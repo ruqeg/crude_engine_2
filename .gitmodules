@@ -1,0 +1,3 @@
+[submodule "extlibs/tlsf_cmake/tlsf"]
+	path = extlibs/tlsf_cmake/tlsf
+	url = https://github.com/mattconte/tlsf.git

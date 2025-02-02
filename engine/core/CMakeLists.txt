@@ -1,0 +1,9 @@
+target_sources(crude_engine
+  PRIVATE
+  memory.c
+  log.c
+  memory.h
+  platform.h
+  assert.h
+  log.h
+)
