@@ -14,6 +14,7 @@ typedef enum crude_verbosity
 
 typedef enum crude_channel
 {
+  CRUDE_CHANNEL_CORE,
   CRUDE_CHANNEL_GENERAL,
   CRUDE_CHANNEL_MEMORY,
   CRUDE_CHANNEL_NETWORKING,
@@ -26,6 +27,8 @@ typedef enum crude_channel
   CRUDE_CHANNEL_GUI,
   CRUDE_CHANNEL_ALL,
 } crude_channel;
+
+void crude_log_set_allocator( void* allocator );
 
 void crude_log_common( cstring filename, int32 line, crude_channel channel, crude_verbosity verbosity, cstring format, ... );
 
