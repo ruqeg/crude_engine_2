@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CRUDE_DEBUG_BREAK   __debugbreak();
 #define CRUDE_INLINE        inline

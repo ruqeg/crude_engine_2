@@ -1,3 +1,12 @@
 [submodule "extlibs/tlsf_cmake/tlsf"]
 	path = extlibs/tlsf_cmake/tlsf
 	url = https://github.com/mattconte/tlsf.git
+[submodule "extlibs/SDL"]
+	path = extlibs/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "extlibs/flecs"]
+	path = extlibs/flecs
+	url = https://github.com/SanderMertens/flecs.git
+[submodule "extlibs/stb_cmake/stb"]
+	path = extlibs/stb_cmake/stb
+	url = https://github.com/nothings/stb.git

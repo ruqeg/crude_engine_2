@@ -4,9 +4,6 @@
 #include <core/utils.h>
 #include <stdlib.h>
 
-#define CRUDE_VALIDATE_ALLOCATOR( allocator ) CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocator, "Invalid allocator!" );
-#define CRUDE_GET_ALLOCATOR_TYPE( allocator ) CRUDE_CAST( crude_allocator_common_data*, allocator )->type
-
 typedef struct memory_statistics
 {
   sizet   allocated_bytes;
@@ -14,43 +11,18 @@ typedef struct memory_statistics
   uint32  allocation_count;
 } memory_statistics;
 
-void exit_walker( void* ptr, size_t size, int used, void* user )
+static void exit_walker( void* ptr, size_t size, int used, void* user )
 {
   if ( !used ) return;
 
-  memory_statistics* stats = CRUDE_CAST( memory_statistics*, user );
+  memory_statistics* stats = CAST( memory_statistics*, user );
   stats->allocated_bytes += size;
   ++stats->allocation_count;
   CRUDE_LOG_WARNING( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
 }
 
-void* crude_allocate( void* allocator, sizet size, sizet alignment )
-{
-  CRUDE_VALIDATE_ALLOCATOR( allocator );
-  switch ( CRUDE_GET_ALLOCATOR_TYPE( allocator ) )
-  {
-  case CRUDE_ALLOCATOR_TYPE_HEAP:
-    return crude_heap_allocator_allocate( CRUDE_CAST( crude_heap_allocator*, allocator ), size, alignment );
-  }
-  CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "Unsupported allocator!" );
-  return NULL;
-}
-
-void crude_deallocate( void* allocator, void* pointer )
-{
-  CRUDE_VALIDATE_ALLOCATOR( allocator );
-  switch ( CRUDE_GET_ALLOCATOR_TYPE( allocator ) )
-  {
-  case CRUDE_ALLOCATOR_TYPE_HEAP:
-    crude_heap_allocator_deallocate( CRUDE_CAST( crude_heap_allocator*, allocator ), pointer );
-    return;
-  }
-  CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "Unsupported allocator!" );
-}
-
 void crude_heap_allocator_initialize( crude_heap_allocator* allocator, sizet capacity )
 {
-  allocator->common.type = CRUDE_ALLOCATOR_TYPE_HEAP;
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
   allocator->tlsf_handle = tlsf_create_with_pool( allocator->memory, capacity );
@@ -96,7 +68,6 @@ void crude_heap_allocator_deallocate( crude_heap_allocator* allocator, void* poi
 
 void crude_stack_allocator_initialize( crude_stack_allocator* allocator, sizet capacity )
 {
-  allocator->common.type = CRUDE_ALLOCATOR_TYPE_STACK;
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
   allocator->occupied = 0u;
@@ -114,7 +85,7 @@ void* crude_stack_allocator_allocate( crude_stack_allocator* allocator, sizet si
   {
     CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator!" );
   }
-  void* memory_block = CRUDE_CAST( int8*, allocator->memory ) + allocator->occupied;
+  void* memory_block = CAST( int8*, allocator->memory ) + allocator->occupied;
   allocator->occupied += size;
   return memory_block;
 }
@@ -122,7 +93,7 @@ void* crude_stack_allocator_allocate( crude_stack_allocator* allocator, sizet si
 void crude_stack_allocator_deallocate( crude_stack_allocator* allocator, void* pointer )
 {
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CRUDE_CAST( int8*, allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CRUDE_CAST( int8*, allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
-  allocator->occupied = CRUDE_CAST( int8*, pointer ) - CRUDE_CAST( int8*, allocator->memory );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
+  allocator->occupied = CAST( int8*, pointer ) - CAST( int8*, allocator->memory );
 }

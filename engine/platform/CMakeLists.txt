@@ -1,0 +1,9 @@
+target_sources(crude_engine
+  PRIVATE
+  input.c
+  input.h
+  sdl_window.c
+  sdl_window.h
+  sdl_system.c
+  sdl_system.h
+)

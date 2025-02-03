@@ -4,7 +4,7 @@ target_sources(crude_engine
   memory.h
   log.c
   log.h
-  platform.h
+  alias.h
   assert.h
   utils.h
 )

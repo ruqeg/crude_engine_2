@@ -1,7 +1,6 @@
 #pragma once
 
-#include <core/platform.h>
-#include <stdarg.h>
+#include <core/alias.h>
 
 typedef enum crude_verbosity
 {
@@ -15,6 +14,7 @@ typedef enum crude_verbosity
 typedef enum crude_channel
 {
   CRUDE_CHANNEL_CORE,
+  CRUDE_CHANNEL_PLATFORM,
   CRUDE_CHANNEL_GENERAL,
   CRUDE_CHANNEL_MEMORY,
   CRUDE_CHANNEL_NETWORKING,
