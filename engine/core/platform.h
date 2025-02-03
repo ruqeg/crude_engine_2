@@ -19,5 +19,3 @@ typedef float         float32;
 typedef double        float64;
 
 typedef size_t        sizet;
-
-typedef const char*   cstring;
