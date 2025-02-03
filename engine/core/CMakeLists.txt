@@ -8,4 +8,5 @@ target_sources(crude_engine
   string.h
   platform.h
   assert.h
+  utils.h
 )

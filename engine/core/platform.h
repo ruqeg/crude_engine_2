@@ -5,8 +5,6 @@
 #define CRUDE_DEBUG_BREAK   __debugbreak();
 #define CRUDE_INLINE        inline
 
-#define CRUDE_CAST(t, exp)  ((t) (exp))
-
 typedef int8_t        int8;
 typedef int16_t       int16;
 typedef int64_t       int64;

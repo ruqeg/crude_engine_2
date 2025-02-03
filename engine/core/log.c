@@ -1,9 +1,11 @@
 #include <core/log.h>
 #include <core/string.h>
+#include <core/utils.h>
 #include <stdio.h>
 #include <Windows.h>
 
-void* g_allocator = NULL;
+char g_message_buffer[1024];
+char g_format_buffer[1024];
 
 CRUDE_INLINE cstring crude_get_verbosity_string( crude_verbosity v )
 {
@@ -36,23 +38,12 @@ CRUDE_INLINE cstring crude_get_channel_string( crude_channel c )
   return "Unknown-Channel";
 }
 
-void crude_log_set_allocator( void* allocator )
-{
-  g_allocator = allocator;
-}
-
 void crude_log_common( cstring filename, int32 line, crude_channel channel, crude_verbosity verbosity, cstring format, ... )
 {
   va_list args;
   va_start( args, format );
-  crude_string_buffer format_buffer;
-  crude_string_buffer message_buffer;
-  crude_string_buffer_initialize( &format_buffer, 1024, g_allocator  );
-  crude_string_buffer_initialize( &message_buffer, 1024, g_allocator  );
-  crude_string_buffer_append_f( &format_buffer, "%s%s%s", "[c: %s][v: %s][f: %s][l: %i] =>\n\t", format, "\n" );
-  crude_string_buffer_append_f( &message_buffer, format_buffer.data, crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, args );
-  OutputDebugStringA( CRUDE_CAST( LPCSTR, message_buffer.data ) );
-  crude_string_buffer_deinitialize( &format_buffer );
-  crude_string_buffer_deinitialize( &format_buffer );
+  snprintf( g_format_buffer, CRUDE_ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
+  vsnprintf( g_message_buffer, CRUDE_ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
+  OutputDebugStringA( CRUDE_CAST( LPCSTR, g_message_buffer ) );
   va_end(args);
 }

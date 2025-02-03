@@ -1,6 +1,7 @@
 #include <core/string.h>
 #include <core/assert.h>
 #include <core/memory.h>
+#include <core/utils.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -54,6 +55,6 @@ void crude_string_buffer_append_f( crude_string_buffer* string, const char* form
   if ( written_chars < 0 )
   {
     CRUDE_OVERFLOW();
-    CRUDE_ABORT( "New string too big for current buffer! Please allocate more size." );
+    CRUDE_ABORT( CRUDE_CHANNEL_CORE, "New string too big for current buffer! Please allocate more size." );
   }
 }

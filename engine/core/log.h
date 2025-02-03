@@ -28,8 +28,6 @@ typedef enum crude_channel
   CRUDE_CHANNEL_ALL,
 } crude_channel;
 
-void crude_log_set_allocator( void* allocator );
-
 void crude_log_common( cstring filename, int32 line, crude_channel channel, crude_verbosity verbosity, cstring format, ... );
 
 #define CRUDE_LOG( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ALL, format, ##__VA_ARGS__ );
