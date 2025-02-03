@@ -1,0 +1,9 @@
+#include <platform/input.h>
+
+ECS_COMPONENT_DECLARE( crude_input );
+
+void crude_input_components_import( crude_world *world )
+{
+  ECS_MODULE( world, crude_input_components );
+  ECS_COMPONENT_DEFINE( world, crude_input );
+}
