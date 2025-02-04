@@ -42,7 +42,7 @@ static void sdl_create_window( ecs_iter_t *it )
     {
       SDL_SetWindowBordered( created_window, false );
       
-      int display_index = SDL_GetWindowDisplayIndex( created_window );
+      int display_index = SDL_GetDisplayForWindow( created_window );
       if ( display_index < 0 )
       {
         CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Error getting window display" );
@@ -129,7 +129,7 @@ static void sdl_process_events( ecs_iter_t *it )
   }
 }
 
-void crude_sdl_system_import( crude_world *world )
+void crude_sdl_systemImport( crude_world *world )
 {
   ECS_TAG( world, OnInput );
 

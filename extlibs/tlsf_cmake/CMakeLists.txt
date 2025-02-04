@@ -4,19 +4,10 @@ project(tlsf C)
 
 set(CMAKE_C_STANDARD 17)
 
-add_library(tlsf)
+set(TLSF_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tlsf")
+add_library(${PROJECT_NAME} SHARED ${TLSF_SOURCE_DIR}/tlsf.c)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TLSF_SOURCE_DIR})
 
 if(MSVC)
- target_compile_options(tlsf PRIVATE "/MP")
+  target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
 endif()
-
-set(TLSF_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tlsf")
-
-target_include_directories(tlsf PUBLIC ${TLSF_SOURCE_DIR})
-
-target_sources(tlsf PRIVATE
-  ${TLSF_SOURCE_DIR}/tlsf.c)
-
-install(TARGETS tlsf
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

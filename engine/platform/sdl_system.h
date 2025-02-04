@@ -2,4 +2,4 @@
 
 #include <scene/world.h>
 
-void crude_sdl_system_import( crude_world *world );
+CRUDE_API void crude_sdl_systemImport( crude_world *world );

@@ -11,9 +11,9 @@ typedef struct crude_entity
   void          *world;
 } crude_entity;
 
-crude_entity crude_entity_create_empty( void *world, const char *name );
-void crude_entity_destroy( crude_entity entity );
-bool crude_entity_valid( crude_entity entity );
+CRUDE_API crude_entity crude_entity_create_empty( void *world, const char *name );
+CRUDE_API void crude_entity_destroy( crude_entity entity );
+CRUDE_API bool crude_entity_valid( crude_entity entity );
 
 #define CRUDE_ENTITY_CREATE( ecs_world, name, component, ...)\
   ({\

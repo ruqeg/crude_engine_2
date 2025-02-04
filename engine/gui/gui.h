@@ -3,7 +3,7 @@
 #include <core/alias.h>
 #include <scene/world.h>
 
-typedef void ( *crude_update_callback )( ecs_iter_t *it );
+typedef void ( *crude_update_callback )( ecs_iter_t* );
 
 typedef struct crude_gui_system
 {
@@ -27,9 +27,9 @@ typedef struct crude_window_handle
   void *value;
 } crude_window_handle;
 
-extern ECS_COMPONENT_DECLARE( crude_gui_system );
-extern ECS_COMPONENT_DECLARE( crude_gui_context );
-extern ECS_COMPONENT_DECLARE( crude_window );
-extern ECS_COMPONENT_DECLARE( crude_window_handle );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_gui_system );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_gui_context );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window_handle );
 
-void crude_gui_components_import( crude_world *world );
+CRUDE_API void crude_gui_componentsImport( crude_world *world );

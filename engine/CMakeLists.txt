@@ -2,30 +2,15 @@ cmake_minimum_required(VERSION 3.25)
 
 project(crude_engine C)
 
-add_library(crude_engine)
+file(GLOB_RECURSE SRC *.c)
+file(GLOB_RECURSE HEADERS *.h)
 
-target_link_libraries(crude_engine PUBLIC
-  stb
-  flecs
-  tlsf
-  SDL3::SDL3
-)
-target_sources(crude_engine PRIVATE 
-  engine.c
-  engine.h
-)
-target_include_directories(crude_engine PUBLIC 
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+set(CRUDE_SOURCES ${SRC} ${HEADERS})
 
-if(MSVC)
- target_compile_options(crude_engine PRIVATE "/MP")
-endif()
+add_library(${PROJECT_NAME} SHARED ${CRUDE_SOURCES})
 
-add_subdirectory(core)
-add_subdirectory(platform)
-add_subdirectory(gui)
-add_subdirectory(scene)
+target_include_directories(crude_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(crude_engine PUBLIC stb flecs tlsf SDL3::SDL3)
 
 source_group(core REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/core/*")
 source_group(platform REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/platform/*")
@@ -33,6 +18,6 @@ source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
 source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(crude_engine FILES engine.c engine.h)
 
-install(TARGETS crude_engine
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+if(MSVC)
+ target_compile_options(crude_engine PRIVATE "/MP")
+endif()

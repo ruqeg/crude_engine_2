@@ -3,6 +3,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef crude_engine_EXPORTS
+#define CRUDE_API __declspec(dllexport)
+#else
+#define CRUDE_API __declspec(dllimport)
+#endif
+
 #define CRUDE_DEBUG_BREAK   __debugbreak();
 #define CRUDE_INLINE        inline
 

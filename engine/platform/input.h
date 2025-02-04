@@ -10,4 +10,4 @@ typedef struct crude_input
 
 extern ECS_COMPONENT_DECLARE( crude_input );
 
-void crude_input_components_import( crude_world *world );
+CRUDE_API void crude_input_componentsImport( crude_world *world );

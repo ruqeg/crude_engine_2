@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(cr C)
+
+set(CMAKE_C_STANDARD 17)
+
+add_library(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cr/cr.h")
+
+set(CR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cr")
+
+target_include_directories(cr INTERFACE ${CR_SOURCE_DIR})
+
+install(TARGETS cr
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

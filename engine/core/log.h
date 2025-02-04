@@ -28,7 +28,7 @@ typedef enum crude_channel
   CRUDE_CHANNEL_ALL,
 } crude_channel;
 
-void crude_log_common( const char* filename, int32 line, crude_channel channel, crude_verbosity verbosity, const char* format, ... );
+CRUDE_API void crude_log_common( const char* filename, int32 line, crude_channel channel, crude_verbosity verbosity, const char* format, ... );
 
 #define CRUDE_LOG( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ALL, format, ##__VA_ARGS__ );
 #define CRUDE_LOG_INFO( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_INFO, format, ##__VA_ARGS__ );
