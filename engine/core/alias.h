@@ -3,10 +3,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifdef crude_engine_EXPORTS
-#define CRUDE_API __declspec(dllexport)
+#if defined(_MSC_VER)
+#if defined(__cplusplus)
+#define CRUDE_EXPORT extern "C" __declspec(dllexport)
+#define CRUDE_IMPORT extern "C" __declspec(dllimport)
 #else
-#define CRUDE_API __declspec(dllimport)
+#define CRUDE_EXPORT __declspec(dllexport)
+#define CRUDE_IMPORT __declspec(dllimport)
+#endif
+#endif
+
+#ifdef crude_engine_EXPORTS
+#define CRUDE_API CRUDE_EXPORT
+#else
+#define CRUDE_API CRUDE_IMPORT
 #endif
 
 #define CRUDE_DEBUG_BREAK   __debugbreak();
