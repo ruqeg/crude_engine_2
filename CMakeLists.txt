@@ -13,6 +13,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_subdirectory(extlibs)
 add_subdirectory(engine)
+add_subdirectory(engine_simulation)
 add_subdirectory(editor)
 add_subdirectory(launcher)
 
