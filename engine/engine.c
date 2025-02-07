@@ -33,6 +33,13 @@ crude_engine crude_engine_initialize( int32 num_threads )
   return engine;
 }
 
-bool crude_engine_update()
+bool crude_engine_update( crude_engine *engine )
 {
+  crude_world *world = engine->world;
+  
+  if (!ecs_should_quit(world))
+  {
+    ecs_progress(world, 0);
+    return true;
+  }
 }

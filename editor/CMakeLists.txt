@@ -12,6 +12,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(crude_editor PUBLIC crude_engine)
 
+source_group(editor FILES ${CRUDE_SOURCES})
+
 if(MSVC)
  target_compile_options(crude_editor PRIVATE "/MP")
 endif()

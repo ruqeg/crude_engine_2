@@ -16,7 +16,7 @@ source_group(core REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/core/*")
 source_group(platform REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/platform/*")
 source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
 source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
-source_group(crude_engine FILES engine.c engine.h)
+source_group(engine FILES engine.c engine.h)
 
 if(MSVC)
  target_compile_options(crude_engine PRIVATE "/MP")

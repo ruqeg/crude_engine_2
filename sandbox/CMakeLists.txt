@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_engine_simulation C)
+project(crude_sandbox C)
 
 file(GLOB_RECURSE SRC *.c)
 file(GLOB_RECURSE HEADERS *.h)
@@ -12,7 +12,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine cr)
 
-source_group(engine_simulation FILES ${CRUDE_SOURCES})
+source_group(sandbox FILES ${CRUDE_SOURCES})
 
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
