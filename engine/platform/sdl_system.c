@@ -1,26 +1,27 @@
-#include <platform/sdl_system.h>
-#include <platform/sdl_window.h>
-#include <platform/input.h>
-#include <gui/gui.h>
-#include <scene/entity.h>
-#include <core/assert.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include <gui/gui.h>
+#include <platform/input.h>
+#include <platform/sdl_window.h>
+#include <core/assert.h>
+
+#include <platform/sdl_system.h>
+
 static void sdl_create_window( ecs_iter_t *it )
 {
-  crude_window *window = ecs_field( it, crude_window, 1 );
-  ecs_entity_t ecs_id( crude_window_handle ) = ecs_field_id( it, 2 );
+  crude_window *window = ecs_field( it, crude_window, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_entity entity = ( crude_entity ){ it->entities[i], it->world };
-    crude_window_handle *window_handle = CRUDE_ENTITY_GET_OR_ADD_COMPONENT( entity, crude_window_handle );
+    ecs_world_t *world = it->world;
+    ecs_entity_t *entity = it->entities[i];
+
+    crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
+    crude_sdl_window *sdl_window = ecs_ensure( world, entity, crude_sdl_window );
     
-    ecs_add( it->world, it->entities[i], crude_sdl_window );
-    
-    const char *title = CRUDE_ENTITY_GET_NAME( entity );
-    if (!title)
+    const char *title = ecs_doc_get_name( world, entity );
+    if ( !title )
     {
       title = "SDL2 window";
     }
@@ -50,7 +51,7 @@ static void sdl_create_window( ecs_iter_t *it )
       }
       
       SDL_Rect usable_bounds;
-      if ( 0 != SDL_GetDisplayUsableBounds( display_index, &usable_bounds ) )
+      if ( SDL_GetDisplayUsableBounds( display_index, &usable_bounds ) )
       {
         CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Error getting usable bounds" );
         return;
@@ -75,7 +76,7 @@ static void sdl_create_window( ecs_iter_t *it )
 
 static void sdl_destroy_window( ecs_iter_t *it )
 {
-  crude_window_handle *window = ecs_field( it, crude_window_handle, 1 );
+  crude_window_handle *window = ecs_field( it, crude_window_handle, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
@@ -83,7 +84,7 @@ static void sdl_destroy_window( ecs_iter_t *it )
   }
 }
 
-static void sdl_shutdown( crude_world *world, void *ctx )
+static void sdl_shutdown( ecs_world_t *world, void *ctx )
 {
   SDL_Quit();
   CRUDE_LOG_INFO( CRUDE_CHANNEL_PLATFORM, "SDL successfully shutdown" );
@@ -91,21 +92,18 @@ static void sdl_shutdown( crude_world *world, void *ctx )
 
 static void sdl_process_events( ecs_iter_t *it )
 {
-  crude_input *input = ecs_field( it, crude_input, 1 );
-  crude_window *app_window = ecs_field( it, crude_window, 2 );
-  crude_window_handle *app_window_handle = ecs_field( it, crude_window_handle, 3 );
+  crude_input *input = ecs_field( it, crude_input, 0 );
+  crude_window *app_window = ecs_field( it, crude_window, 1 );
+  crude_window_handle *app_window_handle = ecs_field( it, crude_window_handle, 2 );
   
+  uint32 current_event_index = 0u;
+
   SDL_Event sdl_event;
   while (SDL_PollEvent( &sdl_event ))
   {
-    if (input->callback)
-    {
-      input->callback( &sdl_event );
-    }
-
     if ( sdl_event.type == SDL_EVENT_QUIT )
     {
-      crude_world_destroy( it->world );
+      ecs_quit( it->world );
     }
     else if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
     {
@@ -124,23 +122,44 @@ static void sdl_process_events( ecs_iter_t *it )
     }
     else if ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
     {
-      crude_world_destroy( it->world );
+      ecs_quit( it->world );
     }
   }
 }
 
-void crude_sdl_systemImport( crude_world *world )
+void crude_sdl_systemImport( ecs_world_t *world )
 {
-  ECS_TAG( world, OnInput );
+  ECS_MODULE( world, crude_sdl_system );
+  ECS_IMPORT( world, crude_gui_components );
+  ECS_IMPORT( world, crude_input_components );
+  ECS_IMPORT( world, crude_sdl_components );
+ 
+  ecs_observer_desc_t s = (ecs_observer_desc_t) { .query.terms = { (ecs_term_t) { .id = ecs_id( crude_window ), .oper = EcsNot } } };
+  
+  ecs_observer( world, {
+    .query.terms = { 
+      ( ecs_term_t ) { .id = ecs_id( crude_window ) },
+      ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsNot }
+    },
+    .events = { EcsOnSet },
+    .callback = sdl_create_window
+    });
+  
+  ecs_system( world, {
+    .entity = ecs_entity( world, { .name = "sdl_process_events", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
+    .callback = sdl_process_events,
+    .query.terms = { 
+		{.id = ecs_id( crude_input ) },
+		{.id = ecs_id( crude_window ) },
+		{.id = ecs_id( crude_window_handle ) },
+    } } );
+  ecs_observer( world, {
+    .query.terms = { { ecs_id( crude_window_handle ) } },
+    .events = { EcsOnRemove },
+    .callback = sdl_destroy_window
+    } );
 
-  ECS_MODULE( world, sdl_system );
-  ECS_OBSERVER( world, sdl_create_window, EcsOnSet, [in] crude_gui.components.crude_window, !crude_gui.components.crude_window );
-  ECS_SYSTEM( world, sdl_process_events, OnInput, crude_input.components.crude_input($), crude_gui.components.crude_window, crude_gui.components.crude_window_handle );
-  ECS_OBSERVER( world, sdl_destroy_window, EcsOnDelete, [in] crude_gui.components.crude_window_handle );
-
-  ecs_set_ptr( world, ecs_id(crude_input), crude_input, NULL );
-
-  if (SDL_Init( SDL_INIT_VIDEO ) != 0)
+  if ( !SDL_Init( SDL_INIT_VIDEO ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to initialize SDL: %s", SDL_GetError() );
     return;

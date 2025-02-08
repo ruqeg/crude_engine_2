@@ -1,49 +1,40 @@
-#define CR_HOST
 #include <cr.h>
-#include <Windows.h>
-#include <engine.h>
-#include <filesystem>
+#include <assert.h>
 
-std::filesystem::path get_executable_path()
+#include <engine.h>
+#include <platform/sdl_window.h>
+#include <platform/sdl_system.h>
+#include <platform/input.h>
+#include <gui/gui.h>
+
+static bool CR_STATE g_initialized = false;
+
+bool input_callback( const void *sdl_event )
 {
-#ifdef _WIN32
-  wchar_t path[ MAX_PATH ] = { 0 };
-  GetModuleFileNameW( NULL, path, MAX_PATH );
-  return std::filesystem::path( path ).remove_filename();
-#else
-  return std::filesystem::canonical("/proc/self/exe");
-#endif
 }
 
-#define PLUGIN_PATH_STR( name ) get_executable_path().concat( CR_PLUGIN( name ) ).string()
-
-int APIENTRY wWinMain(_In_ HINSTANCE      hInstance,
-                      _In_opt_ HINSTANCE  hPrevInstance,
-                      _In_ LPWSTR         lpCmdLine,
-                      _In_ int            nCmdShow)
+CR_EXPORT int cr_main( struct cr_plugin *ctx, enum cr_op operation )
 {
-  cr_plugin crude_editor, crude_engine_simulation;
-  
-  crude_engine engine = crude_engine_initialize( 1u );
+  if ( operation == CR_CLOSE )
+    return 0;
 
-  crude_editor.userdata            = engine.world;
-  crude_engine_simulation.userdata = &engine;
-  std::filesystem::path a;
-  std::filesystem::path b;
-  //cr_plugin_open( crude_editor, CR_PLUGIN( "crude_editor" ) );
-  cr_plugin_open( crude_engine_simulation, PLUGIN_PATH_STR( "crude_engine_simulation" ).c_str() );
+  assert( ctx );
 
-  while ( engine.running )
+  ecs_world_t* world = ctx->userdata;
+
+  if ( !g_initialized )
   {
-    //if ( cr_plugin_update( crude_editor ) == 0 )
-    //{
-      cr_plugin_update( crude_engine_simulation );
-    //}
-    cr_plat_init();
+    ECS_IMPORT( world, crude_sdl_system );
+
+    ecs_entity_t scene = ecs_entity( world, { .name = "scene1" } );
+    ecs_set( world, scene, crude_window, { 
+      .width     = 800,
+      .height    = 600,
+      .maximized = false });
+    ecs_set( world, scene, crude_input, { .callback = &input_callback } );
+
+    g_initialized = true;
   }
-
-  //cr_plugin_close( crude_editor );
-  cr_plugin_close( crude_engine_simulation );
-
-  return EXIT_SUCCESS;
+ 
+  return 0;
 }

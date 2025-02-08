@@ -1,5 +1,7 @@
 #pragma once
 
-#include <scene/world.h>
+#include <flecs.h>
 
-CRUDE_API void crude_sdl_systemImport( crude_world *world );
+#include <core/alias.h>
+
+CRUDE_API void crude_sdl_systemImport( ecs_world_t *world );

@@ -1,7 +1,8 @@
 #pragma once
 
+#include <flecs.h>
+
 #include <core/alias.h>
-#include <scene/world.h>
 
 typedef void ( *crude_update_callback )( ecs_iter_t* );
 
@@ -32,4 +33,4 @@ CRUDE_API extern ECS_COMPONENT_DECLARE( crude_gui_context );
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window );
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window_handle );
 
-CRUDE_API void crude_gui_componentsImport( crude_world *world );
+CRUDE_API void crude_gui_componentsImport( ecs_world_t *world );

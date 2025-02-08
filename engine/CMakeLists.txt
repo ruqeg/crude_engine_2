@@ -15,7 +15,6 @@ target_link_libraries(crude_engine PUBLIC stb flecs tlsf SDL3::SDL3)
 source_group(core REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/core/*")
 source_group(platform REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/platform/*")
 source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
-source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(engine FILES engine.c engine.h)
 
 if(MSVC)
