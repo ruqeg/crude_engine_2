@@ -20,14 +20,14 @@ bool crude_engine_update( crude_engine *engine )
 {
   ecs_world_t *world = engine->world;
   
-  if (!ecs_should_quit(world))
+  if ( !ecs_should_quit( world ) )
   {
-    const ecs_world_info_t *info = ecs_get_world_info( world );
+    ecs_world_info_t const *info = ecs_get_world_info( world );
     ecs_progress( world, info->delta_time );
     return true;
   }
 
-  ecs_fini(world);
+  ecs_fini( world );
   engine->running = false;
   
   return false;

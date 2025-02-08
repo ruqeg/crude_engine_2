@@ -2,6 +2,12 @@
 
 #include <core/log.h>
 
+#define CRUDE_ASSERT( condition )\
+  if ( !( condition ) )\
+  {\
+    CRUDE_DEBUG_BREAK\
+  }
+
 #define CRUDE_ASSERTM( channel, condition, format, ... )\
   if ( !( condition ) )\
   {\

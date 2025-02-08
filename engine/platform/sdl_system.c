@@ -86,6 +86,7 @@ static void sdl_destroy_window( ecs_iter_t *it )
 
 static void sdl_shutdown( ecs_world_t *world, void *ctx )
 {
+  SDL_Vulkan_UnloadLibrary();
   SDL_Quit();
   CRUDE_LOG_INFO( CRUDE_CHANNEL_PLATFORM, "SDL successfully shutdown" );
 }
@@ -149,10 +150,11 @@ void crude_sdl_systemImport( ecs_world_t *world )
     .entity = ecs_entity( world, { .name = "sdl_process_events", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
     .callback = sdl_process_events,
     .query.terms = { 
-		{.id = ecs_id( crude_input ) },
-		{.id = ecs_id( crude_window ) },
-		{.id = ecs_id( crude_window_handle ) },
+      {.id = ecs_id( crude_input ) },
+      {.id = ecs_id( crude_window ) },
+      {.id = ecs_id( crude_window_handle ) },
     } } );
+
   ecs_observer( world, {
     .query.terms = { { ecs_id( crude_window_handle ) } },
     .events = { EcsOnRemove },
@@ -162,6 +164,12 @@ void crude_sdl_systemImport( ecs_world_t *world )
   if ( !SDL_Init( SDL_INIT_VIDEO ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to initialize SDL: %s", SDL_GetError() );
+    return;
+  }
+
+  if ( !SDL_Vulkan_LoadLibrary( NULL ) )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to load SDL Vulkan: %s", SDL_GetError() );
     return;
   }
 
