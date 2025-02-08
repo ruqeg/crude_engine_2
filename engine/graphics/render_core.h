@@ -14,8 +14,9 @@ typedef struct crude_render_core_config
 
 typedef struct crude_render_core
 {
-  VkInstance             vk_instance;
-  VkAllocationCallbacks *vk_allocation_callbacks;
+  VkInstance                 vk_instance;
+  VkDebugUtilsMessengerEXT   vk_debug_utils_messenger;
+  VkAllocationCallbacks     *vk_allocation_callbacks;
 } crude_render_core;
 
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_render_core );

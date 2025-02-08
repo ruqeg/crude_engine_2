@@ -34,7 +34,10 @@ static VKAPI_ATTR VkBool32 debug_callback(
   return VK_FALSE;
 }
 
-static VkInstance create_instance( crude_render_core_config *config )
+static VkInstance create_instance(
+  char const            *application_name,
+  uint32                 application_version,
+  VkAllocationCallbacks *vk_allocation_callbacks)
 {
   // extensions
   uint32 surface_extensions_count;
@@ -53,7 +56,7 @@ static VkInstance create_instance( crude_render_core_config *config )
   }
   for ( uint32 i = 0; i < debug_extensions_count; ++i )
   {
-    instance_enabled_extensions[surface_extensions_count + i] = surface_extensions_array[i];
+    instance_enabled_extensions[surface_extensions_count + i] = debug_extensions[i];
   }
 
   // layers
@@ -61,8 +64,8 @@ static VkInstance create_instance( crude_render_core_config *config )
 
   // application
   VkApplicationInfo vk_application = ( VkApplicationInfo ) {
-    .pApplicationName   = config->application_name,
-    .applicationVersion = config->application_version,
+    .pApplicationName   = application_name,
+    .applicationVersion = application_version,
     .pEngineName        = "crude_engine",
     .engineVersion      = VK_MAKE_VERSION( 1, 0, 0 ),
     .apiVersion         = VK_API_VERSION_1_0 
@@ -101,11 +104,43 @@ static VkInstance create_instance( crude_render_core_config *config )
 #endif // VK_EXT_debug_utils
   
   VkInstance vk_instance;
-  handle_vk_result( vkCreateInstance( &vk_instance_create_info, config->vk_allocation_callbacks, &vk_instance ), "failed to create instance" );
+  handle_vk_result( vkCreateInstance( &vk_instance_create_info, vk_allocation_callbacks, &vk_instance ), "failed to create instance" );
 
   arrfree( instance_enabled_extensions );
 
   return vk_instance;
+}
+
+
+static VkDebugUtilsMessengerEXT create_debug_utils_messsenger( VkInstance vk_instance, VkAllocationCallbacks *vk_allocation_callbacks )
+{
+  VkDebugUtilsMessengerCreateInfoEXT vk_create_info = ( VkDebugUtilsMessengerCreateInfoEXT) {
+    .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+    .pfnUserCallback  = debug_callback,
+    .messageSeverity  =
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+    .messageType      =
+      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    .pUserData        = NULL,
+    .pNext            = NULL,
+    .flags            = 0u,
+  };
+
+  VkDebugUtilsMessengerEXT handle;
+  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( vk_instance, "vkCreateDebugUtilsMessengerEXT" );
+  if ( !vkCreateDebugUtilsMessengerEXT )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to get vkCreateDebugUtilsMessengerEXT " );
+    return VK_NULL_HANDLE;
+  }
+
+  handle_vk_result( vkCreateDebugUtilsMessengerEXT( vk_instance, &vk_create_info, vk_allocation_callbacks, &handle ), "failed to create debug utils messenger" );
+  return handle;
 }
 
 static void initialize_render_core( ecs_iter_t *it  )
@@ -116,7 +151,8 @@ static void initialize_render_core( ecs_iter_t *it  )
   {
     crude_render_core *core = ecs_ensure( it->world, it->entities[i], crude_render_core );
     core->vk_allocation_callbacks = config->vk_allocation_callbacks;
-    core->vk_instance = create_instance( &config[i] );
+    core->vk_instance = create_instance( config->application_name, config->application_version, core->vk_allocation_callbacks );
+    core->vk_debug_utils_messenger = create_debug_utils_messsenger( core->vk_instance, core->vk_allocation_callbacks );
   }
 }
 
@@ -126,6 +162,13 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( core->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vkDestroyDebugUtilsMessengerEXT, "failed to get vkDestroyDebugUtilsMessengerEXT " );
+    if ( vkDestroyDebugUtilsMessengerEXT )
+    {
+      vkDestroyDebugUtilsMessengerEXT( core->vk_instance, core->vk_debug_utils_messenger, core->vk_allocation_callbacks );
+    }
+
     vkDestroyInstance( core->vk_instance, core->vk_allocation_callbacks );
   }
 }
