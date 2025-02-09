@@ -2,6 +2,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include <stb_ds.h>
 
+#include <gui/gui.h>
 #include <platform/sdl_system.h>
 #include <graphics/render_core.h>
 #include <core/assert.h>
@@ -133,26 +134,34 @@ static VkDebugUtilsMessengerEXT create_debug_utils_messsenger( VkInstance vk_ins
 
   VkDebugUtilsMessengerEXT handle;
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( vk_instance, "vkCreateDebugUtilsMessengerEXT" );
-  if ( !vkCreateDebugUtilsMessengerEXT )
+  CRUDE_ASSERT( vkCreateDebugUtilsMessengerEXT );
+  handle_vk_result( vkCreateDebugUtilsMessengerEXT( vk_instance, &vk_create_info, vk_allocation_callbacks, &handle ), "failed to create debug utils messenger" );
+  return handle;
+}
+
+static VkSurfaceKHR create_surface( crude_window_handle *window_handle, VkInstance vk_instance, VkAllocationCallbacks *vk_allocation_callbacks )
+{
+  VkSurfaceKHR handle;
+  if ( !SDL_Vulkan_CreateSurface( window_handle->value, vk_instance, vk_allocation_callbacks, &handle ) )
   {
-    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to get vkCreateDebugUtilsMessengerEXT " );
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
     return VK_NULL_HANDLE;
   }
-
-  handle_vk_result( vkCreateDebugUtilsMessengerEXT( vk_instance, &vk_create_info, vk_allocation_callbacks, &handle ), "failed to create debug utils messenger" );
   return handle;
 }
 
 static void initialize_render_core( ecs_iter_t *it  )
 {
   crude_render_core_config *config = ecs_field( it, crude_render_core_config, 0 );
+  crude_window_handle *window_handle = ecs_field( it, crude_window_handle, 1 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_render_core *core = ecs_ensure( it->world, it->entities[i], crude_render_core );
-    core->vk_allocation_callbacks = config->vk_allocation_callbacks;
-    core->vk_instance = create_instance( config->application_name, config->application_version, core->vk_allocation_callbacks );
+    core->vk_allocation_callbacks = config[i].vk_allocation_callbacks;
+    core->vk_instance = create_instance( config[i].application_name, config[i].application_version, core->vk_allocation_callbacks );
     core->vk_debug_utils_messenger = create_debug_utils_messsenger( core->vk_instance, core->vk_allocation_callbacks );
+    core->vk_surface = create_surface( &window_handle[i], core->vk_instance, core->vk_allocation_callbacks );
   }
 }
 
@@ -162,8 +171,10 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    vkDestroySurfaceKHR( core->vk_instance, core->vk_surface, core->vk_allocation_callbacks );
+
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( core->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vkDestroyDebugUtilsMessengerEXT, "failed to get vkDestroyDebugUtilsMessengerEXT " );
+    CRUDE_ASSERT( vkDestroyDebugUtilsMessengerEXT );
     if ( vkDestroyDebugUtilsMessengerEXT )
     {
       vkDestroyDebugUtilsMessengerEXT( core->vk_instance, core->vk_debug_utils_messenger, core->vk_allocation_callbacks );
@@ -180,7 +191,8 @@ void crude_render_systemImport( ecs_world_t *world )
  
   ecs_observer( world, {
     .query.terms = { 
-      ( ecs_term_t ) { .id = ecs_id( crude_render_core_config ) },
+      ( ecs_term_t ) { .id = ecs_id( crude_render_core_config ), .oper = EcsAnd },
+      ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsAnd },
       ( ecs_term_t ) { .id = ecs_id( crude_render_core ), .oper = EcsNot }
     },
     .events = { EcsOnSet },

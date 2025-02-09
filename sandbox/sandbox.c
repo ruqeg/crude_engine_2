@@ -2,7 +2,6 @@
 #include <assert.h>
 
 #include <engine.h>
-#include <platform/sdl_window.h>
 #include <platform/sdl_system.h>
 #include <platform/input.h>
 #include <graphics/render_core.h>

@@ -25,6 +25,6 @@ void crude_gui_componentsImport( ecs_world_t *world )
   ecs_struct_init(world, &( ecs_struct_desc_t ){
     .entity  = ecs_id( crude_window_handle ),
     .members = {
-      {.name = "value", .type = sizeof( void * ) == 4 ? ecs_id( ecs_i32_t ) : ecs_id( ecs_i64_t ) }
+      { .name = "value", .type = sizeof( void * ) == 4 ? ecs_id( ecs_i32_t ) : ecs_id( ecs_i64_t ) }
     } } );
 }

@@ -3,7 +3,6 @@
 
 #include <gui/gui.h>
 #include <platform/input.h>
-#include <platform/sdl_window.h>
 #include <core/assert.h>
 
 #include <platform/sdl_system.h>
@@ -18,7 +17,6 @@ static void sdl_create_window( ecs_iter_t *it )
     ecs_entity_t *entity = it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
-    crude_sdl_window *sdl_window = ecs_ensure( world, entity, crude_sdl_window );
     
     const char *title = ecs_doc_get_name( world, entity );
     if ( !title )
@@ -26,13 +24,10 @@ static void sdl_create_window( ecs_iter_t *it )
       title = "SDL2 window";
     }
     
-    int x = SDL_WINDOWPOS_UNDEFINED;
-    int y = SDL_WINDOWPOS_UNDEFINED;
-    uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if ( window[i].maximized )
       flags |= SDL_WINDOW_MAXIMIZED;
-
-    SDL_Window *created_window = SDL_CreateWindow( title, x, y, window[i].width, window[i].height, flags );
+    SDL_Window *created_window = SDL_CreateWindow( title, window[i].width, window[i].height, flags );
     if ( !created_window )
     {
       CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "SDL2 window creation failed: %s", SDL_GetError() );
@@ -133,7 +128,6 @@ void crude_sdl_systemImport( ecs_world_t *world )
   ECS_MODULE( world, crude_sdl_system );
   ECS_IMPORT( world, crude_gui_components );
   ECS_IMPORT( world, crude_input_components );
-  ECS_IMPORT( world, crude_sdl_components );
  
   ecs_observer_desc_t s = (ecs_observer_desc_t) { .query.terms = { (ecs_term_t) { .id = ecs_id( crude_window ), .oper = EcsNot } } };
   

@@ -16,6 +16,7 @@ typedef struct crude_render_core
 {
   VkInstance                 vk_instance;
   VkDebugUtilsMessengerEXT   vk_debug_utils_messenger;
+  VkSurfaceKHR               vk_surface;
   VkAllocationCallbacks     *vk_allocation_callbacks;
 } crude_render_core;
 
