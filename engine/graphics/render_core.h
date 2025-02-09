@@ -7,17 +7,18 @@
 
 typedef struct crude_render_core_config
 {
-  char const            *application_name;
-  uint32                 application_version;
-  VkAllocationCallbacks *vk_allocation_callbacks;
+  char const                *application_name;
+  uint32                     application_version;
+  VkAllocationCallbacks     *allocation_callbacks;
 } crude_render_core_config;
 
 typedef struct crude_render_core
 {
-  VkInstance                 vk_instance;
-  VkDebugUtilsMessengerEXT   vk_debug_utils_messenger;
-  VkSurfaceKHR               vk_surface;
-  VkAllocationCallbacks     *vk_allocation_callbacks;
+  VkInstance                 instance;
+  VkDebugUtilsMessengerEXT   debug_utils_messenger;
+  VkSurfaceKHR               surface;
+  VkPhysicalDevice           physical_device;
+  VkAllocationCallbacks     *allocation_callbacks;
 } crude_render_core;
 
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_render_core );
