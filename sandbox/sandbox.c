@@ -36,8 +36,7 @@ CR_EXPORT int cr_main( struct cr_plugin *ctx, enum cr_op operation )
     ecs_set( world, scene, crude_input, { .callback = &input_callback } );
     ecs_set( world, scene, crude_render_core_config, {
       .application_name = "sandbox",
-      .application_version = VK_MAKE_VERSION( 1, 0, 0 ),
-      .allocation_callbacks = NULL } );
+      .application_version = VK_MAKE_VERSION( 1, 0, 0 ) } );
 
     g_initialized = true;
   }
