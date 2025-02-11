@@ -1,13 +1,13 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <stb_ds.h>
+#include <math.h>
 
 #include <gui/gui.h>
 #include <platform/sdl_system.h>
 #include <graphics/render_core.h>
 #include <core/assert.h>
 #include <core/utils.h>
-#include <math.h>
 
 #include <graphics/render_system.h>
 
@@ -474,6 +474,66 @@ static VkSwapchainKHR create_swapchain(
   return vulkan_swapchain;
 }
 
+static VmaAllocation create_vma_allocator( VkPhysicalDevice vulkan_physical_device, VkDevice vulkan_device, VkInstance vulkan_instance )
+{
+  VmaAllocatorCreateInfo allocator_info = ( VmaAllocatorCreateInfo ){
+    .physicalDevice = vulkan_physical_device,
+    .device         = vulkan_device,
+    .instance       = vulkan_instance,
+  };
+  
+  VmaAllocation vma_allocator;
+  HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &vma_allocator ), "Failed to create vma allocator" );
+  return vma_allocator;
+}
+
+static VkDescriptorPool create_descriptor_pool( VkDevice vulkan_device, VkAllocationCallbacks *vulkan_allocation_callbacks )
+{    
+  uint32 const global_pool_elements = 128;
+  VkDescriptorPoolSize pool_sizes[] =
+  {
+    { VK_DESCRIPTOR_TYPE_SAMPLER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, global_pool_elements },
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, global_pool_elements }
+  };
+  
+  VkDescriptorPoolCreateInfo pool_info = ( VkDescriptorPoolCreateInfo ) {
+    .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+    .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+    .maxSets       = global_pool_elements * ARRAY_SIZE( pool_sizes ),
+    .poolSizeCount = ARRAY_SIZE( pool_sizes ),
+    .pPoolSizes    = pool_sizes,
+  };
+
+  VkDescriptorPool vulkan_descriptor_pool;
+  HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( vulkan_device, &pool_info, vulkan_allocation_callbacks, &vulkan_descriptor_pool ), "Failed create descriptor pool" );
+  return vulkan_descriptor_pool;
+}
+
+VkQueryPool create_timestamp_query_pool( VkDevice vulkan_device, VkAllocationCallbacks *vulkan_allocation_callbacks )
+{    
+  uint32 const gpu_time_queries_per_frame = 32;
+  VkQueryPoolCreateInfo query_pool_create_info = ( VkQueryPoolCreateInfo ){ 
+    .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+    .pNext = NULL,
+    .flags = 0u,
+    .queryType = VK_QUERY_TYPE_TIMESTAMP,
+    .queryCount = gpu_time_queries_per_frame * 2u * CRUDE_MAX_FRAMES,
+    .pipelineStatistics = 0u,
+  };
+  VkQueryPool vulkan_timestamp_query_pool;
+  HANDLE_VULKAN_RESULT( vkCreateQueryPool( vulkan_device, &query_pool_create_info, vulkan_allocation_callbacks, &vulkan_timestamp_query_pool ), "Failed to create query pool" );
+  return vulkan_timestamp_query_pool;
+}
+
 static void destroy_swapchain(
   VkDevice                 vulkan_device,
   VkSwapchainKHR           vulkan_swapchain,
@@ -505,6 +565,17 @@ static void initialize_render_core( ecs_iter_t *it  )
     core->vulkan_device = create_device( core->vulkan_physical_device, core->vulkan_queue_family_index, core->vulkan_allocation_callbacks );
     vkGetDeviceQueue( core->vulkan_device, core->vulkan_queue_family_index, 0u, &core->vulkan_queue );
     core->vulkan_swapchain = create_swapchain( core->vulkan_device, core->vulkan_physical_device, core->vulkan_surface, core->vulkan_queue_family_index, core->vulkan_allocation_callbacks, &core->vulkan_swapchain_images_count, core->vulkan_swapchain_images, core->vulkan_swapchain_images_views );
+    core->vma_allocator = create_vma_allocator( core->vulkan_physical_device, core->vulkan_device, core->vulkan_instance );
+    core->vulkan_descriptor_pool = create_descriptor_pool( core->vulkan_device, core->vulkan_allocation_callbacks );
+    core->vulkan_timestamp_query_pool = create_timestamp_query_pool( core->vulkan_device, core->vulkan_allocation_callbacks );
+    core->buffers = crude_resource_pool_create( config->allocator, 4096, sizeof( Buffer ) );
+    core->textures = crude_resource_pool_create( config->allocator, 512, sizeof( Texture ) );
+    core->render_passes = crude_resource_pool_create( config->allocator, 256, sizeof( RenderPass ) );
+    core->descriptor_set_layouts = crude_resource_pool_create( config->allocator, 128, sizeof( DesciptorSetLayout ) );
+    core->pipelines = crude_resource_pool_create( config->allocator, 128, sizeof( Pipeline ) );
+    core->shaders = crude_resource_pool_create( config->allocator, 128, sizeof( ShaderState ) );
+    core->descriptor_sets = crude_resource_pool_create( config->allocator, 256, sizeof( DesciptorSet ) );
+    core->samplers = crude_resource_pool_create( &config->allocator, 32, sizeof( Sampler ) );
   }
 }
 
@@ -514,6 +585,9 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    vkDestroyQueryPool( core[i].vulkan_device, core[i].vulkan_timestamp_query_pool, core[i].vulkan_allocation_callbacks );
+    vkDestroyDescriptorPool( core[i].vulkan_device, core[i].vulkan_descriptor_pool, core[i].vulkan_allocation_callbacks );
+    vmaDestroyAllocator( core[i].vma_allocator );
     destroy_swapchain( core[i].vulkan_device, core[i].vulkan_swapchain, core[i].vulkan_swapchain_images_count, core[i].vulkan_swapchain_images_views, core[i].vulkan_allocation_callbacks );
     vkDestroySwapchainKHR( core[i].vulkan_device, core[i].vulkan_swapchain, core[i].vulkan_allocation_callbacks );
     vkDestroyDevice( core[i].vulkan_device, core[i].vulkan_allocation_callbacks );

@@ -13,3 +13,6 @@
 [submodule "extlibs/cr_cmake/cr"]
 	path = extlibs/cr_cmake/cr
 	url = https://github.com/fungos/cr.git
+[submodule "extlibs/VulkanMemoryAllocator"]
+	path = extlibs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

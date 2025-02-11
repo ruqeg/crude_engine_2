@@ -1,4 +1,5 @@
 add_subdirectory(SDL)
+add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(cr_cmake)
 add_subdirectory(flecs)
 add_subdirectory(stb_cmake)
