@@ -18,6 +18,9 @@ typedef struct crude_render_core
   VkDebugUtilsMessengerEXT   debug_utils_messenger;
   VkSurfaceKHR               surface;
   VkPhysicalDevice           physical_device;
+  VkDevice                   device;
+  int32                      queue_family_index;
+  VkQueue                    queue;
   VkAllocationCallbacks     *allocation_callbacks;
 } crude_render_core;
 

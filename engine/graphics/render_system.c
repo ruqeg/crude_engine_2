@@ -32,6 +32,11 @@ static char const *const *instance_required_extensions[] =
   VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 };
 
+static char const *const *required_layers[] =
+{
+  "VK_LAYER_KHRONOS_validation"
+};
+
 static void handle_vk_result( VkResult result, char const* msg )
 {
   if ( result != VK_SUCCESS )
@@ -46,11 +51,11 @@ static VKAPI_ATTR VkBool32 debug_callback(
   VkDebugUtilsMessengerCallbackDataEXT const *pCallbackData,
   void                                       *pUserData)
 {
-  if ( messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
+  if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "validation layer: %s", pCallbackData->pMessage );
   }
-  else if ( messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT )
+  else if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT )
   {
     CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "validation layer: %s", pCallbackData->pMessage );
   }
@@ -154,8 +159,7 @@ static VkDebugUtilsMessengerEXT create_debug_utils_messsenger( VkInstance instan
   };
 
   VkDebugUtilsMessengerEXT handle;
-  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
-  CRUDE_ASSERT( vkCreateDebugUtilsMessengerEXT );
+  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
   handle_vk_result( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
   return handle;
 }
@@ -171,36 +175,35 @@ static VkSurfaceKHR create_surface( crude_window_handle *window_handle, VkInstan
   return handle;
 }
 
-static bool check_queues_support_graphics_and_present( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
+static int32 get_supported_queue_family_index( VkPhysicalDevice physical_device, VkSurfaceKHR surface )
 {
   uint32 queue_family_count = 0u;
   vkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, NULL );
   if ( queue_family_count == 0u )
   {
-    return false;
+    return -1;
   }
   
   VkQueueFamilyProperties *queue_families_properties = NULL;
   arrsetlen( queue_families_properties, queue_family_count ); // tofree
   vkGetPhysicalDeviceQueueFamilyProperties( physical_device, &queue_family_count, queue_families_properties );
   
-  bool support_graphics = false;
-  bool support_present = false;
+  int32 queue_index = -1;
   for ( uint32 i = 0; i < queue_family_count; ++i )
   {
-    if ( queue_families_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT )
+    if ( queue_families_properties[i].queueCount > 0 && queue_families_properties[i].queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) )
     {
-      support_graphics = true;
-    }
-    VkBool32 vk_support_surface = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR( physical_device, i, surface, &vk_support_surface );
-    if ( vk_support_surface )
-    {
-      support_present = true;
+      VkBool32 surface_supported = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR( physical_device, i, surface, &surface_supported );
+      if ( surface_supported )
+      {
+        queue_index = i;
+        break;
+      }
     }
   }
   arrfree( queue_families_properties );
-  return support_graphics && support_present;
+  return queue_index;
 }
 
 static bool check_support_required_extensions( VkPhysicalDevice physical_device )
@@ -215,14 +218,14 @@ static bool check_support_required_extensions( VkPhysicalDevice physical_device 
   VkExtensionProperties *available_extensions = NULL;
   arrsetlen( available_extensions, available_extensions_count ); // tofree
   vkEnumerateDeviceExtensionProperties( physical_device, NULL, &available_extensions_count, available_extensions );
-  
+
   bool support_required_extensions = true;
   for ( uint32 i = 0; i < ARRAY_SIZE( device_required_extensions ); ++i )
   {
     bool extension_found = false;
     for ( uint32 k = 0; k < available_extensions_count; ++k )
     {
-      if ( strcmp( device_required_extensions[i], available_extensions[i].extensionName ) )
+      if ( strcmp( device_required_extensions[i], available_extensions[k].extensionName ) == 0 )
       {
         extension_found = true;
         break;
@@ -265,8 +268,10 @@ static bool check_support_required_features( VkPhysicalDevice physical_device )
   return features.samplerAnisotropy;
 }
 
-static VkPhysicalDevice pick_physical_device( VkInstance instance, VkSurfaceKHR surface )
+static VkPhysicalDevice pick_physical_device( VkInstance instance, VkSurfaceKHR surface, int32 *selected_queue_family_index )
 {
+  CRUDE_ASSERT( selected_queue_family_index );
+
   uint32 physical_devices_count = 0u;
   vkEnumeratePhysicalDevices( instance, &physical_devices_count, NULL );
 
@@ -283,10 +288,7 @@ static VkPhysicalDevice pick_physical_device( VkInstance instance, VkSurfaceKHR 
   for ( uint32 physical_device_index = 0; physical_device_index < physical_devices_count; ++physical_device_index )
   {
     VkPhysicalDevice physical_device = physical_devices[physical_device_index];
-    if ( !check_queues_support_graphics_and_present( physical_device, surface ) )
-    {
-      continue;
-    }
+    
     if ( !check_support_required_extensions( physical_device ) )
     {
       continue;
@@ -299,7 +301,13 @@ static VkPhysicalDevice pick_physical_device( VkInstance instance, VkSurfaceKHR 
     {
       continue;
     }
+    int32 queue_family_index = get_supported_queue_family_index( physical_device, surface ); 
+    if ( queue_family_index == -1 )
+    {
+      continue;
+    }
     
+    *selected_queue_family_index = queue_family_index;
     selected_physical_devices = physical_device;
     break;
   }
@@ -309,6 +317,36 @@ static VkPhysicalDevice pick_physical_device( VkInstance instance, VkSurfaceKHR 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", properties.deviceName, properties.deviceType );
 
   return selected_physical_devices;
+}
+
+VkDevice create_device( VkPhysicalDevice physical_device, int32 queue_family_index, VkAllocationCallbacks *allocation_callbacks )
+{
+  float const queue_priority[] = { 1.0f };
+  VkDeviceQueueCreateInfo queue_info[1];
+  memset( queue_info, 0, sizeof( queue_info) );
+  queue_info[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queue_info[0].queueFamilyIndex = queue_family_index;
+  queue_info[0].queueCount       = 1;
+  queue_info[0].pQueuePriorities = queue_priority;
+ 
+  VkPhysicalDeviceFeatures2 physical_features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+  vkGetPhysicalDeviceFeatures2( physical_device, &physical_features2 );
+
+  VkDeviceCreateInfo device_create_info = ( VkDeviceCreateInfo ) {
+    .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    .pNext                    = &physical_features2,
+    .flags                    = 0u,
+    .queueCreateInfoCount     = ARRAY_SIZE( queue_info ),
+    .pQueueCreateInfos        = queue_info,
+    .pEnabledFeatures         = NULL,
+    .enabledExtensionCount    = ARRAY_SIZE( device_required_extensions ),
+    .ppEnabledExtensionNames  = device_required_extensions,
+    .enabledLayerCount        = ARRAY_SIZE( required_layers ),
+    .ppEnabledLayerNames      = required_layers,
+  };
+  VkDevice device;
+  handle_vk_result( vkCreateDevice( physical_device, &device_create_info, allocation_callbacks, &device ), "failed to create logic device!" );
+  return device;
 }
 
 static void initialize_render_core( ecs_iter_t *it  )
@@ -323,7 +361,9 @@ static void initialize_render_core( ecs_iter_t *it  )
     core->instance = create_instance( config[i].application_name, config[i].application_version, core->allocation_callbacks );
     core->debug_utils_messenger = create_debug_utils_messsenger( core->instance, core->allocation_callbacks );
     core->surface = create_surface( &window_handle[i], core->instance, core->allocation_callbacks );
-    core->physical_device = pick_physical_device( core->instance, core->surface );
+    core->physical_device = pick_physical_device( core->instance, core->surface, &core->queue_family_index );
+    core->device = create_device( core->physical_device, core->queue_family_index, core->allocation_callbacks );
+    vkGetDeviceQueue( core->device, core->queue_family_index, 0u, &core->queue );
   }
 }
 
@@ -333,16 +373,11 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    vkDestroySurfaceKHR( core->instance, core->surface, core->allocation_callbacks );
-
-    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( core->instance, "vkDestroyDebugUtilsMessengerEXT" );
-    CRUDE_ASSERT( vkDestroyDebugUtilsMessengerEXT );
-    if ( vkDestroyDebugUtilsMessengerEXT )
-    {
-      vkDestroyDebugUtilsMessengerEXT( core->instance, core->debug_utils_messenger, core->allocation_callbacks );
-    }
-
-    vkDestroyInstance( core->instance, core->allocation_callbacks );
+    vkDestroyDevice( core[i].device, core[i].allocation_callbacks );
+    vkDestroySurfaceKHR( core[i].instance, core[i].surface, core[i].allocation_callbacks );
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( core[i].instance, "vkDestroyDebugUtilsMessengerEXT" );
+    vkDestroyDebugUtilsMessengerEXT( core[i].instance, core[i].debug_utils_messenger, core[i].allocation_callbacks );
+    vkDestroyInstance( core[i].instance, core[i].allocation_callbacks );
   }
 }
 
