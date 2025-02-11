@@ -40,13 +40,7 @@ static char const *const *required_layers[] =
   "VK_LAYER_KHRONOS_validation"
 };
 
-static void handle_vk_result( VkResult result, char const* msg )
-{
-  if ( result != VK_SUCCESS )
-  {
-    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
-  }
-}
+#define HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
 
 static VKAPI_ATTR VkBool32 debug_callback(
   VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
@@ -134,7 +128,7 @@ static VkInstance create_instance(
 #endif // VK_EXT_debug_utils
   
   VkInstance handle;
-  handle_vk_result( vkCreateInstance( &instance_create_info, vulkan_allocation_callbacks, &handle ), "failed to create instance" );
+  HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vulkan_allocation_callbacks, &handle ), "failed to create instance" );
 
   arrfree( instance_enabled_extensions );
 
@@ -163,7 +157,7 @@ static VkDebugUtilsMessengerEXT create_debug_utils_messsenger( VkInstance instan
 
   VkDebugUtilsMessengerEXT handle;
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
-  handle_vk_result( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
+  HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
   return handle;
 }
 
@@ -348,11 +342,19 @@ static VkDevice create_device( VkPhysicalDevice vulkan_physical_device, int32 vu
     .ppEnabledLayerNames      = required_layers,
   };
   VkDevice device;
-  handle_vk_result( vkCreateDevice( vulkan_physical_device, &device_create_info, vulkan_allocation_callbacks, &device ), "failed to create logic device!" );
+  HANDLE_VULKAN_RESULT( vkCreateDevice( vulkan_physical_device, &device_create_info, vulkan_allocation_callbacks, &device ), "failed to create logic device!" );
   return device;
 }
 
-static VkSwapchainKHR create_swapchain( VkDevice vulkan_device, VkPhysicalDevice vulkan_physical_device, VkSurfaceKHR vulkan_surface, int32 vulkan_queue_family_index, VkAllocationCallbacks *vulkan_allocation_callbacks )
+static VkSwapchainKHR create_swapchain( 
+  VkDevice                 vulkan_device, 
+  VkPhysicalDevice         vulkan_physical_device, 
+  VkSurfaceKHR             vulkan_surface, 
+  int32                    vulkan_queue_family_index,
+  VkAllocationCallbacks   *vulkan_allocation_callbacks,
+  uint32                  *vulkan_swapchain_images_count,
+  VkImage                 *vulkan_swapchain_images,
+  VkImageView             *vulkan_swapchain_images_views )
 {
   VkSurfaceCapabilitiesKHR surface_capabilities;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR( vulkan_physical_device, vulkan_surface, &surface_capabilities);
@@ -378,12 +380,12 @@ static VkSwapchainKHR create_swapchain( VkDevice vulkan_device, VkPhysicalDevice
   vkGetPhysicalDeviceSurfaceFormatsKHR( vulkan_physical_device, vulkan_surface, &available_formats_count, available_formats );
 
   bool surface_format_found = false;
-  VkSurfaceFormatKHR surface_format;
+  VkSurfaceFormatKHR vulkan_surface_format;
   for ( uint32 i = 0; i < available_formats_count; ++i )
   {
     if ( available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
     {
-      surface_format = available_formats[i];
+      vulkan_surface_format = available_formats[i];
       surface_format_found = true;
     }
   }
@@ -426,8 +428,8 @@ static VkSwapchainKHR create_swapchain( VkDevice vulkan_device, VkPhysicalDevice
     .pNext                  = NULL,
     .surface                = vulkan_surface,
     .minImageCount          = image_count,
-    .imageFormat            = surface_format.format,
-    .imageColorSpace        = surface_format.colorSpace,
+    .imageFormat            = vulkan_surface_format.format,
+    .imageColorSpace        = vulkan_surface_format.colorSpace,
     .imageExtent            = swapchain_extent,
     .imageArrayLayers       = 1,
     .imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -441,13 +443,50 @@ static VkSwapchainKHR create_swapchain( VkDevice vulkan_device, VkPhysicalDevice
     .oldSwapchain           = VK_NULL_HANDLE,
   };
   
-  VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-  handle_vk_result( vkCreateSwapchainKHR( vulkan_device, &swapchain_create_info, vulkan_allocation_callbacks, &swapchain ), "failed to create swapchain!" );
+  VkSwapchainKHR vulkan_swapchain = VK_NULL_HANDLE;
+  HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( vulkan_device, &swapchain_create_info, vulkan_allocation_callbacks, &vulkan_swapchain ), "failed to create swapchain!" );
+
+  vkGetSwapchainImagesKHR( vulkan_device, vulkan_swapchain, vulkan_swapchain_images_count, NULL );
+  vkGetSwapchainImagesKHR( vulkan_device, vulkan_swapchain, vulkan_swapchain_images_count, vulkan_swapchain_images );
+  
+  for ( uint32 i = 0; i < *vulkan_swapchain_images_count; ++i )
+  {
+    VkImageViewCreateInfo image_view_info = ( VkImageViewCreateInfo ) { 
+      .sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+      .viewType                    = VK_IMAGE_VIEW_TYPE_2D,
+      .format                      = vulkan_surface_format.format,
+      .image                       = vulkan_swapchain_images[ i ],
+      .subresourceRange.levelCount = 1,
+      .subresourceRange.layerCount = 1,
+      .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+      .components.r                = VK_COMPONENT_SWIZZLE_R,
+      .components.g                = VK_COMPONENT_SWIZZLE_G,
+      .components.b                = VK_COMPONENT_SWIZZLE_B,
+      .components.a                = VK_COMPONENT_SWIZZLE_A,
+    };
+    
+    HANDLE_VULKAN_RESULT( vkCreateImageView( vulkan_device, &image_view_info, vulkan_allocation_callbacks, &vulkan_swapchain_images_views[ i ] ), "Failed to create image view for swapchain image" );
+  }
 
   arrfree( available_formats );
   arrfree( available_present_modes );
 
-  return swapchain;
+  return vulkan_swapchain;
+}
+
+static void destroy_swapchain(
+  VkDevice                 vulkan_device,
+  VkSwapchainKHR           vulkan_swapchain,
+  uint32                   vulkan_swapchain_images_count,
+  VkImageView             *vulkan_swapchain_images_views,
+  VkAllocationCallbacks   *vulkan_allocation_callbacks )
+{
+  for ( uint32 i = 0; i < vulkan_swapchain_images_count; ++i )
+  {
+    vkDestroyImageView( vulkan_device, vulkan_swapchain_images_views[ i ], vulkan_allocation_callbacks );
+  }
+ 
+  vkDestroySwapchainKHR( vulkan_device, vulkan_swapchain, vulkan_allocation_callbacks );
 }
 
 static void initialize_render_core( ecs_iter_t *it  )
@@ -465,7 +504,7 @@ static void initialize_render_core( ecs_iter_t *it  )
     core->vulkan_physical_device = pick_physical_device( core->vulkan_instance, core->vulkan_surface, &core->vulkan_queue_family_index );
     core->vulkan_device = create_device( core->vulkan_physical_device, core->vulkan_queue_family_index, core->vulkan_allocation_callbacks );
     vkGetDeviceQueue( core->vulkan_device, core->vulkan_queue_family_index, 0u, &core->vulkan_queue );
-    core->vulkan_swapchain = create_swapchain( core->vulkan_device, core->vulkan_physical_device, core->vulkan_surface, core->vulkan_queue_family_index, core->vulkan_allocation_callbacks );
+    core->vulkan_swapchain = create_swapchain( core->vulkan_device, core->vulkan_physical_device, core->vulkan_surface, core->vulkan_queue_family_index, core->vulkan_allocation_callbacks, &core->vulkan_swapchain_images_count, core->vulkan_swapchain_images, core->vulkan_swapchain_images_views );
   }
 }
 
@@ -475,6 +514,7 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    destroy_swapchain( core[i].vulkan_device, core[i].vulkan_swapchain, core[i].vulkan_swapchain_images_count, core[i].vulkan_swapchain_images_views, core[i].vulkan_allocation_callbacks );
     vkDestroySwapchainKHR( core[i].vulkan_device, core[i].vulkan_swapchain, core[i].vulkan_allocation_callbacks );
     vkDestroyDevice( core[i].vulkan_device, core[i].vulkan_allocation_callbacks );
     vkDestroySurfaceKHR( core[i].vulkan_instance, core[i].vulkan_surface, core[i].vulkan_allocation_callbacks );

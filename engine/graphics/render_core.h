@@ -5,6 +5,8 @@
 
 #include <core/alias.h>
 
+#define CRUDE_MAX_SWAPCHAIN_IMAGES 3
+
 typedef struct crude_render_core_config
 {
   char const                *application_name;
@@ -21,6 +23,9 @@ typedef struct crude_render_core
   int32                      vulkan_queue_family_index;
   VkQueue                    vulkan_queue;
   VkSwapchainKHR             vulkan_swapchain;
+  uint32                     vulkan_swapchain_images_count;
+  VkImage                    vulkan_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkImageView                vulkan_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkAllocationCallbacks     *vulkan_allocation_callbacks;
 } crude_render_core;
 
