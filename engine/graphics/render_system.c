@@ -3,11 +3,12 @@
 #include <stb_ds.h>
 #include <math.h>
 
+#include <core/utils.h>
+#include <core/assert.h>
 #include <gui/gui.h>
 #include <platform/sdl_system.h>
 #include <graphics/render_core.h>
-#include <core/assert.h>
-#include <core/utils.h>
+#include <graphics/gpu_resources.h>
 
 #include <graphics/render_system.h>
 
@@ -568,14 +569,14 @@ static void initialize_render_core( ecs_iter_t *it  )
     core->vma_allocator = create_vma_allocator( core->vulkan_physical_device, core->vulkan_device, core->vulkan_instance );
     core->vulkan_descriptor_pool = create_descriptor_pool( core->vulkan_device, core->vulkan_allocation_callbacks );
     core->vulkan_timestamp_query_pool = create_timestamp_query_pool( core->vulkan_device, core->vulkan_allocation_callbacks );
-    core->buffers = crude_resource_pool_create( config->allocator, 4096, sizeof( Buffer ) );
-    core->textures = crude_resource_pool_create( config->allocator, 512, sizeof( Texture ) );
-    core->render_passes = crude_resource_pool_create( config->allocator, 256, sizeof( RenderPass ) );
-    core->descriptor_set_layouts = crude_resource_pool_create( config->allocator, 128, sizeof( DesciptorSetLayout ) );
-    core->pipelines = crude_resource_pool_create( config->allocator, 128, sizeof( Pipeline ) );
-    core->shaders = crude_resource_pool_create( config->allocator, 128, sizeof( ShaderState ) );
-    core->descriptor_sets = crude_resource_pool_create( config->allocator, 256, sizeof( DesciptorSet ) );
-    core->samplers = crude_resource_pool_create( &config->allocator, 32, sizeof( Sampler ) );
+    core->buffers = crude_resource_pool_create( config->allocator, 4096, sizeof( crude_buffer ) );
+    core->textures = crude_resource_pool_create( config->allocator, 512, sizeof( crude_texture ) );
+    core->render_passes = crude_resource_pool_create( config->allocator, 256, sizeof( crude_render_pass ) );
+    core->descriptor_set_layouts = crude_resource_pool_create( config->allocator, 128, sizeof( crude_descriptor_set_layout ) );
+    core->pipelines = crude_resource_pool_create( config->allocator, 128, sizeof( crude_pipeline ) );
+    core->shaders = crude_resource_pool_create( config->allocator, 128, sizeof( crude_shader_state ) );
+    core->descriptor_sets = crude_resource_pool_create( config->allocator, 256, sizeof( crude_descriptor_set ) );
+    core->samplers = crude_resource_pool_create( config->allocator, 32, sizeof( crude_sampler ) );
   }
 }
 
