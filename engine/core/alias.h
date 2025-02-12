@@ -22,6 +22,9 @@
 #define CRUDE_DEBUG_BREAK   __debugbreak();
 #define CRUDE_INLINE        inline
 
+#define CAST( t, exp )      ( ( t ) ( exp ) )
+#define ARRAY_SIZE( arr )   ( sizeof( arr ) / sizeof( arr[0] ) )
+
 typedef int8_t        int8;
 typedef int16_t       int16;
 typedef int64_t       int64;

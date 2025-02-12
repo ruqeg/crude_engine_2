@@ -1,8 +1,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include <gui/gui.h>
-#include <platform/input.h>
+#include <platform/gui_components.h>
+#include <platform/input_components.h>
 #include <core/assert.h>
 
 #include <platform/sdl_system.h>

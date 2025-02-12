@@ -17,9 +17,9 @@ typedef struct crude_resource_pool
 
 typedef uint32 crude_resource_handle;
 
-CRUDE_API crude_resource_pool crude_resource_pool_create( crude_allocator allocator, uint32 pool_size, uint32 resource_size );
-CRUDE_API void crude_resource_pool_destroy( crude_resource_pool *resource_pool );
-CRUDE_API crude_resource_handle crude_resource_pool_obtain_resource( crude_resource_pool *resource_pool );
-CRUDE_API void crude_resource_pool_release_resource( crude_resource_pool *resource_pool, crude_resource_handle handle );
-CRUDE_API void crude_resource_pool_free_all_resources( crude_resource_pool *resource_pool );
-CRUDE_API void* crude_resource_pool_access_resource( crude_resource_pool *resource_pool, crude_resource_handle handle );
+CRUDE_API void crude_initialize_resource_pool( _In_ crude_resource_pool *resource_pool, _In_ crude_allocator allocator, _In_ uint32 pool_size, _In_ uint32 resource_size );
+CRUDE_API void crude_deinitialize_resource_pool( _In_ crude_resource_pool *resource_pool );
+CRUDE_API crude_resource_handle crude_resource_pool_obtain( _In_ crude_resource_pool *resource_pool );
+CRUDE_API void crude_resource_pool_release( _In_ crude_resource_pool *resource_pool, _In_ crude_resource_handle handle );
+CRUDE_API void crude_resource_pool_free_all( _In_ crude_resource_pool *resource_pool );
+CRUDE_API void* crude_resource_pool_access( _In_ crude_resource_pool *resource_pool, _In_ crude_resource_handle handle );

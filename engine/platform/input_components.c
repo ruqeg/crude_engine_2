@@ -1,4 +1,4 @@
-#include <platform/input.h>
+#include <platform/input_components.h>
 
 ECS_COMPONENT_DECLARE( crude_input );
 

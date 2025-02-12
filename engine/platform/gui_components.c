@@ -1,4 +1,4 @@
-#include <gui/gui.h>
+#include <platform/gui_components.h>
 
 ECS_COMPONENT_DECLARE( crude_gui_system );
 ECS_COMPONENT_DECLARE( crude_gui_context );

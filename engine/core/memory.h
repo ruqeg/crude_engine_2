@@ -16,18 +16,18 @@ typedef struct crude_stack_allocator
   sizet   occupied;
 } crude_stack_allocator;
 
-CRUDE_API void crude_heap_allocator_initialize( crude_heap_allocator* allocator, sizet capacity );
-CRUDE_API void crude_heap_allocator_deinitialize( crude_heap_allocator* allocator );
-CRUDE_API void* crude_heap_allocator_allocate( crude_heap_allocator* allocator, sizet size, sizet alignment );
-CRUDE_API void crude_heap_allocator_deallocate( crude_heap_allocator* allocator, void* pointer );
+CRUDE_API void crude_initialize_heap_allocator( _In_ crude_heap_allocator* allocator, _In_ sizet capacity );
+CRUDE_API void crude_deinitialize_heap_allocator( _In_ crude_heap_allocator* allocator );
+CRUDE_API void* crude_allocate_heap( _In_ crude_heap_allocator* allocator, _In_ sizet size, _In_ sizet alignment );
+CRUDE_API void crude_deallocate_heap( _In_ crude_heap_allocator* allocator, _In_ void* pointer );
 
-CRUDE_API void crude_stack_allocator_initialize( crude_stack_allocator* allocator, sizet capacity );
-CRUDE_API void crude_stack_allocator_deinitialize( crude_stack_allocator* allocator );
-CRUDE_API void* crude_stack_allocator_allocate( crude_stack_allocator* allocator, sizet size, sizet alignment );
-CRUDE_API void crude_stack_allocator_deallocate( crude_stack_allocator* allocator, void* pointer );
+CRUDE_API void crude_initialize_stack_allocator( _In_ crude_stack_allocator* allocator, _In_ sizet capacity );
+CRUDE_API void crude_deinitialize_stack_allocator( _In_ crude_stack_allocator* allocator );
+CRUDE_API void* crude_allocate_stack( _In_ crude_stack_allocator* allocator, _In_ sizet size, _In_ sizet alignment );
+CRUDE_API void crude_deallocate_stack( _In_ crude_stack_allocator* allocator, _In_ void* pointer );
 
 typedef void* (*crude_allocate_fun)( sizet size, sizet alignment );
-typedef void* (*crude_deallocate_fun)( void* pointer );
+typedef void (*crude_deallocate_fun)( void* pointer );
 
 typedef struct crude_allocator
 {

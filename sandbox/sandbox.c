@@ -3,15 +3,25 @@
 
 #include <engine.h>
 #include <platform/sdl_system.h>
-#include <platform/input.h>
-#include <graphics/render_core.h>
+#include <platform/input_components.h>
+#include <platform/gui_components.h>
+#include <graphics/render_components.h>
 #include <graphics/render_system.h>
-#include <gui/gui.h>
 
 static bool CR_STATE g_initialized = false;
 
 bool input_callback( const void *sdl_event )
 {
+}
+
+// !TODO
+void* sandbox_allocate( sizet size, sizet alignment )
+{
+  return malloc( size );
+}
+void sandbox_deallocate( void* pointer )
+{
+  free( pointer );
 }
 
 CR_EXPORT int cr_main( struct cr_plugin *ctx, enum cr_op operation )
@@ -34,9 +44,11 @@ CR_EXPORT int cr_main( struct cr_plugin *ctx, enum cr_op operation )
       .height    = 600,
       .maximized = false });
     ecs_set( world, scene, crude_input, { .callback = &input_callback } );
-    ecs_set( world, scene, crude_render_core_config, {
-      .application_name = "sandbox",
-      .application_version = VK_MAKE_VERSION( 1, 0, 0 ) } );
+    ecs_set( world, scene, crude_render_create, {
+      .vk_application_name = "sandbox",
+      .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
+      .allocator = ( crude_allocator ) { .allocate = sandbox_allocate, .deallocate = sandbox_deallocate },
+      .max_frames = 3u } );
 
     g_initialized = true;
   }
