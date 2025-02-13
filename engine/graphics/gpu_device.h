@@ -6,6 +6,8 @@
 #include <core/alias.h>
 #include <graphics/gpu_resources.h>
 
+#define CRUDE_HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
+
 #define CRUDE_MAX_SWAPCHAIN_IMAGES 3
 
 typedef struct crude_gpu_device_creation
@@ -20,6 +22,9 @@ typedef struct crude_gpu_device_creation
 
 typedef struct crude_gpu_device
 {
+  uint32                            dynamic_allocated_size;
+  uint32                            dynamic_per_frame_size;
+  uint32                            dynamic_max_per_frame_size;
   VkInstance                        vk_instance;
   VkDebugUtilsMessengerEXT          vk_debug_utils_messenger;
   VkSurfaceKHR                      vk_surface;
@@ -48,6 +53,7 @@ typedef struct crude_gpu_device
   crude_resource_pool               shaders;
   uint32                            current_frame;
   uint32                            previous_frame;
+  uint32                            vk_image_index;
   crude_resource_update            *resource_deletion_queue;
   VmaAllocator                      vma_allocator;
   VkAllocationCallbacks            *vk_allocation_callbacks;
@@ -61,3 +67,5 @@ CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
 CRUDE_API crude_sampler_handle crude_create_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_creation const *creation );
 CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_handle sampler );
 CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
+
+CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );

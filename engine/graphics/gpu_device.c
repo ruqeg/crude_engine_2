@@ -10,7 +10,6 @@
 #include <graphics/gpu_device.h>
 
 #define CLAMP( v, lo, hi ) ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
-#define HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
 
 static char const *const vk_device_required_extensions[] = 
 { 
@@ -38,6 +37,71 @@ static char const *const *vk_required_layers[] =
 {
   "VK_LAYER_KHRONOS_validation"
 };
+
+#define CRUDE_COMMAND_BUFFER_RING_MAX_THREADS     1
+#define CRUDE_COMMAND_BUFFER_RING_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS
+#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 4
+#define CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_RING_MAX_POOLS
+
+typedef struct crude_command_buffer_ring
+{
+  crude_gpu_device      *gpu;
+  VkCommandPool          vk_command_pools[ CRUDE_COMMAND_BUFFER_RING_MAX_POOLS ];
+  crude_command_buffer   command_buffers[ CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS ];
+  uint8                  next_free_per_thread_frames[ CRUDE_COMMAND_BUFFER_RING_MAX_POOLS ];
+} crude_command_buffer_ring;
+
+static inline uint16 command_buffer_ring_pool_from_index(
+  _In_ uint32 index ) 
+{ 
+  return index / CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL;
+}
+
+static void initialize_command_buffer_ring(
+  _In_ crude_command_buffer_ring  *command_buffer_ring,
+  _In_ crude_gpu_device           *gpu)
+{
+  command_buffer_ring->gpu = command_buffer_ring->gpu;
+  
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_POOLS; ++i )
+  {
+    VkCommandPoolCreateInfo cmd_pool_info = {
+      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .queueFamilyIndex = gpu->vk_queue_family_index,
+      .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+    };
+    
+    CRUDE_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &command_buffer_ring->vk_command_pools[ i ] ), "Failed to create command pool" );
+  }
+  
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS; ++i )
+  {
+    crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ i ];
+    VkCommandBufferAllocateInfo cmd_allocation_info = { 
+      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool        = command_buffer_ring->vk_command_pools[ command_buffer_ring_pool_from_index( i ) ],
+      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 1,
+    };
+    CRUDE_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
+    
+    command_buffer->gpu = gpu;
+    command_buffer->handle = i;
+    crude_reset_command_buffer( &command_buffer );
+  }
+}
+
+static void reset_command_buffer_ring_pools( 
+  _In_ crude_command_buffer_ring  *command_buffer_ring,
+  _In_ uint32                      frame_index )
+{
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_THREADS; ++i )
+  {
+    vkResetCommandPool( command_buffer_ring->gpu->vk_device, command_buffer_ring->vk_command_pools[ frame_index * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS + i ], 0 );
+  }
+}
+
+static crude_command_buffer_ring command_buffer_ring;
 
 static VKAPI_ATTR VkBool32 debug_callback(
   _In_ VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
@@ -125,13 +189,12 @@ static VkInstance create_instance(
 #endif // VK_EXT_debug_utils
   
   VkInstance handle;
-  HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &handle ), "failed to create instance" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &handle ), "failed to create instance" );
 
   arrfree( instance_enabled_extensions );
 
   return handle;
 }
-
 
 static VkDebugUtilsMessengerEXT create_debug_utils_messsenger(
   _In_     VkInstance              instance,
@@ -156,7 +219,7 @@ static VkDebugUtilsMessengerEXT create_debug_utils_messsenger(
 
   VkDebugUtilsMessengerEXT handle;
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
-  HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
   return handle;
 }
 
@@ -356,7 +419,7 @@ static VkDevice create_device(
     .ppEnabledLayerNames      = vk_required_layers,
   };
   VkDevice device;
-  HANDLE_VULKAN_RESULT( vkCreateDevice( vk_physical_device, &device_create_info, vk_allocation_callbacks, &device ), "failed to create logic device!" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateDevice( vk_physical_device, &device_create_info, vk_allocation_callbacks, &device ), "failed to create logic device!" );
   return device;
 }
 
@@ -458,7 +521,7 @@ static VkSwapchainKHR create_swapchain(
   };
   
   VkSwapchainKHR vulkan_swapchain = VK_NULL_HANDLE;
-  HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( vk_device, &swapchain_create_info, vk_allocation_callbacks, &vulkan_swapchain ), "failed to create swapchain!" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( vk_device, &swapchain_create_info, vk_allocation_callbacks, &vulkan_swapchain ), "failed to create swapchain!" );
 
   vkGetSwapchainImagesKHR( vk_device, vulkan_swapchain, vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( vk_device, vulkan_swapchain, vk_swapchain_images_count, vk_swapchain_images );
@@ -479,7 +542,7 @@ static VkSwapchainKHR create_swapchain(
       .components.a                = VK_COMPONENT_SWIZZLE_A,
     };
     
-    HANDLE_VULKAN_RESULT( vkCreateImageView( vk_device, &image_view_info, vk_allocation_callbacks, &vk_swapchain_images_views[ i ] ), "Failed to create image view for swapchain image" );
+    CRUDE_HANDLE_VULKAN_RESULT( vkCreateImageView( vk_device, &image_view_info, vk_allocation_callbacks, &vk_swapchain_images_views[ i ] ), "Failed to create image view for swapchain image" );
   }
 
   arrfree( available_formats );
@@ -500,7 +563,7 @@ static VmaAllocation create_vma_allocator(
   };
 
   VmaAllocation vma_allocator;
-  HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &vma_allocator ), "Failed to create vma allocator" );
+  CRUDE_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &vma_allocator ), "Failed to create vma allocator" );
   return vma_allocator;
 }
 
@@ -533,7 +596,7 @@ static VkDescriptorPool create_descriptor_pool(
   };
 
   VkDescriptorPool vulkan_descriptor_pool;
-  HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( vk_device, &pool_info, vk_allocation_callbacks, &vulkan_descriptor_pool ), "Failed create descriptor pool" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( vk_device, &pool_info, vk_allocation_callbacks, &vulkan_descriptor_pool ), "Failed create descriptor pool" );
   return vulkan_descriptor_pool;
 }
 
@@ -552,7 +615,7 @@ VkQueryPool create_timestamp_query_pool(
     .pipelineStatistics = 0u,
   };
   VkQueryPool vulkan_timestamp_query_pool;
-  HANDLE_VULKAN_RESULT( vkCreateQueryPool( vk_device, &query_pool_create_info, vk_allocation_callbacks, &vulkan_timestamp_query_pool ), "Failed to create query pool" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateQueryPool( vk_device, &query_pool_create_info, vk_allocation_callbacks, &vulkan_timestamp_query_pool ), "Failed to create query pool" );
   return vulkan_timestamp_query_pool;
 }
 
@@ -622,15 +685,15 @@ void crude_initialize_gpu_device(
     vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fence[ i ] );
   }
   
+  initialize_command_buffer_ring( &command_buffer_ring, gpu );
+
   gpu->current_frame = 1;
   gpu->previous_frame = 0;
+  gpu->vk_image_index = 0;
 
   gpu->resource_deletion_queue = NULL;
   arrsetcap( gpu->resource_deletion_queue, 16 );
 
-  //
-  // Init primitive resources
-  //
   crude_sampler_creation sampler_creation = {
     .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
     .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -641,54 +704,6 @@ void crude_initialize_gpu_device(
     .name           = "sampler default"
   };
   gpu->default_sampler = crude_create_sampler( gpu, &sampler_creation );
-//  
-//  BufferCreation fullscreen_vb_creation = { VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, ResourceUsageType::Immutable, 0, nullptr, "Fullscreen_vb" };
-//  fullscreen_vertex_buffer = create_buffer( fullscreen_vb_creation );
-//  
-//  // Create depth image
-//  TextureCreation depth_texture_creation = { nullptr, swapchain_width, swapchain_height, 1, 1, 0, VK_FORMAT_D32_SFLOAT, TextureType::Texture2D, "DepthImage_Texture" };
-//  depth_texture = create_texture( depth_texture_creation );
-//  
-//  // Cache depth texture format
-//  swapchain_output.depth( VK_FORMAT_D32_SFLOAT );
-//  
-//  RenderPassCreation swapchain_pass_creation = {};
-//  swapchain_pass_creation.set_type( RenderPassType::Swapchain ).set_name( "Swapchain" );
-//  swapchain_pass_creation.set_operations( RenderPassOperation::Clear, RenderPassOperation::Clear, RenderPassOperation::Clear );
-//  swapchain_pass = create_render_pass( swapchain_pass_creation );
-//  
-//  // Init Dummy resources
-//  TextureCreation dummy_texture_creation = { nullptr, 1, 1, 1, 1, 0, VK_FORMAT_R8_UINT, TextureType::Texture2D };
-//  dummy_texture = create_texture( dummy_texture_creation );
-//  
-//  BufferCreation dummy_constant_buffer_creation = { VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, 16, nullptr, "Dummy_cb" };
-//  dummy_constant_buffer = create_buffer( dummy_constant_buffer_creation );
-//  
-//  // Get binaries path
-//#if defined(_MSC_VER)
-//    char* vulkan_env = string_buffer.reserve( 512 );
-//    ExpandEnvironmentStringsA( "%VULKAN_SDK%", vulkan_env, 512 );
-//    char* compiler_path = string_buffer.append_use_f( "%s\\Bin\\", vulkan_env );
-//#else
-//    char* vulkan_env = getenv ("VULKAN_SDK");
-//    char* compiler_path = string_buffer.append_use_f( "%s/bin/", vulkan_env );
-//#endif
-//  
-//  strcpy( vulkan_binaries_path, compiler_path );
-//  string_buffer.clear();
-//  
-//  // Dynamic buffer handling
-//  // TODO:
-//  dynamic_per_frame_size = 1024 * 1024 * 10;
-//  BufferCreation bc;
-//  bc.set( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, ResourceUsageType::Immutable, dynamic_per_frame_size * k_max_frames ).set_name( "Dynamic_Persistent_Buffer" );
-//  dynamic_buffer = create_buffer( bc );
-//  
-//  MapBufferParameters cb_map = { dynamic_buffer, 0, 0 };
-//  dynamic_mapped_memory = ( u8* )map_buffer( cb_map );
-//  
-//  // Init render pass cache
-//  render_pass_cache.init( allocator, 16 );
  }
 
 void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
@@ -775,7 +790,7 @@ crude_sampler_handle crude_create_sampler(
     .borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE,
   };
   
-  HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
   set_resource_name( gpu->vk_device, VK_OBJECT_TYPE_SAMPLER, CAST( uint64, sampler->vk_sampler ), creation->name );
   return handle;
 }
@@ -805,4 +820,43 @@ void crude_destroy_sampler_instant(
     vkDestroySampler( gpu->vk_device, sampler->vk_sampler, gpu->vk_allocation_callbacks );
   }
   crude_resource_pool_release_resource( &gpu->samplers, handle );
+}
+
+void crude_new_frame( _In_ crude_gpu_device *gpu )
+{
+  VkFence* render_complete_fence = &gpu->vk_command_buffer_executed_fence[ gpu->current_frame ];
+  
+  if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
+  {
+    vkWaitForFences( gpu->vk_device, 1, render_complete_fence, VK_TRUE, UINT64_MAX );
+  }
+  
+  vkResetFences( gpu->vk_device, 1, render_complete_fence );
+  
+  VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_acquired_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_image_index );
+  if ( result == VK_ERROR_OUT_OF_DATE_KHR )
+  {
+    // !TODO resize_swapchain();
+  }
+  
+  reset_command_buffer_ring_pools( &command_buffer_ring, gpu->current_frame );
+
+  uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
+  gpu->dynamic_max_per_frame_size = max( used_size, gpu->dynamic_max_per_frame_size );
+  gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
+  
+  // Descriptor Set Updates
+  if ( descriptor_set_updates.size ) {
+      for ( i32 i = descriptor_set_updates.size - 1; i >= 0; i-- ) {
+          DescriptorSetUpdate& update = descriptor_set_updates[ i ];
+  
+          //if ( update.frame_issued == current_frame )
+          {
+              update_descriptor_set_instant( update );
+  
+              update.frame_issued = u32_max;
+              descriptor_set_updates.delete_swap( i );
+          }
+      }
+  }
 }
