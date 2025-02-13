@@ -23,8 +23,6 @@ void crude_initialize_resource_pool( _In_ crude_resource_pool *resource_pool, _I
   }
   
   resource_pool->used_indices = 0;
-
-  return resource_pool;
 }
 
 void crude_deinitialize_resource_pool( _In_ crude_resource_pool *resource_pool )
@@ -33,7 +31,7 @@ void crude_deinitialize_resource_pool( _In_ crude_resource_pool *resource_pool )
   resource_pool->allocator.deallocate( resource_pool->memory );
 }
 
-crude_resource_handle crude_resource_pool_obtain( _In_ crude_resource_pool *resource_pool )
+uint32 crude_resource_pool_obtain_resource( _In_ crude_resource_pool *resource_pool )
 {
   if ( resource_pool->free_indices_head < resource_pool->pool_size )
   {
@@ -42,16 +40,16 @@ crude_resource_handle crude_resource_pool_obtain( _In_ crude_resource_pool *reso
     return free_index;
   }
   CRUDE_ASSERT( false );
-  return CRUDE_RESOURCE_INVALID_HANDLE;
+  return CRUDE_RESOURCE_INVALID_INDEX;
 }
 
-void crude_resource_pool_release( _In_ crude_resource_pool *resource_pool, _In_ crude_resource_handle handle )
+void crude_resource_pool_release_resource( _In_ crude_resource_pool *resource_pool, _In_ uint32 handle )
 {
   resource_pool->free_indices[--resource_pool->free_indices_head] = handle;
   --resource_pool->used_indices;
 }
 
-void crude_resource_pool_free_all( _In_ crude_resource_pool *resource_pool )
+void crude_resource_pool_free_all_resource( _In_ crude_resource_pool *resource_pool )
 {
   resource_pool->free_indices_head = 0u;
   resource_pool->used_indices = 0u;
@@ -62,9 +60,9 @@ void crude_resource_pool_free_all( _In_ crude_resource_pool *resource_pool )
   }
 }
 
-void* crude_resource_pool_access( _In_ crude_resource_pool *resource_pool, _In_ crude_resource_handle handle )
+void* crude_resource_pool_access_resource( _In_ crude_resource_pool *resource_pool, _In_ uint32 handle )
 {
-  if ( handle != CRUDE_RESOURCE_INVALID_HANDLE )
+  if ( handle != CRUDE_RESOURCE_INVALID_INDEX )
   {
     return &resource_pool->memory[handle * resource_pool->resource_size];
   }

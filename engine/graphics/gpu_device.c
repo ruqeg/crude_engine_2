@@ -5,10 +5,12 @@
 
 #include <core/assert.h>
 #include <graphics/gpu_resources.h>
+#include <graphics/command_buffer.h>
 
 #include <graphics/gpu_device.h>
 
 #define CLAMP( v, lo, hi ) ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
+#define HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
 
 static char const *const vk_device_required_extensions[] = 
 { 
@@ -36,8 +38,6 @@ static char const *const *vk_required_layers[] =
 {
   "VK_LAYER_KHRONOS_validation"
 };
-
-#define HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
 
 static VKAPI_ATTR VkBool32 debug_callback(
   _In_ VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
@@ -571,6 +571,22 @@ static void destroy_swapchain(
   vkDestroySwapchainKHR( vk_device, vulkan_swapchain, vk_allocation_callbacks );
 }
 
+static void set_resource_name(
+  _In_ VkDevice      vk_device, 
+  _In_ VkObjectType  type, 
+  _In_ uint64        handle, 
+  _In_ char const   *name )
+{
+  VkDebugUtilsObjectNameInfoEXT name_info = { 
+    .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+    .objectType   = type,
+    .objectHandle = handle,
+    .pObjectName  = name,
+  };
+  PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( vk_device, "vkSetDebugUtilsObjectNameEXT" );
+  vkSetDebugUtilsObjectNameEXT( vk_device, &name_info );
+}
+
 void crude_initialize_gpu_device(
   _In_ crude_gpu_device           *gpu,
   _In_ crude_gpu_device_creation  *creation )
@@ -596,35 +612,115 @@ void crude_initialize_gpu_device(
   crude_initialize_resource_pool( &gpu->shaders, gpu->allocator, 128, sizeof( crude_shader_state ) );
   crude_initialize_resource_pool( &gpu->descriptor_sets, gpu->allocator, 256, sizeof( crude_descriptor_set ) );
   crude_initialize_resource_pool( &gpu->samplers, gpu->allocator, 32, sizeof( crude_sampler ) );
+  
+  VkSemaphoreCreateInfo semaphore_info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+  VkFenceCreateInfo fence_info = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
+  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_complete_semaphores[ i ] );
+    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_acquired_semaphores[ i ] );
+    vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fence[ i ] );
+  }
+  
+  gpu->current_frame = 1;
+  gpu->previous_frame = 0;
 
-    //uint8 *memory = NULL;
-    //arrsetlen( sizeof( GPUTimestampManager ) + sizeof( CommandBuffer* ) * 128 ); // tofree
+  gpu->resource_deletion_queue = NULL;
+  arrsetcap( gpu->resource_deletion_queue, 16 );
 
-    //VkSemaphoreCreateInfo semaphore_info{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-
-    //for ( size_t i = 0; i < k_max_swapchain_images; i++ ) {
-
-    //    vkCreateSemaphore( vk_device, &semaphore_info, vk_allocation_callbacks, &vulkan_render_complete_semaphore[ i ] );
-    //    vkCreateSemaphore( vk_device, &semaphore_info, vk_allocation_callbacks, &vulkan_image_acquired_semaphore[ i ] );
-
-    //    VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-    //    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    //    vkCreateFence( vk_device, &fenceInfo, vk_allocation_callbacks, &vulkan_command_buffer_executed_fence[ i ] );
-    //}
-
-    //gpu_timestamp_manager = ( GPUTimestampManager* )( memory );
-    //gpu_timestamp_manager->init( allocator, creation.gpu_time_queries_per_frame, k_max_frames );
-
-    //command_buffer_ring.init( this );
-
-    //// Allocate queued command buffers array
-    //queued_command_buffers = ( CommandBuffer** )( gpu_timestamp_manager + 1 );
-    //CommandBuffer** correctly_allocated_buffer = ( CommandBuffer** )( memory + sizeof( GPUTimestampManager ) );
-    //RASSERTM( queued_command_buffers == correctly_allocated_buffer, "Wrong calculations for queued command buffers arrays. Should be %p, but it is %p.", correctly_allocated_buffer, queued_command_buffers );
+  //
+  // Init primitive resources
+  //
+  crude_sampler_creation sampler_creation = {
+    .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    .address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    .min_filter     = VK_FILTER_LINEAR,
+    .mag_filter     = VK_FILTER_LINEAR,
+    .mip_filter     = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+    .name           = "sampler default"
+  };
+  gpu->default_sampler = crude_create_sampler( gpu, &sampler_creation );
+//  
+//  BufferCreation fullscreen_vb_creation = { VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, ResourceUsageType::Immutable, 0, nullptr, "Fullscreen_vb" };
+//  fullscreen_vertex_buffer = create_buffer( fullscreen_vb_creation );
+//  
+//  // Create depth image
+//  TextureCreation depth_texture_creation = { nullptr, swapchain_width, swapchain_height, 1, 1, 0, VK_FORMAT_D32_SFLOAT, TextureType::Texture2D, "DepthImage_Texture" };
+//  depth_texture = create_texture( depth_texture_creation );
+//  
+//  // Cache depth texture format
+//  swapchain_output.depth( VK_FORMAT_D32_SFLOAT );
+//  
+//  RenderPassCreation swapchain_pass_creation = {};
+//  swapchain_pass_creation.set_type( RenderPassType::Swapchain ).set_name( "Swapchain" );
+//  swapchain_pass_creation.set_operations( RenderPassOperation::Clear, RenderPassOperation::Clear, RenderPassOperation::Clear );
+//  swapchain_pass = create_render_pass( swapchain_pass_creation );
+//  
+//  // Init Dummy resources
+//  TextureCreation dummy_texture_creation = { nullptr, 1, 1, 1, 1, 0, VK_FORMAT_R8_UINT, TextureType::Texture2D };
+//  dummy_texture = create_texture( dummy_texture_creation );
+//  
+//  BufferCreation dummy_constant_buffer_creation = { VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, 16, nullptr, "Dummy_cb" };
+//  dummy_constant_buffer = create_buffer( dummy_constant_buffer_creation );
+//  
+//  // Get binaries path
+//#if defined(_MSC_VER)
+//    char* vulkan_env = string_buffer.reserve( 512 );
+//    ExpandEnvironmentStringsA( "%VULKAN_SDK%", vulkan_env, 512 );
+//    char* compiler_path = string_buffer.append_use_f( "%s\\Bin\\", vulkan_env );
+//#else
+//    char* vulkan_env = getenv ("VULKAN_SDK");
+//    char* compiler_path = string_buffer.append_use_f( "%s/bin/", vulkan_env );
+//#endif
+//  
+//  strcpy( vulkan_binaries_path, compiler_path );
+//  string_buffer.clear();
+//  
+//  // Dynamic buffer handling
+//  // TODO:
+//  dynamic_per_frame_size = 1024 * 1024 * 10;
+//  BufferCreation bc;
+//  bc.set( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, ResourceUsageType::Immutable, dynamic_per_frame_size * k_max_frames ).set_name( "Dynamic_Persistent_Buffer" );
+//  dynamic_buffer = create_buffer( bc );
+//  
+//  MapBufferParameters cb_map = { dynamic_buffer, 0, 0 };
+//  dynamic_mapped_memory = ( u8* )map_buffer( cb_map );
+//  
+//  // Init render pass cache
+//  render_pass_cache.init( allocator, 16 );
  }
 
 void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
 {
+  crude_destroy_sampler( gpu, gpu->default_sampler );
+
+  for ( uint32 i = 0; i < arrlen( gpu->resource_deletion_queue ); ++i )
+  {
+    crude_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
+
+    if ( resource_deletion->current_frame == -1 )
+      continue;
+
+    switch ( resource_deletion->type )
+    {
+      case CRUDE_RESOURCE_DELETION_TYPE_SAMPLER:
+      {
+        crude_destroy_sampler_instant( gpu, resource_deletion->handle );
+        break;
+      }
+    }
+  }
+
+  arrfree( gpu->resource_deletion_queue );
+
+  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    vkDestroySemaphore( gpu->vk_device, &gpu->vk_render_complete_semaphores[ i ], gpu->vk_allocation_callbacks );
+    vkDestroySemaphore( gpu->vk_device, &gpu->vk_image_acquired_semaphores[ i ], gpu->vk_allocation_callbacks );
+    vkDestroyFence( gpu->vk_device, &gpu->vk_command_buffer_executed_fence[ i ], gpu->vk_allocation_callbacks );
+  }
+
   crude_deinitialize_resource_pool( &gpu->buffers );
   crude_deinitialize_resource_pool( &gpu->textures );
   crude_deinitialize_resource_pool( &gpu->render_passes );
@@ -644,4 +740,69 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( gpu->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
   vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
+}
+
+crude_sampler_handle crude_create_sampler(
+  _In_ crude_gpu_device             *gpu,
+  _In_ crude_sampler_creation const *creation )
+{
+  crude_sampler_handle handle = { crude_resource_pool_obtain_resource( &gpu->samplers ) };
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_sampler *sampler = crude_resource_pool_access_resource( &gpu->samplers, handle.index );
+  sampler->address_mode_u = creation->address_mode_u;
+  sampler->address_mode_v = creation->address_mode_v;
+  sampler->address_mode_w = creation->address_mode_w;
+  sampler->min_filter     = creation->min_filter;
+  sampler->mag_filter     = creation->mag_filter;
+  sampler->mip_filter     = creation->mip_filter;
+  sampler->name           = creation->name;
+  
+  VkSamplerCreateInfo create_info = { 
+    .sType                    = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    .addressModeU             = creation->address_mode_u,
+    .addressModeV             = creation->address_mode_v,
+    .addressModeW             = creation->address_mode_w,
+    .minFilter                = creation->min_filter,
+    .magFilter                = creation->mag_filter,
+    .mipmapMode               = creation->mip_filter,
+    .anisotropyEnable         = 0,
+    .compareEnable            = 0,
+    .unnormalizedCoordinates  = 0,
+    .borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+  };
+  
+  HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
+  set_resource_name( gpu->vk_device, VK_OBJECT_TYPE_SAMPLER, CAST( uint64, sampler->vk_sampler ), creation->name );
+  return handle;
+}
+
+void crude_destroy_sampler(
+  _In_ crude_gpu_device     *gpu,
+  _In_ crude_sampler_handle  sampler )
+{
+  if ( sampler.index >= gpu->samplers.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid sampler %u", sampler.index )
+  }
+  crude_resource_update sampler_update_event = { 
+    .type          = CRUDE_RESOURCE_DELETION_TYPE_SAMPLER,
+    .handle        = sampler.index,
+    .current_frame = gpu->current_frame };
+  arrput( gpu->resource_deletion_queue, sampler_update_event );
+}
+
+void crude_destroy_sampler_instant(
+  _In_ crude_gpu_device       *gpu,
+  _In_ crude_resource_handle   handle )
+{
+  crude_sampler *sampler = crude_resource_pool_access_resource( &gpu->samplers, handle );
+  if ( sampler )
+  {
+    vkDestroySampler( gpu->vk_device, sampler->vk_sampler, gpu->vk_allocation_callbacks );
+  }
+  crude_resource_pool_release_resource( &gpu->samplers, handle );
 }

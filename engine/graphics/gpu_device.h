@@ -2,10 +2,9 @@
 
 #include <vulkan/vulkan.h>
 #include <SDL3/SDL.h>
-#include <vma_usage.h>
 
 #include <core/alias.h>
-#include <core/resource_pool.h>
+#include <graphics/gpu_resources.h>
 
 #define CRUDE_MAX_SWAPCHAIN_IMAGES 3
 
@@ -21,33 +20,44 @@ typedef struct crude_gpu_device_creation
 
 typedef struct crude_gpu_device
 {
-  VkInstance                 vk_instance;
-  VkDebugUtilsMessengerEXT   vk_debug_utils_messenger;
-  VkSurfaceKHR               vk_surface;
-  VkPhysicalDevice           vk_physical_device;
-  VkDevice                   vk_device;
-  int32                      vk_queue_family_index;
-  VkQueue                    vk_queue;
-  VkSwapchainKHR             vk_swapchain;
-  uint32                     vk_swapchain_images_count;
-  VkImage                    vk_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkImageView                vk_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkDescriptorPool           vk_descriptor_pool;
-  VkQueryPool                vk_timestamp_query_pool;
-  crude_resource_pool        buffers;
-  crude_resource_pool        textures;
-  crude_resource_pool        pipelines;
-  crude_resource_pool        samplers;
-  crude_resource_pool        descriptor_set_layouts;
-  crude_resource_pool        descriptor_sets;
-  crude_resource_pool        render_passes;
-  crude_resource_pool        command_buffers;
-  crude_resource_pool        shaders;
-  VmaAllocator               vma_allocator;
-  VkAllocationCallbacks     *vk_allocation_callbacks;
-  crude_allocator            allocator;
-  uint16                     max_frames;
+  VkInstance                        vk_instance;
+  VkDebugUtilsMessengerEXT          vk_debug_utils_messenger;
+  VkSurfaceKHR                      vk_surface;
+  VkPhysicalDevice                  vk_physical_device;
+  VkDevice                          vk_device;
+  int32                             vk_queue_family_index;
+  VkQueue                           vk_queue;
+  VkSwapchainKHR                    vk_swapchain;
+  uint32                            vk_swapchain_images_count;
+  VkImage                           vk_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkImageView                       vk_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkDescriptorPool                  vk_descriptor_pool;
+  VkQueryPool                       vk_timestamp_query_pool;
+  VkSemaphore                       vk_render_complete_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                       vk_image_acquired_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkFence                           vk_command_buffer_executed_fence[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  crude_sampler_handle              default_sampler;
+  crude_resource_pool               buffers;
+  crude_resource_pool               textures;
+  crude_resource_pool               pipelines;
+  crude_resource_pool               samplers;
+  crude_resource_pool               descriptor_set_layouts;
+  crude_resource_pool               descriptor_sets;
+  crude_resource_pool               render_passes;
+  crude_resource_pool               command_buffers;
+  crude_resource_pool               shaders;
+  uint32                            current_frame;
+  uint32                            previous_frame;
+  crude_resource_update            *resource_deletion_queue;
+  VmaAllocator                      vma_allocator;
+  VkAllocationCallbacks            *vk_allocation_callbacks;
+  crude_allocator                   allocator;
+  uint16                            max_frames;
 } crude_gpu_device;
 
 CRUDE_API void crude_initialize_gpu_device( _In_ crude_gpu_device *gpu, _In_ crude_gpu_device_creation *creation );
 CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
+
+CRUDE_API crude_sampler_handle crude_create_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_creation const *creation );
+CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_handle sampler );
+CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );

@@ -5,12 +5,37 @@
 
 #include <core/resource_pool.h>
 
-typedef crude_resource_handle crude_buffer_handle;
-typedef crude_resource_handle crude_texture_handle;
-typedef crude_resource_handle crude_descriptor_set_layout_handle;
-typedef crude_resource_handle crude_sampler_handle;
-typedef crude_resource_handle crude_shader_state_handle;
-typedef crude_resource_handle crude_pipeline_handle;
+typedef uint32 crude_resource_handle;
+
+typedef struct crude_buffer_handle
+{
+  crude_resource_handle index;
+} crude_buffer_handle;
+
+typedef struct crude_texture_handle
+{
+  crude_resource_handle index;
+} crude_texture_handle;
+
+typedef struct crude_descriptor_set_layout_handle
+{
+  crude_resource_handle index;
+} crude_descriptor_set_layout_handle;
+
+typedef struct crude_sampler_handle
+{
+  crude_resource_handle index;
+} crude_sampler_handle;
+
+typedef struct crude_shader_state_handle
+{
+  crude_resource_handle index;
+} crude_shader_state_handle;
+
+typedef struct crude_pipeline_handle
+{
+  crude_resource_handle index;
+} crude_pipeline_handle;
 
 #define CRUDE_MAX_IMAGE_OUTPUTS             8          
 #define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
@@ -54,7 +79,6 @@ typedef enum crude_fill_mode
   CRUDE_FILL_MODE_COUNT
 } crude_fill_mode;
 
-
 typedef enum crude_render_pass_type
 {
   CRUDE_RENDER_PASS_TYPE_GEOMETRY,
@@ -69,6 +93,30 @@ typedef enum crude_render_pass_operation
   CRUDE_RENDER_PASS_OPERATION_CLEAR,
   CRUDE_RENDER_PASS_OPERATION_COUNT
 } crude_render_pass_operation;
+
+typedef enum crude_resource_deletion_type
+{
+  CRUDE_RESOURCE_DELETION_TYPE_BUFFER,
+  CRUDE_RESOURCE_DELETION_TYPE_TEXTURE,
+  CRUDE_RESOURCE_DELETION_TYPE_PIPELINE,
+  CRUDE_RESOURCE_DELETION_TYPE_SAMPLER,
+  CRUDE_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT,
+  CRUDE_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET,
+  CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS,
+  CRUDE_RESOURCE_DELETION_TYPE_SHADER_STATE,
+  CRUDE_RESOURCE_DELETION_TYPE_COUNT
+} crude_resource_deletion_type;
+
+typedef struct crude_sampler_creation
+{
+  VkFilter                             min_filter;
+  VkFilter                             mag_filter;
+  VkSamplerMipmapMode                  mip_filter;
+  VkSamplerAddressMode                 address_mode_u;
+  VkSamplerAddressMode                 address_mode_v;
+  VkSamplerAddressMode                 address_mode_w;
+  const char*                          name;
+} crude_sampler_creation;
 
 typedef struct crude_buffer
 {
@@ -246,3 +294,10 @@ typedef struct crude_shader_state
   uint32                               active_shaders;
   bool                                 graphics_pipeline;
 } crude_shader_state;
+
+typedef struct crude_resource_update
+{
+  crude_resource_deletion_type         type;
+  crude_resource_handle                handle;
+  uint32                               current_frame;
+} crude_resource_update;
