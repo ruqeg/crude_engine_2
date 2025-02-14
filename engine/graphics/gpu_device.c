@@ -61,7 +61,7 @@ static void initialize_command_buffer_ring(
   _In_ crude_command_buffer_ring  *command_buffer_ring,
   _In_ crude_gpu_device           *gpu)
 {
-  command_buffer_ring->gpu = command_buffer_ring->gpu;
+  command_buffer_ring->gpu = gpu;
   
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_POOLS; ++i )
   {
@@ -89,6 +89,37 @@ static void initialize_command_buffer_ring(
     command_buffer->handle = i;
     crude_reset_command_buffer( &command_buffer );
   }
+}
+
+static void deinitialize_command_buffer_ring_pools(
+  _In_ crude_command_buffer_ring  *command_buffer_ring )
+{
+  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS; ++i )
+  {
+    vkDestroyCommandPool( command_buffer_ring->gpu->vk_device, command_buffer_ring->vk_command_pools[ i ], command_buffer_ring->gpu->vk_allocation_callbacks );
+  }
+}
+
+
+crude_command_buffer* get_command_buffer_from_ring_pools(
+  _In_ crude_command_buffer_ring  *command_buffer_ring,
+  _In_ uint32                      frame,
+  _In_ bool                        begin )
+{
+  crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ frame * CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL ];
+
+  if ( begin )
+  {
+    crude_reset_command_buffer( &command_buffer );
+  
+    VkCommandBufferBeginInfo begin_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+    };
+    vkBeginCommandBuffer( command_buffer->vk_command_buffer, &begin_info );
+  }
+  
+  return command_buffer;
 }
 
 static void reset_command_buffer_ring_pools( 
@@ -690,6 +721,7 @@ void crude_initialize_gpu_device(
   gpu->current_frame = 1;
   gpu->previous_frame = 0;
   gpu->vk_image_index = 0;
+  gpu->gpu_timestamp_reset = true;
 
   gpu->resource_deletion_queue = NULL;
   arrsetcap( gpu->resource_deletion_queue, 16 );
@@ -728,6 +760,8 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
   }
 
   arrfree( gpu->resource_deletion_queue );
+
+  deinitialize_command_buffer_ring_pools( &command_buffer_ring );
 
   for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -840,23 +874,28 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
   }
   
   reset_command_buffer_ring_pools( &command_buffer_ring, gpu->current_frame );
+}
 
-  uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
-  gpu->dynamic_max_per_frame_size = max( used_size, gpu->dynamic_max_per_frame_size );
-  gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
-  
-  // Descriptor Set Updates
-  if ( descriptor_set_updates.size ) {
-      for ( i32 i = descriptor_set_updates.size - 1; i >= 0; i-- ) {
-          DescriptorSetUpdate& update = descriptor_set_updates[ i ];
-  
-          //if ( update.frame_issued == current_frame )
-          {
-              update_descriptor_set_instant( update );
-  
-              update.frame_issued = u32_max;
-              descriptor_set_updates.delete_swap( i );
-          }
-      }
+crude_command_buffer* crude_get_command_buffer(
+  _In_ crude_gpu_device  *gpu,
+  _In_ crude_queue_type   type,
+  _In_ bool               begin )
+{
+  crude_command_buffer *command_buffer = get_command_buffer_from_ring_pools( &command_buffer_ring, gpu->current_frame, begin );
+ 
+  if ( gpu->gpu_timestamp_reset && begin )
+  {
+    // !TODO
+    //vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * gpu_timestamp_manager->queries_per_frame * 2, gpu_timestamp_manager->queries_per_frame );
+    vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
+    gpu->gpu_timestamp_reset = false;
   }
+  
+  return command_buffer;
+}
+
+void crude_queue_command_buffer(
+  _In_ crude_command_buffer *command_buffer )
+{
+  gpu->queued_command_buffers[ gpu->num_queued_command_buffers++ ] = command_buffer;
 }

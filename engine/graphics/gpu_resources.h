@@ -107,6 +107,14 @@ typedef enum crude_resource_deletion_type
   CRUDE_RESOURCE_DELETION_TYPE_COUNT
 } crude_resource_deletion_type;
 
+typedef enum crude_queue_type
+{
+  CRUDE_QUEUE_TYPE_GRAPHICS,
+  CRUDE_QUEUE_TYPE_COMPUTE,
+  CRUDE_QUEUE_TYPE_COPY_TRANSFER,
+  CRUDE_QUEUE_TYPE_COUNT
+} crude_queue_type;
+
 typedef struct crude_sampler_creation
 {
   VkFilter                             min_filter;

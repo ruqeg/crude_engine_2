@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <graphics/gpu_device.h>
+typedef struct crude_gpu_device crude_gpu_device;
 
 typedef struct crude_command_buffer
 {

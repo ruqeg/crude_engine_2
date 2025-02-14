@@ -1,5 +1,6 @@
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
+#include <graphics/command_buffer.h>
 
 #include <graphics/render_system.h>
 
@@ -33,6 +34,22 @@ static void deinitialize_render_core( ecs_iter_t *it )
   }
 }
 
+static void render( ecs_iter_t *it )
+{
+  crude_gpu_device *gpu = ecs_field( it, crude_gpu_device, 0 );
+  crude_window     *window_handle = ecs_field( it, crude_window, 1 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_new_frame( &gpu[i] );
+
+    crude_command_buffer *gpu_commands = crude_get_command_buffer( gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    crude_queue_command_buffer( gpu_commands );
+    //gpu.queue_command_buffer( gpu_commands );
+    //gpu.present();
+  }
+}
+
 void crude_render_systemImport( ecs_world_t *world )
 {
   ECS_MODULE( world, crude_render_system );
@@ -53,4 +70,11 @@ void crude_render_systemImport( ecs_world_t *world )
     .events = { EcsOnRemove },
     .callback = deinitialize_render_core
     } );
+  ecs_system( world, {
+    .entity = ecs_entity( world, { .name = "render_system", .add = ecs_ids( ecs_dependson( EcsOnStore ) ) } ),
+    .callback = render,
+    .query.terms = { 
+      {.id = ecs_id( crude_gpu_device ) },
+      {.id = ecs_id( crude_window ) },
+    } } );
 }

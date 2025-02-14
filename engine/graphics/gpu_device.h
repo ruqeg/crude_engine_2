@@ -5,6 +5,7 @@
 
 #include <core/alias.h>
 #include <graphics/gpu_resources.h>
+#include <graphics/command_buffer.h>
 
 #define CRUDE_HANDLE_VULKAN_RESULT( result, msg ) if ( result != VK_SUCCESS ) CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );
 
@@ -25,6 +26,7 @@ typedef struct crude_gpu_device
   uint32                            dynamic_allocated_size;
   uint32                            dynamic_per_frame_size;
   uint32                            dynamic_max_per_frame_size;
+  bool                              gpu_timestamp_reset;
   VkInstance                        vk_instance;
   VkDebugUtilsMessengerEXT          vk_debug_utils_messenger;
   VkSurfaceKHR                      vk_surface;
@@ -69,3 +71,7 @@ CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sam
 CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );
+
+CRUDE_API crude_command_buffer* crude_get_command_buffer( _In_ crude_gpu_device *gpu, _In_ crude_queue_type type, _In_ bool begin );
+
+CRUDE_API void crude_queue_command_buffer( _In_ crude_command_buffer *command_buffer );
