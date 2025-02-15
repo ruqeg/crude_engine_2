@@ -27,6 +27,8 @@ typedef struct crude_gpu_device
   uint32                            dynamic_per_frame_size;
   uint32                            dynamic_max_per_frame_size;
   bool                              gpu_timestamp_reset;
+  uint32                            num_queued_command_buffers;
+  crude_command_buffer            **queued_command_buffers;
   VkInstance                        vk_instance;
   VkDebugUtilsMessengerEXT          vk_debug_utils_messenger;
   VkSurfaceKHR                      vk_surface;
@@ -71,7 +73,7 @@ CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sam
 CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );
+CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );
 
 CRUDE_API crude_command_buffer* crude_get_command_buffer( _In_ crude_gpu_device *gpu, _In_ crude_queue_type type, _In_ bool begin );
-
 CRUDE_API void crude_queue_command_buffer( _In_ crude_command_buffer *command_buffer );

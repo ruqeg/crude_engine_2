@@ -45,8 +45,7 @@ static void render( ecs_iter_t *it )
 
     crude_command_buffer *gpu_commands = crude_get_command_buffer( gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
     crude_queue_command_buffer( gpu_commands );
-    //gpu.queue_command_buffer( gpu_commands );
-    //gpu.present();
+    crude_present( &gpu[i] );
   }
 }
 

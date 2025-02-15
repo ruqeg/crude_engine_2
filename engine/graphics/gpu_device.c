@@ -717,11 +717,13 @@ void crude_initialize_gpu_device(
   }
   
   initialize_command_buffer_ring( &command_buffer_ring, gpu );
+  gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer ), 1 );
 
   gpu->current_frame = 1;
   gpu->previous_frame = 0;
   gpu->vk_image_index = 0;
   gpu->gpu_timestamp_reset = true;
+  gpu->num_queued_command_buffers = 0;
 
   gpu->resource_deletion_queue = NULL;
   arrsetcap( gpu->resource_deletion_queue, 16 );
@@ -876,6 +878,66 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
   reset_command_buffer_ring_pools( &command_buffer_ring, gpu->current_frame );
 }
 
+void crude_present( _In_ crude_gpu_device *gpu )
+{
+  VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fence[ gpu->current_frame ];
+  VkSemaphore *render_complete_semaphore = &gpu->vk_render_complete_semaphores[ gpu->current_frame ];
+
+  VkCommandBuffer enqueued_command_buffers[ 4 ];
+  for ( uint32 i = 0; i < gpu->num_queued_command_buffers; ++i )
+  {
+    crude_command_buffer* command_buffer = gpu->queued_command_buffers[ i ];
+    
+    enqueued_command_buffers[ i ] = command_buffer->vk_command_buffer;
+    if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
+    {
+      vkCmdEndRenderPass( command_buffer->vk_command_buffer );
+    }
+    
+    vkEndCommandBuffer( command_buffer->vk_command_buffer );
+  }
+
+  VkSemaphore wait_semaphores[] = { gpu->vk_image_acquired_semaphores[ gpu->current_frame ]};
+  VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+  VkSubmitInfo submit_info = { 
+    .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    .waitSemaphoreCount   = 1,
+    .pWaitSemaphores      = wait_semaphores,
+    .pWaitDstStageMask    = wait_stages,
+    .commandBufferCount   = gpu->num_queued_command_buffers,
+    .pCommandBuffers      = enqueued_command_buffers,
+    .signalSemaphoreCount = 1,
+    .pSignalSemaphores    = render_complete_semaphore,
+  };
+  
+  vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence );
+
+  gpu->num_queued_command_buffers = 0u;
+  
+  VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
+  VkPresentInfoKHR present_info = {
+    .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+    .waitSemaphoreCount = 1,
+    .pWaitSemaphores    = render_complete_semaphore,
+    .swapchainCount     = ARRAY_SIZE( swap_chains ),
+    .pSwapchains        = swap_chains,
+    .pImageIndices      = &gpu->vk_image_index,
+    .pResults           = NULL,
+  };
+  
+  VkResult result = vkQueuePresentKHR( gpu->vk_queue, &present_info );
+  //bool resized= false;
+  //if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || resized ) {
+  //    resized = false;
+  //    resize_swapchain();
+  //
+  //    // Advance frame counters that are skipped during this frame.
+  //    frame_counters_advance();
+  //
+  //    return;
+  //}
+}
+
 crude_command_buffer* crude_get_command_buffer(
   _In_ crude_gpu_device  *gpu,
   _In_ crude_queue_type   type,
@@ -895,7 +957,7 @@ crude_command_buffer* crude_get_command_buffer(
 }
 
 void crude_queue_command_buffer(
-  _In_ crude_command_buffer *command_buffer )
+  _In_ crude_command_buffer   *command_buffer )
 {
-  gpu->queued_command_buffers[ gpu->num_queued_command_buffers++ ] = command_buffer;
+  command_buffer->gpu->queued_command_buffers[ command_buffer->gpu->num_queued_command_buffers++ ] = command_buffer;
 }
