@@ -36,7 +36,7 @@ static CRUDE_INLINE char const* crude_get_channel_string( _In_ crude_channel c )
   return "Unknown-Channel";
 }
 
-static CRUDE_INLINE void output_visual_studio( _In_ char* buffer )
+static CRUDE_INLINE void output_visual_studio( _In_ char *buffer )
 {
   OutputDebugStringA( CAST( LPCSTR, buffer ) );
 }
@@ -48,5 +48,5 @@ void crude_log_common( _In_ char const *filename, _In_ int32 line, _In_ crude_ch
   stbsp_snprintf( g_format_buffer, ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
   stbsp_vsnprintf( g_message_buffer, ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
   output_visual_studio( g_message_buffer );
-  va_end(args);
+  va_end( args );
 }

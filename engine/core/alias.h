@@ -22,7 +22,7 @@
 #define CRUDE_DEBUG_BREAK   __debugbreak();
 #define CRUDE_INLINE        inline
 
-#define CAST( t, expp )      ( ( t ) ( expp ) )
+#define CAST( t, exp )      ( ( t ) ( exp ) )
 #define ARRAY_SIZE( arr )   ( sizeof( arr ) / sizeof( arr[0] ) )
 
 typedef int8_t        int8;

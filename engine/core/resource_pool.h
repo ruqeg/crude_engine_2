@@ -6,13 +6,13 @@
 
 typedef struct crude_resource_pool
 {
-  crude_allocator        allocator;
-  uint8                 *memory;
-  uint32                *free_indices;
-  uint32                 free_indices_head;
-  uint32                 pool_size;
-  uint32                 resource_size;
-  uint32                 used_indices;
+  crude_allocator   allocator;
+  uint8            *memory;
+  uint32           *free_indices;
+  uint32            free_indices_head;
+  uint32            pool_size;
+  uint32            resource_size;
+  uint32            used_indices;
 } crude_resource_pool;
 
 CRUDE_API void crude_initialize_resource_pool( _In_ crude_resource_pool *resource_pool, _In_ crude_allocator allocator, _In_ uint32 pool_size, _In_ uint32 resource_size );

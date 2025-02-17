@@ -32,6 +32,11 @@ typedef struct crude_shader_state_handle
   crude_resource_handle index;
 } crude_shader_state_handle;
 
+typedef struct crude_render_pass_handle
+{
+  crude_resource_handle index;
+} crude_render_pass_handle;
+
 typedef struct crude_pipeline_handle
 {
   crude_resource_handle index;
@@ -125,6 +130,30 @@ typedef struct crude_sampler_creation
   VkSamplerAddressMode                 address_mode_w;
   const char*                          name;
 } crude_sampler_creation;
+
+typedef struct crude_buffer_creation
+{
+  VkBufferUsageFlags                   type_flags;
+  crude_resource_usage_type            usage;
+  uint32                               size;
+  void                                *initial_data;
+  char const                          *name;
+} crude_buffer_creation;
+
+typedef struct crude_render_pass_creation
+{
+  uint16                               num_render_targets;
+  crude_render_pass_type               type;
+  crude_texture_handle                 output_textures[ CRUDE_MAX_IMAGE_OUTPUTS ];
+  crude_texture_handle                 depth_stencil_texture;
+  float32                              scale_x;
+  float32                              scale_y;
+  uint8                                resize;
+  crude_render_pass_operation          color_operation;
+  crude_render_pass_operation          depth_operation;
+  crude_render_pass_operation          stencil_operation;
+  char const                          *name;
+} crude_render_pass_creation;
 
 typedef struct crude_buffer
 {
@@ -309,3 +338,5 @@ typedef struct crude_resource_update
   crude_resource_handle                handle;
   uint32                               current_frame;
 } crude_resource_update;
+
+CRUDE_API crude_reset_render_pass_output( _In_ crude_render_pass_output *output );

@@ -23,11 +23,18 @@ typedef struct crude_gpu_device_creation
 
 typedef struct crude_gpu_device
 {
-  uint32                            dynamic_allocated_size;
-  uint32                            dynamic_per_frame_size;
-  uint32                            dynamic_max_per_frame_size;
-  bool                              gpu_timestamp_reset;
-  uint32                            num_queued_command_buffers;
+  crude_render_pass_output          swapchain_output;
+  crude_sampler_handle              default_sampler;
+  crude_resource_pool               buffers;
+  crude_resource_pool               textures;
+  crude_resource_pool               pipelines;
+  crude_resource_pool               samplers;
+  crude_resource_pool               descriptor_set_layouts;
+  crude_resource_pool               descriptor_sets;
+  crude_resource_pool               render_passes;
+  crude_resource_pool               command_buffers;
+  crude_resource_pool               shaders;
+  uint32                            queued_command_buffers_count;
   crude_command_buffer            **queued_command_buffers;
   VkInstance                        vk_instance;
   VkDebugUtilsMessengerEXT          vk_debug_utils_messenger;
@@ -40,23 +47,13 @@ typedef struct crude_gpu_device
   uint32                            vk_swapchain_images_count;
   VkImage                           vk_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkImageView                       vk_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkSurfaceFormatKHR                vk_surface_format;
   VkDescriptorPool                  vk_descriptor_pool;
   VkQueryPool                       vk_timestamp_query_pool;
-  VkSemaphore                       vk_render_complete_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                       vk_image_acquired_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkFence                           vk_command_buffer_executed_fence[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  crude_sampler_handle              default_sampler;
-  crude_resource_pool               buffers;
-  crude_resource_pool               textures;
-  crude_resource_pool               pipelines;
-  crude_resource_pool               samplers;
-  crude_resource_pool               descriptor_set_layouts;
-  crude_resource_pool               descriptor_sets;
-  crude_resource_pool               render_passes;
-  crude_resource_pool               command_buffers;
-  crude_resource_pool               shaders;
+  VkSemaphore                       vk_render_finished_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                       vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkFence                           vk_command_buffer_executed_fences[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   uint32                            current_frame;
-  uint32                            previous_frame;
   uint32                            vk_image_index;
   crude_resource_update            *resource_deletion_queue;
   VmaAllocator                      vma_allocator;
@@ -71,6 +68,10 @@ CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
 CRUDE_API crude_sampler_handle crude_create_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_creation const *creation );
 CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_handle sampler );
 CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
+
+CRUDE_API crude_buffer_handle crude_create_buffer( _In_ crude_gpu_device *gpu, _In_ crude_buffer_creation const *creation );
+
+CRUDE_API crude_render_pass_handle crude_create_render_pass( _In_ crude_gpu_device *gpu, _In_ crude_render_pass_creation const *creation );
 
 CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );
 CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );

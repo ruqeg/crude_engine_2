@@ -86,8 +86,6 @@ static void initialize_command_buffer_ring(
     CRUDE_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
     
     command_buffer->gpu = gpu;
-    command_buffer->handle = i;
-    crude_reset_command_buffer( &command_buffer );
   }
 }
 
@@ -109,9 +107,7 @@ crude_command_buffer* get_command_buffer_from_ring_pools(
   crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ frame * CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL ];
 
   if ( begin )
-  {
-    crude_reset_command_buffer( &command_buffer );
-  
+  {  
     VkCommandBufferBeginInfo begin_info = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
@@ -462,7 +458,8 @@ static VkSwapchainKHR create_swapchain(
   _In_opt_  VkAllocationCallbacks   *vk_allocation_callbacks,
   _Out_     uint32                  *vk_swapchain_images_count,
   _Out_     VkImage                 *vk_swapchain_images,
-  _Out_     VkImageView             *vk_swapchain_images_views )
+  _Out_     VkImageView             *vk_swapchain_images_views,
+  _Out_     VkSurfaceFormatKHR      *vk_surface_format)
 {
   VkSurfaceCapabilitiesKHR surface_capabilities;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR( vk_physical_device, vk_surface, &surface_capabilities);
@@ -488,12 +485,11 @@ static VkSwapchainKHR create_swapchain(
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &available_formats_count, available_formats );
 
   bool surface_format_found = false;
-  VkSurfaceFormatKHR vulkan_surface_format;
   for ( uint32 i = 0; i < available_formats_count; ++i )
   {
     if ( available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
     {
-      vulkan_surface_format = available_formats[i];
+      *vk_surface_format = available_formats[i];
       surface_format_found = true;
     }
   }
@@ -536,8 +532,8 @@ static VkSwapchainKHR create_swapchain(
     .pNext                  = NULL,
     .surface                = vk_surface,
     .minImageCount          = image_count,
-    .imageFormat            = vulkan_surface_format.format,
-    .imageColorSpace        = vulkan_surface_format.colorSpace,
+    .imageFormat            = vk_surface_format->format,
+    .imageColorSpace        = vk_surface_format->colorSpace,
     .imageExtent            = swapchain_extent,
     .imageArrayLayers       = 1,
     .imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -562,7 +558,7 @@ static VkSwapchainKHR create_swapchain(
     VkImageViewCreateInfo image_view_info = { 
       .sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
       .viewType                    = VK_IMAGE_VIEW_TYPE_2D,
-      .format                      = vulkan_surface_format.format,
+      .format                      = vk_surface_format->format,
       .image                       = vk_swapchain_images[ i ],
       .subresourceRange.levelCount = 1,
       .subresourceRange.layerCount = 1,
@@ -631,7 +627,7 @@ static VkDescriptorPool create_descriptor_pool(
   return vulkan_descriptor_pool;
 }
 
-VkQueryPool create_timestamp_query_pool(
+static VkQueryPool create_timestamp_query_pool(
   _In_     VkDevice               vk_device, 
   _In_     int32                  max_frames,
   _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks )
@@ -648,6 +644,119 @@ VkQueryPool create_timestamp_query_pool(
   VkQueryPool vulkan_timestamp_query_pool;
   CRUDE_HANDLE_VULKAN_RESULT( vkCreateQueryPool( vk_device, &query_pool_create_info, vk_allocation_callbacks, &vulkan_timestamp_query_pool ), "Failed to create query pool" );
   return vulkan_timestamp_query_pool;
+}
+
+static void create_swapchain_pass(
+  _In_ crude_gpu_device* gpu
+)
+{
+  //VkAttachmentDescription color_attachment = {
+  //  .format         = gpu->vk_surface_format.format,
+  //  .samples        = VK_SAMPLE_COUNT_1_BIT,
+  //  .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+  //  .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+  //  .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+  //  .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+  //  .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+  //  .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+  //};
+  //
+  //VkAttachmentReference color_attachment_ref = {
+  //  .attachment     = 0,
+  //  .layout         = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
+  //};
+  //
+  //VkAttachmentDescription depth_attachment = {
+  //
+  //};
+  //Texture* depth_texture_vk = gpu.access_texture( gpu.depth_texture );
+  //depth_attachment.format = depth_texture_vk->vk_format;
+  //depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  //depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  //depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  //depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  //depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  //depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  //depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  //
+  //VkAttachmentReference depth_attachment_ref{};
+  //depth_attachment_ref.attachment = 1;
+  //depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  //
+  //
+  //VkSubpassDescription subpass{};
+  //subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  //subpass.colorAttachmentCount = 1;
+  //subpass.pColorAttachments = &color_attachment_ref;
+  //subpass.pDepthStencilAttachment = &depth_attachment_ref;
+  //
+  //VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
+  //VkRenderPassCreateInfo render_pass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+  //render_pass_info.attachmentCount = 2;
+  //render_pass_info.pAttachments = attachments;
+  //render_pass_info.subpassCount = 1;
+  //render_pass_info.pSubpasses = &subpass;
+  //
+  //check( vkCreateRenderPass( gpu.vulkan_device, &render_pass_info, nullptr, &render_pass->vk_render_pass ) );
+  //
+  //gpu.set_resource_name( VK_OBJECT_TYPE_RENDER_PASS, ( u64 )render_pass->vk_render_pass, creation.name );
+  //
+  //// Create framebuffer into the device.
+  //VkFramebufferCreateInfo framebuffer_info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+  //framebuffer_info.renderPass = render_pass->vk_render_pass;
+  //framebuffer_info.attachmentCount = 2;
+  //framebuffer_info.width = gpu.swapchain_width;
+  //framebuffer_info.height = gpu.swapchain_height;
+  //framebuffer_info.layers = 1;
+  //
+  //VkImageView framebuffer_attachments[ 2 ];
+  //framebuffer_attachments[ 1 ] = depth_texture_vk->vk_image_view;
+  //
+  //for ( size_t i = 0; i < gpu.vulkan_swapchain_image_count; i++ ) {
+  //    framebuffer_attachments[ 0 ] = gpu.vulkan_swapchain_image_views[ i ];
+  //    framebuffer_info.pAttachments = framebuffer_attachments;
+  //
+  //    vkCreateFramebuffer( gpu.vulkan_device, &framebuffer_info, nullptr, &gpu.vulkan_swapchain_framebuffers[ i ] );
+  //    gpu.set_resource_name( VK_OBJECT_TYPE_FRAMEBUFFER, ( u64 )gpu.vulkan_swapchain_framebuffers[ i ], creation.name );
+  //}
+  //
+  //render_pass->width = gpu.swapchain_width;
+  //render_pass->height = gpu.swapchain_height;
+  //
+  //// Manually transition the texture
+  //VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+  //beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  //
+  //CommandBuffer* command_buffer = gpu.get_instant_command_buffer();
+  //vkBeginCommandBuffer( command_buffer->vk_command_buffer, &beginInfo );
+  //
+  //VkBufferImageCopy region = {};
+  //region.bufferOffset = 0;
+  //region.bufferRowLength = 0;
+  //region.bufferImageHeight = 0;
+  //
+  //region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  //region.imageSubresource.mipLevel = 0;
+  //region.imageSubresource.baseArrayLayer = 0;
+  //region.imageSubresource.layerCount = 1;
+  //
+  //region.imageOffset = { 0, 0, 0 };
+  //region.imageExtent = { gpu.swapchain_width, gpu.swapchain_height, 1 };
+  //
+  //// Transition
+  //for ( size_t i = 0; i < gpu.vulkan_swapchain_image_count; i++ ) {
+  //    transition_image_layout( command_buffer->vk_command_buffer, gpu.vulkan_swapchain_images[ i ], gpu.vulkan_surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, false );
+  //}
+  //
+  //vkEndCommandBuffer( command_buffer->vk_command_buffer );
+  //
+  //// Submit command buffer
+  //VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+  //submitInfo.commandBufferCount = 1;
+  //submitInfo.pCommandBuffers = &command_buffer->vk_command_buffer;
+  //
+  //vkQueueSubmit( gpu.vulkan_queue, 1, &submitInfo, VK_NULL_HANDLE );
+  //vkQueueWaitIdle( gpu.vulkan_queue );
 }
 
 static void destroy_swapchain(
@@ -694,7 +803,7 @@ void crude_initialize_gpu_device(
   gpu->vk_physical_device = pick_physical_device( gpu->vk_instance, gpu->vk_surface, &gpu->vk_queue_family_index );
   gpu->vk_device = create_device( gpu->vk_physical_device, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks );
   vkGetDeviceQueue( gpu->vk_device, gpu->vk_queue_family_index, 0u, &gpu->vk_queue );
-  gpu->vk_swapchain = create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views );
+  gpu->vk_swapchain = create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format );
   gpu->vma_allocator = create_vma_allocator( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
   gpu->vk_descriptor_pool = create_descriptor_pool( gpu->vk_device, gpu->vk_allocation_callbacks );
   gpu->vk_timestamp_query_pool = create_timestamp_query_pool( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
@@ -711,19 +820,17 @@ void crude_initialize_gpu_device(
   VkFenceCreateInfo fence_info = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
   for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_complete_semaphores[ i ] );
-    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_acquired_semaphores[ i ] );
-    vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fence[ i ] );
+    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_finished_semaphores[ i ] );
+    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
+    vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
   }
   
   initialize_command_buffer_ring( &command_buffer_ring, gpu );
   gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer ), 1 );
 
   gpu->current_frame = 1;
-  gpu->previous_frame = 0;
   gpu->vk_image_index = 0;
-  gpu->gpu_timestamp_reset = true;
-  gpu->num_queued_command_buffers = 0;
+  gpu->queued_command_buffers_count = 0;
 
   gpu->resource_deletion_queue = NULL;
   arrsetcap( gpu->resource_deletion_queue, 16 );
@@ -738,6 +845,22 @@ void crude_initialize_gpu_device(
     .name           = "sampler default"
   };
   gpu->default_sampler = crude_create_sampler( gpu, &sampler_creation );
+  
+  crude_reset_render_pass_output( &gpu->swapchain_output );
+  gpu->swapchain_output.color_formats[ gpu->swapchain_output.num_color_formats++ ] = gpu->vk_surface_format.format;
+  gpu->swapchain_output.depth_operation = VK_FORMAT_D32_SFLOAT;
+
+  crude_render_pass_creation swapchain_pass_creation = {
+    .type                  = CRUDE_RENDER_PASS_TYPE_GEOMETRY,
+    .name                  = "swapchain",
+    .color_operation       = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .depth_operation       = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .depth_stencil_texture = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .scale_x             = 1.f,
+    .scale_y             = 1.f,
+    .resize              = 1,
+  };
+  swapchain_pass = crude_create_render_pass( gpu, &swapchain_pass_creation );
  }
 
 void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
@@ -767,9 +890,9 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
 
   for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    vkDestroySemaphore( gpu->vk_device, &gpu->vk_render_complete_semaphores[ i ], gpu->vk_allocation_callbacks );
-    vkDestroySemaphore( gpu->vk_device, &gpu->vk_image_acquired_semaphores[ i ], gpu->vk_allocation_callbacks );
-    vkDestroyFence( gpu->vk_device, &gpu->vk_command_buffer_executed_fence[ i ], gpu->vk_allocation_callbacks );
+    vkDestroySemaphore( gpu->vk_device, &gpu->vk_render_finished_semaphores[ i ], gpu->vk_allocation_callbacks );
+    vkDestroySemaphore( gpu->vk_device, &gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
+    vkDestroyFence( gpu->vk_device, &gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
 
   crude_deinitialize_resource_pool( &gpu->buffers );
@@ -858,10 +981,61 @@ void crude_destroy_sampler_instant(
   crude_resource_pool_release_resource( &gpu->samplers, handle );
 }
 
+crude_buffer_handle crude_create_buffer(
+  _In_ crude_gpu_device             *gpu,
+  _In_ crude_buffer_creation const  *creation )
+{
+}
+
+crude_render_pass_handle crude_create_render_pass(
+  _In_ crude_gpu_device                 *gpu,
+  _In_ crude_render_pass_creation const *creation )
+{
+  crude_render_pass_handle handle = { crude_resource_pool_obtain_resource( &gpu->render_passes ) };
+  if ( handle.index ==  CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_render_pass *render_pass = crude_resource_pool_access_resource( &gpu->render_passes, handle.index );
+  render_pass->type               = creation->type;
+  render_pass->num_render_targets = creation->num_render_targets;
+  render_pass->dispatch_x         = 0;
+  render_pass->dispatch_y         = 0;
+  render_pass->dispatch_z         = 0;
+  render_pass->name               = creation->name;
+  render_pass->vk_frame_buffer    = NULL;
+  render_pass->vk_render_pass     = NULL;
+  render_pass->scale_x            = creation->scale_x;
+  render_pass->scale_y            = creation->scale_y;
+  render_pass->resize             = creation->resize;
+  
+  for ( uint32 i = 0 ; i < creation->num_render_targets; ++i )
+  {
+    crude_texture *texture = crude_resource_pool_access_resource( &gpu->textures, creation->output_textures[ i ].index );
+    
+    render_pass->width = texture->width;
+    render_pass->height = texture->height;
+    render_pass->output_textures[ i ] = creation->output_textures[ i ];
+  }
+  
+  render_pass->output_depth = creation->depth_stencil_texture;
+  
+  switch ( creation->type )
+  {
+    case CRUDE_RENDER_PASS_TYPE_SWAPCHAIN:
+    {
+      vulkan_create_swapchain_pass( *this, creation, render_pass );
+      break;
+    }
+  }
+  
+  return handle;
+}
+
 void crude_new_frame( _In_ crude_gpu_device *gpu )
 {
-  VkFence* render_complete_fence = &gpu->vk_command_buffer_executed_fence[ gpu->current_frame ];
-  
+  VkFence *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
   {
     vkWaitForFences( gpu->vk_device, 1, render_complete_fence, VK_TRUE, UINT64_MAX );
@@ -869,42 +1043,41 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
   
   vkResetFences( gpu->vk_device, 1, render_complete_fence );
   
-  VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_acquired_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_image_index );
-  if ( result == VK_ERROR_OUT_OF_DATE_KHR )
+  VkSemaphore image_acquired_semaphore = gpu->vk_image_avalivable_semaphores[ gpu->current_frame ];
+  VkResult const result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &gpu->vk_image_index );
+  if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
     // !TODO resize_swapchain();
   }
-  
+  else if ( ( result != VK_SUCCESS ) && ( result != VK_SUBOPTIMAL_KHR )  )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to acquire swap chain images!" );
+  }
+
   reset_command_buffer_ring_pools( &command_buffer_ring, gpu->current_frame );
 }
 
 void crude_present( _In_ crude_gpu_device *gpu )
 {
-  VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fence[ gpu->current_frame ];
-  VkSemaphore *render_complete_semaphore = &gpu->vk_render_complete_semaphores[ gpu->current_frame ];
+  VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
+  VkSemaphore *render_complete_semaphore = &gpu->vk_render_finished_semaphores[ gpu->current_frame ];
 
   VkCommandBuffer enqueued_command_buffers[ 4 ];
-  for ( uint32 i = 0; i < gpu->num_queued_command_buffers; ++i )
+  for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
     crude_command_buffer* command_buffer = gpu->queued_command_buffers[ i ];
-    
     enqueued_command_buffers[ i ] = command_buffer->vk_command_buffer;
-    if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
-    {
-      vkCmdEndRenderPass( command_buffer->vk_command_buffer );
-    }
-    
     vkEndCommandBuffer( command_buffer->vk_command_buffer );
   }
 
-  VkSemaphore wait_semaphores[] = { gpu->vk_image_acquired_semaphores[ gpu->current_frame ]};
+  VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
   VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
   VkSubmitInfo submit_info = { 
     .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
     .waitSemaphoreCount   = 1,
     .pWaitSemaphores      = wait_semaphores,
     .pWaitDstStageMask    = wait_stages,
-    .commandBufferCount   = gpu->num_queued_command_buffers,
+    .commandBufferCount   = gpu->queued_command_buffers_count,
     .pCommandBuffers      = enqueued_command_buffers,
     .signalSemaphoreCount = 1,
     .pSignalSemaphores    = render_complete_semaphore,
@@ -912,7 +1085,7 @@ void crude_present( _In_ crude_gpu_device *gpu )
   
   vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence );
 
-  gpu->num_queued_command_buffers = 0u;
+  gpu->queued_command_buffers_count = 0u;
   
   VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
   VkPresentInfoKHR present_info = {
@@ -926,16 +1099,14 @@ void crude_present( _In_ crude_gpu_device *gpu )
   };
   
   VkResult result = vkQueuePresentKHR( gpu->vk_queue, &present_info );
-  //bool resized= false;
-  //if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || resized ) {
-  //    resized = false;
-  //    resize_swapchain();
-  //
-  //    // Advance frame counters that are skipped during this frame.
-  //    frame_counters_advance();
-  //
-  //    return;
-  //}
+  bool resized = false;
+  if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || resized )
+  {
+    // TODO
+    return;
+  }
+
+  gpu->current_frame = ( gpu->current_frame + 1 ) % gpu->vk_swapchain_images_count;
 }
 
 crude_command_buffer* crude_get_command_buffer(
@@ -945,12 +1116,9 @@ crude_command_buffer* crude_get_command_buffer(
 {
   crude_command_buffer *command_buffer = get_command_buffer_from_ring_pools( &command_buffer_ring, gpu->current_frame, begin );
  
-  if ( gpu->gpu_timestamp_reset && begin )
+  if ( begin )
   {
-    // !TODO
-    //vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * gpu_timestamp_manager->queries_per_frame * 2, gpu_timestamp_manager->queries_per_frame );
     vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
-    gpu->gpu_timestamp_reset = false;
   }
   
   return command_buffer;
@@ -959,5 +1127,5 @@ crude_command_buffer* crude_get_command_buffer(
 void crude_queue_command_buffer(
   _In_ crude_command_buffer   *command_buffer )
 {
-  command_buffer->gpu->queued_command_buffers[ command_buffer->gpu->num_queued_command_buffers++ ] = command_buffer;
+  command_buffer->gpu->queued_command_buffers[ command_buffer->gpu->queued_command_buffers_count++ ] = command_buffer;
 }
