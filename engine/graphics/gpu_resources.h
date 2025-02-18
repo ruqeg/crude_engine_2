@@ -120,6 +120,47 @@ typedef enum crude_queue_type
   CRUDE_QUEUE_TYPE_COUNT
 } crude_queue_type;
 
+typedef enum crude_texture_flag
+{
+  CRUDE_TEXTURE_FLAG_DEFAULT,
+  CRUDE_TEXTURE_FLAG_RENDER_TARGET,
+  CRUDE_TEXTURE_FLAG_COMPUTE,
+  CRUDE_TEXTURE_FLAG_COUNT,
+} crude_texture_flag;
+
+typedef enum crude_texture_mask
+{
+  CRUDE_TEXTURE_MASK_DEFAULT = 1 << 0,
+  CRUDE_TEXTURE_MASK_RENDER_TARGET = 1 << 1,
+  CRUDE_TEXTURE_MASK_COMPUTE = 1 << 2,
+} crude_texture_mask;
+
+typedef struct crude_stencil_operation_state
+{
+  VkStencilOp                          fail;
+  VkStencilOp                          pass;
+  VkStencilOp                          depth_fail;
+  VkCompareOp                          compare;
+  uint32                               compare_mask;
+  uint32                               write_mask;
+  uint32                               reference;
+} crude_stencil_operation_state;
+
+typedef struct crude_blend_state
+{
+  VkBlendFactor                        source_color;
+  VkBlendFactor                        destination_color;
+  VkBlendOp                            color_operation;
+  VkBlendFactor                        source_alpha;
+  VkBlendFactor                        destination_alpha;
+  VkBlendOp                            alpha_operation;
+  crude_color_write_enabled            color_write_mask;
+  uint8                                blend_enabled   : 1;
+  uint8                                separate_blend  : 1;
+  uint8                                pad             : 6;
+} crude_blend_state;
+
+
 typedef struct crude_sampler_creation
 {
   VkFilter                             min_filter;
@@ -154,6 +195,43 @@ typedef struct crude_render_pass_creation
   crude_render_pass_operation          stencil_operation;
   char const                          *name;
 } crude_render_pass_creation;
+
+typedef struct crude_depth_stencil_creation
+{
+  crude_stencil_operation_state        front;
+  crude_stencil_operation_state        back;
+  VkCompareOp                          depth_comparison;
+  uint8                                depth_enable        : 1;
+  uint8                                depth_write_enable  : 1;
+  uint8                                stencil_enable      : 1;
+  uint8                                pad                 : 5;
+} crude_depth_stencil_creation;
+
+typedef struct crude_blend_state_creation
+{
+  crude_blend_state                    blend_states[ CRUDE_MAX_IMAGE_OUTPUTS ];
+  uint32                               active_states;
+} crude_blend_state_creation;
+
+typedef struct crude_rasterization_creation
+{
+  VkCullModeFlagBits                   cull_mode;
+  VkFrontFace                          front;
+  crude_fill_mode                      fill;
+} crude_rasterization_creation;
+
+typedef struct crude_texture_creation
+{
+  void                                *initial_data;
+  uint16                               width;
+  uint16                               height;
+  uint16                               depth;
+  uint8                                mipmaps;
+  uint8                                flags;
+  VkFormat                             format;
+  crude_texture_type                   type;
+  char const                          *name;
+} crude_texture_creation;
 
 typedef struct crude_buffer
 {
@@ -229,55 +307,6 @@ typedef struct crude_descriptor_set
   uint32                               num_resources;
 } crude_descriptor_set;
 
-typedef struct crude_stencil_operation_state
-{
-  VkStencilOp                          fail;
-  VkStencilOp                          pass;
-  VkStencilOp                          depth_fail;
-  VkCompareOp                          compare;
-  uint32                               compare_mask;
-  uint32                               write_mask;
-  uint32                               reference;
-} crude_stencil_operation_state;
-
-typedef struct crude_depth_stencil_creation
-{
-  crude_stencil_operation_state        front;
-  crude_stencil_operation_state        back;
-  VkCompareOp                          depth_comparison;
-  uint8                                depth_enable        : 1;
-  uint8                                depth_write_enable  : 1;
-  uint8                                stencil_enable      : 1;
-  uint8                                pad                 : 5;
-} crude_depth_stencil_creation;
-
-typedef struct crude_blend_state
-{
-  VkBlendFactor                        source_color;
-  VkBlendFactor                        destination_color;
-  VkBlendOp                            color_operation;
-  VkBlendFactor                        source_alpha;
-  VkBlendFactor                        destination_alpha;
-  VkBlendOp                            alpha_operation;
-  crude_color_write_enabled            color_write_mask;
-  uint8                                blend_enabled   : 1;
-  uint8                                separate_blend  : 1;
-  uint8                                pad             : 6;
-} crude_blend_state;
-
-typedef struct crude_blend_state_creation
-{
-  crude_blend_state                    blend_states[ CRUDE_MAX_IMAGE_OUTPUTS ];
-  uint32                               active_states;
-} crude_blend_state_creation;
-
-typedef struct crude_rasterization_creation
-{
-  VkCullModeFlagBits                   cull_mode;
-  VkFrontFace                          front;
-  crude_fill_mode                      fill;
-} crude_rasterization_creation;
-
 typedef struct crude_pipeline
 {
   VkPipeline                           vk_pipeline;
@@ -339,4 +368,8 @@ typedef struct crude_resource_update
   uint32                               current_frame;
 } crude_resource_update;
 
-CRUDE_API crude_reset_render_pass_output( _In_ crude_render_pass_output *output );
+CRUDE_API void crude_reset_render_pass_output( _In_ crude_render_pass_output *output );
+CRUDE_API VkImageType crude_to_vk_image_type( _In_ crude_texture_type type );
+CRUDE_API bool crude_has_depth_or_stencil( _In_ VkFormat value );
+CRUDE_API bool crude_has_depth( _In_ VkFormat value );
+CRUDE_API VkImageViewType crude_to_vk_image_view_type( _In_ crude_texture_type type );

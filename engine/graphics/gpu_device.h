@@ -23,8 +23,12 @@ typedef struct crude_gpu_device_creation
 
 typedef struct crude_gpu_device
 {
+  crude_render_pass_handle          swapchain_pass;
+  uint16                            swapchain_width;
+  uint16                            swapchain_height;
   crude_render_pass_output          swapchain_output;
   crude_sampler_handle              default_sampler;
+  crude_texture_handle              depth_texture;
   crude_resource_pool               buffers;
   crude_resource_pool               textures;
   crude_resource_pool               pipelines;
@@ -47,6 +51,7 @@ typedef struct crude_gpu_device
   uint32                            vk_swapchain_images_count;
   VkImage                           vk_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkImageView                       vk_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkFramebuffer                     vk_swapchain_framebuffers[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkSurfaceFormatKHR                vk_surface_format;
   VkDescriptorPool                  vk_descriptor_pool;
   VkQueryPool                       vk_timestamp_query_pool;
@@ -65,11 +70,15 @@ typedef struct crude_gpu_device
 CRUDE_API void crude_initialize_gpu_device( _In_ crude_gpu_device *gpu, _In_ crude_gpu_device_creation *creation );
 CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
 
+CRUDE_API void crude_set_resource_name( _In_ crude_gpu_device *gpu, _In_ VkObjectType type, _In_ uint64 handle, _In_ char const *name );
+
 CRUDE_API crude_sampler_handle crude_create_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_creation const *creation );
 CRUDE_API void crude_destroy_sampler( _In_ crude_gpu_device *gpu, _In_ crude_sampler_handle sampler );
 CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API crude_buffer_handle crude_create_buffer( _In_ crude_gpu_device *gpu, _In_ crude_buffer_creation const *creation );
+
+CRUDE_API crude_texture_handle crude_create_texture( _In_ crude_gpu_device *gpu, _In_ crude_texture_creation const *creation );
 
 CRUDE_API crude_render_pass_handle crude_create_render_pass( _In_ crude_gpu_device *gpu, _In_ crude_render_pass_creation const *creation );
 
