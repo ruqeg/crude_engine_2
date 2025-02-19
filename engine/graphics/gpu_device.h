@@ -65,9 +65,10 @@ typedef struct crude_gpu_device
   VkAllocationCallbacks            *vk_allocation_callbacks;
   crude_allocator                   allocator;
   uint16                            max_frames;
+  SDL_Window                       *sdl_window;
 } crude_gpu_device;
 
-CRUDE_API void crude_initialize_gpu_device( _In_ crude_gpu_device *gpu, _In_ crude_gpu_device_creation *creation );
+CRUDE_API void crude_initialize_gpu_device( _Out_ crude_gpu_device *gpu, _In_ crude_gpu_device_creation *creation );
 CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
 
 CRUDE_API void crude_set_resource_name( _In_ crude_gpu_device *gpu, _In_ VkObjectType type, _In_ uint64 handle, _In_ char const *name );

@@ -912,10 +912,77 @@ static void vulkan_create_texture(
   texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
+static void resize_swapchain(
+  _In_ crude_gpu_device *gpu )
+{
+  vkDeviceWaitIdle( gpu->vk_device );
+
+  VkSurfaceCapabilitiesKHR surface_capabilities;
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( gpu->vk_physical_device, gpu->vk_surface, &surface_capabilities );
+  VkExtent2D swapchain_extent = surface_capabilities.currentExtent;
+  
+  if ( swapchain_extent.width == 0 || swapchain_extent.height == 0 )
+  {
+    return;
+  }
+
+  crude_render_pass* vk_swapchain_pass = crude_resource_pool_access_resource( &gpu->render_passes, &gpu->swapchain_pass );
+  vkDestroyRenderPass( gpu->vk_device, vk_swapchain_pass->vk_render_pass, gpu->vk_allocation_callbacks );
+  
+  destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
+  vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
+
+  if ( !SDL_Vulkan_CreateSurface( gpu->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks, &gpu->vk_surface ) )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Failed to create vk_surface: %s!", SDL_GetError() );
+  }
+  
+  create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->swapchain_width, &gpu->swapchain_height);
+  
+  crude_texture_handle texture_to_delete_handle = { crude_resource_pool_obtain_resource( &gpu->textures ) };
+  crude_texture* texture_to_delete = crude_resource_pool_access_resource( &gpu->textures, texture_to_delete_handle.index );
+  texture_to_delete->handle = texture_to_delete_handle;
+
+  crude_texture* depth_texture = crude_resource_pool_access_resource( gpu->depth_texture.index );
+  vulkan_resize_texture( *this, vk_depth_texture, vk_texture_to_delete, swapchain_width, swapchain_height, 1 );
+  
+  texture_to_delete->vk_image_view = depth_texture->vk_image_view;
+  texture_to_delete->vk_image = depth_texture->vk_image;
+  texture_to_delete->vma_allocation = depth_texture->vma_allocation;
+  
+  crude_texture_creation texture_creation = {
+    .width    = gpu->swapchain_width,
+    .height   = gpu->swapchain_height, 
+    .depth    = 1,
+    .mipmaps  = 1, 
+    .format   = VK_FORMAT_D32_SFLOAT, 
+    .type     = CRUDE_TEXTURE_TYPE_TEXTURE_2D, 
+    .name     = "depth_image_texture"
+  };
+  vulkan_create_texture( gpu, &texture_creation, depth_texture->handle, depth_texture );
+
+  destroy_texture( texture_to_delete );
+  
+  crude_render_pass_creation swapchain_pass_creation = {
+    .type                  = CRUDE_RENDER_PASS_TYPE_SWAPCHAIN,
+    .name                  = "swapchain",
+    .color_operation       = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .depth_operation       = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .depth_stencil_texture = CRUDE_RENDER_PASS_OPERATION_CLEAR,
+    .scale_x               = 1.f,
+    .scale_y               = 1.f,
+    .resize                = 1,
+  };
+  create_swapchain_pass( gpu, &swapchain_pass_creation, &gpu->swapchain_pass );
+  
+  vkDeviceWaitIdle( gpu->vk_device );
+}
+
 void crude_initialize_gpu_device(
-  _In_ crude_gpu_device           *gpu,
+  _Out_ crude_gpu_device          *gpu,
   _In_ crude_gpu_device_creation  *creation )
 {
+  gpu->sdl_window = creation->sdl_window;
   gpu->allocator  = creation->allocator;
   gpu->vk_allocation_callbacks = NULL;
   gpu->max_frames = creation->max_frames;
@@ -1200,7 +1267,7 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
   VkResult const result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &gpu->vk_image_index );
   if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
-    // !TODO resize_swapchain();
+    resize_swapchain( gpu );
   }
   else if ( ( result != VK_SUCCESS ) && ( result != VK_SUBOPTIMAL_KHR )  )
   {
