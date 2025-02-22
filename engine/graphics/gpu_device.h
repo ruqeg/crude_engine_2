@@ -80,8 +80,12 @@ CRUDE_API void crude_destroy_sampler_instant( _In_ crude_gpu_device *gpu, _In_ c
 CRUDE_API crude_buffer_handle crude_create_buffer( _In_ crude_gpu_device *gpu, _In_ crude_buffer_creation const *creation );
 
 CRUDE_API crude_texture_handle crude_create_texture( _In_ crude_gpu_device *gpu, _In_ crude_texture_creation const *creation );
+CRUDE_API void crude_destroy_texture( _In_ crude_gpu_device *gpu, _In_ crude_texture_handle texture );
+CRUDE_API void crude_destroy_texture_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API crude_render_pass_handle crude_create_render_pass( _In_ crude_gpu_device *gpu, _In_ crude_render_pass_creation const *creation );
+CRUDE_API void crude_destroy_render_pass( _In_ crude_gpu_device *gpu, _In_ crude_render_pass_handle render_pass );
+CRUDE_API void crude_destroy_render_pass_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );
 CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );

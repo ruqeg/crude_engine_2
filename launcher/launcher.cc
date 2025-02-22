@@ -30,8 +30,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE      hInstance,
   crude_sandbox.userdata           = engine.world;
   crude_editor.userdata            = engine.world;
   crude_engine_simulation.userdata = &engine;
-  std::filesystem::path a;
-  std::filesystem::path b;
   //cr_plugin_open( crude_editor, CR_PLUGIN( "crude_editor" ) );
   cr_plugin_open( crude_engine_simulation, PLUGIN_PATH_STR( "crude_engine_simulation" ).c_str() );
   cr_plugin_open( crude_sandbox, PLUGIN_PATH_STR( "crude_sandbox" ).c_str() );
