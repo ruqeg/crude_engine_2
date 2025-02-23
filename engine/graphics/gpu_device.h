@@ -92,3 +92,5 @@ CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );
 
 CRUDE_API crude_command_buffer* crude_get_command_buffer( _In_ crude_gpu_device *gpu, _In_ crude_queue_type type, _In_ bool begin );
 CRUDE_API void crude_queue_command_buffer( _In_ crude_command_buffer *command_buffer );
+
+CRUDE_API VkShaderModuleCreateInfo crude_compile_shader( _In_ char const *code, _In_ uint32 code_size, _In_ VkShaderStageFlagBits stage, _In_ char const *name );

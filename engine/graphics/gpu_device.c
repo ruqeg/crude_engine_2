@@ -1451,3 +1451,70 @@ void crude_set_resource_name(
   PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
   vkSetDebugUtilsObjectNameEXT( gpu->vk_device, &name_info );
 }
+
+VkShaderModuleCreateInfo crude_compile_shader(
+  _In_ char const            *code,
+  _In_ uint32                 code_size,
+  _In_ VkShaderStageFlagBits  stage,
+  _In_ char const            *name )
+{
+  VkShaderModuleCreateInfo shader_create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+
+  FILE* temp_shader_file = fopen( temp_filename, "w" );
+  fwrite( code, code_size, 1, temp_shader_file );
+  fclose( temp_shader_file );
+  
+  sizet current_marker = temporary_allocator->get_marker();
+  StringBuffer temp_string_buffer;
+  temp_string_buffer.init( rkilo( 1 ), temporary_allocator );
+  
+  // Add uppercase define as STAGE_NAME
+  char* stage_define = temp_string_buffer.append_use_f( "%s_%s", to_stage_defines( stage ), name );
+  sizet stage_define_length = strlen( stage_define );
+  for ( u32 i = 0; i < stage_define_length; ++i ) {
+      stage_define[ i ] = toupper( stage_define[ i ] );
+  }
+    // Compile to SPV
+#if defined(_MSC_VER)
+  char* glsl_compiler_path = temp_string_buffer.append_use_f( "%sglslangValidator.exe", vulkan_binaries_path );
+  char* final_spirv_filename = temp_string_buffer.append_use( "shader_final.spv" );
+  // TODO: add optional debug information in shaders (option -g).
+  char* arguments = temp_string_buffer.append_use_f( "glslangValidator.exe %s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, to_compiler_extension( stage ), stage_define, to_stage_defines( stage ) );
+#else
+  char* glsl_compiler_path = temp_string_buffer.append_use_f( "%sglslangValidator", vulkan_binaries_path );
+  char* final_spirv_filename = temp_string_buffer.append_use( "shader_final.spv" );
+  char* arguments = temp_string_buffer.append_use_f( "%s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, to_compiler_extension( stage ), stage_define, to_stage_defines( stage ) );
+#endif
+  process_execute( ".", glsl_compiler_path, arguments, "" );
+
+  bool optimize_shaders = false;
+
+  if ( optimize_shaders ) {
+      // TODO: add optional optimization stage
+      //"spirv-opt -O input -o output
+      char* spirv_optimizer_path = temp_string_buffer.append_use_f( "%sspirv-opt.exe", vulkan_binaries_path );
+      char* optimized_spirv_filename = temp_string_buffer.append_use_f( "shader_opt.spv" );
+      char* spirv_opt_arguments = temp_string_buffer.append_use_f( "spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
+
+      process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
+
+      // Read back SPV file.
+      shader_create_info.pCode = reinterpret_cast< const u32* >( file_read_binary( optimized_spirv_filename, temporary_allocator, &shader_create_info.codeSize ) );
+
+      file_delete( optimized_spirv_filename );
+  } else {
+      // Read back SPV file.
+      shader_create_info.pCode = reinterpret_cast< const u32* >( file_read_binary( final_spirv_filename, temporary_allocator, &shader_create_info.codeSize ) );
+  }
+
+  // Handling compilation error
+  if ( shader_create_info.pCode == nullptr ) {
+      dump_shader_code( temp_string_buffer, code, stage, name );
+  }
+
+  // Temporary files cleanup
+  file_delete( temp_filename );
+  file_delete( final_spirv_filename );
+
+  return shader_create_info;
+}
