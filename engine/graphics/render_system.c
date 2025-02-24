@@ -1,3 +1,6 @@
+#include <crude_shaders/main.frag.inl>
+#include <crude_shaders/main.vert.inl>
+
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/command_buffer.h>
@@ -21,6 +24,19 @@ static void initialize_render_core( ecs_iter_t *it  )
     };
     crude_gpu_device *gpu = ecs_ensure( it->world, it->entities[i], crude_gpu_device );
     crude_initialize_gpu_device( gpu, &create );
+
+    crude_pipeline_creation pipeline_creation;
+    memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
+    pipeline_creation.shaders.name = "triangle";
+    pipeline_creation.shaders.spv_input = true;
+    pipeline_creation.shaders.stages[0].code = crude_compiled_shader_main_vert;
+    pipeline_creation.shaders.stages[0].code_size = sizeof( crude_compiled_shader_main_vert );
+    pipeline_creation.shaders.stages[0].type = VK_SHADER_STAGE_VERTEX_BIT;
+    pipeline_creation.shaders.stages[1].code = crude_compiled_shader_main_frag;
+    pipeline_creation.shaders.stages[1].code_size = sizeof( crude_compiled_shader_main_frag );
+    pipeline_creation.shaders.stages[1].type = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipeline_creation.shaders.stages_count = 2u;
+    crude_pipeline_handle pipeline = crude_create_pipeline( gpu, &pipeline_creation );
   }
 }
 

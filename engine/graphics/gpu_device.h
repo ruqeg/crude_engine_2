@@ -93,4 +93,9 @@ CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );
 CRUDE_API crude_command_buffer* crude_get_command_buffer( _In_ crude_gpu_device *gpu, _In_ crude_queue_type type, _In_ bool begin );
 CRUDE_API void crude_queue_command_buffer( _In_ crude_command_buffer *command_buffer );
 
-CRUDE_API VkShaderModuleCreateInfo crude_compile_shader( _In_ char const *code, _In_ uint32 code_size, _In_ VkShaderStageFlagBits stage, _In_ char const *name );
+CRUDE_API crude_shader_state_handle crude_create_shader_state( _In_ crude_gpu_device *gpu, _In_ crude_shader_state_creation const *creation );
+CRUDE_API void crude_destroy_shader_state( _In_ crude_gpu_device *gpu, _In_ crude_shader_state_handle shader_state );
+
+CRUDE_API VkShaderModuleCreateInfo crude_compile_shader( _In_ const *code, _In_ uint32 code_size, _In_ VkShaderStageFlagBits stage, _In_ char const *name );
+
+CRUDE_API crude_pipeline_handle crude_create_pipeline( _In_ crude_gpu_device *gpu, _In_ crude_pipeline_creation const *creation );

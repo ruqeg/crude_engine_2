@@ -46,6 +46,8 @@ typedef struct crude_pipeline_handle
 #define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
 #define CRUDE_MAX_SHADER_STAGES             5      
 #define CRUDE_MAX_DESCRIPTORS_PER_SET       16
+#define CRUDE_MAX_VERTEX_STREAMS            16
+#define CRUDE_MAX_VERTEX_ATTRIBUTES         16
 
 typedef enum crude_resource_usage_type 
 {
@@ -134,6 +136,47 @@ typedef enum crude_texture_mask
   CRUDE_TEXTURE_MASK_RENDER_TARGET = 1 << 1,
   CRUDE_TEXTURE_MASK_COMPUTE = 1 << 2,
 } crude_texture_mask;
+
+typedef enum crude_vertex_component_format
+{
+  CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT,
+  CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT2,
+  CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3,
+  CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT4,
+  CRUDE_VERTEX_COMPONENT_FORMAT_MAT4,
+  CRUDE_VERTEX_COMPONENT_FORMAT_BYTE,
+  CRUDE_VERTEX_COMPONENT_FORMAT_BYTE4N,
+  CRUDE_VERTEX_COMPONENT_FORMAT_SHORT2,
+  CRUDE_VERTEX_COMPONENT_FORMAT_SHORT2N,
+  CRUDE_VERTEX_COMPONENT_FORMAT_SHORT4,
+  CRUDE_VERTEX_COMPONENT_FORMAT_SHORT4N,
+  CRUDE_VERTEX_COMPONENT_FORMAT_UINT,
+  CRUDE_VERTEX_COMPONENT_FORMAT_UINT2,
+  CRUDE_VERTEX_COMPONENT_FORMAT_UINT4,
+  CRUDE_VERTEX_COMPONENT_FORMAT_COUNT,
+} crude_vertex_component_format;
+    
+typedef enum crude_vertex_input_rate
+{
+  CRUDE_VERTEX_INPUT_RATE_PER_VERTEX,
+  CRUDE_VERTEX_INPUT_RATE_PER_INSTANCE,
+  CRUDE_VERTEX_INPUT_RATE_COUNT,
+} crude_vertex_input_rate;
+
+typedef struct crude_rect2d_int
+{
+  int16                                x;
+  int16                                y;
+  uint16                               width;
+  uint16                               height;
+} crude_rect2d_int;
+
+typedef struct crude_viewport
+{
+  crude_rect2d_int                     rect;
+  float32                              min_depth;
+  float32                              max_depth;
+} crude_viewport;
 
 typedef struct crude_stencil_operation_state
 {
@@ -233,6 +276,76 @@ typedef struct crude_texture_creation
   char const                          *name;
 } crude_texture_creation;
 
+typedef struct crude_render_pass_output
+{
+  VkFormat                             color_formats[ CRUDE_MAX_IMAGE_OUTPUTS ];
+  VkFormat                             depth_stencil_format;
+  uint32                               num_color_formats;
+  crude_render_pass_operation          color_operation;
+  crude_render_pass_operation          depth_operation;
+  crude_render_pass_operation          stencil_operation;
+} crude_render_pass_output;
+
+typedef struct crude_vertex_attribute
+{
+  uint16                               location;
+  uint16                               binding;
+  uint32                               offset;
+  crude_vertex_component_format        format;
+} crude_vertex_attribute;
+
+typedef struct crude_vertex_stream
+{
+  uint16                               binding;
+  uint16                               stride;
+  crude_vertex_input_rate              input_rate;
+} crude_vertex_stream;
+
+typedef struct crude_vertex_input_creation
+{
+  uint32                               num_vertex_streams;
+  uint32                               num_vertex_attributes;
+  crude_vertex_stream                  vertex_streams[ CRUDE_MAX_VERTEX_STREAMS ];
+  crude_vertex_attribute               vertex_attributes[ CRUDE_MAX_VERTEX_ATTRIBUTES ];
+} crude_vertex_input_creation;
+
+typedef struct crude_shader_stage
+{
+  char const                          *code;
+  uint32                               code_size;
+  VkShaderStageFlagBits                type;
+} crude_shader_stage; 
+
+typedef struct crude_shader_state_creation
+{
+  crude_shader_stage                   stages[ CRUDE_MAX_SHADER_STAGES ];
+  char const                          *name;
+  uint32                               stages_count;
+  uint32                               spv_input;
+} crude_shader_state_creation;
+
+typedef struct crude_viewport_state
+{
+  uint32                               num_viewports;
+  uint32                               num_scissors;
+  crude_viewport                      *viewport;
+  crude_rect2d_int                    *scissors;
+} crude_viewport_state;
+
+typedef struct crude_pipeline_creation
+{
+  crude_rasterization_creation         rasterization;
+  crude_depth_stencil_creation         depth_stencil;
+  crude_blend_state_creation           blend_state;
+  crude_vertex_input_creation          vertex_input;
+  crude_shader_state_creation          shaders;
+  crude_render_pass_output             render_pass;
+  crude_descriptor_set_layout_handle   descriptor_set_layout[ CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  crude_viewport_state const          *viewport;
+  uint32                               num_active_layouts;
+  char const                          *name;
+} crude_pipeline_creation;
+
 typedef struct crude_buffer
 {
   VkBuffer                             vk_buffer;
@@ -322,16 +435,6 @@ typedef struct crude_pipeline
   crude_pipeline_handle                handle;
   bool                                 graphics_pipeline;
 } crude_pipeline;
-
-typedef struct crude_render_pass_output
-{
-  VkFormat                             color_formats[ CRUDE_MAX_IMAGE_OUTPUTS ];
-  VkFormat                             depth_stencil_format;
-  uint32                               num_color_formats;
-  crude_render_pass_operation          color_operation;
-  crude_render_pass_operation          depth_operation;
-  crude_render_pass_operation          stencil_operation;
-} crude_render_pass_output;
 
 typedef struct crude_render_pass
 {

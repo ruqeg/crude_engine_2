@@ -2,12 +2,20 @@ cmake_minimum_required(VERSION 3.25)
 
 project(crude_shaders)
 
-file(GLOB_RECURSE SRC *.frag *.vert)
+add_library(${PROJECT_NAME} INTERFACE)
 
-set(CRUDE_SOURCES ${SRC} ${HEADERS})
+find_package(Vulkan REQUIRED)
 
-add_library(${PROJECT_NAME} INTERFACE ${CRUDE_SOURCES})
+set(CRUDE_SHADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB_RECURSE CRUDE_SHADER_SOURCES *.frag *.vert)
 
-target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+include(${CMAKE_CURRENT_SOURCE_DIR}/compile_spirv_shader.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/compile_shader.cmake)
 
-source_group(shaders FILES ${CRUDE_SOURCES})
+foreach(SHADER_SOURCE ${CRUDE_SHADER_SOURCES})
+  COMPILE_SHADER(${SHADER_SOURCE})
+endforeach()
+
+target_include_directories(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+source_group(shaders FILES ${CRUDE_SHADER_SOURCES})
