@@ -32,7 +32,20 @@ void crude_initialize_resource_pool(
 void crude_deinitialize_resource_pool(
   _In_ crude_resource_pool *resource_pool )
 {
-  CRUDE_ASSERT( resource_pool && ( resource_pool->free_indices_head == 0 ) && ( resource_pool->used_indices == 0 ) );
+  CRUDE_ASSERT( resource_pool );
+
+  if ( resource_pool->free_indices_head != 0 )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "Resource pool has unfreed resources" );
+  
+    for ( uint32 i = 0; i < resource_pool->free_indices_head; ++i )
+    {
+      CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tResource %u", resource_pool->free_indices[i] );
+    }
+  }
+
+  CRUDE_ASSERT( ( resource_pool->free_indices_head == 0 ) && ( resource_pool->used_indices == 0 ) );
+
   resource_pool->allocator.deallocate( resource_pool->memory );
 }
 

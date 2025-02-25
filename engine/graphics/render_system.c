@@ -37,6 +37,7 @@ static void initialize_render_core( ecs_iter_t *it  )
     pipeline_creation.shaders.stages[1].type = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipeline_creation.shaders.stages_count = 2u;
     crude_pipeline_handle pipeline = crude_create_pipeline( gpu, &pipeline_creation );
+    crude_destroy_pipeline( gpu, pipeline );
   }
 }
 

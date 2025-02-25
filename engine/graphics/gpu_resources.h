@@ -146,6 +146,8 @@ typedef enum crude_vertex_component_format
   CRUDE_VERTEX_COMPONENT_FORMAT_MAT4,
   CRUDE_VERTEX_COMPONENT_FORMAT_BYTE,
   CRUDE_VERTEX_COMPONENT_FORMAT_BYTE4N,
+  CRUDE_VERTEX_COMPONENT_FORMAT_UBYTE,
+  CRUDE_VERTEX_COMPONENT_FORMAT_UBYTE4N,
   CRUDE_VERTEX_COMPONENT_FORMAT_SHORT2,
   CRUDE_VERTEX_COMPONENT_FORMAT_SHORT2N,
   CRUDE_VERTEX_COMPONENT_FORMAT_SHORT4,
@@ -153,7 +155,7 @@ typedef enum crude_vertex_component_format
   CRUDE_VERTEX_COMPONENT_FORMAT_UINT,
   CRUDE_VERTEX_COMPONENT_FORMAT_UINT2,
   CRUDE_VERTEX_COMPONENT_FORMAT_UINT4,
-  CRUDE_VERTEX_COMPONENT_FORMAT_COUNT,
+  CRUDE_VERTEX_COMPONENT_FORMAT_COUNT
 } crude_vertex_component_format;
     
 typedef enum crude_vertex_input_rate
@@ -476,3 +478,4 @@ CRUDE_API VkImageType crude_to_vk_image_type( _In_ crude_texture_type type );
 CRUDE_API bool crude_has_depth_or_stencil( _In_ VkFormat value );
 CRUDE_API bool crude_has_depth( _In_ VkFormat value );
 CRUDE_API VkImageViewType crude_to_vk_image_view_type( _In_ crude_texture_type type );
+CRUDE_API VkFormat crude_to_vk_vertex_format( _In_ crude_vertex_component_format value );

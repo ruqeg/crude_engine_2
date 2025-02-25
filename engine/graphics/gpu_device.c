@@ -1119,6 +1119,16 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
         crude_destroy_render_pass_instant( gpu, resource_deletion->handle );
         break;
       }
+      case CRUDE_RESOURCE_DELETION_TYPE_SHADER_STATE:
+      {
+        crude_destroy_shader_state_instant( gpu, resource_deletion->handle );
+        break;
+      }
+      case CRUDE_RESOURCE_DELETION_TYPE_PIPELINE:
+      {
+        crude_destroy_pipeline_instant( gpu, resource_deletion->handle );
+        break;
+      }
     }
   }
 
@@ -1188,7 +1198,8 @@ void crude_destroy_sampler(
 {
   if ( sampler.index >= gpu->samplers.pool_size )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid sampler %u", sampler.index )
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid sampler %u", sampler.index );
+    return;
   }
   crude_resource_update sampler_update_event = { 
     .type          = CRUDE_RESOURCE_DELETION_TYPE_SAMPLER,
@@ -1239,7 +1250,8 @@ void crude_destroy_texture(
 {
   if ( texture.index >= gpu->textures.pool_size )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", texture.index )
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", texture.index );
+    return;
   }
   crude_resource_update texture_update_event = { 
     .type          = CRUDE_RESOURCE_DELETION_TYPE_TEXTURE,
@@ -1314,7 +1326,8 @@ void crude_destroy_render_pass(
 {
   if ( render_pass.index >= gpu->render_passes.pool_size )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", render_pass.index )
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", render_pass.index );
+    return;
   }
   crude_resource_update render_pass_update_event = { 
     .type          = CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS,
@@ -1542,13 +1555,29 @@ void crude_destroy_shader_state(
 {
   if ( shader_state.index >= gpu->shaders.pool_size )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid shader state %u", shader_state.index )
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid shader state %u", shader_state.index );
+    return;
   }
   crude_resource_update shader_state_update_event = { 
     .type          = CRUDE_RESOURCE_DELETION_TYPE_SHADER_STATE,
     .handle        = shader_state.index,
     .current_frame = gpu->current_frame };
   arrput( gpu->resource_deletion_queue, shader_state_update_event );
+}
+
+void crude_destroy_shader_state_instant(
+  _In_ crude_gpu_device      *gpu,
+  _In_ crude_resource_handle  handle )
+{
+  crude_shader_state *shader_state = crude_resource_pool_access_resource( &gpu->shaders, handle );
+  if ( shader_state )
+  {
+    for ( uint32 i = 0; i < shader_state->active_shaders; ++i )
+    {
+      vkDestroyShaderModule( gpu->vk_device, shader_state->shader_stage_info[ i ].module, gpu->vk_allocation_callbacks );
+    }
+  }
+  crude_resource_pool_release_resource( &gpu->shaders, handle );
 }
 
 crude_pipeline_handle crude_create_pipeline(
@@ -1568,205 +1597,253 @@ crude_pipeline_handle crude_create_pipeline(
     return ( crude_pipeline_handle ) { CRUDE_RESOURCE_INVALID_INDEX };
   }
 
-    //// Now that shaders have compiled we can create the pipeline.
-    //Pipeline* pipeline = access_pipeline( handle );
-    //ShaderState* shader_state_data = access_shader_state( shader_state );
+  crude_pipeline *pipeline = crude_resource_pool_access_resource( &gpu->pipelines, handle.index );
+  crude_shader_state *shader_state_data = crude_resource_pool_access_resource( &gpu->shaders, shader_state.index );
+  
+  pipeline->shader_state = shader_state;
 
-    //pipeline->shader_state = shader_state;
+  VkDescriptorSetLayout vk_layouts[ CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  for ( uint32 i = 0; i < creation->num_active_layouts; ++i )
+  {
+    pipeline->descriptor_set_layout[i] = crude_resource_pool_access_resource( &gpu->descriptor_set_layouts, creation->descriptor_set_layout[i].index );
+    pipeline->descriptor_set_layout_handle[i] = creation->descriptor_set_layout[i];
 
-    //VkDescriptorSetLayout vk_layouts[ k_max_descriptor_set_layouts ];
+    vk_layouts[i] = pipeline->descriptor_set_layout[i]->vk_descriptor_set_layout;
+  }
 
-    //// Create VkPipelineLayout
-    //for ( u32 l = 0; l < creation.num_active_layouts; ++l ) {
-    //    pipeline->descriptor_set_layout[ l ] = access_descriptor_set_layout( creation.descriptor_set_layout[ l ] );
-    //    pipeline->descriptor_set_layout_handle[ l ] = creation.descriptor_set_layout[ l ];
+  VkPipelineLayoutCreateInfo pipeline_layout_info = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    .pSetLayouts = vk_layouts,
+    .setLayoutCount = creation->num_active_layouts,
+  };
+  
+  VkPipelineLayout pipeline_layout;
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( gpu->vk_device, &pipeline_layout_info, gpu->vk_allocation_callbacks, &pipeline_layout ), "Failed to create pipeline layout" );
 
-    //    vk_layouts[ l ] = pipeline->descriptor_set_layout[ l ]->vk_descriptor_set_layout;
-    //}
+  pipeline->vk_pipeline_layout = pipeline_layout;
+  pipeline->num_active_layouts = creation->num_active_layouts;
 
-    //VkPipelineLayoutCreateInfo pipeline_layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-    //pipeline_layout_info.pSetLayouts = vk_layouts;
-    //pipeline_layout_info.setLayoutCount = creation.num_active_layouts;
+  VkPipelineVertexInputStateCreateInfo vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+  
+  VkVertexInputAttributeDescription vertex_attributes[8];
+  if ( creation->vertex_input.num_vertex_attributes )
+  {
+    for ( uint32 i = 0; i < creation->vertex_input.num_vertex_attributes; ++i )
+    {
+      crude_vertex_attribute const *vertex_attribute = &creation->vertex_input.vertex_attributes[i];
+      vertex_attributes[i] = ( VkVertexInputAttributeDescription ){
+        .location = vertex_attribute->location,
+        .binding = vertex_attribute->binding,
+        .format = crude_to_vk_vertex_format( vertex_attribute->format ),
+        .offset = vertex_attribute->offset
+      };
+    }
+    vertex_input_info.vertexAttributeDescriptionCount = creation->vertex_input.num_vertex_attributes;
+    vertex_input_info.pVertexAttributeDescriptions = vertex_attributes;
+  }
+  else
+  {
+    vertex_input_info.vertexAttributeDescriptionCount = 0;
+    vertex_input_info.pVertexAttributeDescriptions = NULL;
+  }
 
-    //VkPipelineLayout pipeline_layout;
-    //check( vkCreatePipelineLayout( vulkan_device, &pipeline_layout_info, vulkan_allocation_callbacks, &pipeline_layout ) );
-    //// Cache pipeline layout
-    //pipeline->vk_pipeline_layout = pipeline_layout;
-    //pipeline->num_active_layouts = creation.num_active_layouts;
+  VkVertexInputBindingDescription vertex_bindings[8];
+  if ( creation->vertex_input.num_vertex_streams )
+  {
+    vertex_input_info.vertexBindingDescriptionCount = creation->vertex_input.num_vertex_streams;
+  
+    for ( uint32 i = 0; i < creation->vertex_input.num_vertex_streams; ++i )
+    {
+      crude_vertex_stream const *vertex_stream = &creation->vertex_input.vertex_streams[i];
+      VkVertexInputRate vertex_rate = vertex_stream->input_rate == CRUDE_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+      vertex_bindings[i] = ( VkVertexInputBindingDescription ){
+        .binding = vertex_stream->binding,
+        .stride = vertex_stream->stride,
+        .inputRate = vertex_rate
+      };
+    }
+    vertex_input_info.pVertexBindingDescriptions = vertex_bindings;
+  }
+  else
+  {
+    vertex_input_info.vertexBindingDescriptionCount = 0;
+    vertex_input_info.pVertexBindingDescriptions = NULL;
+  }
+  
+  VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    .primitiveRestartEnable = VK_FALSE
+  };
 
-    //// Create full pipeline
-    //if ( shader_state_data->graphics_pipeline ) {
-    //    VkGraphicsPipelineCreateInfo pipeline_info = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+  VkPipelineColorBlendAttachmentState color_blend_attachment[8];
+  
+  if ( creation->blend_state.active_states )
+  {
+    for ( uint32 i = 0; i < creation->blend_state.active_states; ++i )
+    {
+      crude_blend_state const *blend_state = &creation->blend_state.blend_states[i];
+  
+      color_blend_attachment[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      color_blend_attachment[i].blendEnable = blend_state->blend_enabled ? VK_TRUE : VK_FALSE;
+      color_blend_attachment[i].srcColorBlendFactor = blend_state->source_color;
+      color_blend_attachment[i].dstColorBlendFactor = blend_state->destination_color;
+      color_blend_attachment[i].colorBlendOp = blend_state->color_operation;
+      
+      if ( blend_state->separate_blend )
+      {
+        color_blend_attachment[i].srcAlphaBlendFactor = blend_state->source_alpha;
+        color_blend_attachment[i].dstAlphaBlendFactor = blend_state->destination_alpha;
+        color_blend_attachment[i].alphaBlendOp = blend_state->alpha_operation;
+      }
+      else
+      {
+        color_blend_attachment[i].srcAlphaBlendFactor = blend_state->source_color;
+        color_blend_attachment[i].dstAlphaBlendFactor = blend_state->destination_color;
+        color_blend_attachment[i].alphaBlendOp = blend_state->color_operation;
+      }
+    }
+  }
+  else
+  {
+    memset( &color_blend_attachment[0], 0u, sizeof( color_blend_attachment[0] ) );
+    color_blend_attachment[0].blendEnable = VK_FALSE;
+    color_blend_attachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  }
+  
+  VkPipelineColorBlendStateCreateInfo color_blending = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+    .logicOpEnable = VK_FALSE,
+    .logicOp = VK_LOGIC_OP_COPY,
+    .attachmentCount = creation->blend_state.active_states ? creation->blend_state.active_states : 1,
+    .pAttachments = color_blend_attachment,
+    .blendConstants[0] = 0.0f,
+    .blendConstants[1] = 0.0f,
+    .blendConstants[2] = 0.0f,
+    .blendConstants[3] = 0.0f,
+  };
+  
+  VkPipelineDepthStencilStateCreateInfo depth_stencil = { 
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+    .depthWriteEnable = creation->depth_stencil.depth_write_enable ? VK_TRUE : VK_FALSE,
+    .stencilTestEnable = creation->depth_stencil.stencil_enable ? VK_TRUE : VK_FALSE,
+    .depthTestEnable = creation->depth_stencil.depth_enable ? VK_TRUE : VK_FALSE,
+    .depthCompareOp = creation->depth_stencil.depth_comparison,
+  };
+  
+  if ( creation->depth_stencil.stencil_enable )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO" );
+  }
+  
+  VkPipelineMultisampleStateCreateInfo multisampling = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    .sampleShadingEnable = VK_FALSE,
+    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    .minSampleShading = 1.0f,
+    .pSampleMask = NULL,
+    .alphaToCoverageEnable = VK_FALSE,
+    .alphaToOneEnable = VK_FALSE,
+  };
+  
+  VkPipelineRasterizationStateCreateInfo rasterizer = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    .depthClampEnable = VK_FALSE,
+    .rasterizerDiscardEnable = VK_FALSE,
+    .polygonMode = VK_POLYGON_MODE_FILL,
+    .lineWidth = 1.0f,
+    .cullMode = creation->rasterization.cull_mode,
+    .frontFace = creation->rasterization.front,
+    .depthBiasEnable = VK_FALSE,
+    .depthBiasConstantFactor = 0.0f,
+    .depthBiasClamp = 0.0f,
+    .depthBiasSlopeFactor = 0.0f,
+  };
+  
+  VkViewport viewport = {
+    .x = 0.0f,
+    .y = 0.0f,
+    .width = gpu->swapchain_width,
+    .height = gpu->swapchain_height,
+    .minDepth = 0.0f,
+    .maxDepth = 1.0f,
+  };
+  
+  VkRect2D scissor = {
+    .offset = { 0, 0 },
+    .extent = { gpu->swapchain_width, gpu->swapchain_height },
+  };
+  
+  VkPipelineViewportStateCreateInfo viewport_state = { 
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    .viewportCount = 1,
+    .pViewports = &viewport,
+    .scissorCount = 1,
+    .pScissors = &scissor,
+  };
+  
+  VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+  VkPipelineDynamicStateCreateInfo dynamic_state = { 
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+    .dynamicStateCount = ARRAY_SIZE( dynamic_states ),
+    .pDynamicStates = dynamic_states,
+  };
+  
+  crude_render_pass *render_pass = crude_resource_pool_access_resource( &gpu->render_passes, gpu->swapchain_pass.index );
 
-    //    //// Shader stage
-    //    pipeline_info.pStages = shader_state_data->shader_stage_info;
-    //    pipeline_info.stageCount = shader_state_data->active_shaders;
-    //    //// PipelineLayout
-    //    pipeline_info.layout = pipeline_layout;
+  VkGraphicsPipelineCreateInfo pipeline_info = {
+    .pStages = shader_state_data->shader_stage_info,
+    .stageCount = shader_state_data->active_shaders,
+    .layout = pipeline_layout,
+    .pVertexInputState = &vertex_input_info,
+    .pInputAssemblyState = &input_assembly,
+    .pColorBlendState = &color_blending,
+    .pDepthStencilState = &depth_stencil,
+    .pMultisampleState = &multisampling,
+    .pRasterizationState = &rasterizer,
+    .pViewportState = &viewport_state,
+    .renderPass = render_pass->vk_render_pass,
+    .pDynamicState = &dynamic_state,
+    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    .pStages = shader_state_data->shader_stage_info,
+    .stageCount = shader_state_data->active_shaders,
+    .layout = pipeline_layout,
+  };
+  
+  CRUDE_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( gpu->vk_device, VK_NULL_HANDLE, 1, &pipeline_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
+  pipeline->vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-    //    //// Vertex input
-    //    VkPipelineVertexInputStateCreateInfo vertex_input_info = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+  return handle;
+}
 
-    //    // Vertex attributes.
-    //    VkVertexInputAttributeDescription vertex_attributes[ 8 ];
-    //    if ( creation.vertex_input.num_vertex_attributes ) {
+void crude_destroy_pipeline(
+  _In_ crude_gpu_device     *gpu,
+  _In_ crude_pipeline_handle pipeline )
+{
+  if ( pipeline.index >= gpu->pipelines.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid pipeline %u", pipeline.index );
+    return;
+  }
+  crude_resource_update pipeline_update_event = { 
+    .type          = CRUDE_RESOURCE_DELETION_TYPE_PIPELINE,
+    .handle        = pipeline.index,
+    .current_frame = gpu->current_frame };
+  arrput( gpu->resource_deletion_queue, pipeline_update_event );
 
-    //        for ( u32 i = 0; i < creation.vertex_input.num_vertex_attributes; ++i ) {
-    //            const VertexAttribute& vertex_attribute = creation.vertex_input.vertex_attributes[ i ];
-    //            vertex_attributes[ i ] = { vertex_attribute.location, vertex_attribute.binding, to_vk_vertex_format( vertex_attribute.format ), vertex_attribute.offset };
-    //        }
+  crude_pipeline *vpipeline = crude_resource_pool_access_resource( &gpu->pipelines, pipeline.index );
+  crude_destroy_shader_state( gpu, vpipeline->shader_state );
+}
 
-    //        vertex_input_info.vertexAttributeDescriptionCount = creation.vertex_input.num_vertex_attributes;
-    //        vertex_input_info.pVertexAttributeDescriptions = vertex_attributes;
-    //    } else {
-    //        vertex_input_info.vertexAttributeDescriptionCount = 0;
-    //        vertex_input_info.pVertexAttributeDescriptions = nullptr;
-    //    }
-    //    // Vertex bindings
-    //    VkVertexInputBindingDescription vertex_bindings[ 8 ];
-    //    if ( creation.vertex_input.num_vertex_streams ) {
-    //        vertex_input_info.vertexBindingDescriptionCount = creation.vertex_input.num_vertex_streams;
+void crude_destroy_pipeline_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle )
+{
+  crude_pipeline *pipeline = crude_resource_pool_access_resource( &gpu->pipelines, handle );
 
-    //        for ( u32 i = 0; i < creation.vertex_input.num_vertex_streams; ++i ) {
-    //            const VertexStream& vertex_stream = creation.vertex_input.vertex_streams[ i ];
-    //            VkVertexInputRate vertex_rate = vertex_stream.input_rate == VertexInputRate::PerVertex ? VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX : VkVertexInputRate::VK_VERTEX_INPUT_RATE_INSTANCE;
-    //            vertex_bindings[ i ] = { vertex_stream.binding, vertex_stream.stride, vertex_rate };
-    //        }
-    //        vertex_input_info.pVertexBindingDescriptions = vertex_bindings;
-    //    } else {
-    //        vertex_input_info.vertexBindingDescriptionCount = 0;
-    //        vertex_input_info.pVertexBindingDescriptions = nullptr;
-    //    }
+  if ( pipeline )
+  {
+    vkDestroyPipeline( gpu->vk_device, pipeline->vk_pipeline, gpu->vk_allocation_callbacks );
+    vkDestroyPipelineLayout( gpu->vk_device, pipeline->vk_pipeline_layout, gpu->vk_allocation_callbacks );
+  }
 
-    //    pipeline_info.pVertexInputState = &vertex_input_info;
-
-    //    //// Input Assembly
-    //    VkPipelineInputAssemblyStateCreateInfo input_assembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-    //    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    //    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    //    pipeline_info.pInputAssemblyState = &input_assembly;
-
-    //    //// Color Blending
-    //    VkPipelineColorBlendAttachmentState color_blend_attachment[ 8 ];
-
-    //    if ( creation.blend_state.active_states ) {
-    //        for ( size_t i = 0; i < creation.blend_state.active_states; i++ ) {
-    //            const BlendState& blend_state = creation.blend_state.blend_states[ i ];
-
-    //            color_blend_attachment[ i ].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //            color_blend_attachment[ i ].blendEnable = blend_state.blend_enabled ? VK_TRUE : VK_FALSE;
-    //            color_blend_attachment[ i ].srcColorBlendFactor = blend_state.source_color;
-    //            color_blend_attachment[ i ].dstColorBlendFactor = blend_state.destination_color;
-    //            color_blend_attachment[ i ].colorBlendOp = blend_state.color_operation;
-
-    //            if ( blend_state.separate_blend ) {
-    //                color_blend_attachment[ i ].srcAlphaBlendFactor = blend_state.source_alpha;
-    //                color_blend_attachment[ i ].dstAlphaBlendFactor = blend_state.destination_alpha;
-    //                color_blend_attachment[ i ].alphaBlendOp = blend_state.alpha_operation;
-    //            } else {
-    //                color_blend_attachment[ i ].srcAlphaBlendFactor = blend_state.source_color;
-    //                color_blend_attachment[ i ].dstAlphaBlendFactor = blend_state.destination_color;
-    //                color_blend_attachment[ i ].alphaBlendOp = blend_state.color_operation;
-    //            }
-    //        }
-    //    } else {
-    //        // Default non blended state
-    //        color_blend_attachment[ 0 ] = {};
-    //        color_blend_attachment[ 0 ].blendEnable = VK_FALSE;
-    //        color_blend_attachment[ 0 ].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //    }
-
-    //    VkPipelineColorBlendStateCreateInfo color_blending{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-    //    color_blending.logicOpEnable = VK_FALSE;
-    //    color_blending.logicOp = VK_LOGIC_OP_COPY; // Optional
-    //    color_blending.attachmentCount = creation.blend_state.active_states ? creation.blend_state.active_states : 1; // Always have 1 blend defined.
-    //    color_blending.pAttachments = color_blend_attachment;
-    //    color_blending.blendConstants[ 0 ] = 0.0f; // Optional
-    //    color_blending.blendConstants[ 1 ] = 0.0f; // Optional
-    //    color_blending.blendConstants[ 2 ] = 0.0f; // Optional
-    //    color_blending.blendConstants[ 3 ] = 0.0f; // Optional
-
-    //    pipeline_info.pColorBlendState = &color_blending;
-
-    //    //// Depth Stencil
-    //    VkPipelineDepthStencilStateCreateInfo depth_stencil{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-
-    //    depth_stencil.depthWriteEnable = creation.depth_stencil.depth_write_enable ? VK_TRUE : VK_FALSE;
-    //    depth_stencil.stencilTestEnable = creation.depth_stencil.stencil_enable ? VK_TRUE : VK_FALSE;
-    //    depth_stencil.depthTestEnable = creation.depth_stencil.depth_enable ? VK_TRUE : VK_FALSE;
-    //    depth_stencil.depthCompareOp = creation.depth_stencil.depth_comparison;
-    //    if ( creation.depth_stencil.stencil_enable ) {
-    //        // TODO: add stencil
-    //        RASSERT( false );
-    //    }
-
-    //    pipeline_info.pDepthStencilState = &depth_stencil;
-
-    //    //// Multisample
-    //    VkPipelineMultisampleStateCreateInfo multisampling = {};
-    //    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    //    multisampling.sampleShadingEnable = VK_FALSE;
-    //    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    //    multisampling.minSampleShading = 1.0f; // Optional
-    //    multisampling.pSampleMask = nullptr; // Optional
-    //    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-    //    multisampling.alphaToOneEnable = VK_FALSE; // Optional
-
-    //    pipeline_info.pMultisampleState = &multisampling;
-
-    //    //// Rasterizer
-    //    VkPipelineRasterizationStateCreateInfo rasterizer{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-    //    rasterizer.depthClampEnable = VK_FALSE;
-    //    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    //    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    //    rasterizer.lineWidth = 1.0f;
-    //    rasterizer.cullMode = creation.rasterization.cull_mode;
-    //    rasterizer.frontFace = creation.rasterization.front;
-    //    rasterizer.depthBiasEnable = VK_FALSE;
-    //    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
-    //    rasterizer.depthBiasClamp = 0.0f; // Optional
-    //    rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
-
-    //    pipeline_info.pRasterizationState = &rasterizer;
-
-    //    //// Tessellation
-    //    pipeline_info.pTessellationState;
-
-
-    //    //// Viewport state
-    //    VkViewport viewport = {};
-    //    viewport.x = 0.0f;
-    //    viewport.y = 0.0f;
-    //    viewport.width = ( float )swapchain_width;
-    //    viewport.height = ( float )swapchain_height;
-    //    viewport.minDepth = 0.0f;
-    //    viewport.maxDepth = 1.0f;
-
-    //    VkRect2D scissor = {};
-    //    scissor.offset = { 0, 0 };
-    //    scissor.extent = { swapchain_width, swapchain_height };
-
-    //    VkPipelineViewportStateCreateInfo viewport_state{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-    //    viewport_state.viewportCount = 1;
-    //    viewport_state.pViewports = &viewport;
-    //    viewport_state.scissorCount = 1;
-    //    viewport_state.pScissors = &scissor;
-
-    //    pipeline_info.pViewportState = &viewport_state;
-
-    //    //// Render Pass
-    //    pipeline_info.renderPass = get_vulkan_render_pass( creation.render_pass, creation.name );
-
-    //    //// Dynamic states
-    //    VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    //    VkPipelineDynamicStateCreateInfo dynamic_state{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-    //    dynamic_state.dynamicStateCount = ArraySize( dynamic_states );
-    //    dynamic_state.pDynamicStates = dynamic_states;
-
-    //    pipeline_info.pDynamicState = &dynamic_state;
-
-    //    vkCreateGraphicsPipelines( vulkan_device, VK_NULL_HANDLE, 1, &pipeline_info, vulkan_allocation_callbacks, &pipeline->vk_pipeline );
-
-    //    pipeline->vk_bind_point = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+  crude_resource_pool_release_resource( &gpu->pipelines, handle );
 }
