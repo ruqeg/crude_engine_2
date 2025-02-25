@@ -84,6 +84,9 @@ static void initialize_command_buffer_ring(
       .commandBufferCount = 1,
     };
     CRUDE_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
+    command_buffer->gpu = gpu;
+    command_buffer->handle = i;
+    crude_reset_command_buffer( command_buffer );
   }
 }
 
@@ -105,7 +108,7 @@ static crude_command_buffer* get_command_buffer_from_ring_pools(
 
   if ( begin )
   {  
-    crude_reset_command_buffer( &command_buffer );
+    crude_reset_command_buffer( command_buffer );
 
     VkCommandBufferBeginInfo begin_info = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -1382,10 +1385,10 @@ void crude_present( _In_ crude_gpu_device *gpu )
     crude_command_buffer* command_buffer = gpu->queued_command_buffers[ i ];
     enqueued_command_buffers[ i ] = command_buffer->vk_command_buffer;
 
-    //if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
-    //{
-    //  vkCmdEndRenderPass( command_buffer->vk_command_buffer );
-    //}
+    if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
+    {
+      vkCmdEndRenderPass( command_buffer->vk_command_buffer );
+    }
 
     vkEndCommandBuffer( command_buffer->vk_command_buffer );
   }
@@ -1426,6 +1429,49 @@ void crude_present( _In_ crude_gpu_device *gpu )
   }
 
   gpu->current_frame = ( gpu->current_frame + 1 ) % gpu->vk_swapchain_images_count;
+  
+  for ( uint32 i = 0; i < arrlen( gpu->resource_deletion_queue ); ++i )
+  {
+    crude_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
+    
+    if ( resource_deletion->current_frame != gpu->current_frame )
+    {
+      continue;
+    }
+
+    switch ( resource_deletion->type )
+    {
+      case CRUDE_RESOURCE_DELETION_TYPE_SAMPLER:
+      {
+        crude_destroy_sampler_instant( gpu, resource_deletion->handle );
+        break;
+      }
+      case CRUDE_RESOURCE_DELETION_TYPE_TEXTURE:
+      {
+        crude_destroy_texture_instant( gpu, resource_deletion->handle );
+        break;
+      }
+      case CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS:
+      {
+        crude_destroy_render_pass_instant( gpu, resource_deletion->handle );
+        break;
+      }
+      case CRUDE_RESOURCE_DELETION_TYPE_SHADER_STATE:
+      {
+        crude_destroy_shader_state_instant( gpu, resource_deletion->handle );
+        break;
+      }
+      case CRUDE_RESOURCE_DELETION_TYPE_PIPELINE:
+      {
+        crude_destroy_pipeline_instant( gpu, resource_deletion->handle );
+        break;
+      }
+    }
+
+    resource_deletion->current_frame = UINT32_MAX;
+    arrdelswap( gpu->resource_deletion_queue, i );
+    --i;
+  }
 }
 
 crude_command_buffer* crude_get_command_buffer(
@@ -1435,7 +1481,7 @@ crude_command_buffer* crude_get_command_buffer(
 {
   crude_command_buffer *command_buffer = get_command_buffer_from_ring_pools( &command_buffer_ring, gpu->current_frame, begin );
  
-  if ( begin )
+  if ( begin && false )
   {
     vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
   }

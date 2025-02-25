@@ -7,6 +7,9 @@
 
 #include <graphics/render_system.h>
 
+// ??? TODO :D
+crude_pipeline_handle pipeline;
+
 static void initialize_render_core( ecs_iter_t *it  )
 {
   crude_render_create *render_create = ecs_field( it, crude_render_create, 0 );
@@ -36,8 +39,7 @@ static void initialize_render_core( ecs_iter_t *it  )
     pipeline_creation.shaders.stages[1].code_size = sizeof( crude_compiled_shader_main_frag );
     pipeline_creation.shaders.stages[1].type = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipeline_creation.shaders.stages_count = 2u;
-    crude_pipeline_handle pipeline = crude_create_pipeline( gpu, &pipeline_creation );
-    crude_destroy_pipeline( gpu, pipeline );
+    pipeline = crude_create_pipeline( gpu, &pipeline_creation );
   }
 }
 
@@ -47,6 +49,7 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    crude_destroy_pipeline( &gpu[i], pipeline );
     crude_deinitialize_gpu_device( &gpu[i] );
   }
 }
@@ -58,11 +61,15 @@ static void render( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    //crude_new_frame( &gpu[i] );
-    //
-    //crude_command_buffer *gpu_commands = crude_get_command_buffer( gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
-    //crude_queue_command_buffer( gpu_commands );
-    //crude_present( &gpu[i] );
+    crude_new_frame( &gpu[i] );
+  //  crude_command_buffer *gpu_commands = crude_get_command_buffer( gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+  //  crude_bind_render_pass( gpu_commands, gpu->swapchain_pass );
+  //  crude_bind_pipeline( gpu_commands, pipeline );
+  //  crude_set_viewport( gpu_commands, NULL );
+  //  crude_set_scissor( gpu_commands, NULL );
+  //  crude_command_buffer_draw( gpu_commands, 0, 3, 0, 1);
+  //  crude_queue_command_buffer( gpu_commands );
+    crude_present( &gpu[i] );
   }
 }
 
