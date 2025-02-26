@@ -92,20 +92,18 @@ static void sdl_process_events( ecs_iter_t *it )
   crude_window *app_window = ecs_field( it, crude_window, 1 );
   crude_window_handle *app_window_handle = ecs_field( it, crude_window_handle, 2 );
   
-  uint32 current_event_index = 0u;
-
-  SDL_Event sdl_event;
-  while (SDL_PollEvent( &sdl_event ))
+  for ( uint32 i = 0; i < it->count; ++i )
   {
-    if ( sdl_event.type == SDL_EVENT_QUIT )
+    SDL_Event sdl_event;
+    while (SDL_PollEvent( &sdl_event ))
     {
-      ecs_quit( it->world );
-    }
-    else if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
-    {
-      for ( int32 i = 0; i < it->count; ++i )
+      if ( sdl_event.type == SDL_EVENT_QUIT )
       {
-        if ( SDL_GetWindowID( app_window_handle[i]. value) == sdl_event.window.windowID )
+        ecs_quit( it->world );
+      }
+      else if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
+      {
+        if ( SDL_GetWindowID( app_window_handle[i].value) == sdl_event.window.windowID )
         {
           int actual_width, actual_height;
           SDL_GetWindowSizeInPixels( app_window_handle[i].value, &actual_width, &actual_height );
@@ -115,10 +113,10 @@ static void sdl_process_events( ecs_iter_t *it )
           break;
         }
       }
-    }
-    else if ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
-    {
-      ecs_quit( it->world );
+      else if ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
+      {
+        ecs_quit( it->world );
+      }
     }
   }
 }

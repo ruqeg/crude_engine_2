@@ -13,19 +13,7 @@
 
 static char const *const vk_device_required_extensions[] = 
 { 
-  VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
-  VK_KHR_SPIRV_1_4_EXTENSION_NAME, 
-  VK_EXT_MESH_SHADER_EXTENSION_NAME, 
-  VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME, 
-  VK_KHR_8BIT_STORAGE_EXTENSION_NAME, 
-  VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, 
-  VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
-  VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-  VK_KHR_RAY_QUERY_EXTENSION_NAME,
-  VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-  VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-  VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+  VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 static char const *const *vk_instance_required_extensions[] =
@@ -40,7 +28,7 @@ static char const *const *vk_required_layers[] =
 
 #define CRUDE_COMMAND_BUFFER_RING_MAX_THREADS     1
 #define CRUDE_COMMAND_BUFFER_RING_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS
-#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 4
+#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 1
 #define CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_RING_MAX_POOLS
 
 typedef struct crude_command_buffer_ring
@@ -93,7 +81,7 @@ static void initialize_command_buffer_ring(
 static void deinitialize_command_buffer_ring_pools(
   _In_ crude_command_buffer_ring  *command_buffer_ring )
 {
-  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS; ++i )
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_POOLS; ++i )
   {
     vkDestroyCommandPool( command_buffer_ring->gpu->vk_device, command_buffer_ring->vk_command_pools[ i ], command_buffer_ring->gpu->vk_allocation_callbacks );
   }
@@ -437,16 +425,16 @@ static VkPhysicalDevice pick_physical_device(
 
   uint32 physical_devices_count = 0u;
   vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, NULL );
-
+  
   if ( physical_devices_count == 0u ) 
   {
     return VK_NULL_HANDLE;
   }
-
+  
   VkPhysicalDevice *physical_devices = NULL;
   arrput( physical_devices, physical_devices_count ); // tofree
   vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, physical_devices );
-
+  
   VkPhysicalDevice selected_physical_devices = VK_NULL_HANDLE;
   for ( uint32 physical_device_index = 0; physical_device_index < physical_devices_count; ++physical_device_index )
   {
@@ -475,6 +463,11 @@ static VkPhysicalDevice pick_physical_device(
     break;
   }
   
+  if ( selected_physical_devices == VK_NULL_HANDLE )
+  {
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", physical_devices_count );
+    return VK_NULL_HANDLE;
+  }
   VkPhysicalDeviceProperties properties;
   vkGetPhysicalDeviceProperties( selected_physical_devices, &properties );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", properties.deviceName, properties.deviceType );
@@ -738,17 +731,17 @@ static void create_swapchain_pass(
     .layout         = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
   };
   
-  crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
-  VkAttachmentDescription depth_attachment = {
-    .format         = depth_texture->vk_format,
-    .samples        = VK_SAMPLE_COUNT_1_BIT,
-    .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-    .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-    .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-  };
+  //crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
+  //VkAttachmentDescription depth_attachment = {
+  //  .format         = depth_texture->vk_format,
+  //  .samples        = VK_SAMPLE_COUNT_1_BIT,
+  //  .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+  //  .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+  //  .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+  //  .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+  //  .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+  //  .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+  //};
   
   VkAttachmentReference depth_attachment_ref = {
     .attachment     = 1,
@@ -759,13 +752,13 @@ static void create_swapchain_pass(
     .pipelineBindPoint        = VK_PIPELINE_BIND_POINT_GRAPHICS,
     .colorAttachmentCount     = 1,
     .pColorAttachments        = &color_attachment_ref,
-    .pDepthStencilAttachment  = &depth_attachment_ref,
+    .pDepthStencilAttachment  = NULL/*&depth_attachment_ref*/,
   };
   
-  VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
+  VkAttachmentDescription attachments[] = { color_attachment, /*depth_attachment*/ };
   VkRenderPassCreateInfo render_pass_info = { 
     .sType            = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    .attachmentCount  = 2,
+    .attachmentCount  = ARRAY_SIZE( attachments ),
     .pAttachments     = attachments,
     .subpassCount     = 1,
     .pSubpasses       = &subpass,
@@ -774,18 +767,19 @@ static void create_swapchain_pass(
   CRUDE_HANDLE_VULKAN_RESULT( vkCreateRenderPass( gpu->vk_device, &render_pass_info, NULL, &render_pass->vk_render_pass ), "Failed to create swapchain render pass" );
 
   crude_set_resource_name( gpu, VK_OBJECT_TYPE_RENDER_PASS, CAST( uint64, render_pass->vk_render_pass ), creation->name );
+  
+  VkImageView framebuffer_attachments[1];
 
   VkFramebufferCreateInfo framebuffer_info = {
     .sType            = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
     .renderPass       = render_pass->vk_render_pass,
-    .attachmentCount  = 2,
+    .attachmentCount  = ARRAY_SIZE( framebuffer_attachments ),
     .width            = gpu->swapchain_width,
     .height           = gpu->swapchain_height,
     .layers           = 1,
   };
 
-  VkImageView framebuffer_attachments[2];
-  framebuffer_attachments[1] = depth_texture->vk_image_view;
+  //framebuffer_attachments[1] = depth_texture->vk_image_view;
   framebuffer_info.pAttachments = framebuffer_attachments;
   for ( uint32 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
@@ -1033,10 +1027,10 @@ void crude_initialize_gpu_device(
   }
   
   initialize_command_buffer_ring( &command_buffer_ring, gpu );
-  gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer ), 1 );
+  gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer* ) * 128, 1 );
 
   gpu->current_frame = 1;
-  gpu->vk_image_index = 0;
+  gpu->vk_swapchain_image_index = 0;
   gpu->queued_command_buffers_count = 0;
 
   gpu->resource_deletion_queue = NULL;
@@ -1062,7 +1056,7 @@ void crude_initialize_gpu_device(
     .type     = CRUDE_TEXTURE_TYPE_TEXTURE_2D, 
     .name     = "depth_image_texture"
   };
-  gpu->depth_texture = crude_create_texture( gpu, &depth_texture_creation );
+  //gpu->depth_texture = crude_create_texture( gpu, &depth_texture_creation );
 
   crude_reset_render_pass_output( &gpu->swapchain_output );
   gpu->swapchain_output.color_formats[ gpu->swapchain_output.num_color_formats++ ] = gpu->vk_surface_format.format;
@@ -1094,7 +1088,7 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
 
-  crude_destroy_texture( gpu, gpu->depth_texture );
+  //crude_destroy_texture( gpu, gpu->depth_texture );
   crude_destroy_render_pass( gpu, gpu->swapchain_pass );
   crude_destroy_sampler( gpu, gpu->default_sampler );
 
@@ -1148,8 +1142,8 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
 
   vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_descriptor_pool, gpu->vk_allocation_callbacks );
-  vmaDestroyAllocator( gpu->vma_allocator );
   destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
+  vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( gpu->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
@@ -1365,7 +1359,7 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
   
   vkResetFences( gpu->vk_device, 1, render_complete_fence );
   
-  VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_image_index );
+  VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
   if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
     resize_swapchain( gpu );
@@ -1406,7 +1400,7 @@ void crude_present( _In_ crude_gpu_device *gpu )
     .pSignalSemaphores    = render_complete_semaphore,
   };
   
-  vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence );
+  CRUDE_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
   
   gpu->queued_command_buffers_count = 0u;
 
@@ -1417,8 +1411,7 @@ void crude_present( _In_ crude_gpu_device *gpu )
     .pWaitSemaphores    = render_complete_semaphore,
     .swapchainCount     = ARRAY_SIZE( swap_chains ),
     .pSwapchains        = swap_chains,
-    .pImageIndices      = &gpu->vk_image_index,
-    .pResults           = NULL,
+    .pImageIndices      = &gpu->vk_swapchain_image_index,
   };
   VkResult result = vkQueuePresentKHR( gpu->vk_queue, &present_info );
 
@@ -1428,7 +1421,7 @@ void crude_present( _In_ crude_gpu_device *gpu )
     return;
   }
 
-  gpu->current_frame = ( gpu->current_frame + 1 ) % gpu->vk_swapchain_images_count;
+  gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
   
   for ( uint32 i = 0; i < arrlen( gpu->resource_deletion_queue ); ++i )
   {
@@ -1481,16 +1474,16 @@ crude_command_buffer* crude_get_command_buffer(
 {
   crude_command_buffer *command_buffer = get_command_buffer_from_ring_pools( &command_buffer_ring, gpu->current_frame, begin );
  
-  if ( begin && false )
-  {
-    vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
-  }
+  //if ( begin )
+  //{
+  //  vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
+  //}
   
   return command_buffer;
 }
 
 void crude_queue_command_buffer(
-  _In_ crude_command_buffer   *command_buffer )
+  _In_ crude_command_buffer *command_buffer )
 {
   command_buffer->gpu->queued_command_buffers[ command_buffer->gpu->queued_command_buffers_count++ ] = command_buffer;
 }

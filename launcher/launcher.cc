@@ -1,7 +1,6 @@
 #define CR_HOST
 #include <cr.h>
 #include <filesystem>
-#include <Windows.h>
 
 #include <engine.h>
 
@@ -18,10 +17,7 @@ std::filesystem::path get_executable_path()
 
 #define PLUGIN_PATH_STR( name ) get_executable_path().concat( CR_PLUGIN( name ) ).string()
 
-int APIENTRY wWinMain(_In_ HINSTANCE      hInstance,
-                      _In_opt_ HINSTANCE  hPrevInstance,
-                      _In_ LPWSTR         lpCmdLine,
-                      _In_ int            nCmdShow)
+int main()
 {
   cr_plugin crude_sandbox, crude_editor, crude_engine_simulation;
   

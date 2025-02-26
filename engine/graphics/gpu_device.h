@@ -59,7 +59,7 @@ typedef struct crude_gpu_device
   VkSemaphore                       vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkFence                           vk_command_buffer_executed_fences[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   uint32                            current_frame;
-  uint32                            vk_image_index;
+  uint32                            vk_swapchain_image_index;
   crude_resource_update            *resource_deletion_queue;
   VmaAllocator                      vma_allocator;
   VkAllocationCallbacks            *vk_allocation_callbacks;

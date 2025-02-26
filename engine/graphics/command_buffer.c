@@ -26,7 +26,7 @@ void crude_bind_render_pass(
   {
     VkRenderPassBeginInfo render_pass_begin = {
       .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      .framebuffer = render_pass->type == CRUDE_RENDER_PASS_TYPE_SWAPCHAIN ? command_buffer->gpu->vk_swapchain_framebuffers[ command_buffer->gpu->vk_image_index ] : render_pass->vk_frame_buffer,
+      .framebuffer = render_pass->type == CRUDE_RENDER_PASS_TYPE_SWAPCHAIN ? command_buffer->gpu->vk_swapchain_framebuffers[ command_buffer->gpu->vk_swapchain_image_index ] : render_pass->vk_frame_buffer,
       .renderPass = render_pass->vk_render_pass,
       .renderArea.offset = { 0, 0 },
       .renderArea.extent = { render_pass->width, render_pass->height },
