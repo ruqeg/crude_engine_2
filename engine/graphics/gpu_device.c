@@ -28,7 +28,7 @@ static char const *const *vk_required_layers[] =
 
 #define CRUDE_COMMAND_BUFFER_RING_MAX_THREADS     1
 #define CRUDE_COMMAND_BUFFER_RING_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS
-#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 1
+#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 3
 #define CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_RING_MAX_POOLS
 
 typedef struct crude_command_buffer_ring
@@ -1351,6 +1351,8 @@ void crude_destroy_render_pass_instant(
 
 void crude_new_frame( _In_ crude_gpu_device *gpu )
 {
+  static int b =0;
+  b++;
   VkFence *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
   {
@@ -1376,8 +1378,8 @@ void crude_present( _In_ crude_gpu_device *gpu )
   VkCommandBuffer enqueued_command_buffers[ 4 ];
   for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
-    crude_command_buffer* command_buffer = gpu->queued_command_buffers[ i ];
-    enqueued_command_buffers[ i ] = command_buffer->vk_command_buffer;
+    crude_command_buffer* command_buffer = gpu->queued_command_buffers[i];
+    enqueued_command_buffers[i] = command_buffer->vk_command_buffer;
 
     if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
     {
@@ -1401,8 +1403,6 @@ void crude_present( _In_ crude_gpu_device *gpu )
   };
   
   CRUDE_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
-  
-  gpu->queued_command_buffers_count = 0u;
 
   VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
   VkPresentInfoKHR present_info = {
@@ -1414,6 +1414,8 @@ void crude_present( _In_ crude_gpu_device *gpu )
     .pImageIndices      = &gpu->vk_swapchain_image_index,
   };
   VkResult result = vkQueuePresentKHR( gpu->vk_queue, &present_info );
+  
+  gpu->queued_command_buffers_count = 0u;
 
   if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
   {
