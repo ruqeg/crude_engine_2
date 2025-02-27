@@ -26,7 +26,7 @@ static void initialize_render_core( ecs_iter_t *it  )
     };
 
     renderer->gpu = render_create[i].allocator.allocate( sizeof( crude_gpu_device ), 1u );
-    crude_initialize_gpu_device( renderer->gpu, &create );
+    crude_gfx_initialize_gpu_device( renderer->gpu, &create );
 
     crude_pipeline_creation pipeline_creation;
     memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
@@ -50,7 +50,7 @@ static void deinitialize_render_core( ecs_iter_t *it )
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_destroy_pipeline( renderer[i].gpu, renderer[i].pipeline );
-    crude_deinitialize_gpu_device( renderer[i].gpu );
+    crude_gfx_deinitialize_gpu_device( renderer[i].gpu );
     renderer[i].gpu->allocator.deallocate( renderer[i].gpu );
   }
 }
@@ -62,15 +62,15 @@ static void render( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_new_frame( renderer[i].gpu );
-    crude_command_buffer *gpu_commands = crude_get_command_buffer( renderer[i].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    crude_gfx_new_frame( renderer[i].gpu );
+    crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[i].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
     crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[i].gpu->swapchain_pass );
     crude_gfx_cmd_bind_pipeline( gpu_commands, renderer[i].pipeline );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     crude_gfx_cmd_draw( gpu_commands, 0, 3, 0, 1);
-    crude_queue_command_buffer( gpu_commands );
-    crude_present( renderer[i].gpu );
+    crude_gfx_queue_cmd_buffer( gpu_commands );
+    crude_gfx_present( renderer[i].gpu );
   }
 }
 

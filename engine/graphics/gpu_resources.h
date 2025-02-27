@@ -42,6 +42,7 @@ typedef struct crude_pipeline_handle
   crude_resource_handle index;
 } crude_pipeline_handle;
 
+#define CRUDE_MAX_SWAPCHAIN_IMAGES          3
 #define CRUDE_MAX_IMAGE_OUTPUTS             8          
 #define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
 #define CRUDE_MAX_SHADER_STAGES             5      

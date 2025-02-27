@@ -9,7 +9,9 @@
 
 #include <graphics/gpu_device.h>
 
-#define CLAMP( v, lo, hi ) ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
+///////////////////////////////////
+// Constants
+///////////////////////////////////
 
 static char const *const vk_device_required_extensions[] = 
 { 
@@ -26,108 +28,14 @@ static char const *const *vk_required_layers[] =
   "VK_LAYER_KHRONOS_validation"
 };
 
-#define CRUDE_COMMAND_BUFFER_RING_MAX_THREADS     1
-#define CRUDE_COMMAND_BUFFER_RING_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS
-#define CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL 3
-#define CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_RING_MAX_POOLS
+///////////////////////////////////
+// Global
+///////////////////////////////////
+static crude_command_buffer_manager g_command_buffer_manager;
 
-typedef struct crude_command_buffer_ring
-{
-  crude_gpu_device      *gpu;
-  VkCommandPool          vk_command_pools[ CRUDE_COMMAND_BUFFER_RING_MAX_POOLS ];
-  crude_command_buffer   command_buffers[ CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS ];
-  uint8                  next_free_per_thread_frames[ CRUDE_COMMAND_BUFFER_RING_MAX_POOLS ];
-} crude_command_buffer_ring;
-
-static inline uint16 command_buffer_ring_pool_from_index(
-  _In_ uint32 index ) 
-{ 
-  return index / CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL;
-}
-
-static void initialize_command_buffer_ring(
-  _In_ crude_command_buffer_ring  *command_buffer_ring,
-  _In_ crude_gpu_device           *gpu)
-{
-  command_buffer_ring->gpu = gpu;
-  
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_POOLS; ++i )
-  {
-    VkCommandPoolCreateInfo cmd_pool_info = {
-      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .queueFamilyIndex = gpu->vk_queue_family_index,
-      .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-    };
-    
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &command_buffer_ring->vk_command_pools[ i ] ), "Failed to create command pool" );
-  }
-  
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_BUFFERS; ++i )
-  {
-    crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ i ];
-    VkCommandBufferAllocateInfo cmd_allocation_info = { 
-      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = command_buffer_ring->vk_command_pools[ command_buffer_ring_pool_from_index( i ) ],
-      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 1,
-    };
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_handle ), "Failed to allocate command buffer" );
-    command_buffer->gpu = gpu;
-    crude_gfx_cmd_reset( command_buffer );
-  }
-}
-
-static void deinitialize_command_buffer_ring_pools(
-  _In_ crude_command_buffer_ring  *command_buffer_ring )
-{
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_POOLS; ++i )
-  {
-    vkDestroyCommandPool( command_buffer_ring->gpu->vk_device, command_buffer_ring->vk_command_pools[ i ], command_buffer_ring->gpu->vk_allocation_callbacks );
-  }
-}
-
-static crude_command_buffer* get_command_buffer_from_ring_pools(
-  _In_ crude_command_buffer_ring  *command_buffer_ring,
-  _In_ uint32                      frame,
-  _In_ bool                        begin )
-{
-  crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ frame * CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL ];
-
-  if ( begin )
-  {  
-    crude_gfx_cmd_reset( command_buffer );
-
-    VkCommandBufferBeginInfo begin_info = {
-      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-    };
-    vkBeginCommandBuffer( command_buffer->vk_handle, &begin_info );
-  }
-  
-  return command_buffer;
-}
-
-static void reset_command_buffer_ring_pools( 
-  _In_ crude_command_buffer_ring  *command_buffer_ring,
-  _In_ uint32                      frame_index )
-{
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_RING_MAX_THREADS; ++i )
-  {
-    vkResetCommandPool( command_buffer_ring->gpu->vk_device, command_buffer_ring->vk_command_pools[ frame_index * CRUDE_COMMAND_BUFFER_RING_MAX_THREADS + i ], 0 );
-  }
-}
-
-static crude_command_buffer* get_command_buffer_instant_from_ring_pool(
-  _In_ crude_command_buffer_ring  *command_buffer_ring,
-  _In_ uint32                      frame,
-  _In_ bool                        begin )
-{
-  crude_command_buffer *command_buffer = &command_buffer_ring->command_buffers[ frame * CRUDE_COMMAND_BUFFER_RING_BUFFER_PER_POOL + 1 ];
-  return command_buffer;
-}
-
-static crude_command_buffer_ring command_buffer_ring;
-
+///////////////////////////////////
+// Local vulkal utils
+///////////////////////////////////
 static VKAPI_ATTR VkBool32 debug_callback(
   _In_ VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
   _In_ VkDebugUtilsMessageTypeFlagsEXT             messageType,
@@ -765,7 +673,7 @@ static void create_swapchain_pass(
 
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateRenderPass( gpu->vk_device, &render_pass_info, NULL, &render_pass->vk_render_pass ), "Failed to create swapchain render pass" );
 
-  crude_set_resource_name( gpu, VK_OBJECT_TYPE_RENDER_PASS, CAST( uint64, render_pass->vk_render_pass ), creation->name );
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_RENDER_PASS, CAST( uint64, render_pass->vk_render_pass ), creation->name );
   
   VkImageView framebuffer_attachments[1];
 
@@ -784,7 +692,7 @@ static void create_swapchain_pass(
   {
     framebuffer_attachments[0] = gpu->vk_swapchain_images_views[i];
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFramebuffer( gpu->vk_device, &framebuffer_info, NULL, &gpu->vk_swapchain_framebuffers[i] ), "Failed to create framebuffer" );
-    crude_set_resource_name( gpu, VK_OBJECT_TYPE_FRAMEBUFFER, gpu->vk_swapchain_framebuffers[ i ], creation->name );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_FRAMEBUFFER, gpu->vk_swapchain_framebuffers[ i ], creation->name );
   }
 
   render_pass->width = gpu->vk_swapchain_width;
@@ -795,7 +703,7 @@ static void create_swapchain_pass(
     .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
   };
 
-  crude_command_buffer *command_buffer = get_command_buffer_instant_from_ring_pool( &command_buffer_ring, gpu->current_frame, false );
+  crude_command_buffer *command_buffer = crude_gfx_cmd_manager_get_cmd_buffer_instant( &g_command_buffer_manager, gpu->current_frame, false );
   vkBeginCommandBuffer( command_buffer->vk_handle, &beginInfo );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
@@ -885,7 +793,7 @@ static void vulkan_create_texture(
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateImage( gpu->vma_allocator, &image_info, &memory_info, &texture->vk_image, &texture->vma_allocation, NULL ), "Failed to create image!" );
   
-  crude_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
   
   VkImageViewCreateInfo info = {
     .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -906,7 +814,7 @@ static void vulkan_create_texture(
   info.subresourceRange.layerCount = 1;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view" );
   
-  crude_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, texture->vk_image_view, creation->name );
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, texture->vk_image_view, creation->name );
   
   texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
@@ -989,9 +897,15 @@ static void resize_swapchain(
   vkDeviceWaitIdle( gpu->vk_device );
 }
 
-void crude_initialize_gpu_device(
+///////////////////
+// Gpu device
+///////////////////
+
+void crude_gfx_initialize_gpu_device
+(
   _Out_ crude_gpu_device          *gpu,
-  _In_ crude_gpu_device_creation  *creation )
+  _In_ crude_gpu_device_creation  *creation
+)
 {
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator  = creation->allocator;
@@ -1025,7 +939,7 @@ void crude_initialize_gpu_device(
     vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
   }
   
-  initialize_command_buffer_ring( &command_buffer_ring, gpu );
+  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu );
   gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer* ) * 128, 1 );
 
   gpu->current_frame = 1;
@@ -1074,11 +988,15 @@ void crude_initialize_gpu_device(
   gpu->swapchain_pass = crude_gfx_create_render_pass( gpu, &swapchain_pass_creation );
  }
 
-void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
+void
+crude_gfx_deinitialize_gpu_device
+(
+  _In_ crude_gpu_device *gpu
+)
 {
   vkDeviceWaitIdle( gpu->vk_device );
   
-  deinitialize_command_buffer_ring_pools( &command_buffer_ring );
+  crude_gfx_deinitialize_cmd_manager( &g_command_buffer_manager );
 
   for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -1150,10 +1068,15 @@ void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu )
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
 }
 
-void crude_new_frame( _In_ crude_gpu_device *gpu )
+/////////////////////
+//// Common
+/////////////////////
+void
+crude_gfx_new_frame
+(
+  _In_ crude_gpu_device *gpu
+)
 {
-  static int b =0;
-  b++;
   VkFence *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
   {
@@ -1168,10 +1091,14 @@ void crude_new_frame( _In_ crude_gpu_device *gpu )
     resize_swapchain( gpu );
   }
 
-  reset_command_buffer_ring_pools( &command_buffer_ring, gpu->current_frame );
+  crude_gfx_reset_cmd_manager( &g_command_buffer_manager, gpu->current_frame );
 }
 
-void crude_present( _In_ crude_gpu_device *gpu )
+void
+crude_gfx_present
+(
+  _In_ crude_gpu_device *gpu
+)
 {
   VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   VkSemaphore *render_complete_semaphore = &gpu->vk_render_finished_semaphores[ gpu->current_frame ];
@@ -1180,7 +1107,7 @@ void crude_present( _In_ crude_gpu_device *gpu )
   for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
     crude_command_buffer* command_buffer = gpu->queued_command_buffers[i];
-    enqueued_command_buffers[i] = command_buffer->vk_handle;
+    enqueued_command_buffers[ i ] = command_buffer->vk_handle;
 
     if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
     {
@@ -1270,32 +1197,41 @@ void crude_present( _In_ crude_gpu_device *gpu )
   }
 }
 
-crude_command_buffer* crude_get_command_buffer(
+crude_command_buffer*
+crude_gfx_get_cmd_buffer
+(
   _In_ crude_gpu_device  *gpu,
   _In_ crude_queue_type   type,
-  _In_ bool               begin )
+  _In_ bool               begin
+)
 {
-  crude_command_buffer *command_buffer = get_command_buffer_from_ring_pools( &command_buffer_ring, gpu->current_frame, begin );
+  crude_command_buffer *cmd = crude_gfx_cmd_manager_get_cmd_buffer( &g_command_buffer_manager, gpu->current_frame, begin );
  
   //if ( begin )
   //{
   //  vkCmdResetQueryPool( command_buffer->vk_command_buffer, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
   //}
   
-  return command_buffer;
+  return cmd;
 }
 
-void crude_queue_command_buffer(
-  _In_ crude_command_buffer *command_buffer )
+void
+crude_gfx_queue_cmd_buffer
+(
+  _In_ crude_command_buffer *cmd
+)
 {
-  command_buffer->gpu->queued_command_buffers[ command_buffer->gpu->queued_command_buffers_count++ ] = command_buffer;
+  cmd->gpu->queued_command_buffers[ cmd->gpu->queued_command_buffers_count++ ] = cmd;
 }
 
-void crude_set_resource_name(
+void
+crude_gfx_set_resource_name
+(
   _In_ crude_gpu_device  *gpu,
   _In_ VkObjectType       type,
   _In_ uint64             handle,
-  _In_ char const        *name )
+  _In_ char const        *name
+)
 {
   VkDebugUtilsObjectNameInfoEXT name_info = {
     .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
@@ -1348,7 +1284,7 @@ crude_gfx_create_sampler
   };
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
-  crude_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, CAST( uint64, sampler->vk_sampler ), creation->name );
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, CAST( uint64, sampler->vk_sampler ), creation->name );
   return handle;
 }
 
@@ -1582,7 +1518,7 @@ crude_gfx_create_shader_state
       break;
     }
     
-    crude_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
   }
   
   bool creation_failed = compiled_shaders != creation->stages_count;

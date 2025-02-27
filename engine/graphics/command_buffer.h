@@ -2,6 +2,11 @@
 
 #include <graphics/gpu_resources.h>
 
+#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS     1
+#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS
+#define CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL 3
+#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS
+
 typedef struct crude_gpu_device crude_gpu_device;
 
 typedef struct crude_command_buffer
@@ -56,4 +61,46 @@ crude_gfx_cmd_draw
   _In_ uint32                        vertex_count,
   _In_ uint32                        first_instance,
   _In_ uint32                        instance_count
+);
+
+typedef struct crude_command_buffer_manager
+{
+  VkCommandPool                      vk_command_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
+  crude_command_buffer               command_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
+  crude_gpu_device                  *gpu;
+} crude_command_buffer_manager;
+
+CRUDE_API void
+crude_gfx_initialize_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ crude_gpu_device             *gpu
+);
+
+CRUDE_API void
+crude_gfx_deinitialize_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager
+);
+
+CRUDE_API void
+crude_gfx_reset_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame
+);
+
+CRUDE_API crude_command_buffer*
+crude_gfx_cmd_manager_get_cmd_buffer
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame,
+  _In_ bool                          begin
+);
+
+CRUDE_API crude_command_buffer*
+crude_gfx_cmd_manager_get_cmd_buffer_instant
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame
 );

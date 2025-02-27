@@ -27,6 +27,7 @@
 
 #define MAX( a, b) ( a ) > ( b ) ? ( a ) : ( b )
 #define MIN( a, b) ( a ) < ( b ) ? ( a ) : ( b )
+#define CLAMP( v, lo, hi ) ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
 
 typedef int8_t        int8;
 typedef int16_t       int16;

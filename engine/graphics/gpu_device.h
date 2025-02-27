@@ -7,8 +7,6 @@
 #include <graphics/gpu_resources.h>
 #include <graphics/command_buffer.h>
 
-#define CRUDE_MAX_SWAPCHAIN_IMAGES 3
-
 typedef struct crude_gpu_device_creation
 {
   SDL_Window                                *sdl_window;
@@ -74,18 +72,6 @@ typedef struct crude_gpu_device
   VmaAllocator                               vma_allocator;
 } crude_gpu_device;
 
-CRUDE_API void crude_initialize_gpu_device( _Out_ crude_gpu_device *gpu, _In_ crude_gpu_device_creation *creation );
-CRUDE_API void crude_deinitialize_gpu_device( _In_ crude_gpu_device *gpu );
-
-CRUDE_API void crude_set_resource_name( _In_ crude_gpu_device *gpu, _In_ VkObjectType type, _In_ uint64 handle, _In_ char const *name );
-
-CRUDE_API void crude_new_frame( _In_ crude_gpu_device *gpu );
-CRUDE_API void crude_present( _In_ crude_gpu_device *gpu );
-
-CRUDE_API crude_command_buffer* crude_get_command_buffer( _In_ crude_gpu_device *gpu, _In_ crude_queue_type type, _In_ bool begin );
-CRUDE_API void crude_queue_command_buffer( _In_ crude_command_buffer *command_buffer );
-
-
 ///////////////////
 // Gpu device
 ///////////////////
@@ -97,51 +83,51 @@ crude_gfx_initialize_gpu_device
   _In_ crude_gpu_device_creation            *creation
 );
 
-//CRUDE_API void
-//crude_gfx_deinitialize_gpu_device
-//(
-//  _In_ crude_gpu_device                     *gpu
-//);
-//
+CRUDE_API void
+crude_gfx_deinitialize_gpu_device
+(
+  _In_ crude_gpu_device                     *gpu
+);
+
 /////////////////////
 //// Common
 /////////////////////
-//
-//CRUDE_API void
-//crude_gfx_set_resource_name
-//(
-//  _In_ crude_gpu_device                     *gpu,
-//  _In_ VkObjectType                          type,
-//  _In_ uint64                                handle,
-//  _In_ char const                           *name
-//);
-//
-//CRUDE_API void
-//crude_gfx_new_frame
-//(
-//  _In_ crude_gpu_device                     *gpu
-//);
-//
-//CRUDE_API void
-//crude_gfx_present
-//(
-//  _In_ crude_gpu_device                     *gpu
-//);
-//
-//CRUDE_API crude_command_buffer*
-//crude_gfx_get_command_buffer
-//(
-//  _In_ crude_gpu_device                     *gpu,
-//  _In_ crude_queue_type                      type,
-//  _In_ bool                                  begin
-//);
-//
-//CRUDE_API void
-//crude_gfx_queue_command_buffer
-//(
-//  _In_ crude_command_buffer                 *cmd
-//);
-//
+
+CRUDE_API void
+crude_gfx_set_resource_name
+(
+  _In_ crude_gpu_device                     *gpu,
+  _In_ VkObjectType                          type,
+  _In_ uint64                                handle,
+  _In_ char const                           *name
+);
+
+CRUDE_API void
+crude_gfx_new_frame
+(
+  _In_ crude_gpu_device                     *gpu
+);
+
+CRUDE_API void
+crude_gfx_present
+(
+  _In_ crude_gpu_device                     *gpu
+);
+
+CRUDE_API crude_command_buffer*
+crude_gfx_get_cmd_buffer
+(
+  _In_ crude_gpu_device                     *gpu,
+  _In_ crude_queue_type                      type,
+  _In_ bool                                  begin
+);
+
+CRUDE_API void
+crude_gfx_queue_cmd_buffer
+(
+  _In_ crude_command_buffer                 *cmd
+);
+
 ///////////////////
 // Resources
 ///////////////////

@@ -1,9 +1,11 @@
 #include <graphics/gpu_device.h>
 #include <core/log.h>
+#include <core/assert.h>
 
 #include <graphics/command_buffer.h>
 
-void crude_gfx_cmd_reset
+void
+crude_gfx_cmd_reset
 (
   _In_ crude_command_buffer *cmd
 )
@@ -12,7 +14,8 @@ void crude_gfx_cmd_reset
   cmd->current_render_pass = NULL;
 }
 
-void crude_gfx_cmd_bind_render_pass
+void
+crude_gfx_cmd_bind_render_pass
 (
   _In_ crude_command_buffer     *cmd,
   _In_ crude_render_pass_handle  handle
@@ -55,7 +58,8 @@ void crude_gfx_cmd_bind_render_pass
   cmd->current_render_pass = render_pass;
 }
 
-void crude_gfx_cmd_bind_pipeline
+void
+crude_gfx_cmd_bind_pipeline
 (
   _In_ crude_command_buffer   *cmd,
   _In_ crude_pipeline_handle   handle
@@ -151,4 +155,100 @@ crude_gfx_cmd_draw
 )
 {
   vkCmdDraw( cmd->vk_handle, vertex_count, instance_count, first_vertex, first_instance );
+}
+
+void
+crude_gfx_initialize_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ crude_gpu_device             *gpu
+)
+{
+  cmd_manager->gpu = gpu;
+  
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS; ++i )
+  {
+    VkCommandPoolCreateInfo cmd_pool_info = {
+      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .queueFamilyIndex = gpu->vk_queue_family_index,
+      .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+    };
+    
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_command_pools[ i ] ), "Failed to create command pool" );
+  }
+  
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
+  {
+    crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ i ];
+    VkCommandBufferAllocateInfo cmd_allocation_info = { 
+      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool        = cmd_manager->vk_command_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ],
+      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 1,
+    };
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_handle ), "Failed to allocate command buffer" );
+    
+    command_buffer->gpu = gpu;
+    crude_gfx_cmd_reset( command_buffer );
+  }
+}
+
+void
+crude_gfx_deinitialize_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager
+)
+{
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS; ++i )
+  {
+    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
+  }
+}
+
+void
+crude_gfx_reset_cmd_manager
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame
+)
+{
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS; ++i )
+  {
+    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ frame * CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS + i ], 0 );
+  }
+}
+
+crude_command_buffer*
+crude_gfx_cmd_manager_get_cmd_buffer
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame,
+  _In_ bool                          begin
+)
+{
+  crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ];
+
+  if ( begin )
+  {  
+    crude_gfx_cmd_reset( command_buffer );
+
+    VkCommandBufferBeginInfo begin_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+    };
+    vkBeginCommandBuffer( command_buffer->vk_handle, &begin_info );
+  }
+  
+  return command_buffer;
+}
+
+crude_command_buffer*
+crude_gfx_cmd_manager_get_cmd_buffer_instant
+(
+  _In_ crude_command_buffer_manager *cmd_manager,
+  _In_ uint32                        frame
+)
+{
+  crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL + 1 ];
+  return command_buffer;
 }
