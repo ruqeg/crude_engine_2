@@ -102,3 +102,18 @@ CRUDE_API void crude_destroy_pipeline( _In_ crude_gpu_device *gpu, _In_ crude_pi
 CRUDE_API void crude_destroy_pipeline_instant( _In_ crude_gpu_device *gpu, _In_ crude_resource_handle handle );
 
 CRUDE_API VkShaderModuleCreateInfo crude_compile_shader( _In_ const *code, _In_ uint32 code_size, _In_ VkShaderStageFlagBits stage, _In_ char const *name );
+
+#define CRUDE_GFX_GPU_ACCESS_SHADER( gpu, handle )\
+(\
+  CAST( crude_shader_state*, crude_resource_pool_access_resource( &gpu->shaders, handle.index ) )\
+)
+
+#define CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, handle )\
+(\
+  CAST( crude_render_pass*, crude_resource_pool_access_resource( &gpu->render_passes, handle.index ) )\
+)
+
+#define CRUDE_GFX_GPU_ACCESS_PIPELINE( gpu, handle )\
+(\
+  CAST( crude_pipeline*, crude_resource_pool_access_resource( &gpu->pipelines, handle.index ) )\
+)

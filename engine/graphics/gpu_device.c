@@ -71,10 +71,9 @@ static void initialize_command_buffer_ring(
       .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 1,
     };
-    CRUDE_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
+    CRUDE_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_handle ), "Failed to allocate command buffer" );
     command_buffer->gpu = gpu;
-    command_buffer->handle = i;
-    crude_reset_command_buffer( command_buffer );
+    crude_gfx_cmd_reset( command_buffer );
   }
 }
 
@@ -96,13 +95,13 @@ static crude_command_buffer* get_command_buffer_from_ring_pools(
 
   if ( begin )
   {  
-    crude_reset_command_buffer( command_buffer );
+    crude_gfx_cmd_reset( command_buffer );
 
     VkCommandBufferBeginInfo begin_info = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     };
-    vkBeginCommandBuffer( command_buffer->vk_command_buffer, &begin_info );
+    vkBeginCommandBuffer( command_buffer->vk_handle, &begin_info );
   }
   
   return command_buffer;
@@ -797,17 +796,17 @@ static void create_swapchain_pass(
   };
 
   crude_command_buffer *command_buffer = get_command_buffer_instant_from_ring_pool( &command_buffer_ring, gpu->current_frame, false );
-  vkBeginCommandBuffer( command_buffer->vk_command_buffer, &beginInfo );
+  vkBeginCommandBuffer( command_buffer->vk_handle, &beginInfo );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    transition_image_layout( command_buffer->vk_command_buffer, gpu->vk_swapchain_images[ i ], gpu->vk_surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, false );
+    transition_image_layout( command_buffer->vk_handle, gpu->vk_swapchain_images[ i ], gpu->vk_surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, false );
   }
-  vkEndCommandBuffer( command_buffer->vk_command_buffer );
+  vkEndCommandBuffer( command_buffer->vk_handle );
 
   VkSubmitInfo submitInfo = { 
     .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
     .commandBufferCount = 1,
-    .pCommandBuffers    = &command_buffer->vk_command_buffer,
+    .pCommandBuffers    = &command_buffer->vk_handle,
   };
   
   vkQueueSubmit( gpu->vk_queue, 1, &submitInfo, VK_NULL_HANDLE );
@@ -1379,14 +1378,14 @@ void crude_present( _In_ crude_gpu_device *gpu )
   for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
     crude_command_buffer* command_buffer = gpu->queued_command_buffers[i];
-    enqueued_command_buffers[i] = command_buffer->vk_command_buffer;
+    enqueued_command_buffers[i] = command_buffer->vk_handle;
 
     if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
     {
-      vkCmdEndRenderPass( command_buffer->vk_command_buffer );
+      vkCmdEndRenderPass( command_buffer->vk_handle );
     }
 
-    vkEndCommandBuffer( command_buffer->vk_command_buffer );
+    vkEndCommandBuffer( command_buffer->vk_handle );
   }
 
   VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};

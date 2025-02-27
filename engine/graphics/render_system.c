@@ -64,11 +64,11 @@ static void render( ecs_iter_t *it )
   {
     crude_new_frame( renderer[i].gpu );
     crude_command_buffer *gpu_commands = crude_get_command_buffer( renderer[i].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
-    crude_bind_render_pass( gpu_commands, renderer[i].gpu->swapchain_pass );
-    crude_bind_pipeline( gpu_commands, renderer[i].pipeline );
-    crude_set_viewport( gpu_commands, NULL );
-    crude_set_scissor( gpu_commands, NULL );
-    crude_command_buffer_draw( gpu_commands, 0, 3, 0, 1);
+    crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[i].gpu->swapchain_pass );
+    crude_gfx_cmd_bind_pipeline( gpu_commands, renderer[i].pipeline );
+    crude_gfx_cmd_set_viewport( gpu_commands, NULL );
+    crude_gfx_cmd_set_scissor( gpu_commands, NULL );
+    crude_gfx_cmd_draw( gpu_commands, 0, 3, 0, 1);
     crude_queue_command_buffer( gpu_commands );
     crude_present( renderer[i].gpu );
   }

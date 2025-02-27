@@ -10,26 +10,47 @@
 
 static bool CR_STATE g_initialized = false;
 
-bool input_callback( const void *sdl_event )
+bool
+input_callback
+(
+  const void *sdl_event
+)
 {
 }
 
 // !TODO
-void* sandbox_allocate( sizet size, sizet alignment )
+void*
+sandbox_allocate
+(
+  sizet size,
+  sizet alignment
+)
 {
   return malloc( size );
 }
-void sandbox_deallocate( void* pointer )
+
+void
+sandbox_deallocate
+(
+  void* pointer
+)
 {
   free( pointer );
 }
 
-CR_EXPORT int cr_main( struct cr_plugin *ctx, enum cr_op operation )
+CR_EXPORT int
+cr_main
+(
+  struct cr_plugin *ctx,
+  enum cr_op        operation
+)
 {
-  if ( operation == CR_CLOSE )
-    return 0;
-
   assert( ctx );
+
+  if ( operation == CR_CLOSE )
+  {
+    return 0;
+  }
 
   ecs_world_t* world = ctx->userdata;
 
