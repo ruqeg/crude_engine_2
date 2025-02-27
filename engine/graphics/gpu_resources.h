@@ -474,9 +474,38 @@ typedef struct crude_resource_update
   uint32                               current_frame;
 } crude_resource_update;
 
-CRUDE_API void crude_reset_render_pass_output( _In_ crude_render_pass_output *output );
-CRUDE_API VkImageType crude_to_vk_image_type( _In_ crude_texture_type type );
-CRUDE_API bool crude_has_depth_or_stencil( _In_ VkFormat value );
-CRUDE_API bool crude_has_depth( _In_ VkFormat value );
-CRUDE_API VkImageViewType crude_to_vk_image_view_type( _In_ crude_texture_type type );
-CRUDE_API VkFormat crude_to_vk_vertex_format( _In_ crude_vertex_component_format value );
+CRUDE_API void
+crude_reset_render_pass_output
+( 
+  _In_ crude_render_pass_output *output
+);
+
+CRUDE_API VkImageType
+crude_to_vk_image_type
+( 
+  _In_ crude_texture_type type
+);
+
+CRUDE_API bool
+crude_has_depth_or_stencil
+( 
+  _In_ VkFormat value
+);
+
+CRUDE_API bool
+crude_has_depth
+( 
+  _In_ VkFormat value
+);
+
+CRUDE_API VkImageViewType
+crude_to_vk_image_view_type
+( 
+  _In_ crude_texture_type type
+);
+
+CRUDE_API VkFormat
+crude_to_vk_vertex_format
+( 
+  _In_ crude_vertex_component_format value
+);

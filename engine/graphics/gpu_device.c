@@ -36,11 +36,14 @@ static crude_command_buffer_manager g_command_buffer_manager;
 ///////////////////////////////////
 // Local vulkal utils
 ///////////////////////////////////
-static VKAPI_ATTR VkBool32 debug_callback(
+static VKAPI_ATTR VkBool32
+_vk_debug_callback
+(
   _In_ VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
   _In_ VkDebugUtilsMessageTypeFlagsEXT             messageType,
   _In_ VkDebugUtilsMessengerCallbackDataEXT const *pCallbackData,
-  _In_ void                                       *pUserData)
+  _In_ void                                       *pUserData
+)
 {
   if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
   {
@@ -57,13 +60,16 @@ static VKAPI_ATTR VkBool32 debug_callback(
   return VK_FALSE;
 }
 
-static void transition_image_layout(
+static void
+_vk_transition_image_layout
+(
   _In_ VkCommandBuffer  command_buffer,
   _In_ VkImage          image,
   _In_ VkFormat         format,
   _In_ VkImageLayout    old_layout,
   _In_ VkImageLayout    new_layout,
-  _In_ bool             is_depth )
+  _In_ bool             is_depth
+)
 {
 
   VkImageMemoryBarrier barrier = {
@@ -107,10 +113,13 @@ static void transition_image_layout(
   vkCmdPipelineBarrier( command_buffer, sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier );
 }
 
-static VkInstance create_instance(
+static VkInstance
+_vk_create_instance
+(
   _In_     char const            *vk_application_name,
   _In_     uint32                 vk_application_version,
-  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks)
+  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks
+)
 {
   // extensions
   uint32 surface_extensions_count;
@@ -159,7 +168,7 @@ static VkInstance create_instance(
   debug_create_info.sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   debug_create_info.pNext            = NULL;
   debug_create_info.flags            = 0u;
-  debug_create_info.pfnUserCallback  = debug_callback;
+  debug_create_info.pfnUserCallback  = _vk_debug_callback;
   debug_create_info.pUserData        = NULL;
   debug_create_info.messageSeverity =
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -183,13 +192,16 @@ static VkInstance create_instance(
   return handle;
 }
 
-static VkDebugUtilsMessengerEXT create_debug_utils_messsenger(
+static VkDebugUtilsMessengerEXT
+_vk_create_debug_utils_messsenger
+(
   _In_     VkInstance              instance,
-  _In_opt_ VkAllocationCallbacks  *allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks  *allocation_callbacks
+)
 {
   VkDebugUtilsMessengerCreateInfoEXT create_info = {
     .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-    .pfnUserCallback  = debug_callback,
+    .pfnUserCallback  = _vk_debug_callback,
     .messageSeverity  =
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
@@ -210,10 +222,13 @@ static VkDebugUtilsMessengerEXT create_debug_utils_messsenger(
   return handle;
 }
 
-static VkSurfaceKHR create_surface(
+static VkSurfaceKHR
+_vk_create_surface
+(
   _In_     SDL_Window             *sdl_window,
   _In_     VkInstance              vk_instance,
-  _In_opt_ VkAllocationCallbacks  *vk_allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks  *vk_allocation_callbacks
+)
 {
   VkSurfaceKHR handle;
   if ( !SDL_Vulkan_CreateSurface( sdl_window, vk_instance, vk_allocation_callbacks, &handle ) )
@@ -224,9 +239,12 @@ static VkSurfaceKHR create_surface(
   return handle;
 }
 
-static int32 get_supported_queue_family_index(
+static int32
+_vk_get_supported_queue_family_index
+(
   _In_ VkPhysicalDevice  vk_physical_device,
-  _In_ VkSurfaceKHR      vk_surface )
+  _In_ VkSurfaceKHR      vk_surface
+)
 {
   uint32 queue_family_count = 0u;
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
@@ -257,8 +275,11 @@ static int32 get_supported_queue_family_index(
   return queue_index;
 }
 
-static bool check_support_required_extensions(
-  _In_ VkPhysicalDevice vk_physical_device )
+static bool
+_vk_check_support_required_extensions
+(
+  _In_ VkPhysicalDevice vk_physical_device
+)
 {
   uint32 available_extensions_count = 0u;
   vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, NULL );
@@ -294,9 +315,12 @@ static bool check_support_required_extensions(
   return support_required_extensions;
 }
 
-static bool check_swap_chain_adequate(
+static bool
+_vk_check_swap_chain_adequate
+(
   _In_ VkPhysicalDevice  vk_physical_device,
-  _In_ VkSurfaceKHR      vk_surface )
+  _In_ VkSurfaceKHR      vk_surface
+)
 {
   uint32 formats_count;
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &formats_count, NULL );
@@ -315,18 +339,24 @@ static bool check_swap_chain_adequate(
   return true;
 }
 
-static bool check_support_required_features(
-  _In_ VkPhysicalDevice vk_physical_device )
+static bool
+_vk_check_support_required_features
+(
+  _In_ VkPhysicalDevice vk_physical_device
+)
 {
   VkPhysicalDeviceFeatures features;
   vkGetPhysicalDeviceFeatures( vk_physical_device, &features );
   return features.samplerAnisotropy;
 }
 
-static VkPhysicalDevice pick_physical_device(
+static VkPhysicalDevice
+_vk_pick_physical_device
+(
   _In_  VkInstance     vk_instance,
   _In_  VkSurfaceKHR   vk_surface,
-  _Out_ int32         *vulkan_selected_queue_family_index )
+  _Out_ int32         *vulkan_selected_queue_family_index
+)
 {
   CRUDE_ASSERT( vulkan_selected_queue_family_index );
 
@@ -347,19 +377,19 @@ static VkPhysicalDevice pick_physical_device(
   {
     VkPhysicalDevice physical_device = physical_devices[physical_device_index];
     
-    if ( !check_support_required_extensions( physical_device ) )
+    if ( !_vk_check_support_required_extensions( physical_device ) )
     {
       continue;
     }
-    if ( !check_swap_chain_adequate( physical_device, vk_surface ) )
+    if ( !_vk_check_swap_chain_adequate( physical_device, vk_surface ) )
     {
       continue;
     }
-    if ( !check_support_required_features( physical_device ) )
+    if ( !_vk_check_support_required_features( physical_device ) )
     {
       continue;
     }
-    int32 queue_family_index = get_supported_queue_family_index( physical_device, vk_surface ); 
+    int32 queue_family_index = _vk_get_supported_queue_family_index( physical_device, vk_surface ); 
     if ( queue_family_index == -1 )
     {
       continue;
@@ -382,13 +412,16 @@ static VkPhysicalDevice pick_physical_device(
   return selected_physical_devices;
 }
 
-static VkDevice create_device(
+static VkDevice
+_vk_create_device
+(
   _In_     VkPhysicalDevice       vk_physical_device,
   _In_     int32                  vk_queue_family_index,
-  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks
+)
 {
   float const queue_priority[] = { 1.0f };
-  VkDeviceQueueCreateInfo queue_info[1];
+  VkDeviceQueueCreateInfo queue_info[ 1 ];
   memset( queue_info, 0, sizeof( queue_info) );
   queue_info[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_info[0].queueFamilyIndex = vk_queue_family_index;
@@ -415,7 +448,9 @@ static VkDevice create_device(
   return device;
 }
 
-static VkSwapchainKHR create_swapchain( 
+static VkSwapchainKHR
+_vk_create_swapchain
+( 
   _In_      VkDevice                 vk_device, 
   _In_      VkPhysicalDevice         vk_physical_device, 
   _In_      VkSurfaceKHR             vk_surface, 
@@ -426,7 +461,8 @@ static VkSwapchainKHR create_swapchain(
   _Out_     VkImageView             *vk_swapchain_images_views,
   _Out_     VkSurfaceFormatKHR      *vk_surface_format,
   _Out_     uint16                  *vk_swapchain_width,
-  _Out_     uint16                  *vk_swapchain_height )
+  _Out_     uint16                  *vk_swapchain_height
+)
 {
   VkSurfaceCapabilitiesKHR surface_capabilities;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR( vk_physical_device, vk_surface, &surface_capabilities);
@@ -548,10 +584,13 @@ static VkSwapchainKHR create_swapchain(
   return vulkan_swapchain;
 }
 
-static VmaAllocation create_vma_allocator(
+static VmaAllocation
+_vk_create_vma_allocator
+(
   _In_ VkDevice          vk_device,
   _In_ VkPhysicalDevice  vk_physical_device,
-  _In_ VkInstance        vk_instance )
+  _In_ VkInstance        vk_instance
+)
 {
   VmaAllocatorCreateInfo allocator_info = {
     .physicalDevice   = vk_physical_device,
@@ -564,9 +603,12 @@ static VmaAllocation create_vma_allocator(
   return vma_allocator;
 }
 
-static VkDescriptorPool create_descriptor_pool(
+static VkDescriptorPool
+_vk_create_descriptor_pool
+(
   _In_     VkDevice               vk_device,
-  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks
+)
 {
   uint32 const global_pool_elements = 128;
   VkDescriptorPoolSize pool_sizes[] =
@@ -597,10 +639,13 @@ static VkDescriptorPool create_descriptor_pool(
   return vulkan_descriptor_pool;
 }
 
-static VkQueryPool create_timestamp_query_pool(
+static VkQueryPool
+_vk_create_timestamp_query_pool
+(
   _In_     VkDevice               vk_device, 
   _In_     int32                  max_frames,
-  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks *vk_allocation_callbacks
+)
 {    
   uint32 const gpu_time_queries_per_frame = 32;
   VkQueryPoolCreateInfo query_pool_create_info = { 
@@ -616,7 +661,9 @@ static VkQueryPool create_timestamp_query_pool(
   return vulkan_timestamp_query_pool;
 }
 
-static void create_swapchain_pass(
+static void
+_vk_create_swapchain_pass
+(
   _In_ crude_gpu_device             *gpu,
   _In_ crude_render_pass_creation   *creation,
   _Out_ crude_render_pass           *render_pass
@@ -707,7 +754,7 @@ static void create_swapchain_pass(
   vkBeginCommandBuffer( command_buffer->vk_handle, &beginInfo );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    transition_image_layout( command_buffer->vk_handle, gpu->vk_swapchain_images[ i ], gpu->vk_surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, false );
+    _vk_transition_image_layout( command_buffer->vk_handle, gpu->vk_swapchain_images[ i ], gpu->vk_surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, false );
   }
   vkEndCommandBuffer( command_buffer->vk_handle );
 
@@ -721,13 +768,16 @@ static void create_swapchain_pass(
   vkQueueWaitIdle( gpu->vk_queue );
 }
 
-static void destroy_swapchain(
+static void
+_vk_destroy_swapchain
+(
   _In_     VkDevice                 vk_device,
   _In_     VkSwapchainKHR           vulkan_swapchain,
   _In_     uint32                   vk_swapchain_images_count,
   _In_     VkImageView             *vk_swapchain_images_views,
   _In_     VkFramebuffer           *vk_swapchain_framebuffers,
-  _In_opt_ VkAllocationCallbacks   *vk_allocation_callbacks )
+  _In_opt_ VkAllocationCallbacks   *vk_allocation_callbacks
+)
 {
   for ( uint32 i = 0; i < vk_swapchain_images_count; ++i )
   {
@@ -737,11 +787,14 @@ static void destroy_swapchain(
   vkDestroySwapchainKHR( vk_device, vulkan_swapchain, vk_allocation_callbacks );
 }
 
-static void vulkan_create_texture(
+static void
+_vk_create_texture
+(
   _In_ crude_gpu_device             *gpu,
   _In_ crude_texture_creation const *creation,
   _In_ crude_texture_handle          handle,
-  _In_ crude_texture                *texture )
+  _In_ crude_texture                *texture
+)
 {
   texture->width          = creation->width;
   texture->height         = creation->height;
@@ -819,13 +872,16 @@ static void vulkan_create_texture(
   texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-static void vulkan_resize_texture(
+static void
+_vk_resize_texture
+(
   _In_ crude_gpu_device *gpu,
   _In_ crude_texture    *texture,
   _In_ crude_texture    *texture_to_delete,
   _In_ uint16            width,
   _In_ uint16            height,
-  _In_ uint16            depth )
+  _In_ uint16            depth
+)
 {
   texture_to_delete->vk_image_view = texture->vk_image_view;
   texture_to_delete->vk_image = texture->vk_image;
@@ -841,11 +897,14 @@ static void vulkan_resize_texture(
     .type     = texture->type,
     .name     = texture->name,
   };
-  vulkan_create_texture( gpu, &texture_creation, texture->handle, &texture );
+  _vk_create_texture( gpu, &texture_creation, texture->handle, &texture );
 }
 
-static void resize_swapchain(
-  _In_ crude_gpu_device *gpu )
+static void
+_vk_resize_swapchain
+(
+  _In_ crude_gpu_device *gpu
+)
 {
   vkDeviceWaitIdle( gpu->vk_device );
 
@@ -864,7 +923,7 @@ static void resize_swapchain(
   crude_render_pass* vk_swapchain_pass = crude_resource_pool_access_resource( &gpu->render_passes, gpu->swapchain_pass.index );
   vkDestroyRenderPass( gpu->vk_device, vk_swapchain_pass->vk_render_pass, gpu->vk_allocation_callbacks );
   
-  destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
+  _vk_destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
 
   if ( !SDL_Vulkan_CreateSurface( gpu->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks, &gpu->vk_surface ) )
@@ -872,14 +931,14 @@ static void resize_swapchain(
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Failed to create vk_surface: %s!", SDL_GetError() );
   }
   
-  gpu->vk_swapchain = create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
   
   crude_texture_handle texture_to_delete_handle = { crude_resource_pool_obtain_resource( &gpu->textures ) };
   crude_texture* texture_to_delete = crude_resource_pool_access_resource( &gpu->textures, texture_to_delete_handle.index );
   texture_to_delete->handle = texture_to_delete_handle;
 
   crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
-  vulkan_resize_texture( gpu, depth_texture, texture_to_delete, gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 );
+  _vk_resize_texture( gpu, depth_texture, texture_to_delete, gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 );
   crude_gfx_destroy_texture( gpu, texture_to_delete_handle );
   
   crude_render_pass_creation swapchain_pass_creation = {
@@ -892,7 +951,7 @@ static void resize_swapchain(
     .scale_y               = 1.f,
     .resize                = 1,
   };
-  create_swapchain_pass( gpu, &swapchain_pass_creation, &gpu->swapchain_pass );
+  _vk_create_swapchain_pass( gpu, &swapchain_pass_creation, &gpu->swapchain_pass );
   
   vkDeviceWaitIdle( gpu->vk_device );
 }
@@ -901,7 +960,8 @@ static void resize_swapchain(
 // Gpu device
 ///////////////////
 
-void crude_gfx_initialize_gpu_device
+void
+crude_gfx_initialize_gpu_device
 (
   _Out_ crude_gpu_device          *gpu,
   _In_ crude_gpu_device_creation  *creation
@@ -911,16 +971,16 @@ void crude_gfx_initialize_gpu_device
   gpu->allocator  = creation->allocator;
   gpu->vk_allocation_callbacks = NULL;
   gpu->max_frames = creation->max_frames;
-  gpu->vk_instance = create_instance( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks );
-  gpu->vk_debug_utils_messenger = create_debug_utils_messsenger( gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_surface = create_surface( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_physical_device = pick_physical_device( gpu->vk_instance, gpu->vk_surface, &gpu->vk_queue_family_index );
-  gpu->vk_device = create_device( gpu->vk_physical_device, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks );
+  gpu->vk_instance = _vk_create_instance( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks );
+  gpu->vk_debug_utils_messenger = _vk_create_debug_utils_messsenger( gpu->vk_instance, gpu->vk_allocation_callbacks );
+  gpu->vk_surface = _vk_create_surface( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
+  gpu->vk_physical_device = _vk_pick_physical_device( gpu->vk_instance, gpu->vk_surface, &gpu->vk_queue_family_index );
+  gpu->vk_device = _vk_create_device( gpu->vk_physical_device, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks );
   vkGetDeviceQueue( gpu->vk_device, gpu->vk_queue_family_index, 0u, &gpu->vk_queue );
-  gpu->vk_swapchain = create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height );
-  gpu->vma_allocator = create_vma_allocator( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
-  gpu->vk_descriptor_pool = create_descriptor_pool( gpu->vk_device, gpu->vk_allocation_callbacks );
-  gpu->vk_timestamp_query_pool = create_timestamp_query_pool( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height );
+  gpu->vma_allocator = _vk_create_vma_allocator( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
+  gpu->vk_descriptor_pool = _vk_create_descriptor_pool( gpu->vk_device, gpu->vk_allocation_callbacks );
+  gpu->vk_timestamp_query_pool = _vk_create_timestamp_query_pool( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
   crude_initialize_resource_pool( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_buffer ) );
   crude_initialize_resource_pool( &gpu->textures, gpu->allocator, 512, sizeof( crude_texture ) );
   crude_initialize_resource_pool( &gpu->render_passes, gpu->allocator, 256, sizeof( crude_render_pass ) );
@@ -1059,7 +1119,7 @@ crude_gfx_deinitialize_gpu_device
 
   vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_descriptor_pool, gpu->vk_allocation_callbacks );
-  destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
+  _vk_destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
@@ -1088,7 +1148,7 @@ crude_gfx_new_frame
   VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
   if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
-    resize_swapchain( gpu );
+    _vk_resize_swapchain( gpu );
   }
 
   crude_gfx_reset_cmd_manager( &g_command_buffer_manager, gpu->current_frame );
@@ -1147,7 +1207,7 @@ crude_gfx_present
 
   if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
   {
-    resize_swapchain( gpu );
+    _vk_resize_swapchain( gpu );
     return;
   }
 
@@ -1335,7 +1395,7 @@ crude_texture_handle crude_gfx_create_texture
   }
   
   crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, handle );
-  vulkan_create_texture( gpu, creation, handle, texture );
+  _vk_create_texture( gpu, creation, handle, texture );
   return handle;
 }
 
@@ -1416,7 +1476,7 @@ crude_gfx_create_render_pass
   {
     case CRUDE_RENDER_PASS_TYPE_SWAPCHAIN:
     {
-      create_swapchain_pass( gpu, creation, render_pass );
+      _vk_create_swapchain_pass( gpu, creation, render_pass );
       break;
     }
   }
