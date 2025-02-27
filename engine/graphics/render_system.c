@@ -39,7 +39,7 @@ static void initialize_render_core( ecs_iter_t *it  )
     pipeline_creation.shaders.stages[1].code_size = sizeof( crude_compiled_shader_main_frag );
     pipeline_creation.shaders.stages[1].type = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipeline_creation.shaders.stages_count = 2u;
-    renderer->pipeline = crude_create_pipeline( renderer->gpu, &pipeline_creation );
+    renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
   }
 }
 
@@ -49,7 +49,7 @@ static void deinitialize_render_core( ecs_iter_t *it )
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_destroy_pipeline( renderer[i].gpu, renderer[i].pipeline );
+    crude_gfx_destroy_pipeline( renderer[i].gpu, renderer[i].pipeline );
     crude_deinitialize_gpu_device( renderer[i].gpu );
     renderer[i].gpu->allocator.deallocate( renderer[i].gpu );
   }
