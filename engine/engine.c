@@ -2,7 +2,11 @@
 
 #include <engine.h>
 
-crude_engine crude_engine_initialize( _In_ int32 num_threads )
+crude_engine
+crude_engine_initialize
+(
+  _In_ int32 num_threads
+)
 {
   crude_engine engine;
   engine.world   = ecs_init();
@@ -12,11 +16,26 @@ crude_engine crude_engine_initialize( _In_ int32 num_threads )
   {
     ecs_set_threads( engine.world, num_threads );
   }
+
+  crude_initialize_log();
   
   return engine;
 }
 
-bool crude_engine_update( _In_ crude_engine *engine )
+void
+crude_engine_deinitialize
+(
+  _In_ crude_engine *engine
+)
+{
+  crude_deinitialize_log();
+}
+
+bool
+crude_engine_update
+(
+  _In_ crude_engine *engine
+)
 {
   ecs_world_t *world = engine->world;
   

@@ -1,12 +1,19 @@
 #include <core/log.h>
+#include <core/assert.h>
 #include <stb_sprintf.h>
 #include <Windows.h>
 #include <stdio.h>
 
-char g_message_buffer[1024];
-char g_format_buffer[1024];
+char g_message_buffer[ 1024 ];
+char g_format_buffer[ 1024 ];
 
-static CRUDE_INLINE char const* crude_get_verbosity_string( _In_ crude_verbosity v )
+FILE *g_log_file = NULL;
+
+static CRUDE_INLINE char const*
+crude_get_verbosity_string
+(
+  _In_ crude_verbosity v
+)
 {
   switch ( v )
   {
@@ -19,7 +26,11 @@ static CRUDE_INLINE char const* crude_get_verbosity_string( _In_ crude_verbosity
   return "Unknown";
 }
 
-static CRUDE_INLINE char const* crude_get_channel_string( _In_ crude_channel c )
+static CRUDE_INLINE char const*
+crude_get_channel_string
+(
+  _In_ crude_channel c
+)
 {
   switch ( c )
   {
@@ -37,28 +48,37 @@ static CRUDE_INLINE char const* crude_get_channel_string( _In_ crude_channel c )
   return "Unknown-Channel";
 }
 
-static CRUDE_INLINE void output_visual_studio( _In_ char *buffer )
+CRUDE_API void
+crude_initialize_log
+()
 {
-  OutputDebugStringA( CAST( LPCSTR, buffer ) );
+  g_log_file = fopen( "log.txt", "w" );
 }
 
-static CRUDE_INLINE void output_file( _In_ char *buffer )
+CRUDE_API void
+crude_deinitialize_log
+()
 {
-  // !TODO
-  FILE *inf = fopen("log.txt", "a");
-  fprintf(inf, buffer);
-  fclose(inf);
+  fclose( g_log_file );
 }
 
-void crude_log_common( _In_ char const *filename, _In_ int32 line, _In_ crude_channel channel, _In_ crude_verbosity verbosity, _In_ char const *format, ... )
+void
+crude_log_common
+(
+  _In_ char const      *filename,
+  _In_ int32            line,
+  _In_ crude_channel    channel,
+  _In_ crude_verbosity  verbosity,
+  _In_ char const      *format,
+  _In_ ...
+)
 {
-
   va_list args;
   va_start( args, format );
   stbsp_snprintf( g_format_buffer, ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
   stbsp_vsnprintf( g_message_buffer, ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
-  output_visual_studio( g_message_buffer );
-  output_file( g_message_buffer );
+  OutputDebugStringA( CAST( LPCSTR, g_message_buffer ) );
+  fprintf( g_log_file, g_message_buffer );
   printf( "%s", g_message_buffer );
   va_end( args );
 }

@@ -43,5 +43,7 @@ int main()
   cr_plugin_close( crude_engine_simulation );
   cr_plugin_close( crude_sandbox );
 
+  crude_engine_deinitialize( &engine );
+
   return EXIT_SUCCESS;
 }

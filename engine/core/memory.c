@@ -10,11 +10,14 @@ typedef struct memory_statistics
   uint32  allocation_count;
 } memory_statistics;
 
-static void exit_walker(
+static void
+exit_walker
+(
   _In_ void    *ptr,
   _In_ size_t   size,
   _In_ int      used,
-  _In_ void    *user )
+  _In_ void    *user
+)
 {
   if ( !used ) return;
 
@@ -24,9 +27,12 @@ static void exit_walker(
   CRUDE_LOG_WARNING( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
 }
 
-void crude_initialize_heap_allocator(
+void
+crude_initialize_heap_allocator
+(
   _In_ crude_heap_allocator  *allocator,
-  _In_ sizet                  capacity )
+  _In_ sizet                  capacity
+)
 {
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
@@ -34,8 +40,11 @@ void crude_initialize_heap_allocator(
   CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator of capacity %llu created", capacity );
 }
 
-void crude_deinitialize_heap_allocator(
-  _In_ crude_heap_allocator *allocator )
+void
+crude_deinitialize_heap_allocator
+(
+  _In_ crude_heap_allocator *allocator
+)
 {
   memory_statistics stats = {
     .allocated_bytes = 0,
@@ -60,26 +69,35 @@ void crude_deinitialize_heap_allocator(
   free( allocator->memory );
 }
 
-void* crude_allocate_heap(
+void*
+crude_allocate_heap
+(
   _In_ crude_heap_allocator *allocator,
   _In_ sizet                 size,
-  _In_ sizet                 alignment )
+  _In_ sizet                 alignment
+)
 {
   void* allocated_memory = alignment == 1 ? tlsf_malloc( allocator->tlsf_handle, size ) : tlsf_memalign( allocator->tlsf_handle, alignment, size );
   sizet actual_size = tlsf_block_size( allocated_memory );
   return allocated_memory;
 }
 
-void crude_deallocate_heap(
+void
+crude_deallocate_heap
+(
   _In_ crude_heap_allocator *allocator,
-  _In_ void                 *pointer )
+  _In_ void                 *pointer
+)
 {
   tlsf_free( allocator->tlsf_handle, pointer );
 }
 
-void crude_initialize_stack_allocator(
+void
+crude_initialize_stack_allocator
+(
   _In_ crude_stack_allocator *allocator,
-  _In_ sizet                  capacity )
+  _In_ sizet                  capacity
+)
 {
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
@@ -87,16 +105,22 @@ void crude_initialize_stack_allocator(
   CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Stack allocator of capacity %llu created", capacity );
 }
 
-void crude_deinitialize_stack_allocator(
-  _In_ crude_stack_allocator *allocator )
+void
+crude_deinitialize_stack_allocator
+(
+  _In_ crude_stack_allocator *allocator
+)
 {
   free( allocator->memory );
 }
 
-void* crude_allocate_stack(
+void*
+crude_allocate_stack
+(
   _In_ crude_stack_allocator *allocator,
   _In_ sizet                  size,
-  _In_ sizet                  alignment )
+  _In_ sizet                  alignment
+)
 {
   if ( allocator->occupied + size > allocator->capacity )
   {
@@ -107,9 +131,12 @@ void* crude_allocate_stack(
   return memory_block;
 }
 
-void crude_deallocate_stack(
+void
+crude_deallocate_stack
+(
   _In_ crude_stack_allocator  *allocator,
-  _In_ void                   *pointer )
+  _In_ void                   *pointer
+)
 {
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );

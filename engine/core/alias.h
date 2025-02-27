@@ -19,11 +19,14 @@
 #define CRUDE_API CRUDE_IMPORT
 #endif
 
-#define CRUDE_DEBUG_BREAK   __debugbreak();
+#define CRUDE_DEBUG_BREAK   __debugbreak()
 #define CRUDE_INLINE        inline
 
 #define CAST( t, exp )      ( ( t ) ( exp ) )
-#define ARRAY_SIZE( arr )   ( sizeof( arr ) / sizeof( arr[0] ) )
+#define ARRAY_SIZE( arr )   ( sizeof( arr ) / sizeof( arr[ 0 ] ) )
+
+#define MAX( a, b) ( a ) > ( b ) ? ( a ) : ( b )
+#define MIN( a, b) ( a ) < ( b ) ? ( a ) : ( b )
 
 typedef int8_t        int8;
 typedef int16_t       int16;

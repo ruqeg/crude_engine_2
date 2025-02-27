@@ -28,9 +28,41 @@ typedef enum crude_channel
   CRUDE_CHANNEL_ALL,
 } crude_channel;
 
-CRUDE_API void crude_log_common( _In_ char const *filename, _In_ int32 line, _In_ crude_channel channel, _In_ crude_verbosity verbosity, _In_ char const *format, ... );
+CRUDE_API void
+crude_initialize_log
+();
 
-#define CRUDE_LOG( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ALL, format, ##__VA_ARGS__ )
-#define CRUDE_LOG_INFO( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_INFO, format, ##__VA_ARGS__ )
-#define CRUDE_LOG_WARNING( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_WARNING, format, ##__VA_ARGS__ )
-#define CRUDE_LOG_ERROR( channel, format, ... ) crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ERROR, format, ##__VA_ARGS__ )
+CRUDE_API void
+crude_deinitialize_log
+();
+
+CRUDE_API void
+crude_log_common
+(
+  _In_ char const      *filename,
+  _In_ int32            line,
+  _In_ crude_channel    channel,
+  _In_ crude_verbosity  verbosity,
+  _In_ char const      *format,
+  _In_ ...
+);
+
+#define CRUDE_LOG( channel, format, ... )\
+{\
+  crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ALL, format, ##__VA_ARGS__ );\
+}
+
+#define CRUDE_LOG_INFO( channel, format, ... )\
+{\
+  crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_INFO, format, ##__VA_ARGS__ );\
+}
+
+#define CRUDE_LOG_WARNING( channel, format, ... )\
+{\
+  crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_WARNING, format, ##__VA_ARGS__ );\
+}
+
+#define CRUDE_LOG_ERROR( channel, format, ... )\
+{\
+  crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ERROR, format, ##__VA_ARGS__ );\
+}
