@@ -5,7 +5,11 @@ ECS_COMPONENT_DECLARE( crude_gui_context );
 ECS_COMPONENT_DECLARE( crude_window );
 ECS_COMPONENT_DECLARE( crude_window_handle );
 
-void crude_gui_componentsImport( ecs_world_t *world )
+void
+crude_gui_componentsImport
+(
+  ecs_world_t *world
+)
 {
   ECS_MODULE( world, crude_gui_components );
 

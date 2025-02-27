@@ -4,4 +4,8 @@
 
 #include <core/alias.h>
 
-CRUDE_API void crude_sdl_systemImport( ecs_world_t *world );
+CRUDE_API void
+crude_sdl_systemImport
+(
+  ecs_world_t *world
+);

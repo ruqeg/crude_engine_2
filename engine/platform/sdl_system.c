@@ -7,13 +7,18 @@
 
 #include <platform/sdl_system.h>
 
-static void sdl_create_window( ecs_iter_t *it )
+static void
+sdl_create_window
+(
+  ecs_iter_t *it
+)
 {
-  crude_window *window = ecs_field( it, crude_window, 0 );
+  crude_window *windows = ecs_field( it, crude_window, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     ecs_world_t *world = it->world;
+    crude_window *window = &windows[ i ];
     ecs_entity_t *entity = it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
@@ -25,16 +30,19 @@ static void sdl_create_window( ecs_iter_t *it )
     }
     
     SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-    if ( window[i].maximized )
+    if ( window->maximized )
+    {
       flags |= SDL_WINDOW_MAXIMIZED;
-    SDL_Window *created_window = SDL_CreateWindow( title, window[i].width, window[i].height, flags );
+    }
+
+    SDL_Window *created_window = SDL_CreateWindow( title, window->width, window->height, flags );
     if ( !created_window )
     {
       CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "SDL2 window creation failed: %s", SDL_GetError() );
       return;
     }
     
-    if ( window[i].maximized )
+    if ( window->maximized )
     {
       SDL_SetWindowBordered( created_window, false );
       
@@ -57,40 +65,53 @@ static void sdl_create_window( ecs_iter_t *it )
     }
     else
     {
-      SDL_SetWindowSize( created_window, window[i].width, window[i].height );
+      SDL_SetWindowSize( created_window, window->width, window->height );
     }
     
     int32 actual_width, actual_height;
     SDL_GetWindowSizeInPixels(created_window, &actual_width, &actual_height);
     
     window_handle->value = created_window;
-    window[i].width      = actual_width;
-    window[i].height     = actual_height;
+    window->width      = actual_width;
+    window->height     = actual_height;
   }
 }
 
-static void sdl_destroy_window( ecs_iter_t *it )
+static void
+sdl_destroy_window
+(
+  ecs_iter_t *it
+)
 {
-  crude_window_handle *window = ecs_field( it, crude_window_handle, 0 );
+  crude_window_handle *windows = ecs_field( it, crude_window_handle, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    SDL_DestroyWindow( window[i].value );
+    SDL_DestroyWindow( windows[ i ].value );
   }
 }
 
-static void sdl_shutdown( ecs_world_t *world, void *ctx )
+static void
+sdl_shutdown
+(
+  ecs_world_t *world,
+  void        *ctx
+)
 {
   SDL_Vulkan_UnloadLibrary();
   SDL_Quit();
   CRUDE_LOG_INFO( CRUDE_CHANNEL_PLATFORM, "SDL successfully shutdown" );
 }
 
-static void sdl_process_events( ecs_iter_t *it )
+static void
+sdl_process_events
+(
+  ecs_iter_t *it
+)
 {
-  crude_input *input = ecs_field( it, crude_input, 0 );
-  crude_window *app_window = ecs_field( it, crude_window, 1 );
-  crude_window_handle *app_window_handle = ecs_field( it, crude_window_handle, 2 );
+  crude_input *inputs = ecs_field( it, crude_input, 0 );
+  crude_window *app_windows = ecs_field( it, crude_window, 1 );
+  crude_window_handle *app_windows_handles = ecs_field( it, crude_window_handle, 2 );
   
   for ( uint32 i = 0; i < it->count; ++i )
   {
@@ -103,13 +124,13 @@ static void sdl_process_events( ecs_iter_t *it )
       }
       else if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
       {
-        if ( SDL_GetWindowID( app_window_handle[i].value) == sdl_event.window.windowID )
+        if ( SDL_GetWindowID( app_windows_handles[ i ].value) == sdl_event.window.windowID )
         {
           int actual_width, actual_height;
-          SDL_GetWindowSizeInPixels( app_window_handle[i].value, &actual_width, &actual_height );
-          app_window[i].width  = actual_width;
-          app_window[i].height = actual_height;
-          ecs_modified( it->world, it->entities[i], crude_window );
+          SDL_GetWindowSizeInPixels( app_windows_handles[ i ].value, &actual_width, &actual_height );
+          app_windows[ i ].width  = actual_width;
+          app_windows[ i ].height = actual_height;
+          ecs_modified( it->world, it->entities[ i ], crude_window );
           break;
         }
       }
@@ -121,7 +142,11 @@ static void sdl_process_events( ecs_iter_t *it )
   }
 }
 
-void crude_sdl_systemImport( ecs_world_t *world )
+void
+crude_sdl_systemImport
+(
+  ecs_world_t *world
+)
 {
   ECS_MODULE( world, crude_sdl_system );
   ECS_IMPORT( world, crude_gui_components );
