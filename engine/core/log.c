@@ -4,8 +4,8 @@
 #include <Windows.h>
 #include <stdio.h>
 
-char g_message_buffer[ 1024 ];
-char g_format_buffer[ 1024 ];
+char g_message_buffer[ 4098 ];
+char g_format_buffer[ 4098 ];
 
 FILE *g_log_file = NULL;
 

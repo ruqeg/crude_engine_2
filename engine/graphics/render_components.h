@@ -21,4 +21,8 @@ typedef struct crude_renderer
 CRUDE_API ECS_COMPONENT_DECLARE( crude_render_create );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_renderer );
 
-CRUDE_API void crude_render_componentsImport( ecs_world_t *world );
+CRUDE_API void
+crude_render_componentsImport
+(
+  ecs_world_t *world
+);

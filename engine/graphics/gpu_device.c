@@ -685,17 +685,17 @@ _vk_create_swapchain_pass
     .layout         = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
   };
   
-  //crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
-  //VkAttachmentDescription depth_attachment = {
-  //  .format         = depth_texture->vk_format,
-  //  .samples        = VK_SAMPLE_COUNT_1_BIT,
-  //  .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-  //  .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-  //  .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-  //  .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-  //  .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-  //  .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-  //};
+  crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
+  VkAttachmentDescription depth_attachment = {
+    .format         = depth_texture->vk_format,
+    .samples        = VK_SAMPLE_COUNT_1_BIT,
+    .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+    .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+    .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+  };
   
   VkAttachmentReference depth_attachment_ref = {
     .attachment     = 1,
@@ -706,10 +706,10 @@ _vk_create_swapchain_pass
     .pipelineBindPoint        = VK_PIPELINE_BIND_POINT_GRAPHICS,
     .colorAttachmentCount     = 1,
     .pColorAttachments        = &color_attachment_ref,
-    .pDepthStencilAttachment  = NULL/*&depth_attachment_ref*/,
+    .pDepthStencilAttachment  = &depth_attachment_ref,
   };
   
-  VkAttachmentDescription attachments[] = { color_attachment, /*depth_attachment*/ };
+  VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
   VkRenderPassCreateInfo render_pass_info = { 
     .sType            = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
     .attachmentCount  = ARRAY_SIZE( attachments ),
@@ -722,7 +722,7 @@ _vk_create_swapchain_pass
 
   crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_RENDER_PASS, CAST( uint64, render_pass->vk_render_pass ), creation->name );
   
-  VkImageView framebuffer_attachments[1];
+  VkImageView framebuffer_attachments[2];
 
   VkFramebufferCreateInfo framebuffer_info = {
     .sType            = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -733,11 +733,11 @@ _vk_create_swapchain_pass
     .layers           = 1,
   };
 
-  //framebuffer_attachments[1] = depth_texture->vk_image_view;
-  framebuffer_info.pAttachments = framebuffer_attachments;
+  framebuffer_attachments[1] = depth_texture->vk_image_view;
   for ( uint32 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
     framebuffer_attachments[0] = gpu->vk_swapchain_images_views[i];
+    framebuffer_info.pAttachments = framebuffer_attachments;
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFramebuffer( gpu->vk_device, &framebuffer_info, NULL, &gpu->vk_swapchain_framebuffers[i] ), "Failed to create framebuffer" );
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_FRAMEBUFFER, gpu->vk_swapchain_framebuffers[ i ], creation->name );
   }
@@ -897,7 +897,7 @@ _vk_resize_texture
     .type     = texture->type,
     .name     = texture->name,
   };
-  _vk_create_texture( gpu, &texture_creation, texture->handle, &texture );
+  _vk_create_texture( gpu, &texture_creation, texture->handle, texture );
 }
 
 static void
@@ -917,11 +917,8 @@ _vk_resize_swapchain
     return;
   }
 
-  gpu->vk_swapchain_width = swapchain_extent.width;
-  gpu->vk_swapchain_height = swapchain_extent.height;
-
-  crude_render_pass* vk_swapchain_pass = crude_resource_pool_access_resource( &gpu->render_passes, gpu->swapchain_pass.index );
-  vkDestroyRenderPass( gpu->vk_device, vk_swapchain_pass->vk_render_pass, gpu->vk_allocation_callbacks );
+  crude_render_pass* swapchain_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, gpu->swapchain_pass );
+  vkDestroyRenderPass( gpu->vk_device, swapchain_pass->vk_render_pass, gpu->vk_allocation_callbacks );
   
   _vk_destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
@@ -933,11 +930,11 @@ _vk_resize_swapchain
   
   gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
   
-  crude_texture_handle texture_to_delete_handle = { crude_resource_pool_obtain_resource( &gpu->textures ) };
-  crude_texture* texture_to_delete = crude_resource_pool_access_resource( &gpu->textures, texture_to_delete_handle.index );
+  crude_texture_handle texture_to_delete_handle = { CRUDE_GFX_GPU_OBTAIN_TEXTURE( gpu ) };
+  crude_texture *texture_to_delete = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, texture_to_delete_handle );
   texture_to_delete->handle = texture_to_delete_handle;
 
-  crude_texture* depth_texture = crude_resource_pool_access_resource( &gpu->textures, gpu->depth_texture.index );
+  crude_texture *depth_texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, gpu->depth_texture );
   _vk_resize_texture( gpu, depth_texture, texture_to_delete, gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 );
   crude_gfx_destroy_texture( gpu, texture_to_delete_handle );
   
@@ -951,7 +948,7 @@ _vk_resize_swapchain
     .scale_y               = 1.f,
     .resize                = 1,
   };
-  _vk_create_swapchain_pass( gpu, &swapchain_pass_creation, &gpu->swapchain_pass );
+  _vk_create_swapchain_pass( gpu, &swapchain_pass_creation, swapchain_pass );
   
   vkDeviceWaitIdle( gpu->vk_device );
 }
@@ -1029,7 +1026,7 @@ crude_gfx_initialize_gpu_device
     .type     = CRUDE_TEXTURE_TYPE_TEXTURE_2D, 
     .name     = "depth_image_texture"
   };
-  //gpu->depth_texture = crude_create_texture( gpu, &depth_texture_creation );
+  gpu->depth_texture = crude_gfx_create_texture( gpu, &depth_texture_creation );
 
   crude_reset_render_pass_output( &gpu->swapchain_output );
   gpu->swapchain_output.color_formats[ gpu->swapchain_output.num_color_formats++ ] = gpu->vk_surface_format.format;
@@ -1065,7 +1062,7 @@ crude_gfx_deinitialize_gpu_device
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
 
-  //crude_destroy_texture( gpu, gpu->depth_texture );
+  crude_gfx_destroy_texture( gpu, gpu->depth_texture );
   crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
 
