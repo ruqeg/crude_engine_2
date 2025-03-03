@@ -143,3 +143,14 @@ crude_deallocate_stack
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
   allocator->occupied = CAST( int8*, pointer ) - CAST( int8*, allocator->memory );
 }
+
+sizet
+crude_memory_align
+(
+  _In_ sizet                   size,
+  _In_ sizet                   alignment
+)
+{
+  const sizet alignment_mask = alignment - 1;
+  return ( size + alignment_mask ) & ~alignment_mask;
+}

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(tlsf C)
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 99)
 
 set(TLSF_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tlsf")
 add_library(${PROJECT_NAME} SHARED ${TLSF_SOURCE_DIR}/tlsf.c)

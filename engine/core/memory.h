@@ -80,3 +80,10 @@ crude_deallocate_stack
   _In_ crude_stack_allocator  *allocator,
   _In_ void                   *pointer
 );
+
+CRUDE_API sizet
+crude_memory_align
+(
+  _In_ sizet                   size,
+  _In_ sizet                   alignment
+);

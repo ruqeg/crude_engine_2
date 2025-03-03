@@ -55,3 +55,18 @@ crude_resource_pool_access_resource
   _In_ crude_resource_pool    *resource_pool,
   _In_ uint32                  index
 );
+
+#define CRUDE_OBTAIN_RESOURCE( resource_pool )\
+(\
+  crude_resource_pool_obtain_resource( &resource_pool )\
+)
+
+#define CRUDE_ACCESS_RESOURCE( resource_pool, resource_struct, handle )\
+(\
+  CAST( resource_struct*, crude_resource_pool_access_resource( &resource_pool, handle.index ) )\
+)
+
+#define CRUDE_RELEASE_RESOURCE( resource_pool, handle )\
+{\
+  crude_resource_pool_release_resource( &resource_pool, handle.index );\
+}

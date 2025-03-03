@@ -49,6 +49,7 @@ typedef struct crude_pipeline_handle
 #define CRUDE_MAX_DESCRIPTORS_PER_SET       16
 #define CRUDE_MAX_VERTEX_STREAMS            16
 #define CRUDE_MAX_VERTEX_ATTRIBUTES         16
+#define CRUDE_UBO_ALIGNMENT                 256
 
 typedef enum crude_resource_usage_type 
 {
@@ -466,6 +467,23 @@ typedef struct crude_shader_state
   uint32                               active_shaders;
   bool                                 graphics_pipeline;
 } crude_shader_state;
+
+typedef struct crude_buffer_description
+{
+  void                                *native_handle;
+  char const                          *name;
+  VkBufferUsageFlags                   type_flags;
+  crude_resource_usage_type            usage;
+  uint32                               size;
+  crude_buffer_handle                  parent_handle;
+} crude_buffer_description;
+
+typedef struct crude_map_buffer_parameters
+{
+  crude_buffer_handle                  buffer;
+  uint32                               offset;
+  uint32                               size;
+} crude_map_buffer_parameters;
 
 typedef struct crude_resource_update
 {
