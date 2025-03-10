@@ -19,3 +19,9 @@
 [submodule "extlibs/cgltf_cmake/cgltf"]
 	path = extlibs/cgltf_cmake/cgltf
 	url = https://github.com/jkuhlmann/cgltf.git
+[submodule "resources/glTF-Sample-Models"]
+	path = resources/glTF-Sample-Models
+	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
+[submodule "extlibs/cimgui"]
+	path = extlibs/cimgui
+	url = https://github.com/cimgui/cimgui.git

@@ -1,5 +1,6 @@
 add_subdirectory(SDL)
 add_subdirectory(cgltf_cmake)
+add_subdirectory(cimgui)
 add_subdirectory(cr_cmake)
 add_subdirectory(flecs)
 add_subdirectory(stb_cmake)

@@ -1,11 +1,16 @@
 #include <crude_shaders/main.frag.inl>
 #include <crude_shaders/main.vert.inl>
 
+#include <core/file.h>
+#include <core/string.h>
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/command_buffer.h>
 
 #include <graphics/render_system.h>
+
+// !TODO
+#include <resources/gltf_loader.h> 
 
 static void
 initialize_render_core
@@ -18,9 +23,9 @@ initialize_render_core
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_renderer *renderer = ecs_ensure( it->world, it->entities[ i ], crude_renderer );
+    crude_renderer_component *renderer = ecs_ensure( it->world, it->entities[ i ], crude_renderer_component );
     
-    crude_gpu_device_creation create = {
+    crude_gpu_device_creation gpu_creation = {
       .sdl_window             = window_handle[ i ].value,
       .vk_application_name    = render_create[ i ].vk_application_name,
       .vk_application_version = render_create[ i ].vk_application_version,
@@ -30,7 +35,7 @@ initialize_render_core
     };
 
     renderer->gpu = render_create[ i ].allocator.allocate( sizeof( crude_gpu_device ), 1u );
-    crude_gfx_initialize_gpu_device( renderer->gpu, &create );
+    crude_gfx_initialize_gpu_device( renderer->gpu, &gpu_creation );
 
     crude_pipeline_creation pipeline_creation;
     memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
@@ -44,6 +49,21 @@ initialize_render_core
     pipeline_creation.shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipeline_creation.shaders.stages_count = 2u;
     renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
+
+    crude_renderer_creation rendere_creation = {
+      .allocator = render_create[ i ].allocator,
+      .gpu = renderer->gpu
+    };
+
+    renderer->renderer = render_create[ i ].allocator.allocate( sizeof( crude_renderer ), 1u );
+    crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
+
+    char gltf_path[ 1024 ];
+    crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
+    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+
+    crude_scene scene;
+    crude_load_gltf_from_file( renderer->renderer, gltf_path, &scene );
   }
 }
 
@@ -53,13 +73,15 @@ deinitialize_render_core
   ecs_iter_t *it
 )
 {
-  crude_renderer *renderer = ecs_field( it, crude_renderer, 0 );
+  crude_renderer_component *renderer = ecs_field( it, crude_renderer_component, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    crude_gfx_deinitialize_renderer( renderer->renderer );
     crude_gfx_destroy_pipeline( renderer[ i ].gpu, renderer[ i ].pipeline );
     crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
     renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
+    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
   }
 }
 
@@ -69,7 +91,7 @@ render
   ecs_iter_t *it
 )
 {
-  crude_renderer *renderer = ecs_field( it, crude_renderer, 0 );
+  crude_renderer_component *renderer = ecs_field( it, crude_renderer_component, 0 );
   crude_window   *window_handle = ecs_field( it, crude_window, 1 );
 
   for ( uint32 i = 0; i < it->count; ++i )
@@ -100,13 +122,13 @@ crude_render_systemImport
     .query.terms = { 
       ( ecs_term_t ) { .id = ecs_id( crude_render_create ), .oper = EcsAnd },
       ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsAnd },
-      ( ecs_term_t ) { .id = ecs_id( crude_renderer ), .oper = EcsNot }
+      ( ecs_term_t ) { .id = ecs_id( crude_renderer_component ), .oper = EcsNot }
     },
     .events = { EcsOnSet },
     .callback = initialize_render_core
     });
   ecs_observer( world, {
-    .query.terms = { { .id = ecs_id( crude_renderer ) } },
+    .query.terms = { { .id = ecs_id( crude_renderer_component ) } },
     .events = { EcsOnRemove },
     .callback = deinitialize_render_core
     } );
@@ -114,7 +136,7 @@ crude_render_systemImport
     .entity = ecs_entity( world, { .name = "render_system", .add = ecs_ids( ecs_dependson( EcsOnStore ) ) } ),
     .callback = render,
     .query.terms = { 
-      {.id = ecs_id( crude_renderer ) },
+      {.id = ecs_id( crude_renderer_component ) },
       {.id = ecs_id( crude_window ) },
     } } );
 }

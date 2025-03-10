@@ -1,8 +1,13 @@
-#include <core/log.h>
-#include <core/assert.h>
-#include <stb_sprintf.h>
+#ifdef _WIN32
 #include <Windows.h>
 #include <stdio.h>
+#endif
+
+#include <core/file.h>
+#include <core/string.h>
+#include <core/assert.h>
+
+#include <core/log.h>
 
 char g_message_buffer[ 4098 ];
 char g_format_buffer[ 4098 ];
@@ -75,9 +80,11 @@ crude_log_common
 {
   va_list args;
   va_start( args, format );
-  stbsp_snprintf( g_format_buffer, ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
-  stbsp_vsnprintf( g_message_buffer, ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
+  crude_snprintf( g_format_buffer, ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
+  crude_vsnprintf( g_message_buffer, ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
+#ifdef _WIN32
   OutputDebugStringA( CAST( LPCSTR, g_message_buffer ) );
+#endif
   fprintf( g_log_file, g_message_buffer );
   printf( "%s", g_message_buffer );
   va_end( args );

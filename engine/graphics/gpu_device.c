@@ -1370,6 +1370,32 @@ crude_gfx_dynamic_allocate
   return mapped_memory;
 }
 
+/////////////////////
+//// @Query
+/////////////////////
+
+void
+crude_gfx_query_buffer
+(
+  _In_ crude_gpu_device                     *gpu,
+  _In_ crude_buffer_handle                   buffer,
+  _Out_ crude_buffer_description            *description
+)
+{
+  if ( buffer.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return;
+  }
+
+  const crude_buffer* buffer_data = CRUDE_GFX_GPU_ACCESS_BUFFER( gpu, buffer );
+  description->name = buffer_data->name;
+  description->size = buffer_data->size;
+  description->type_flags = buffer_data->type_flags;
+  description->usage = buffer_data->usage;
+  description->parent_handle = buffer_data->parent_buffer;
+  description->native_handle = &buffer_data->vk_buffer;
+}
+
 void
 crude_gfx_set_resource_name
 (

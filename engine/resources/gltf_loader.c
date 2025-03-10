@@ -7,22 +7,12 @@
 
 #include <resources/gltf_loader.h>
 
-typedef struct crude_mesh_draw
-{
-  uint32 todo;
-} crude_mesh_draw;
-
-typedef struct crude_scene
-{
-	crude_buffer_resource *buffers;
-  crude_mesh_draw       *mesh_draws;
-} crude_scene;
-
 void
 crude_load_gltf_from_file
 (
-  _In_ char const    *path,
-  _Out_ crude_scene  *scene
+  _In_ crude_renderer  *renderer,
+  _In_ char const      *path,
+  _Out_ crude_scene    *scene
 )
 {
 	cgltf_options gltf_options = { 0 };
@@ -31,6 +21,12 @@ crude_load_gltf_from_file
 	if ( result != cgltf_result_success )
 	{
 		CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", path );
+	}
+
+  result = cgltf_load_buffers( &gltf_options, gltf_scene, path );
+	if ( result != cgltf_result_success )
+	{
+		CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", path );
 	}
   
   scene->buffers = NULL;
@@ -46,12 +42,16 @@ crude_load_gltf_from_file
     {
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Bufer name is null: %u", buffer_index );
     }
-  
-    VkBufferUsageFlags flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    //crude_buffer_resource *buffer_resource = renderer.create_buffer( flags, ResourceUsageType::Immutable, buffer.byte_length, data, buffer_name );
-    CRUDE_ASSERT( buffer->name );
-  
-    //arrpush( scene->buffers, *buffer_resource );
+
+    crude_buffer_creation buffer_creation = {
+      .initial_data = data,
+      .usage = CRUDE_RESOURCE_USAGE_TYPE_IMMUTABLE,
+      .size = buffer->size,
+      .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      .name = buffer->name
+    };
+    crude_buffer_resource *buffer_resource = crude_gfx_renderer_create_buffer( renderer, &buffer_creation );
+    arrpush( scene->buffers, *buffer_resource );
   }
 
   scene->mesh_draws = NULL;

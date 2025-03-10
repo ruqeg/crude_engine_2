@@ -156,6 +156,18 @@ crude_gfx_dynamic_allocate
   _In_ uint32                                size
 );
 
+/////////////////////
+//// @Query
+/////////////////////
+
+CRUDE_API void
+crude_gfx_query_buffer
+(
+  _In_ crude_gpu_device                     *gpu,
+  _In_ crude_buffer_handle                   buffer,
+  _Out_ crude_buffer_description            *description
+);
+
 ///////////////////
 // @Resources
 ///////////////////
