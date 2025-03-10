@@ -1,4 +1,3 @@
-#include <DirectXMath.h>
 #include <cgltf.h>
 #include <stb_ds.h>
 
@@ -76,24 +75,22 @@ crude_load_gltf_from_file
       continue;
     }
   
-    vec3s node_scale{ 1.0f, 1.0f, 1.0f };
-    if ( node.scale_count != 0 ) {
-        RASSERT( node.scale_count == 3 );
-        node_scale = vec3s{ node.scale[0], node.scale[1], node.scale[2] };
+    crude_float3 node_scale = { 1.0f, 1.0f, 1.0f };
+    if ( node->has_scale )
+    {
+      node_scale = ( crude_float3 ){ node->scale[0], node->scale[1], node->scale[2] };
     }
   
-    // Gltf primitives are conceptually submeshes.
-    for ( u32 primitive_index = 0; primitive_index < mesh.primitives_count; ++primitive_index ) {
-        MeshDraw mesh_draw{ };
+    for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
+    {
+        crude_mesh_draw mesh_draw = { .scale = node_scale };
     
-        mesh_draw.scale = node_scale;
+        cgltf_primitive *mesh_primitive = &node->mesh->primitives[ primitive_index ];
     
-        glTF::MeshPrimitive& mesh_primitive = mesh.primitives[ primitive_index ];
-    
-        const i32 position_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive.attributes, mesh_primitive.attribute_count, "POSITION" );
-        const i32 tangent_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive.attributes, mesh_primitive.attribute_count, "TANGENT" );
-        const i32 normal_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive.attributes, mesh_primitive.attribute_count, "NORMAL" );
-        const i32 texcoord_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive.attributes, mesh_primitive.attribute_count, "TEXCOORD_0" );
+        int32 const position_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "POSITION" );
+        int32 const tangent_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TANGENT" );
+        int32 const normal_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "NORMAL" );
+        int32 const texcoord_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TEXCOORD_0" );
     
         get_mesh_vertex_buffer( scene, position_accessor_index, mesh_draw.position_buffer, mesh_draw.position_offset );
         get_mesh_vertex_buffer( scene, tangent_accessor_index, mesh_draw.tangent_buffer, mesh_draw.tangent_offset );

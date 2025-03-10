@@ -8,12 +8,12 @@
 /////////////////////
 
 #if defined(_M_IX86) || defined(_M_X64)
-using crude_vector = __m128;
+typedef __m128 crude_vector;
 #else
 #error "!TODO"
 #endif
 
-typedef struct alignas( 16 ) crude_vector_f32
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_vector_f32
 {
   union
   {
@@ -22,7 +22,7 @@ typedef struct alignas( 16 ) crude_vector_f32
   };
 } crude_vector_f32;
 
-typedef struct alignas( 16 ) crude_vector_u32
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_vector_u32
 {
   union
   {
@@ -41,7 +41,7 @@ typedef struct crude_float1
   float32                           x;
 } crude_float1;
 
-typedef struct alignas( 16 ) crude_float1a
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_float1a
 {
   float32                           x;
 } crude_float1a;
@@ -52,7 +52,7 @@ typedef struct crude_float2
   float32                           y;
 } crude_float2;
 
-typedef struct alignas( 16 ) crude_float2a
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_float2a
 {
   float32                           x;
   float32                           y;
@@ -65,7 +65,7 @@ typedef struct crude_float3
   float32                           z;
 } crude_float3;
 
-typedef struct alignas( 16 ) crude_float3a
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_float3a
 {
   float32                           x;
   float32                           y;
@@ -80,7 +80,7 @@ typedef struct crude_float4
   float32                           w;
 } crude_float4;
 
-typedef struct alignas( 16 ) crude_float4a
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_float4a
 {
   float32                           x;
   float32                           y;
@@ -115,7 +115,7 @@ typedef struct crude_float4x4
   };
 } crude_float4x4;
 
-typedef struct alignas( 64 ) crude_float4x4a
+typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
 {
   union
   {

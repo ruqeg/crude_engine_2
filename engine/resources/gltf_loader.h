@@ -1,10 +1,11 @@
 #pragma once
 
+#include <core/math.h>
 #include <graphics/renderer.h>
 
 CRUDE_API typedef struct crude_mesh_draw
 {
-  uint32                 todo;
+  crude_float3           scale;
 } crude_mesh_draw;
 
 CRUDE_API typedef struct crude_scene

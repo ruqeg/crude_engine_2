@@ -19,15 +19,26 @@
 #define CRUDE_API CRUDE_IMPORT
 #endif
 
-#define CRUDE_DEBUG_BREAK   __debugbreak()
-#define CRUDE_INLINE        inline
+#define CRUDE_DEBUG_BREAK       __debugbreak()
+#define CRUDE_INLINE            inline
 
-#define CAST( t, exp )      ( ( t ) ( exp ) )
-#define ARRAY_SIZE( arr )   ( sizeof( arr ) / sizeof( arr[ 0 ] ) )
+#define CAST( t, exp )          ( ( t ) ( exp ) )
+#define ARRAY_SIZE( arr )       ( sizeof( arr ) / sizeof( arr[ 0 ] ) )
 
-#define MAX( a, b) ( a ) > ( b ) ? ( a ) : ( b )
-#define MIN( a, b) ( a ) < ( b ) ? ( a ) : ( b )
-#define CLAMP( v, lo, hi ) ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
+#define MAX( a, b)              ( a ) > ( b ) ? ( a ) : ( b )
+#define MIN( a, b)              ( a ) < ( b ) ? ( a ) : ( b )
+#define CLAMP( v, lo, hi )      ( ( ( v ) < ( lo ) ) ? ( lo ) : ( ( hi ) < ( v ) ) ? ( hi ) : ( v ) )
+
+#if __cplusplus >= 201703L
+#define CRUDE_ALIGNED_DATA(x)   alignas(x)
+#define CRUDE_ALIGNED_STRUCT(x) struct alignas(x)
+#elif defined(__GNUC__)
+#define CRUDE_ALIGNED_DATA(x)   __attribute__ ((aligned(x)))
+#define CRUDE_ALIGNED_STRUCT(x) struct __attribute__ ((aligned(x)))
+#else
+#define CRUDE_ALIGNED(x)   __declspec(align(x))
+#define CRUDE_ALIGNED_STRUCT(x) __declspec(align(x)) struct
+#endif
 
 typedef int8_t        int8;
 typedef int16_t       int16;
