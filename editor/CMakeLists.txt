@@ -10,7 +10,7 @@ add_library(${PROJECT_NAME} SHARED ${CRUDE_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(crude_editor PUBLIC crude_engine)
+target_link_libraries(crude_editor PUBLIC crude_engine cr)
 
 source_group(editor FILES ${CRUDE_SOURCES})
 
