@@ -7,6 +7,47 @@
 
 #include <resources/gltf_loader.h>
 
+static int32
+crude_get_attribute_accessor_index
+(
+  _In_ cgltf_attribute *attributes,
+  _In_ uint32           attributes_count,
+  _In_ char const      *attribute_name
+)
+{
+  for ( uint32 i = 0; i < attributes_count; ++i )
+  {
+    if ( strcmp( attributes[ i ].data, attribute_name ) == 0 )
+    {
+      return attributes[ i ].index;
+    }
+  }
+  return -1;
+}
+
+static void
+crude_get_mesh_vertex_buffer
+(
+  _In_ cgltf_data             *gltf,
+  _In_ crude_scene            *scene,
+  _In_ int32                   accessor_index,
+  _Out_ crude_buffer_handle   *buffer_handle,
+  _Out_ uint32                *buffer_offset
+)
+{
+  if ( accessor_index == -1 )
+  {
+    return;
+  }
+
+  cgltf_accessor *buffer_accessor = &gltf->accessors[ accessor_index ];
+  cgltf_buffer_view *buffer_view = buffer_accessor->buffer_view;
+  crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, buffer_accessor->buffer_view ) ];
+  
+  *buffer_handle = buffer_gpu->handle;
+  *buffer_offset = buffer_accessor->offset;
+}
+
 void
 crude_load_gltf_from_file
 (
@@ -16,31 +57,31 @@ crude_load_gltf_from_file
 )
 {
   cgltf_options gltf_options = { 0 };
-  cgltf_data *gltf_data = NULL;
-  cgltf_result result = cgltf_parse_file( &gltf_options, path, &gltf_data );
+  cgltf_data *gltf = NULL;
+  cgltf_result result = cgltf_parse_file( &gltf_options, path, &gltf );
   if ( result != cgltf_result_success )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", path );
   }
   
-  result = cgltf_load_buffers( &gltf_options, gltf_data, path );
+  result = cgltf_load_buffers( &gltf_options, gltf, path );
   if ( result != cgltf_result_success )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", path );
   }
   
-  result = cgltf_validate( gltf_data );
+  result = cgltf_validate( gltf );
   if ( result != cgltf_result_success )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", path );
   }
   
   scene->buffers = NULL;
-  arrsetlen( scene->buffers, gltf_data->buffer_views_count );
+  arrsetcap( scene->buffers, gltf->buffer_views_count );
 
-  for ( uint32 buffer_view_index = 0; buffer_view_index < gltf_data->buffer_views_count; ++buffer_view_index )
+  for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
   {
-    cgltf_buffer_view *buffer_view = &gltf_data->buffer_views[ buffer_view_index ];
+    cgltf_buffer_view *buffer_view = &gltf->buffer_views[ buffer_view_index ];
     cgltf_buffer *buffer = buffer_view->buffer;
   
     uint8* data = ( uint8* )buffer->data + buffer_view->offset;
@@ -62,15 +103,15 @@ crude_load_gltf_from_file
   }
 
   scene->mesh_draws = NULL;
-  arrsetlen( scene->mesh_draws, gltf_data->meshes_count );
+  arrsetcap( scene->mesh_draws, gltf->meshes_count );
 
-  cgltf_scene *root_gltf_scene = gltf_data->scene;
+  cgltf_scene *root_scene = gltf->scene;
 
-  for ( uint32 node_index = 0; node_index < root_gltf_scene->nodes_count; ++node_index )
+  for ( uint32 node_index = 0; node_index < root_scene->nodes_count; ++node_index )
   {
-    cgltf_node *node = root_gltf_scene->nodes[ node_index ];
+    cgltf_node *node = root_scene->nodes[ node_index ];
   
-    if ( node->mesh )
+    if ( !node->mesh )
     {
       continue;
     }
@@ -83,55 +124,32 @@ crude_load_gltf_from_file
   
     for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
     {
-        crude_mesh_draw mesh_draw = { .scale = node_scale };
-    
-        cgltf_primitive *mesh_primitive = &node->mesh->primitives[ primitive_index ];
-    
-        int32 const position_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "POSITION" );
-        int32 const tangent_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TANGENT" );
-        int32 const normal_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "NORMAL" );
-        int32 const texcoord_accessor_index = gltf_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TEXCOORD_0" );
-    
-        get_mesh_vertex_buffer( scene, position_accessor_index, mesh_draw.position_buffer, mesh_draw.position_offset );
-        get_mesh_vertex_buffer( scene, tangent_accessor_index, mesh_draw.tangent_buffer, mesh_draw.tangent_offset );
-        get_mesh_vertex_buffer( scene, normal_accessor_index, mesh_draw.normal_buffer, mesh_draw.normal_offset );
-        get_mesh_vertex_buffer( scene, texcoord_accessor_index, mesh_draw.texcoord_buffer, mesh_draw.texcoord_offset );
-    
-        // Create index buffer
-        glTF::Accessor& indices_accessor = scene.gltf_scene.accessors[ mesh_primitive.indices ];
-        glTF::BufferView& indices_buffer_view = scene.gltf_scene.buffer_views[ indices_accessor.buffer_view ];
-        BufferResource& indices_buffer_gpu = scene.buffers[ indices_accessor.buffer_view ];
-        mesh_draw.index_buffer = indices_buffer_gpu.handle;
-        mesh_draw.index_offset = indices_accessor.byte_offset == glTF::INVALID_INT_VALUE ? 0 : indices_accessor.byte_offset;
-        mesh_draw.primitive_count = indices_accessor.count;
-    
-        // Create material
-        glTF::Material& material = scene.gltf_scene.materials[ mesh_primitive.material ];
-    
-        bool transparent = get_mesh_material( renderer, scene, material, mesh_draw );
-    
-        if ( transparent) {
-            if ( material.double_sided ) {
-                mesh_draw.material = material_no_cull_transparent;
-            } else {
-                mesh_draw.material = material_cull_transparent;
-            }
-        } else {
-            if ( material.double_sided ) {
-                mesh_draw.material = material_no_cull_opaque;
-            } else {
-                mesh_draw.material = material_cull_opaque;
-            }
-        }
-    
-        scene.mesh_draws.push( mesh_draw );
+      crude_mesh_draw mesh_draw = { .scale = node_scale };
+      
+      cgltf_primitive *mesh_primitive = &node->mesh->primitives[ primitive_index ];
+      
+      int32 position_accessor_index = crude_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "POSITION" );
+      int32 tangent_accessor_index = crude_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TANGENT" );
+      int32 normal_accessor_index = crude_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "NORMAL" );
+      int32 texcoord_accessor_index = crude_get_attribute_accessor_index( mesh_primitive->attributes, mesh_primitive->attributes_count, "TEXCOORD_0" );
+      
+      crude_get_mesh_vertex_buffer( gltf, scene, position_accessor_index, &mesh_draw.position_buffer, &mesh_draw.position_offset );
+      crude_get_mesh_vertex_buffer( gltf, scene, tangent_accessor_index, &mesh_draw.tangent_buffer, &mesh_draw.tangent_offset );
+      crude_get_mesh_vertex_buffer( gltf, scene, normal_accessor_index, &mesh_draw.normal_buffer, &mesh_draw.normal_offset );
+      crude_get_mesh_vertex_buffer( gltf, scene, texcoord_accessor_index, &mesh_draw.texcoord_buffer, &mesh_draw.texcoord_offset );
+      
+      cgltf_accessor *indices_accessor = mesh_primitive->indices;
+      cgltf_buffer_view *indices_buffer_view = indices_accessor->buffer_view;
+      
+      crude_buffer_resource *indices_buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
+      mesh_draw.index_buffer = indices_buffer_gpu->handle;
+      mesh_draw.index_offset = indices_accessor->offset;
+      mesh_draw.primitive_count = indices_accessor->count;
+      arrpush( scene->mesh_draws, mesh_draw );
     }
   }
-    }
 
-    qsort( scene.mesh_draws.data, scene.mesh_draws.size, sizeof( MeshDraw ), mesh_material_compare );
-
-  cgltf_free( gltf_scene );
+  cgltf_free( gltf );
 }
 
 void

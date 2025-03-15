@@ -3,6 +3,7 @@
 #include <flecs.h>
 
 #include <graphics/renderer.h>
+#include <resources/gltf_loader.h>
 
 typedef struct crude_render_create
 {
@@ -17,6 +18,7 @@ typedef struct crude_renderer_component
   crude_gpu_device            *gpu;
   crude_renderer              *renderer;
   crude_pipeline_handle        pipeline;
+  crude_scene                 *scene;
 } crude_renderer_component;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_render_create );

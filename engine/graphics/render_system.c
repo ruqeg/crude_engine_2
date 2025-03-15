@@ -1,5 +1,6 @@
 #include <crude_shaders/main.frag.inl>
 #include <crude_shaders/main.vert.inl>
+#include <stb_ds.h>
 
 #include <core/file.h>
 #include <core/string.h>
@@ -11,6 +12,27 @@
 
 // !TODO
 #include <resources/gltf_loader.h> 
+
+static void
+crude_draw_mesh
+(
+  _In_ crude_renderer        *renderer,
+  _In_ crude_command_buffer  *gpu_commands,
+  _In_ crude_mesh_draw       *mesh_draw
+)
+{
+  //DescriptorSetCreation ds_creation{};
+  //ds_creation.buffer( scene_cb, 0 ).buffer( mesh_draw.material_buffer, 1 );
+  //DescriptorSetHandle descriptor_set = renderer.create_descriptor_set( gpu_commands, mesh_draw.material, ds_creation );
+  
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->tangent_buffer, 1, mesh_draw->tangent_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->normal_buffer, 2, mesh_draw->normal_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->texcoord_buffer, 3, mesh_draw->texcoord_offset );
+  crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
+  //gpu_commands->bind_descriptor_set( &mesh_draw.descriptor_set, 1, nullptr, 0 );
+  crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
+}
 
 static void
 initialize_render_core
@@ -48,6 +70,31 @@ initialize_render_core
     pipeline_creation.shaders.stages[ 1 ].code_size = sizeof( crude_compiled_shader_main_frag );
     pipeline_creation.shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipeline_creation.shaders.stages_count = 2u;
+
+    pipeline_creation.vertex_input.vertex_attributes[ 0 ] = ( crude_vertex_attribute ){ 0, 0, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // position
+    pipeline_creation.vertex_input.vertex_streams[ 0 ] = ( crude_vertex_stream ){ 0, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+
+    pipeline_creation.vertex_input.vertex_attributes[ 1 ] = ( crude_vertex_attribute ){ 1, 1, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT4 }; // tangent
+    pipeline_creation.vertex_input.vertex_streams[ 1 ] = ( crude_vertex_stream ){ 1, 16, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX};
+
+    pipeline_creation.vertex_input.vertex_attributes[ 2 ] = ( crude_vertex_attribute ) { 2, 2, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // normal
+    pipeline_creation.vertex_input.vertex_streams[ 2 ] = ( crude_vertex_stream ){ 2, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+
+    pipeline_creation.vertex_input.vertex_attributes[ 3 ] = ( crude_vertex_attribute ){ 3, 3, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT2 }; // texcoord
+    pipeline_creation.vertex_input.vertex_streams[ 3 ] = ( crude_vertex_stream ){ 3, 8, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+
+    pipeline_creation.vertex_input.num_vertex_attributes = 4;
+    pipeline_creation.vertex_input.num_vertex_streams = 4;
+
+    
+    crude_descriptor_set_layout_creation dsl_creation = {
+      .bindings = {
+        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .start = 0, .count = 1, .name = "local_constants" }
+      }
+    };
+    
+    crude_descriptor_set_layout_handle descriptor_set_layout_handle = crude_create_descriptor_set_layout( renderer->gpu, &dsl_creation );
+    pipeline_creation.descriptor_set_layout[0] = descriptor_set_layout_handle;
     renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
 
     crude_renderer_creation rendere_creation = {
@@ -61,9 +108,9 @@ initialize_render_core
     char gltf_path[ 1024 ];
     crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
     crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
-
-    crude_scene scene;
-    crude_load_gltf_from_file( renderer->renderer, gltf_path, &scene );
+    
+    renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
+    crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->scene );
   }
 }
 
@@ -82,6 +129,7 @@ deinitialize_render_core
     crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
     renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
+    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
   }
 }
 
@@ -102,7 +150,21 @@ render
     crude_gfx_cmd_bind_pipeline( gpu_commands, renderer[ i ].pipeline );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
-    crude_gfx_cmd_draw( gpu_commands, 0, 3, 0, 1);
+    
+    for ( uint32 mesh_index = 0; mesh_index < arrlen( renderer->scene->mesh_draws ); ++mesh_index )
+    {
+      crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
+    
+      //if ( mesh_draw.material != last_material )
+      //{
+      //    PipelineHandle pipeline = renderer.get_pipeline( mesh_draw.material );
+      //
+      //    gpu_commands->bind_pipeline( pipeline );
+      //
+      //    last_material = mesh_draw.material;
+      //}
+      crude_draw_mesh( renderer->renderer, gpu_commands, mesh_draw );
+    }
     crude_gfx_queue_cmd_buffer( gpu_commands );
     crude_gfx_present( renderer[ i ].gpu );
   }

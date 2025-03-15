@@ -19,6 +19,13 @@ typedef struct crude_command_buffer
   VkClearValue                       clears[ 2 ];
 } crude_command_buffer;
 
+typedef struct crude_command_buffer_manager
+{
+  VkCommandPool                      vk_command_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
+  crude_command_buffer               command_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
+  crude_gpu_device                  *gpu;
+} crude_command_buffer_manager;
+
 CRUDE_API void
 crude_gfx_cmd_reset
 (
@@ -63,12 +70,33 @@ crude_gfx_cmd_draw
   _In_ uint32                        instance_count
 );
 
-typedef struct crude_command_buffer_manager
-{
-  VkCommandPool                      vk_command_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
-  crude_command_buffer               command_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
-  crude_gpu_device                  *gpu;
-} crude_command_buffer_manager;
+CRUDE_API void
+crude_gfx_cmd_draw_indexed
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ uint32                        index_count,
+  _In_ uint32                        instance_count,
+  _In_ uint32                        first_index,
+  _In_ int32                         vertex_offset,
+  _In_ uint32                        first_instance
+);
+
+CRUDE_API void
+crude_gfx_cmd_bind_vertex_buffer
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_buffer_handle           handle,
+  _In_ uint32                        binding,
+  _In_ uint32                        offset
+);
+
+CRUDE_API void
+crude_gfx_cmd_bind_index_buffer
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_buffer_handle           handle,
+  _In_ uint32                        offset
+);
 
 CRUDE_API void
 crude_gfx_initialize_cmd_manager

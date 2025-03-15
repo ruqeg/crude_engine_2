@@ -6,6 +6,17 @@
 CRUDE_API typedef struct crude_mesh_draw
 {
   crude_float3           scale;
+  crude_buffer_handle    index_buffer;
+  crude_buffer_handle    position_buffer;
+  crude_buffer_handle    tangent_buffer;
+  crude_buffer_handle    normal_buffer;
+  crude_buffer_handle    texcoord_buffer;
+  uint32                 index_offset;
+  uint32                 position_offset;
+  uint32                 tangent_offset;
+  uint32                 normal_offset;
+  uint32                 texcoord_offset;
+  uint32                 primitive_count;
 } crude_mesh_draw;
 
 CRUDE_API typedef struct crude_scene

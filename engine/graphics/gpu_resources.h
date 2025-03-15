@@ -336,6 +336,22 @@ typedef struct crude_viewport_state
   crude_rect2d_int                    *scissors;
 } crude_viewport_state;
 
+typedef struct crude_descriptor_set_layout_binding
+{
+  VkDescriptorType                     type;
+  uint16                               start;
+  uint16                               count;
+  char const                          *name;
+} crude_descriptor_set_layout_binding;
+
+typedef struct crude_descriptor_set_layout_creation
+{
+  crude_descriptor_set_layout_binding  bindings[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  uint32                               num_bindings;
+  uint32                               set_index;
+  char const                          *name;
+} crude_descriptor_set_layout_creation;
+
 typedef struct crude_pipeline_creation
 {
   crude_rasterization_creation         rasterization;

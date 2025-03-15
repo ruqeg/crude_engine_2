@@ -1494,7 +1494,8 @@ crude_gfx_destroy_sampler_instant
   CRUDE_GFX_GPU_RELEASE_SAMPLER( gpu, handle );
 }
 
-crude_texture_handle crude_gfx_create_texture
+crude_texture_handle
+crude_gfx_create_texture
 (
   _In_ crude_gpu_device             *gpu,
   _In_ crude_texture_creation const *creation
@@ -1545,93 +1546,6 @@ crude_gfx_destroy_texture_instant
     vmaDestroyImage( gpu->vma_allocator, texture->vk_image, texture->vma_allocation );
   }
   CRUDE_GFX_GPU_RELEASE_TEXTURE( gpu, handle );
-}
-
-crude_render_pass_handle
-crude_gfx_create_render_pass
-(
-  _In_ crude_gpu_device                 *gpu,
-  _In_ crude_render_pass_creation const *creation
-)
-{
-  crude_render_pass_handle handle = { CRUDE_GFX_GPU_OBTAIN_RENDER_PASS( gpu) };
-  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
-  {
-    return handle;
-  }
-  
-  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, handle );
-  render_pass->type               = creation->type;
-  render_pass->num_render_targets = creation->num_render_targets;
-  render_pass->dispatch_x         = 0;
-  render_pass->dispatch_y         = 0;
-  render_pass->dispatch_z         = 0;
-  render_pass->name               = creation->name;
-  render_pass->vk_frame_buffer    = NULL;
-  render_pass->vk_render_pass     = NULL;
-  render_pass->scale_x            = creation->scale_x;
-  render_pass->scale_y            = creation->scale_y;
-  render_pass->resize             = creation->resize;
-  
-  for ( uint32 i = 0 ; i < creation->num_render_targets; ++i )
-  {
-    crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, creation->output_textures[ i ] );
-    
-    render_pass->width = texture->width;
-    render_pass->height = texture->height;
-    render_pass->output_textures[ i ] = creation->output_textures[ i ];
-  }
-  
-  render_pass->output_depth = creation->depth_stencil_texture;
-  
-  switch ( creation->type )
-  {
-    case CRUDE_RENDER_PASS_TYPE_SWAPCHAIN:
-    {
-      _vk_create_swapchain_pass( gpu, creation, render_pass );
-      break;
-    }
-  }
-  
-  return handle;
-}
-
-void
-crude_gfx_destroy_render_pass
-(
-  _In_ crude_gpu_device         *gpu,
-  _In_ crude_render_pass_handle  handle
-)
-{
-  if ( handle.index >= gpu->render_passes.pool_size )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", handle.index );
-    return;
-  }
-  crude_resource_update render_pass_update_event = { 
-    .type          = CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS,
-    .handle        = handle.index,
-    .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, render_pass_update_event );
-}
-
-void
-crude_gfx_destroy_render_pass_instant
-(
-  _In_ crude_gpu_device         *gpu,
-  _In_ crude_render_pass_handle  handle
-)
-{
-  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, handle );
-  if ( render_pass )
-  {
-    if ( render_pass->num_render_targets )
-    {
-      vkDestroyFramebuffer( gpu->vk_device, render_pass->vk_frame_buffer, gpu->vk_allocation_callbacks );
-    }
-    vkDestroyRenderPass( gpu->vk_device, render_pass->vk_render_pass, gpu->vk_allocation_callbacks );
-  }
-  CRUDE_GFX_GPU_RELEASE_RENDER_PASS( gpu, handle );
 }
 
 crude_shader_state_handle
@@ -1747,6 +1661,93 @@ crude_gfx_destroy_shader_state_instant
     }
   }
   CRUDE_GFX_GPU_RELEASE_SHADER_STATE( gpu, handle );
+}
+
+crude_render_pass_handle
+crude_gfx_create_render_pass
+(
+  _In_ crude_gpu_device                 *gpu,
+  _In_ crude_render_pass_creation const *creation
+)
+{
+  crude_render_pass_handle handle = { CRUDE_GFX_GPU_OBTAIN_RENDER_PASS( gpu) };
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, handle );
+  render_pass->type               = creation->type;
+  render_pass->num_render_targets = creation->num_render_targets;
+  render_pass->dispatch_x         = 0;
+  render_pass->dispatch_y         = 0;
+  render_pass->dispatch_z         = 0;
+  render_pass->name               = creation->name;
+  render_pass->vk_frame_buffer    = NULL;
+  render_pass->vk_render_pass     = NULL;
+  render_pass->scale_x            = creation->scale_x;
+  render_pass->scale_y            = creation->scale_y;
+  render_pass->resize             = creation->resize;
+  
+  for ( uint32 i = 0 ; i < creation->num_render_targets; ++i )
+  {
+    crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, creation->output_textures[ i ] );
+    
+    render_pass->width = texture->width;
+    render_pass->height = texture->height;
+    render_pass->output_textures[ i ] = creation->output_textures[ i ];
+  }
+  
+  render_pass->output_depth = creation->depth_stencil_texture;
+  
+  switch ( creation->type )
+  {
+    case CRUDE_RENDER_PASS_TYPE_SWAPCHAIN:
+    {
+      _vk_create_swapchain_pass( gpu, creation, render_pass );
+      break;
+    }
+  }
+  
+  return handle;
+}
+
+void
+crude_gfx_destroy_render_pass
+(
+  _In_ crude_gpu_device         *gpu,
+  _In_ crude_render_pass_handle  handle
+)
+{
+  if ( handle.index >= gpu->render_passes.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", handle.index );
+    return;
+  }
+  crude_resource_update render_pass_update_event = { 
+    .type          = CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS,
+    .handle        = handle.index,
+    .current_frame = gpu->current_frame };
+  arrput( gpu->resource_deletion_queue, render_pass_update_event );
+}
+
+void
+crude_gfx_destroy_render_pass_instant
+(
+  _In_ crude_gpu_device         *gpu,
+  _In_ crude_render_pass_handle  handle
+)
+{
+  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( gpu, handle );
+  if ( render_pass )
+  {
+    if ( render_pass->num_render_targets )
+    {
+      vkDestroyFramebuffer( gpu->vk_device, render_pass->vk_frame_buffer, gpu->vk_allocation_callbacks );
+    }
+    vkDestroyRenderPass( gpu->vk_device, render_pass->vk_render_pass, gpu->vk_allocation_callbacks );
+  }
+  CRUDE_GFX_GPU_RELEASE_RENDER_PASS( gpu, handle );
 }
 
 crude_pipeline_handle
@@ -2119,6 +2120,89 @@ crude_gfx_destroy_buffer_instant
     vmaDestroyBuffer( gpu->vma_allocator, buffer->vk_buffer, buffer->vma_allocation );
   }
 
+  CRUDE_GFX_GPU_RELEASE_BUFFER( gpu, handle );
+}
+
+crude_descriptor_set_layout_handle
+crude_create_descriptor_set_layout
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_layout_creation const   *creation
+)
+{
+  crude_descriptor_set_layout_handle handle = { CRUDE_GFX_GPU_OBTAIN_DESCRIPTOR_SET_LAYOUT( gpu ) };
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
+  
+  uint8 *memory = gpu->allocator.allocate( ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_descriptor_binding ) ) * creation->num_bindings, 1 );
+  descriptor_set_layout->num_bindings = creation->num_bindings;
+  descriptor_set_layout->bindings     = CAST( crude_descriptor_binding*, memory );
+  descriptor_set_layout->vk_binding   = CAST( VkDescriptorSetLayoutBinding*, memory + sizeof( crude_descriptor_binding ) * creation->num_bindings );
+  descriptor_set_layout->handle       = handle;
+  descriptor_set_layout->set_index    = creation->set_index;
+  
+  uint32 used_bindings = 0;
+  for ( uint32 i = 0; i < creation->num_bindings; ++i )
+  {
+    crude_descriptor_binding *binding = &descriptor_set_layout->bindings[ i ];
+    crude_descriptor_set_layout_binding const *input_binding = &creation->bindings[ i ];
+    binding->start = ( input_binding->start == UINT16_MAX ) ? i : input_binding->start;
+    binding->count = 1;
+    binding->type = input_binding->type;
+    binding->name = input_binding->name;
+    
+    VkDescriptorSetLayoutBinding *const vk_binding = &descriptor_set_layout->vk_binding[ used_bindings++ ];
+    vk_binding->binding = binding->start;
+    vk_binding->descriptorType = input_binding->type;
+    vk_binding->descriptorType = vk_binding->descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : vk_binding->descriptorType;
+    vk_binding->descriptorCount = 1;
+    vk_binding->stageFlags = VK_SHADER_STAGE_ALL;
+    vk_binding->pImmutableSamplers = NULL;
+  }
+
+  VkDescriptorSetLayoutCreateInfo layout_info = {
+    .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+    .bindingCount = used_bindings,
+    .pBindings    = descriptor_set_layout->vk_binding,
+  };
+
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( gpu->vk_device, &layout_info, gpu->vk_allocation_callbacks, &descriptor_set_layout->vk_descriptor_set_layout ), "Failed to create descriptor set layout" );
+  return handle;
+}
+
+void                                      
+crude_create_gfx_descriptor_set_layout
+(                                                   
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_layout_handle            handle
+)
+{
+  if ( handle.index >= gpu->descriptor_set_layouts.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid buffer %u", handle.index );
+    return;
+  }
+  crude_resource_update descriptor_set_layout_update_event = { 
+    .type          = CRUDE_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT,
+    .handle        = handle.index,
+    .current_frame = gpu->current_frame };
+  arrput( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
+}
+
+void
+crude_gfx_destroy_descriptor_set_layout_instant
+(                                                   
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_layout_handle            handle
+)
+{
+  crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
+  gpu->allocator.deallocate( descriptor_set_layout->bindings );
+  vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
   CRUDE_GFX_GPU_RELEASE_BUFFER( gpu, handle );
 }
 

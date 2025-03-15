@@ -158,6 +158,66 @@ crude_gfx_cmd_draw
 }
 
 void
+crude_gfx_cmd_draw_indexed
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ uint32                        index_count,
+  _In_ uint32                        instance_count,
+  _In_ uint32                        first_index,
+  _In_ int32                         vertex_offset,
+  _In_ uint32                        first_instance
+)
+{
+  vkCmdDrawIndexed( cmd->vk_handle, index_count, instance_count, first_index, vertex_offset, first_instance );
+}
+
+void
+crude_gfx_cmd_bind_vertex_buffer
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_buffer_handle           handle,
+  _In_ uint32                        binding,
+  _In_ uint32                        offset
+)
+{
+  crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, handle );
+  VkDeviceSize offsets[] = { offset };
+  
+  VkBuffer vk_buffer = buffer->vk_buffer;
+  
+  if ( buffer->parent_buffer.index != CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    crude_buffer *parent_buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+    vk_buffer = parent_buffer->vk_buffer;
+    offsets[ 0 ] = buffer->global_offset;
+  }
+  
+  vkCmdBindVertexBuffers( cmd->vk_handle, binding, 1, &vk_buffer, offsets );
+}
+
+CRUDE_API void
+crude_gfx_cmd_bind_index_buffer
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_buffer_handle           handle,
+  _In_ uint32                        offset
+)
+{
+  crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, handle );
+  
+  VkBuffer vk_buffer = buffer->vk_buffer;
+  
+  if ( buffer->parent_buffer.index != CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    crude_buffer *parent_buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+    vk_buffer = parent_buffer->vk_buffer;
+    offset = buffer->global_offset;
+  }
+
+  vkCmdBindIndexBuffer( cmd->vk_handle, vk_buffer, offset, VK_INDEX_TYPE_UINT16  );
+}
+
+void
 crude_gfx_initialize_cmd_manager
 (
   _In_ crude_command_buffer_manager *cmd_manager,
