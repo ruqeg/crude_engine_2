@@ -77,6 +77,10 @@ typedef struct crude_gpu_device
   VkAllocationCallbacks                             *vk_allocation_callbacks;
                                                    
   VmaAllocator                                       vma_allocator;
+
+  // !TODO move from this place
+  crude_descriptor_set_layout_handle                 descriptor_set_layout_handle;
+  crude_buffer_handle                                ubo_buffer;
 } crude_gpu_device;                                
                                                    
 ///////////////////                                
@@ -146,7 +150,7 @@ CRUDE_API void
 crude_gfx_unmap_buffer                             
 (                                                  
   _In_ crude_gpu_device                             *gpu,
-  _In_ crude_map_buffer_parameters const            *parameters
+  _In_ crude_buffer_handle                           handle
 );                                                 
                                                    
 CRUDE_API void*                                    
@@ -317,6 +321,27 @@ crude_gfx_destroy_descriptor_set_layout_instant
 (                                                   
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_descriptor_set_layout_handle            handle
+);
+
+CRUDE_API crude_descriptor_set_handle
+crude_create_descriptor_set
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_creation const          *creation
+);
+
+CRUDE_API void                                      
+crude_create_gfx_descriptor_set
+(                                                   
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_handle                   handle
+);
+
+CRUDE_API void
+crude_gfx_destroy_descriptor_set_instant
+(                                                   
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_handle                   handle
 );
 
 CRUDE_API VkShaderModuleCreateInfo                  

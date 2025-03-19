@@ -1079,10 +1079,7 @@ crude_gfx_deinitialize_gpu_device
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
   
-  crude_map_buffer_parameters buffer_map = {
-    .buffer = gpu->dynamic_buffer
-  };
-  crude_gfx_unmap_buffer( gpu, &buffer_map );
+  crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_texture( gpu, gpu->depth_texture );
   crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
@@ -1345,13 +1342,13 @@ void
 crude_gfx_unmap_buffer
 (
   _In_ crude_gpu_device                     *gpu,
-  _In_ crude_map_buffer_parameters const    *parameters
+  _In_ crude_buffer_handle                   handle
 )
 {
-  if ( parameters->buffer.index == CRUDE_RESOURCE_INVALID_INDEX )
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
     return;
   
-  crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( gpu, parameters->buffer );
+  crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( gpu, handle );
   if ( buffer->parent_buffer.index == gpu->dynamic_buffer.index )
     return;
   
@@ -2204,6 +2201,88 @@ crude_gfx_destroy_descriptor_set_layout_instant
   gpu->allocator.deallocate( descriptor_set_layout->bindings );
   vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
   CRUDE_GFX_GPU_RELEASE_BUFFER( gpu, handle );
+}
+
+crude_descriptor_set_handle
+crude_create_descriptor_set
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_descriptor_set_creation const          *creation
+)
+{
+  crude_descriptor_set_handle handle = { CRUDE_GFX_GPU_OBTAIN_DESCRIPTOR_SET( gpu ) };
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_descriptor_set *descriptor_set = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET( gpu, handle );
+  crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, creation->layout );
+  
+  VkDescriptorSetAllocateInfo vk_descriptor_info = {
+    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+    .descriptorPool = gpu->vk_descriptor_pool,
+    .descriptorSetCount = 1u,
+    .pSetLayouts = &descriptor_set_layout->vk_descriptor_set_layout
+  };
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
+
+  VkWriteDescriptorSet descriptor_write[ 8 ];
+  VkDescriptorBufferInfo buffer_info[ 8 ];
+  VkDescriptorImageInfo image_info[ 8 ];
+
+  uint32 num_resources = creation->num_resources;
+  for ( uint32 i = 0; i < num_resources; i++ )
+  {
+    crude_descriptor_binding const *binding = &descriptor_set_layout->bindings[ creation->bindings[ i ] ];
+    
+    descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write[ i ].pNext = NULL;
+    descriptor_write[ i ].dstSet = descriptor_set->vk_descriptor_set;
+    descriptor_write[ i ].dstBinding = binding->start;
+    descriptor_write[ i ].dstArrayElement = 0u;
+    descriptor_write[ i ].descriptorCount = 1u;
+    descriptor_write[ i ].descriptorType = binding->type;
+    descriptor_write[ i ].pImageInfo = NULL;
+    descriptor_write[ i ].pBufferInfo = NULL;
+    descriptor_write[ i ].pTexelBufferView = NULL;
+
+    switch ( binding->type )
+    {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    {
+      crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( gpu, ( crude_buffer_handle ){ creation->resources[ i ] } );
+      CRUDE_ASSERT( buffer );
+      
+      descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+      if ( buffer->parent_buffer.index != CRUDE_RESOURCE_INVALID_INDEX )
+      {
+        crude_buffer *parent_buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( gpu, buffer->parent_buffer );
+        buffer_info[ i ].buffer = parent_buffer->vk_buffer;
+      }
+      else
+      {
+        buffer_info[ i ].buffer = buffer->vk_buffer;
+      }
+
+      buffer_info[ i ].offset = 0;
+      buffer_info[ i ].range = buffer->size;
+
+      descriptor_write[ i ].pBufferInfo = &buffer_info[ i ];
+      break;
+    }
+    }
+  }
+
+  for ( uint32 i = 0; i < num_resources; i++ )
+  {
+    descriptor_set->resources[ i ] = creation->resources[ i ];
+    descriptor_set->samplers[ i ] = creation->samplers[ i ];
+    descriptor_set->bindings[ i ] = creation->bindings[ i ];
+  }
+
+  vkUpdateDescriptorSets( gpu->vk_device, num_resources, descriptor_write, 0, NULL );
 }
 
 VkShaderModuleCreateInfo

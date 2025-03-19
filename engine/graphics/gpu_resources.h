@@ -22,6 +22,11 @@ typedef struct crude_descriptor_set_layout_handle
   crude_resource_handle index;
 } crude_descriptor_set_layout_handle;
 
+typedef struct crude_descriptor_set_handle
+{
+  crude_resource_handle index;
+} crude_descriptor_set_handle;
+
 typedef struct crude_sampler_handle
 {
   crude_resource_handle index;
@@ -366,6 +371,16 @@ typedef struct crude_pipeline_creation
   char const                          *name;
 } crude_pipeline_creation;
 
+typedef struct crude_descriptor_set_creation
+{
+  crude_resource_handle                resources[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  crude_sampler_handle                 samplers[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  uint16                               bindings[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  crude_descriptor_set_layout_handle   layout;
+  uint32                               num_resources;
+  char const                          *name;
+} crude_descriptor_set_creation;
+
 typedef struct crude_buffer
 {
   VkBuffer                             vk_buffer;
@@ -433,9 +448,9 @@ typedef struct crude_descriptor_set_layout
 typedef struct crude_descriptor_set
 {
   VkDescriptorSet                      vk_descriptor_set;
-  crude_resource_handle               *resources;
-  crude_sampler_handle                *samplers;
-  uint16                              *bindings;
+  crude_resource_handle                resources[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  crude_sampler_handle                 samplers[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
+  uint16                               bindings[ CRUDE_MAX_DESCRIPTORS_PER_SET ];
   crude_descriptor_set_layout const   *layout;
   uint32                               num_resources;
 } crude_descriptor_set;

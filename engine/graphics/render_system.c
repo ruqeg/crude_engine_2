@@ -11,6 +11,7 @@
 #include <graphics/render_system.h>
 
 // !TODO
+#include <scene/camera.h>
 #include <resources/gltf_loader.h> 
 
 static void
@@ -90,11 +91,13 @@ initialize_render_core
     crude_descriptor_set_layout_creation dsl_creation = {
       .bindings = {
         { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .start = 0, .count = 1, .name = "local_constants" }
-      }
+      },
+      .num_bindings = 1,
+      .name = "dsl"
     };
     
-    crude_descriptor_set_layout_handle descriptor_set_layout_handle = crude_create_descriptor_set_layout( renderer->gpu, &dsl_creation );
-    pipeline_creation.descriptor_set_layout[0] = descriptor_set_layout_handle;
+    renderer->gpu->descriptor_set_layout_handle = crude_create_descriptor_set_layout( renderer->gpu, &dsl_creation );
+    pipeline_creation.descriptor_set_layout[0] = renderer->gpu->descriptor_set_layout_handle;
     renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
 
     crude_renderer_creation rendere_creation = {
@@ -109,6 +112,14 @@ initialize_render_core
     crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
     crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
     
+    crude_buffer_creation ubo_creation = {
+      .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC ,
+      .size = sizeof( TMP_UBO ),
+      .name = "ubo",
+    };
+    renderer->gpu->ubo_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
+
     renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
     crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->scene );
   }
@@ -146,6 +157,21 @@ render
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
     crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+
+    
+    crude_map_buffer_parameters ubo_map = { renderer[ i ].gpu->ubo_buffer, 0, 0 };
+    void *ubo_data = crude_gfx_map_buffer( renderer[ i ].gpu, &ubo_map );
+    if ( ubo_data )
+    {
+      TMP_UBO uniform_data;
+      crude_camera camera;
+      crude_calculate_camera( &camera, CRUDE_CPI4, 1.0, 0.01, 1000 );
+      memcpy( uniform_data.world_to_clip.m, camera.view_to_clip_float4x4.m, sizeof( camera.view_to_clip_float4x4.m ) );
+      memcpy( ubo_data, &uniform_data, sizeof( TMP_UBO ) );
+      
+     crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->ubo_buffer );
+    }
+
     crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass );
     crude_gfx_cmd_bind_pipeline( gpu_commands, renderer[ i ].pipeline );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );

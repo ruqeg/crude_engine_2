@@ -145,6 +145,15 @@ crude_load_gltf_from_file
       mesh_draw.index_buffer = indices_buffer_gpu->handle;
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
+
+      crude_descriptor_set_creation ds_creation = {
+        .resources = { renderer->gpu->ubo_buffer.index },
+        .bindings = { 0u },
+        .layout = renderer->gpu->descriptor_set_layout_handle,
+        .num_resources = 1,
+        .name = "ds_1"
+      };
+      mesh_draw.descriptor_set = crude_create_descriptor_set( renderer->gpu, &ds_creation );
       arrpush( scene->mesh_draws, mesh_draw );
     }
   }
