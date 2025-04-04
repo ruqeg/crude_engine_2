@@ -1771,11 +1771,11 @@ crude_gfx_create_pipeline
   crude_shader_state *shader_state_data = CRUDE_GFX_GPU_ACCESS_SHADER_STATE( gpu, shader_state );
   
   pipeline->shader_state = shader_state;
-
+  
   VkDescriptorSetLayout vk_layouts[ CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS ];
   for ( uint32 i = 0; i < creation->num_active_layouts; ++i )
   {
-    pipeline->descriptor_set_layout[i] = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET( gpu, creation->descriptor_set_layout[i] );
+    pipeline->descriptor_set_layout[i] = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, creation->descriptor_set_layout[i] );
     pipeline->descriptor_set_layout_handle[i] = creation->descriptor_set_layout[i];
 
     vk_layouts[i] = pipeline->descriptor_set_layout[i]->vk_descriptor_set_layout;
@@ -2281,6 +2281,8 @@ crude_create_descriptor_set
     descriptor_set->samplers[ i ] = creation->samplers[ i ];
     descriptor_set->bindings[ i ] = creation->bindings[ i ];
   }
+
+  descriptor_set->layout = descriptor_set_layout;
 
   vkUpdateDescriptorSets( gpu->vk_device, num_resources, descriptor_write, 0, NULL );
 }

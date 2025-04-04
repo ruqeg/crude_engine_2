@@ -145,6 +145,31 @@ crude_gfx_cmd_set_scissor
 }
 
 void
+crude_gfx_cmd_bind_descriptor_set
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_descriptor_set_handle   handle
+)
+{
+  crude_descriptor_set *descriptor_set = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET( cmd->gpu, handle );
+  
+  uint32 num_offsets = 0u;
+  uint32 offsets_cache[ 8 ];
+  for ( uint32 i = 0; i < descriptor_set->layout->num_bindings; ++i )
+  {
+    if ( descriptor_set->layout->bindings[ i ].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER )
+    {
+        CRUDE_ASSERT( num_offsets < ARRAY_SIZE( offsets_cache ) );
+        const uint32 resource_index = descriptor_set->bindings[ i ];
+        crude_buffer_handle buffer_handle = { descriptor_set->resources[ resource_index ] };
+        crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, buffer_handle );
+        offsets_cache[ num_offsets++ ] = buffer->global_offset;
+    }
+  }
+  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+}
+
+void
 crude_gfx_cmd_draw
 (
   _In_ crude_command_buffer *cmd,

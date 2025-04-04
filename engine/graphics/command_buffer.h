@@ -61,6 +61,13 @@ crude_gfx_cmd_set_scissor
 );
 
 CRUDE_API void
+crude_gfx_cmd_bind_descriptor_set
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ crude_descriptor_set_handle   handle
+);
+
+CRUDE_API void
 crude_gfx_cmd_draw
 (
   _In_ crude_command_buffer         *cmd,

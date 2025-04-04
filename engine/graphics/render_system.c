@@ -31,6 +31,7 @@ crude_draw_mesh
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->normal_buffer, 2, mesh_draw->normal_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->texcoord_buffer, 3, mesh_draw->texcoord_offset );
   crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
+  crude_gfx_cmd_bind_descriptor_set( gpu_commands, mesh_draw->descriptor_set );
   //gpu_commands->bind_descriptor_set( &mesh_draw.descriptor_set, 1, nullptr, 0 );
   crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
 }
@@ -97,7 +98,10 @@ initialize_render_core
     };
     
     renderer->gpu->descriptor_set_layout_handle = crude_create_descriptor_set_layout( renderer->gpu, &dsl_creation );
+
     pipeline_creation.descriptor_set_layout[0] = renderer->gpu->descriptor_set_layout_handle;
+    pipeline_creation.num_active_layouts = 1;
+
     renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
 
     crude_renderer_creation rendere_creation = {

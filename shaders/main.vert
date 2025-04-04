@@ -1,12 +1,18 @@
 #version 450
 
-vec2 positions[3] = vec2[](
-  vec2(0.0, -0.5),
-  vec2(0.5, 0.5),
-  vec2(-0.5, 0.5)
-);
+layout(location=0) in vec3 position;
+layout(location=1) in vec4 tangent;
+layout(location=2) in vec3 normal;
+layout(location=3) in vec2 texcoord0;
+
+layout(location = 0) out vec4 outPosition;
+
+layout(std140, binding = 0) uniform LocalConstants
+{
+  mat4 viewToClip;
+};
 
 void main()
 {
-  gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+  outPosition = viewToClip * vec4( position, 1.0 );
 }
