@@ -32,7 +32,6 @@ crude_draw_mesh
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->texcoord_buffer, 3, mesh_draw->texcoord_offset );
   crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
   crude_gfx_cmd_bind_descriptor_set( gpu_commands, mesh_draw->descriptor_set );
-  //gpu_commands->bind_descriptor_set( &mesh_draw.descriptor_set, 1, nullptr, 0 );
   crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
 }
 

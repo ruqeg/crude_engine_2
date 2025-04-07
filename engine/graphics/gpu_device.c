@@ -2049,7 +2049,7 @@ crude_gfx_create_buffer
   buffer->global_offset = 0;
   buffer->parent_buffer = ( crude_buffer_handle ) { CRUDE_RESOURCE_INVALID_INDEX };
 
-  bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) );
+  bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) ) != 0;
   if ( creation->usage == CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC && use_global_buffer )
   {
     buffer->parent_buffer = gpu->dynamic_buffer;
