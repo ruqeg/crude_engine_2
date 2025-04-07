@@ -11,7 +11,7 @@
 #include <graphics/render_system.h>
 
 // !TODO
-#include <scene/camera.h>
+#include <scene/scene_components.h>
 #include <resources/gltf_loader.h> 
 
 static void
@@ -126,6 +126,17 @@ initialize_render_core
 
     renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
     crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->scene );
+    
+    renderer[ i ].camera = crude_entity_create_empty( it->world, "camera1" );
+    CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_camera, {
+      .fov_radians = CRUDE_CPI4,
+      .near_z = 0.01,
+      .far_z = 1000,
+      .aspect_ratio = 1.0 } );
+    CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_transform, {
+      .translation = { 0, 0, -5 },
+      .rotation = { 0, 0, 0, 1 },
+      .scale = { 1, 1, 1 }, } );
   }
 }
 
@@ -168,12 +179,16 @@ render
     if ( ubo_data )
     {
       TMP_UBO uniform_data;
-      crude_camera camera;
-      crude_calculate_camera( &camera, CRUDE_CPI4, 1.0, 0.01, 1000 );
-      memcpy( uniform_data.world_to_clip.m, camera.view_to_clip_float4x4.m, sizeof( camera.view_to_clip_float4x4.m ) );
+      crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
+      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_transform );
+
+      crude_matrix world_to_view = crude_transform_node_to_world( renderer[ i ].camera, transform );
+      crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+      crude_matrix world_to_clip = crude_mat_multiply( world_to_view, view_to_clip );
+      crude_store_float4x4a( &uniform_data.world_to_clip, world_to_clip ); 
       memcpy( ubo_data, &uniform_data, sizeof( TMP_UBO ) );
       
-     crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->ubo_buffer );
+      crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->ubo_buffer );
     }
 
     crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass );
@@ -208,6 +223,7 @@ crude_render_systemImport
 {
   ECS_MODULE( world, crude_render_system );
   ECS_IMPORT( world, crude_gui_components );
+  ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_render_components );
  
   ecs_observer( world, {

@@ -1,5 +1,7 @@
 #include <flecs.h>
 
+#include <scene/entity.h>
+
 #include <engine.h>
 
 crude_engine
@@ -12,6 +14,8 @@ crude_engine_initialize
   engine.world   = ecs_init();
   engine.running = true;
   
+  ECS_TAG_DEFINE( engine.world, Entity );
+
   if (num_threads > 1)
   {
     ecs_set_threads( engine.world, num_threads );

@@ -15,7 +15,8 @@
 
 static char const *const vk_device_required_extensions[] = 
 { 
-  VK_KHR_SWAPCHAIN_EXTENSION_NAME
+  VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  VK_KHR_MAINTENANCE_1_EXTENSION_NAME
 };
 
 static char const *const *vk_instance_required_extensions[] =

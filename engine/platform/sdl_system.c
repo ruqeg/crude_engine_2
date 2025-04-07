@@ -22,13 +22,13 @@ sdl_create_window
     ecs_entity_t *entity = it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
-    
+
     const char *title = ecs_doc_get_name( world, entity );
     if ( !title )
     {
       title = "SDL2 window";
     }
-    
+
     SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if ( window->maximized )
     {
@@ -41,7 +41,7 @@ sdl_create_window
       CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "SDL2 window creation failed: %s", SDL_GetError() );
       return;
     }
-    
+
     if ( window->maximized )
     {
       SDL_SetWindowBordered( created_window, false );
@@ -59,7 +59,7 @@ sdl_create_window
         CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Error getting usable bounds" );
         return;
       }
-      
+
       SDL_SetWindowPosition( created_window, usable_bounds.x, usable_bounds.y );
       SDL_SetWindowSize( created_window, usable_bounds.w, usable_bounds.h );
     }

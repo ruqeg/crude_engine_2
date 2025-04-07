@@ -46,6 +46,48 @@ crude_sin_cos
 }
 
 /////////////////////
+//// @Vector Common
+/////////////////////
+crude_vector
+crude_vec_select
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2,
+  _In_ crude_vector const                        control
+)
+{
+  return _mm_blendv_ps( v1, v2, control );
+}
+
+crude_vector
+crude_vec_zero
+(
+)
+{
+  return _mm_set_ps( 0.0f, 0.0f, 0.0f, 0.0f  );
+}
+
+CRUDE_INLINE crude_vector
+crude_vec_add
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2
+)
+{
+  return _mm_add_ps( v1, v2 );
+}
+
+CRUDE_INLINE crude_vector
+crude_vec_subtract
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2
+)
+{
+  return _mm_sub_ps( v1, v2 );
+}
+
+/////////////////////
 //// @Vector 3
 /////////////////////
 crude_vector
@@ -119,6 +161,82 @@ crude_mat_perspective_fov_lh
   m.r[ 1 ] = _mm_set_ps( 0.f, 0.f, height, 0.f );
   m.r[ 2 ] = _mm_set_ps( 1.0f, frange, 0.f, width );
   m.r[ 3 ] = _mm_set_ps( 0.f, 0.f, -frange * nearz, 0.f );
+  return m;
+}
+
+crude_matrix
+crude_mat_multiply
+(
+  _In_ crude_matrix                              m1,
+  _In_ crude_matrix                              m2
+)
+{
+  // copy from inline XMMATRIX XM_CALLCONV XMMatrixMultiply
+  __m256 t0 = _mm256_castps128_ps256(m1.r[0]);
+  t0 = _mm256_insertf128_ps(t0, m1.r[1], 1);
+  __m256 t1 = _mm256_castps128_ps256(m1.r[2]);
+  t1 = _mm256_insertf128_ps(t1, m1.r[3], 1);
+  
+  __m256 u0 = _mm256_castps128_ps256(m2.r[0]);
+  u0 = _mm256_insertf128_ps(u0, m2.r[1], 1);
+  __m256 u1 = _mm256_castps128_ps256(m2.r[2]);
+  u1 = _mm256_insertf128_ps(u1, m2.r[3], 1);
+  
+  __m256 a0 = _mm256_shuffle_ps(t0, t0, _MM_SHUFFLE(0, 0, 0, 0));
+  __m256 a1 = _mm256_shuffle_ps(t1, t1, _MM_SHUFFLE(0, 0, 0, 0));
+  __m256 b0 = _mm256_permute2f128_ps(u0, u0, 0x00);
+  __m256 c0 = _mm256_mul_ps(a0, b0);
+  __m256 c1 = _mm256_mul_ps(a1, b0);
+  
+  a0 = _mm256_shuffle_ps(t0, t0, _MM_SHUFFLE(1, 1, 1, 1));
+  a1 = _mm256_shuffle_ps(t1, t1, _MM_SHUFFLE(1, 1, 1, 1));
+  b0 = _mm256_permute2f128_ps(u0, u0, 0x11);
+  __m256 c2 = _mm256_fmadd_ps(a0, b0, c0);
+  __m256 c3 = _mm256_fmadd_ps(a1, b0, c1);
+  
+  a0 = _mm256_shuffle_ps(t0, t0, _MM_SHUFFLE(2, 2, 2, 2));
+  a1 = _mm256_shuffle_ps(t1, t1, _MM_SHUFFLE(2, 2, 2, 2));
+  __m256 b1 = _mm256_permute2f128_ps(u1, u1, 0x00);
+  __m256 c4 = _mm256_mul_ps(a0, b1);
+  __m256 c5 = _mm256_mul_ps(a1, b1);
+  
+  a0 = _mm256_shuffle_ps(t0, t0, _MM_SHUFFLE(3, 3, 3, 3));
+  a1 = _mm256_shuffle_ps(t1, t1, _MM_SHUFFLE(3, 3, 3, 3));
+  b1 = _mm256_permute2f128_ps(u1, u1, 0x11);
+  __m256 c6 = _mm256_fmadd_ps(a0, b1, c4);
+  __m256 c7 = _mm256_fmadd_ps(a1, b1, c5);
+  
+  t0 = _mm256_add_ps(c2, c6);
+  t1 = _mm256_add_ps(c3, c7);
+  
+  crude_matrix mResult;
+  mResult.r[0] = _mm256_castps256_ps128(t0);
+  mResult.r[1] = _mm256_extractf128_ps(t0, 1);
+  mResult.r[2] = _mm256_castps256_ps128(t1);
+  mResult.r[3] = _mm256_extractf128_ps(t1, 1);
+  return mResult;
+}
+
+crude_matrix
+crude_mat_affine_transformation
+(
+  _In_ crude_vector                              scaling,
+  _In_ crude_vector                              rotation_origin,
+  _In_ crude_vector                              rotation_quaternion,
+  _In_ crude_vector                              translation
+)
+{
+  crude_matrix mscaling = crude_mat_scaling_from_vector( scaling );
+  crude_vector vrotation_origin = crude_vec_select( CRUDE_MATH_SELECT_1110, rotation_origin, CRUDE_MATH_SELECT_1110 );
+  crude_matrix mrotation = crude_mat_rotation_quaternion( rotation_quaternion );
+  crude_vector vtranslation = crude_vec_select( CRUDE_MATH_SELECT_1110, translation, CRUDE_MATH_SELECT_1110 );
+  
+  crude_matrix m;
+  m = mscaling;
+  m.r[3] = crude_vec_subtract( m.r[3], vrotation_origin );
+  m = crude_mat_multiply( m, mrotation );
+  m.r[3] = crude_vec_add( m.r[3], vrotation_origin );
+  m.r[3] = crude_vec_add( m.r[3], vtranslation );
   return m;
 }
 
@@ -242,7 +360,7 @@ crude_mat_inverse
     *determinant= v_temp;
   }
 
-  v_temp = _mm_div_ps( CRUDE_MATH_VECTOR_ONE.v, v_temp );
+  v_temp = _mm_div_ps( CRUDE_MATH_VECTOR_ONE, v_temp );
   
   crude_matrix mResult;
   mResult.r[ 0 ] = _mm_mul_ps( c0, v_temp );
@@ -252,31 +370,148 @@ crude_mat_inverse
   return mResult;
 }
 
+crude_matrix
+crude_mat_scaling_from_vector
+(
+  _In_ crude_vector const                        scale
+)
+{
+  crude_matrix m;
+  m.r[0] = _mm_and_ps( scale, CRUDE_MATH_MASK_X );
+  m.r[1] = _mm_and_ps( scale , CRUDE_MATH_MASK_Y );
+  m.r[2] = _mm_and_ps( scale, CRUDE_MATH_MASK_Z );
+  m.r[3] = CRUDE_MATH_IDENTITY_R3;
+  return m;
+}
+
+crude_matrix
+crude_mat_rotation_quaternion
+(
+  _In_ crude_vector const                        quaternion
+)
+{
+  crude_vector Q0 = _mm_add_ps(quaternion, quaternion);
+  crude_vector Q1 = _mm_mul_ps(quaternion, Q0);
+  
+  crude_vector V0 = _mm_permute_ps(Q1, _MM_SHUFFLE(3, 0, 0, 1));
+  V0 = _mm_and_ps(V0, CRUDE_MATH_MASK_3 );
+  crude_vector V1 = _mm_permute_ps(Q1, _MM_SHUFFLE(3, 1, 2, 2));
+  V1 = _mm_and_ps(V1, CRUDE_MATH_MASK_3 );
+  crude_vector R0 = _mm_sub_ps( _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f ), V0);
+  R0 = _mm_sub_ps(R0, V1);
+  
+  V0 = _mm_permute_ps(quaternion, _MM_SHUFFLE(3, 1, 0, 0));
+  V1 = _mm_permute_ps(Q0, _MM_SHUFFLE(3, 2, 1, 2));
+  V0 = _mm_mul_ps(V0, V1);
+  
+  V1 = _mm_permute_ps(quaternion, _MM_SHUFFLE(3, 3, 3, 3));
+  crude_vector V2 = _mm_permute_ps(Q0, _MM_SHUFFLE(3, 0, 2, 1));
+  V1 = _mm_mul_ps(V1, V2);
+  
+  crude_vector R1 = _mm_add_ps(V0, V1);
+  crude_vector R2 = _mm_sub_ps(V0, V1);
+  
+  V0 = _mm_shuffle_ps(R1, R2, _MM_SHUFFLE(1, 0, 2, 1));
+  V0 = _mm_permute_ps(V0, _MM_SHUFFLE(1, 3, 2, 0));
+  V1 = _mm_shuffle_ps(R1, R2, _MM_SHUFFLE(2, 2, 0, 0));
+  V1 = _mm_permute_ps(V1, _MM_SHUFFLE(2, 0, 2, 0));
+  
+  Q1 = _mm_shuffle_ps(R0, V0, _MM_SHUFFLE(1, 0, 3, 0));
+  Q1 = _mm_permute_ps(Q1, _MM_SHUFFLE(1, 3, 2, 0));
+  
+  crude_matrix M;
+  M.r[0] = Q1;
+  
+  Q1 = _mm_shuffle_ps(R0, V0, _MM_SHUFFLE(3, 2, 3, 1));
+  Q1 = _mm_permute_ps(Q1, _MM_SHUFFLE(1, 3, 0, 2));
+  M.r[1] = Q1;
+  
+  Q1 = _mm_shuffle_ps(V1, R0, _MM_SHUFFLE(3, 2, 1, 0));
+  M.r[2] = Q1;
+  M.r[3] = CRUDE_MATH_IDENTITY_R3;
+  return M;
+}
+
+/////////////////////
+//// @Quaternio Common
+/////////////////////
+
+crude_vector 
+crude_quat_identity
+(
+)
+{
+  crude_vector res = _mm_set_ps( 1.0f, 0.0f, 0.0f, 0.0f );
+  return res;
+}
+
 /////////////////////
 //// @Convert
 /////////////////////
 void
-crude_store_float4x4
+crude_store_float3
 (
-  _Out_ crude_float4x4    *f,
-  _In_ crude_matrix const  m
+  _Out_ crude_float3                            *f,
+  _In_ crude_vector                              v
 )
 {
-  _mm_storeu_ps( &f->_01, m.r[ 0 ] );
-  _mm_storeu_ps( &f->_11, m.r[ 1 ] );
-  _mm_storeu_ps( &f->_21, m.r[ 2 ] );
-  _mm_storeu_ps( &f->_31, m.r[ 3 ] );
+  *( int* )( &f->x ) = _mm_extract_ps( v, 0 );
+  *( int* )( &f->y ) = _mm_extract_ps( v, 1 );
+  *( int* )( &f->z ) = _mm_extract_ps( v, 2 );
+}
+
+void
+crude_store_float4
+(
+  _Out_ crude_float4                            *f,
+  _In_ crude_vector                              v
+)
+{
+  _mm_storeu_ps( f, v );
+}
+
+void
+crude_store_float4x4
+(
+  _Out_ crude_float4x4                          *f,
+  _In_ crude_matrix const                        m
+)
+{
+  _mm_storeu_ps( &f->_00, m.r[ 0 ] );
+  _mm_storeu_ps( &f->_10, m.r[ 1 ] );
+  _mm_storeu_ps( &f->_20, m.r[ 2 ] );
+  _mm_storeu_ps( &f->_30, m.r[ 3 ] );
 }
 
 void
 crude_store_float4x4a
 (
-  _Out_ crude_float4x4a   *f,
-  _In_ crude_matrix const  m
+  _Out_ crude_float4x4a                         *f,
+  _In_ crude_matrix const                        m
 )
 {
-  _mm_store_ps( &f->_01, m.r[ 0 ] );
-  _mm_store_ps( &f->_11, m.r[ 1 ] );
-  _mm_store_ps( &f->_21, m.r[ 2 ] );
-  _mm_store_ps( &f->_31, m.r[ 3 ] );
+  _mm_store_ps( &f->_00, m.r[ 0 ] );
+  _mm_store_ps( &f->_10, m.r[ 1 ] );
+  _mm_store_ps( &f->_20, m.r[ 2 ] );
+  _mm_store_ps( &f->_30, m.r[ 3 ] );
+}
+
+crude_vector
+crude_load_float3
+(
+  _In_ crude_float3 const                       *f
+)
+{
+  __m128 xy = _mm_castpd_ps( _mm_load_sd( ( const double* )( f ) ) );
+  __m128 z = _mm_load_ss( &f->z );
+  return _mm_insert_ps( xy, z, 0x20 );
+}
+
+crude_vector
+crude_load_float4
+(
+  _In_ crude_float4 const                       *f
+)
+{
+  return _mm_loadu_ps( &f->x );
 }
