@@ -148,20 +148,41 @@ crude_mat_perspective_fov_lh
   _In_ float32 farz
 )
 {
-  float32 cos_fov;
-  float32 sin_fov;
-  crude_sin_cos( &sin_fov, &cos_fov, 0.5f * fov_angle_y );
+  float SinFov;
+  float CosFov;
+  crude_sin_cos( &SinFov, &CosFov, 0.5f * fov_angle_y );
   
-  float height = cos_fov / sin_fov;
-  float width = height / aspect_ratio;
-  float frange = farz / ( farz - nearz );
-  
-  crude_matrix m;
-  m.r[ 0 ] = _mm_set_ps( 0.f, 0.f, 0.f, width );
-  m.r[ 1 ] = _mm_set_ps( 0.f, 0.f, height, 0.f );
-  m.r[ 2 ] = _mm_set_ps( 1.0f, frange, 0.f, width );
-  m.r[ 3 ] = _mm_set_ps( 0.f, 0.f, -frange * nearz, 0.f );
-  return m;
+  float fRange = farz / ( farz - nearz );
+  // Note: This is recorded on the stack
+  float Height = CosFov / SinFov;
+  crude_vector rMem = {
+    Height / aspect_ratio,
+    Height,
+    fRange,
+    -fRange * nearz
+  };
+  // Copy from memory to SSE register
+  crude_vector vValues = rMem;
+  crude_vector vTemp = _mm_setzero_ps();
+  // Copy x only
+  vTemp = _mm_move_ss(vTemp, vValues);
+  // Height / AspectRatio,0,0,0
+  crude_matrix M;
+  M.r[0] = vTemp;
+  // 0,Height,0,0
+  vTemp = vValues;
+  vTemp = _mm_and_ps(vTemp, CRUDE_MATH_MASK_Y);
+  M.r[1] = vTemp;
+  // x=fRange,y=-fRange * NearZ,0,1.0f
+  vTemp = _mm_setzero_ps();
+  vValues = _mm_shuffle_ps(vValues, CRUDE_MATH_IDENTITY_R3, _MM_SHUFFLE(3, 2, 3, 2));
+  // 0,0,fRange,1.0f
+  vTemp = _mm_shuffle_ps(vTemp, vValues, _MM_SHUFFLE(3, 0, 0, 0));
+  M.r[2] = vTemp;
+  // 0,0,-fRange * NearZ,0.0f
+  vTemp = _mm_shuffle_ps(vTemp, vValues, _MM_SHUFFLE(2, 1, 0, 0));
+  M.r[3] = vTemp;
+  return M;
 }
 
 crude_matrix

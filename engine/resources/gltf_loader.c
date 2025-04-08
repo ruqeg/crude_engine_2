@@ -112,32 +112,29 @@ crude_load_gltf_from_file
       
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
+        crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
         switch ( mesh_primitive->attributes[ i ].type )
         {
         case cgltf_attribute_type_position:
         {
-          crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
           mesh_draw.position_buffer = buffer_gpu->handle;
           mesh_draw.position_offset = mesh_primitive->attributes[ i ].data->offset;
           break;
         }
         case cgltf_attribute_type_tangent:
         {
-          crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
           mesh_draw.tangent_buffer = buffer_gpu->handle;
           mesh_draw.tangent_offset = mesh_primitive->attributes[ i ].data->offset;
           break;
         }
         case cgltf_attribute_type_normal:
         {
-          crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
           mesh_draw.normal_buffer = buffer_gpu->handle;
           mesh_draw.normal_offset = mesh_primitive->attributes[ i ].data->offset;
           break;
         }
         case cgltf_attribute_type_texcoord:
         {
-          crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
           mesh_draw.texcoord_buffer = buffer_gpu->handle;
           mesh_draw.texcoord_offset = mesh_primitive->attributes[ i ].data->offset;
           break;

@@ -142,13 +142,13 @@ typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
 
 #define CRUDE_MATH_SELECT0         0x00000000
 #define CRUDE_MATH_SELECT1         0xFFFFFFFF
-#define CRUDE_MATH_SELECT_1110     ( _mm_set_ps( CRUDE_MATH_SELECT0, CRUDE_MATH_SELECT1, CRUDE_MATH_SELECT1, CRUDE_MATH_SELECT1 ) )
+#define CRUDE_MATH_SELECT_1110     ( _mm_castsi128_ps( _mm_set_epi32( CRUDE_MATH_SELECT0, CRUDE_MATH_SELECT1, CRUDE_MATH_SELECT1, CRUDE_MATH_SELECT1 ) ) )
 #define CRUDE_MATH_VECTOR_ONE      ( _mm_set_ps( 1.0f, 1.0f, 1.0f, 1.0f ) )
-#define CRUDE_MATH_MASK_X          ( _mm_set_ps( 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF ) )
-#define CRUDE_MATH_MASK_Y          ( _mm_set_ps( 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 ) )
-#define CRUDE_MATH_MASK_Z          ( _mm_set_ps( 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 ) )
-#define CRUDE_MATH_MASK_W          ( _mm_set_ps( 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 ) )
-#define CRUDE_MATH_MASK_3          ( _mm_set_ps( 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF) )
+#define CRUDE_MATH_MASK_X          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF ) ) )
+#define CRUDE_MATH_MASK_Y          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 ) ) )
+#define CRUDE_MATH_MASK_Z          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 ) ) )
+#define CRUDE_MATH_MASK_W          ( _mm_castsi128_ps( _mm_set_epi32( 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 ) ) )
+#define CRUDE_MATH_MASK_3          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF) ) )
 #define CRUDE_MATH_IDENTITY_R3     ( _mm_set_ps( 1.0f, 0.0f, 0.0f, 0.0f ) )
 
 /////////////////////

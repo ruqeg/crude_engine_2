@@ -133,7 +133,7 @@ initialize_render_core
       .far_z = 1000,
       .aspect_ratio = 1.0 } );
     CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_transform, {
-      .translation = { 0, 0, -5 },
+      .translation = { 0, 0, 5 },
       .rotation = { 0, 0, 0, 1 },
       .scale = { 1, 1, 1 }, } );
   }
@@ -181,9 +181,16 @@ render
       crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_transform );
 
+      crude_transform model_transform = {
+        .translation = { 0, 0, 0 },
+        .rotation = { 0, 0, 0, 0 },
+        .scale = { 0.0005, 0.0005, 0.0005 },
+      };
+      crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
       crude_matrix world_to_view = crude_transform_node_to_world( renderer[ i ].camera, transform );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
-      crude_matrix world_to_clip = crude_mat_multiply( world_to_view, view_to_clip );
+
+      crude_matrix world_to_clip = crude_mat_multiply( crude_mat_multiply( model_to_world, world_to_view), view_to_clip );
       crude_store_float4x4a( &uniform_data.world_to_clip, world_to_clip ); 
       memcpy( ubo_data, &uniform_data, sizeof( TMP_UBO ) );
       
