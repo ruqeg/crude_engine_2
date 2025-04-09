@@ -1,5 +1,6 @@
 #include <flecs.h>
 
+#include <core/time.h>
 #include <scene/entity.h>
 
 #include <engine.h>
@@ -13,6 +14,7 @@ crude_engine_initialize
   crude_engine engine;
   engine.world   = ecs_init();
   engine.running = true;
+  engine.time    = 0;
   
   ECS_TAG_DEFINE( engine.world, Entity );
 
@@ -22,6 +24,7 @@ crude_engine_initialize
   }
 
   crude_initialize_log();
+  crude_initialize_time_service();
   
   return engine;
 }
@@ -43,10 +46,14 @@ crude_engine_update
 {
   ecs_world_t *world = engine->world;
   
+  int64 const current_tick = crude_time_now();
+  float32 const delta_time = CAST( float32, crude_time_delta_seconds( engine->time, current_tick ) );
+  engine->time = current_tick;
+
   if ( !ecs_should_quit( world ) )
   {
     ecs_world_info_t const *info = ecs_get_world_info( world );
-    ecs_progress( world, info->delta_time );
+    ecs_progress( world, delta_time );
     return true;
   }
 

@@ -163,6 +163,13 @@ CRUDE_INLINE float32                   crude_ceil( _In_ float32 s );
 CRUDE_INLINE float32                   crude_trunc( _In_ float32 s );
 CRUDE_INLINE float32                   crude_clamp( _In_ float32 s, _In_ float32 min, _In_ float32 max );
 CRUDE_INLINE float32                   crude_abs( _In_ float32 s );
+CRUDE_INLINE float32
+crude_lerp
+(
+  _In_ float32                                   a,
+  _In_ float32                                   b,
+  _In_ float32                                   f
+);
 
 CRUDE_INLINE float32                   crude_pow( _In_ float32 s1, _In_ float32 s2 );
 CRUDE_INLINE float32                   crude_sqrt( _In_ float32 s);

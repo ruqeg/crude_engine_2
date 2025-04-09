@@ -1,7 +1,18 @@
 /////////////////////
 //// @Scalar
 /////////////////////
-CRUDE_INLINE float32
+float32
+crude_lerp
+(
+  _In_ float32                                   a,
+  _In_ float32                                   b,
+  _In_ float32                                   f
+)
+{
+  return a + f * ( b - a );
+}
+
+float32
 crude_sin_cos
 (
   _Out_ float32                                 *sinangle,

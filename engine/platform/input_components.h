@@ -36,6 +36,7 @@ typedef struct crude_input
   crude_input_event_callback   callback;
   crude_key_state              keys[ 128 ];
   crude_mouse_state            mouse;
+  crude_mouse_input            wrapwnd;
 } crude_input;
 
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_input );

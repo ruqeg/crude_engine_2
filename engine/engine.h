@@ -6,6 +6,7 @@ typedef struct crude_engine
 {
   void              *world;
   bool               running;
+  int64              time;
 } crude_engine;
 
 CRUDE_API crude_engine

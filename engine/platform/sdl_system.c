@@ -259,7 +259,9 @@ sdl_process_events
         }
         else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
         {
-          SDL_SetWindowRelativeMouseMode( app_windows_handles[ i ].value, true );
+          inputs[ i ].wrapwnd.x = sdl_event.motion.x;
+          inputs[ i ].wrapwnd.y = sdl_event.motion.y;
+          SDL_HideCursor();
           key_down( &inputs[ i ].mouse.right );
         }
       }
@@ -271,7 +273,8 @@ sdl_process_events
         }
         else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
         {
-          SDL_SetWindowRelativeMouseMode( app_windows_handles[ i ].value, false );
+          SDL_WarpMouseInWindow( app_windows_handles[ i ].value, inputs[ i ].wrapwnd.x, inputs[ i ].wrapwnd.y );
+          SDL_ShowCursor();
           key_up( &inputs[ i ].mouse.right );
         }
       }
@@ -281,6 +284,11 @@ sdl_process_events
         inputs[ i ].mouse.wnd.y = sdl_event.motion.y;
         inputs[ i ].mouse.rel.x = sdl_event.motion.xrel;
         inputs[ i ].mouse.rel.y = sdl_event.motion.yrel;
+  
+        if ( !SDL_CursorVisible() )
+        {
+          SDL_WarpMouseInWindow( app_windows_handles[ i ].value, inputs[ i ].wrapwnd.x, inputs[ i ].wrapwnd.y );
+        }
       }
       else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
       {
