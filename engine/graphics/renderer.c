@@ -10,6 +10,8 @@ crude_gfx_initialize_renderer
   renderer->gpu = creation->gpu;
   renderer->allocator = creation->allocator;
   crude_initialize_resource_pool( &renderer->buffers, renderer->allocator, 1024, sizeof( crude_buffer_resource ) );
+  crude_initialize_resource_pool( &renderer->textures, renderer->allocator, 1024, sizeof( crude_texture_resource ) );
+  crude_initialize_resource_pool( &renderer->samplers, renderer->allocator, 1024, sizeof( crude_sampler_resource ) );
 }
 
 void
@@ -47,4 +49,58 @@ crude_gfx_renderer_create_buffer
   
   buffer_resource->references = 1;
   return buffer_resource;
+}
+
+crude_texture_resource*
+crude_gfx_renderer_create_texture
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_texture_creation const   *creation
+)
+{
+  crude_texture_resource_handle texture_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
+  if ( texture_resource_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return NULL;
+  }
+  
+  crude_texture_resource *texture_resource = CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, texture_resource_handle );
+  texture_resource->handle = crude_gfx_create_texture( renderer->gpu, creation );
+  texture_resource->name = creation->name;
+  texture_resource->pool_index = texture_resource_handle.index;
+  
+  if ( creation->name )
+  {
+    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+  }
+  
+  texture_resource->references = 1;
+  return texture_resource;
+}
+
+crude_sampler_resource*
+crude_gfx_renderer_create_sampler
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_sampler_creation const   *creation
+)
+{
+  crude_sampler_resource_handle sampler_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
+  if ( sampler_resource_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return NULL;
+  }
+  
+  crude_sampler_resource *sampler_resource = CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, sampler_resource_handle );
+  sampler_resource->handle = crude_gfx_create_sampler( renderer->gpu, creation );
+  sampler_resource->name = creation->name;
+  sampler_resource->pool_index = sampler_resource_handle.index;
+  
+  if ( creation->name )
+  {
+    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+  }
+  
+  sampler_resource->references = 1;
+  return sampler_resource;
 }

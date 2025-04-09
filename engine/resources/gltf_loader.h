@@ -22,6 +22,8 @@ typedef struct crude_mesh_draw
 
 typedef struct crude_scene
 {
+  crude_sampler_resource      *samplers;
+  crude_texture_resource      *images;
   crude_buffer_resource       *buffers;
   crude_mesh_draw             *mesh_draws;
 } crude_scene;

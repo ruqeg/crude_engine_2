@@ -163,14 +163,14 @@ crude_gfx_dynamic_allocate
 /////////////////////                              
 //// @Query                                        
 /////////////////////                              
-                                                   
-CRUDE_API void                                     
-crude_gfx_query_buffer                             
-(                                                  
+
+CRUDE_API void
+crude_gfx_query_buffer 
+(
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_buffer_handle                           buffer,
   _Out_ crude_buffer_description                    *description
-);                                                 
+);
                                                    
 ///////////////////                                
 // @Resources                                      

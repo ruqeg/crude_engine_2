@@ -1,8 +1,10 @@
 #include <cgltf.h>
 #include <stb_ds.h>
+#include <stb_image.h>
 
 #include <core/assert.h>
 #include <core/log.h>
+#include <core/file.h>
 #include <graphics/renderer.h>
 
 #include <resources/gltf_loader.h>
@@ -30,6 +32,117 @@ crude_get_mesh_vertex_buffer
   *buffer_offset = buffer_accessor->offset;
 }
 
+//static bool
+//get_mesh_material
+//(
+//  raptor::Renderer& renderer,
+//  Scene& scene,
+//  raptor::glTF::Material& material,
+//  MeshDraw& mesh_draw
+//)
+//{
+//    //bool transparent = false;
+//    //GpuDevice& gpu = *renderer.gpu;
+//
+//    //if ( material.pbr_metallic_roughness != nullptr ) {
+//    //    if ( material.pbr_metallic_roughness->base_color_factor_count != 0 ) {
+//    //        RASSERT( material.pbr_metallic_roughness->base_color_factor_count == 4 );
+//
+//    //        mesh_draw.base_color_factor = {
+//    //            material.pbr_metallic_roughness->base_color_factor[ 0 ],
+//    //            material.pbr_metallic_roughness->base_color_factor[ 1 ],
+//    //            material.pbr_metallic_roughness->base_color_factor[ 2 ],
+//    //            material.pbr_metallic_roughness->base_color_factor[ 3 ],
+//    //        };
+//    //    } else {
+//    //        mesh_draw.base_color_factor = { 1.0f, 1.0f, 1.0f, 1.0f };
+//    //    }
+//
+//    //    if ( material.pbr_metallic_roughness->roughness_factor != glTF::INVALID_FLOAT_VALUE ) {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.x = material.pbr_metallic_roughness->roughness_factor;
+//    //    } else {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.x = 1.0f;
+//    //    }
+//
+//    //    if ( material.alpha_mode.data != nullptr && strcmp( material.alpha_mode.data, "MASK" ) == 0 ) {
+//    //        mesh_draw.flags |= DrawFlags_AlphaMask;
+//    //        transparent = true;
+//    //    }
+//
+//    //    if ( material.alpha_cutoff != glTF::INVALID_FLOAT_VALUE ) {
+//    //        mesh_draw.alpha_cutoff = material.alpha_cutoff;
+//    //    }
+//
+//    //    if ( material.pbr_metallic_roughness->metallic_factor != glTF::INVALID_FLOAT_VALUE ) {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.y = material.pbr_metallic_roughness->metallic_factor;
+//    //    } else {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.y = 1.0f;
+//    //    }
+//
+//    //    if ( material.pbr_metallic_roughness->base_color_texture != nullptr ) {
+//    //        glTF::Texture& diffuse_texture = scene.gltf_scene.textures[ material.pbr_metallic_roughness->base_color_texture->index ];
+//    //        TextureResource& diffuse_texture_gpu = scene.images[ diffuse_texture.source ];
+//    //        SamplerResource& diffuse_sampler_gpu = scene.samplers[ diffuse_texture.sampler ];
+//
+//    //        mesh_draw.diffuse_texture_index = diffuse_texture_gpu.handle.index;
+//
+//    //        gpu.link_texture_sampler( diffuse_texture_gpu.handle, diffuse_sampler_gpu.handle );
+//    //    } else {
+//    //        mesh_draw.diffuse_texture_index = INVALID_TEXTURE_INDEX;
+//    //    }
+//
+//    //    if ( material.pbr_metallic_roughness->metallic_roughness_texture != nullptr ) {
+//    //        glTF::Texture& roughness_texture = scene.gltf_scene.textures[ material.pbr_metallic_roughness->metallic_roughness_texture->index ];
+//    //        TextureResource& roughness_texture_gpu = scene.images[ roughness_texture.source ];
+//    //        SamplerResource& roughness_sampler_gpu = scene.samplers[ roughness_texture.sampler ];
+//
+//    //        mesh_draw.roughness_texture_index = roughness_texture_gpu.handle.index;
+//
+//    //        gpu.link_texture_sampler( roughness_texture_gpu.handle, roughness_sampler_gpu.handle );
+//    //    } else {
+//    //        mesh_draw.roughness_texture_index = INVALID_TEXTURE_INDEX;
+//    //    }
+//    //}
+//
+//    //if ( material.occlusion_texture != nullptr ) {
+//    //    glTF::Texture& occlusion_texture = scene.gltf_scene.textures[ material.occlusion_texture->index ];
+//
+//    //    TextureResource& occlusion_texture_gpu = scene.images[ occlusion_texture.source ];
+//    //    SamplerResource& occlusion_sampler_gpu = scene.samplers[ occlusion_texture.sampler ];
+//
+//    //    mesh_draw.occlusion_texture_index = occlusion_texture_gpu.handle.index;
+//
+//    //    if ( material.occlusion_texture->strength != glTF::INVALID_FLOAT_VALUE ) {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.z = material.occlusion_texture->strength;
+//    //    } else {
+//    //        mesh_draw.metallic_roughness_occlusion_factor.z = 1.0f;
+//    //    }
+//
+//    //    gpu.link_texture_sampler( occlusion_texture_gpu.handle, occlusion_sampler_gpu.handle );
+//    //} else {
+//    //    mesh_draw.occlusion_texture_index = INVALID_TEXTURE_INDEX;
+//    //}
+//
+//    //if ( material.normal_texture != nullptr ) {
+//    //    glTF::Texture& normal_texture = scene.gltf_scene.textures[ material.normal_texture->index ];
+//    //    TextureResource& normal_texture_gpu = scene.images[ normal_texture.source ];
+//    //    SamplerResource& normal_sampler_gpu = scene.samplers[ normal_texture.sampler ];
+//
+//    //    gpu.link_texture_sampler( normal_texture_gpu.handle, normal_sampler_gpu.handle );
+//
+//    //    mesh_draw.normal_texture_index = normal_texture_gpu.handle.index;
+//    //} else {
+//    //    mesh_draw.normal_texture_index = INVALID_TEXTURE_INDEX;
+//    //}
+//
+//    //// Create material buffer
+//    //BufferCreation buffer_creation;
+//    //buffer_creation.reset().set( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Dynamic, sizeof( MeshData ) ).set_name( "mesh_data" );
+//    //mesh_draw.material_buffer = gpu.create_buffer( buffer_creation );
+//
+//    //return transparent;
+//}
+
 void
 crude_load_gltf_from_file
 (
@@ -56,6 +169,119 @@ crude_load_gltf_from_file
   if ( result != cgltf_result_success )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", path );
+  }
+  
+  
+  char prev_directory[ 1024 ];
+  crude_get_current_working_directory( &prev_directory, sizeof( prev_directory ) );
+  
+  char gltf_base_path[ 1024 ];
+  memcpy( gltf_base_path, path, sizeof( gltf_base_path ) );
+  crude_file_directory_from_path( gltf_base_path );
+
+  crude_change_working_directory( gltf_base_path );
+
+  scene->images = NULL;
+  arrsetcap( scene->images, gltf->images_count );
+  
+  for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
+  {
+    cgltf_image *image = &gltf->images[ image_index ];
+    int comp, width, height;
+    uint8_t* image_data = stbi_load( image->uri, &width, &height, &comp, 4 );
+  
+    if ( !image_data )
+    {
+      continue;
+    }
+
+    crude_texture_creation texture_creation = {
+      .initial_data = image_data,
+      .width = width,
+      .height = height,
+      .depth = 1u,
+      .mipmaps = 1u,
+      .flags = 0u,
+      .format = VK_FORMAT_R8G8B8A8_UNORM,
+      .type = CRUDE_TEXTURE_TYPE_TEXTURE_2D,
+      .name = image->uri,
+    };
+
+    crude_texture_resource *texture_resource = crude_gfx_renderer_create_texture( renderer, &texture_creation );
+    free( image_data );
+
+    arrpush( scene->images, *texture_resource );
+  }
+
+  // Load all samplers
+  scene->samplers = NULL;
+  arrsetcap( scene->samplers, gltf->samplers_count );
+
+  for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
+  {
+    cgltf_sampler *sampler = &gltf->samplers[ sampler_index ];
+  
+    crude_sampler_creation creation;
+    switch ( sampler->min_filter )
+    {
+    case cgltf_filter_type_nearest:
+      creation.min_filter = VK_FILTER_NEAREST;
+      break;
+    case cgltf_filter_type_linear:
+      creation.min_filter = VK_FILTER_LINEAR;
+      break;
+    case cgltf_filter_type_linear_mipmap_nearest:
+      creation.min_filter = VK_FILTER_LINEAR;
+      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      break;
+    case cgltf_filter_type_linear_mipmap_linear:
+      creation.min_filter = VK_FILTER_LINEAR;
+      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      break;
+    case cgltf_filter_type_nearest_mipmap_nearest:
+      creation.min_filter = VK_FILTER_NEAREST;
+      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      break;
+    case cgltf_filter_type_nearest_mipmap_linear:
+      creation.min_filter = VK_FILTER_NEAREST;
+      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      break;
+    }
+    
+    creation.mag_filter = sampler->mag_filter == cgltf_filter_type_linear ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+    
+    switch ( sampler->wrap_s )
+    {
+      case cgltf_wrap_mode_clamp_to_edge:
+        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        break;
+      case cgltf_wrap_mode_mirrored_repeat:
+        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        break;
+      case cgltf_wrap_mode_repeat:
+        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        break;
+    }
+    
+    switch ( sampler->wrap_t )
+    {
+    case cgltf_wrap_mode_clamp_to_edge:
+      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+      break;
+    case cgltf_wrap_mode_mirrored_repeat:
+      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+      break;
+    case cgltf_wrap_mode_repeat:
+      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+      break;
+    }
+
+    creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    
+    creation.name = "";
+    
+    crude_sampler_resource *sampler_resource = crude_gfx_renderer_create_sampler( renderer, &creation );
+    arrpush( scene->samplers, *sampler_resource );
   }
   
   scene->buffers = NULL;
@@ -158,10 +384,37 @@ crude_load_gltf_from_file
         .name = "ds_1"
       };
       mesh_draw.descriptor_set = crude_create_descriptor_set( renderer->gpu, &ds_creation );
+
+      /*bool transparent = get_mesh_material( renderer, scene, mesh_primitive->material, mesh_draw );
+      
+      if ( transparent)
+      {
+        if ( mesh_primitive->material->double_sided )
+        {
+          mesh_draw.material = material_no_cull_transparent;
+        }
+        else
+        {
+          mesh_draw.material = material_cull_transparent;
+        }
+      }
+      else
+      {
+        if ( mesh_primitive->material->double_sided )
+        {
+          mesh_draw.material = material_no_cull_opaque;
+        }
+        else
+        {
+          mesh_draw.material = material_cull_opaque;
+        }
+      }*/
+
       arrpush( scene->mesh_draws, mesh_draw );
     }
   }
-
+  
+  crude_change_working_directory( prev_directory );
   cgltf_free( gltf );
 }
 
