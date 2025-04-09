@@ -1,8 +1,8 @@
-#include <scene/scripts_components.h>
-
 #include <platform/input_components.h>
 #include <scene/scene_components.h>
 #include <scene/free_camera_system.h>
+
+#include <scene/scripts_components.h>
 
 static void
 crude_update_free_camera

@@ -141,7 +141,7 @@ initialize_render_core
     
     CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_free_camera, {
       .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
-      .rotating_speed_multiplier  = { -0.15f, -0.15f },
+      .rotating_speed_multiplier  = { -1.0f, -1.0f },
       .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
   }
 }

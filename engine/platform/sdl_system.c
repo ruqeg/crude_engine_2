@@ -259,6 +259,7 @@ sdl_process_events
         }
         else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
         {
+          SDL_SetWindowRelativeMouseMode( app_windows_handles[ i ].value, true );
           key_down( &inputs[ i ].mouse.right );
         }
       }
@@ -270,6 +271,7 @@ sdl_process_events
         }
         else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
         {
+          SDL_SetWindowRelativeMouseMode( app_windows_handles[ i ].value, false );
           key_up( &inputs[ i ].mouse.right );
         }
       }
