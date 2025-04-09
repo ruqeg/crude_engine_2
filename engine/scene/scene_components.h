@@ -23,12 +23,6 @@ typedef struct crude_camera
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 
-CRUDE_API void
-crude_scene_componentsImport
-(
-  _In_ ecs_world_t            *world
-);
-
 CRUDE_API crude_matrix
 crude_camera_view_to_clip
 (
@@ -40,4 +34,10 @@ crude_transform_node_to_world
 (
   _In_ crude_entity            node,
   _In_ crude_transform        *transform
+);
+
+CRUDE_API void
+crude_scene_componentsImport
+(
+  _In_ ecs_world_t            *world
 );

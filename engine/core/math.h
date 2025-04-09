@@ -150,6 +150,7 @@ typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
 #define CRUDE_MATH_MASK_W          ( _mm_castsi128_ps( _mm_set_epi32( 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 ) ) )
 #define CRUDE_MATH_MASK_3          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF) ) )
 #define CRUDE_MATH_IDENTITY_R3     ( _mm_set_ps( 1.0f, 0.0f, 0.0f, 0.0f ) )
+#define CRUDE_MATH_ONE_HALF        ( _mm_set_ps( 0.5f, 0.5f, 0.5f, 0.5f ) )
 
 /////////////////////
 //// @Scalar
@@ -227,7 +228,14 @@ CRUDE_INLINE crude_vector
 crude_vec_zero
 (
 );
-CRUDE_INLINE crude_vector              crude_vec_set( _In_ float32 x, _In_ float32 y, _In_ float32 z, _In_ float32 w );
+CRUDE_INLINE crude_vector
+crude_vec_set
+(
+  _In_ float32                                   x,
+  _In_ float32                                   y,
+  _In_ float32                                   z,
+  _In_ float32                                   w
+);
 CRUDE_INLINE crude_vector              crude_vec_fill( _In_ float32 value );
 CRUDE_INLINE crude_vector              crude_vec_splat_x( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_splat_y( _In_ crude_vector const *v );
@@ -238,10 +246,26 @@ CRUDE_INLINE crude_vector              crude_vec_splat_infinity( );
 CRUDE_INLINE crude_vector              crude_vec_splat_qnan( );
 CRUDE_INLINE crude_vector              crude_vec_splat_epsilon( );
 
-CRUDE_INLINE float32                   crude_vec_get_x( _In_ crude_vector const *v );
-CRUDE_INLINE float32                   crude_vec_get_y( _In_ crude_vector const *v );
-CRUDE_INLINE float32                   crude_vec_get_z( _In_ crude_vector const *v );
-CRUDE_INLINE float32                   crude_vec_get_w( _In_ crude_vector const *v );
+CRUDE_INLINE float32
+crude_vec_get_x
+( 
+  _In_ crude_vector const                        v
+);
+CRUDE_INLINE float32
+crude_vec_get_y                                  
+(
+  _In_ crude_vector const                        v
+); 
+CRUDE_INLINE float32
+crude_vec_get_z
+( 
+  _In_ crude_vector const                        v
+);
+CRUDE_INLINE float32
+crude_vec_get_w
+(
+  _In_ crude_vector const                        v
+);
 
 CRUDE_INLINE crude_vector              crude_vec_set_x( _In_ crude_vector const *v, float32 x );
 CRUDE_INLINE crude_vector              crude_vec_set_y( _In_ crude_vector const *v, float32 y );
@@ -267,8 +291,11 @@ CRUDE_INLINE crude_vector              crude_vec_floor( _In_ crude_vector const 
 CRUDE_INLINE crude_vector              crude_vec_ceil( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_trunc( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_clamp( _In_ crude_vector const *v, crude_vector const *vmin, crude_vector const *vmax );
-
-CRUDE_INLINE crude_vector              crude_vec_negate( _In_ crude_vector const *v );
+CRUDE_INLINE crude_vector
+crude_vec_negate
+(
+  _In_ crude_vector const                        v
+);
 CRUDE_INLINE crude_vector
 crude_vec_add
 (
@@ -281,11 +308,27 @@ crude_vec_subtract
   _In_ crude_vector const                        v1,
   _In_ crude_vector const                        v2
 );
-CRUDE_INLINE crude_vector              crude_vec_multiply( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
-CRUDE_INLINE crude_vector              crude_vec_multiply_add( _In_ crude_vector const *v1, _In_ crude_vector const *v2, _In_ crude_vector const *v3 );
+CRUDE_INLINE crude_vector
+crude_vec_multiply
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2
+);
+CRUDE_INLINE crude_vector
+crude_vec_multiply_add
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2,
+  _In_ crude_vector const                        v3
+);
 CRUDE_INLINE crude_vector              crude_vec_divide( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 CRUDE_INLINE crude_vector              crude_vec_divide_add( _In_ crude_vector const *v1, _In_ crude_vector const *v2, _In_ crude_vector const *v3 );
-CRUDE_INLINE crude_vector              crude_vec_scale( _In_ crude_vector const *v, _In_ float32 s );
+CRUDE_INLINE crude_vector
+crude_vec_scale
+( 
+  _In_ crude_vector const                        v,
+  _In_ float32                                   s
+);
 CRUDE_INLINE crude_vector              crude_vec_sqrt( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_exp2( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_exp( _In_ crude_vector const *v );
@@ -300,6 +343,23 @@ CRUDE_INLINE crude_vector              crude_vec_tan( _In_ crude_vector const *v
 CRUDE_INLINE crude_vector              crude_vec_arc_cos( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_arc_sin( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_arc_tan( _In_ crude_vector const *v );
+CRUDE_INLINE crude_vector
+crude_vec_sin_cos
+(
+  _Out_ crude_vector                            *sin,
+  _Out_ crude_vector                            *cos,
+  _In_ crude_vector const                        v
+);
+CRUDE_INLINE crude_vector
+crude_vec_permute
+(
+  _In_ crude_vector                              v1, 
+  _In_ crude_vector                              v2,
+  _In_ uint32                                    permute_x,
+  _In_ uint32                                    permute_y,
+  _In_ uint32                                    permute_z,
+  _In_ uint32                                    permute_w 
+);
 
 /////////////////////
 //// @Vector 1
@@ -328,6 +388,12 @@ CRUDE_INLINE crude_vector              crude_vec_reject2( _In_ crude_vector cons
 /////////////////////
 //// @Vector 3
 /////////////////////
+CRUDE_INLINE crude_vector
+crude_vec_transform_normal3
+(
+  _In_ crude_vector                              v, 
+  _In_ crude_matrix                              m
+);
 CRUDE_INLINE crude_vector              crude_vec_covector3( _In_ crude_vector const *v, _In_ crude_vector const *e1, _In_ crude_vector const *e2, _In_ crude_vector const *e3 );
 CRUDE_INLINE crude_vector              crude_vec_dot3( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 CRUDE_INLINE crude_vector              crude_vec_length3( _In_ crude_vector const *v );
@@ -367,6 +433,21 @@ CRUDE_INLINE crude_vector              crude_vec_cos4( _In_ crude_vector const *
 CRUDE_INLINE crude_vector              crude_vec_project4( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 CRUDE_INLINE crude_vector              crude_vec_reject4( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 
+/////////////////////
+//// @Vector Other
+/////////////////////
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_forward
+(
+);
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_right
+(
+);
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_up
+(
+);
 
 /////////////////////
 //// @Quaternio Common
@@ -374,6 +455,36 @@ CRUDE_INLINE crude_vector              crude_vec_reject4( _In_ crude_vector cons
 CRUDE_INLINE crude_vector 
 crude_quat_identity
 (
+);
+CRUDE_INLINE crude_vector 
+crude_quat_multiply
+(
+  _In_ crude_vector                              q1,
+  _In_ crude_vector                              q2
+);
+CRUDE_INLINE crude_vector 
+crude_quat_rotation_axis
+(
+  _In_ crude_vector                              axis,
+  _In_ float32                                   angle
+);
+CRUDE_INLINE crude_vector 
+crude_quat_rotation_normal
+(
+  _In_ crude_vector                              normal,
+  _In_ float32                                   angle
+);
+CRUDE_INLINE crude_vector
+crude_quat_rotation_roll_pitch_yaw
+(
+  _In_ float32                                   pitch,
+  _In_ float32                                   yaw,
+  _In_ float32                                   roll
+);
+CRUDE_INLINE crude_vector
+crude_quat_rotation_roll_pitch_yaw_from_vector
+(
+  _In_ crude_vector const                        angle
 );
 
 /////////////////////

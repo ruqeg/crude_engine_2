@@ -33,15 +33,15 @@ cr_main
 
   if ( !g_initialized )
   {
-    ECS_IMPORT( world, crude_sdl_system );
-
-    ecs_entity_t scene = ecs_entity( world, { .name = "paprika" } );
-    ecs_set( world, scene, crude_window, { 
-      .width     = 800,
-      .height    = 600,
-      .maximized = false });
-    ecs_set( world, scene, crude_input, { .callback = &input_callback } );
-
+    //ECS_IMPORT( world, crude_sdl_system );
+    //
+    //ecs_entity_t scene = ecs_entity( world, { .name = "paprika" } );
+    //ecs_set( world, scene, crude_window, { 
+    //  .width     = 800,
+    //  .height    = 600,
+    //  .maximized = false });
+    //ecs_set( world, scene, crude_input, { .callback = &input_callback } );
+    
     g_initialized = true;
   }
 

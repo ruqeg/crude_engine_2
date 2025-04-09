@@ -7,6 +7,7 @@
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/render_system.h>
+#include <scene/free_camera_system.h>
 
 static bool CR_STATE g_initialized = false;
 
@@ -58,6 +59,7 @@ cr_main
   {
     ECS_IMPORT( world, crude_sdl_system );
     ECS_IMPORT( world, crude_render_system );
+    ECS_IMPORT( world, crude_free_camera_system );
 
     ecs_entity_t scene = ecs_entity( world, { .name = "scene1" } );
     ecs_set( world, scene, crude_window, { 

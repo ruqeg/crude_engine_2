@@ -67,7 +67,69 @@ crude_vec_zero
   return _mm_set_ps( 0.0f, 0.0f, 0.0f, 0.0f  );
 }
 
-CRUDE_INLINE crude_vector
+crude_vector
+crude_vec_set
+(
+  _In_ float32                                   x,
+  _In_ float32                                   y,
+  _In_ float32                                   z,
+  _In_ float32                                   w
+)
+{
+  return _mm_set_ps( w, z, y, x );
+}
+
+float32
+crude_vec_get_x
+( 
+  _In_ crude_vector const                        v
+)
+{
+  return _mm_cvtss_f32( v );
+}
+
+float32
+crude_vec_get_y                                  
+(
+  _In_ crude_vector const                        v
+)
+{
+  crude_vector vTemp = _mm_permute_ps( v, _MM_SHUFFLE( 1, 1, 1, 1 ) );
+  return _mm_cvtss_f32(vTemp);
+}
+
+float32
+crude_vec_get_z
+( 
+  _In_ crude_vector const                        v
+)
+{
+  crude_vector vTemp = _mm_permute_ps( v, _MM_SHUFFLE( 2, 2, 2, 2 ) );
+  return _mm_cvtss_f32(vTemp);
+}
+
+float32
+crude_vec_get_w
+(
+  _In_ crude_vector const                        v
+)
+{
+  crude_vector vTemp = _mm_permute_ps( v, _MM_SHUFFLE( 3, 3, 3, 3 ) );
+  return _mm_cvtss_f32(vTemp);
+}
+
+crude_vector
+crude_vec_negate
+(
+  _In_ crude_vector const                        v
+)
+{
+  crude_vector z;
+  z = _mm_setzero_ps();
+  return _mm_sub_ps( z, v );
+}
+
+crude_vector
 crude_vec_add
 (
   _In_ crude_vector const                        v1,
@@ -77,7 +139,7 @@ crude_vec_add
   return _mm_add_ps( v1, v2 );
 }
 
-CRUDE_INLINE crude_vector
+crude_vector
 crude_vec_subtract
 (
   _In_ crude_vector const                        v1,
@@ -87,9 +149,77 @@ crude_vec_subtract
   return _mm_sub_ps( v1, v2 );
 }
 
+crude_vector
+crude_vec_scale
+( 
+  _In_ crude_vector const                        v,
+  _In_ float32                                   s
+)
+{
+  crude_vector vResult = _mm_set_ps1( s );
+  return _mm_mul_ps(vResult, v );
+}
+
+crude_vector
+crude_vec_sin_cos
+(
+  _Out_ crude_vector                            *sin,
+  _Out_ crude_vector                            *cos,
+  _In_ crude_vector const                        v
+)
+{
+  *sin = _mm_sincos_ps( cos, v );
+}
+
+crude_vector
+crude_vec_permute
+(
+  _In_ crude_vector                              v1, 
+  _In_ crude_vector                              v2,
+  _In_ uint32                                    permute_x,
+  _In_ uint32                                    permute_y,
+  _In_ uint32                                    permute_z,
+  _In_ uint32                                    permute_w 
+)
+{
+  //uint32 Shuffle = _MM_SHUFFLE( permute_w & 3, permute_z & 3, permute_y & 3, permute_x & 3);
+  //
+  //bool WhichX = permute_x > 3;
+  //bool WhichY = permute_y > 3;
+  //bool WhichZ = permute_z > 3;
+  //bool WhichW = permute_w > 3;
+  //
+  //crude_vector selectMask = _mm_castsi128_ps( _mm_set_epi32( WhichX ? 0xFFFFFFFF : 0, WhichY ? 0xFFFFFFFF : 0, WhichZ ? 0xFFFFFFFF : 0, WhichW ? 0xFFFFFFFF : 0 ) );
+  //
+  //crude_vector shuffled1 = _mm_permute_ps(v1, Shuffle);
+  //crude_vector shuffled2 = _mm_permute_ps(v2, Shuffle);
+  //
+  //crude_vector masked1 = _mm_andnot_ps(selectMask, shuffled1);
+  //crude_vector masked2 = _mm_and_ps(selectMask, shuffled2);
+  //
+  //return _mm_or_ps(masked1, masked2);
+}
+
+
 /////////////////////
 //// @Vector 3
 /////////////////////
+crude_vector
+crude_vec_transform_normal3
+(
+  _In_ crude_vector                              v, 
+  _In_ crude_matrix                              m
+)
+{
+  crude_vector vResult = _mm_permute_ps(v,_MM_SHUFFLE(2,2,2,2));
+  vResult = _mm_mul_ps( vResult, m.r[2] );
+  crude_vector vTemp = _mm_permute_ps(v,_MM_SHUFFLE(1,1,1,1));
+  vResult = _mm_fmadd_ps( vTemp, m.r[1], vResult );
+  vTemp = _mm_permute_ps(v,_MM_SHUFFLE(0,0,0,0));
+  vResult = _mm_fmadd_ps( vTemp, m.r[0], vResult );
+  return vResult;
+}
+
 crude_vector
 crude_vec_normalize3
 (
@@ -454,9 +584,35 @@ crude_mat_rotation_quaternion
 }
 
 /////////////////////
+//// @Vector Other
+/////////////////////
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_forward
+(
+)
+{
+  return _mm_set_ps( 0, 1, 0, 0 );
+}
+
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_right
+(
+)
+{
+  return _mm_set_ps( 0, 0, 0, 1 );
+}
+
+CRUDE_INLINE crude_vector
+crude_vec_default_basis_up
+(
+)
+{
+  return _mm_set_ps( 0, 0, 1, 0 );
+}
+
+/////////////////////
 //// @Quaternio Common
 /////////////////////
-
 crude_vector 
 crude_quat_identity
 (
@@ -464,6 +620,122 @@ crude_quat_identity
 {
   crude_vector res = _mm_set_ps( 1.0f, 0.0f, 0.0f, 0.0f );
   return res;
+}
+
+crude_vector 
+crude_quat_multiply
+(
+  _In_ crude_vector                              q1,
+  _In_ crude_vector                              q2
+)
+{
+  crude_vector ControlWZYX = _mm_setr_ps( 1.0f, -1.0f, 1.0f, -1.0f );
+  crude_vector ControlZWXY = _mm_setr_ps( 1.0f, 1.0f, -1.0f, -1.0f );
+  crude_vector ControlYXWZ = _mm_setr_ps( -1.0f, 1.0f, 1.0f, -1.0f );
+  // Copy to SSE registers and use as few as possible for x86
+  crude_vector Q2X = q2;
+  crude_vector Q2Y = q2;
+  crude_vector Q2Z = q2;
+  crude_vector vResult = q2;
+  // Splat with one instruction
+  vResult = _mm_permute_ps(vResult, _MM_SHUFFLE(3, 3, 3, 3));
+  Q2X = _mm_permute_ps(Q2X, _MM_SHUFFLE(0, 0, 0, 0));
+  Q2Y = _mm_permute_ps(Q2Y, _MM_SHUFFLE(1, 1, 1, 1));
+  Q2Z = _mm_permute_ps(Q2Z, _MM_SHUFFLE(2, 2, 2, 2));
+  // Retire Q1 and perform Q1*Q2W
+  vResult = _mm_mul_ps(vResult, q1);
+  crude_vector Q1Shuffle = q1;
+  // Shuffle the copies of Q1
+  Q1Shuffle = _mm_permute_ps(Q1Shuffle, _MM_SHUFFLE(0, 1, 2, 3));
+  // Mul by Q1WZYX
+  Q2X = _mm_mul_ps(Q2X, Q1Shuffle);
+  Q1Shuffle = _mm_permute_ps(Q1Shuffle, _MM_SHUFFLE(2, 3, 0, 1));
+  // Flip the signs on y and z
+  vResult = _mm_fmadd_ps(Q2X, ControlWZYX, vResult);
+  // Mul by Q1ZWXY
+  Q2Y = _mm_mul_ps(Q2Y, Q1Shuffle);
+  Q1Shuffle = _mm_permute_ps(Q1Shuffle, _MM_SHUFFLE(0, 1, 2, 3));
+  // Flip the signs on z and w
+  Q2Y = _mm_mul_ps(Q2Y, ControlZWXY);
+  // Mul by Q1YXWZ
+  Q2Z = _mm_mul_ps(Q2Z, Q1Shuffle);
+  // Flip the signs on x and w
+  Q2Y = _mm_fmadd_ps(Q2Z, ControlYXWZ, Q2Y);
+  vResult = _mm_add_ps(vResult, Q2Y);
+  return vResult;
+}
+
+crude_vector 
+crude_quat_rotation_axis
+(
+  _In_ crude_vector                              axis,
+  _In_ float32                                   angle
+)
+{
+  crude_vector Normal = crude_vec_normalize3( axis);
+  crude_vector Q = crude_quat_rotation_normal( Normal, angle );
+  return Q;
+}
+
+crude_vector 
+crude_quat_rotation_normal
+(
+  _In_ crude_vector                              normal,
+  _In_ float32                                   angle
+)
+{
+  crude_vector N = _mm_and_ps( normal, CRUDE_MATH_MASK_3 );
+  N = _mm_or_ps( N, CRUDE_MATH_IDENTITY_R3 );
+  crude_vector Scale = _mm_set_ps1(0.5f * angle);
+  crude_vector vSine;
+  crude_vector vCosine;
+  crude_vec_sin_cos( &vSine, &vCosine, Scale );
+  Scale = _mm_and_ps( vSine, CRUDE_MATH_MASK_3 );
+  vCosine = _mm_and_ps( vCosine, CRUDE_MATH_MASK_W );
+  Scale = _mm_or_ps( Scale, vCosine );
+  N = _mm_mul_ps( N, Scale );
+  return N;
+}
+
+crude_vector
+crude_quat_rotation_roll_pitch_yaw
+(
+  _In_ float32                                   pitch,
+  _In_ float32                                   yaw,
+  _In_ float32                                   roll
+)
+{
+  crude_vector angles = crude_vec_set( pitch, yaw, roll, 0.0f );
+  return crude_quat_rotation_roll_pitch_yaw_from_vector( angles );
+}
+
+crude_vector
+crude_quat_rotation_roll_pitch_yaw_from_vector
+(
+  _In_ crude_vector const                        angles
+)
+{
+  crude_vector Sign = _mm_set_ps( 1.0f, -1.0f, -1.0f, 1.0f );
+  
+  crude_vector HalfAngles = crude_vec_multiply( angles, CRUDE_MATH_ONE_HALF);
+  
+  crude_vector SinAngles, CosAngles;
+  crude_vec_sin_cos(&SinAngles, &CosAngles, HalfAngles);
+  
+  crude_vector P0 = crude_vec_permute( SinAngles, CosAngles, 0, 4, 4, 4 );
+  crude_vector Y0 = crude_vec_permute( SinAngles, CosAngles, 5, 1, 5, 5 );
+  crude_vector R0 = crude_vec_permute( SinAngles, CosAngles, 6, 6, 2, 6 );
+  crude_vector P1 = crude_vec_permute( CosAngles, SinAngles, 0, 4, 4, 4 );
+  crude_vector Y1 = crude_vec_permute( CosAngles, SinAngles, 5, 1, 5, 5 );
+  crude_vector R1 = crude_vec_permute( CosAngles, SinAngles, 6, 6, 2, 6 );
+  
+  crude_vector Q1 = crude_vec_multiply(P1, Sign );
+  crude_vector Q0 = crude_vec_multiply(P0, Y0);
+  Q1 = crude_vec_multiply(Q1, Y1);
+  Q0 = crude_vec_multiply(Q0, R0);
+  crude_vector Q = crude_vec_multiply_add(Q1, R1, Q0);
+  
+  return Q;
 }
 
 /////////////////////

@@ -7,6 +7,97 @@
 
 #include <platform/sdl_system.h>
 
+static uint32
+key_sym
+(
+  _In_ uint32 sdl_sym
+)
+{
+  if (sdl_sym < 128)
+  {
+    return sdl_sym;
+  }
+  
+  switch (sdl_sym)
+  {
+  case SDLK_RIGHT:  return 'R';
+  case SDLK_LEFT:   return 'L';
+  case SDLK_DOWN:   return 'D';
+  case SDLK_UP:     return 'U';
+  case SDLK_LCTRL:  return 'C';
+  case SDLK_LSHIFT: return 'S';
+  case SDLK_LALT:   return 'A';
+  case SDLK_RCTRL:  return 'C';
+  case SDLK_RSHIFT: return 'S';
+  case SDLK_RALT:   return 'A';
+  }
+  return 0;
+}
+
+static void
+key_down
+(
+  _In_ crude_key_state *key
+)
+{
+  if (key->state)
+  {
+    key->pressed = false;
+  }
+  else
+  {
+    key->pressed = true;
+  }
+  
+  key->state   = true;
+  key->current = true;
+}
+
+static void
+key_up
+(
+  _In_ crude_key_state *key
+)
+{
+  key->current = false;
+}
+
+static void
+key_reset
+(
+  _In_ crude_key_state *key
+)
+{
+  if ( !key->current )
+  {
+    key->state   = 0;
+    key->pressed = 0;
+  }
+  else if ( key->state )
+  {
+    key->pressed = 0;
+  }
+}
+
+static void
+mouse_reset
+(
+  _In_ crude_mouse_state *state
+)
+{
+  state->rel.x = 0;
+  state->rel.y = 0;
+  
+  state->scroll.x = 0;
+  state->scroll.y = 0;
+  
+  state->view.x = 0;
+  state->view.y = 0;
+  
+  state->wnd.x = 0;
+  state->wnd.y = 0;
+}
+
 static void
 sdl_create_window
 (
@@ -115,9 +206,21 @@ sdl_process_events
   
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    for ( uint32 k = 0; k < 128; k++ )
+    {
+      key_reset( &inputs[ i ].keys[ k ] );
+    }
+
+    key_reset( &inputs[ i ].mouse.left );
+    key_reset( &inputs[ i ].mouse.right );
+
+    mouse_reset( &inputs[ i ].mouse );
+
     SDL_Event sdl_event;
     while (SDL_PollEvent( &sdl_event ))
     {
+      inputs[ i ].callback(&sdl_event);
+
       if ( sdl_event.type == SDL_EVENT_QUIT )
       {
         ecs_quit( it->world );
@@ -138,6 +241,50 @@ sdl_process_events
       {
         ecs_quit( it->world );
       }
+      else if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
+      {
+        uint32 sym = key_sym( sdl_event.key.key );
+        key_down( &inputs[ i ].keys[ sym ] );
+      }
+      else if ( sdl_event.type == SDL_EVENT_KEY_UP )
+      {
+        uint32 sym = key_sym( sdl_event.key.key );
+        key_up( &inputs[ i ].keys[ sym ] );
+      }
+      else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN )
+      {
+        if ( sdl_event.button.button == SDL_BUTTON_LEFT )
+        {
+          key_down( &inputs[ i ].mouse.left );
+        }
+        else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
+        {
+          key_down( &inputs[ i ].mouse.right );
+        }
+      }
+      else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP )
+      {
+        if ( sdl_event.button.button == SDL_BUTTON_LEFT )
+        {
+          key_up( &inputs[ i ].mouse.left );
+        }
+        else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
+        {
+          key_up( &inputs[ i ].mouse.right );
+        }
+      }
+      else if ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )
+      {
+        inputs[ i ].mouse.wnd.x = sdl_event.motion.x;
+        inputs[ i ].mouse.wnd.y = sdl_event.motion.y;
+        inputs[ i ].mouse.rel.x = sdl_event.motion.xrel;
+        inputs[ i ].mouse.rel.y = sdl_event.motion.yrel;
+      }
+      else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
+      {
+        inputs[ i ].mouse.scroll.x = sdl_event.wheel.x;
+        inputs[ i ].mouse.scroll.y = sdl_event.wheel.y;
+      }
     }
   }
 }
@@ -152,8 +299,6 @@ crude_sdl_systemImport
   ECS_IMPORT( world, crude_gui_components );
   ECS_IMPORT( world, crude_input_components );
  
-  ecs_observer_desc_t s = (ecs_observer_desc_t) { .query.terms = { (ecs_term_t) { .id = ecs_id( crude_window ), .oper = EcsNot } } };
-  
   ecs_observer( world, {
     .query.terms = { 
       ( ecs_term_t ) { .id = ecs_id( crude_window ) },
