@@ -1,20 +1,19 @@
 #version 450
 
-layout(location=0) in vec3 position;
-layout(location=1) in vec4 tangent;
-layout(location=2) in vec3 normal;
-layout(location=3) in vec2 texcoord0;
+layout( location = 0 ) in vec3 position;
+layout( location = 1 ) in vec4 tangent;
+layout( location = 2 ) in vec3 normal;
+layout( location = 3 ) in vec2 texcoord0;
 
-layout(binding = 0, row_major) uniform LocalConstants
+layout( binding = 0, row_major ) uniform FrameConstants
 {
   mat4 worldToView;
   mat4 viewToClip;
 };
 
-layout(binding = 1, row_major) uniform Mesh
+layout( binding = 1, row_major ) uniform MeshConstants
 {
   mat4  modelToWorld;
-  mat4  worldToModel;
   uvec4 textures;
   vec4  base_color_factor;
   vec4  metallic_roughness_occlusion_factor;

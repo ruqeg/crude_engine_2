@@ -29,17 +29,6 @@ typedef struct crude_mesh_draw
   uint16                       occlusion_texture_index;
 } crude_mesh_draw;
 
-typedef struct crude_mesh_data
-{
-  crude_float4x4a              m;
-  crude_float4x4a              inverse_m;
-  uint32                       textures[ 4 ];
-  crude_float4a                base_color_factor;
-  crude_float4a                metallic_roughness_occlusion_factor;
-  crude_float1a                alpha_cutoff;
-  uint32                       flags;
-} crude_mesh_data;
-
 typedef struct crude_scene
 {
   crude_sampler_resource      *samplers;

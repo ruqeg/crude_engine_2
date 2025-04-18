@@ -125,6 +125,32 @@ typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
   };
 } crude_float4x4a;
 
+typedef struct crude_uint1
+{
+  uint32                            x;
+} crude_uint1;
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_uint1a
+{
+  uint32                            x;
+} crude_uint1a;
+
+typedef struct crude_uint4
+{
+  uint32                            x;
+  uint32                            y;
+  uint32                            z;
+  uint32                            w;
+} crude_uint4;
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_uint4a
+{
+  uint32                            x;
+  uint32                            y;
+  uint32                            z;
+  uint32                            w;
+} crude_uint4a;
+
 // !TODO INT, UINT, FLOAT?XY
 
 /////////////////////

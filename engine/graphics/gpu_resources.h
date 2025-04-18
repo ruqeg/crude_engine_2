@@ -4,6 +4,7 @@
 #include <vma_usage.h>
 #include <spirv_reflect.h>
 
+#include <core/math.h>
 #include <core/resource_pool.h>
 
 typedef uint32 crude_resource_handle;
@@ -534,6 +535,22 @@ typedef struct crude_resource_update
   crude_resource_handle                handle;
   uint32                               current_frame;
 } crude_resource_update;
+
+typedef struct crude_shader_frame_constants
+{
+  crude_float4x4a world_to_view;
+  crude_float4x4a view_to_clip;
+} crude_shader_frame_constants;
+
+typedef struct crude_shader_mesh_constants
+{
+  crude_float4x4a  modelToWorld;
+  crude_uint4a     textures;
+  crude_float4a    base_color_factor;
+  crude_float3a    metallic_roughness_occlusion_factor;
+  crude_float1a    alpha_cutoff;
+  crude_uint1a     flags;
+} crude_shader_mesh_constants;
 
 CRUDE_API void
 crude_reset_render_pass_output

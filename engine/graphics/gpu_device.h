@@ -81,7 +81,8 @@ typedef struct crude_gpu_device
   VmaAllocator                                       vma_allocator;
 
   // !TODO move from this place
-  crude_buffer_handle                                ubo_buffer;
+  crude_buffer_handle                                frame_buffer;
+  crude_buffer_handle                                mesh_buffer;
 } crude_gpu_device;                                
                                                    
 ///////////////////                                

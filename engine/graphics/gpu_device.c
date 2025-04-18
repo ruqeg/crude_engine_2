@@ -1434,7 +1434,7 @@ crude_gfx_get_cmd_buffer
  
   if ( begin )
   {
-    vkCmdResetQueryPool( cmd->vk_handle, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
+    //vkCmdResetQueryPool( cmd->vk_handle, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
   }
   
   return cmd;
@@ -1877,12 +1877,13 @@ crude_gfx_create_shader_state
     
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
 
-    shader_state->active_shaders = compiled_shaders;
-    shader_state->name = creation->name;
 
     _parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
   }
   
+  shader_state->active_shaders = compiled_shaders;
+  shader_state->name = creation->name;
+
   bool creation_failed = compiled_shaders != creation->stages_count;
   if ( creation_failed )
   {
@@ -2068,7 +2069,7 @@ crude_gfx_create_pipeline
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( gpu->vk_device, &pipeline_layout_info, gpu->vk_allocation_callbacks, &pipeline_layout ), "Failed to create pipeline layout" );
 
   pipeline->vk_pipeline_layout = pipeline_layout;
-  pipeline->num_active_layouts = 1u;
+  pipeline->num_active_layouts = shader_state_data->parse.descriptor.sets_count;
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
   

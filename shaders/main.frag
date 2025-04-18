@@ -1,16 +1,16 @@
 #version 450
 
-#extension GL_EXT_nonuniform_qualifier : enable
+//#extension GL_EXT_nonuniform_qualifier : enable
 
-layout(binding = 0, row_major) uniform LocalConstants
+layout( binding = 0, row_major ) uniform FrameConstants
 {
+  mat4 worldToView;
   mat4 viewToClip;
 };
 
-layout(binding = 1, row_major) uniform Mesh
+layout( binding = 1, row_major ) uniform MeshConstants
 {
   mat4  modelToWorld;
-  mat4  worldToModel;
   uvec4 textures;
   vec4  base_color_factor;
   vec4  metallic_roughness_occlusion_factor;
@@ -18,8 +18,8 @@ layout(binding = 1, row_major) uniform Mesh
   uint  flags;
 };
 
-layout(set = 1, binding = 10) uniform sampler2D global_textures[];
-layout(set = 1, binding = 10) uniform sampler3D global_textures_3d[];
+layout( set = 1, binding = 10 ) uniform sampler2D global_textures[];
+layout( set = 1, binding = 10 ) uniform sampler3D global_textures_3d[];
 
 layout(location = 0) out vec4 outColor;
 

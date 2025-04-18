@@ -127,7 +127,7 @@ get_mesh_material
   crude_buffer_creation buffer_creation = {
     .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC,
     .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-    .size = sizeof ( crude_mesh_data ),
+    .size = sizeof ( crude_shader_mesh_constants ),
     .name = "mesh_data"
   };
   mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );

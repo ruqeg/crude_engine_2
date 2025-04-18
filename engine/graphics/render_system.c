@@ -25,7 +25,7 @@ crude_draw_mesh
   crude_descriptor_set_creation ds_creation = {
     .samplers = { ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX }, ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX } },
     .bindings = { 0, 1 },
-    .resources= { renderer->gpu->ubo_buffer.index, mesh_draw->material_buffer.index },
+    .resources= { renderer->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
     .num_resources = 2,
     .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
   };
@@ -80,10 +80,10 @@ initialize_render_core
     crude_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
       .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC ,
-      .size = sizeof( TMP_UBO ),
+      .size = sizeof( crude_shader_frame_constants ),
       .name = "ubo",
     };
-    renderer->gpu->ubo_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
+    renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
 
     renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
     crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->scene );
@@ -138,47 +138,66 @@ render
     crude_gfx_new_frame( renderer[ i ].gpu );
     crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
 
-    crude_map_buffer_parameters ubo_map = { renderer[ i ].gpu->ubo_buffer, 0, 0 };
-    void *ubo_data = crude_gfx_map_buffer( renderer[ i ].gpu, &ubo_map );
-    if ( ubo_data )
+    // update fame buffer
+    crude_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
+    crude_shader_frame_constants *frame_buffer_data = CAST( crude_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+    if ( frame_buffer_data )
     {
-      TMP_UBO uniform_data;
       crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_transform );
 
-      crude_transform model_transform = {
-        .translation = { 0, 0, 0 },
-        .rotation = { 0, 0, 0, 0 },
-        .scale = { 0.0005, 0.0005, 0.0005 },
-      };
-      crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
       crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( renderer[ i ].camera, transform ) );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
-
-      crude_matrix world_to_clip = crude_mat_multiply( crude_mat_multiply( model_to_world, world_to_view), view_to_clip );
-      crude_store_float4x4a( &uniform_data.world_to_clip, world_to_clip ); 
-      memcpy( ubo_data, &uniform_data, sizeof( TMP_UBO ) );
       
-      crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->ubo_buffer );
+      crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
+      crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
+      crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
+    }
+    
+    // update mesh buffer
+    for ( uint32 mesh_index = 0; mesh_index < arrlen( renderer->scene->mesh_draws ); ++mesh_index )
+    {
+      crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
+      
+      constant_buffer_map.buffer = mesh_draw->material_buffer;
+      
+      crude_shader_mesh_constants *mesh_data = CAST( crude_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+      if ( mesh_data )
+      {
+        mesh_data->textures.x = mesh_draw->albedo_texture_index;
+        mesh_data->textures.y = mesh_draw->roughness_texture_index;
+        mesh_data->textures.z = mesh_draw->normal_texture_index;
+        mesh_data->textures.w = mesh_draw->occlusion_texture_index;
+        mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
+        mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
+        mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
+        mesh_data->flags.x = mesh_draw->flags;
+      
+        crude_transform model_transform = {
+          .translation = { 0, 0, 0 },
+          .rotation = { 0, 0, 0, 0 },
+          .scale = { 0.0005, 0.0005, 0.0005 },
+        };
+        crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
+        crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
+      
+        crude_gfx_unmap_buffer( renderer[ i ].gpu, mesh_draw->material_buffer );
+      }
     }
 
     crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     
+    crude_material *last_material = NULL;
     for ( uint32 mesh_index = 0; mesh_index < arrlen( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
-    
-      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
-      //if ( mesh_draw.material != last_material )
-      //{
-      //    PipelineHandle pipeline = renderer.get_pipeline( mesh_draw.material );
-      //
-      //    gpu_commands->bind_pipeline( pipeline );
-      //
-      //    last_material = mesh_draw.material;
-      //}
+      if ( mesh_draw->material != last_material )
+      {
+        crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
+        last_material = mesh_draw->material;
+      }
       crude_draw_mesh( renderer->renderer, gpu_commands, mesh_draw );
     }
     crude_gfx_queue_cmd_buffer( gpu_commands );
