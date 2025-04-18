@@ -4,7 +4,7 @@
 #include <platform/sdl_system.h>
 #include <platform/input_components.h>
 #include <platform/gui_components.h>
-#include <cr.h>
+#include <cr/cr.h>
 
 static bool CR_STATE g_initialized = false;
 

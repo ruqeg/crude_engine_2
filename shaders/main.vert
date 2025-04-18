@@ -21,6 +21,8 @@ layout( binding = 1, row_major ) uniform MeshConstants
   uint  flags;
 };
 
+layout(location = 0) out vec2 outTexcoord0;
+
 void main()
 {
   gl_Position = vec4( position, 1.0 ) * modelToWorld * worldToView * viewToClip;

@@ -4,7 +4,7 @@ project(cr C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_library(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cr/cr.h")
+add_library(${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cr/cr/cr.h")
 
 set(CR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cr")
 

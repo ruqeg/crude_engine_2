@@ -174,7 +174,8 @@ crude_gfx_cmd_bind_local_descriptor_set
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
     }
   }
-  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0u, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 1u, 1u, &cmd->gpu->vk_bindless_descriptor_set, 0u, NULL );
 }
 
 void

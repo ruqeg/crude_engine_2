@@ -155,7 +155,7 @@ _vk_create_instance
     .applicationVersion = vk_application_version,
     .pEngineName        = "crude_engine",
     .engineVersion      = VK_MAKE_VERSION( 1, 0, 0 ),
-    .apiVersion         = VK_API_VERSION_1_0 
+    .apiVersion         = VK_API_VERSION_1_3 
   };
 
   // initialize instance & debug_utils_messenger
@@ -1015,7 +1015,6 @@ _parse_shader_descriptor_parse
   _Out_ crude_shader_descriptor_parse  *parse
 )
 {
-  
   SpvReflectShaderModule spv_reflect;
   SpvReflectResult result = spvReflectCreateShaderModule( code_size, code, &spv_reflect );
   CRUDE_ASSERT( result == SPV_REFLECT_RESULT_SUCCESS );
@@ -1026,7 +1025,7 @@ _parse_shader_descriptor_parse
 
     crude_descriptor_set_layout_creation *set_layout = &parse->sets[ spv_descriptor_set->set ];
     set_layout->set_index = spv_descriptor_set->set;
-    set_layout->num_bindings = spv_descriptor_set->binding_count;
+    set_layout->num_bindings = 0;
 
     for ( uint32 binding_index = 0; binding_index < spv_descriptor_set->binding_count; ++binding_index )
     {
@@ -1041,19 +1040,13 @@ _parse_shader_descriptor_parse
       {
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         {
+          parse->sets_count = crude_max( parse->sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-          break;
-        }
-        
-        case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        {
-          binding->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          ++set_layout->num_bindings;
           break;
         }
       }
     }
-
-    parse->sets_count = crude_max( parse->sets_count, ( spv_descriptor_set->set + 1 ) );
   }
 
   spvReflectDestroyShaderModule( &spv_reflect );
@@ -2054,15 +2047,17 @@ crude_gfx_create_pipeline
   VkDescriptorSetLayout vk_layouts[ CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS ];
   for ( uint32 i = 0; i < shader_state_data->parse.descriptor.sets_count; ++i )
   {
-      pipeline->descriptor_set_layout_handle[ i ] = crude_gfx_create_descriptor_set_layout( gpu, &shader_state_data->parse.descriptor.sets[ i ] );
-      crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, pipeline->descriptor_set_layout_handle[ i ] );
-      vk_layouts[ i ] = descriptor_set_layout->vk_descriptor_set_layout;
+    pipeline->descriptor_set_layout_handle[ i ] = crude_gfx_create_descriptor_set_layout( gpu, &shader_state_data->parse.descriptor.sets[ i ] );
+    crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, pipeline->descriptor_set_layout_handle[ i ] );
+    vk_layouts[ i ] = descriptor_set_layout->vk_descriptor_set_layout;
   }
+
+  vk_layouts[ shader_state_data->parse.descriptor.sets_count ] = gpu->vk_bindless_descriptor_set_layout;
 
   VkPipelineLayoutCreateInfo pipeline_layout_info = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     .pSetLayouts = vk_layouts,
-    .setLayoutCount = shader_state_data->parse.descriptor.sets_count,
+    .setLayoutCount = shader_state_data->parse.descriptor.sets_count + 1,
   };
   
   VkPipelineLayout pipeline_layout;
