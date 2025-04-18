@@ -12,6 +12,14 @@ crude_gfx_cmd_reset
 {
   cmd->is_recording = false;
   cmd->current_render_pass = NULL;
+  
+  vkResetDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, 0 );
+  
+  uint32 resource_count = cmd->descriptor_sets.free_indices_head;
+  for ( uint32 i = 0; i < resource_count; ++i )
+  {
+    CRUDE_RELEASE_RESOURCE( cmd->descriptor_sets, ( crude_descriptor_set_handle){ i } );
+  }
 }
 
 void
@@ -145,13 +153,13 @@ crude_gfx_cmd_set_scissor
 }
 
 void
-crude_gfx_cmd_bind_descriptor_set
+crude_gfx_cmd_bind_local_descriptor_set
 (
   _In_ crude_command_buffer         *cmd,
   _In_ crude_descriptor_set_handle   handle
 )
 {
-  crude_descriptor_set *descriptor_set = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET( cmd->gpu, handle );
+  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->descriptor_sets, crude_descriptor_set, handle );
   
   uint32 num_offsets = 0u;
   uint32 offsets_cache[ 8 ];
@@ -242,6 +250,100 @@ crude_gfx_cmd_bind_index_buffer
   vkCmdBindIndexBuffer( cmd->vk_handle, vk_buffer, offset, VK_INDEX_TYPE_UINT16  );
 }
 
+crude_descriptor_set_handle
+crude_gfx_cmd_create_local_descriptor_set
+(
+  _In_ crude_command_buffer                  *cmd,
+  _In_ crude_descriptor_set_creation const   *creation
+)
+{
+  crude_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->descriptor_sets ) };
+  if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return handle;
+  }
+  
+  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->descriptor_sets, crude_descriptor_set , handle );
+  memset( descriptor_set, 0, sizeof( *descriptor_set ) );
+  crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( cmd->gpu, creation->layout );
+  
+  VkDescriptorSetAllocateInfo vk_descriptor_info = {
+    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+    .descriptorPool = cmd->vk_descriptor_pool,
+    .descriptorSetCount = 1u,
+    .pSetLayouts = &descriptor_set_layout->vk_descriptor_set_layout
+  };
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( cmd->gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
+
+  VkWriteDescriptorSet descriptor_write[ 8 ];
+  VkDescriptorBufferInfo buffer_info[ 8 ];
+  VkDescriptorImageInfo image_info[ 8 ];
+
+  uint32 num_resources = 0u;
+  for ( uint32 i = 0; i < creation->num_resources; i++ )
+  {
+    crude_descriptor_binding const *binding = &descriptor_set_layout->bindings[ creation->bindings[ i ] ];
+    
+    if ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE )
+    {
+      continue;
+    }
+
+    descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write[ i ].pNext = NULL;
+    descriptor_write[ i ].dstSet = descriptor_set->vk_descriptor_set;
+    descriptor_write[ i ].dstBinding = binding->start;
+    descriptor_write[ i ].dstArrayElement = 0u;
+    descriptor_write[ i ].descriptorCount = 1u;
+    descriptor_write[ i ].descriptorType = binding->type;
+    descriptor_write[ i ].pImageInfo = NULL;
+    descriptor_write[ i ].pBufferInfo = NULL;
+    descriptor_write[ i ].pTexelBufferView = NULL;
+
+    switch ( binding->type )
+    {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    {
+      crude_buffer *buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, ( crude_buffer_handle ){ creation->resources[ i ] } );
+      CRUDE_ASSERT( buffer );
+      
+      descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+      if ( buffer->parent_buffer.index != CRUDE_RESOURCE_INVALID_INDEX )
+      {
+        crude_buffer *parent_buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+        buffer_info[ i ].buffer = parent_buffer->vk_buffer;
+      }
+      else
+      {
+        buffer_info[ i ].buffer = buffer->vk_buffer;
+      }
+
+      buffer_info[ i ].offset = 0;
+      buffer_info[ i ].range = buffer->size;
+
+      descriptor_write[ i ].pBufferInfo = &buffer_info[ i ];
+      break;
+    }
+    }
+
+    ++num_resources;
+  }
+
+  for ( uint32 i = 0; i < num_resources; i++ )
+  {
+    descriptor_set->resources[ i ] = creation->resources[ i ];
+    descriptor_set->samplers[ i ] = creation->samplers[ i ];
+    descriptor_set->bindings[ i ] = creation->bindings[ i ];
+  }
+
+  descriptor_set->layout = descriptor_set_layout;
+
+  vkUpdateDescriptorSets( cmd->gpu->vk_device, num_resources, descriptor_write, 0, NULL );
+
+  return handle;
+}
+
 void
 crude_gfx_initialize_cmd_manager
 (
@@ -265,6 +367,9 @@ crude_gfx_initialize_cmd_manager
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
   {
     crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ i ];
+    
+    command_buffer->gpu = gpu;
+
     VkCommandBufferAllocateInfo cmd_allocation_info = { 
       .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
       .commandPool        = cmd_manager->vk_command_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ],
@@ -273,7 +378,34 @@ crude_gfx_initialize_cmd_manager
     };
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_handle ), "Failed to allocate command buffer" );
     
-    command_buffer->gpu = gpu;
+    uint32 const global_pool_elements = 128;
+    VkDescriptorPoolSize pool_sizes[] =
+    {
+      { VK_DESCRIPTOR_TYPE_SAMPLER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, global_pool_elements },
+      { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, global_pool_elements }
+    };
+    
+    VkDescriptorPoolCreateInfo pool_info = {
+      .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+      .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+      .maxSets       = global_pool_elements * ARRAY_SIZE( pool_sizes ),
+      .poolSizeCount = ARRAY_SIZE( pool_sizes ),
+      .pPoolSizes    = pool_sizes,
+    };
+
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &command_buffer->vk_descriptor_pool ), "Failed create descriptor pool" );
+
+    crude_initialize_resource_pool( &command_buffer->descriptor_sets, gpu->allocator, 256, sizeof( crude_descriptor_set ) );
+
     crude_gfx_cmd_reset( command_buffer );
   }
 }
@@ -286,7 +418,9 @@ crude_gfx_deinitialize_cmd_manager
 {
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS; ++i )
   {
-    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
+    crude_deinitialize_resource_pool( &cmd_manager->command_buffers[ i ].descriptor_sets );
+    vkDestroyDescriptorPool( cmd_manager->gpu->vk_device, cmd_manager->command_buffers[ i ].vk_descriptor_pool, cmd_manager->gpu->vk_allocation_callbacks );
+    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ], cmd_manager->gpu->vk_allocation_callbacks );
   }
 }
 

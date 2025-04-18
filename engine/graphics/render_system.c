@@ -1,5 +1,3 @@
-#include <crude_shaders/main.frag.inl>
-#include <crude_shaders/main.vert.inl>
 #include <stb_ds.h>
 
 #include <core/file.h>
@@ -24,16 +22,21 @@ crude_draw_mesh
   _In_ crude_mesh_draw       *mesh_draw
 )
 {
-  //DescriptorSetCreation ds_creation{};
-  //ds_creation.buffer( scene_cb, 0 ).buffer( mesh_draw.material_buffer, 1 );
-  //DescriptorSetHandle descriptor_set = renderer.create_descriptor_set( gpu_commands, mesh_draw.material, ds_creation );
+  crude_descriptor_set_creation ds_creation = {
+    .samplers = { ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX }, ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX } },
+    .bindings = { 0, 1 },
+    .resources= { renderer->gpu->ubo_buffer.index, mesh_draw->material_buffer.index },
+    .num_resources = 2,
+    .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
+  };
+  crude_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
   
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->tangent_buffer, 1, mesh_draw->tangent_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->normal_buffer, 2, mesh_draw->normal_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->texcoord_buffer, 3, mesh_draw->texcoord_offset );
   crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
-  crude_gfx_cmd_bind_descriptor_set( gpu_commands, mesh_draw->descriptor_set );
+  crude_gfx_cmd_bind_local_descriptor_set( gpu_commands, descriptor_set );
   crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
 }
 
@@ -61,49 +64,6 @@ initialize_render_core
 
     renderer->gpu = render_create[ i ].allocator.allocate( sizeof( crude_gpu_device ), 1u );
     crude_gfx_initialize_gpu_device( renderer->gpu, &gpu_creation );
-
-    crude_pipeline_creation pipeline_creation;
-    memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
-    pipeline_creation.shaders.name = "triangle";
-    pipeline_creation.shaders.spv_input = true;
-    pipeline_creation.shaders.stages[ 0 ].code = crude_compiled_shader_main_vert;
-    pipeline_creation.shaders.stages[ 0 ].code_size = sizeof( crude_compiled_shader_main_vert );
-    pipeline_creation.shaders.stages[ 0 ].type = VK_SHADER_STAGE_VERTEX_BIT;
-    pipeline_creation.shaders.stages[ 1 ].code = crude_compiled_shader_main_frag;
-    pipeline_creation.shaders.stages[ 1 ].code_size = sizeof( crude_compiled_shader_main_frag );
-    pipeline_creation.shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT;
-    pipeline_creation.shaders.stages_count = 2u;
-
-    pipeline_creation.vertex_input.vertex_attributes[ 0 ] = ( crude_vertex_attribute ){ 0, 0, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // position
-    pipeline_creation.vertex_input.vertex_streams[ 0 ] = ( crude_vertex_stream ){ 0, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
-
-    pipeline_creation.vertex_input.vertex_attributes[ 1 ] = ( crude_vertex_attribute ){ 1, 1, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT4 }; // tangent
-    pipeline_creation.vertex_input.vertex_streams[ 1 ] = ( crude_vertex_stream ){ 1, 16, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX};
-
-    pipeline_creation.vertex_input.vertex_attributes[ 2 ] = ( crude_vertex_attribute ) { 2, 2, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // normal
-    pipeline_creation.vertex_input.vertex_streams[ 2 ] = ( crude_vertex_stream ){ 2, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
-
-    pipeline_creation.vertex_input.vertex_attributes[ 3 ] = ( crude_vertex_attribute ){ 3, 3, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT2 }; // texcoord
-    pipeline_creation.vertex_input.vertex_streams[ 3 ] = ( crude_vertex_stream ){ 3, 8, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
-
-    pipeline_creation.vertex_input.num_vertex_attributes = 4;
-    pipeline_creation.vertex_input.num_vertex_streams = 4;
-
-    
-    crude_descriptor_set_layout_creation dsl_creation = {
-      .bindings = {
-        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .start = 0, .count = 1, .name = "local_constants" }
-      },
-      .num_bindings = 1,
-      .name = "dsl"
-    };
-    
-    renderer->gpu->descriptor_set_layout_handle = crude_create_descriptor_set_layout( renderer->gpu, &dsl_creation );
-
-    pipeline_creation.descriptor_set_layout[0] = renderer->gpu->descriptor_set_layout_handle;
-    pipeline_creation.num_active_layouts = 1;
-
-    renderer->pipeline = crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation );
 
     crude_renderer_creation rendere_creation = {
       .allocator = render_create[ i ].allocator,
@@ -157,7 +117,6 @@ deinitialize_render_core
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_deinitialize_renderer( renderer->renderer );
-    crude_gfx_destroy_pipeline( renderer[ i ].gpu, renderer[ i ].pipeline );
     crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
     renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
@@ -179,7 +138,6 @@ render
     crude_gfx_new_frame( renderer[ i ].gpu );
     crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
 
-    
     crude_map_buffer_parameters ubo_map = { renderer[ i ].gpu->ubo_buffer, 0, 0 };
     void *ubo_data = crude_gfx_map_buffer( renderer[ i ].gpu, &ubo_map );
     if ( ubo_data )
@@ -205,7 +163,6 @@ render
     }
 
     crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass );
-    crude_gfx_cmd_bind_pipeline( gpu_commands, renderer[ i ].pipeline );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     
@@ -213,6 +170,7 @@ render
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
     
+      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
       //if ( mesh_draw.material != last_material )
       //{
       //    PipelineHandle pipeline = renderer.get_pipeline( mesh_draw.material );

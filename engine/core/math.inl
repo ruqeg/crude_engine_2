@@ -2,6 +2,16 @@
 //// @Scalar
 /////////////////////
 float32
+crude_max
+(
+  _In_ float32                                   s1,
+  _In_ float32                                   s2
+)
+{
+  return s1 > s2 ? s1 : s2;
+}
+
+float32
 crude_lerp
 (
   _In_ float32                                   a,

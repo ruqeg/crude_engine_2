@@ -2,6 +2,9 @@
 #include <stb_ds.h>
 #include <stb_image.h>
 
+#include <crude_shaders/main.frag.inl>
+#include <crude_shaders/main.vert.inl>
+
 #include <core/assert.h>
 #include <core/log.h>
 #include <core/file.h>
@@ -32,116 +35,105 @@ crude_get_mesh_vertex_buffer
   *buffer_offset = buffer_accessor->offset;
 }
 
-//static bool
-//get_mesh_material
-//(
-//  raptor::Renderer& renderer,
-//  Scene& scene,
-//  raptor::glTF::Material& material,
-//  MeshDraw& mesh_draw
-//)
-//{
-//    //bool transparent = false;
-//    //GpuDevice& gpu = *renderer.gpu;
-//
-//    //if ( material.pbr_metallic_roughness != nullptr ) {
-//    //    if ( material.pbr_metallic_roughness->base_color_factor_count != 0 ) {
-//    //        RASSERT( material.pbr_metallic_roughness->base_color_factor_count == 4 );
-//
-//    //        mesh_draw.base_color_factor = {
-//    //            material.pbr_metallic_roughness->base_color_factor[ 0 ],
-//    //            material.pbr_metallic_roughness->base_color_factor[ 1 ],
-//    //            material.pbr_metallic_roughness->base_color_factor[ 2 ],
-//    //            material.pbr_metallic_roughness->base_color_factor[ 3 ],
-//    //        };
-//    //    } else {
-//    //        mesh_draw.base_color_factor = { 1.0f, 1.0f, 1.0f, 1.0f };
-//    //    }
-//
-//    //    if ( material.pbr_metallic_roughness->roughness_factor != glTF::INVALID_FLOAT_VALUE ) {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.x = material.pbr_metallic_roughness->roughness_factor;
-//    //    } else {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.x = 1.0f;
-//    //    }
-//
-//    //    if ( material.alpha_mode.data != nullptr && strcmp( material.alpha_mode.data, "MASK" ) == 0 ) {
-//    //        mesh_draw.flags |= DrawFlags_AlphaMask;
-//    //        transparent = true;
-//    //    }
-//
-//    //    if ( material.alpha_cutoff != glTF::INVALID_FLOAT_VALUE ) {
-//    //        mesh_draw.alpha_cutoff = material.alpha_cutoff;
-//    //    }
-//
-//    //    if ( material.pbr_metallic_roughness->metallic_factor != glTF::INVALID_FLOAT_VALUE ) {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.y = material.pbr_metallic_roughness->metallic_factor;
-//    //    } else {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.y = 1.0f;
-//    //    }
-//
-//    //    if ( material.pbr_metallic_roughness->base_color_texture != nullptr ) {
-//    //        glTF::Texture& diffuse_texture = scene.gltf_scene.textures[ material.pbr_metallic_roughness->base_color_texture->index ];
-//    //        TextureResource& diffuse_texture_gpu = scene.images[ diffuse_texture.source ];
-//    //        SamplerResource& diffuse_sampler_gpu = scene.samplers[ diffuse_texture.sampler ];
-//
-//    //        mesh_draw.diffuse_texture_index = diffuse_texture_gpu.handle.index;
-//
-//    //        gpu.link_texture_sampler( diffuse_texture_gpu.handle, diffuse_sampler_gpu.handle );
-//    //    } else {
-//    //        mesh_draw.diffuse_texture_index = INVALID_TEXTURE_INDEX;
-//    //    }
-//
-//    //    if ( material.pbr_metallic_roughness->metallic_roughness_texture != nullptr ) {
-//    //        glTF::Texture& roughness_texture = scene.gltf_scene.textures[ material.pbr_metallic_roughness->metallic_roughness_texture->index ];
-//    //        TextureResource& roughness_texture_gpu = scene.images[ roughness_texture.source ];
-//    //        SamplerResource& roughness_sampler_gpu = scene.samplers[ roughness_texture.sampler ];
-//
-//    //        mesh_draw.roughness_texture_index = roughness_texture_gpu.handle.index;
-//
-//    //        gpu.link_texture_sampler( roughness_texture_gpu.handle, roughness_sampler_gpu.handle );
-//    //    } else {
-//    //        mesh_draw.roughness_texture_index = INVALID_TEXTURE_INDEX;
-//    //    }
-//    //}
-//
-//    //if ( material.occlusion_texture != nullptr ) {
-//    //    glTF::Texture& occlusion_texture = scene.gltf_scene.textures[ material.occlusion_texture->index ];
-//
-//    //    TextureResource& occlusion_texture_gpu = scene.images[ occlusion_texture.source ];
-//    //    SamplerResource& occlusion_sampler_gpu = scene.samplers[ occlusion_texture.sampler ];
-//
-//    //    mesh_draw.occlusion_texture_index = occlusion_texture_gpu.handle.index;
-//
-//    //    if ( material.occlusion_texture->strength != glTF::INVALID_FLOAT_VALUE ) {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.z = material.occlusion_texture->strength;
-//    //    } else {
-//    //        mesh_draw.metallic_roughness_occlusion_factor.z = 1.0f;
-//    //    }
-//
-//    //    gpu.link_texture_sampler( occlusion_texture_gpu.handle, occlusion_sampler_gpu.handle );
-//    //} else {
-//    //    mesh_draw.occlusion_texture_index = INVALID_TEXTURE_INDEX;
-//    //}
-//
-//    //if ( material.normal_texture != nullptr ) {
-//    //    glTF::Texture& normal_texture = scene.gltf_scene.textures[ material.normal_texture->index ];
-//    //    TextureResource& normal_texture_gpu = scene.images[ normal_texture.source ];
-//    //    SamplerResource& normal_sampler_gpu = scene.samplers[ normal_texture.sampler ];
-//
-//    //    gpu.link_texture_sampler( normal_texture_gpu.handle, normal_sampler_gpu.handle );
-//
-//    //    mesh_draw.normal_texture_index = normal_texture_gpu.handle.index;
-//    //} else {
-//    //    mesh_draw.normal_texture_index = INVALID_TEXTURE_INDEX;
-//    //}
-//
-//    //// Create material buffer
-//    //BufferCreation buffer_creation;
-//    //buffer_creation.reset().set( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Dynamic, sizeof( MeshData ) ).set_name( "mesh_data" );
-//    //mesh_draw.material_buffer = gpu.create_buffer( buffer_creation );
-//
-//    //return transparent;
-//}
+static bool
+get_mesh_material
+(
+  _In_ cgltf_data             *gltf,
+  _In_ crude_renderer         *renderer,
+  _In_ crude_scene            *scene,
+  _In_ cgltf_material         *material,
+  _In_ crude_mesh_draw        *mesh_draw
+)
+{
+  bool transparent = false;
+  
+  mesh_draw->flags = 0;
+
+  mesh_draw->base_color_factor = ( crude_float4 ) {
+    material->pbr_metallic_roughness.base_color_factor[ 0 ],
+    material->pbr_metallic_roughness.base_color_factor[ 1 ],
+    material->pbr_metallic_roughness.base_color_factor[ 2 ],
+    material->pbr_metallic_roughness.base_color_factor[ 3 ],
+  };
+  
+  mesh_draw->metallic_roughness_occlusion_factor.x = material->pbr_metallic_roughness.roughness_factor;
+  mesh_draw->metallic_roughness_occlusion_factor.y = material->pbr_metallic_roughness.metallic_factor;
+  mesh_draw->alpha_cutoff = material->alpha_cutoff;
+  
+  if (material->alpha_mode == cgltf_alpha_mode_mask )
+  {
+    mesh_draw->flags |= CRUDE_DRAW_FLAGS_ALPHA_MASK;
+    transparent = true;
+  }
+
+  if ( material->pbr_metallic_roughness.base_color_texture.texture )
+  {
+    cgltf_texture *albedo_texture = material->pbr_metallic_roughness.base_color_texture.texture;
+    crude_texture_resource *albedo_texture_gpu = &scene->images[ cgltf_image_index( gltf, albedo_texture->image ) ];
+    crude_sampler_resource *albedo_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, albedo_texture->sampler ) ];
+  
+    mesh_draw->albedo_texture_index = albedo_texture_gpu->handle.index;
+    crude_gfx_link_texture_sampler( renderer->gpu, albedo_texture_gpu->handle, albedo_sampler_gpu->handle );
+  }
+  else
+  {
+    mesh_draw->albedo_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+  }
+  
+  if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
+  {
+    cgltf_texture *roughness_texture = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
+    crude_texture_resource *roughness_texture_gpu = &scene->images[ cgltf_image_index( gltf, roughness_texture->image ) ];
+    crude_sampler_resource *roughness_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
+    
+    mesh_draw->roughness_texture_index = roughness_texture_gpu->handle.index;
+    crude_gfx_link_texture_sampler( renderer->gpu, roughness_texture_gpu->handle, roughness_sampler_gpu->handle );
+  }
+  else
+  {
+    mesh_draw->roughness_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+  }
+
+  if ( material->occlusion_texture.texture )
+  {
+    cgltf_texture *occlusion_texture = material->occlusion_texture.texture;
+    crude_texture_resource *occlusion_texture_gpu = &scene->images[ cgltf_image_index( gltf, occlusion_texture->image ) ];
+    crude_sampler_resource *occlusion_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, occlusion_texture->sampler ) ];
+    
+    mesh_draw->occlusion_texture_index = occlusion_texture_gpu->handle.index;
+    mesh_draw->metallic_roughness_occlusion_factor.z = material->occlusion_texture.scale;
+    
+    crude_gfx_link_texture_sampler( renderer->gpu, occlusion_texture_gpu->handle, occlusion_sampler_gpu->handle );
+  }
+  else
+  {
+    mesh_draw->occlusion_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+  }
+  
+  if ( material->normal_texture.texture )
+  {
+    cgltf_texture *normal_texture = material->normal_texture.texture;
+    crude_texture_resource *normal_texture_gpu = &scene->images[ cgltf_image_index( gltf, normal_texture->image ) ];
+    crude_sampler_resource *normal_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, normal_texture->sampler ) ];
+    
+    mesh_draw->normal_texture_index = normal_texture_gpu->handle.index;
+    crude_gfx_link_texture_sampler( renderer->gpu, normal_texture_gpu->handle, normal_sampler_gpu->handle );
+  }
+  else
+  {
+    mesh_draw->normal_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+  }
+  
+  crude_buffer_creation buffer_creation = {
+    .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC,
+    .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    .size = sizeof ( crude_mesh_data ),
+    .name = "mesh_data"
+  };
+  mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
+  
+  return transparent;
+}
 
 void
 crude_load_gltf_from_file
@@ -170,8 +162,43 @@ crude_load_gltf_from_file
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", path );
   }
+
+  crude_pipeline_creation pipeline_creation;
+  memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
+  pipeline_creation.shaders.name = "triangle";
+  pipeline_creation.shaders.spv_input = true;
+  pipeline_creation.shaders.stages[ 0 ].code = crude_compiled_shader_main_vert;
+  pipeline_creation.shaders.stages[ 0 ].code_size = sizeof( crude_compiled_shader_main_vert );
+  pipeline_creation.shaders.stages[ 0 ].type = VK_SHADER_STAGE_VERTEX_BIT;
+  pipeline_creation.shaders.stages[ 1 ].code = crude_compiled_shader_main_frag;
+  pipeline_creation.shaders.stages[ 1 ].code_size = sizeof( crude_compiled_shader_main_frag );
+  pipeline_creation.shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT;
+  pipeline_creation.shaders.stages_count = 2u;
   
+  pipeline_creation.vertex_input.vertex_attributes[ 0 ] = ( crude_vertex_attribute ){ 0, 0, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // position
+  pipeline_creation.vertex_input.vertex_streams[ 0 ] = ( crude_vertex_stream ){ 0, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
   
+  pipeline_creation.vertex_input.vertex_attributes[ 1 ] = ( crude_vertex_attribute ){ 1, 1, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT4 }; // tangent
+  pipeline_creation.vertex_input.vertex_streams[ 1 ] = ( crude_vertex_stream ){ 1, 16, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX};
+  
+  pipeline_creation.vertex_input.vertex_attributes[ 2 ] = ( crude_vertex_attribute ) { 2, 2, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // normal
+  pipeline_creation.vertex_input.vertex_streams[ 2 ] = ( crude_vertex_stream ){ 2, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+  
+  pipeline_creation.vertex_input.vertex_attributes[ 3 ] = ( crude_vertex_attribute ){ 3, 3, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT2 }; // texcoord
+  pipeline_creation.vertex_input.vertex_streams[ 3 ] = ( crude_vertex_stream ){ 3, 8, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+  
+  pipeline_creation.vertex_input.num_vertex_attributes = 4;
+  pipeline_creation.vertex_input.num_vertex_streams = 4;
+  
+  crude_program_creation program_creation = { .pipeline_creation = pipeline_creation };
+  crude_program *program = crude_gfx_renderer_create_program( renderer, &program_creation );
+  crude_material_creation material_creatoin = { 
+    .name = "material1",
+    .program = program,
+    .render_index = 0
+  };
+  crude_material *material = crude_gfx_renderer_create_material( renderer, &material_creatoin );
+
   char prev_directory[ 1024 ];
   crude_get_current_working_directory( &prev_directory, sizeof( prev_directory ) );
   
@@ -376,40 +403,35 @@ crude_load_gltf_from_file
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
 
-      crude_descriptor_set_creation ds_creation = {
-        .resources = { renderer->gpu->ubo_buffer.index },
-        .bindings = { 0u },
-        .layout = renderer->gpu->descriptor_set_layout_handle,
-        .num_resources = 1,
-        .name = "ds_1"
-      };
-      mesh_draw.descriptor_set = crude_create_descriptor_set( renderer->gpu, &ds_creation );
-
-      /*bool transparent = get_mesh_material( renderer, scene, mesh_primitive->material, mesh_draw );
+      bool transparent = get_mesh_material( gltf, renderer, scene, mesh_primitive->material, &mesh_draw );
       
       if ( transparent)
       {
         if ( mesh_primitive->material->double_sided )
         {
-          mesh_draw.material = material_no_cull_transparent;
+          //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
+          //mesh_draw.material = material_no_cull_transparent;
         }
         else
         {
-          mesh_draw.material = material_cull_transparent;
+          //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
+          //mesh_draw.material = material_cull_transparent;
         }
       }
       else
       {
         if ( mesh_primitive->material->double_sided )
         {
-          mesh_draw.material = material_no_cull_opaque;
+          //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
+          //mesh_draw.material = material_no_cull_opaque;
         }
         else
         {
-          mesh_draw.material = material_cull_opaque;
+          //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
+          //mesh_draw.material = material_cull_opaque;
         }
-      }*/
-
+      }
+      mesh_draw.material = material;
       arrpush( scene->mesh_draws, mesh_draw );
     }
   }

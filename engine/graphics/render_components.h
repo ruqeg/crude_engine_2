@@ -18,7 +18,6 @@ typedef struct crude_renderer_component
 {
   crude_gpu_device            *gpu;
   crude_renderer              *renderer;
-  crude_pipeline_handle        pipeline;
   crude_scene                 *scene;
   crude_entity                 camera;
 } crude_renderer_component;

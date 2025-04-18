@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vma_usage.h>
+#include <spirv_reflect.h>
 
 #include <core/resource_pool.h>
 
@@ -55,6 +56,7 @@ typedef struct crude_pipeline_handle
 #define CRUDE_MAX_VERTEX_STREAMS            16
 #define CRUDE_MAX_VERTEX_ATTRIBUTES         16
 #define CRUDE_UBO_ALIGNMENT                 256
+#define CRUDE_MAX_SET_COUNT                 32
 
 typedef enum crude_resource_usage_type 
 {
@@ -365,9 +367,7 @@ typedef struct crude_pipeline_creation
   crude_vertex_input_creation          vertex_input;
   crude_shader_state_creation          shaders;
   crude_render_pass_output             render_pass;
-  crude_descriptor_set_layout_handle   descriptor_set_layout[ CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS ];
   crude_viewport_state const          *viewport;
-  uint32                               num_active_layouts;
   char const                          *name;
 } crude_pipeline_creation;
 
@@ -380,6 +380,17 @@ typedef struct crude_descriptor_set_creation
   uint32                               num_resources;
   char const                          *name;
 } crude_descriptor_set_creation;
+
+typedef struct crude_shader_descriptor_parse
+{
+  uint32                               sets_count;
+  crude_descriptor_set_layout_creation sets[ CRUDE_MAX_SET_COUNT ];
+} crude_shader_descriptor_parse;
+
+typedef struct crude_shader_parse
+{
+  crude_shader_descriptor_parse        descriptor;
+} crude_shader_parse;
 
 typedef struct crude_buffer
 {
@@ -497,6 +508,7 @@ typedef struct crude_shader_state
   const char                          *name;
   uint32                               active_shaders;
   bool                                 graphics_pipeline;
+  crude_shader_parse                   parse;
 } crude_shader_state;
 
 typedef struct crude_buffer_description

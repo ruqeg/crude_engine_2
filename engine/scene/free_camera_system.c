@@ -50,7 +50,6 @@ crude_update_free_camera
 
       rotation = crude_quat_multiply( rotation, crude_quat_rotation_axis( basis_right, -free_cameras[ i ].rotating_speed_multiplier.y * input->mouse.rel.y * it->delta_time ) );
       rotation = crude_quat_multiply( rotation, crude_quat_rotation_axis( camera_up, -free_cameras[ i ].rotating_speed_multiplier.x * input->mouse.rel.x * it->delta_time ) );
-      CRUDE_LOG( CRUDE_CHANNEL_GAMEPLAY, "REL MOVEMANT X%f Y%f", sqrt( max( input->mouse.rel.x - 1, 0 ) ), sqrt( max( input->mouse.rel.y - 1, 0 ) ) );
       crude_store_float4( &transforms[ i ].rotation, rotation );
     }
   }

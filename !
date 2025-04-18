@@ -25,6 +25,3 @@
 [submodule "extlibs/cimgui"]
 	path = extlibs/cimgui
 	url = https://github.com/cimgui/cimgui.git
-[submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
-	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
-	url = git@github.com:KhronosGroup/SPIRV-Reflect.git

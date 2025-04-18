@@ -12,6 +12,8 @@ crude_gfx_initialize_renderer
   crude_initialize_resource_pool( &renderer->buffers, renderer->allocator, 1024, sizeof( crude_buffer_resource ) );
   crude_initialize_resource_pool( &renderer->textures, renderer->allocator, 1024, sizeof( crude_texture_resource ) );
   crude_initialize_resource_pool( &renderer->samplers, renderer->allocator, 1024, sizeof( crude_sampler_resource ) );
+  crude_initialize_resource_pool( &renderer->programs, renderer->allocator, 1024, sizeof( crude_program ) );
+  crude_initialize_resource_pool( &renderer->materials, renderer->allocator, 1024, sizeof( crude_material ) );
 }
 
 void
@@ -103,4 +105,57 @@ crude_gfx_renderer_create_sampler
   
   sampler_resource->references = 1;
   return sampler_resource;
+}
+
+crude_program*
+crude_gfx_renderer_create_program
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_program_creation const   *creation
+)
+{
+  crude_program_handle program_handle = { CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer ) };
+  if ( program_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return NULL;
+  }
+  
+  crude_program *program = CRUDE_GFX_RENDERER_ACCESS_PROGRAM( renderer, program_handle );
+  program->name = creation->pipeline_creation.name;
+  program->pool_index = program_handle.index;
+  program->passes[ 0 ].pipeline = crude_gfx_create_pipeline( renderer->gpu, &creation->pipeline_creation );
+  program->passes[ 0 ].descriptor_set_layout = crude_gfx_get_descriptor_set_layout( renderer->gpu, program->passes[ 0 ].pipeline, 0 );
+
+  if ( program->name )
+  {
+    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+  }
+
+  return program;
+}
+
+crude_material*
+crude_gfx_renderer_create_material
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_material_creation const  *creation
+)
+{
+  crude_material_handle material_handle = { CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer ) };
+  if ( material_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return NULL;
+  }
+  
+  crude_material *material = CRUDE_GFX_RENDERER_ACCESS_MATERIAL( renderer, material_handle );
+  material->name = creation->name;
+  material->pool_index = material_handle.index;
+  material->program = creation->program;
+  material->render_index = creation->render_index;
+  if ( material->name )
+  {
+    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+  }
+
+  return material;
 }

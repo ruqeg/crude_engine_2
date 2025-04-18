@@ -17,6 +17,8 @@ typedef struct crude_command_buffer
   crude_render_pass                 *current_render_pass;
   crude_pipeline                    *current_pipeline;
   VkClearValue                       clears[ 2 ];
+  crude_resource_pool                descriptor_sets;
+  VkDescriptorPool                   vk_descriptor_pool;
 } crude_command_buffer;
 
 typedef struct crude_command_buffer_manager
@@ -61,7 +63,7 @@ crude_gfx_cmd_set_scissor
 );
 
 CRUDE_API void
-crude_gfx_cmd_bind_descriptor_set
+crude_gfx_cmd_bind_local_descriptor_set
 (
   _In_ crude_command_buffer         *cmd,
   _In_ crude_descriptor_set_handle   handle
@@ -103,6 +105,13 @@ crude_gfx_cmd_bind_index_buffer
   _In_ crude_command_buffer         *cmd,
   _In_ crude_buffer_handle           handle,
   _In_ uint32                        offset
+);
+
+CRUDE_API crude_descriptor_set_handle
+crude_gfx_cmd_create_local_descriptor_set
+(
+  _In_ crude_command_buffer                  *cmd,
+  _In_ crude_descriptor_set_creation const   *creation
 );
 
 CRUDE_API void

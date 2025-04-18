@@ -155,7 +155,12 @@ typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
 /////////////////////
 //// @Scalar
 /////////////////////
-CRUDE_INLINE float32                   crude_max( _In_ float32 s1, _In_ float32 s2 );
+CRUDE_INLINE float32
+crude_max
+(
+  _In_ float32                                   s1,
+  _In_ float32                                   s2
+);
 CRUDE_INLINE float32                   crude_min( _In_ float32 s1, _In_ float32 s2 );
 CRUDE_INLINE float32                   crude_round( _In_ float32 s );
 CRUDE_INLINE float32                   crude_floor( _In_ float32 s );

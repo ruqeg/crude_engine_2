@@ -7,10 +7,22 @@ layout(location=3) in vec2 texcoord0;
 
 layout(binding = 0, row_major) uniform LocalConstants
 {
+  mat4 worldToView;
   mat4 viewToClip;
+};
+
+layout(binding = 1, row_major) uniform Mesh
+{
+  mat4  modelToWorld;
+  mat4  worldToModel;
+  uvec4 textures;
+  vec4  base_color_factor;
+  vec4  metallic_roughness_occlusion_factor;
+  float alpha_cutoff;
+  uint  flags;
 };
 
 void main()
 {
-  gl_Position = vec4( position, 1.0 ) * viewToClip;
+  gl_Position = vec4( position, 1.0 ) * modelToWorld * worldToView * viewToClip;
 }

@@ -15,8 +15,8 @@ typedef struct crude_gpu_device_creation
   crude_allocator                                    allocator;
   uint16                                             queries_per_frame;
   uint16                                             max_frames;
-} crude_gpu_device_creation;                       
-                                                   
+} crude_gpu_device_creation;
+
 typedef struct crude_gpu_device                    
 {                                                  
   crude_allocator                                    allocator;
@@ -43,12 +43,12 @@ typedef struct crude_gpu_device
   crude_resource_pool                                pipelines;
   crude_resource_pool                                samplers;
   crude_resource_pool                                descriptor_set_layouts;
-  crude_resource_pool                                descriptor_sets;
   crude_resource_pool                                render_passes;
   crude_resource_pool                                command_buffers;
   crude_resource_pool                                shaders;
                                                    
   crude_resource_update                             *resource_deletion_queue;
+  crude_resource_update                             *texture_to_update_bindless;
                                                    
   uint32                                             queued_command_buffers_count;
   crude_command_buffer                             **queued_command_buffers;
@@ -68,7 +68,9 @@ typedef struct crude_gpu_device
   uint16                                             vk_swapchain_width;
   uint16                                             vk_swapchain_height;
   VkSurfaceFormatKHR                                 vk_surface_format;
-  VkDescriptorPool                                   vk_descriptor_pool;
+  VkDescriptorPool                                   vk_bindless_descriptor_pool;
+  VkDescriptorSetLayout                              vk_bindless_descriptor_set_layout;
+  VkDescriptorSet                                    vk_bindless_descriptor_set;
   VkQueryPool                                        vk_timestamp_query_pool;
   VkSemaphore                                        vk_render_finished_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                        vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
@@ -79,7 +81,6 @@ typedef struct crude_gpu_device
   VmaAllocator                                       vma_allocator;
 
   // !TODO move from this place
-  crude_descriptor_set_layout_handle                 descriptor_set_layout_handle;
   crude_buffer_handle                                ubo_buffer;
 } crude_gpu_device;                                
                                                    
@@ -117,13 +118,13 @@ CRUDE_API void
 crude_gfx_new_frame                                
 (                                                  
   _In_ crude_gpu_device                             *gpu
-);                                                 
+);
                                                    
 CRUDE_API void                                     
 crude_gfx_present                                  
 (                                                  
   _In_ crude_gpu_device                             *gpu
-);                                                 
+);
                                                    
 CRUDE_API crude_command_buffer*                    
 crude_gfx_get_cmd_buffer                           
@@ -131,35 +132,51 @@ crude_gfx_get_cmd_buffer
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_queue_type                              type,
   _In_ bool                                          begin
-);                                                 
+);
                                                    
 CRUDE_API void                                     
 crude_gfx_queue_cmd_buffer                         
 (                                                  
   _In_ crude_command_buffer                         *cmd
-);                                                 
+);
                                                    
 CRUDE_API void*                                    
 crude_gfx_map_buffer                               
 (                                                  
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_map_buffer_parameters const            *parameters
-);                                                 
+);
                                                    
 CRUDE_API void                                     
 crude_gfx_unmap_buffer                             
 (                                                  
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_buffer_handle                           handle
-);                                                 
+);
                                                    
 CRUDE_API void*                                    
 crude_gfx_dynamic_allocate                         
 (                                                  
   _In_ crude_gpu_device                             *gpu,
   _In_ uint32                                        size
-);                                                 
-                                                   
+);
+
+CRUDE_API void
+crude_gfx_link_texture_sampler
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_texture_handle                          texture,
+  _In_ crude_sampler_handle                          sampler
+);
+
+CRUDE_API crude_descriptor_set_layout_handle
+crude_gfx_get_descriptor_set_layout
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_pipeline_handle                         pipeline_handle,
+  _In_ uint32                                        layout_index
+);
+
 /////////////////////                              
 //// @Query                                        
 /////////////////////                              
@@ -303,14 +320,14 @@ crude_gfx_destroy_buffer_instant
 );
 
 CRUDE_API crude_descriptor_set_layout_handle
-crude_create_descriptor_set_layout
+crude_gfx_create_descriptor_set_layout
 (
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_descriptor_set_layout_creation const   *creation
 );
 
 CRUDE_API void                                      
-crude_create_gfx_descriptor_set_layout
+crude_gfx_destroy_descriptor_set_layout
 (                                                   
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_descriptor_set_layout_handle            handle
@@ -321,27 +338,6 @@ crude_gfx_destroy_descriptor_set_layout_instant
 (                                                   
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_descriptor_set_layout_handle            handle
-);
-
-CRUDE_API crude_descriptor_set_handle
-crude_create_descriptor_set
-(
-  _In_ crude_gpu_device                             *gpu,
-  _In_ crude_descriptor_set_creation const          *creation
-);
-
-CRUDE_API void                                      
-crude_create_gfx_descriptor_set
-(                                                   
-  _In_ crude_gpu_device                             *gpu,
-  _In_ crude_descriptor_set_handle                   handle
-);
-
-CRUDE_API void
-crude_gfx_destroy_descriptor_set_instant
-(                                                   
-  _In_ crude_gpu_device                             *gpu,
-  _In_ crude_descriptor_set_handle                   handle
 );
 
 CRUDE_API VkShaderModuleCreateInfo                  
