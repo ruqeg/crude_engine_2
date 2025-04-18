@@ -1,9 +1,9 @@
 #version 450
 
-layout( location = 0 ) in vec3 position;
+layout( location = 0 ) in vec3 inPosition;
 layout( location = 1 ) in vec4 tangent;
 layout( location = 2 ) in vec3 normal;
-layout( location = 3 ) in vec2 texcoord0;
+layout( location = 3 ) in vec2 inTexcoord0;
 
 layout( binding = 0, row_major ) uniform FrameConstants
 {
@@ -25,5 +25,6 @@ layout(location = 0) out vec2 outTexcoord0;
 
 void main()
 {
-  gl_Position = vec4( position, 1.0 ) * modelToWorld * worldToView * viewToClip;
+  outTexcoord0 = inTexcoord0;
+  gl_Position = vec4( inPosition, 1.0 ) * modelToWorld * worldToView * viewToClip;
 }

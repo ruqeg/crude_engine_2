@@ -59,6 +59,29 @@ typedef struct crude_pipeline_handle
 #define CRUDE_UBO_ALIGNMENT                 256
 #define CRUDE_MAX_SET_COUNT                 32
 
+typedef enum crude_resource_state
+{
+  CRUDE_RESOURCE_STATE_UNDEFINED = 0,
+  CRUDE_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER = 0x1,
+  CRUDE_RESOURCE_STATE_INDEX_BUFFER = 0x2,
+  CRUDE_RESOURCE_STATE_RENDER_TARGET = 0x4,
+  CRUDE_RESOURCE_STATE_UNORDERED_ACCESS = 0x8,
+  CRUDE_RESOURCE_STATE_DEPTH_WRITE = 0x10,
+  CRUDE_RESOURCE_STATE_DEPTH_READ = 0x20,
+  CRUDE_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE = 0x40,
+  CRUDE_RESOURCE_STATE_PIXEL_SHADER_RESOURCE = 0x80,
+  CRUDE_RESOURCE_STATE_SHADER_RESOURCE = 0x40 | 0x80,
+  CRUDE_RESOURCE_STATE_STREAM_OUT = 0x100,
+  CRUDE_RESOURCE_STATE_INDIRECT_ARGUMENT = 0x200,
+  CRUDE_RESOURCE_STATE_COPY_DEST = 0x400,
+  CRUDE_RESOURCE_STATE_COPY_SOURCE = 0x800,
+  CRUDE_RESOURCE_STATE_GENERIC_READ = ( ( ( ( ( 0x1 | 0x2 ) | 0x40 ) | 0x80 ) | 0x200 ) | 0x800 ),
+  CRUDE_RESOURCE_STATE_PRESENT = 0x1000,
+  CRUDE_RESOURCE_STATE_COMMON = 0x2000,
+  CRUDE_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE = 0x4000,
+  CRUDE_RESOURCE_STATE_SHADING_RATE_SOURCE = 0x8000,
+} crude_resource_state;
+
 typedef enum crude_resource_usage_type 
 {
   CRUDE_RESOURCE_USAGE_TYPE_IMMUTABLE, 
@@ -538,52 +561,71 @@ typedef struct crude_resource_update
 
 typedef struct crude_shader_frame_constants
 {
-  crude_float4x4a world_to_view;
-  crude_float4x4a view_to_clip;
+  crude_float4x4a                      world_to_view;
+  crude_float4x4a                      view_to_clip;
 } crude_shader_frame_constants;
 
 typedef struct crude_shader_mesh_constants
 {
-  crude_float4x4a  modelToWorld;
-  crude_uint4a     textures;
-  crude_float4a    base_color_factor;
-  crude_float3a    metallic_roughness_occlusion_factor;
-  crude_float1a    alpha_cutoff;
-  crude_uint1a     flags;
+  crude_float4x4a                      modelToWorld;
+  crude_uint4a                         textures;
+  crude_float4a                        base_color_factor;
+  crude_float3a                        metallic_roughness_occlusion_factor;
+  crude_float1a                        alpha_cutoff;
+  crude_uint1a                         flags;
 } crude_shader_mesh_constants;
 
 CRUDE_API void
 crude_reset_render_pass_output
 ( 
-  _In_ crude_render_pass_output *output
+  _In_ crude_render_pass_output       *output
 );
 
 CRUDE_API VkImageType
 crude_to_vk_image_type
 ( 
-  _In_ crude_texture_type type
+  _In_ crude_texture_type              type
 );
 
 CRUDE_API bool
 crude_has_depth_or_stencil
 ( 
-  _In_ VkFormat value
+  _In_ VkFormat                        value
 );
 
 CRUDE_API bool
 crude_has_depth
 ( 
-  _In_ VkFormat value
+  _In_ VkFormat                        value
 );
 
 CRUDE_API VkImageViewType
 crude_to_vk_image_view_type
 ( 
-  _In_ crude_texture_type type
+  _In_ crude_texture_type              type
 );
 
 CRUDE_API VkFormat
 crude_to_vk_vertex_format
 ( 
-  _In_ crude_vertex_component_format value
+  _In_ crude_vertex_component_format   value
+);
+
+CRUDE_API VkAccessFlags
+crude_resource_state_to_vk_access_flags
+(
+  _In_ crude_resource_state            state
+);
+
+CRUDE_API VkImageLayout
+crude_resource_state_to_vk_image_layout
+(
+  _In_ crude_resource_state            state
+);
+
+CRUDE_API VkPipelineStageFlags
+crude_determine_pipeline_stage_flags
+(
+  _In_ VkAccessFlags                   access_flags,
+  _In_ crude_queue_type                queue_type
 );
