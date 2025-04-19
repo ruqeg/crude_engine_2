@@ -15,10 +15,10 @@ crude_gfx_cmd_reset
   
   vkResetDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, 0 );
   
-  uint32 resource_count = cmd->descriptor_sets.free_indices_head;
+  uint32 resource_count = cmd->frame_descriptor_sets.free_indices_head;
   for ( uint32 i = 0; i < resource_count; ++i )
   {
-    CRUDE_RELEASE_RESOURCE( cmd->descriptor_sets, ( crude_descriptor_set_handle){ i } );
+    CRUDE_RELEASE_RESOURCE( cmd->frame_descriptor_sets, ( crude_descriptor_set_handle){ i } );
   }
 }
 
@@ -45,7 +45,7 @@ crude_gfx_cmd_bind_render_pass
 
   if ( cmd->current_render_pass && ( cmd->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
   {
-    vkCmdEndRenderPass( cmd->vk_handle );
+    vkCmdEndRenderPass( cmd->vk_cmd_buffer );
   }
   
   if ( render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE )
@@ -60,7 +60,7 @@ crude_gfx_cmd_bind_render_pass
       .pClearValues      = cmd->clears,
     };
     
-    vkCmdBeginRenderPass( cmd->vk_handle, &render_pass_begin, VK_SUBPASS_CONTENTS_INLINE );
+    vkCmdBeginRenderPass( cmd->vk_cmd_buffer, &render_pass_begin, VK_SUBPASS_CONTENTS_INLINE );
   }
   
   cmd->current_render_pass = render_pass;
@@ -80,7 +80,7 @@ crude_gfx_cmd_bind_pipeline
     return;
   }
 
-  vkCmdBindPipeline( cmd->vk_handle, pipeline->vk_bind_point, pipeline->vk_pipeline );
+  vkCmdBindPipeline( cmd->vk_cmd_buffer, pipeline->vk_bind_point, pipeline->vk_pipeline );
   cmd->current_pipeline = pipeline;
 }
 
@@ -122,7 +122,18 @@ crude_gfx_cmd_set_viewport
     vk_viewport.maxDepth = 1.0f;
   }
   
-  vkCmdSetViewport( cmd->vk_handle, 0, 1, &vk_viewport);
+  vkCmdSetViewport( cmd->vk_cmd_buffer, 0, 1, &vk_viewport);
+}
+
+void
+crude_gfx_cmd_set_clear_color
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ uint32                        index,
+  _In_ VkClearValue                  clear
+)
+{
+  cmd->clears[ index ] = clear;
 }
 
 void
@@ -149,7 +160,7 @@ crude_gfx_cmd_set_scissor
     vk_scissor.extent.height = cmd->gpu->vk_swapchain_height;
   }
   
-  vkCmdSetScissor( cmd->vk_handle, 0, 1, &vk_scissor );
+  vkCmdSetScissor( cmd->vk_cmd_buffer, 0, 1, &vk_scissor );
 }
 
 void
@@ -159,7 +170,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   _In_ crude_descriptor_set_handle   handle
 )
 {
-  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->descriptor_sets, crude_descriptor_set, handle );
+  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->frame_descriptor_sets, crude_descriptor_set, handle );
   
   uint32 num_offsets = 0u;
   uint32 offsets_cache[ 8 ];
@@ -174,8 +185,8 @@ crude_gfx_cmd_bind_local_descriptor_set
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
     }
   }
-  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0u, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
-  vkCmdBindDescriptorSets( cmd->vk_handle, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 1u, 1u, &cmd->gpu->vk_bindless_descriptor_set, 0u, NULL );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0u, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 1u, 1u, &cmd->gpu->vk_bindless_descriptor_set, 0u, NULL );
 }
 
 void
@@ -188,7 +199,7 @@ crude_gfx_cmd_draw
   _In_ uint32                instance_count
 )
 {
-  vkCmdDraw( cmd->vk_handle, vertex_count, instance_count, first_vertex, first_instance );
+  vkCmdDraw( cmd->vk_cmd_buffer, vertex_count, instance_count, first_vertex, first_instance );
 }
 
 void
@@ -202,7 +213,7 @@ crude_gfx_cmd_draw_indexed
   _In_ uint32                        first_instance
 )
 {
-  vkCmdDrawIndexed( cmd->vk_handle, index_count, instance_count, first_index, vertex_offset, first_instance );
+  vkCmdDrawIndexed( cmd->vk_cmd_buffer, index_count, instance_count, first_index, vertex_offset, first_instance );
 }
 
 void
@@ -226,7 +237,7 @@ crude_gfx_cmd_bind_vertex_buffer
     offsets[ 0 ] = buffer->global_offset;
   }
   
-  vkCmdBindVertexBuffers( cmd->vk_handle, binding, 1, &vk_buffer, offsets );
+  vkCmdBindVertexBuffers( cmd->vk_cmd_buffer, binding, 1, &vk_buffer, offsets );
 }
 
 CRUDE_API void
@@ -248,7 +259,7 @@ crude_gfx_cmd_bind_index_buffer
     offset = buffer->global_offset;
   }
 
-  vkCmdBindIndexBuffer( cmd->vk_handle, vk_buffer, offset, VK_INDEX_TYPE_UINT16  );
+  vkCmdBindIndexBuffer( cmd->vk_cmd_buffer, vk_buffer, offset, VK_INDEX_TYPE_UINT16  );
 }
 
 crude_descriptor_set_handle
@@ -258,14 +269,13 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_descriptor_set_creation const   *creation
 )
 {
-  crude_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->descriptor_sets ) };
+  crude_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->frame_descriptor_sets ) };
   if ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
   {
     return handle;
   }
   
-  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->descriptor_sets, crude_descriptor_set , handle );
-  memset( descriptor_set, 0, sizeof( *descriptor_set ) );
+  crude_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->frame_descriptor_sets, crude_descriptor_set , handle );
   crude_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( cmd->gpu, creation->layout );
   
   VkDescriptorSetAllocateInfo vk_descriptor_info = {
@@ -362,22 +372,22 @@ crude_gfx_initialize_cmd_manager
       .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     };
     
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_command_pools[ i ] ), "Failed to create command pool" );
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );
   }
   
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
   {
-    crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ i ];
+    crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ i ];
     
     command_buffer->gpu = gpu;
 
     VkCommandBufferAllocateInfo cmd_allocation_info = { 
       .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = cmd_manager->vk_command_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ],
+      .commandPool        = cmd_manager->vk_cmd_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ],
       .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 1,
     };
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_handle ), "Failed to allocate command buffer" );
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &cmd_allocation_info, &command_buffer->vk_cmd_buffer ), "Failed to allocate command buffer" );
     
     uint32 const global_pool_elements = 128;
     VkDescriptorPoolSize pool_sizes[] =
@@ -405,7 +415,7 @@ crude_gfx_initialize_cmd_manager
 
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &command_buffer->vk_descriptor_pool ), "Failed create descriptor pool" );
 
-    crude_initialize_resource_pool( &command_buffer->descriptor_sets, gpu->allocator, 256, sizeof( crude_descriptor_set ) );
+    crude_initialize_resource_pool( &command_buffer->frame_descriptor_sets, gpu->allocator, 256, sizeof( crude_descriptor_set ) );
 
     crude_gfx_cmd_reset( command_buffer );
   }
@@ -419,13 +429,13 @@ crude_gfx_deinitialize_cmd_manager
 {
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
   {
-    crude_gfx_cmd_reset( &cmd_manager->command_buffers[ i ] );
-    crude_deinitialize_resource_pool( &cmd_manager->command_buffers[ i ].descriptor_sets );
-    vkDestroyDescriptorPool( cmd_manager->gpu->vk_device, cmd_manager->command_buffers[ i ].vk_descriptor_pool, cmd_manager->gpu->vk_allocation_callbacks );
+    crude_gfx_cmd_reset( &cmd_manager->cmd_buffers[ i ] );
+    crude_deinitialize_resource_pool( &cmd_manager->cmd_buffers[ i ].frame_descriptor_sets );
+    vkDestroyDescriptorPool( cmd_manager->gpu->vk_device, cmd_manager->cmd_buffers[ i ].vk_descriptor_pool, cmd_manager->gpu->vk_allocation_callbacks );
   }
   for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
+    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
   }
 }
 
@@ -438,7 +448,7 @@ crude_gfx_reset_cmd_manager
 {
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS; ++i )
   {
-    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ frame + i * CRUDE_MAX_SWAPCHAIN_IMAGES ], 0 );
+    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ frame + i * CRUDE_MAX_SWAPCHAIN_IMAGES ], 0 );
   }
 }
 
@@ -450,7 +460,7 @@ crude_gfx_cmd_manager_get_cmd_buffer
   _In_ bool                          begin
 )
 {
-  crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ];
+  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ];
 
   if ( begin )
   {  
@@ -460,7 +470,7 @@ crude_gfx_cmd_manager_get_cmd_buffer
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     };
-    vkBeginCommandBuffer( command_buffer->vk_handle, &begin_info );
+    vkBeginCommandBuffer( command_buffer->vk_cmd_buffer, &begin_info );
   }
   
   return command_buffer;
@@ -473,6 +483,6 @@ crude_gfx_cmd_manager_get_cmd_buffer_instant
   _In_ uint32                        frame
 )
 {
-  crude_command_buffer *command_buffer = &cmd_manager->command_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL + 1 ];
+  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL + 1 ];
   return command_buffer;
 }

@@ -12,22 +12,25 @@ typedef struct crude_gpu_device crude_gpu_device;
 typedef struct crude_command_buffer
 {
   crude_gpu_device                  *gpu;
-  VkCommandBuffer                    vk_handle;
   bool                               is_recording;
   crude_render_pass                 *current_render_pass;
   crude_pipeline                    *current_pipeline;
   VkClearValue                       clears[ 2 ];
-  crude_resource_pool                descriptor_sets;
+  crude_resource_pool                frame_descriptor_sets;
   VkDescriptorPool                   vk_descriptor_pool;
+  VkCommandBuffer                    vk_cmd_buffer;
 } crude_command_buffer;
 
 typedef struct crude_command_buffer_manager
 {
-  VkCommandPool                      vk_command_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
-  crude_command_buffer               command_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
+  VkCommandPool                      vk_cmd_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
+  crude_command_buffer               cmd_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
   crude_gpu_device                  *gpu;
 } crude_command_buffer_manager;
 
+/////////////////////
+//// @Command Buffer
+///////////////////// 
 CRUDE_API void
 crude_gfx_cmd_reset
 (
@@ -53,6 +56,14 @@ crude_gfx_cmd_set_viewport
 (
   _In_ crude_command_buffer         *cmd,
   _In_opt_ crude_viewport const     *viewport
+);
+
+CRUDE_API void
+crude_gfx_cmd_set_clear_color
+(
+  _In_ crude_command_buffer         *cmd,
+  _In_ uint32                        index,
+  _In_ VkClearValue                  clear
 );
 
 CRUDE_API void
@@ -114,6 +125,9 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_descriptor_set_creation const   *creation
 );
 
+/////////////////////
+//// @CMD MANAGER
+///////////////////// 
 CRUDE_API void
 crude_gfx_initialize_cmd_manager
 (

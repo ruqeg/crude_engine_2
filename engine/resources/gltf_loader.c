@@ -1,10 +1,10 @@
 #include <cgltf.h>
-#include <stb_ds.h>
 #include <stb_image.h>
 
 #include <crude_shaders/main.frag.inl>
 #include <crude_shaders/main.vert.inl>
 
+#include <core/algorithms.h>
 #include <core/assert.h>
 #include <core/log.h>
 #include <core/file.h>
@@ -214,7 +214,7 @@ crude_load_gltf_from_file
   crude_change_working_directory( gltf_base_path );
 
   scene->images = NULL;
-  arrsetcap( scene->images, gltf->images_count );
+  CRUDE_ARR_SETCAP( scene->images, gltf->images_count );
   
   for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
   {
@@ -242,12 +242,12 @@ crude_load_gltf_from_file
     crude_texture_resource *texture_resource = crude_gfx_renderer_create_texture( renderer, &texture_creation );
     free( image_data );
 
-    arrpush( scene->images, *texture_resource );
+    CRUDE_ARR_PUSH( scene->images, *texture_resource );
   }
 
   // Load all samplers
   scene->samplers = NULL;
-  arrsetcap( scene->samplers, gltf->samplers_count );
+  CRUDE_ARR_SETCAP( scene->samplers, gltf->samplers_count );
 
   for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
   {
@@ -313,11 +313,11 @@ crude_load_gltf_from_file
     creation.name = "";
     
     crude_sampler_resource *sampler_resource = crude_gfx_renderer_create_sampler( renderer, &creation );
-    arrpush( scene->samplers, *sampler_resource );
+    CRUDE_ARR_PUSH( scene->samplers, *sampler_resource );
   }
   
   scene->buffers = NULL;
-  arrsetcap( scene->buffers, gltf->buffer_views_count );
+  CRUDE_ARR_SETCAP( scene->buffers, gltf->buffer_views_count );
 
   for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
   {
@@ -339,11 +339,11 @@ crude_load_gltf_from_file
       .name = buffer->name
     };
     crude_buffer_resource *buffer_resource = crude_gfx_renderer_create_buffer( renderer, &buffer_creation );
-    arrpush( scene->buffers, *buffer_resource );
+    CRUDE_ARR_PUSH( scene->buffers, *buffer_resource );
   }
 
   scene->mesh_draws = NULL;
-  arrsetcap( scene->mesh_draws, gltf->meshes_count );
+  CRUDE_ARR_SETCAP( scene->mesh_draws, gltf->meshes_count );
 
   cgltf_scene *root_scene = gltf->scene;
 
@@ -437,7 +437,7 @@ crude_load_gltf_from_file
         }
       }
       mesh_draw.material = scene->material;
-      arrpush( scene->mesh_draws, mesh_draw );
+      CRUDE_ARR_PUSH( scene->mesh_draws, mesh_draw );
     }
   }
   
@@ -455,29 +455,29 @@ crude_unload_gltf_from_file
   crude_gfx_renderer_destroy_program( renderer, scene->program );
   crude_gfx_renderer_destroy_material( renderer, scene->material );
 
-  for ( uint32 i = 0; i < arrlen( scene->images ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->images ); ++i )
   {
     crude_gfx_renderer_destroy_texture( renderer, &scene->images[ i ] );
   }
-  arrfree( scene->images );
+  CRUDE_ARR_FREE( scene->images );
 
-  for ( uint32 i = 0; i < arrlen( scene->samplers ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->samplers ); ++i )
   {
     crude_gfx_renderer_destroy_sampler( renderer, &scene->samplers[ i ] );
   }
-  arrfree( scene->samplers );
+  CRUDE_ARR_FREE( scene->samplers );
   
-  for ( uint32 i = 0; i < arrlen( scene->buffers ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->buffers ); ++i )
   {
     crude_gfx_renderer_destroy_buffer( renderer, &scene->buffers[ i ] );
   }
-  arrfree( scene->buffers );
+  CRUDE_ARR_FREE( scene->buffers );
 
-  for ( uint32 i = 0; i < arrlen( scene->mesh_draws ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->mesh_draws ); ++i )
   {
      crude_gfx_destroy_buffer( renderer->gpu, scene->mesh_draws[ i ].material_buffer );
   }
-  arrfree( scene->mesh_draws );
+  CRUDE_ARR_FREE( scene->mesh_draws );
 
-  arrfree( scene->buffers );
+  CRUDE_ARR_FREE( scene->buffers );
 }

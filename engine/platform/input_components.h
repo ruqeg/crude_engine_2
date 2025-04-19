@@ -2,7 +2,6 @@
 
 #include <SDL3/SDL.h>
 #include <flecs.h>
-#include <stb_ds.h>
 
 #include <core/alias.h>
 

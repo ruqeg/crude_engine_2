@@ -1,7 +1,6 @@
-#include <stb_ds.h>
-
 #include <core/file.h>
 #include <core/string.h>
+#include <core/algorithms.h>
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/command_buffer.h>
@@ -12,7 +11,7 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <scene/free_camera_system.h>
-#include <resources/gltf_loader.h> 
+#include <resources/gltf_loader.h>
 
 static void
 crude_draw_mesh
@@ -139,6 +138,8 @@ render
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
     crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
+    crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
     gpu_commands->clears[1].color.float32[ 0 ] = 1;
     gpu_commands->clears[1].color.float32[ 1 ] = 1;
     gpu_commands->clears[1].color.float32[ 2 ] = 1;
@@ -161,7 +162,7 @@ render
     }
     
     // update mesh buffer
-    for ( uint32 mesh_index = 0; mesh_index < arrlen( renderer->scene->mesh_draws ); ++mesh_index )
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
       
@@ -196,7 +197,7 @@ render
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     
     crude_material *last_material = NULL;
-    for ( uint32 mesh_index = 0; mesh_index < arrlen( renderer->scene->mesh_draws ); ++mesh_index )
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
       if ( mesh_draw->material != last_material )

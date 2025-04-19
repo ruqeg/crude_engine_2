@@ -102,8 +102,8 @@ crude_gfx_deinitialize_gpu_device
   _In_ crude_gpu_device                             *gpu
 );                                                 
                                                    
-/////////////////////                              
-//// @Common                                       
+/////////////////////
+//// @Common
 /////////////////////                              
                                                    
 CRUDE_API void                                     

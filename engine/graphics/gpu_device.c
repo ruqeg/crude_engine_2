@@ -1,8 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <stb_ds.h>
-#include <math.h>
 
+#include <core/algorithms.h>
 #include <core/math.h>
 #include <core/assert.h>
 #include <graphics/gpu_resources.h>
@@ -81,7 +80,7 @@ _vk_create_instance
 
   char const **instance_enabled_extensions = NULL;
   uint32 const instance_enabled_extensions_count = surface_extensions_count + debug_extensions_count;
-  arrsetlen( instance_enabled_extensions, instance_enabled_extensions_count ); // tofree
+  CRUDE_ARR_SETLEN( instance_enabled_extensions, instance_enabled_extensions_count ); // tofree
   CRUDE_ASSERT( instance_enabled_extensions );
 
   for ( uint32 i = 0; i < surface_extensions_count; ++i )
@@ -140,7 +139,7 @@ _vk_create_instance
   VkInstance handle;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &handle ), "failed to create instance" );
 
-  arrfree( instance_enabled_extensions );
+  CRUDE_ARR_FREE( instance_enabled_extensions );
 
   return handle;
 }
@@ -243,7 +242,7 @@ _vk_get_supported_queue_family_index
   }
   
   VkQueueFamilyProperties *queue_families_properties = NULL;
-  arrsetlen( queue_families_properties, queue_family_count ); // tofree
+  CRUDE_ARR_SETLEN( queue_families_properties, queue_family_count ); // tofree
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families_properties );
   
   int32 queue_index = -1;
@@ -260,7 +259,7 @@ _vk_get_supported_queue_family_index
       }
     }
   }
-  arrfree( queue_families_properties );
+  CRUDE_ARR_FREE( queue_families_properties );
   return queue_index;
 }
 
@@ -278,7 +277,7 @@ _vk_check_support_required_extensions
   }
     
   VkExtensionProperties *available_extensions = NULL;
-  arrsetlen( available_extensions, available_extensions_count ); // tofree
+  CRUDE_ARR_SETLEN( available_extensions, available_extensions_count ); // tofree
   vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
 
   bool support_required_extensions = true;
@@ -300,7 +299,7 @@ _vk_check_support_required_extensions
     }
   }
 
-  arrfree( available_extensions );
+  CRUDE_ARR_FREE( available_extensions );
   return support_required_extensions;
 }
 
@@ -358,7 +357,7 @@ _vk_pick_physical_device
   }
   
   VkPhysicalDevice *physical_devices = NULL;
-  arrput( physical_devices, physical_devices_count ); // tofree
+  CRUDE_ARR_PUT( physical_devices, physical_devices_count ); // tofree
   vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, physical_devices );
   
   VkPhysicalDevice selected_physical_devices = VK_NULL_HANDLE;
@@ -483,7 +482,7 @@ _vk_create_swapchain
   }
 
   VkSurfaceFormatKHR *available_formats = NULL;
-  arrsetlen( available_formats, available_formats_count ); // tofree
+  CRUDE_ARR_SETLEN( available_formats, available_formats_count ); // tofree
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &available_formats_count, available_formats );
 
   bool surface_format_found = false;
@@ -499,7 +498,7 @@ _vk_create_swapchain
   if ( !surface_format_found )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
-    arrfree( available_formats );
+    CRUDE_ARR_FREE( available_formats );
     return VK_NULL_HANDLE;
   }
   
@@ -508,12 +507,12 @@ _vk_create_swapchain
   if ( available_present_modes_count == 0u ) 
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
-    arrfree( available_formats );
+    CRUDE_ARR_FREE( available_formats );
     return VK_NULL_HANDLE;
   }
   
   VkPresentModeKHR *available_present_modes = NULL;
-  arrsetlen( available_present_modes, available_present_modes_count ); // tofree
+  CRUDE_ARR_SETLEN( available_present_modes, available_present_modes_count ); // tofree
   vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, available_present_modes );
   
   VkPresentModeKHR surface_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -574,8 +573,8 @@ _vk_create_swapchain
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( vk_device, &image_view_info, vk_allocation_callbacks, &vk_swapchain_images_views[ i ] ), "Failed to create image view for swapchain image" );
   }
 
-  arrfree( available_formats );
-  arrfree( available_present_modes );
+  CRUDE_ARR_FREE( available_formats );
+  CRUDE_ARR_FREE( available_present_modes );
 
   return vulkan_swapchain;
 }
@@ -781,17 +780,17 @@ _vk_create_swapchain_pass
   };
 
   crude_command_buffer *command_buffer = crude_gfx_cmd_manager_get_cmd_buffer_instant( &g_command_buffer_manager, gpu->current_frame, false );
-  vkBeginCommandBuffer( command_buffer->vk_handle, &beginInfo );
+  vkBeginCommandBuffer( command_buffer->vk_cmd_buffer, &beginInfo );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    _add_image_barrier( command_buffer->vk_handle, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
+    _add_image_barrier( command_buffer->vk_cmd_buffer, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
   }
-  vkEndCommandBuffer( command_buffer->vk_handle );
+  vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
 
   VkSubmitInfo submitInfo = { 
     .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
     .commandBufferCount = 1,
-    .pCommandBuffers    = &command_buffer->vk_handle,
+    .pCommandBuffers    = &command_buffer->vk_cmd_buffer,
   };
   
   vkQueueSubmit( gpu->vk_queue, 1, &submitInfo, VK_NULL_HANDLE );
@@ -905,7 +904,7 @@ _vk_create_texture
     .type          = CRUDE_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->texture_to_update_bindless, texture_update_event );
+  CRUDE_ARR_PUT( gpu->texture_to_update_bindless, texture_update_event );
 }
 
 static void
@@ -1134,9 +1133,9 @@ crude_gfx_initialize_gpu_device
   gpu->queued_command_buffers_count = 0;
 
   gpu->resource_deletion_queue = NULL;
-  arrsetcap( gpu->resource_deletion_queue, 16 );
+  CRUDE_ARR_SETCAP( gpu->resource_deletion_queue, 16 );
   gpu->texture_to_update_bindless = NULL;
-  arrsetcap( gpu->texture_to_update_bindless, 16 );
+  CRUDE_ARR_SETCAP( gpu->texture_to_update_bindless, 16 );
 
   crude_sampler_creation sampler_creation = {
     .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -1216,7 +1215,7 @@ crude_gfx_deinitialize_gpu_device
   crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
 
-  for ( uint32 i = 0; i < arrlen( gpu->resource_deletion_queue ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( gpu->resource_deletion_queue ); ++i )
   {
     crude_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
 
@@ -1226,8 +1225,8 @@ crude_gfx_deinitialize_gpu_device
     _destoy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
   }
 
-  arrfree( gpu->resource_deletion_queue );
-  arrfree( gpu->texture_to_update_bindless );
+  CRUDE_ARR_FREE( gpu->resource_deletion_queue );
+  CRUDE_ARR_FREE( gpu->texture_to_update_bindless );
 
   crude_deinitialize_resource_pool( &gpu->buffers );
   crude_deinitialize_resource_pool( &gpu->textures );
@@ -1293,20 +1292,20 @@ crude_gfx_present
   for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
     crude_command_buffer* command_buffer = gpu->queued_command_buffers[i];
-    enqueued_command_buffers[ i ] = command_buffer->vk_handle;
+    enqueued_command_buffers[ i ] = command_buffer->vk_cmd_buffer;
 
     if ( command_buffer->is_recording && command_buffer->current_render_pass && ( command_buffer->current_render_pass->type != CRUDE_RENDER_PASS_TYPE_COMPUTE ) )
     {
-      vkCmdEndRenderPass( command_buffer->vk_handle );
+      vkCmdEndRenderPass( command_buffer->vk_cmd_buffer );
     }
 
-    vkEndCommandBuffer( command_buffer->vk_handle );
+    vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
   }
   
   VkWriteDescriptorSet bindless_descriptor_writes[ MAX_BINDLESS_RESOURCES ];
   VkDescriptorImageInfo bindless_image_info[ MAX_BINDLESS_RESOURCES ];
   uint32 current_write_index = 0;
-  for ( int32 i = arrlen( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
+  for ( int32 i = CRUDE_ARR_LEN( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
   {
     crude_resource_update* texture_to_update = &gpu->texture_to_update_bindless[ i ];
     
@@ -1337,7 +1336,7 @@ crude_gfx_present
     descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     descriptor_write->pImageInfo = descriptor_image_info;
     
-    arrdelswap( gpu->texture_to_update_bindless, i );
+    CRUDE_ARR_DELSWAP( gpu->texture_to_update_bindless, i );
 
     ++current_write_index;
   }
@@ -1384,7 +1383,7 @@ crude_gfx_present
   gpu->previous_frame = gpu->current_frame;
   gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
   
-  for ( uint32 i = 0; i < arrlen( gpu->resource_deletion_queue ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARR_LEN( gpu->resource_deletion_queue ); ++i )
   {
     crude_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
     
@@ -1396,7 +1395,7 @@ crude_gfx_present
     _destoy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
 
     resource_deletion->current_frame = UINT32_MAX;
-    arrdelswap( gpu->resource_deletion_queue, i );
+    CRUDE_ARR_DELSWAP( gpu->resource_deletion_queue, i );
     --i;
   }
 }
@@ -1612,7 +1611,7 @@ crude_gfx_destroy_sampler
     .type          = CRUDE_RESOURCE_DELETION_TYPE_SAMPLER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, sampler_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, sampler_update_event );
 }
 
 void
@@ -1677,7 +1676,7 @@ crude_gfx_create_texture
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     
     crude_command_buffer *cmd = crude_gfx_cmd_manager_get_cmd_buffer_instant( &g_command_buffer_manager, gpu->current_frame );
-    vkBeginCommandBuffer( cmd->vk_handle, &beginInfo );
+    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
     
     VkBufferImageCopy region =
     {
@@ -1692,13 +1691,13 @@ crude_gfx_create_texture
       .imageExtent = { creation->width, creation->height, creation->depth }
     };
     
-    _add_image_barrier( cmd->vk_handle, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     
-    vkCmdCopyBufferToImage( cmd->vk_handle, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
+    vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
     
     if ( creation->mipmaps > 1 )
     {
-      _add_image_barrier( cmd->vk_handle, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     }
     
     int32 w = creation->width;
@@ -1706,7 +1705,7 @@ crude_gfx_create_texture
     
     for ( int32 mip_index = 1; mip_index < creation->mipmaps; ++mip_index )
     {
-      _add_image_barrier( cmd->vk_handle, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
+      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
     
       VkImageBlit blit_region =
       { 
@@ -1730,26 +1729,26 @@ crude_gfx_create_texture
       w /= 2;
       h /= 2;
     
-      vkCmdBlitImage( cmd->vk_handle, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
+      vkCmdBlitImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
     
-      _add_image_barrier( cmd->vk_handle, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
+      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
     }
     
-    _add_image_barrier( cmd->vk_handle, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
+    _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
     
-    vkEndCommandBuffer( cmd->vk_handle );
+    vkEndCommandBuffer( cmd->vk_cmd_buffer );
     
     VkSubmitInfo submit_info = {
       .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
       .commandBufferCount = 1,
-      .pCommandBuffers = &cmd->vk_handle,
+      .pCommandBuffers = &cmd->vk_cmd_buffer,
     };
     
     vkQueueSubmit( gpu->vk_queue, 1, &submit_info, VK_NULL_HANDLE );
     vkQueueWaitIdle( gpu->vk_queue);
     vmaDestroyBuffer( gpu->vma_allocator, staging_buffer, staging_allocation );
 
-    vkResetCommandBuffer( cmd->vk_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
+    vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
     
     texture->vk_image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   }
@@ -1773,13 +1772,13 @@ crude_gfx_destroy_texture
     .type          = CRUDE_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, texture_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, texture_update_event );
 
   crude_resource_update texture_update_bindless_event = { 
     .type          = CRUDE_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->texture_to_update_bindless, texture_update_event );
+  CRUDE_ARR_PUT( gpu->texture_to_update_bindless, texture_update_event );
 }
 
 void
@@ -1897,7 +1896,7 @@ crude_gfx_destroy_shader_state
     .type          = CRUDE_RESOURCE_DELETION_TYPE_SHADER_STATE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, shader_state_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, shader_state_update_event );
 }
 
 void
@@ -1983,7 +1982,7 @@ crude_gfx_destroy_render_pass
     .type          = CRUDE_RESOURCE_DELETION_TYPE_RENDER_PASS,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, render_pass_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, render_pass_update_event );
 }
 
 void
@@ -2262,7 +2261,7 @@ crude_gfx_destroy_pipeline
     .type          = CRUDE_RESOURCE_DELETION_TYPE_PIPELINE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, pipeline_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, pipeline_update_event );
 
   crude_pipeline *pipeline = CRUDE_GFX_GPU_ACCESS_PIPELINE( gpu, handle );
   crude_gfx_destroy_shader_state( gpu, pipeline->shader_state );
@@ -2364,7 +2363,7 @@ crude_gfx_destroy_buffer
     .type          = CRUDE_RESOURCE_DELETION_TYPE_BUFFER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, buffer_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, buffer_update_event );
 }
 
 void
@@ -2454,7 +2453,7 @@ crude_gfx_destroy_descriptor_set_layout
     .type          = CRUDE_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  arrput( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
+  CRUDE_ARR_PUT( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
 }
 
 void

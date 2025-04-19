@@ -37,8 +37,8 @@ int64_mul_div
   _In_ int64 denom
 )
 {
-  const int64 q = value / denom;
-  const int64 r = value % denom;
+  int64 q = value / denom;
+  int64 r = value % denom;
   return q * numer + r * numer / denom;
 }
 
