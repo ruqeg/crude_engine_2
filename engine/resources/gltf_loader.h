@@ -35,6 +35,8 @@ typedef struct crude_scene
   crude_texture_resource      *images;
   crude_buffer_resource       *buffers;
   crude_mesh_draw             *mesh_draws;
+  crude_program               *program;
+  crude_material              *material;
 } crude_scene;
 
 CRUDE_API void

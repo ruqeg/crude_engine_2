@@ -720,7 +720,7 @@ _vk_create_swapchain_pass
     .format         = depth_texture->vk_format,
     .samples        = VK_SAMPLE_COUNT_1_BIT,
     .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-    .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
     .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
     .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
     .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1236,6 +1236,9 @@ crude_gfx_deinitialize_gpu_device
   crude_deinitialize_resource_pool( &gpu->pipelines );
   crude_deinitialize_resource_pool( &gpu->shaders );
   crude_deinitialize_resource_pool( &gpu->samplers );
+
+  vkDestroyDescriptorSetLayout( gpu->vk_device, gpu->vk_bindless_descriptor_set_layout, gpu->vk_allocation_callbacks );
+  vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
 
   vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
   _vk_destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
@@ -2276,6 +2279,10 @@ crude_gfx_destroy_pipeline_instant
 
   if ( pipeline )
   {
+    for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
+    {
+      crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
+    }
     vkDestroyPipeline( gpu->vk_device, pipeline->vk_pipeline, gpu->vk_allocation_callbacks );
     vkDestroyPipelineLayout( gpu->vk_device, pipeline->vk_pipeline_layout, gpu->vk_allocation_callbacks );
   }

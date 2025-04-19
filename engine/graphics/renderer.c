@@ -53,6 +53,17 @@ crude_gfx_renderer_create_buffer
   return buffer_resource;
 }
 
+void
+crude_gfx_renderer_destroy_buffer
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_buffer_resource          *buffer
+)
+{
+  crude_gfx_destroy_buffer( renderer->gpu, buffer->handle );
+  CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, ( crude_buffer_resource_handle ){ buffer->pool_index } );
+}
+
 crude_texture_resource*
 crude_gfx_renderer_create_texture
 (
@@ -78,6 +89,17 @@ crude_gfx_renderer_create_texture
   
   texture_resource->references = 1;
   return texture_resource;
+}
+
+void
+crude_gfx_renderer_destroy_texture
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_texture_resource         *texture
+)
+{
+  crude_gfx_destroy_texture( renderer->gpu, texture->handle );
+  CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, ( crude_texture_resource_handle ){ texture->pool_index } );
 }
 
 crude_sampler_resource*
@@ -107,6 +129,17 @@ crude_gfx_renderer_create_sampler
   return sampler_resource;
 }
 
+void
+crude_gfx_renderer_destroy_sampler
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_sampler_resource         *sampler
+)
+{
+  crude_gfx_destroy_sampler( renderer->gpu, sampler->handle );
+  CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, ( crude_sampler_resource_handle ) { sampler->pool_index } );
+}
+
 crude_program*
 crude_gfx_renderer_create_program
 (
@@ -134,6 +167,18 @@ crude_gfx_renderer_create_program
   return program;
 }
 
+void
+crude_gfx_renderer_destroy_program
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_program                  *program
+)
+{
+  crude_gfx_destroy_pipeline( renderer->gpu, program->passes[ 0 ].pipeline );
+  CRUDE_GFX_RENDERER_RELEASE_PROGRAM( renderer, ( crude_program_handle ) { program->pool_index } );
+  return program;
+}
+
 crude_material*
 crude_gfx_renderer_create_material
 (
@@ -157,5 +202,16 @@ crude_gfx_renderer_create_material
     // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
   }
 
+  return material;
+}
+
+void
+crude_gfx_renderer_destroy_material
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_material                 *material
+)
+{
+  CRUDE_GFX_RENDERER_RELEASE_MATERIAL( renderer, ( crude_material_handle ){ material->pool_index } );
   return material;
 }

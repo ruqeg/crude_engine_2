@@ -130,11 +130,25 @@ crude_gfx_renderer_create_buffer
   _In_ crude_buffer_creation const    *creation
 );
 
+CRUDE_API void
+crude_gfx_renderer_destroy_buffer
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_buffer_resource          *buffer
+);
+
 CRUDE_API crude_texture_resource*
 crude_gfx_renderer_create_texture
 (
   _In_ crude_renderer                 *renderer,
   _In_ crude_texture_creation const   *creation
+);
+
+CRUDE_API void
+crude_gfx_renderer_destroy_texture
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_texture_resource         *texture
 );
 
 CRUDE_API crude_sampler_resource*
@@ -144,6 +158,13 @@ crude_gfx_renderer_create_sampler
   _In_ crude_sampler_creation const   *creation
 );
 
+CRUDE_API void
+crude_gfx_renderer_destroy_sampler
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_sampler_resource         *sampler
+);
+
 CRUDE_API crude_program*
 crude_gfx_renderer_create_program
 (
@@ -151,11 +172,25 @@ crude_gfx_renderer_create_program
   _In_ crude_program_creation const   *creation
 );
 
+CRUDE_API void
+crude_gfx_renderer_destroy_program
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_program                  *program
+);
+
 CRUDE_API crude_material*
 crude_gfx_renderer_create_material
 (
   _In_ crude_renderer                 *renderer,
   _In_ crude_material_creation const  *creation
+);
+
+CRUDE_API void
+crude_gfx_renderer_destroy_material
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_material                 *material
 );
 
 #define CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer )                   CRUDE_OBTAIN_RESOURCE( renderer->buffers )

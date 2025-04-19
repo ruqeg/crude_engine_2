@@ -417,11 +417,15 @@ crude_gfx_deinitialize_cmd_manager
   _In_ crude_command_buffer_manager *cmd_manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS; ++i )
+  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
   {
+    crude_gfx_cmd_reset( &cmd_manager->command_buffers[ i ] );
     crude_deinitialize_resource_pool( &cmd_manager->command_buffers[ i ].descriptor_sets );
     vkDestroyDescriptorPool( cmd_manager->gpu->vk_device, cmd_manager->command_buffers[ i ].vk_descriptor_pool, cmd_manager->gpu->vk_allocation_callbacks );
-    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ], cmd_manager->gpu->vk_allocation_callbacks );
+  }
+  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
   }
 }
 
@@ -434,7 +438,7 @@ crude_gfx_reset_cmd_manager
 {
   for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS; ++i )
   {
-    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ frame * CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS + i ], 0 );
+    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_command_pools[ frame + i * CRUDE_MAX_SWAPCHAIN_IMAGES ], 0 );
   }
 }
 

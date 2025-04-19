@@ -190,14 +190,19 @@ crude_load_gltf_from_file
   pipeline_creation.vertex_input.num_vertex_attributes = 4;
   pipeline_creation.vertex_input.num_vertex_streams = 4;
   
+  pipeline_creation.depth_stencil.depth_write_enable = true;
+  pipeline_creation.depth_stencil.depth_enable = true;
+  pipeline_creation.depth_stencil.depth_comparison = VK_COMPARE_OP_LESS;
+
   crude_program_creation program_creation = { .pipeline_creation = pipeline_creation };
-  crude_program *program = crude_gfx_renderer_create_program( renderer, &program_creation );
+  scene->program = crude_gfx_renderer_create_program( renderer, &program_creation );
   crude_material_creation material_creatoin = { 
     .name = "material1",
-    .program = program,
-    .render_index = 0
+    .program = scene->program,
+    .render_index = 0,
   };
-  crude_material *material = crude_gfx_renderer_create_material( renderer, &material_creatoin );
+
+  scene->material = crude_gfx_renderer_create_material( renderer, &material_creatoin );
 
   char prev_directory[ 1024 ];
   crude_get_current_working_directory( &prev_directory, sizeof( prev_directory ) );
@@ -431,7 +436,7 @@ crude_load_gltf_from_file
           //mesh_draw.material = material_cull_opaque;
         }
       }
-      mesh_draw.material = material;
+      mesh_draw.material = scene->material;
       arrpush( scene->mesh_draws, mesh_draw );
     }
   }
@@ -447,6 +452,32 @@ crude_unload_gltf_from_file
   _In_ crude_scene     *scene
 )
 {
+  crude_gfx_renderer_destroy_program( renderer, scene->program );
+  crude_gfx_renderer_destroy_material( renderer, scene->material );
+
+  for ( uint32 i = 0; i < arrlen( scene->images ); ++i )
+  {
+    crude_gfx_renderer_destroy_texture( renderer, &scene->images[ i ] );
+  }
+  arrfree( scene->images );
+
+  for ( uint32 i = 0; i < arrlen( scene->samplers ); ++i )
+  {
+    crude_gfx_renderer_destroy_sampler( renderer, &scene->samplers[ i ] );
+  }
+  arrfree( scene->samplers );
+  
+  for ( uint32 i = 0; i < arrlen( scene->buffers ); ++i )
+  {
+    crude_gfx_renderer_destroy_buffer( renderer, &scene->buffers[ i ] );
+  }
+  arrfree( scene->buffers );
+
+  for ( uint32 i = 0; i < arrlen( scene->mesh_draws ); ++i )
+  {
+     crude_gfx_destroy_buffer( renderer->gpu, scene->mesh_draws[ i ].material_buffer );
+  }
   arrfree( scene->mesh_draws );
+
   arrfree( scene->buffers );
 }

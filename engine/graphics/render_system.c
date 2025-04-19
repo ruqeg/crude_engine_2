@@ -116,11 +116,13 @@ deinitialize_render_core
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    crude_unload_gltf_from_file( renderer->renderer, renderer->scene );
+    crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer->gpu->frame_buffer );
     crude_gfx_deinitialize_renderer( renderer->renderer );
     crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
-    renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
-    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
+    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
+    renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
   }
 }
 
@@ -137,6 +139,10 @@ render
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
     crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    gpu_commands->clears[1].color.float32[ 0 ] = 1;
+    gpu_commands->clears[1].color.float32[ 1 ] = 1;
+    gpu_commands->clears[1].color.float32[ 2 ] = 1;
+    gpu_commands->clears[1].color.float32[ 3 ] = 1;
 
     // update fame buffer
     crude_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
@@ -176,7 +182,7 @@ render
         crude_transform model_transform = {
           .translation = { 0, 0, 0 },
           .rotation = { 0, 0, 0, 0 },
-          .scale = { 0.0005, 0.0005, 0.0005 },
+          .scale = { 0.001, 0.001, 0.001 },
         };
         crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
