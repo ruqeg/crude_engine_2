@@ -1,6 +1,5 @@
-#include <graphics/gpu_device.h>
-#include <core/log.h>
 #include <core/assert.h>
+#include <graphics/gpu_device.h>
 
 #include <graphics/command_buffer.h>
 
@@ -364,7 +363,7 @@ crude_gfx_initialize_cmd_manager
 {
   cmd_manager->gpu = gpu;
   
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS; ++i )
+  for ( uint32 i = 0; i < CRUDE_CBM_MAX_POOLS; ++i )
   {
     VkCommandPoolCreateInfo cmd_pool_info = {
       .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -375,7 +374,7 @@ crude_gfx_initialize_cmd_manager
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );
   }
   
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
+  for ( uint32 i = 0; i < CRUDE_CBM_MAX_BUFFERS; ++i )
   {
     crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ i ];
     
@@ -383,7 +382,7 @@ crude_gfx_initialize_cmd_manager
 
     VkCommandBufferAllocateInfo cmd_allocation_info = { 
       .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = cmd_manager->vk_cmd_pools[ i / CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ],
+      .commandPool        = cmd_manager->vk_cmd_pools[ i / CRUDE_CBM_BUFFER_PER_POOL ],
       .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 1,
     };
@@ -427,7 +426,7 @@ crude_gfx_deinitialize_cmd_manager
   _In_ crude_command_buffer_manager *cmd_manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS; ++i )
+  for ( uint32 i = 0; i < CRUDE_CBM_MAX_BUFFERS; ++i )
   {
     crude_gfx_cmd_reset( &cmd_manager->cmd_buffers[ i ] );
     crude_deinitialize_resource_pool( &cmd_manager->cmd_buffers[ i ].frame_descriptor_sets );
@@ -446,7 +445,7 @@ crude_gfx_reset_cmd_manager
   _In_ uint32                        frame
 )
 {
-  for ( uint32 i = 0; i < CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS; ++i )
+  for ( uint32 i = 0; i < CRUDE_CBM_MAX_THREADS; ++i )
   {
     vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ frame + i * CRUDE_MAX_SWAPCHAIN_IMAGES ], 0 );
   }
@@ -460,7 +459,7 @@ crude_gfx_cmd_manager_get_cmd_buffer
   _In_ bool                          begin
 )
 {
-  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL ];
+  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_CBM_BUFFER_PER_POOL ];
 
   if ( begin )
   {  
@@ -483,6 +482,6 @@ crude_gfx_cmd_manager_get_cmd_buffer_instant
   _In_ uint32                        frame
 )
 {
-  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL + 1 ];
+  crude_command_buffer *command_buffer = &cmd_manager->cmd_buffers[ frame * CRUDE_CBM_BUFFER_PER_POOL + 1 ];
   return command_buffer;
 }

@@ -7,6 +7,26 @@
 #include <core/math.h>
 #include <core/resource_pool.h>
 
+/************************************************
+ *
+ * GPU Resoruces Constants
+ * 
+ ***********************************************/
+#define CRUDE_MAX_SWAPCHAIN_IMAGES          3
+#define CRUDE_MAX_IMAGE_OUTPUTS             8          
+#define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
+#define CRUDE_MAX_SHADER_STAGES             5      
+#define CRUDE_MAX_DESCRIPTORS_PER_SET       16
+#define CRUDE_MAX_VERTEX_STREAMS            16
+#define CRUDE_MAX_VERTEX_ATTRIBUTES         16
+#define CRUDE_UBO_ALIGNMENT                 256
+#define CRUDE_MAX_SET_COUNT                 32
+
+/************************************************
+ *
+ * GPU Resoruces Handles
+ * 
+ ***********************************************/
 typedef uint32 crude_resource_handle;
 
 typedef struct crude_buffer_handle
@@ -49,16 +69,11 @@ typedef struct crude_pipeline_handle
   crude_resource_handle index;
 } crude_pipeline_handle;
 
-#define CRUDE_MAX_SWAPCHAIN_IMAGES          3
-#define CRUDE_MAX_IMAGE_OUTPUTS             8          
-#define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
-#define CRUDE_MAX_SHADER_STAGES             5      
-#define CRUDE_MAX_DESCRIPTORS_PER_SET       16
-#define CRUDE_MAX_VERTEX_STREAMS            16
-#define CRUDE_MAX_VERTEX_ATTRIBUTES         16
-#define CRUDE_UBO_ALIGNMENT                 256
-#define CRUDE_MAX_SET_COUNT                 32
-
+/************************************************
+ *
+ * GPU Resoruces Enums
+ * 
+ ***********************************************/
 typedef enum crude_resource_state
 {
   CRUDE_RESOURCE_STATE_UNDEFINED = 0,
@@ -198,6 +213,11 @@ typedef enum crude_vertex_input_rate
   CRUDE_VERTEX_INPUT_RATE_COUNT,
 } crude_vertex_input_rate;
 
+/************************************************
+ *
+ * GPU Resoruces Structs
+ * 
+ ***********************************************/
 typedef struct crude_rect2d_int
 {
   int16                                x;
@@ -575,6 +595,11 @@ typedef struct crude_shader_mesh_constants
   crude_uint1a                         flags;
 } crude_shader_mesh_constants;
 
+/************************************************
+ *
+ * GPU Resoruces Functions
+ * 
+ ***********************************************/
 CRUDE_API void
 crude_reset_render_pass_output
 ( 

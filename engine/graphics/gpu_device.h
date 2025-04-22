@@ -7,6 +7,12 @@
 #include <graphics/gpu_resources.h>
 #include <graphics/command_buffer.h>
 
+/************************************************
+ *
+ * GPU Device Structs
+ * 
+ ***********************************************/
+
 typedef struct crude_gpu_device_creation
 {
   SDL_Window                                        *sdl_window;
@@ -18,26 +24,46 @@ typedef struct crude_gpu_device_creation
 } crude_gpu_device_creation;
 
 typedef struct crude_gpu_device                    
-{                                                  
-  crude_allocator                                    allocator;
+{
+  /**
+   * Holds the window for the surface.
+   */
   SDL_Window                                        *sdl_window;
-                                                   
+  /**
+   * The maximum/current/previous swapchain frame index.
+   */
   uint16                                             max_frames;
   uint32                                             previous_frame;
   uint32                                             current_frame;
-                                                   
+  /**
+   * The swapchain render pass and swapchain render
+   * pass output.
+   */
   crude_render_pass_handle                           swapchain_pass;
   crude_render_pass_output                           swapchain_output;
-                                                   
+  /**
+   * Serves as the primary dynamic buffer.
+   * This buffer acts as a foundation for mapping 
+   * other buffers to its memory space.
+   */
+  crude_buffer_handle                                dynamic_buffer;
   uint8                                             *dynamic_mapped_memory;
   uint32                                             dynamic_per_frame_size;
   uint32                                             dynamic_allocated_size;
   uint32                                             dynamic_max_per_frame_size;
-  crude_buffer_handle                                dynamic_buffer;
-                                                   
+  /**
+   * Default sampler and texture references.
+   * These fallback resources will be used when
+   * sampler/texture is undefined. Ensures consistent
+   * rendering behavior even with missing assets.
+   */
   crude_sampler_handle                               default_sampler;
   crude_texture_handle                               depth_texture;
-                                                   
+  /**
+   * GPU Device resources memory pools.
+   * For implementation details and usage guidelines
+   * refer to "GPU Device Resource Macros"
+   */
   crude_resource_pool                                buffers;
   crude_resource_pool                                textures;
   crude_resource_pool                                pipelines;
@@ -46,66 +72,94 @@ typedef struct crude_gpu_device
   crude_resource_pool                                render_passes;
   crude_resource_pool                                command_buffers;
   crude_resource_pool                                shaders;
-                                                   
+  /**
+   * Queue to remove or update bindless texture.
+   * Handle can be added to queue using the
+   * CRUDE_RELEASE_RESOURCE macro.
+   * Object will be released after the frame
+   * is present.
+   */
   crude_resource_update                             *resource_deletion_queue;
   crude_resource_update                             *texture_to_update_bindless;
-                                                   
+  /**
+   * Stores current command buffers added to the queue.
+   */
   uint32                                             queued_command_buffers_count;
   crude_command_buffer                             **queued_command_buffers;
-                                                   
+  /**
+   * Vulkan handles and additional data related to the
+   * foundation of the renderer.
+   */
   VkInstance                                         vk_instance;
   VkDebugUtilsMessengerEXT                           vk_debug_utils_messenger;
   VkSurfaceKHR                                       vk_surface;
+  VkSurfaceFormatKHR                                 vk_surface_format;
   VkPhysicalDevice                                   vk_physical_device;
   VkDevice                                           vk_device;
   int32                                              vk_queue_family_index;
   VkQueue                                            vk_queue;
   VkSwapchainKHR                                     vk_swapchain;
+  VkSemaphore                                        vk_render_finished_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                        vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  VkFence                                            vk_command_buffer_executed_fences[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  /**
+   * Vulkan handles and additional data related to
+   * the swapchain.
+   */
   uint32                                             vk_swapchain_images_count;
   VkImage                                            vk_swapchain_images[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkImageView                                        vk_swapchain_images_views[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkFramebuffer                                      vk_swapchain_framebuffers[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   uint16                                             vk_swapchain_width;
   uint16                                             vk_swapchain_height;
-  VkSurfaceFormatKHR                                 vk_surface_format;
+  uint32                                             vk_swapchain_image_index;
+  /**
+   * Descriptor pools/sets automatically generated
+   * based on the reflection of the pipeline shaders.
+   */
   VkDescriptorPool                                   vk_bindless_descriptor_pool;
   VkDescriptorSetLayout                              vk_bindless_descriptor_set_layout;
   VkDescriptorSet                                    vk_bindless_descriptor_set;
+  /**
+   * //!TODO
+   */
   VkQueryPool                                        vk_timestamp_query_pool;
-  VkSemaphore                                        vk_render_finished_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                                        vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  VkFence                                            vk_command_buffer_executed_fences[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
-  uint32                                             vk_swapchain_image_index;
-  VkAllocationCallbacks                             *vk_allocation_callbacks;
-                                                   
+  /**
+   * Allocators and callbacks
+   */
+  VkAllocationCallbacks                             *vk_allocation_callbacks;                               
   VmaAllocator                                       vma_allocator;
-
-  // !TODO move from this place
+  crude_allocator                                    allocator;
+  /**
+   * UBO Buffers. //!TODO
+   */
   crude_buffer_handle                                frame_buffer;
   crude_buffer_handle                                mesh_buffer;
 } crude_gpu_device;                                
-                                                   
-///////////////////                                
-// Gpu device                                      
-///////////////////                                
-                                                   
+
+/************************************************
+ *
+ * GPU Device Initialize/Deinitialize
+ * 
+ ***********************************************/
 CRUDE_API void                                     
 crude_gfx_initialize_gpu_device                    
 (                                                  
   _Out_ crude_gpu_device                            *gpu,
   _In_ crude_gpu_device_creation                    *creation
-);                                                 
-                                                   
+);
+
 CRUDE_API void                                     
-crude_gfx_deinitialize_gpu_device                  
-(                                                  
+crude_gfx_deinitialize_gpu_device
+(
   _In_ crude_gpu_device                             *gpu
-);                                                 
-                                                   
-/////////////////////
-//// @Common
-/////////////////////                              
-                                                   
+);
+
+/************************************************
+ *
+ * GPU Device Common Functions
+ * 
+ ***********************************************/  
 CRUDE_API void                                     
 crude_gfx_set_resource_name                        
 (                                                  
@@ -178,10 +232,6 @@ crude_gfx_get_descriptor_set_layout
   _In_ uint32                                        layout_index
 );
 
-/////////////////////                              
-//// @Query                                        
-/////////////////////                              
-
 CRUDE_API void
 crude_gfx_query_buffer 
 (
@@ -189,11 +239,12 @@ crude_gfx_query_buffer
   _In_ crude_buffer_handle                           buffer,
   _Out_ crude_buffer_description                    *description
 );
-                                                   
-///////////////////                                
-// @Resources                                      
-///////////////////                                
-                                                   
+
+/************************************************
+ *
+ * GPU Device Resources Functions
+ * 
+ ***********************************************/
 CRUDE_API crude_sampler_handle                     
 crude_gfx_create_sampler                           
 (                                                  
@@ -214,7 +265,7 @@ crude_gfx_destroy_sampler_instant
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_sampler_handle                          handle
 );                                                 
-                                                   
+
 CRUDE_API crude_texture_handle                     
 crude_gfx_create_texture                           
 (                                                  
@@ -350,9 +401,11 @@ crude_gfx_compile_shader
   _In_ char const                                   *name
 );    
 
-///////////////////
-// Resources macro
-///////////////////
+/************************************************
+ *
+ * GPU Device Resource Macros
+ * 
+ ***********************************************/  
 
 #define CRUDE_OBTAIN_RESOURCE( resource_pool )\
 (\
@@ -401,9 +454,11 @@ crude_gfx_compile_shader
 #define CRUDE_GFX_GPU_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle )           CRUDE_ACCESS_RESOURCE( gpu->descriptor_set_layouts, crude_descriptor_set_layout, handle  )
 #define CRUDE_GFX_GPU_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle )          CRUDE_RELEASE_RESOURCE( gpu->descriptor_set_layouts, handle )
 
-///////////////////
-// Utils macro
-///////////////////
+/************************************************
+ *
+ * GPU Device Utils Macros
+ * 
+ ***********************************************/  
 
 #define CRUDE_GFX_HANDLE_VULKAN_RESULT( result, msg )\
 {\

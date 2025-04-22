@@ -2,35 +2,71 @@
 
 #include <graphics/gpu_resources.h>
 
-#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS     1
-#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_COMMAND_BUFFER_MANAGER_MAX_THREADS
-#define CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL 3
-#define CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS     CRUDE_COMMAND_BUFFER_MANAGER_BUFFER_PER_POOL * CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS
+/************************************************
+ *
+ * Command Buffer Manager Constants
+ * 
+ ***********************************************/
+#define CRUDE_CBM_MAX_THREADS     1
+#define CRUDE_CBM_MAX_POOLS       CRUDE_MAX_SWAPCHAIN_IMAGES * CRUDE_CBM_MAX_THREADS
+#define CRUDE_CBM_BUFFER_PER_POOL 3
+#define CRUDE_CBM_MAX_BUFFERS     CRUDE_CBM_BUFFER_PER_POOL * CRUDE_CBM_MAX_POOLS
 
+/************************************************
+ *
+ * Command Buffer & Command Buffer Manager Structs
+ * 
+ ***********************************************/
 typedef struct crude_gpu_device crude_gpu_device;
 
 typedef struct crude_command_buffer
 {
+  /**
+   * Holds the GPU Device on which the command buffer 
+   * was created created
+   */
   crude_gpu_device                  *gpu;
+  /**
+   * !TODO
+   */
   bool                               is_recording;
+  /**
+   * The pipeline/renderpass bound to the command buffer.
+   */
   crude_render_pass                 *current_render_pass;
   crude_pipeline                    *current_pipeline;
+  /**
+   * Holds clear values for attachments.
+   */
   VkClearValue                       clears[ 2 ];
+  /**
+   * Holds the resource pool for descriptor sets for the current frame.
+   * They will be automatically deallocated on the end of each frame.
+   * Can be allocated by crude_gfx_cmd_create_local_descriptor_set()
+   */
   crude_resource_pool                frame_descriptor_sets;
+  /**
+   * Holds the descriptor pool for frame descriptor sets.
+   */
   VkDescriptorPool                   vk_descriptor_pool;
+  /**
+   * Holds the command buffer vulkan handle.
+   */
   VkCommandBuffer                    vk_cmd_buffer;
 } crude_command_buffer;
 
 typedef struct crude_command_buffer_manager
 {
-  VkCommandPool                      vk_cmd_pools[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_POOLS ];
-  crude_command_buffer               cmd_buffers[ CRUDE_COMMAND_BUFFER_MANAGER_MAX_BUFFERS ];
+  VkCommandPool                      vk_cmd_pools[ CRUDE_CBM_MAX_POOLS ];
+  crude_command_buffer               cmd_buffers[ CRUDE_CBM_MAX_BUFFERS ];
   crude_gpu_device                  *gpu;
 } crude_command_buffer_manager;
 
-/////////////////////
-//// @Command Buffer
-///////////////////// 
+/************************************************
+ *
+ * Command Buffer Functions
+ * 
+ ***********************************************/
 CRUDE_API void
 crude_gfx_cmd_reset
 (
@@ -125,9 +161,11 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_descriptor_set_creation const   *creation
 );
 
-/////////////////////
-//// @CMD MANAGER
-///////////////////// 
+/************************************************
+ *
+ * Command Buffer Manager Functions
+ * 
+ ***********************************************/
 CRUDE_API void
 crude_gfx_initialize_cmd_manager
 (

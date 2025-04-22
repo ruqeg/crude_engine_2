@@ -16,8 +16,8 @@
 void
 crude_get_current_working_directory
 (
-  _Out_ char    *buffer,
-  _In_ uint32    buffer_size
+  _Out_ char                                    *buffer,
+  _In_ uint32                                    buffer_size
 )
 {
   CRUDE_ASSERTM( CRUDE_CHANNEL_FILEIO, buffer_size >= FILENAME_MAX, "Working directory buffer size must be larger than %i!", FILENAME_MAX );
@@ -30,7 +30,7 @@ crude_get_current_working_directory
 void
 crude_change_working_directory
 (
-  _In_ char     *path
+  _In_ char                                     *path
 )
 {
 #if defined( _WIN64 )
@@ -49,7 +49,7 @@ crude_change_working_directory
 void
 crude_file_directory_from_path
 (
-  _Out_ char    *path
+  _Out_ char                                    *path
 )
 {
   char* last_point = strrchr( path, '.' );

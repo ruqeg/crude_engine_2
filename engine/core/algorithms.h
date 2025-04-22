@@ -2,6 +2,11 @@
 
 #include <stb_ds.h>
 
+/************************************************
+ *
+ * Abstraction over STB_DS
+ * 
+ ***********************************************/
 #define CRUDE_ARR_SETLEN( arr, len )     arrsetlen( arr, len )
 #define CRUDE_ARR_LEN( arr )             arrlen( arr )
 #define CRUDE_ARR_FREE( arr )            arrfree( arr )
