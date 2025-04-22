@@ -23,6 +23,16 @@ crude_lerp
 }
 
 float32
+crude_pow
+(
+  _In_ float32                                   s1,
+  _In_ float32                                   s2
+)
+{
+  return powf( s1, s2 );
+}
+
+float32
 crude_sin_cos
 (
   _Out_ float32                                 *sinangle,
@@ -100,6 +110,15 @@ crude_vec_set
   return _mm_set_ps( w, z, y, x );
 }
 
+crude_vector
+crude_vec_replicate
+(
+  _In_ float32                                   value
+)
+{
+  return _mm_set_ps1( value );
+}
+
 float32
 crude_vec_get_x
 ( 
@@ -171,6 +190,16 @@ crude_vec_subtract
 }
 
 crude_vector
+crude_vec_multiply
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2
+)
+{
+  return _mm_mul_ps( v1, v2 );
+}
+
+crude_vector
 crude_vec_scale
 ( 
   _In_ crude_vector const                        v,
@@ -179,6 +208,41 @@ crude_vec_scale
 {
   crude_vector vResult = _mm_set_ps1( s );
   return _mm_mul_ps(vResult, v );
+}
+
+crude_vector
+crude_vec_sqrt
+(
+  _In_ crude_vector const                        v
+)
+{
+  return _mm_sqrt_ps( v );
+}
+
+crude_vector
+crude_vec_abs
+(
+  _In_ crude_vector const                        v
+)
+{
+  crude_vector result = _mm_setzero_ps();
+  result = _mm_sub_ps( result, v );
+  result = _mm_max_ps( result, v );
+  return result;
+}
+
+crude_vector
+crude_vec_scale_add
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2,
+  _In_ float32                                   s
+)
+{
+  crude_vector scalar = _mm_set_ps1( s );
+  crude_vector v2_scaled = _mm_mul_ps( scalar, v2 );
+  crude_vector result = _mm_add_ps( v1, v2_scaled );
+  return result;
 }
 
 crude_vector
@@ -239,6 +303,29 @@ crude_vec_transform_normal3
   vTemp = _mm_permute_ps(v,_MM_SHUFFLE(0,0,0,0));
   vResult = _mm_fmadd_ps( vTemp, m.r[0], vResult );
   return vResult;
+}
+
+crude_vector
+crude_vec_dot3
+(
+  _In_ crude_vector const                        v1,
+  _In_ crude_vector const                        v2
+)
+{
+  return _mm_dp_ps( v1, v2, 0x7f );
+}
+
+crude_vector
+crude_vec_length3
+(
+  _In_ crude_vector const                       v
+)
+{
+  crude_vector result;
+  result = crude_vec_dot3( v, v );
+  result = crude_vec_sqrt( result );
+  
+  return result;
 }
 
 crude_vector

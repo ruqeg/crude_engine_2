@@ -74,7 +74,7 @@ initialize_render_core
 
     char gltf_path[ 1024 ];
     crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
-    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Box\\glTF\\Box.gltf" );
     
     crude_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -183,7 +183,7 @@ render
         crude_transform model_transform = {
           .translation = { 0, 0, 0 },
           .rotation = { 0, 0, 0, 0 },
-          .scale = { 0.001, 0.001, 0.001 },
+          .scale = { 1.0, 1.0, 1.0 },
         };
         crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 

@@ -410,6 +410,7 @@ crude_load_gltf_from_file
 
       bool transparent = get_mesh_material( gltf, renderer, scene, mesh_primitive->material, &mesh_draw );
       
+      //!TODO
       if ( transparent)
       {
         if ( mesh_primitive->material->double_sided )

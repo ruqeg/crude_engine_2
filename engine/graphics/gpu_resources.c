@@ -46,7 +46,7 @@ crude_has_depth
 VkImageViewType
 crude_to_vk_image_view_type
 (
-  crude_texture_type type
+  _In_ crude_texture_type type
 )
 {
   static VkImageViewType s_vk_data[ CRUDE_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY };

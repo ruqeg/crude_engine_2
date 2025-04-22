@@ -1843,6 +1843,8 @@ crude_gfx_create_shader_state
       shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name );
     }
   
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode, "Shader code is empty!" );
+
     VkPipelineShaderStageCreateInfo *shader_stage_info = &shader_state->shader_stage_info[ compiled_shaders ];
     memset( shader_stage_info, 0, sizeof( VkPipelineShaderStageCreateInfo ) );
     shader_stage_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1856,8 +1858,10 @@ crude_gfx_create_shader_state
     
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
 
-
-    _parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
+    if ( shader_create_info.pCode )
+    {
+      _parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
+    }
   }
   
   shader_state->active_shaders = compiled_shaders;
