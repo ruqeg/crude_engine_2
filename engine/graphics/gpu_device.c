@@ -113,14 +113,16 @@ static VkPhysicalDevice
 _vk_pick_physical_device
 (
   _In_  VkInstance                                   vk_instance,
-  _In_  VkSurfaceKHR                                 vk_surface,
-  _Out_ int32                                       *vulkan_selected_queue_family_index
+  _In_  VkSurfaceKHR                                 vk_surface
 );
 static VkDevice
 _vk_create_device
 (
-  _In_     VkPhysicalDevice                          vk_physical_device,
-  _In_     int32                                     vk_queue_family_index,
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _Out_ VkQueue                                     *vk_main_queue,
+  _Out_ VkQueue                                     *vk_transfer_queue,
+  _Out_ uint32                                      *vk_main_queue_family,
+  _Out_ uint32                                      *vk_transfer_queue_family,
   _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
 );
 static VkSwapchainKHR
@@ -160,6 +162,13 @@ _vk_create_timestamp_query_pool
   _In_     VkDevice                                  vk_device, 
   _In_     int32                                     max_frames,
   _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+);
+static void
+_vk_create_swapchain_pass
+(
+  _In_ crude_gpu_device                             *gpu,
+  _In_ crude_render_pass_creation                   *creation,
+  _Out_ crude_render_pass                           *render_pass
 );
 static void
 _vk_destroy_swapchain
@@ -203,7 +212,7 @@ _vk_parse_shader_descriptor_parse
   _Out_ crude_shader_descriptor_parse               *parse
 );
 static void
-_vk_destoy_resources_instant
+_vk_destroy_resources_instant
 (
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_resource_deletion_type                  type,
@@ -229,10 +238,9 @@ crude_gfx_initialize_gpu_device
   gpu->vk_instance = _vk_create_instance( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks );
   gpu->vk_debug_utils_messenger = _vk_create_debug_utils_messsenger( gpu->vk_instance, gpu->vk_allocation_callbacks );
   gpu->vk_surface = _vk_create_surface( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_physical_device = _vk_pick_physical_device( gpu->vk_instance, gpu->vk_surface, &gpu->vk_queue_family_index );
-  gpu->vk_device = _vk_create_device( gpu->vk_physical_device, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks );
-  vkGetDeviceQueue( gpu->vk_device, gpu->vk_queue_family_index, 0u, &gpu->vk_queue );
-  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height );
+  gpu->vk_physical_device = _vk_pick_physical_device( gpu->vk_instance, gpu->vk_surface );
+  gpu->vk_device = _vk_create_device( gpu->vk_physical_device, &gpu->vk_main_queue, &gpu->vk_transfer_queue, &gpu->vk_main_queue_family, &gpu->vk_transfer_queue_family, gpu->vk_allocation_callbacks );
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height );
   gpu->vma_allocator = _vk_create_vma_allocator( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
   _vk_create_descriptor_pool( gpu->vk_device, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool, &gpu->vk_bindless_descriptor_set_layout, &gpu->vk_bindless_descriptor_set );
   gpu->vk_timestamp_query_pool = _vk_create_timestamp_query_pool( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
@@ -351,7 +359,7 @@ crude_gfx_deinitialize_gpu_device
     if ( resource_deletion->current_frame == -1 )
       continue;
 
-    _destoy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
+    _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
   }
 
   CRUDE_ARR_FREE( gpu->resource_deletion_queue );
@@ -490,7 +498,7 @@ crude_gfx_present
     .pSignalSemaphores    = render_complete_semaphore,
   };
   
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
 
   VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
   VkPresentInfoKHR present_info = {
@@ -501,7 +509,7 @@ crude_gfx_present
     .pSwapchains        = swap_chains,
     .pImageIndices      = &gpu->vk_swapchain_image_index,
   };
-  VkResult result = vkQueuePresentKHR( gpu->vk_queue, &present_info );
+  VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
   
   gpu->queued_command_buffers_count = 0u;
 
@@ -523,7 +531,7 @@ crude_gfx_present
       continue;
     }
     
-    _destoy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
+    _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
 
     resource_deletion->current_frame = UINT32_MAX;
     CRUDE_ARR_DELSWAP( gpu->resource_deletion_queue, i );
@@ -819,13 +827,13 @@ crude_gfx_create_texture
       .imageExtent = { creation->width, creation->height, creation->depth }
     };
     
-    _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     
     vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
     
     if ( creation->mipmaps > 1 )
     {
-      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     }
     
     int32 w = creation->width;
@@ -833,7 +841,7 @@ crude_gfx_create_texture
     
     for ( int32 mip_index = 1; mip_index < creation->mipmaps; ++mip_index )
     {
-      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
+      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
     
       VkImageBlit blit_region =
       { 
@@ -859,10 +867,10 @@ crude_gfx_create_texture
     
       vkCmdBlitImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
     
-      _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
+      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
     }
     
-    _add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
+    _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
     
     vkEndCommandBuffer( cmd->vk_cmd_buffer );
     
@@ -872,8 +880,8 @@ crude_gfx_create_texture
       .pCommandBuffers = &cmd->vk_cmd_buffer,
     };
     
-    vkQueueSubmit( gpu->vk_queue, 1, &submit_info, VK_NULL_HANDLE );
-    vkQueueWaitIdle( gpu->vk_queue);
+    vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE );
+    vkQueueWaitIdle( gpu->vk_main_queue);
     vmaDestroyBuffer( gpu->vma_allocator, staging_buffer, staging_allocation );
 
     vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
@@ -988,7 +996,7 @@ crude_gfx_create_shader_state
 
     if ( shader_create_info.pCode )
     {
-      _parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
+      _vk_parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
     }
   }
   
@@ -1918,12 +1926,9 @@ VkPhysicalDevice
 _vk_pick_physical_device
 (
   _In_  VkInstance                                   vk_instance,
-  _In_  VkSurfaceKHR                                 vk_surface,
-  _Out_ int32                                       *vulkan_selected_queue_family_index
+  _In_  VkSurfaceKHR                                 vk_surface
 )
 {
-  CRUDE_ASSERT( vulkan_selected_queue_family_index );
-
   uint32 physical_devices_count = 0u;
   vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, NULL );
   
@@ -1939,8 +1944,14 @@ _vk_pick_physical_device
   VkPhysicalDevice selected_physical_devices = VK_NULL_HANDLE;
   for ( uint32 physical_device_index = 0; physical_device_index < physical_devices_count; ++physical_device_index )
   {
+    VkPhysicalDeviceProperties vk_physical_properties;
     VkPhysicalDevice physical_device = physical_devices[physical_device_index];
+    vkGetPhysicalDeviceProperties( physical_device, &vk_physical_properties );
     
+    if ( vk_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
+    {
+      continue;
+    }
     if ( !_vk_check_support_required_extensions( physical_device ) )
     {
       continue;
@@ -1959,7 +1970,6 @@ _vk_pick_physical_device
       continue;
     }
     
-    *vulkan_selected_queue_family_index = queue_family_index;
     selected_physical_devices = physical_device;
     break;
   }
@@ -1979,19 +1989,69 @@ _vk_pick_physical_device
 VkDevice
 _vk_create_device
 (
-  _In_     VkPhysicalDevice                          vk_physical_device,
-  _In_     int32                                     vk_queue_family_index,
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _Out_ VkQueue                                     *vk_main_queue,
+  _Out_ VkQueue                                     *vk_transfer_queue,
+  _Out_ uint32                                      *vk_main_queue_family,
+  _Out_ uint32                                      *vk_transfer_queue_family,
   _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
 )
 {
+  uint32 queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
+  
+  VkQueueFamilyProperties *queue_families = NULL;
+  CRUDE_ARR_SETLEN( queue_families, queue_family_count );
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families );
+  
+  uint32 main_queue_index = UINT32_MAX;
+  uint32 transfer_queue_index = UINT32_MAX;
+  uint32 compute_queue_index = UINT32_MAX;
+  uint32 present_queue_index = UINT32_MAX;
+  for ( uint32 family_index = 0; family_index < queue_family_count; ++family_index )
+  {
+    VkQueueFamilyProperties queue_family = queue_families[ family_index ];
+    
+    if ( queue_family.queueCount == 0 )
+    {
+      continue;
+    }
+    
+    if ( ( queue_family.queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) ) == ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT  ) )
+    {
+      main_queue_index = family_index;
+    }
+
+    if ( ( queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT ) == 0 && ( queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT ) )
+    {
+      transfer_queue_index = family_index;
+    }
+  }
+  
+  *vk_main_queue_family = main_queue_index;
+  *vk_transfer_queue_family = transfer_queue_index;
+
+  CRUDE_ARR_FREE( queue_families );
+
   float const queue_priority[] = { 1.0f };
-  VkDeviceQueueCreateInfo queue_info[ 1 ];
-  memset( queue_info, 0, sizeof( queue_info) );
-  queue_info[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_info[0].queueFamilyIndex = vk_queue_family_index;
-  queue_info[0].queueCount       = 1;
-  queue_info[0].pQueuePriorities = queue_priority;
- 
+
+  VkDeviceQueueCreateInfo queue_info[ 2 ];
+  memset( queue_info, 0, sizeof( queue_info ) );
+  VkDeviceQueueCreateInfo *main_queue = &queue_info[ 0 ];
+  main_queue->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  main_queue->queueFamilyIndex = main_queue_index;
+  main_queue->queueCount = 1;
+  main_queue->pQueuePriorities = queue_priority;
+  
+  if ( transfer_queue_index < queue_family_count )
+  {
+    VkDeviceQueueCreateInfo *transfer_queue_info = &queue_info[ 1 ];
+    transfer_queue_info->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    transfer_queue_info->queueFamilyIndex = transfer_queue_index;
+    transfer_queue_info->queueCount = 1;
+    transfer_queue_info->pQueuePriorities = queue_priority;
+  }
+
   VkPhysicalDeviceDescriptorIndexingFeatures indexing_features = {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES
   };
@@ -2006,7 +2066,7 @@ _vk_create_device
     .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     .pNext                    = &physical_features2,
     .flags                    = 0u,
-    .queueCreateInfoCount     = ARRAY_SIZE( queue_info ),
+    .queueCreateInfoCount     = transfer_queue_index < queue_family_count ? 2 : 1,
     .pQueueCreateInfos        = queue_info,
     .pEnabledFeatures         = NULL,
     .enabledExtensionCount    = ARRAY_SIZE( vk_device_required_extensions ),
@@ -2016,6 +2076,12 @@ _vk_create_device
   };
   VkDevice device;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDevice( vk_physical_device, &device_create_info, vk_allocation_callbacks, &device ), "failed to create logic device!" );
+  vkGetDeviceQueue( device, main_queue_index, 0u, vk_main_queue );
+  if ( transfer_queue_index < queue_family_count )
+  {
+    vkGetDeviceQueue( device, transfer_queue_index, 0, vk_transfer_queue );
+  }
+
   return device;
 }
 
@@ -2359,7 +2425,7 @@ _vk_create_swapchain_pass
   vkBeginCommandBuffer( command_buffer->vk_cmd_buffer, &beginInfo );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    _add_image_barrier( command_buffer->vk_cmd_buffer, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
+    _vk_add_image_barrier( command_buffer->vk_cmd_buffer, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
   }
   vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
 
@@ -2369,8 +2435,8 @@ _vk_create_swapchain_pass
     .pCommandBuffers    = &command_buffer->vk_cmd_buffer,
   };
   
-  vkQueueSubmit( gpu->vk_queue, 1, &submitInfo, VK_NULL_HANDLE );
-  vkQueueWaitIdle( gpu->vk_queue );
+  vkQueueSubmit( gpu->vk_main_queue, 1, &submitInfo, VK_NULL_HANDLE );
+  vkQueueWaitIdle( gpu->vk_main_queue );
 }
 
 void
@@ -2539,7 +2605,7 @@ _vk_resize_swapchain
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Failed to create vk_surface: %s!", SDL_GetError() );
   }
   
-  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_queue_family_index, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
   
   crude_texture_handle texture_to_delete_handle = { CRUDE_GFX_GPU_OBTAIN_TEXTURE( gpu ) };
   crude_texture *texture_to_delete = CRUDE_GFX_GPU_ACCESS_TEXTURE( gpu, texture_to_delete_handle );
@@ -2611,7 +2677,7 @@ _vk_parse_shader_descriptor_parse
 }
 
 void
-_vk_destoy_resources_instant
+_vk_destroy_resources_instant
 (
   _In_ crude_gpu_device                             *gpu,
   _In_ crude_resource_deletion_type                  type,

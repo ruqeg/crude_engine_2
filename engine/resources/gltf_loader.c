@@ -361,13 +361,23 @@ crude_load_gltf_from_file
     {
       node_scale = ( crude_float3 ){ node->scale[0], node->scale[1], node->scale[2] };
     }
+    crude_float3 node_translation = { 1.0f, 1.0f, 1.0f };
+    if ( node->has_translation )
+    {
+      node_translation = ( crude_float3 ){ node->translation[0], node->translation[1], node->translation[2] };
+    }
+    crude_float4 node_rotation = { 1.0f, 1.0f, 1.0f };
+    if ( node->has_rotation )
+    {
+      node_rotation = ( crude_float4 ){ node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[4] };
+    }
   
     for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
     {
-      crude_mesh_draw mesh_draw = { .scale = node_scale };
+      crude_mesh_draw mesh_draw = { .scale = node_scale, .translation = node_translation, .rotation = node_rotation };
       
       cgltf_primitive *mesh_primitive = &node->mesh->primitives[ primitive_index ];
-      
+
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
         crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];

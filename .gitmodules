@@ -31,3 +31,6 @@
 [submodule "extlibs/miniaudio"]
 	path = extlibs/miniaudio
 	url = https://github.com/mackron/miniaudio.git
+[submodule "extlibs/enkiTS"]
+	path = extlibs/enkiTS
+	url = https://github.com/dougbinks/enkiTS.git

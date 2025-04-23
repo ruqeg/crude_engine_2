@@ -96,12 +96,17 @@ typedef struct crude_gpu_device
   VkSurfaceFormatKHR                                 vk_surface_format;
   VkPhysicalDevice                                   vk_physical_device;
   VkDevice                                           vk_device;
-  int32                                              vk_queue_family_index;
-  VkQueue                                            vk_queue;
   VkSwapchainKHR                                     vk_swapchain;
   VkSemaphore                                        vk_render_finished_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                        vk_image_avalivable_semaphores[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   VkFence                                            vk_command_buffer_executed_fences[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
+  /**
+   * Vulkan queues
+   */
+  VkQueue                                            vk_main_queue;
+  VkQueue                                            vk_transfer_queue;
+  uint32                                             vk_main_queue_family;
+  uint32                                             vk_transfer_queue_family;
   /**
    * Vulkan handles and additional data related to
    * the swapchain.

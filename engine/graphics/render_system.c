@@ -179,11 +179,11 @@ render
         mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
         mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
         mesh_data->flags.x = mesh_draw->flags;
-      
+        
         crude_transform model_transform = {
-          .translation = { 0, 0, 0 },
-          .rotation = { 0, 0, 0, 0 },
-          .scale = { 1.0, 1.0, 1.0 },
+          .translation = mesh_draw->translation,
+          .rotation = mesh_draw->rotation,
+          .scale = mesh_draw->scale,
         };
         crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 

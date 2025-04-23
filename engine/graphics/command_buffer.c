@@ -367,7 +367,7 @@ crude_gfx_initialize_cmd_manager
   {
     VkCommandPoolCreateInfo cmd_pool_info = {
       .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .queueFamilyIndex = gpu->vk_queue_family_index,
+      .queueFamilyIndex = gpu->vk_main_queue_family,
       .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     };
     

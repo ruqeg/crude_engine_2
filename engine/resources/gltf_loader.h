@@ -7,6 +7,8 @@ typedef struct crude_mesh_draw
 {
   crude_material              *material;
   crude_float3                 scale;
+  crude_float3                 translation;
+  crude_float4                 rotation;
   crude_buffer_handle          index_buffer;
   crude_buffer_handle          position_buffer;
   crude_buffer_handle          tangent_buffer;
