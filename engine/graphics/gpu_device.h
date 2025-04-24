@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <SDL3/SDL.h>
 
-#include <core/alias.h>
+#include <core/assert.h>
 #include <graphics/gpu_resources.h>
 #include <graphics/command_buffer.h>
 

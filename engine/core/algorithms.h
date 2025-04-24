@@ -14,3 +14,4 @@
 #define CRUDE_ARR_SETCAP( arr, cap )     arrsetcap( arr, cap )
 #define CRUDE_ARR_PUT( arr, value )      arrput( arr, value )
 #define CRUDE_ARR_DELSWAP( arr, index )  arrdelswap( arr, index )
+#define CRUDE_ARR_POP( arr )             arrpop( arr )

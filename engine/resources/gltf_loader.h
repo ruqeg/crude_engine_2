@@ -2,6 +2,7 @@
 
 #include <core/math.h>
 #include <graphics/renderer.h>
+#include <graphics/asynchronous_loader.h>
 
 typedef struct crude_mesh_draw
 {
@@ -46,6 +47,7 @@ crude_load_gltf_from_file
 (
   _In_ crude_renderer         *renderer,
   _In_ char const             *path,
+  _In_ crude_gfx_asynchronous_loader *async_loader,
   _Out_ crude_scene           *scene
 );
 

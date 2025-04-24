@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include <immintrin.h>
 
 #include <core/alias.h>

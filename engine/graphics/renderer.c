@@ -1,5 +1,10 @@
 #include <graphics/renderer.h>
 
+/************************************************
+ *
+ * Renderer Functions
+ * 
+ ***********************************************/
 void
 crude_gfx_initialize_renderer
 (
@@ -25,6 +30,11 @@ crude_gfx_deinitialize_renderer
   crude_deinitialize_resource_pool( &renderer->buffers );
 }
 
+/************************************************
+ *
+ * Renderer Resoruces Functions
+ * 
+ ***********************************************/
 crude_buffer_resource*
 crude_gfx_renderer_create_buffer
 (

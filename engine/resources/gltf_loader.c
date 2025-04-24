@@ -77,7 +77,7 @@ get_mesh_material
   }
   else
   {
-    mesh_draw->albedo_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+    mesh_draw->albedo_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
   
   if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
@@ -91,7 +91,7 @@ get_mesh_material
   }
   else
   {
-    mesh_draw->roughness_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+    mesh_draw->roughness_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
 
   if ( material->occlusion_texture.texture )
@@ -107,7 +107,7 @@ get_mesh_material
   }
   else
   {
-    mesh_draw->occlusion_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+    mesh_draw->occlusion_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
   
   if ( material->normal_texture.texture )
@@ -121,7 +121,7 @@ get_mesh_material
   }
   else
   {
-    mesh_draw->normal_texture_index = CRUDE_INVALID_TEXTURE_INDEX;
+    mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
   
   crude_buffer_creation buffer_creation = {
@@ -140,6 +140,7 @@ crude_load_gltf_from_file
 (
   _In_ crude_renderer  *renderer,
   _In_ char const      *path,
+  _In_ crude_gfx_asynchronous_loader *async_loader,
   _Out_ crude_scene    *scene
 )
 {
@@ -211,24 +212,22 @@ crude_load_gltf_from_file
   memcpy( gltf_base_path, path, sizeof( gltf_base_path ) );
   crude_file_directory_from_path( gltf_base_path );
 
-  crude_change_working_directory( gltf_base_path );
-
   scene->images = NULL;
   CRUDE_ARR_SETCAP( scene->images, gltf->images_count );
   
   for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
   {
-    cgltf_image *image = &gltf->images[ image_index ];
+    cgltf_image const *image = &gltf->images[ image_index ];
+
+    char image_full_filename[ 512 ] = { 0 };
+    strcat( image_full_filename, gltf_base_path );
+    strcat( image_full_filename, image->uri );
+
     int comp, width, height;
-    uint8_t* image_data = stbi_load( image->uri, &width, &height, &comp, 4 );
-  
-    if ( !image_data )
-    {
-      continue;
-    }
+    stbi_info( image_full_filename, &width, &height, &comp );
 
     crude_texture_creation texture_creation = {
-      .initial_data = image_data,
+      .initial_data = NULL,
       .width = width,
       .height = height,
       .depth = 1u,
@@ -236,13 +235,13 @@ crude_load_gltf_from_file
       .flags = 0u,
       .format = VK_FORMAT_R8G8B8A8_UNORM,
       .type = CRUDE_TEXTURE_TYPE_TEXTURE_2D,
-      .name = image->uri,
+      .name = image_full_filename,
     };
 
     crude_texture_resource *texture_resource = crude_gfx_renderer_create_texture( renderer, &texture_creation );
-    free( image_data );
-
     CRUDE_ARR_PUSH( scene->images, *texture_resource );
+
+    crude_gfx_asynchronous_loader_request_texture_data( async_loader, image_full_filename, texture_resource->handle );
   }
 
   // Load all samplers
@@ -451,8 +450,6 @@ crude_load_gltf_from_file
       CRUDE_ARR_PUSH( scene->mesh_draws, mesh_draw );
     }
   }
-  
-  crude_change_working_directory( prev_directory );
   cgltf_free( gltf );
 }
 

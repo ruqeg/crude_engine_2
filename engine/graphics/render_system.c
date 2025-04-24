@@ -22,7 +22,7 @@ crude_draw_mesh
 )
 {
   crude_descriptor_set_creation ds_creation = {
-    .samplers = { ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX }, ( crude_sampler_handle ) { CRUDE_INVALID_SAMPLER_INDEX } },
+    .samplers = { CRUDE_GFX_INVALID_SAMPLER_HANDLE, CRUDE_GFX_INVALID_SAMPLER_HANDLE },
     .bindings = { 0, 1 },
     .resources= { renderer->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
     .num_resources = 2,
@@ -39,6 +39,28 @@ crude_draw_mesh
   crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
 }
 
+void PinnedTaskRunPinnedTaskLoop( void* pArgs_ )
+{
+  // !TODO
+  enkiTaskScheduler *ets = ( enkiTaskScheduler*) pArgs_;
+  
+  while( !enkiGetIsShutdownRequested( ets ) )
+  {
+    enkiWaitForNewPinnedTasks( ets );
+    enkiRunPinnedTasks( ets );
+  }
+}
+
+void PinnedTaskRunPinnedTaskLoopAsyns( void* pArgs_ )
+{
+  // !TODO
+  while ( true )
+  {
+    crude_gfx_asynchronous_loader *async_loader = ( crude_gfx_asynchronous_loader*) pArgs_;
+    crude_gfx_asynchronous_loader_update( async_loader );
+  }
+}
+
 static void
 initialize_render_core
 (
@@ -52,6 +74,7 @@ initialize_render_core
   {
     crude_renderer_component *renderer = ecs_ensure( it->world, it->entities[ i ], crude_renderer_component );
     
+
     crude_gpu_device_creation gpu_creation = {
       .sdl_window             = window_handle[ i ].value,
       .vk_application_name    = render_create[ i ].vk_application_name,
@@ -72,9 +95,26 @@ initialize_render_core
     renderer->renderer = render_create[ i ].allocator.allocate( sizeof( crude_renderer ), 1u );
     crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
 
+    renderer->async_loader = render_create[ i ].allocator.allocate( sizeof( crude_gfx_asynchronous_loader ), 1u );
+
+    crude_gfx_initialize_asynchronous_loader( renderer->async_loader, renderer->renderer );
+    
+    renderer->ets = enkiNewTaskScheduler();
+    struct enkiTaskSchedulerConfig config = enkiGetTaskSchedulerConfig( renderer->ets );
+    config.numTaskThreadsToCreate += 1;
+    enkiInitTaskSchedulerWithConfig( renderer->ets, config );
+    
+    uint32 threadNumIOTasks = config.numTaskThreadsToCreate;
+
+    renderer->pinned_task_run_pinned_task_loop = enkiCreatePinnedTask( renderer->ets, PinnedTaskRunPinnedTaskLoop, threadNumIOTasks );
+    enkiAddPinnedTaskArgs( renderer->ets, renderer->pinned_task_run_pinned_task_loop, renderer->ets );
+    
+    renderer->async_load_task = enkiCreatePinnedTask( renderer->ets, PinnedTaskRunPinnedTaskLoopAsyns, threadNumIOTasks );
+    enkiAddPinnedTaskArgs( renderer->ets, renderer->async_load_task, renderer->async_loader );
+
     char gltf_path[ 1024 ];
     crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
-    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Box\\glTF\\Box.gltf" );
+    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
     
     crude_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -85,7 +125,7 @@ initialize_render_core
     renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
 
     renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
-    crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->scene );
+    crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->async_loader, renderer->scene );
     
     renderer[ i ].camera = crude_entity_create_empty( it->world, "camera1" );
     CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_camera, {
@@ -115,9 +155,12 @@ deinitialize_render_core
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_unload_gltf_from_file( renderer->renderer, renderer->scene );
-    crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer->gpu->frame_buffer );
-    crude_gfx_deinitialize_renderer( renderer->renderer );
+    enkiWaitforAllAndShutdown( renderer[ i ].ets );
+    enkiDeletePinnedTask( renderer[ i ].ets, renderer[ i ].pinned_task_run_pinned_task_loop );
+    enkiDeleteTaskScheduler( renderer[ i ].ets );
+    crude_unload_gltf_from_file( renderer[ i ].renderer, renderer[ i ].scene );
+    crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
+    crude_gfx_deinitialize_renderer( renderer[ i ].renderer );
     crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );

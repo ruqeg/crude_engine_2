@@ -1468,6 +1468,11 @@ crude_gfx_create_buffer
     .flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
     .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
   };
+
+  if ( creation->persistent )
+  {
+    memory_info.flags = memory_info.flags | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  }
   
   VmaAllocationInfo allocation_info;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateBuffer( gpu->vma_allocator, &buffer_info, &memory_info, &buffer->vk_buffer, &buffer->vma_allocation, &allocation_info ),
@@ -1484,6 +1489,12 @@ crude_gfx_create_buffer
     memcpy( data, creation->initial_data, creation->size );
     vmaUnmapMemory( gpu->vma_allocator, buffer->vma_allocation );
   }
+  
+  if ( creation->persistent )
+  {
+    buffer->mapped_data = ( uint8* )allocation_info.pMappedData;
+  }
+
   return handle;
 }
 

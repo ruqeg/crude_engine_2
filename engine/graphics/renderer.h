@@ -2,9 +2,18 @@
 
 #include <graphics/gpu_device.h>
 
-#define CRUDE_INVALID_TEXTURE_INDEX    ( ~0u )
-#define CRUDE_INVALID_SAMPLER_INDEX    ( ~0u )
+/************************************************
+ *
+ * Invalid Renderer Resoruces Indices
+ * 
+ ***********************************************/
+#define CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX ( ~0u )
 
+/************************************************
+ *
+ * Renderer Resoruces Handles
+ * 
+ ***********************************************/
 typedef struct crude_buffer_resource_handle
 {
   crude_resource_handle                index;
@@ -30,6 +39,21 @@ typedef struct crude_material_handle
   crude_resource_handle                index;
 } crude_material_handle;
 
+/************************************************
+ *
+ * Renderer Resoruces Enums
+ * 
+ ***********************************************/
+typedef enum crude_draw_flags
+{
+  CRUDE_DRAW_FLAGS_ALPHA_MASK = 1 << 0,
+} crude_draw_flags;
+
+/************************************************
+ *
+ * Renderer Resoruces Structs
+ * 
+ ***********************************************/
 typedef struct crude_buffer_resource
 {
   uint32                               references;
@@ -88,10 +112,16 @@ typedef struct crude_material
   char const                          *name;
 } crude_material;
 
-typedef enum crude_draw_flags
+/************************************************
+ *
+ * Renderer Structs
+ * 
+ ***********************************************/
+typedef struct crude_renderer_creation
 {
-  CRUDE_DRAW_FLAGS_ALPHA_MASK = 1 << 0,
-} crude_draw_flags;
+  crude_gpu_device                    *gpu;
+  crude_allocator                      allocator;
+} crude_renderer_creation;
 
 typedef struct crude_renderer
 {
@@ -104,12 +134,11 @@ typedef struct crude_renderer
   crude_allocator                      allocator;
 } crude_renderer;
 
-typedef struct crude_renderer_creation
-{
-  crude_gpu_device                    *gpu;
-  crude_allocator                      allocator;
-} crude_renderer_creation;
-
+/************************************************
+ *
+ * Renderer Functions
+ * 
+ ***********************************************/
 CRUDE_API void
 crude_gfx_initialize_renderer
 (
@@ -123,6 +152,11 @@ crude_gfx_deinitialize_renderer
   _In_ crude_renderer                 *renderer
 );
 
+/************************************************
+ *
+ * Renderer Resoruces Functions
+ * 
+ ***********************************************/
 CRUDE_API crude_buffer_resource*
 crude_gfx_renderer_create_buffer
 (
@@ -193,6 +227,11 @@ crude_gfx_renderer_destroy_material
   _In_ crude_material                 *material
 );
 
+/************************************************
+ *
+ * Renderer Resoruces Pools Macros
+ * 
+ ***********************************************/
 #define CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer )                   CRUDE_OBTAIN_RESOURCE( renderer->buffers )
 #define CRUDE_GFX_RENDERER_ACCESS_BUFFER( renderer, handle )           CRUDE_ACCESS_RESOURCE( renderer->buffers, crude_buffer_resource, handle  )
 #define CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, handle )          CRUDE_RELEASE_RESOURCE( renderer->buffers, handle )

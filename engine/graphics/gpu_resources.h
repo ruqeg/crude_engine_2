@@ -13,8 +13,8 @@
  * 
  ***********************************************/
 #define CRUDE_MAX_SWAPCHAIN_IMAGES          3
-#define CRUDE_MAX_IMAGE_OUTPUTS             8          
-#define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8 
+#define CRUDE_MAX_IMAGE_OUTPUTS             8
+#define CRUDE_MAX_DESCRIPTOR_SET_LAYOUTS    8
 #define CRUDE_MAX_SHADER_STAGES             5      
 #define CRUDE_MAX_DESCRIPTORS_PER_SET       16
 #define CRUDE_MAX_VERTEX_STREAMS            16
@@ -68,6 +68,15 @@ typedef struct crude_pipeline_handle
 {
   crude_resource_handle index;
 } crude_pipeline_handle;
+
+/************************************************
+ *
+ * Invalid GPU Resoruces Handles
+ * 
+ ***********************************************/
+#define CRUDE_GFX_INVALID_BUFFER_HANDLE ( ( crude_buffer_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
+#define CRUDE_GFX_INVALID_TEXTURE_HANDLE ( ( crude_texture_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
+#define CRUDE_GFX_INVALID_SAMPLER_HANDLE ( ( crude_sampler_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
 
 /************************************************
  *
@@ -275,6 +284,7 @@ typedef struct crude_buffer_creation
   VkBufferUsageFlags                   type_flags;
   crude_resource_usage_type            usage;
   uint32                               size;
+  bool                                 persistent;
   void                                *initial_data;
   char const                          *name;
 } crude_buffer_creation;
@@ -449,6 +459,7 @@ typedef struct crude_buffer
   crude_buffer_handle                  handle;
   crude_buffer_handle                  parent_buffer;
   char const                          *name;
+  uint8                               *mapped_data;
 } crude_buffer;
 
 typedef struct crude_sampler
