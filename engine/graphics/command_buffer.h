@@ -215,7 +215,7 @@ crude_gfx_cmd_add_image_barrier
   _In_ bool                                      is_depth
 );
 
-CRUDE_API void
+CRUDE_API VkImageLayout
 crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_command_buffer                     *cmd,
@@ -229,6 +229,20 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ uint32                                    destination_family,
   _In_ crude_queue_type                          source_queue_type,
   _In_ crude_queue_type                          destination_queue_type
+);
+
+CRUDE_API void
+crude_gfx_cmd_add_image_barrier_ext2
+(
+  _In_ crude_command_buffer                     *cmd,
+  _In_ VkImage                                   image,
+  _In_ crude_resource_state                      old_state,
+  _In_ crude_resource_state                      new_state,
+  _In_ uint32                                    base_mip_level,
+  _In_ uint32                                    mip_count,
+  _In_ bool                                      is_depth,
+  _In_ uint32                                    source_queue_family,
+  _In_ uint32                                    destination_family
 );
 
 CRUDE_API void

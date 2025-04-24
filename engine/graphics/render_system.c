@@ -180,7 +180,7 @@ render
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
-    crude_command_buffer *gpu_commands = crude_gfx_get_cmd_buffer( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    crude_command_buffer *gpu_commands = crude_gfx_get_cmd( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
     crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
     crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
     gpu_commands->clears[1].color.float32[ 0 ] = 1;

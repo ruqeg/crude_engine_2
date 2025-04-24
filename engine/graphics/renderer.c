@@ -62,24 +62,19 @@ crude_gfx_renderer_add_texture_update_commands
     return;
   }
   
-  //crude_command_buffer *cmd = crude_gfx_get_cmd_buffer( renderer->gpu, thread_id, false );
-  //crude_gfx_cmd_begin( cmd );
-  //
-  //for ( u32 i = 0; i < num_textures_to_update; ++i ) {
-  //
-  //    Texture* texture = gpu->access_texture( textures_to_update[i] );
-  //
-  //    texture->vk_image_layout = add_image_barrier2( cb->vk_command_buffer, texture->vk_image, RESOURCE_STATE_COPY_DEST, RESOURCE_STATE_COPY_SOURCE,
-  //                        0, 1, false, gpu->vulkan_transfer_queue_family, gpu->vulkan_main_queue_family );
-  //
-  //    generate_mipmaps( texture, cb, true );
-  //}
-  //
-  //// TODO: this is done before submitting to the queue in the device.
-  ////cb->end();
-  //gpu->queue_command_buffer( cb );
-  //
-  //num_textures_to_update = 0;
+  crude_command_buffer *cmd = crude_gfx_get_cmd( renderer->gpu, thread_id, true );
+
+  for ( uint32 i = 0; i < renderer->num_textures_to_update; ++i )
+  {
+    crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( renderer->gpu, renderer->textures_to_update[ i ] );
+    texture->vk_image_layout = crude_gfx_cmd_add_image_barrier_ext( cmd, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, renderer->gpu->vk_transfer_queue_family, renderer->gpu->vk_main_queue_family, CRUDE_QUEUE_TYPE_GRAPHICS, CRUDE_QUEUE_TYPE_GRAPHICS );
+    
+    //generate_mipmaps( texture, cb, true );
+  }
+
+  crude_gfx_queue_cmd_buffer( cmd );
+  
+  renderer->num_textures_to_update = 0;
 
   mtx_unlock( &renderer->texture_update_mutex );
 }

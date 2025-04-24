@@ -187,7 +187,7 @@ crude_gfx_present
 );
                                                    
 CRUDE_API crude_command_buffer*                    
-crude_gfx_get_cmd_buffer                           
+crude_gfx_get_cmd
 (
   _In_ crude_gpu_device                             *gpu,
   _In_ uint32                                        thread_index,

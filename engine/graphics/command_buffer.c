@@ -114,6 +114,39 @@ crude_gfx_cmd_begin_primary
   vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
 }
 
+void
+crude_gfx_cmd_begin_secondary
+(
+  _In_ crude_command_buffer                     *cmd,
+  _In_ crude_render_pass_handle                  render_pass_handle
+)
+{
+  if ( cmd->is_recording )
+  {
+    return;
+  }
+
+  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( cmd->gpu, render_pass_handle );
+
+  VkCommandBufferInheritanceInfo inheritance = {
+    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+    .renderPass = render_pass->vk_render_pass,
+    .subpass = 0,
+    .framebuffer = render_pass->vk_frame_buffer,
+  };
+
+  VkCommandBufferBeginInfo begin_info = {
+    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+    .pInheritanceInfo = &inheritance,
+  };
+
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+
+  cmd->is_recording = true;
+  cmd->current_render_pass = render_pass;
+}
+
 CRUDE_API void
 crude_gfx_cmd_end
 (
@@ -170,38 +203,7 @@ crude_gfx_cmd_bind_render_pass
     
     vkCmdBeginRenderPass( cmd->vk_cmd_buffer, &render_pass_begin, use_secondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE );
   }
-}
 
-void
-crude_gfx_cmd_begin_secondary
-(
-  _In_ crude_command_buffer                     *cmd,
-  _In_ crude_render_pass_handle                  render_pass_handle
-)
-{
-  if ( cmd->is_recording )
-  {
-    return;
-  }
-
-  crude_render_pass *render_pass = CRUDE_GFX_GPU_ACCESS_RENDER_PASS( cmd->gpu, render_pass_handle );
-
-  VkCommandBufferInheritanceInfo inheritance = {
-    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-    .renderPass = render_pass->vk_render_pass,
-    .subpass = 0,
-    .framebuffer = render_pass->vk_frame_buffer,
-  };
-
-  VkCommandBufferBeginInfo begin_info = {
-    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
-    .pInheritanceInfo = &inheritance,
-  };
-
-  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
-
-  cmd->is_recording = true;
   cmd->current_render_pass = render_pass;
 }
 
@@ -529,7 +531,7 @@ crude_gfx_cmd_add_image_barrier
   vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
 }
 
-void
+VkImageLayout
 crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_command_buffer                     *cmd,
@@ -566,6 +568,8 @@ crude_gfx_cmd_add_image_barrier_ext
   VkPipelineStageFlags destination_stage_mask = crude_determine_pipeline_stage_flags( barrier.dstAccessMask, destination_queue_type );
   
   vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  return barrier.newLayout;
 }
 
 void
@@ -736,8 +740,9 @@ crude_gfx_cmd_manager_reset
 
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
-    cmd_manager->num_used_primary_cmd_buffers_per_frame[ i ] = 0;
-    cmd_manager->num_used_secondary_cmd_buffers_per_frame[ i ] = 0;
+    uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
+    cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
+    cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ] = 0;
   }
 }
 

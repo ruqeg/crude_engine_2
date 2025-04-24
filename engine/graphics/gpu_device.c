@@ -428,6 +428,8 @@ crude_gfx_present
     }
 
     vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
+    command_buffer->is_recording = false;
+    command_buffer->current_render_pass = NULL;
   }
   
   VkWriteDescriptorSet bindless_descriptor_writes[ MAX_BINDLESS_RESOURCES ];
@@ -529,7 +531,7 @@ crude_gfx_present
 }
 
 crude_command_buffer*
-crude_gfx_get_cmd_buffer
+crude_gfx_get_cmd
 (
   _In_ crude_gpu_device                             *gpu,
   _In_ uint32                                        thread_index,
