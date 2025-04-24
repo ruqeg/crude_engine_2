@@ -224,9 +224,9 @@ render
         mesh_data->flags.x = mesh_draw->flags;
         
         crude_transform model_transform = {
-          .translation = mesh_draw->translation,
-          .rotation = mesh_draw->rotation,
-          .scale = mesh_draw->scale,
+          .translation = { 0.0, 0.0, 0.0 },
+          .rotation = { 0.0, 0.0, 0.0, 0.0 },
+          .scale = { 0.001,0.001,0.001 },
         };
         crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
@@ -235,7 +235,7 @@ render
       }
     }
 
-    crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass );
+    crude_gfx_cmd_bind_render_pass( gpu_commands, renderer[ i ].gpu->swapchain_pass, false );
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     

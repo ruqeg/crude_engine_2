@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(stb C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 set(STB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 add_library(${PROJECT_NAME} SHARED ${STB_SOURCE_DIR}/stb_vorbis.c stb_implementation.c)

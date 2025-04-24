@@ -1,5 +1,7 @@
 #pragma once
 
+#include <threads.h>
+
 #include <graphics/gpu_device.h>
 
 /************************************************
@@ -132,11 +134,14 @@ typedef struct crude_renderer
   crude_resource_pool                  samplers;
   crude_resource_pool                  programs;
   crude_allocator                      allocator;
+  crude_texture_handle                 textures_to_update[ 128 ];
+  uint32                               num_textures_to_update;
+  mtx_t                                texture_update_mutex;
 } crude_renderer;
 
 /************************************************
  *
- * Renderer Functions
+ * Renderer Initialize/Deinitialize Functions
  * 
  ***********************************************/
 CRUDE_API void
@@ -150,6 +155,25 @@ CRUDE_API void
 crude_gfx_deinitialize_renderer
 (
   _In_ crude_renderer                 *renderer
+);
+
+/************************************************
+ *
+ * Renderer Common Functions
+ * 
+ ***********************************************/
+CRUDE_API void
+crude_gfx_renderer_add_texture_to_update
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_texture_handle            texture
+);
+
+CRUDE_API void
+crude_gfx_renderer_add_texture_update_commands
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ uint32                          thread_id
 );
 
 /************************************************

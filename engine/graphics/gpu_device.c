@@ -69,17 +69,6 @@ _vk_create_debug_utils_messsenger
   _In_     VkInstance                                instance,
   _In_opt_ VkAllocationCallbacks                    *allocation_callbacks
 );
-static void
-_vk_add_image_barrier
-(
-  _In_ VkCommandBuffer                               command_buffer,
-  _In_ VkImage                                       image,
-  _In_ crude_resource_state                          old_state,
-  _In_ crude_resource_state                          new_state,
-  _In_ uint32                                        base_mip_level,
-  _In_ uint32                                        mip_count,
-  _In_ bool                                          is_depth
-);
 static VkSurfaceKHR
 _vk_create_surface
 (
@@ -261,7 +250,7 @@ crude_gfx_initialize_gpu_device
     vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
   }
   
-  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu );
+  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, 1 );
   gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_command_buffer* ) * 128, 1 );
 
   gpu->previous_frame = 0;
@@ -411,7 +400,7 @@ crude_gfx_new_frame
     _vk_resize_swapchain( gpu );
   }
 
-  crude_gfx_reset_cmd_manager( &g_command_buffer_manager, gpu->current_frame );
+  crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
 
   uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
   gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
@@ -542,18 +531,19 @@ crude_gfx_present
 crude_command_buffer*
 crude_gfx_get_cmd_buffer
 (
-  _In_ crude_gpu_device  *gpu,
-  _In_ crude_queue_type   type,
-  _In_ bool               begin
+  _In_ crude_gpu_device                             *gpu,
+  _In_ uint32                                        thread_index,
+  _In_ bool                                          begin
 )
 {
-  crude_command_buffer *cmd = crude_gfx_cmd_manager_get_cmd_buffer( &g_command_buffer_manager, gpu->current_frame, begin );
- 
-  if ( begin )
+  crude_command_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &g_command_buffer_manager, gpu->current_frame, thread_index, begin );
+
+  if ( /*gpu_timestamp_reset &&*/ begin )
   {
-    //vkCmdResetQueryPool( cmd->vk_handle, gpu->vk_timestamp_query_pool, gpu->current_frame * 3 * 2, 3 );
+    //vkCmdResetQueryPool( cmd->vk_cmd_buffer, vulkan_timestamp_query_pool, current_frame * gpu_timestamp_manager->queries_per_frame * 2, gpu_timestamp_manager->queries_per_frame );
+    /*gpu_timestamp_reset = false;*/
   }
-  
+
   return cmd;
 }
 
@@ -808,11 +798,7 @@ crude_gfx_create_texture
     memcpy( destination_data, creation->initial_data, image_size );
     vmaUnmapMemory( gpu->vma_allocator, staging_allocation );
     
-    VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    
-    crude_command_buffer *cmd = crude_gfx_cmd_manager_get_cmd_buffer_instant( &g_command_buffer_manager, gpu->current_frame );
-    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
+    crude_command_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &g_command_buffer_manager, gpu->current_frame, 0u, true );
     
     VkBufferImageCopy region =
     {
@@ -827,13 +813,13 @@ crude_gfx_create_texture
       .imageExtent = { creation->width, creation->height, creation->depth }
     };
     
-    _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     
     vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
     
     if ( creation->mipmaps > 1 )
     {
-      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+      crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     }
     
     int32 w = creation->width;
@@ -841,7 +827,7 @@ crude_gfx_create_texture
     
     for ( int32 mip_index = 1; mip_index < creation->mipmaps; ++mip_index )
     {
-      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
+      crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
     
       VkImageBlit blit_region =
       { 
@@ -867,12 +853,12 @@ crude_gfx_create_texture
     
       vkCmdBlitImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
     
-      _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
+      crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
     }
     
-    _vk_add_image_barrier( cmd->vk_cmd_buffer, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, ( creation->mipmaps > 1 ) ? CRUDE_RESOURCE_STATE_COPY_SOURCE : CRUDE_RESOURCE_STATE_COPY_DEST, CRUDE_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
     
-    vkEndCommandBuffer( cmd->vk_cmd_buffer );
+    crude_gfx_cmd_end( cmd );
     
     VkSubmitInfo submit_info = {
       .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -1770,41 +1756,6 @@ _vk_create_debug_utils_messsenger
   return handle;
 }
 
-void
-_vk_add_image_barrier
-(
-  _In_ VkCommandBuffer                               command_buffer,
-  _In_ VkImage                                       image,
-  _In_ crude_resource_state                          old_state,
-  _In_ crude_resource_state                          new_state,
-  _In_ uint32                                        base_mip_level,
-  _In_ uint32                                        mip_count,
-  _In_ bool                                          is_depth
-)
-{
-  VkImageMemoryBarrier barrier = {
-    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .image = image,
-    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-    .subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
-    .subresourceRange.baseArrayLayer = 0,
-    .subresourceRange.layerCount = 1,
-    .subresourceRange.levelCount = mip_count,
-
-    .subresourceRange.baseMipLevel = base_mip_level,
-    .oldLayout = crude_resource_state_to_vk_image_layout( old_state ),
-    .newLayout = crude_resource_state_to_vk_image_layout( new_state ),
-    .srcAccessMask = crude_resource_state_to_vk_access_flags( old_state ),
-    .dstAccessMask = crude_resource_state_to_vk_access_flags( new_state ),
-  };
-  
-  VkPipelineStageFlags source_stage_mask = crude_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_QUEUE_TYPE_GRAPHICS );
-  VkPipelineStageFlags destination_stage_mask = crude_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_QUEUE_TYPE_GRAPHICS );
-  
-  vkCmdPipelineBarrier( command_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
-}
-
 VkSurfaceKHR
 _vk_create_surface
 (
@@ -2427,18 +2378,12 @@ _vk_create_swapchain_pass
   render_pass->width = gpu->vk_swapchain_width;
   render_pass->height = gpu->vk_swapchain_height;
 
-  VkCommandBufferBeginInfo beginInfo = {
-    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-  };
-
-  crude_command_buffer *command_buffer = crude_gfx_cmd_manager_get_cmd_buffer_instant( &g_command_buffer_manager, gpu->current_frame, false );
-  vkBeginCommandBuffer( command_buffer->vk_cmd_buffer, &beginInfo );
+  crude_command_buffer *command_buffer = crude_gfx_cmd_manager_get_primary_cmd( &g_command_buffer_manager, gpu->current_frame, 0u, true );
   for ( uint64 i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    _vk_add_image_barrier( command_buffer->vk_cmd_buffer, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
+    crude_gfx_cmd_add_image_barrier( command_buffer, gpu->vk_swapchain_images[ i ], CRUDE_RESOURCE_STATE_UNDEFINED, CRUDE_RESOURCE_STATE_PRESENT, 0u, 1u, false );
   }
-  vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
+  crude_gfx_cmd_end( command_buffer );
 
   VkSubmitInfo submitInfo = { 
     .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,

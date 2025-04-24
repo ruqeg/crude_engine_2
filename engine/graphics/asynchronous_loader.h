@@ -31,13 +31,19 @@ typedef struct crude_gfx_upload_request
 
 typedef struct crude_gfx_asynchronous_loader
 {
+  crude_renderer                                *renderer;
+
   crude_gfx_file_load_request                   *file_load_requests;
   crude_gfx_upload_request                      *upload_requests;
   
   crude_buffer                                  *staging_buffer;
+  uint32                                         staging_buffer_offset;
 
   VkSemaphore                                    vk_transfer_complete_semaphore;
   VkFence                                        vk_transfer_fence;
+
+  
+  crude_texture_handle                           texture_ready;
 
   VkCommandPool                                  vk_cmd_pools[ CRUDE_MAX_SWAPCHAIN_IMAGES ];
   crude_command_buffer                           cmd_buffers[ CRUDE_MAX_SWAPCHAIN_IMAGES ];

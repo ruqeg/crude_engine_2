@@ -188,9 +188,9 @@ crude_gfx_present
                                                    
 CRUDE_API crude_command_buffer*                    
 crude_gfx_get_cmd_buffer                           
-(                                                  
+(
   _In_ crude_gpu_device                             *gpu,
-  _In_ crude_queue_type                              type,
+  _In_ uint32                                        thread_index,
   _In_ bool                                          begin
 );
                                                    
@@ -465,10 +465,10 @@ crude_gfx_compile_shader
  * 
  ***********************************************/  
 
-#define CRUDE_GFX_HANDLE_VULKAN_RESULT( result, msg )\
+#define CRUDE_GFX_HANDLE_VULKAN_RESULT( result, ... )\
 {\
   if ( result != VK_SUCCESS )\
   {\
-    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, msg );\
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "vulkan result isn't success: %i %s", result, ##__VA_ARGS__ );\
   }\
 }

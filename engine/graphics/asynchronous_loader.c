@@ -12,6 +12,8 @@ crude_gfx_initialize_asynchronous_loader
   _In_ crude_renderer                           *renderer
 )
 {
+  asynloader->renderer = renderer;
+
   asynloader->file_load_requests = NULL;
   asynloader->upload_requests = NULL;
 
@@ -82,6 +84,62 @@ crude_gfx_asynchronous_loader_update
   _In_ crude_gfx_asynchronous_loader            *asynloader
 )
 {
+  
+  if ( asynloader->texture_ready.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+  {
+    crude_gfx_renderer_add_texture_to_update( asynloader->renderer, asynloader->texture_ready );
+    asynloader->texture_ready = CRUDE_GFX_INVALID_TEXTURE_HANDLE;
+  }
+  
+  if ( CRUDE_ARR_LEN( asynloader->upload_requests ) )
+  {
+    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence ) != VK_SUCCESS )
+    {
+      return;
+    }
+    
+    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_fence );
+    
+    crude_gfx_upload_request request = CRUDE_ARR_POP( asynloader->upload_requests );
+
+    crude_command_buffer *cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
+    crude_gfx_cmd_begin_primary( cmd );
+
+    if ( request.texture.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+    {
+      crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( asynloader->renderer->gpu, request.texture );
+      uint32 texture_channels = 4;
+      uint32 texture_alignment = 4;
+      uint64 aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );
+      sizet current_offset = asynloader->staging_buffer_offset + aligned_image_size;
+      
+      crude_gfx_cmd_upload_texture_data( cmd, texture->handle, request.data, asynloader->staging_buffer->handle, current_offset );
+     
+      free( request.data );
+    }
+        
+    crude_gfx_cmd_end( cmd );
+
+    VkPipelineStageFlags wait_flag[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+    VkSemaphore wait_semaphore[] = { asynloader->vk_transfer_complete_semaphore };
+    VkSubmitInfo submitInfo = { 
+      .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      .commandBufferCount = 1,
+      .pCommandBuffers = &cmd->vk_cmd_buffer,
+      .pWaitSemaphores = wait_semaphore,
+      .pWaitDstStageMask = wait_flag,
+    };
+
+    VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
+    vkQueueSubmit( used_queue, 1, &submitInfo, asynloader->vk_transfer_fence );
+
+    if ( request.texture.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+    {
+      CRUDE_ASSERT( asynloader->texture_ready.index == CRUDE_GFX_INVALID_TEXTURE_HANDLE.index );
+      asynloader->texture_ready = request.texture;
+    }
+  }
+
   if ( CRUDE_ARR_LEN( asynloader->file_load_requests ) )
   {
     crude_gfx_file_load_request load_request = CRUDE_ARR_POP( asynloader->file_load_requests );

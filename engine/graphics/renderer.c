@@ -2,7 +2,7 @@
 
 /************************************************
  *
- * Renderer Functions
+ * Renderer Initialize/Deinitialize Functions
  * 
  ***********************************************/
 void
@@ -28,6 +28,60 @@ crude_gfx_deinitialize_renderer
 )
 {
   crude_deinitialize_resource_pool( &renderer->buffers );
+}
+
+/************************************************
+ *
+ * Renderer Common Functions
+ * 
+ ***********************************************/
+CRUDE_API void
+crude_gfx_renderer_add_texture_to_update
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ crude_texture_handle            texture
+)
+{
+  mtx_lock( &renderer->texture_update_mutex );
+  renderer->textures_to_update[ renderer->num_textures_to_update++ ] = texture;
+  mtx_unlock( &renderer->texture_update_mutex );
+}
+
+void
+crude_gfx_renderer_add_texture_update_commands
+(
+  _In_ crude_renderer                 *renderer,
+  _In_ uint32                          thread_id
+)
+{
+  mtx_lock( &renderer->texture_update_mutex );
+  
+  if ( renderer->num_textures_to_update == 0 )
+  {
+    mtx_unlock( &renderer->texture_update_mutex );
+    return;
+  }
+  
+  //crude_command_buffer *cmd = crude_gfx_get_cmd_buffer( renderer->gpu, thread_id, false );
+  //crude_gfx_cmd_begin( cmd );
+  //
+  //for ( u32 i = 0; i < num_textures_to_update; ++i ) {
+  //
+  //    Texture* texture = gpu->access_texture( textures_to_update[i] );
+  //
+  //    texture->vk_image_layout = add_image_barrier2( cb->vk_command_buffer, texture->vk_image, RESOURCE_STATE_COPY_DEST, RESOURCE_STATE_COPY_SOURCE,
+  //                        0, 1, false, gpu->vulkan_transfer_queue_family, gpu->vulkan_main_queue_family );
+  //
+  //    generate_mipmaps( texture, cb, true );
+  //}
+  //
+  //// TODO: this is done before submitting to the queue in the device.
+  ////cb->end();
+  //gpu->queue_command_buffer( cb );
+  //
+  //num_textures_to_update = 0;
+
+  mtx_unlock( &renderer->texture_update_mutex );
 }
 
 /************************************************

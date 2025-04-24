@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(spirv_reflect C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 set(SPIRV_REFLECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Reflect")
 add_library(${PROJECT_NAME} SHARED ${SPIRV_REFLECT_SOURCE_DIR}/spirv_reflect.c)
