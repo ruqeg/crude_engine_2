@@ -16,8 +16,8 @@ typedef struct crude_render_create
 
 typedef struct crude_renderer_component
 {
-  crude_gpu_device            *gpu;
-  crude_renderer              *renderer;
+  crude_gfx_device            *gpu;
+  crude_gfx_renderer              *renderer;
   crude_gfx_asynchronous_loader *async_loader;
   crude_scene                 *scene;
   crude_entity                 camera;

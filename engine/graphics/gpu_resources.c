@@ -1,65 +1,65 @@
 #include <graphics/gpu_resources.h>
 
 void
-crude_reset_render_pass_output
+crude_gfx_reset_render_pass_output
 (
-  _In_ crude_render_pass_output *output
+  _In_ crude_gfx_render_pass_output                       *output
 )
 {
   output->num_color_formats = 0;
-  for ( uint32 i = 0; i < CRUDE_MAX_IMAGE_OUTPUTS; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_IMAGE_OUTPUTS; ++i )
   {
     output->color_formats[ i ] = VK_FORMAT_UNDEFINED;
   }
   output->depth_stencil_format = VK_FORMAT_UNDEFINED;
-  output->color_operation = output->depth_operation = output->stencil_operation = CRUDE_RENDER_PASS_OPERATION_DONT_CARE;
+  output->color_operation = output->depth_operation = output->stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }
 
 VkImageType
-crude_to_vk_image_type
+crude_gfx_to_vk_image_type
 (
-  _In_ crude_texture_type type
+  _In_ crude_gfx_texture_type                              type
 )
 {
-  static VkImageType s_vk_target[ CRUDE_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D };
+  static VkImageType s_vk_target[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D };
   return s_vk_target[ type ];
 }
 
 bool
-crude_has_depth_or_stencil
+crude_gfx_has_depth_or_stencil
 (
-  _In_ VkFormat value
+  _In_ VkFormat                                            value
 )
 {
   return value >= VK_FORMAT_D16_UNORM && value <= VK_FORMAT_D32_SFLOAT_S8_UINT;
 }
 
 bool
-crude_has_depth
+crude_gfx_has_depth
 (
-  _In_ VkFormat value
+  _In_ VkFormat                                            value
 )
 {
   return ( value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_S8_UINT ) || ( value >= VK_FORMAT_D16_UNORM_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT );
 }
 
 VkImageViewType
-crude_to_vk_image_view_type
+crude_gfx_to_vk_image_view_type
 (
-  _In_ crude_texture_type type
+  _In_ crude_gfx_texture_type                              type
 )
 {
-  static VkImageViewType s_vk_data[ CRUDE_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY };
+  static VkImageViewType s_vk_data[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY };
   return s_vk_data[ type ];
 }
 
 VkFormat
-crude_to_vk_vertex_format
+crude_gfx_to_vk_vertex_format
 (
-  _In_ crude_vertex_component_format value
+  _In_ crude_gfx_vertex_component_format                   value
 )
 {
-  static VkFormat s_vk_vertex_formats[ CRUDE_VERTEX_COMPONENT_FORMAT_COUNT ] =
+  static VkFormat s_vk_vertex_formats[ CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT ] =
   {
     VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT, /*MAT4 TODO*/VK_FORMAT_R32G32B32A32_SFLOAT,
     VK_FORMAT_R8_SINT, VK_FORMAT_R8G8B8A8_SNORM, VK_FORMAT_R8_UINT, VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R16G16_SINT, VK_FORMAT_R16G16_SNORM,
@@ -70,25 +70,25 @@ crude_to_vk_vertex_format
 }
 
 VkAccessFlags
-crude_resource_state_to_vk_access_flags
+crude_gfx_resource_state_to_vk_access_flags
 (
-  _In_ crude_resource_state state
+  _In_ crude_gfx_resource_state                            state
 )
 {
   VkAccessFlags ret = 0;
-  if ( state & CRUDE_RESOURCE_STATE_COPY_SOURCE )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )
   {
     ret |= VK_ACCESS_TRANSFER_READ_BIT;
   }
-  if ( state & CRUDE_RESOURCE_STATE_COPY_DEST )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )
   {
     ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
   }
-  if ( state & CRUDE_RESOURCE_STATE_PRESENT )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )
   {
     ret |= VK_ACCESS_MEMORY_READ_BIT;
   }
-  if ( state & CRUDE_RESOURCE_STATE_SHADER_RESOURCE )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE )
   {
     ret |= VK_ACCESS_SHADER_READ_BIT;
   }
@@ -96,24 +96,24 @@ crude_resource_state_to_vk_access_flags
 }
 
 VkImageLayout
-crude_resource_state_to_vk_image_layout
+crude_gfx_resource_state_to_vk_image_layout
 (
-  _In_ crude_resource_state            state
+  _In_ crude_gfx_resource_state                            state
 )
 {
-  if ( state & CRUDE_RESOURCE_STATE_COPY_SOURCE )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )
   {
     return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
   }
-  if ( state & CRUDE_RESOURCE_STATE_COPY_DEST )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )
   {
     return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   }
-  if ( state & CRUDE_RESOURCE_STATE_SHADER_RESOURCE )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE )
   {
     return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   }
-  if ( state & CRUDE_RESOURCE_STATE_PRESENT )
+  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )
   {
     return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   }
@@ -121,17 +121,17 @@ crude_resource_state_to_vk_image_layout
 }
 
 CRUDE_API VkPipelineStageFlags
-crude_determine_pipeline_stage_flags
+crude_gfx_determine_pipeline_stage_flags
 (
-  _In_ VkAccessFlags                   access_flags,
-  _In_ crude_queue_type                queue_type
+  _In_ VkAccessFlags                                       access_flags,
+  _In_ crude_gfx_queue_type                                queue_type
 )
 {
   VkPipelineStageFlags flags = 0;
   
   switch ( queue_type )
   {
-    case CRUDE_QUEUE_TYPE_GRAPHICS:
+    case CRUDE_GFX_QUEUE_TYPE_GRAPHICS:
     {
       if ( access_flags & ( VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT ) )
         flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
@@ -170,7 +170,7 @@ crude_determine_pipeline_stage_flags
       }
       break;
     }
-    case CRUDE_QUEUE_TYPE_COMPUTE:
+    case CRUDE_GFX_QUEUE_TYPE_COMPUTE:
     {
       if ( ( access_flags & ( VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT ) ) ||
            ( access_flags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT ) ||
@@ -186,7 +186,7 @@ crude_determine_pipeline_stage_flags
       }
       break;
     }
-    case CRUDE_QUEUE_TYPE_COPY_TRANSFER:
+    case CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER:
     {
       return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     }

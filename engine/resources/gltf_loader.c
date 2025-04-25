@@ -18,7 +18,7 @@ crude_get_mesh_vertex_buffer
   _In_ cgltf_data             *gltf,
   _In_ crude_scene            *scene,
   _In_ int32                   accessor_index,
-  _Out_ crude_buffer_handle   *buffer_handle,
+  _Out_ crude_gfx_buffer_handle   *buffer_handle,
   _Out_ uint32                *buffer_offset
 )
 {
@@ -29,7 +29,7 @@ crude_get_mesh_vertex_buffer
 
   cgltf_accessor *buffer_accessor = &gltf->accessors[ accessor_index ];
   cgltf_buffer_view *buffer_view = buffer_accessor->buffer_view;
-  crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, buffer_accessor->buffer_view ) ];
+  crude_gfx_renderer_buffer *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, buffer_accessor->buffer_view ) ];
   
   *buffer_handle = buffer_gpu->handle;
   *buffer_offset = buffer_accessor->offset;
@@ -39,7 +39,7 @@ static bool
 get_mesh_material
 (
   _In_ cgltf_data             *gltf,
-  _In_ crude_renderer         *renderer,
+  _In_ crude_gfx_renderer         *renderer,
   _In_ crude_scene            *scene,
   _In_ cgltf_material         *material,
   _In_ crude_mesh_draw        *mesh_draw
@@ -62,15 +62,15 @@ get_mesh_material
   
   if (material->alpha_mode == cgltf_alpha_mode_mask )
   {
-    mesh_draw->flags |= CRUDE_DRAW_FLAGS_ALPHA_MASK;
+    mesh_draw->flags |= CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK;
     transparent = true;
   }
 
   if ( material->pbr_metallic_roughness.base_color_texture.texture )
   {
     cgltf_texture *albedo_texture = material->pbr_metallic_roughness.base_color_texture.texture;
-    crude_texture_resource *albedo_texture_gpu = &scene->images[ cgltf_image_index( gltf, albedo_texture->image ) ];
-    crude_sampler_resource *albedo_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, albedo_texture->sampler ) ];
+    crude_gfx_renderer_texture *albedo_texture_gpu = &scene->images[ cgltf_image_index( gltf, albedo_texture->image ) ];
+    crude_gfx_renderer_sampler *albedo_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, albedo_texture->sampler ) ];
   
     mesh_draw->albedo_texture_index = albedo_texture_gpu->handle.index;
     crude_gfx_link_texture_sampler( renderer->gpu, albedo_texture_gpu->handle, albedo_sampler_gpu->handle );
@@ -83,8 +83,8 @@ get_mesh_material
   if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
   {
     cgltf_texture *roughness_texture = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
-    crude_texture_resource *roughness_texture_gpu = &scene->images[ cgltf_image_index( gltf, roughness_texture->image ) ];
-    crude_sampler_resource *roughness_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
+    crude_gfx_renderer_texture *roughness_texture_gpu = &scene->images[ cgltf_image_index( gltf, roughness_texture->image ) ];
+    crude_gfx_renderer_sampler *roughness_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
     
     mesh_draw->roughness_texture_index = roughness_texture_gpu->handle.index;
     crude_gfx_link_texture_sampler( renderer->gpu, roughness_texture_gpu->handle, roughness_sampler_gpu->handle );
@@ -97,8 +97,8 @@ get_mesh_material
   if ( material->occlusion_texture.texture )
   {
     cgltf_texture *occlusion_texture = material->occlusion_texture.texture;
-    crude_texture_resource *occlusion_texture_gpu = &scene->images[ cgltf_image_index( gltf, occlusion_texture->image ) ];
-    crude_sampler_resource *occlusion_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, occlusion_texture->sampler ) ];
+    crude_gfx_renderer_texture *occlusion_texture_gpu = &scene->images[ cgltf_image_index( gltf, occlusion_texture->image ) ];
+    crude_gfx_renderer_sampler *occlusion_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, occlusion_texture->sampler ) ];
     
     mesh_draw->occlusion_texture_index = occlusion_texture_gpu->handle.index;
     mesh_draw->metallic_roughness_occlusion_factor.z = material->occlusion_texture.scale;
@@ -113,8 +113,8 @@ get_mesh_material
   if ( material->normal_texture.texture )
   {
     cgltf_texture *normal_texture = material->normal_texture.texture;
-    crude_texture_resource *normal_texture_gpu = &scene->images[ cgltf_image_index( gltf, normal_texture->image ) ];
-    crude_sampler_resource *normal_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, normal_texture->sampler ) ];
+    crude_gfx_renderer_texture *normal_texture_gpu = &scene->images[ cgltf_image_index( gltf, normal_texture->image ) ];
+    crude_gfx_renderer_sampler *normal_sampler_gpu = &scene->samplers[ cgltf_sampler_index( gltf, normal_texture->sampler ) ];
     
     mesh_draw->normal_texture_index = normal_texture_gpu->handle.index;
     crude_gfx_link_texture_sampler( renderer->gpu, normal_texture_gpu->handle, normal_sampler_gpu->handle );
@@ -124,10 +124,10 @@ get_mesh_material
     mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
   
-  crude_buffer_creation buffer_creation = {
-    .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC,
+  crude_gfx_buffer_creation buffer_creation = {
+    .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC,
     .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-    .size = sizeof ( crude_shader_mesh_constants ),
+    .size = sizeof ( crude_gfx_shader_mesh_constants ),
     .name = "mesh_data"
   };
   mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
@@ -138,7 +138,7 @@ get_mesh_material
 void
 crude_load_gltf_from_file
 (
-  _In_ crude_renderer  *renderer,
+  _In_ crude_gfx_renderer  *renderer,
   _In_ char const      *path,
   _In_ crude_gfx_asynchronous_loader *async_loader,
   _Out_ crude_scene    *scene
@@ -164,7 +164,7 @@ crude_load_gltf_from_file
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", path );
   }
 
-  crude_pipeline_creation pipeline_creation;
+  crude_gfx_pipeline_creation pipeline_creation;
   memset( &pipeline_creation, 0, sizeof( pipeline_creation ) );
   pipeline_creation.shaders.name = "triangle";
   pipeline_creation.shaders.spv_input = true;
@@ -177,17 +177,17 @@ crude_load_gltf_from_file
   pipeline_creation.shaders.stages_count = 2u;
   
   // !TODO relfect from shader
-  pipeline_creation.vertex_input.vertex_attributes[ 0 ] = ( crude_vertex_attribute ){ 0, 0, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // position
-  pipeline_creation.vertex_input.vertex_streams[ 0 ] = ( crude_vertex_stream ){ 0, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+  pipeline_creation.vertex_input.vertex_attributes[ 0 ] = ( crude_gfx_vertex_attribute ){ 0, 0, 0, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // position
+  pipeline_creation.vertex_input.vertex_streams[ 0 ] = ( crude_gfx_vertex_stream ){ 0, 12, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX };
   
-  pipeline_creation.vertex_input.vertex_attributes[ 1 ] = ( crude_vertex_attribute ){ 1, 1, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT4 }; // tangent
-  pipeline_creation.vertex_input.vertex_streams[ 1 ] = ( crude_vertex_stream ){ 1, 16, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX};
+  pipeline_creation.vertex_input.vertex_attributes[ 1 ] = ( crude_gfx_vertex_attribute ){ 1, 1, 0, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT4 }; // tangent
+  pipeline_creation.vertex_input.vertex_streams[ 1 ] = ( crude_gfx_vertex_stream ){ 1, 16, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX};
   
-  pipeline_creation.vertex_input.vertex_attributes[ 2 ] = ( crude_vertex_attribute ) { 2, 2, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // normal
-  pipeline_creation.vertex_input.vertex_streams[ 2 ] = ( crude_vertex_stream ){ 2, 12, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+  pipeline_creation.vertex_input.vertex_attributes[ 2 ] = ( crude_gfx_vertex_attribute ) { 2, 2, 0, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT3 }; // normal
+  pipeline_creation.vertex_input.vertex_streams[ 2 ] = ( crude_gfx_vertex_stream ){ 2, 12, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX };
   
-  pipeline_creation.vertex_input.vertex_attributes[ 3 ] = ( crude_vertex_attribute ){ 3, 3, 0, CRUDE_VERTEX_COMPONENT_FORMAT_FLOAT2 }; // texcoord
-  pipeline_creation.vertex_input.vertex_streams[ 3 ] = ( crude_vertex_stream ){ 3, 8, CRUDE_VERTEX_INPUT_RATE_PER_VERTEX };
+  pipeline_creation.vertex_input.vertex_attributes[ 3 ] = ( crude_gfx_vertex_attribute ){ 3, 3, 0, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2 }; // texcoord
+  pipeline_creation.vertex_input.vertex_streams[ 3 ] = ( crude_gfx_vertex_stream ){ 3, 8, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX };
   
   pipeline_creation.vertex_input.num_vertex_attributes = 4;
   pipeline_creation.vertex_input.num_vertex_streams = 4;
@@ -196,9 +196,9 @@ crude_load_gltf_from_file
   pipeline_creation.depth_stencil.depth_enable = true;
   pipeline_creation.depth_stencil.depth_comparison = VK_COMPARE_OP_LESS;
 
-  crude_program_creation program_creation = { .pipeline_creation = pipeline_creation };
+  crude_gfx_renderer_program_creation program_creation = { .pipeline_creation = pipeline_creation };
   scene->program = crude_gfx_renderer_create_program( renderer, &program_creation );
-  crude_material_creation material_creatoin = { 
+  crude_gfx_renderer_material_creation material_creatoin = { 
     .name = "material1",
     .program = scene->program,
     .render_index = 0,
@@ -227,7 +227,7 @@ crude_load_gltf_from_file
     int comp, width, height;
     stbi_info( image_full_filename, &width, &height, &comp );
 
-    crude_texture_creation texture_creation = {
+    crude_gfx_texture_creation texture_creation = {
       .initial_data = NULL,
       .width = width,
       .height = height,
@@ -235,11 +235,11 @@ crude_load_gltf_from_file
       .mipmaps = 1u,
       .flags = 0u,
       .format = VK_FORMAT_R8G8B8A8_UNORM,
-      .type = CRUDE_TEXTURE_TYPE_TEXTURE_2D,
+      .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
       .name = image_full_filename,
     };
 
-    crude_texture_resource *texture_resource = crude_gfx_renderer_create_texture( renderer, &texture_creation );
+    crude_gfx_renderer_texture *texture_resource = crude_gfx_renderer_create_texture( renderer, &texture_creation );
     CRUDE_ARR_PUSH( scene->images, *texture_resource );
 
     crude_gfx_asynchronous_loader_request_texture_data( async_loader, image_full_filename, texture_resource->handle );
@@ -253,7 +253,7 @@ crude_load_gltf_from_file
   {
     cgltf_sampler *sampler = &gltf->samplers[ sampler_index ];
   
-    crude_sampler_creation creation;
+    crude_gfx_sampler_creation creation;
     switch ( sampler->min_filter )
     {
     case cgltf_filter_type_nearest:
@@ -312,7 +312,7 @@ crude_load_gltf_from_file
     
     creation.name = "";
     
-    crude_sampler_resource *sampler_resource = crude_gfx_renderer_create_sampler( renderer, &creation );
+    crude_gfx_renderer_sampler *sampler_resource = crude_gfx_renderer_create_sampler( renderer, &creation );
     CRUDE_ARR_PUSH( scene->samplers, *sampler_resource );
   }
   
@@ -331,14 +331,14 @@ crude_load_gltf_from_file
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Bufer name is null: %u", buffer_view_index );
     }
 
-    crude_buffer_creation buffer_creation = {
+    crude_gfx_buffer_creation buffer_creation = {
       .initial_data = data,
-      .usage = CRUDE_RESOURCE_USAGE_TYPE_IMMUTABLE,
+      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
       .size = buffer_view->size,
       .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
       .name = buffer->name
     };
-    crude_buffer_resource *buffer_resource = crude_gfx_renderer_create_buffer( renderer, &buffer_creation );
+    crude_gfx_renderer_buffer *buffer_resource = crude_gfx_renderer_create_buffer( renderer, &buffer_creation );
     CRUDE_ARR_PUSH( scene->buffers, *buffer_resource );
   }
 
@@ -380,7 +380,7 @@ crude_load_gltf_from_file
 
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
-        crude_buffer_resource *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
+        crude_gfx_renderer_buffer *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
         switch ( mesh_primitive->attributes[ i ].type )
         {
         case cgltf_attribute_type_position:
@@ -413,7 +413,7 @@ crude_load_gltf_from_file
       cgltf_accessor *indices_accessor = mesh_primitive->indices;
       cgltf_buffer_view *indices_buffer_view = indices_accessor->buffer_view;
       
-      crude_buffer_resource *indices_buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
+      crude_gfx_renderer_buffer *indices_buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
       mesh_draw.index_buffer = indices_buffer_gpu->handle;
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
@@ -457,7 +457,7 @@ crude_load_gltf_from_file
 void
 crude_unload_gltf_from_file
 (
-  _In_ crude_renderer  *renderer,
+  _In_ crude_gfx_renderer  *renderer,
   _In_ crude_scene     *scene
 )
 {

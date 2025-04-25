@@ -8,8 +8,8 @@
 void
 crude_gfx_initialize_asynchronous_loader
 (
-  _In_ crude_gfx_asynchronous_loader            *asynloader,
-  _In_ crude_renderer                           *renderer
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_renderer                                     *renderer
 )
 {
   asynloader->renderer = renderer;
@@ -17,7 +17,7 @@ crude_gfx_initialize_asynchronous_loader
   asynloader->file_load_requests = NULL;
   asynloader->upload_requests = NULL;
 
-  for ( uint32 i = 0; i < CRUDE_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     VkCommandPoolCreateInfo cmd_pool_info = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -41,15 +41,15 @@ crude_gfx_initialize_asynchronous_loader
     asynloader->cmd_buffers[ i ].gpu = renderer->gpu;
   }
   
-  crude_buffer_creation buffer_creation = {
+  crude_gfx_buffer_creation buffer_creation = {
     .type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-    .usage = CRUDE_RESOURCE_USAGE_TYPE_STREAM,
+    .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_STREAM,
     .size = 64 * 1024 * 1024,
     .name = "staging buffer",
     .persistent = true
   };
-  crude_buffer_handle staging_buffer_handle = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
-  asynloader->staging_buffer = CRUDE_GFX_GPU_ACCESS_BUFFER( renderer->gpu, staging_buffer_handle );
+  crude_gfx_buffer_handle staging_buffer_handle = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
+  asynloader->staging_buffer = CRUDE_GFX_ACCESS_BUFFER( renderer->gpu, staging_buffer_handle );
   
   VkSemaphoreCreateInfo semaphore_info = {
     .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
@@ -66,9 +66,9 @@ crude_gfx_initialize_asynchronous_loader
 void
 crude_gfx_asynchronous_loader_request_texture_data
 (
-  _In_ crude_gfx_asynchronous_loader            *asynloader,
-  _In_ char const                               *filename,
-  _In_ crude_texture_handle                      texture
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ char const                                         *filename,
+  _In_ crude_gfx_texture_handle                            texture
 )
 {
   crude_gfx_file_load_request request;
@@ -81,7 +81,7 @@ crude_gfx_asynchronous_loader_request_texture_data
 void
 crude_gfx_asynchronous_loader_update
 (
-  _In_ crude_gfx_asynchronous_loader            *asynloader
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
   
@@ -102,12 +102,12 @@ crude_gfx_asynchronous_loader_update
     
     crude_gfx_upload_request request = CRUDE_ARR_POP( asynloader->upload_requests );
 
-    crude_command_buffer *cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
+    crude_gfx_cmd_buffer *cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
     crude_gfx_cmd_begin_primary( cmd );
 
     if ( request.texture.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
     {
-      crude_texture *texture = CRUDE_GFX_GPU_ACCESS_TEXTURE( asynloader->renderer->gpu, request.texture );
+      crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( asynloader->renderer->gpu, request.texture );
       uint32 texture_channels = 4;
       uint32 texture_alignment = 4;
       uint64 aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );

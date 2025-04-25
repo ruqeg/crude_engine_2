@@ -6,16 +6,16 @@
 
 typedef struct crude_mesh_draw
 {
-  crude_material              *material;
+  crude_gfx_renderer_material              *material;
   crude_float3                 scale;
   crude_float3                 translation;
   crude_float4                 rotation;
-  crude_buffer_handle          index_buffer;
-  crude_buffer_handle          position_buffer;
-  crude_buffer_handle          tangent_buffer;
-  crude_buffer_handle          normal_buffer;
-  crude_buffer_handle          texcoord_buffer;
-  crude_buffer_handle          material_buffer;
+  crude_gfx_buffer_handle          index_buffer;
+  crude_gfx_buffer_handle          position_buffer;
+  crude_gfx_buffer_handle          tangent_buffer;
+  crude_gfx_buffer_handle          normal_buffer;
+  crude_gfx_buffer_handle          texcoord_buffer;
+  crude_gfx_buffer_handle          material_buffer;
   uint32                       index_offset;
   uint32                       position_offset;
   uint32                       tangent_offset;
@@ -34,18 +34,18 @@ typedef struct crude_mesh_draw
 
 typedef struct crude_scene
 {
-  crude_sampler_resource      *samplers;
-  crude_texture_resource      *images;
-  crude_buffer_resource       *buffers;
+  crude_gfx_renderer_sampler      *samplers;
+  crude_gfx_renderer_texture      *images;
+  crude_gfx_renderer_buffer       *buffers;
   crude_mesh_draw             *mesh_draws;
-  crude_program               *program;
-  crude_material              *material;
+  crude_gfx_renderer_program               *program;
+  crude_gfx_renderer_material              *material;
 } crude_scene;
 
 CRUDE_API void
 crude_load_gltf_from_file
 (
-  _In_ crude_renderer         *renderer,
+  _In_ crude_gfx_renderer         *renderer,
   _In_ char const             *path,
   _In_ crude_gfx_asynchronous_loader *async_loader,
   _Out_ crude_scene           *scene
@@ -54,6 +54,6 @@ crude_load_gltf_from_file
 CRUDE_API void
 crude_unload_gltf_from_file
 (
-  _In_ crude_renderer         *renderer,
+  _In_ crude_gfx_renderer         *renderer,
   _In_ crude_scene            *scene
 );

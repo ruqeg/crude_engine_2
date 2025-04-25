@@ -16,19 +16,19 @@
 static void
 crude_draw_mesh
 (
-  _In_ crude_renderer        *renderer,
-  _In_ crude_command_buffer  *gpu_commands,
+  _In_ crude_gfx_renderer        *renderer,
+  _In_ crude_gfx_cmd_buffer  *gpu_commands,
   _In_ crude_mesh_draw       *mesh_draw
 )
 {
-  crude_descriptor_set_creation ds_creation = {
+  crude_gfx_descriptor_set_creation ds_creation = {
     .samplers = { CRUDE_GFX_INVALID_SAMPLER_HANDLE, CRUDE_GFX_INVALID_SAMPLER_HANDLE },
     .bindings = { 0, 1 },
     .resources= { renderer->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
     .num_resources = 2,
     .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
   };
-  crude_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
+  crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
   
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->tangent_buffer, 1, mesh_draw->tangent_offset );
@@ -75,7 +75,7 @@ initialize_render_core
     crude_renderer_component *renderer = ecs_ensure( it->world, it->entities[ i ], crude_renderer_component );
     
 
-    crude_gpu_device_creation gpu_creation = {
+    crude_gfx_device_creation gpu_creation = {
       .sdl_window             = window_handle[ i ].value,
       .vk_application_name    = render_create[ i ].vk_application_name,
       .vk_application_version = render_create[ i ].vk_application_version,
@@ -84,15 +84,15 @@ initialize_render_core
       .max_frames             = render_create[ i ].max_frames,
     };
 
-    renderer->gpu = render_create[ i ].allocator.allocate( sizeof( crude_gpu_device ), 1u );
-    crude_gfx_initialize_gpu_device( renderer->gpu, &gpu_creation );
+    renderer->gpu = render_create[ i ].allocator.allocate( sizeof( crude_gfx_device ), 1u );
+    crude_gfx_initialize_device( renderer->gpu, &gpu_creation );
 
-    crude_renderer_creation rendere_creation = {
+    crude_gfx_renderer_creation rendere_creation = {
       .allocator = render_create[ i ].allocator,
       .gpu = renderer->gpu
     };
 
-    renderer->renderer = render_create[ i ].allocator.allocate( sizeof( crude_renderer ), 1u );
+    renderer->renderer = render_create[ i ].allocator.allocate( sizeof( crude_gfx_renderer ), 1u );
     crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
 
     renderer->async_loader = render_create[ i ].allocator.allocate( sizeof( crude_gfx_asynchronous_loader ), 1u );
@@ -116,10 +116,10 @@ initialize_render_core
     crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
     crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
     
-    crude_buffer_creation ubo_creation = {
+    crude_gfx_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      .usage = CRUDE_RESOURCE_USAGE_TYPE_DYNAMIC ,
-      .size = sizeof( crude_shader_frame_constants ),
+      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
+      .size = sizeof( crude_gfx_shader_frame_constants ),
       .name = "ubo",
     };
     renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
@@ -161,7 +161,7 @@ deinitialize_render_core
     crude_unload_gltf_from_file( renderer[ i ].renderer, renderer[ i ].scene );
     crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
     crude_gfx_deinitialize_renderer( renderer[ i ].renderer );
-    crude_gfx_deinitialize_gpu_device( renderer[ i ].gpu );
+    crude_gfx_deinitialize_device( renderer[ i ].gpu );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
     renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
     renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
@@ -180,7 +180,7 @@ render
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
-    crude_command_buffer *gpu_commands = crude_gfx_get_cmd( renderer[ i ].gpu, CRUDE_QUEUE_TYPE_GRAPHICS, true );
+    crude_gfx_cmd_buffer *gpu_commands = crude_gfx_get_cmd( renderer[ i ].gpu, CRUDE_GFX_QUEUE_TYPE_GRAPHICS, true );
     crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
     crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
     gpu_commands->clears[1].color.float32[ 0 ] = 1;
@@ -189,8 +189,8 @@ render
     gpu_commands->clears[1].color.float32[ 3 ] = 1;
 
     // update fame buffer
-    crude_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
-    crude_shader_frame_constants *frame_buffer_data = CAST( crude_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+    crude_gfx_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
+    crude_gfx_shader_frame_constants *frame_buffer_data = CAST( crude_gfx_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
     if ( frame_buffer_data )
     {
       crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
@@ -211,7 +211,7 @@ render
       
       constant_buffer_map.buffer = mesh_draw->material_buffer;
       
-      crude_shader_mesh_constants *mesh_data = CAST( crude_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+      crude_gfx_shader_mesh_constants *mesh_data = CAST( crude_gfx_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
       if ( mesh_data )
       {
         mesh_data->textures.x = mesh_draw->albedo_texture_index;
@@ -239,7 +239,7 @@ render
     crude_gfx_cmd_set_viewport( gpu_commands, NULL );
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
     
-    crude_material *last_material = NULL;
+    crude_gfx_renderer_material *last_material = NULL;
     for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
@@ -250,7 +250,7 @@ render
       }
       crude_draw_mesh( renderer->renderer, gpu_commands, mesh_draw );
     }
-    crude_gfx_queue_cmd_buffer( gpu_commands );
+    crude_gfx_queue_cmd( gpu_commands );
     crude_gfx_present( renderer[ i ].gpu );
   }
 }
