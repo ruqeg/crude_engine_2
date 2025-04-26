@@ -95,5 +95,6 @@ CRUDE_API void
 crude_gltf_scene_submit_draw_task
 (
   _In_ crude_gltf_scene                                   *scene,
-  _In_ enkiTaskScheduler                                  *draw_task_sheduler
+  _In_ enkiTaskScheduler                                  *task_sheduler,
+  _In_ bool                                                use_secondary
 );

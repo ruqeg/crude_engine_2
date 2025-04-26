@@ -197,9 +197,9 @@ render
         mesh_data->flags.x = mesh_draw->flags;
         
         crude_transform model_transform = {
-          .translation = { 0.0, 0.0, 0.0 },
+          .translation = { 0.0, 0.0, -4.0 },
           .rotation = { 0.0, 0.0, 0.0, 0.0 },
-          .scale = { 0.001,0.001,0.001 },
+          .scale = { 0.005,0.005,0.005 },
         };
         crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
@@ -208,7 +208,7 @@ render
       }
     }
 
-    crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets );
+    crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
 
     crude_gfx_present( renderer[ i ].gpu );
   }

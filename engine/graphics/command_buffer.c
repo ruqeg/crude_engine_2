@@ -118,15 +118,13 @@ void
 crude_gfx_cmd_begin_secondary
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass_handle                        render_pass_handle
+  _In_ crude_gfx_render_pass                              *render_pass
 )
 {
   if ( cmd->is_recording )
   {
     return;
   }
-
-  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( cmd->gpu, render_pass_handle );
 
   VkCommandBufferInheritanceInfo inheritance = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
@@ -160,6 +158,19 @@ crude_gfx_cmd_end
 
   vkEndCommandBuffer( cmd->vk_cmd_buffer );
   cmd->is_recording = false;
+}
+
+void
+crude_gfx_cmd_end_render_pass
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+)
+{
+  if ( cmd->is_recording && cmd->current_render_pass )
+  {
+    vkCmdEndRenderPass( cmd->vk_cmd_buffer );
+    cmd->current_render_pass = NULL;
+  }
 }
 
 void
@@ -624,8 +635,8 @@ crude_gfx_initialize_cmd_manager
   cmd_manager->gpu = gpu;
   cmd_manager->num_pools_per_frame = num_threads;
 
-  cmd_manager->num_command_buffers_per_thread = 1;
-  cmd_manager->num_secondary_command_buffers  = 1;
+  cmd_manager->num_primary_cmd_buffers_per_thread = 1;
+  cmd_manager->num_secondary_cmd_buffer_per_thread = 1;
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
   CRUDE_ARR_SETLEN( cmd_manager->vk_cmd_pools, total_pools );
@@ -649,13 +660,13 @@ crude_gfx_initialize_cmd_manager
     cmd_manager->num_used_secondary_cmd_buffers_per_frame[ i ] = 0;
   }
   
-  uint32 total_buffers = total_pools * cmd_manager->num_command_buffers_per_thread;
+  uint32 total_buffers = total_pools * cmd_manager->num_primary_cmd_buffers_per_thread;
   CRUDE_ARR_SETLEN( cmd_manager->primary_cmd_buffers, total_pools );
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {
-    uint32 frame_index = i / ( cmd_manager->num_command_buffers_per_thread * cmd_manager->num_pools_per_frame );
-    uint32 thread_index = ( i / cmd_manager->num_command_buffers_per_thread ) % cmd_manager->num_pools_per_frame;
+    uint32 frame_index = i / ( cmd_manager->num_primary_cmd_buffers_per_thread * cmd_manager->num_pools_per_frame );
+    uint32 thread_index = ( i / cmd_manager->num_primary_cmd_buffers_per_thread ) % cmd_manager->num_pools_per_frame;
     uint32 pool_index = pool_from_indices( cmd_manager, frame_index, thread_index );
 
     VkCommandBufferAllocateInfo cmd = {
@@ -670,7 +681,7 @@ crude_gfx_initialize_cmd_manager
     crude_gfx_initialize_cmd( current_cmd_buffer, gpu );
   }
   
-  uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_command_buffers;
+  uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_thread;
   CRUDE_ARR_SETLEN( cmd_manager->secondary_cmd_buffers, total_secondary_buffers );
 
   for ( uint32 pool_index = 0; pool_index < total_pools; ++pool_index )
@@ -679,21 +690,21 @@ crude_gfx_initialize_cmd_manager
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, 
       .commandPool = cmd_manager->vk_cmd_pools[ pool_index ], 
       .level = VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-      .commandBufferCount = cmd_manager->num_secondary_command_buffers
+      .commandBufferCount = cmd_manager->num_secondary_cmd_buffer_per_thread
     };
     
     VkCommandBuffer *secondary_buffers = NULL;
-    CRUDE_ARR_SETLEN( secondary_buffers, cmd_manager->num_secondary_command_buffers );
+    CRUDE_ARR_SETLEN( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_thread );
 
     vkAllocateCommandBuffers( gpu->vk_device, &cmd, secondary_buffers );
     
-    for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_command_buffers; ++second_cmd_index )
+    for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_cmd_buffer_per_thread; ++second_cmd_index )
     {
       crude_gfx_cmd_buffer cmd;
       cmd.vk_cmd_buffer = secondary_buffers[ second_cmd_index ];
       crude_gfx_initialize_cmd( &cmd, gpu );
       
-      cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_command_buffers + second_cmd_index ] = cmd;
+      cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread + second_cmd_index ] = cmd;
     }
 
     CRUDE_ARR_FREE( secondary_buffers );
@@ -741,8 +752,15 @@ crude_gfx_cmd_manager_reset
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
-    cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
+    
+    for ( uint32 i = 0; i < cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ]; ++i )
+    {
+      crude_gfx_cmd_buffer *secondary_cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread ) + i ];
+      crude_gfx_cmd_reset( secondary_cmd );
+    }
     cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ] = 0;
+
+    cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
   }
 }
 
@@ -757,14 +775,13 @@ crude_gfx_cmd_manager_get_primary_cmd
 {
   uint32 pool_index = pool_from_indices( cmd_manager, frame, thread_index );
   uint32 current_used_buffer = cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ];
-  uint32 cmd_index = ( pool_index * cmd_manager->num_command_buffers_per_thread ) + current_used_buffer;
+  uint32 cmd_index = ( pool_index * cmd_manager->num_primary_cmd_buffers_per_thread ) + current_used_buffer;
   crude_gfx_cmd_buffer *cmd = &cmd_manager->primary_cmd_buffers[ cmd_index ];
 
   if ( begin )
   {  
     crude_gfx_cmd_reset( cmd );
     crude_gfx_cmd_begin_primary( cmd );
-
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
   }
   
@@ -776,14 +793,13 @@ crude_gfx_cmd_manager_get_secondary_cmd
 (
   _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager,
   _In_ uint32                                              frame,
-  _In_ uint32                                              thread_index,
-  _In_ bool                                                begin
+  _In_ uint32                                              thread_index
 )
 {
   uint32 pool_index = pool_from_indices( cmd_manager, frame, thread_index );
   uint32 current_used_buffer = cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ];
   cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
   
-  crude_gfx_cmd_buffer *cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_command_buffers ) + current_used_buffer ];
+  crude_gfx_cmd_buffer *cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread ) + current_used_buffer ];
   return cmd;
 }

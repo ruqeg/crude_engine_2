@@ -10,19 +10,42 @@
 #include <crude_shaders/main.frag.inl>
 #include <crude_shaders/main.vert.inl>
 
+#define _PARALLEL_RECORDINGS 4
+
 /**
  *
  * GLTF Draw Task
  * 
  */
-typedef struct _gltf_scene_draw_task_data
+typedef struct _gltf_scene_primary_draw_task_data
 {
+  enkiTaskScheduler*                                       task_scheduler;
   crude_gltf_scene                                        *scene;
   uint32                                                   thread_id;
-} _gltf_scene_draw_task_data;
+  bool                                                     use_secondary;
+} _gltf_scene_primary_draw_task_data;
+
+typedef struct _gltf_scene_secondary_draw_task_data
+{
+  crude_gltf_scene                                        *scene;
+  crude_gfx_cmd_buffer                                    *parent_cmd;
+  uint32                                                   thread_id;
+  uint32                                                   start_mesh_draw_index;
+  uint32                                                   end_mesh_draw_index;
+  crude_gfx_cmd_buffer                                    *secondary_cmd;
+} _gltf_scene_secondary_draw_task_data;
 
 void
-_gltf_scene_draw_task
+_gltf_scene_primary_draw_task
+(
+  _In_ uint32_t                                            start,
+  _In_ uint32_t                                            end,
+  _In_ uint32_t                                            thread_num,
+  _In_ void                                               *args
+);
+
+void
+_gltf_scene_secondary_draw_task
 (
   _In_ uint32_t                                            start,
   _In_ uint32_t                                            end,
@@ -415,15 +438,20 @@ void
 crude_gltf_scene_submit_draw_task
 (
   _In_ crude_gltf_scene                                   *scene,
-  _In_ enkiTaskScheduler                                  *draw_task_sheduler
+  _In_ enkiTaskScheduler                                  *task_sheduler,
+  _In_ bool                                                use_secondary
 )
 {
-  _gltf_scene_draw_task_data draw_task_data = { .scene = scene };
-  enkiTaskSet *draw_task = enkiCreateTaskSet( draw_task_sheduler, _gltf_scene_draw_task );
+  _gltf_scene_primary_draw_task_data draw_task_data = { 
+    .scene = scene,
+    .use_secondary = use_secondary,
+    .task_scheduler = task_sheduler
+  };
+  enkiTaskSet *draw_task = enkiCreateTaskSet( task_sheduler, _gltf_scene_primary_draw_task );
   enkiSetArgsTaskSet( draw_task, &draw_task_data );
-  enkiAddTaskSet( draw_task_sheduler, draw_task );
-  enkiWaitForTaskSet( draw_task_sheduler, draw_task );
-  crude_gfx_renderer_add_texture_update_commands( scene->renderer, ( draw_task_data.thread_id + 1 ) % enkiGetNumTaskThreads( draw_task_sheduler ) );
+  enkiAddTaskSet( task_sheduler, draw_task );
+  enkiWaitForTaskSet( task_sheduler, draw_task );
+  crude_gfx_renderer_add_texture_update_commands( scene->renderer, ( draw_task_data.thread_id + 1 ) % enkiGetNumTaskThreads( task_sheduler ) );
 }
 
 /**
@@ -586,7 +614,7 @@ _draw_mesh
  * 
  */
 void
-_gltf_scene_draw_task
+_gltf_scene_primary_draw_task
 (
   _In_ uint32_t                                            start,
   _In_ uint32_t                                            end,
@@ -594,28 +622,114 @@ _gltf_scene_draw_task
   _In_ void                                               *args
 )
 {
-  _gltf_scene_draw_task_data *draw_task = CAST( _gltf_scene_draw_task_data *, args );
+  _gltf_scene_primary_draw_task_data *draw_task = CAST( _gltf_scene_primary_draw_task_data *, args );
   
   draw_task->thread_id = thread_num;
 
-  crude_gfx_cmd_buffer *gpu_commands = crude_gfx_get_cmd( draw_task->scene->renderer->gpu, draw_task->thread_id, true );
-  
+  crude_gfx_cmd_buffer *gpu_commands = crude_gfx_get_primary_cmd( draw_task->scene->renderer->gpu, draw_task->thread_id, true );
+
   crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
   crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
-  crude_gfx_cmd_bind_render_pass( gpu_commands, draw_task->scene->renderer->gpu->swapchain_pass, false );
-  crude_gfx_cmd_set_viewport( gpu_commands, NULL );
-  crude_gfx_cmd_set_scissor( gpu_commands, NULL );
+  crude_gfx_cmd_bind_render_pass( gpu_commands, draw_task->scene->renderer->gpu->swapchain_pass, draw_task->use_secondary );
   
-  crude_gfx_renderer_material *last_material = NULL;
-  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ); ++mesh_index )
+  if ( draw_task->use_secondary )
   {
-    crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
-    if ( mesh_draw->material != last_material )
+    uint32 draws_per_secondary = CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) / _PARALLEL_RECORDINGS;
+    uint32 offset = draws_per_secondary * _PARALLEL_RECORDINGS;
+    
+    enkiTaskSet *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
+    _gltf_scene_secondary_draw_task_data secondary_draw_tasks_data[ _PARALLEL_RECORDINGS ];
+    _gltf_scene_secondary_draw_task_data offset_secondary_draw_tasks_data;
+    
+    for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
     {
-      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
-      last_material = mesh_draw->material;
+      secondary_draw_tasks_data[ i ] = ( _gltf_scene_secondary_draw_task_data ) {
+        .scene = draw_task->scene,
+        .parent_cmd = gpu_commands,
+        .start_mesh_draw_index = draws_per_secondary * i,
+        .end_mesh_draw_index = draws_per_secondary * i + draws_per_secondary
+      };
+      
+      secondary_draw_tasks[ i ] = enkiCreateTaskSet( draw_task->task_scheduler, _gltf_scene_secondary_draw_task );
+      enkiSetArgsTaskSet( secondary_draw_tasks[ i ], &secondary_draw_tasks_data[ i ] );
+      enkiAddTaskSet( draw_task->task_scheduler, secondary_draw_tasks[ i ] );
     }
-    _draw_mesh( draw_task->scene->renderer, gpu_commands, mesh_draw );
+    
+    if ( offset < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) )
+    {
+      offset_secondary_draw_tasks_data = ( _gltf_scene_secondary_draw_task_data ) {
+        .scene = draw_task->scene,
+        .parent_cmd = gpu_commands,
+        .start_mesh_draw_index = offset,
+        .end_mesh_draw_index = CRUDE_ARR_LEN( draw_task->scene->mesh_draws )
+      };
+      _gltf_scene_secondary_draw_task( NULL, NULL, thread_num, &offset_secondary_draw_tasks_data );
+    }
+    
+    for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
+    {
+      enkiWaitForTaskSet( draw_task->task_scheduler, secondary_draw_tasks[ i ] );
+      vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
+    }
+    
+    if ( offset < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) )
+    {
+      vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
+    }
+    crude_gfx_cmd_end_render_pass( gpu_commands );
+  }
+  else
+  {
+    crude_gfx_cmd_set_viewport( gpu_commands, NULL );
+    crude_gfx_cmd_set_scissor( gpu_commands, NULL );
+
+    crude_gfx_renderer_material *last_material = NULL;
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ); ++mesh_index )
+    {
+      crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
+      if ( mesh_draw->material != last_material )
+      {
+        crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
+        last_material = mesh_draw->material;
+      }
+      _draw_mesh( draw_task->scene->renderer, gpu_commands, mesh_draw );
+    }
   }
   crude_gfx_queue_cmd( gpu_commands );
+}
+
+void
+_gltf_scene_secondary_draw_task
+(
+  _In_ uint32_t                                            start,
+  _In_ uint32_t                                            end,
+  _In_ uint32_t                                            thread_num,
+  _In_ void                                               *args
+)
+{
+  _gltf_scene_secondary_draw_task_data *secondary_draw_task = CAST( _gltf_scene_secondary_draw_task_data *, args );
+  
+  crude_gfx_cmd_buffer *secondary_cmd = crude_gfx_get_secondary_cmd( secondary_draw_task->scene->renderer->gpu, thread_num );
+  
+  crude_gfx_cmd_begin_secondary( secondary_cmd, secondary_draw_task->parent_cmd->current_render_pass );
+  crude_gfx_cmd_set_viewport( secondary_cmd, NULL );
+  crude_gfx_cmd_set_scissor( secondary_cmd, NULL );
+  
+  crude_gfx_renderer_material *last_material = NULL;
+  for ( uint32 mesh_index = secondary_draw_task->start_mesh_draw_index; mesh_index < secondary_draw_task->end_mesh_draw_index; ++mesh_index )
+  {
+    crude_mesh_draw *mesh_draw = &secondary_draw_task->scene->mesh_draws[ mesh_index ];
+  
+    if ( mesh_draw->material != last_material )
+    {
+      crude_gfx_cmd_bind_pipeline( secondary_cmd, mesh_draw->material->program->passes[ 0 ].pipeline );
+      last_material = mesh_draw->material;
+    }
+    
+    _draw_mesh( secondary_draw_task->scene->renderer, secondary_cmd, mesh_draw );
+  }
+  
+  crude_gfx_cmd_end( secondary_cmd );
+
+  secondary_draw_task->secondary_cmd = secondary_cmd;
 }

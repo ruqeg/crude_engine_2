@@ -536,7 +536,7 @@ crude_gfx_present
 }
 
 crude_gfx_cmd_buffer*
-crude_gfx_get_cmd
+crude_gfx_get_primary_cmd
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              thread_index,
@@ -551,6 +551,17 @@ crude_gfx_get_cmd
     /*gpu_timestamp_reset = false;*/
   }
 
+  return cmd;
+}
+
+crude_gfx_cmd_buffer*
+crude_gfx_get_secondary_cmd
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              thread_index
+)
+{
+  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_secondary_cmd( &g_command_buffer_manager, gpu->current_frame, thread_index );
   return cmd;
 }
 

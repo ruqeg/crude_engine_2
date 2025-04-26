@@ -188,11 +188,18 @@ crude_gfx_present
 );
                                                    
 CRUDE_API crude_gfx_cmd_buffer*                    
-crude_gfx_get_cmd
+crude_gfx_get_primary_cmd
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              thread_index,
   _In_ bool                                                begin
+);
+
+CRUDE_API crude_gfx_cmd_buffer*
+crude_gfx_get_secondary_cmd
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              thread_index
 );
                                                    
 CRUDE_API void                                     

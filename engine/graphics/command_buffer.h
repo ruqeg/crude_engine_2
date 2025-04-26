@@ -49,16 +49,16 @@ typedef struct crude_gfx_cmd_buffer_manager
 {
   crude_gfx_device                                        *gpu;
 
-  VkCommandPool                                           *vk_cmd_pools;
-  crude_gfx_cmd_buffer                                    *primary_cmd_buffers;
-  crude_gfx_cmd_buffer                                    *secondary_cmd_buffers;
+  CRUDE_ARR( VkCommandPool )                               vk_cmd_pools;
+  CRUDE_ARR( crude_gfx_cmd_buffer )                        primary_cmd_buffers;
+  CRUDE_ARR( crude_gfx_cmd_buffer )                        secondary_cmd_buffers;
 
   uint32                                                   num_pools_per_frame;
-  uint32                                                   num_command_buffers_per_thread;
-  uint32                                                   num_secondary_command_buffers;
+  uint32                                                   num_primary_cmd_buffers_per_thread;
+  uint32                                                   num_secondary_cmd_buffer_per_thread;
 
-  uint8                                                   *num_used_primary_cmd_buffers_per_frame;
-  uint8                                                   *num_used_secondary_cmd_buffers_per_frame;
+  CRUDE_ARR( uint8 )                                       num_used_primary_cmd_buffers_per_frame;
+  CRUDE_ARR( uint8 )                                       num_used_secondary_cmd_buffers_per_frame;
 } crude_gfx_cmd_buffer_manager;
 
 /************************************************
@@ -95,11 +95,17 @@ CRUDE_API void
 crude_gfx_cmd_begin_secondary
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass_handle                        render_pass_handle
+  _In_ crude_gfx_render_pass                              *render_pass
 );
 
 CRUDE_API void
 crude_gfx_cmd_end
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+);
+
+CRUDE_API void
+crude_gfx_cmd_end_render_pass
 (
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
@@ -271,6 +277,5 @@ crude_gfx_cmd_manager_get_secondary_cmd
 (
   _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager,
   _In_ uint32                                              frame,
-  _In_ uint32                                              thread_index,
-  _In_ bool                                                begin
+  _In_ uint32                                              thread_index
 );

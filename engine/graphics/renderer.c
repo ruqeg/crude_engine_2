@@ -68,7 +68,7 @@ crude_gfx_renderer_add_texture_update_commands
     return;
   }
   
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_cmd( renderer->gpu, thread_id, true );
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( renderer->gpu, thread_id, true );
 
   for ( uint32 i = 0; i < renderer->num_textures_to_update; ++i )
   {
