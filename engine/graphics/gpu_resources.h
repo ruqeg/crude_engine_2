@@ -301,6 +301,7 @@ typedef struct crude_gfx_buffer_creation
   bool                                                     persistent;
   void                                                    *initial_data;
   char const                                              *name;
+  bool                                                     device_only;
 } crude_gfx_buffer_creation;
 
 typedef struct crude_gfx_render_pass_creation
@@ -472,6 +473,7 @@ typedef struct crude_gfx_buffer
   crude_gfx_buffer_handle                                  parent_buffer;
   char const                                              *name;
   uint8                                                   *mapped_data;
+  bool                                                     ready;
 } crude_gfx_buffer;
 
 typedef struct crude_gfx_sampler

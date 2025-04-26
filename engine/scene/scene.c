@@ -81,7 +81,6 @@ _create_gltf_mesh_material
 static void
 _draw_mesh
 (
-  _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_cmd_buffer                               *gpu_commands,
   _In_ crude_mesh_draw                                    *mesh_draw
 );
@@ -274,16 +273,27 @@ crude_gltf_scene_load_from_file
     {
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Bufer name is null: %u", buffer_view_index );
     }
-
-    crude_gfx_buffer_creation buffer_creation = {
+    
+    crude_gfx_buffer_creation cpu_buffer_creation = {
       .initial_data = data,
       .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
       .size = buffer_view->size,
-      .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      .type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
       .name = buffer->name
     };
-    crude_gfx_renderer_buffer *buffer_resource = crude_gfx_renderer_create_buffer( scene->renderer, &buffer_creation );
-    CRUDE_ARR_PUSH( scene->buffers, *buffer_resource );
+    crude_gfx_buffer_handle cpu_buffer = crude_gfx_create_buffer( scene->renderer->gpu, &cpu_buffer_creation );
+
+    crude_gfx_buffer_creation gpu_buffer_creation = {
+      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
+      .size = buffer_view->size,
+      .type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .name = buffer->name,
+      .device_only = true
+    };
+    crude_gfx_renderer_buffer *gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene->renderer, &gpu_buffer_creation );
+    CRUDE_ARR_PUSH( scene->buffers, *gpu_buffer_resource );
+
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene->async_loader, cpu_buffer, gpu_buffer_resource->handle );
   }
 
   scene->mesh_draws = NULL;
@@ -585,20 +595,30 @@ _create_gltf_mesh_material
 void
 _draw_mesh
 (
-  _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_cmd_buffer                               *gpu_commands,
   _In_ crude_mesh_draw                                    *mesh_draw
 )
 {
+  bool mesh_buffers_ready = crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->position_buffer )
+    && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->tangent_buffer )
+    && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->normal_buffer )
+    && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->texcoord_buffer )
+    && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->index_buffer );
+
+  if ( !mesh_buffers_ready )
+  {
+    return;
+  }
+
   crude_gfx_descriptor_set_creation ds_creation = {
     .samplers = { CRUDE_GFX_INVALID_SAMPLER_HANDLE, CRUDE_GFX_INVALID_SAMPLER_HANDLE },
     .bindings = { 0, 1 },
-    .resources= { renderer->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
+    .resources= { gpu_commands->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
     .num_resources = 2,
     .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
   };
   crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
-  
+
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->tangent_buffer, 1, mesh_draw->tangent_offset );
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->normal_buffer, 2, mesh_draw->normal_offset );
@@ -692,7 +712,7 @@ _gltf_scene_primary_draw_task
         crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
         last_material = mesh_draw->material;
       }
-      _draw_mesh( draw_task->scene->renderer, gpu_commands, mesh_draw );
+      _draw_mesh( gpu_commands, mesh_draw );
     }
   }
   crude_gfx_queue_cmd( gpu_commands );
@@ -718,7 +738,7 @@ _gltf_scene_secondary_draw_task
   crude_gfx_renderer_material *last_material = NULL;
   for ( uint32 mesh_index = secondary_draw_task->start_mesh_draw_index; mesh_index < secondary_draw_task->end_mesh_draw_index; ++mesh_index )
   {
-    crude_mesh_draw *mesh_draw = &secondary_draw_task->scene->mesh_draws[ mesh_index ];
+    crude_mesh_draw const *mesh_draw = &secondary_draw_task->scene->mesh_draws[ mesh_index ];
   
     if ( mesh_draw->material != last_material )
     {
@@ -726,7 +746,7 @@ _gltf_scene_secondary_draw_task
       last_material = mesh_draw->material;
     }
     
-    _draw_mesh( secondary_draw_task->scene->renderer, secondary_cmd, mesh_draw );
+    _draw_mesh( secondary_cmd, mesh_draw );
   }
   
   crude_gfx_cmd_end( secondary_cmd );

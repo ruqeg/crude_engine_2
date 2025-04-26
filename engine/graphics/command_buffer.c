@@ -619,6 +619,30 @@ crude_gfx_cmd_upload_texture_data
   texture->vk_image_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 }
 
+void
+crude_gfx_cmd_upload_buffer_data
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             src_buffer,
+  _In_ crude_gfx_buffer_handle                             dst_buffer
+)
+{
+  crude_gfx_buffer* src = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, src_buffer );
+  crude_gfx_buffer* dst = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, dst_buffer );
+  
+  CRUDE_ASSERT( src->size == dst->size );
+  
+  uint32 copy_size = src->size;
+
+  VkBufferCopy region = {
+    .srcOffset = 0,
+    .dstOffset = 0,
+    .size = copy_size,
+  };
+  
+  vkCmdCopyBuffer( cmd->vk_cmd_buffer, src->vk_buffer, dst->vk_buffer, 1, &region );
+}
+
 /************************************************
  *
  * Command Buffer Manager Functions
@@ -636,7 +660,7 @@ crude_gfx_initialize_cmd_manager
   cmd_manager->num_pools_per_frame = num_threads;
 
   cmd_manager->num_primary_cmd_buffers_per_thread = 1;
-  cmd_manager->num_secondary_cmd_buffer_per_thread = 1;
+  cmd_manager->num_secondary_cmd_buffer_per_pool = 5;
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
   CRUDE_ARR_SETLEN( cmd_manager->vk_cmd_pools, total_pools );
@@ -681,7 +705,7 @@ crude_gfx_initialize_cmd_manager
     crude_gfx_initialize_cmd( current_cmd_buffer, gpu );
   }
   
-  uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_thread;
+  uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_pool;
   CRUDE_ARR_SETLEN( cmd_manager->secondary_cmd_buffers, total_secondary_buffers );
 
   for ( uint32 pool_index = 0; pool_index < total_pools; ++pool_index )
@@ -690,21 +714,21 @@ crude_gfx_initialize_cmd_manager
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, 
       .commandPool = cmd_manager->vk_cmd_pools[ pool_index ], 
       .level = VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-      .commandBufferCount = cmd_manager->num_secondary_cmd_buffer_per_thread
+      .commandBufferCount = cmd_manager->num_secondary_cmd_buffer_per_pool
     };
     
     VkCommandBuffer *secondary_buffers = NULL;
-    CRUDE_ARR_SETLEN( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_thread );
+    CRUDE_ARR_SETLEN( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool );
 
     vkAllocateCommandBuffers( gpu->vk_device, &cmd, secondary_buffers );
     
-    for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_cmd_buffer_per_thread; ++second_cmd_index )
+    for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_cmd_buffer_per_pool; ++second_cmd_index )
     {
       crude_gfx_cmd_buffer cmd;
       cmd.vk_cmd_buffer = secondary_buffers[ second_cmd_index ];
       crude_gfx_initialize_cmd( &cmd, gpu );
       
-      cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread + second_cmd_index ] = cmd;
+      cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_cmd_buffer_per_pool + second_cmd_index ] = cmd;
     }
 
     CRUDE_ARR_FREE( secondary_buffers );
@@ -755,7 +779,7 @@ crude_gfx_cmd_manager_reset
     
     for ( uint32 i = 0; i < cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ]; ++i )
     {
-      crude_gfx_cmd_buffer *secondary_cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread ) + i ];
+      crude_gfx_cmd_buffer *secondary_cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_pool ) + i ];
       crude_gfx_cmd_reset( secondary_cmd );
     }
     cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ] = 0;
@@ -782,6 +806,7 @@ crude_gfx_cmd_manager_get_primary_cmd
   {  
     crude_gfx_cmd_reset( cmd );
     crude_gfx_cmd_begin_primary( cmd );
+    CRUDE_ASSERT( current_used_buffer < cmd_manager->num_primary_cmd_buffers_per_thread );
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
   }
   
@@ -798,8 +823,11 @@ crude_gfx_cmd_manager_get_secondary_cmd
 {
   uint32 pool_index = pool_from_indices( cmd_manager, frame, thread_index );
   uint32 current_used_buffer = cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ];
+  uint32 cmd_index = ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_pool ) + current_used_buffer;
+
+  CRUDE_ASSERT( current_used_buffer < cmd_manager->num_secondary_cmd_buffer_per_pool );
   cmd_manager->num_used_secondary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
   
-  crude_gfx_cmd_buffer *cmd = &cmd_manager->secondary_cmd_buffers[ ( pool_index * cmd_manager->num_secondary_cmd_buffer_per_thread ) + current_used_buffer ];
+  crude_gfx_cmd_buffer *cmd = &cmd_manager->secondary_cmd_buffers[ cmd_index ];
   return cmd;
 }

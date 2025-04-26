@@ -253,6 +253,13 @@ crude_gfx_query_buffer
   _Out_ crude_gfx_buffer_description                      *description
 );
 
+CRUDE_API bool
+crude_gfx_buffer_ready
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             buffer_handle
+);
+
 /************************************************
  *
  * GPU Device Resources Functions

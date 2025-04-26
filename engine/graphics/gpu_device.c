@@ -313,7 +313,7 @@ crude_gfx_initialize_device
     .name       = "dynamic_persistent_buffer",
     .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
     .usage      = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
-    .size       = gpu->dynamic_per_frame_size * gpu->max_frames,
+    .size       = gpu->dynamic_per_frame_size * gpu->max_frames
   };
   gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &buffer_creation );
   
@@ -697,6 +697,17 @@ crude_gfx_set_resource_name
   };
   PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
   vkSetDebugUtilsObjectNameEXT( gpu->vk_device, &name_info );
+}
+
+bool
+crude_gfx_buffer_ready
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             buffer_handle
+)
+{
+  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, buffer_handle );
+  return buffer->ready;
 }
 
 /************************************************
@@ -1462,6 +1473,7 @@ crude_gfx_create_buffer
   buffer->handle = handle;
   buffer->global_offset = 0;
   buffer->parent_buffer = CRUDE_GFX_INVALID_BUFFER_HANDLE;
+  buffer->ready = true;
 
   bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) ) != 0;
   if ( creation->usage == CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC && use_global_buffer )
@@ -1476,18 +1488,26 @@ crude_gfx_create_buffer
     .size = creation->size > 0 ? creation->size : 1,
   };
   
-  VmaAllocationCreateInfo memory_info = {
-    .flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
-    .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
+  VmaAllocationCreateInfo allocation_create_info = {
+    .flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT
   };
 
   if ( creation->persistent )
   {
-    memory_info.flags = memory_info.flags | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    allocation_create_info.flags = allocation_create_info.flags | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  }
+
+  if ( creation->device_only )
+  {
+    allocation_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  }
+  else
+  {
+    allocation_create_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
   }
   
   VmaAllocationInfo allocation_info;
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateBuffer( gpu->vma_allocator, &buffer_info, &memory_info, &buffer->vk_buffer, &buffer->vma_allocation, &allocation_info ),
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateBuffer( gpu->vma_allocator, &buffer_info, &allocation_create_info, &buffer->vk_buffer, &buffer->vma_allocation, &allocation_info ),
     "Failed to create buffer %s %u", buffer->name, handle.index );
   
   crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_BUFFER, ( uint64 )buffer->vk_buffer, creation->name );
@@ -1660,15 +1680,15 @@ _vk_debug_callback
 {
   if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "validation layer: %s", pCallbackData->pMessage );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
   }
   else if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT )
   {
-    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "validation layer: %s", pCallbackData->pMessage );
+    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
   }
   //else if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT )
   //{
-  //  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "validation layer: %s", pCallbackData->pMessage );
+  //  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
   //}
   return VK_FALSE;
 }

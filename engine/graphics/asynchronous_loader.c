@@ -17,6 +17,8 @@ crude_gfx_initialize_asynchronous_loader
   asynloader->staging_buffer_offset = 0u;
 
   asynloader->texture_ready = CRUDE_GFX_INVALID_TEXTURE_HANDLE;
+  asynloader->cpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
+  asynloader->gpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
 
   asynloader->file_load_requests = NULL;
   asynloader->upload_requests = NULL;
@@ -68,6 +70,14 @@ crude_gfx_initialize_asynchronous_loader
 }
 
 void
+crude_gfx_deinitialize_asynchronous_loader
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
+)
+{
+}
+
+void
 crude_gfx_asynchronous_loader_request_texture_data
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
@@ -83,6 +93,25 @@ crude_gfx_asynchronous_loader_request_texture_data
 }
 
 void
+crude_gfx_asynchronous_loader_request_buffer_copy
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_buffer_handle                             cpu_buffer,
+  _In_ crude_gfx_buffer_handle                             gpu_buffer
+)
+{
+  crude_gfx_upload_request request = {
+    .cpu_buffer = cpu_buffer,
+    .gpu_buffer = gpu_buffer,
+    .texture    = CRUDE_GFX_INVALID_TEXTURE_HANDLE,
+  };
+  CRUDE_ARR_PUSH( asynloader->upload_requests, request );
+
+  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( asynloader->renderer->gpu, gpu_buffer );
+  buffer->ready = false;
+}
+
+void
 crude_gfx_asynchronous_loader_update
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
@@ -92,6 +121,17 @@ crude_gfx_asynchronous_loader_update
   {
     crude_gfx_renderer_add_texture_to_update( asynloader->renderer, asynloader->texture_ready );
     asynloader->texture_ready = CRUDE_GFX_INVALID_TEXTURE_HANDLE;
+  }
+  
+  if ( CRUDE_GFX_IS_HANDLE_VALID( asynloader->cpu_buffer_ready ) && CRUDE_GFX_IS_HANDLE_VALID( asynloader->gpu_buffer_ready ) )
+  {
+    crude_gfx_destroy_buffer( asynloader->renderer->gpu, asynloader->cpu_buffer_ready );
+
+    crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( asynloader->renderer->gpu, asynloader->gpu_buffer_ready );
+    buffer->ready = true;
+
+    asynloader->cpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
+    asynloader->gpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
   }
   
   if ( CRUDE_ARR_LEN( asynloader->upload_requests ) )
@@ -108,7 +148,7 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_cmd_buffer *cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
     crude_gfx_cmd_begin_primary( cmd );
 
-    if ( request.texture.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+    if ( CRUDE_GFX_IS_HANDLE_VALID( request.texture ) )
     {
       crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( asynloader->renderer->gpu, request.texture );
       uint32 texture_channels = 4;
@@ -119,6 +159,10 @@ crude_gfx_asynchronous_loader_update
       crude_gfx_cmd_upload_texture_data( cmd, texture->handle, request.data, asynloader->staging_buffer->handle, current_offset );
      
       free( request.data );
+    }
+    else if ( CRUDE_GFX_IS_HANDLE_VALID( request.cpu_buffer ) && CRUDE_GFX_IS_HANDLE_VALID( request.gpu_buffer ) )
+    {
+      crude_gfx_cmd_upload_buffer_data( cmd, request.cpu_buffer, request.gpu_buffer );
     }
         
     crude_gfx_cmd_end( cmd );
@@ -136,10 +180,17 @@ crude_gfx_asynchronous_loader_update
     VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
     vkQueueSubmit( used_queue, 1, &submitInfo, asynloader->vk_transfer_fence );
 
-    if ( request.texture.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+    if ( CRUDE_GFX_IS_HANDLE_VALID( request.texture ) )
     {
-      CRUDE_ASSERT( asynloader->texture_ready.index == CRUDE_GFX_INVALID_TEXTURE_HANDLE.index );
+      CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( asynloader->texture_ready ) );
       asynloader->texture_ready = request.texture;
+    }
+    else if ( CRUDE_GFX_IS_HANDLE_VALID( request.cpu_buffer ) && CRUDE_GFX_IS_HANDLE_VALID( request.gpu_buffer ) )
+    {
+      CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( asynloader->cpu_buffer_ready ) );
+      CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( asynloader->gpu_buffer_ready ) );
+      asynloader->cpu_buffer_ready = request.cpu_buffer;
+      asynloader->gpu_buffer_ready = request.gpu_buffer;
     }
   }
 
@@ -165,4 +216,6 @@ crude_gfx_asynchronous_loader_update
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error reading file %s", load_request.path );
     }
   }
+
+  asynloader->staging_buffer_offset = 0;
 }

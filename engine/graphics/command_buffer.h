@@ -55,7 +55,7 @@ typedef struct crude_gfx_cmd_buffer_manager
 
   uint32                                                   num_pools_per_frame;
   uint32                                                   num_primary_cmd_buffers_per_thread;
-  uint32                                                   num_secondary_cmd_buffer_per_thread;
+  uint32                                                   num_secondary_cmd_buffer_per_pool;
 
   CRUDE_ARR( uint8 )                                       num_used_primary_cmd_buffers_per_frame;
   CRUDE_ARR( uint8 )                                       num_used_secondary_cmd_buffers_per_frame;
@@ -235,6 +235,14 @@ crude_gfx_cmd_upload_texture_data
   _In_ void                                               *texture_data,
   _In_ crude_gfx_buffer_handle                             staging_buffer_handle,
   _In_ uint64                                              staging_buffer_offset
+);
+
+CRUDE_API void
+crude_gfx_cmd_upload_buffer_data
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             src_buffer,
+  _In_ crude_gfx_buffer_handle                             dst_buffer
 );
 
 /************************************************
