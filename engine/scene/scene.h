@@ -1,5 +1,7 @@
 #pragma once
 
+#include <TaskScheduler_c.h>
+
 #include <core/math.h>
 #include <graphics/renderer.h>
 #include <graphics/asynchronous_loader.h>
@@ -64,7 +66,6 @@ typedef struct crude_gltf_scene
   crude_gfx_renderer_buffer                               *buffers;
   crude_mesh_draw                                         *mesh_draws;
   char const                                               path[ CRUDE_MAX_GLTF_SCENE_PATH_LEN ];
-
   
   crude_gfx_asynchronous_loader                           *async_loader;
 
@@ -72,22 +73,27 @@ typedef struct crude_gltf_scene
   crude_gfx_renderer_material                             *material;
 } crude_gltf_scene;
 
+/**
+ *
+ * GLTF Scene Function
+ * 
+ */
 CRUDE_API void
-crude_load_gltf_scene_from_file
+crude_gltf_scene_load_from_file
 (
   _In_ crude_gltf_scene                                   *scene,
   _In_ crude_gltf_scene_creation const                    *creation
 );
 
 CRUDE_API void
-crude_unload_gltf_scene
+crude_gltf_scene_unload
 (
   _In_ crude_gltf_scene                                   *scene
 );
-               
-//CRUDE_API void
-//prepare_draws( raptor::Renderer* renderer, raptor::StackAllocator* scratch_allocator );
-//CRUDE_API void
-//upload_materials( float model_scale );
-//CRUDE_API void
-//submit_draw_task( raptor::ImGuiService* imgui, raptor::GPUProfiler* gpu_profiler, enki::TaskScheduler* task_scheduler );
+
+CRUDE_API void
+crude_gltf_scene_submit_draw_task
+(
+  _In_ crude_gltf_scene                                   *scene,
+  _In_ enkiTaskScheduler                                  *draw_task_sheduler
+);

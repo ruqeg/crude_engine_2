@@ -14,6 +14,10 @@ crude_gfx_initialize_asynchronous_loader
 {
   asynloader->renderer = renderer;
 
+  asynloader->staging_buffer_offset = 0u;
+
+  asynloader->texture_ready = CRUDE_GFX_INVALID_TEXTURE_HANDLE;
+
   asynloader->file_load_requests = NULL;
   asynloader->upload_requests = NULL;
 
@@ -84,8 +88,7 @@ crude_gfx_asynchronous_loader_update
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
-  
-  if ( asynloader->texture_ready.index != CRUDE_GFX_INVALID_TEXTURE_HANDLE.index )
+  if ( CRUDE_GFX_IS_HANDLE_VALID( asynloader->texture_ready ) )
   {
     crude_gfx_renderer_add_texture_to_update( asynloader->renderer, asynloader->texture_ready );
     asynloader->texture_ready = CRUDE_GFX_INVALID_TEXTURE_HANDLE;

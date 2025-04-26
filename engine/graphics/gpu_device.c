@@ -255,7 +255,7 @@ crude_gfx_initialize_device
     vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
   }
   
-  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, 1 );
+  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, creation->num_threads );
   gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_gfx_cmd_buffer* ) * 128, 1 );
 
   gpu->previous_frame = 0;
@@ -2475,7 +2475,7 @@ _vk_create_texture
   }
   else
   {
-    image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     image_info.usage |= is_render_target ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0;
   }
   

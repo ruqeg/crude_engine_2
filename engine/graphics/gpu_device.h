@@ -21,6 +21,7 @@ typedef struct crude_gfx_device_creation
   crude_allocator                                          allocator;
   uint16                                                   queries_per_frame;
   uint16                                                   max_frames;
+  uint16                                                   num_threads;
 } crude_gfx_device_creation;
 
 typedef struct crude_gfx_device                    

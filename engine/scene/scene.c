@@ -12,6 +12,26 @@
 
 /**
  *
+ * GLTF Draw Task
+ * 
+ */
+typedef struct _gltf_scene_draw_task_data
+{
+  crude_gltf_scene                                        *scene;
+  uint32                                                   thread_id;
+} _gltf_scene_draw_task_data;
+
+void
+_gltf_scene_draw_task
+(
+  _In_ uint32_t                                            start,
+  _In_ uint32_t                                            end,
+  _In_ uint32_t                                            thread_num,
+  _In_ void                                               *args
+);
+
+/**
+ *
  * GLTF Utils Functinos Declaration
  * 
  */
@@ -35,13 +55,21 @@ _create_gltf_mesh_material
   _In_ crude_mesh_draw                          *mesh_draw
 );
 
+static void
+_draw_mesh
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands,
+  _In_ crude_mesh_draw                                    *mesh_draw
+);
+
 /**
  *
  * GLTF Scene Functinos
  * 
  */
 void
-crude_load_gltf_scene_from_file
+crude_gltf_scene_load_from_file
 (
   _In_ crude_gltf_scene                                   *scene,
   _In_ crude_gltf_scene_creation const                    *creation
@@ -348,7 +376,7 @@ crude_load_gltf_scene_from_file
 }
 
 void
-crude_unload_gltf_scene
+crude_gltf_scene_unload
 (
   _In_ crude_gltf_scene                                   *scene
 )
@@ -383,12 +411,26 @@ crude_unload_gltf_scene
   CRUDE_ARR_FREE( scene->buffers );
 }
 
+void
+crude_gltf_scene_submit_draw_task
+(
+  _In_ crude_gltf_scene                                   *scene,
+  _In_ enkiTaskScheduler                                  *draw_task_sheduler
+)
+{
+  _gltf_scene_draw_task_data draw_task_data = { .scene = scene };
+  enkiTaskSet *draw_task = enkiCreateTaskSet( draw_task_sheduler, _gltf_scene_draw_task );
+  enkiSetArgsTaskSet( draw_task, &draw_task_data );
+  enkiAddTaskSet( draw_task_sheduler, draw_task );
+  enkiWaitForTaskSet( draw_task_sheduler, draw_task );
+  crude_gfx_renderer_add_texture_update_commands( scene->renderer, ( draw_task_data.thread_id + 1 ) % enkiGetNumTaskThreads( draw_task_sheduler ) );
+}
+
 /**
  *
  * GLTF Utils Functinos Implementation
  * 
  */
-
 void
 _get_gltf_mesh_vertex_buffer
 (
@@ -510,4 +552,70 @@ _create_gltf_mesh_material
   mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
   
   return transparent;
+}
+
+void
+_draw_mesh
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands,
+  _In_ crude_mesh_draw                                    *mesh_draw
+)
+{
+  crude_gfx_descriptor_set_creation ds_creation = {
+    .samplers = { CRUDE_GFX_INVALID_SAMPLER_HANDLE, CRUDE_GFX_INVALID_SAMPLER_HANDLE },
+    .bindings = { 0, 1 },
+    .resources= { renderer->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
+    .num_resources = 2,
+    .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
+  };
+  crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
+  
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->tangent_buffer, 1, mesh_draw->tangent_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->normal_buffer, 2, mesh_draw->normal_offset );
+  crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->texcoord_buffer, 3, mesh_draw->texcoord_offset );
+  crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
+  crude_gfx_cmd_bind_local_descriptor_set( gpu_commands, descriptor_set );
+  crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
+}
+
+/**
+ *
+ * GLTF Draw Task
+ * 
+ */
+void
+_gltf_scene_draw_task
+(
+  _In_ uint32_t                                            start,
+  _In_ uint32_t                                            end,
+  _In_ uint32_t                                            thread_num,
+  _In_ void                                               *args
+)
+{
+  _gltf_scene_draw_task_data *draw_task = CAST( _gltf_scene_draw_task_data *, args );
+  
+  draw_task->thread_id = thread_num;
+
+  crude_gfx_cmd_buffer *gpu_commands = crude_gfx_get_cmd( draw_task->scene->renderer->gpu, draw_task->thread_id, true );
+  
+  crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
+  crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
+  crude_gfx_cmd_bind_render_pass( gpu_commands, draw_task->scene->renderer->gpu->swapchain_pass, false );
+  crude_gfx_cmd_set_viewport( gpu_commands, NULL );
+  crude_gfx_cmd_set_scissor( gpu_commands, NULL );
+  
+  crude_gfx_renderer_material *last_material = NULL;
+  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ); ++mesh_index )
+  {
+    crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
+    if ( mesh_draw->material != last_material )
+    {
+      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
+      last_material = mesh_draw->material;
+    }
+    _draw_mesh( draw_task->scene->renderer, gpu_commands, mesh_draw );
+  }
+  crude_gfx_queue_cmd( gpu_commands );
 }
