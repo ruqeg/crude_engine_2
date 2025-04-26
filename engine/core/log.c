@@ -80,8 +80,8 @@ crude_log_common
 {
   va_list args;
   va_start( args, format );
-  crude_snprintf( g_format_buffer, ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
-  crude_vsnprintf( g_message_buffer, ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
+  crude_snprintf( g_format_buffer, CRUDE_STACK_ARRAY_SIZE( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", crude_get_channel_string( channel ), crude_get_verbosity_string( verbosity ), filename, line, format );
+  crude_vsnprintf( g_message_buffer, CRUDE_STACK_ARRAY_SIZE( g_message_buffer ), g_format_buffer, args );
 #ifdef _WIN32
   OutputDebugStringA( CAST( LPCSTR, g_message_buffer ) );
 #endif

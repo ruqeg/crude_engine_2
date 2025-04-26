@@ -192,13 +192,18 @@ _vk_resize_swapchain
 (
   _In_ crude_gfx_device                             *gpu
 );
-static void
-_vk_parse_shader_descriptor_parse
+static inline crude_gfx_vertex_component_format
+_reflect_format_to_vk_format
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ void                                         *code,
-  _In_ uint32                                        code_size,
-  _Out_ crude_gfx_shader_descriptor_parse               *parse
+  _In_ SpvReflectFormat                                    format
+);
+static void
+_vk_reflect_shader
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *code,
+  _In_ uint32                                              code_size,
+  _In_ crude_gfx_shader_reflect                           *reflect
 );
 static void
 _vk_destroy_resources_instant
@@ -496,7 +501,7 @@ crude_gfx_present
     .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
     .waitSemaphoreCount = 1,
     .pWaitSemaphores    = render_complete_semaphore,
-    .swapchainCount     = ARRAY_SIZE( swap_chains ),
+    .swapchainCount     = CRUDE_STACK_ARRAY_SIZE( swap_chains ),
     .pSwapchains        = swap_chains,
     .pImageIndices      = &gpu->vk_swapchain_image_index,
   };
@@ -990,7 +995,7 @@ crude_gfx_create_shader_state
 
     if ( shader_create_info.pCode )
     {
-      _vk_parse_shader_descriptor_parse( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->parse );
+      _vk_reflect_shader( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->reflect );
     }
   }
   
@@ -1165,44 +1170,46 @@ crude_gfx_create_pipeline
   
   // Create VkPipelineLayout
   VkDescriptorSetLayout vk_layouts[ CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS ];
-  for ( uint32 i = 0; i < shader_state_data->parse.descriptor.sets_count; ++i )
+  for ( uint32 i = 0; i < shader_state_data->reflect.descriptor.sets_count; ++i )
   {
-    pipeline->descriptor_set_layout_handle[ i ] = crude_gfx_create_descriptor_set_layout( gpu, &shader_state_data->parse.descriptor.sets[ i ] );
+    pipeline->descriptor_set_layout_handle[ i ] = crude_gfx_create_descriptor_set_layout( gpu, &shader_state_data->reflect.descriptor.sets[ i ] );
     crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, pipeline->descriptor_set_layout_handle[ i ] );
     vk_layouts[ i ] = descriptor_set_layout->vk_descriptor_set_layout;
   }
 
-  vk_layouts[ shader_state_data->parse.descriptor.sets_count ] = gpu->vk_bindless_descriptor_set_layout;
+  vk_layouts[ shader_state_data->reflect.descriptor.sets_count ] = gpu->vk_bindless_descriptor_set_layout;
 
   VkPipelineLayoutCreateInfo pipeline_layout_info = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     .pSetLayouts = vk_layouts,
-    .setLayoutCount = shader_state_data->parse.descriptor.sets_count + 1,
+    .setLayoutCount = shader_state_data->reflect.descriptor.sets_count + 1,
   };
   
   VkPipelineLayout pipeline_layout;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( gpu->vk_device, &pipeline_layout_info, gpu->vk_allocation_callbacks, &pipeline_layout ), "Failed to create pipeline layout" );
 
   pipeline->vk_pipeline_layout = pipeline_layout;
-  pipeline->num_active_layouts = shader_state_data->parse.descriptor.sets_count;
+  pipeline->num_active_layouts = shader_state_data->reflect.descriptor.sets_count;
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
   
-  VkVertexInputAttributeDescription vertex_attributes[8];
-  if ( creation->vertex_input.num_vertex_attributes )
+  VkVertexInputAttributeDescription vk_vertex_attributes[ 8 ];
+  CRUDE_ARR( crude_gfx_vertex_attribute ) vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
+  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_attributes ) >= CRUDE_ARR_LEN( vertex_attributes ) );
+
+  if ( CRUDE_ARR_LEN( vertex_attributes ) )
   {
-    for ( uint32 i = 0; i < creation->vertex_input.num_vertex_attributes; ++i )
+    for ( uint32 i = 0; i < CRUDE_ARR_LEN( vertex_attributes ); ++i )
     {
-      crude_gfx_vertex_attribute const *vertex_attribute = &creation->vertex_input.vertex_attributes[i];
-      vertex_attributes[i] = ( VkVertexInputAttributeDescription ){
-        .location = vertex_attribute->location,
-        .binding = vertex_attribute->binding,
-        .format = crude_gfx_to_vk_vertex_format( vertex_attribute->format ),
-        .offset = vertex_attribute->offset
+      vk_vertex_attributes[ i ] = ( VkVertexInputAttributeDescription ){
+        .location = vertex_attributes[ i ].location,
+        .binding = vertex_attributes[ i ].binding,
+        .format = crude_gfx_to_vk_vertex_format( vertex_attributes[ i ].format ),
+        .offset = vertex_attributes[ i ].offset
       };
     }
-    vertex_input_info.vertexAttributeDescriptionCount = creation->vertex_input.num_vertex_attributes;
-    vertex_input_info.pVertexAttributeDescriptions = vertex_attributes;
+    vertex_input_info.vertexAttributeDescriptionCount = CRUDE_ARR_LEN( vertex_attributes );
+    vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
   }
   else
   {
@@ -1210,22 +1217,22 @@ crude_gfx_create_pipeline
     vertex_input_info.pVertexAttributeDescriptions = NULL;
   }
 
-  VkVertexInputBindingDescription vertex_bindings[8];
-  if ( creation->vertex_input.num_vertex_streams )
+  VkVertexInputBindingDescription vk_vertex_bindings[ 8 ];
+  CRUDE_ARR( crude_gfx_vertex_stream ) vertex_streams = shader_state_data->reflect.input.vertex_streams;
+  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_bindings ) >= CRUDE_ARR_LEN( vertex_streams ) );
+  if ( CRUDE_ARR_LEN( vertex_streams ) )
   {
-    vertex_input_info.vertexBindingDescriptionCount = creation->vertex_input.num_vertex_streams;
-  
-    for ( uint32 i = 0; i < creation->vertex_input.num_vertex_streams; ++i )
+    for ( uint32 i = 0; i < CRUDE_ARR_LEN( vertex_streams ); ++i )
     {
-      crude_gfx_vertex_stream const *vertex_stream = &creation->vertex_input.vertex_streams[i];
-      VkVertexInputRate vertex_rate = vertex_stream->input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-      vertex_bindings[i] = ( VkVertexInputBindingDescription ){
-        .binding = vertex_stream->binding,
-        .stride = vertex_stream->stride,
+      VkVertexInputRate vertex_rate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+      vk_vertex_bindings[ i ] = ( VkVertexInputBindingDescription ){
+        .binding = vertex_streams[ i ].binding,
+        .stride = vertex_streams[ i ].stride,
         .inputRate = vertex_rate
       };
     }
-    vertex_input_info.pVertexBindingDescriptions = vertex_bindings;
+    vertex_input_info.vertexBindingDescriptionCount = CRUDE_ARR_LEN( vertex_streams );
+    vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
   }
   else
   {
@@ -1348,7 +1355,7 @@ crude_gfx_create_pipeline
   VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
   VkPipelineDynamicStateCreateInfo dynamic_state = { 
     .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    .dynamicStateCount = ARRAY_SIZE( dynamic_states ),
+    .dynamicStateCount = CRUDE_STACK_ARRAY_SIZE( dynamic_states ),
     .pDynamicStates = dynamic_states,
   };
   
@@ -1666,7 +1673,7 @@ _vk_create_instance
   // extensions
   uint32 surface_extensions_count;
   char const *const *surface_extensions_array = SDL_Vulkan_GetInstanceExtensions( &surface_extensions_count );
-  uint32 const debug_extensions_count = ARRAY_SIZE( vk_instance_required_extensions );
+  uint32 const debug_extensions_count = CRUDE_STACK_ARRAY_SIZE( vk_instance_required_extensions );
 
   char const **instance_enabled_extensions = NULL;
   uint32 const instance_enabled_extensions_count = surface_extensions_count + debug_extensions_count;
@@ -1703,7 +1710,7 @@ _vk_create_instance
   instance_create_info.ppEnabledExtensionNames  = instance_enabled_extensions;
   instance_create_info.enabledExtensionCount    = instance_enabled_extensions_count;
   instance_create_info.ppEnabledLayerNames     = instance_enabled_layers;
-  instance_create_info.enabledLayerCount       = ARRAY_SIZE( instance_enabled_layers );
+  instance_create_info.enabledLayerCount       = CRUDE_STACK_ARRAY_SIZE( instance_enabled_layers );
 #ifdef VK_EXT_debug_utils
   VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
   memset( &debug_create_info, 0u, sizeof( debug_create_info ) );
@@ -1835,7 +1842,7 @@ _vk_check_support_required_extensions
   vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
 
   bool support_required_extensions = true;
-  for ( uint32 i = 0; i < ARRAY_SIZE( vk_device_required_extensions ); ++i )
+  for ( uint32 i = 0; i < CRUDE_STACK_ARRAY_SIZE( vk_device_required_extensions ); ++i )
   {
     bool extension_found = false;
     for ( uint32 k = 0; k < available_extensions_count; ++k )
@@ -2039,9 +2046,9 @@ _vk_create_device
     .queueCreateInfoCount     = transfer_queue_index < queue_family_count ? 2 : 1,
     .pQueueCreateInfos        = queue_info,
     .pEnabledFeatures         = NULL,
-    .enabledExtensionCount    = ARRAY_SIZE( vk_device_required_extensions ),
+    .enabledExtensionCount    = CRUDE_STACK_ARRAY_SIZE( vk_device_required_extensions ),
     .ppEnabledExtensionNames  = vk_device_required_extensions,
-    .enabledLayerCount        = ARRAY_SIZE( vk_required_layers ),
+    .enabledLayerCount        = CRUDE_STACK_ARRAY_SIZE( vk_required_layers ),
     .ppEnabledLayerNames      = vk_required_layers,
   };
   VkDevice device;
@@ -2150,8 +2157,8 @@ _vk_create_swapchain
     .imageExtent            = swapchain_extent,
     .imageArrayLayers       = 1,
     .imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    .imageSharingMode       = ARRAY_SIZE( queue_family_indices ) > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-    .queueFamilyIndexCount  = ARRAY_SIZE( queue_family_indices ),
+    .imageSharingMode       = CRUDE_STACK_ARRAY_SIZE( queue_family_indices ) > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+    .queueFamilyIndexCount  = CRUDE_STACK_ARRAY_SIZE( queue_family_indices ),
     .pQueueFamilyIndices    = queue_family_indices,
     .preTransform           = surface_capabilities.currentTransform,
     .compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -2229,13 +2236,13 @@ _vk_create_descriptor_pool
   VkDescriptorPoolCreateInfo pool_info = {
     .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,
-    .maxSets       = MAX_BINDLESS_RESOURCES * ARRAY_SIZE( pool_sizes_bindless ),
-    .poolSizeCount = ARRAY_SIZE( pool_sizes_bindless ),
+    .maxSets       = MAX_BINDLESS_RESOURCES * CRUDE_STACK_ARRAY_SIZE( pool_sizes_bindless ),
+    .poolSizeCount = CRUDE_STACK_ARRAY_SIZE( pool_sizes_bindless ),
     .pPoolSizes    = pool_sizes_bindless,
   };
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( vk_device, &pool_info, vk_allocation_callbacks, vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
 
-  uint32 pool_count = ARRAY_SIZE( pool_sizes_bindless );
+  uint32 pool_count = CRUDE_STACK_ARRAY_SIZE( pool_sizes_bindless );
   VkDescriptorSetLayoutBinding vk_binding[ 2 ];
   VkDescriptorSetLayoutBinding  *image_sampler_binding = &vk_binding[ 0 ];
   image_sampler_binding->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2353,7 +2360,7 @@ _vk_create_swapchain_pass
   VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
   VkRenderPassCreateInfo render_pass_info = { 
     .sType            = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    .attachmentCount  = ARRAY_SIZE( attachments ),
+    .attachmentCount  = CRUDE_STACK_ARRAY_SIZE( attachments ),
     .pAttachments     = attachments,
     .subpassCount     = 1,
     .pSubpasses       = &subpass,
@@ -2368,7 +2375,7 @@ _vk_create_swapchain_pass
   VkFramebufferCreateInfo framebuffer_info = {
     .sType            = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
     .renderPass       = render_pass->vk_render_pass,
-    .attachmentCount  = ARRAY_SIZE( framebuffer_attachments ),
+    .attachmentCount  = CRUDE_STACK_ARRAY_SIZE( framebuffer_attachments ),
     .width            = gpu->vk_swapchain_width,
     .height           = gpu->vk_swapchain_height,
     .layers           = 1,
@@ -2594,24 +2601,69 @@ _vk_resize_swapchain
   vkDeviceWaitIdle( gpu->vk_device );
 }
 
-void
-_vk_parse_shader_descriptor_parse
+inline crude_gfx_vertex_component_format
+_reflect_format_to_vk_format
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ void                                         *code,
-  _In_ uint32                                        code_size,
-  _Out_ crude_gfx_shader_descriptor_parse               *parse
+  _In_ SpvReflectFormat                                    format
+)
+{
+  switch ( format )
+  {
+    case SPV_REFLECT_FORMAT_R16G16_SINT         : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_SHORT2;
+    case SPV_REFLECT_FORMAT_R16G16B16A16_SINT   : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_SHORT4;
+    case SPV_REFLECT_FORMAT_R32_UINT            : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT;
+    case SPV_REFLECT_FORMAT_R32_SFLOAT          : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+    case SPV_REFLECT_FORMAT_R32G32_UINT         : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT2;
+    case SPV_REFLECT_FORMAT_R32G32_SFLOAT       : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2;
+    case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT    : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT3;
+    case SPV_REFLECT_FORMAT_R32G32B32A32_UINT   : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT4;
+    case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT4;
+  };
+  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Don't support reflect format %i", format );
+}
+
+void
+_vk_reflect_shader
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *code,
+  _In_ uint32                                              code_size,
+  _In_ crude_gfx_shader_reflect                           *reflect
 )
 {
   SpvReflectShaderModule spv_reflect;
   SpvReflectResult result = spvReflectCreateShaderModule( code_size, code, &spv_reflect );
   CRUDE_ASSERT( result == SPV_REFLECT_RESULT_SUCCESS );
   
+  if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
+  {
+    CRUDE_ARR_SETLEN( reflect->input.vertex_attributes, spv_reflect.input_variable_count );
+    CRUDE_ARR_SETLEN( reflect->input.vertex_streams, spv_reflect.input_variable_count );
+    for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
+    {
+      SpvReflectInterfaceVariable const *spv_input = spv_reflect.input_variables[ input_index ];
+      
+      reflect->input.vertex_attributes[ input_index ] = ( crude_gfx_vertex_attribute ) {
+        .location = spv_input->location,
+        .binding = spv_input->location,
+        .offset = 0,
+        .format = _reflect_format_to_vk_format( spv_input->format )
+      };
+      
+      uint32 const stride = ( spv_input->numeric.vector.component_count * spv_input->numeric.scalar.width ) / 8;
+      reflect->input.vertex_streams[ input_index ] = ( crude_gfx_vertex_stream ){
+        .binding = spv_input->location,
+        .stride = stride,
+        .input_rate = CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX
+      };
+    }
+  }
+
   for ( uint32 set_index = 0; set_index < spv_reflect.descriptor_set_count; ++set_index )
   {
     SpvReflectDescriptorSet const *spv_descriptor_set = &spv_reflect.descriptor_sets[ set_index ];
 
-    crude_gfx_descriptor_set_layout_creation *set_layout = &parse->sets[ spv_descriptor_set->set ];
+    crude_gfx_descriptor_set_layout_creation *set_layout = &reflect->descriptor.sets[ spv_descriptor_set->set ];
     set_layout->set_index = spv_descriptor_set->set;
     set_layout->num_bindings = 0;
 
@@ -2628,7 +2680,7 @@ _vk_parse_shader_descriptor_parse
       {
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         {
-          parse->sets_count = crude_max( parse->sets_count, ( spv_descriptor_set->set + 1 ) );
+          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
           ++set_layout->num_bindings;
           break;

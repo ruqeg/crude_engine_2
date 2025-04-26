@@ -11,7 +11,6 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <scene/free_camera_system.h>
-#include <resources/gltf_loader.h>
 
 static void
 crude_draw_mesh
@@ -124,8 +123,14 @@ initialize_render_core
     };
     renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
 
-    renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_scene ), 1u );
-    crude_load_gltf_from_file( renderer->renderer, gltf_path, renderer->async_loader, renderer->scene );
+    renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_gltf_scene ), 1u );
+    
+    crude_gltf_scene_creation gltf_creation = {
+      .renderer = renderer->renderer,
+      .path = gltf_path,
+      .async_loader = renderer->async_loader,
+    };
+    crude_load_gltf_scene_from_file( renderer->scene, &gltf_creation );
     
     renderer[ i ].camera = crude_entity_create_empty( it->world, "camera1" );
     CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_camera, {
@@ -158,7 +163,7 @@ deinitialize_render_core
     enkiWaitforAllAndShutdown( renderer[ i ].ets );
     enkiDeletePinnedTask( renderer[ i ].ets, renderer[ i ].pinned_task_run_pinned_task_loop );
     enkiDeleteTaskScheduler( renderer[ i ].ets );
-    crude_unload_gltf_from_file( renderer[ i ].renderer, renderer[ i ].scene );
+    crude_unload_gltf_scene( renderer[ i ].scene );
     crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
     crude_gfx_deinitialize_renderer( renderer[ i ].renderer );
     crude_gfx_deinitialize_device( renderer[ i ].gpu );

@@ -4,6 +4,7 @@
 #include <vma_usage.h>
 #include <spirv_reflect.h>
 
+#include <core/algorithms.h>
 #include <core/math.h>
 #include <core/resource_pool.h>
 
@@ -17,8 +18,6 @@
 #define CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS               8
 #define CRUDE_GFX_MAX_SHADER_STAGES                        5      
 #define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  16
-#define CRUDE_GFX_MAX_VERTEX_STREAMS                       16
-#define CRUDE_GFX_MAX_VERTEX_ATTRIBUTES                    16
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
 
@@ -381,14 +380,6 @@ typedef struct crude_gfx_vertex_stream
   crude_gfx_vertex_input_rate                              input_rate;
 } crude_gfx_vertex_stream;
 
-typedef struct crude_gfx_vertex_input_creation
-{
-  uint32                                                   num_vertex_streams;
-  uint32                                                   num_vertex_attributes;
-  crude_gfx_vertex_stream                                  vertex_streams[ CRUDE_GFX_MAX_VERTEX_STREAMS ];
-  crude_gfx_vertex_attribute                               vertex_attributes[ CRUDE_GFX_MAX_VERTEX_ATTRIBUTES ];
-} crude_gfx_vertex_input_creation;
-
 typedef struct crude_gfx_shader_stage
 {
   char const                                              *code;
@@ -433,7 +424,6 @@ typedef struct crude_gfx_pipeline_creation
   crude_gfx_rasterization_creation                         rasterization;
   crude_gfx_depth_stencil_creation                         depth_stencil;
   crude_gfx_blend_state_creation                           blend_state;
-  crude_gfx_vertex_input_creation                          vertex_input;
   crude_gfx_shader_state_creation                          shaders;
   crude_gfx_render_pass_output                             render_pass;
   crude_gfx_viewport_state const                          *viewport;
@@ -450,16 +440,23 @@ typedef struct crude_gfx_descriptor_set_creation
   char const                                              *name;
 } crude_gfx_descriptor_set_creation;
 
-typedef struct crude_gfx_shader_descriptor_parse
+typedef struct crude_gfx_shader_descriptor_reflect
 {
   uint32                                                   sets_count;
   crude_gfx_descriptor_set_layout_creation                 sets[ CRUDE_GFX_MAX_SET_COUNT ];
-} crude_gfx_shader_descriptor_parse;
+} crude_gfx_shader_descriptor_reflect;
 
-typedef struct crude_gfx_shader_parse
+typedef struct crude_gfx_shader_input_reflect
 {
-  crude_gfx_shader_descriptor_parse                        descriptor;
-} crude_gfx_shader_parse;
+  CRUDE_ARR( crude_gfx_vertex_stream )                     vertex_streams;
+  CRUDE_ARR( crude_gfx_vertex_attribute )                  vertex_attributes;
+} crude_gfx_shader_input_reflect;
+
+typedef struct crude_gfx_shader_reflect
+{
+  crude_gfx_shader_descriptor_reflect                      descriptor;
+  crude_gfx_shader_input_reflect                           input;
+} crude_gfx_shader_reflect;
 
 typedef struct crude_gfx_buffer
 {
@@ -578,7 +575,7 @@ typedef struct crude_gfx_shader_state
   const char                                              *name;
   uint32                                                   active_shaders;
   bool                                                     graphics_pipeline;
-  crude_gfx_shader_parse                                   parse;
+  crude_gfx_shader_reflect                                 reflect;
 } crude_gfx_shader_state;
 
 typedef struct crude_gfx_buffer_description

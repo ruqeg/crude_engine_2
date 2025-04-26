@@ -53,8 +53,8 @@ crude_gfx_initialize_cmd
   VkDescriptorPoolCreateInfo pool_info = {
     .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    .maxSets       = global_pool_elements * ARRAY_SIZE( pool_sizes ),
-    .poolSizeCount = ARRAY_SIZE( pool_sizes ),
+    .maxSets       = global_pool_elements * CRUDE_STACK_ARRAY_SIZE( pool_sizes ),
+    .poolSizeCount = CRUDE_STACK_ARRAY_SIZE( pool_sizes ),
     .pPoolSizes    = pool_sizes,
   };
   
@@ -319,7 +319,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   {
     if ( descriptor_set->layout->bindings[ i ].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER )
     {
-        CRUDE_ASSERT( num_offsets < ARRAY_SIZE( offsets_cache ) );
+        CRUDE_ASSERT( num_offsets < CRUDE_STACK_ARRAY_SIZE( offsets_cache ) );
         const uint32 resource_index = descriptor_set->bindings[ i ];
         crude_gfx_buffer_handle buffer_handle = { descriptor_set->resources[ resource_index ] };
         crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, buffer_handle );

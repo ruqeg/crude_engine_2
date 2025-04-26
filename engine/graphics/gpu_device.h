@@ -57,8 +57,8 @@ typedef struct crude_gfx_device
    * sampler/texture is undefined. Ensures consistent
    * rendering behavior even with missing assets.
    */
-  crude_gfx_sampler_handle                               default_sampler;
-  crude_gfx_texture_handle                               depth_texture;
+  crude_gfx_sampler_handle                                 default_sampler;
+  crude_gfx_texture_handle                                 depth_texture;
   /**
    * GPU Device resources memory pools.
    * For implementation details and usage guidelines
