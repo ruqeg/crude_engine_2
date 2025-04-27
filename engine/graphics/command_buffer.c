@@ -1,5 +1,6 @@
 #include <core/assert.h>
 #include <core/algorithms.h>
+#include <core/profiler.h>
 #include <graphics/gpu_device.h>
 
 #include <graphics/command_buffer.h>
@@ -187,6 +188,7 @@ crude_gfx_cmd_bind_render_pass
   if ( !render_pass )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to bind render pass! Invalid render pass %u!", handle.index );
+    return;
   }
 
   if ( render_pass == cmd->current_render_pass )
@@ -421,9 +423,11 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_gfx_descriptor_set_creation const            *creation
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "CreateLocalDescriptorSet" );
   crude_gfx_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->frame_descriptor_sets ) };
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
+    CRUDE_TRACING_END;
     return handle;
   }
   
@@ -503,7 +507,7 @@ crude_gfx_cmd_create_local_descriptor_set
   descriptor_set->layout = descriptor_set_layout;
 
   vkUpdateDescriptorSets( cmd->gpu->vk_device, num_resources, descriptor_write, 0, NULL );
-
+  CRUDE_TRACING_END;
   return handle;
 }
 
@@ -579,7 +583,6 @@ crude_gfx_cmd_add_image_barrier_ext
   VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, destination_queue_type );
   
   vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
-
   return barrier.newLayout;
 }
 
@@ -767,6 +770,7 @@ crude_gfx_cmd_manager_reset
   _In_ uint32                                              frame
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "ResetCommandBufferManager" );
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
@@ -786,6 +790,7 @@ crude_gfx_cmd_manager_reset
 
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
   }
+  CRUDE_TRACING_END;
 }
 
 crude_gfx_cmd_buffer*

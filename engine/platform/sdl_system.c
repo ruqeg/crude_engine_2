@@ -3,6 +3,7 @@
 
 #include <platform/gui_components.h>
 #include <platform/input_components.h>
+#include <core/profiler.h>
 #include <core/assert.h>
 
 #include <platform/sdl_system.h>
@@ -204,6 +205,7 @@ sdl_process_events
   crude_window *app_windows = ecs_field( it, crude_window, 1 );
   crude_window_handle *app_windows_handles = ecs_field( it, crude_window_handle, 2 );
   
+  CRUDE_TRACING_ZONE_NAME( "SDLProcessEvents" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     for ( uint32 k = 0; k < 128; k++ )
@@ -297,6 +299,7 @@ sdl_process_events
       }
     }
   }
+  CRUDE_TRACING_END;
 }
 
 void

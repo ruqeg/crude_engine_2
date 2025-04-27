@@ -60,7 +60,7 @@ cr_main
     ECS_IMPORT( world, crude_sdl_system );
     ECS_IMPORT( world, crude_render_system );
     ECS_IMPORT( world, crude_free_camera_system );
-
+    
     ecs_entity_t scene = ecs_entity( world, { .name = "scene1" } );
     ecs_set( world, scene, crude_window, { 
       .width     = 800,
@@ -72,7 +72,6 @@ cr_main
       .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
       .allocator = ( crude_allocator ) { .allocate = sandbox_allocate, .deallocate = sandbox_deallocate },
       .max_frames = 3u } );
-
     g_initialized = true;
   }
  

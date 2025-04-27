@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_engine_simulation C)
+project(crude_engine_simulation)
 
 file(GLOB_RECURSE SRC *.c)
 file(GLOB_RECURSE HEADERS *.h)

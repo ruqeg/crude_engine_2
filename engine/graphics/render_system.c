@@ -1,6 +1,7 @@
 #include <core/file.h>
 #include <core/string.h>
 #include <core/algorithms.h>
+#include <core/profiler.h>
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/command_buffer.h>
@@ -27,7 +28,7 @@ void PinnedTaskRunPinnedTaskLoop( void* pArgs_ )
 
 void PinnedTaskRunPinnedTaskLoopAsyns( void* pArgs_ )
 {
-  // !TODO
+  CRUDE_TRACING_SET_THREAD_NAME( "AsynchronousLoaderThread" );
   while ( true )
   {
     crude_gfx_asynchronous_loader *async_loader = ( crude_gfx_asynchronous_loader*) pArgs_;
@@ -156,28 +157,32 @@ render
 {
   crude_renderer_component *renderer = ecs_field( it, crude_renderer_component, 0 );
   crude_window   *window_handle = ecs_field( it, crude_window, 1 );
-
+  
+  CRUDE_TRACING_ZONE_NAME( "Rendering" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_new_frame( renderer[ i ].gpu );
-
+  
     // update fame buffer
     crude_gfx_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
     crude_gfx_shader_frame_constants *frame_buffer_data = CAST( crude_gfx_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
     if ( frame_buffer_data )
     {
+      CRUDE_TRACING_ZONE_NAME( "UpdateFrameBuffer" );
       crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_transform );
-
+  
       crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( renderer[ i ].camera, transform ) );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
       
       crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
       crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
       crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
+      CRUDE_TRACING_END;
     }
     
     // update mesh buffer
+    CRUDE_TRACING_ZONE_NAME( "UpdateMeshBuffer" );
     for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
@@ -207,11 +212,13 @@ render
         crude_gfx_unmap_buffer( renderer[ i ].gpu, mesh_draw->material_buffer );
       }
     }
-
+    CRUDE_TRACING_END;
+  
     crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
-
+  
     crude_gfx_present( renderer[ i ].gpu );
   }
+  CRUDE_TRACING_END;
 }
 
 void

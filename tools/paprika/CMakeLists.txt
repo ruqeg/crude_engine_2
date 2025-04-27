@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_paprika C)
+project(crude_paprika)
 
 file(GLOB_RECURSE SRC *.c)
 file(GLOB_RECURSE HEADERS *.h)

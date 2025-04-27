@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include <core/profiler.h>
 #include <core/algorithms.h>
 #include <core/math.h>
 #include <core/assert.h>
@@ -391,18 +392,25 @@ crude_gfx_new_frame
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "GPUNewFrame" );
   VkFence *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
   {
+    CRUDE_TRACING_ZONE_NAME( "WaitForRenderComplete" );
     vkWaitForFences( gpu->vk_device, 1, render_complete_fence, VK_TRUE, UINT64_MAX );
+    CRUDE_TRACING_END;
   }
   
   vkResetFences( gpu->vk_device, 1, render_complete_fence );
   
+  {
+  CRUDE_TRACING_ZONE_NAME( "AcquireImage" );
   VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
   if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
     _vk_resize_swapchain( gpu );
+  }
+  CRUDE_TRACING_END;
   }
 
   crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
@@ -410,6 +418,7 @@ crude_gfx_new_frame
   uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
   gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
   gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
+  CRUDE_TRACING_END;
 }
 
 void
@@ -418,12 +427,14 @@ crude_gfx_present
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "GPUPresent" );
   VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
   VkSemaphore *render_complete_semaphore = &gpu->vk_render_finished_semaphores[ gpu->current_frame ];
-
+  
   VkCommandBuffer enqueued_command_buffers[ 4 ];
   for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
   {
+    CRUDE_TRACING_ZONE_NAME( "EndRenderPassAndCommandBuffers" );
     crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
     enqueued_command_buffers[ i ] = command_buffer->vk_cmd_buffer;
 
@@ -435,8 +446,9 @@ crude_gfx_present
     vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
     command_buffer->is_recording = false;
     command_buffer->current_render_pass = NULL;
+    CRUDE_TRACING_END;
   }
-  
+
   VkWriteDescriptorSet bindless_descriptor_writes[ MAX_BINDLESS_RESOURCES ];
   VkDescriptorImageInfo bindless_image_info[ MAX_BINDLESS_RESOURCES ];
   uint32 current_write_index = 0;
@@ -478,7 +490,9 @@ crude_gfx_present
 
   if ( current_write_index )
   {
+    CRUDE_TRACING_ZONE_NAME( "UpdateDescriptorSets" );
     vkUpdateDescriptorSets( gpu->vk_device, current_write_index, bindless_descriptor_writes, 0, NULL );
+    CRUDE_TRACING_END;
   }
 
   VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
@@ -494,7 +508,11 @@ crude_gfx_present
     .pSignalSemaphores    = render_complete_semaphore,
   };
   
+  {
+  CRUDE_TRACING_ZONE_NAME( "QueueSubmit" );
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
+  CRUDE_TRACING_END;
+  }
 
   VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
   VkPresentInfoKHR present_info = {
@@ -505,19 +523,27 @@ crude_gfx_present
     .pSwapchains        = swap_chains,
     .pImageIndices      = &gpu->vk_swapchain_image_index,
   };
-  VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
   
+  {
+  CRUDE_TRACING_ZONE_NAME( "QueuePresent" );
+  VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
+
   gpu->queued_command_buffers_count = 0u;
 
   if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
   {
     _vk_resize_swapchain( gpu );
+    CRUDE_TRACING_END;
     return;
+  }
+  CRUDE_TRACING_END;
   }
 
   gpu->previous_frame = gpu->current_frame;
   gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
   
+  {
+  CRUDE_TRACING_ZONE_NAME( "DestroyResoucesInstants" );
   for ( uint32 i = 0; i < CRUDE_ARR_LEN( gpu->resource_deletion_queue ); ++i )
   {
     crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
@@ -533,6 +559,10 @@ crude_gfx_present
     CRUDE_ARR_DELSWAP( gpu->resource_deletion_queue, i );
     --i;
   }
+  CRUDE_TRACING_END;
+  }
+
+  CRUDE_TRACING_END;
 }
 
 crude_gfx_cmd_buffer*
@@ -2161,14 +2191,14 @@ _vk_create_swapchain
     return VK_NULL_HANDLE;
   }
   
-  VkPresentModeKHR *available_present_modes = NULL;
+  CRUDE_ARR( VkPresentModeKHR ) available_present_modes = NULL;
   CRUDE_ARR_SETLEN( available_present_modes, available_present_modes_count ); // tofree
   vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, available_present_modes );
   
   VkPresentModeKHR surface_present_mode = VK_PRESENT_MODE_FIFO_KHR;
   for ( uint32 i = 0; i < available_present_modes_count; ++i )
   {
-    if ( available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
+    if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
     {
       surface_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
       break;

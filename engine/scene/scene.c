@@ -1,6 +1,7 @@
 #include <cgltf.h>
 #include <stb_image.h>
 
+#include <core/profiler.h>
 #include <core/algorithms.h>
 #include <core/file.h>
 
@@ -452,6 +453,7 @@ crude_gltf_scene_submit_draw_task
   _In_ bool                                                use_secondary
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "SubmitDrawTask" );
   _gltf_scene_primary_draw_task_data draw_task_data = { 
     .scene = scene,
     .use_secondary = use_secondary,
@@ -462,6 +464,7 @@ crude_gltf_scene_submit_draw_task
   enkiAddTaskSet( task_sheduler, draw_task );
   enkiWaitForTaskSet( task_sheduler, draw_task );
   crude_gfx_renderer_add_texture_update_commands( scene->renderer, ( draw_task_data.thread_id + 1 ) % enkiGetNumTaskThreads( task_sheduler ) );
+  CRUDE_TRACING_END;
 }
 
 /**
@@ -599,6 +602,7 @@ _draw_mesh
   _In_ crude_mesh_draw                                    *mesh_draw
 )
 {
+  CRUDE_TRACING_ZONE_NAME( "DrawMesh" );
   bool mesh_buffers_ready = crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->position_buffer )
     && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->tangent_buffer )
     && crude_gfx_buffer_ready( gpu_commands->gpu, mesh_draw->normal_buffer )
@@ -607,6 +611,7 @@ _draw_mesh
 
   if ( !mesh_buffers_ready )
   {
+    CRUDE_TRACING_END;
     return;
   }
 
@@ -626,6 +631,7 @@ _draw_mesh
   crude_gfx_cmd_bind_index_buffer( gpu_commands, mesh_draw->index_buffer, mesh_draw->index_offset );
   crude_gfx_cmd_bind_local_descriptor_set( gpu_commands, descriptor_set );
   crude_gfx_cmd_draw_indexed( gpu_commands, mesh_draw->primitive_count, 1, 0, 0, 0 );
+  CRUDE_TRACING_END;
 }
 
 /**
@@ -642,6 +648,8 @@ _gltf_scene_primary_draw_task
   _In_ void                                               *args
 )
 {
+  CRUDE_TRACING_SET_THREAD_NAME( "PrimaryDrawTaskThread" );
+  CRUDE_TRACING_ZONE_NAME( "PrimaryDrawTask" );
   _gltf_scene_primary_draw_task_data *draw_task = CAST( _gltf_scene_primary_draw_task_data *, args );
   
   draw_task->thread_id = thread_num;
@@ -716,6 +724,7 @@ _gltf_scene_primary_draw_task
     }
   }
   crude_gfx_queue_cmd( gpu_commands );
+  CRUDE_TRACING_END;
 }
 
 void
@@ -727,6 +736,8 @@ _gltf_scene_secondary_draw_task
   _In_ void                                               *args
 )
 {
+  CRUDE_TRACING_SET_THREAD_NAME( "SecondaryDrawTaskThread" );
+  CRUDE_TRACING_ZONE_NAME( "SecondaryDrawTask" );
   _gltf_scene_secondary_draw_task_data *secondary_draw_task = CAST( _gltf_scene_secondary_draw_task_data *, args );
   
   crude_gfx_cmd_buffer *secondary_cmd = crude_gfx_get_secondary_cmd( secondary_draw_task->scene->renderer->gpu, thread_num );
@@ -752,4 +763,5 @@ _gltf_scene_secondary_draw_task
   crude_gfx_cmd_end( secondary_cmd );
 
   secondary_draw_task->secondary_cmd = secondary_cmd;
+  CRUDE_TRACING_END;
 }

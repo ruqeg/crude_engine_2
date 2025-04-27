@@ -2,6 +2,7 @@
 #include <scene/scene_components.h>
 #include <scene/free_camera_system.h>
 #include <core/log.h>
+#include <core/profiler.h>
 
 #include <scene/scripts_components.h>
 
@@ -14,6 +15,7 @@ crude_update_free_camera
   crude_transform *transforms = ecs_field( it, crude_transform, 0 );
   crude_free_camera *free_cameras = ecs_field( it, crude_free_camera, 1 );
   
+  CRUDE_TRACING_ZONE_NAME( "UpdateFreeCameras" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].entity_input, crude_input );
@@ -53,6 +55,7 @@ crude_update_free_camera
       crude_store_float4( &transforms[ i ].rotation, rotation );
     }
   }
+  CRUDE_TRACING_END;
 }
 
 void
