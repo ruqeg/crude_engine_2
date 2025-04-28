@@ -56,6 +56,7 @@ typedef struct crude_gltf_scene_creation
   crude_gfx_renderer                                      *renderer;
   char const                                              *path;
   crude_gfx_asynchronous_loader                           *async_loader;
+  crude_allocator                                          gltf_allocator;
 } crude_gltf_scene_creation;
 
 typedef struct crude_gltf_scene

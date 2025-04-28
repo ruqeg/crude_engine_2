@@ -18,7 +18,7 @@ crude_initialize_resource_pool
   resource_pool->resource_size = resource_size;
 
   uint64 allocation_size = pool_size * ( resource_size + sizeof( uint32 ) );
-  resource_pool->memory = CAST( uint8*, allocator.allocate( allocation_size, 1 ) );
+  resource_pool->memory = CAST( uint8*, CRUDE_ALLOCATE( allocator, allocation_size ) );
   memset( resource_pool->memory, 0, allocation_size );
   
   resource_pool->free_indices = CAST( uint32*, resource_pool->memory + pool_size * resource_size );
@@ -52,7 +52,7 @@ crude_deinitialize_resource_pool
 
   CRUDE_ASSERT( ( resource_pool->free_indices_head == 0 ) && ( resource_pool->used_indices == 0 ) );
 
-  resource_pool->allocator.deallocate( resource_pool->memory );
+  CRUDE_DEALLOCATE(resource_pool->allocator, resource_pool->memory );
 }
 
 uint32

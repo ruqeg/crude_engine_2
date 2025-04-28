@@ -257,7 +257,7 @@ crude_gfx_initialize_device
   }
   
   crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, creation->num_threads );
-  gpu->queued_command_buffers = gpu->allocator.allocate( sizeof( crude_gfx_cmd_buffer* ) * 128, 1 );
+  gpu->queued_command_buffers = CRUDE_ALLOCATE( gpu->allocator, sizeof( crude_gfx_cmd_buffer* ) * 128 );
 
   gpu->previous_frame = 0;
   gpu->current_frame = 1;
@@ -1611,7 +1611,7 @@ crude_gfx_create_descriptor_set_layout
   
   crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
   
-  uint8 *memory = gpu->allocator.allocate( ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings, 1 );
+  uint8 *memory = CRUDE_ALLOCATE( gpu->allocator, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings );
   descriptor_set_layout->num_bindings = creation->num_bindings;
   descriptor_set_layout->bindings     = CAST( crude_gfx_descriptor_binding*, memory );
   descriptor_set_layout->vk_binding   = CAST( VkDescriptorSetLayoutBinding*, memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
@@ -1677,7 +1677,7 @@ crude_gfx_destroy_descriptor_set_layout_instant
 )
 {
   crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
-  gpu->allocator.deallocate( descriptor_set_layout->bindings );
+  CRUDE_DEALLOCATE( gpu->allocator, descriptor_set_layout->bindings );
   vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
   CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle );
 }

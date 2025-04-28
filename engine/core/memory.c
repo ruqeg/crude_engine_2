@@ -75,11 +75,25 @@ crude_deinitialize_heap_allocator
 }
 
 void*
-crude_allocate_heap
+crude_heap_allocate
 (
   _In_ crude_heap_allocator *allocator,
-  _In_ sizet                 size,
-  _In_ sizet                 alignment
+  _In_ sizet                 size
+)
+{
+  
+  void* allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
+  sizet actual_size = tlsf_block_size( allocated_memory );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
+  return allocated_memory;
+}
+
+CRUDE_API void*
+crude_heap_allocate_align
+(
+  _In_ crude_heap_allocator   *allocator,
+  _In_ sizet                   size,
+  _In_ sizet                   alignment
 )
 {
   void* allocated_memory = alignment == 1 ? tlsf_malloc( allocator->tlsf_handle, size ) : tlsf_memalign( allocator->tlsf_handle, alignment, size );
@@ -89,7 +103,7 @@ crude_allocate_heap
 }
 
 void*
-crude_reallocate_heap
+crude_heap_reallocate
 (
   _In_ crude_heap_allocator *allocator,
   _In_ void                 *pointer,
@@ -107,7 +121,7 @@ crude_reallocate_heap
 }
 
 void
-crude_deallocate_heap
+crude_heap_deallocate
 (
   _In_ crude_heap_allocator *allocator,
   _In_ void                 *pointer
@@ -140,7 +154,7 @@ crude_deinitialize_stack_allocator
 }
 
 void*
-crude_allocate_stack
+crude_stack_allocate
 (
   _In_ crude_stack_allocator *allocator,
   _In_ sizet                  size,
@@ -157,7 +171,7 @@ crude_allocate_stack
 }
 
 void
-crude_deallocate_stack
+crude_stack_deallocate
 (
   _In_ crude_stack_allocator  *allocator,
   _In_ void                   *pointer
@@ -178,4 +192,26 @@ crude_memory_align
 {
   const sizet alignment_mask = alignment - 1;
   return ( size + alignment_mask ) & ~alignment_mask;
+}
+
+// Bro I'm done with this shit
+static void* crude_heap_allocate_raw( void *ctx, sizet size ) { return crude_heap_allocate( ctx, size ); }
+static void crude_heap_deallocate_raw( void *ctx, void *pointer ) { crude_heap_deallocate( ctx, pointer ); }
+static void* crude_heap_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_heap_reallocate( ctx, pointer, size ); }
+static void* crude_heap_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { return crude_heap_allocate_align( ctx, size, alignment ); }
+
+CRUDE_API crude_allocator 
+crude_pack_heap_allocator
+(
+  _In_ crude_heap_allocator                               *heap_allocator
+)
+{
+  crude_allocator allocator = {
+    .allocate = crude_heap_allocate_raw,
+    .reallocate = crude_heap_reallocate_raw,
+    .deallocate = crude_heap_deallocate_raw,
+    .allocate_align = crude_heap_allocate_align_raw,
+    .ctx = heap_allocator,
+  };
+  return allocator;
 }

@@ -13,7 +13,7 @@ _crude_array_realloc
   _In_ uint32_t                                            size
 )
 {
-  crude_reallocate_heap( s_allocator, ptr, size );
+  crude_heap_reallocate( s_allocator, ptr, size );
 }
 
 void
@@ -22,7 +22,7 @@ _crude_array_dealloc
   void                                               *ptr
 )
 {
-  crude_deallocate_heap( s_allocator, ptr );
+  crude_heap_deallocate( s_allocator, ptr );
 }
 
 #include <core/algorithms.h>

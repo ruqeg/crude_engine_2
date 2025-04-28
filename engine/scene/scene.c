@@ -102,7 +102,13 @@ crude_gltf_scene_load_from_file
   scene->renderer = creation->renderer;
   CRUDE_ASSERT( strcpy_s( scene->path, sizeof( scene->path ), creation->path ) == 0 );
 
-  cgltf_options gltf_options = { 0 };
+  cgltf_options gltf_options = { 
+    .memory = {
+      .alloc_func = creation->gltf_allocator.allocate,
+      .free_func  = creation->gltf_allocator.deallocate,
+      .user_data = creation->gltf_allocator.ctx
+    },
+  };
   cgltf_data *gltf = NULL;
   cgltf_result result = cgltf_parse_file( &gltf_options, scene->path, &gltf );
   if ( result != cgltf_result_success )

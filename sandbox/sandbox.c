@@ -7,6 +7,7 @@
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
 #include <graphics/render_system.h>
+#include <core/memory.h>
 #include <scene/free_camera_system.h>
 
 static bool CR_STATE g_initialized = false;
@@ -39,6 +40,9 @@ sandbox_deallocate
   free( pointer );
 }
 
+crude_heap_allocator gltf_allocator;
+crude_heap_allocator renderer_allocator;
+
 CR_EXPORT int
 cr_main
 (
@@ -57,6 +61,8 @@ cr_main
 
   if ( !g_initialized )
   {
+    crude_initialize_heap_allocator( &gltf_allocator, 1024 * 1024 * 1024, "GltfAllocator" );
+    crude_initialize_heap_allocator( &renderer_allocator, 1024 * 1024 * 1024, "RendererAllocator" );
     ECS_IMPORT( world, crude_sdl_system );
     ECS_IMPORT( world, crude_render_system );
     ECS_IMPORT( world, crude_free_camera_system );
@@ -70,7 +76,8 @@ cr_main
     ecs_set( world, scene, crude_render_create, {
       .vk_application_name = "sandbox",
       .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
-      .allocator = ( crude_allocator ) { .allocate = sandbox_allocate, .deallocate = sandbox_deallocate },
+      .allocator = crude_pack_heap_allocator( &renderer_allocator ),
+      .gltf_allocator = crude_pack_heap_allocator( &gltf_allocator ),
       .max_frames = 3u } );
     g_initialized = true;
   }

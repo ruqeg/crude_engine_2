@@ -9,9 +9,9 @@ https://www.flecs.dev/flecs/structecs__world__stats__t.html
 
 custom allocators for:
 + SDL
-- main
-- stb
-- cgltf
++- main
++- stb       TODO something with array or idk
++ cgltf
 - cimgui
 - cr
 - enkits

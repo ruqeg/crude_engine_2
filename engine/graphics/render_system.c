@@ -65,7 +65,7 @@ initialize_render_core
       .max_frames             = render_create[ i ].max_frames,
     };
 
-    renderer->gpu = render_create[ i ].allocator.allocate( sizeof( crude_gfx_device ), 1u );
+    renderer->gpu = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_device ) );
     crude_gfx_initialize_device( renderer->gpu, &gpu_creation );
 
     crude_gfx_renderer_creation rendere_creation = {
@@ -73,10 +73,10 @@ initialize_render_core
       .gpu = renderer->gpu
     };
 
-    renderer->renderer = render_create[ i ].allocator.allocate( sizeof( crude_gfx_renderer ), 1u );
+    renderer->renderer = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_renderer ) );
     crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
 
-    renderer->async_loader = render_create[ i ].allocator.allocate( sizeof( crude_gfx_asynchronous_loader ), 1u );
+    renderer->async_loader = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_asynchronous_loader ) );
 
     crude_gfx_initialize_asynchronous_loader( renderer->async_loader, renderer->renderer );
     
@@ -100,12 +100,13 @@ initialize_render_core
     };
     renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
 
-    renderer->scene = render_create[ i ].allocator.allocate( sizeof( crude_gltf_scene ), 1u );
+    renderer->scene = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gltf_scene ) );
     
     crude_gltf_scene_creation gltf_creation = {
       .renderer = renderer->renderer,
       .path = gltf_path,
       .async_loader = renderer->async_loader,
+      .gltf_allocator = render_create[ i ].gltf_allocator
     };
     crude_gltf_scene_load_from_file( renderer->scene, &gltf_creation );
     
@@ -144,9 +145,9 @@ deinitialize_render_core
     crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
     crude_gfx_deinitialize_renderer( renderer[ i ].renderer );
     crude_gfx_deinitialize_device( renderer[ i ].gpu );
-    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
-    renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
-    renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
+    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
+    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
+    //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
   }
 }
 

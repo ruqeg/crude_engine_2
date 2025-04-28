@@ -311,7 +311,7 @@ SDL_free_func s_sdl_default_free_func;
 void* SDLCALL _sdl_allocate( size_t size )
 {
   void *allocated_memory = s_sdl_default_malloc_func( size );
-  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
+  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
   assert( allocated_memory );
   return allocated_memory;
 }
@@ -319,7 +319,7 @@ void* SDLCALL _sdl_allocate( size_t size )
 void* SDLCALL _sdl_callocate( size_t nmemb, size_t size )
 {
   void *allocated_memory = s_sdl_default_calloc_func( nmemb, size );
-  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, nmemb * size, "SDLAllocator" );
+  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, nmemb * size, "SDLAllocator" );
   assert( allocated_memory );
   return allocated_memory;
 }
@@ -331,7 +331,7 @@ void* SDLCALL _sdl_reallocate( void *ptr, size_t size )
     CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
   }
   void *allocated_memory = s_sdl_default_realloc_func( ptr, size );
-  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
+  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
   assert( allocated_memory != ptr );
   assert( allocated_memory );
   return allocated_memory;
@@ -340,7 +340,7 @@ void* SDLCALL _sdl_reallocate( void *ptr, size_t size )
 void SDLCALL _sdl_free( void *ptr )
 {
   s_sdl_default_free_func( ptr );
-  CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
+  //CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
 }
 
 

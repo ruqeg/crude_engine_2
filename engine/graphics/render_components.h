@@ -12,6 +12,7 @@ typedef struct crude_render_create
   char const       *vk_application_name;
   uint32            vk_application_version;
   crude_allocator   allocator;
+  crude_allocator   gltf_allocator;
 } crude_render_create;
 
 typedef struct crude_renderer_component
