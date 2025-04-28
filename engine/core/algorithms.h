@@ -1,6 +1,5 @@
 #pragma once
 
-
 void*
 _crude_array_realloc
 (
