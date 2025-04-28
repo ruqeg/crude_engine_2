@@ -11,6 +11,7 @@ add_subdirectory(vma_cmake)
 add_subdirectory(spirv_reflect_cmake)
 add_subdirectory(miniaudio)
 add_subdirectory(enkiTS)
+add_subdirectory(cjson_cmake)
 
 FetchContent_Declare(
 	tracy

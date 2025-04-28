@@ -34,3 +34,6 @@
 [submodule "extlibs/enkiTS"]
 	path = extlibs/enkiTS
 	url = https://github.com/dougbinks/enkiTS.git
+[submodule "extlibs/cjson_cmake/cJSON"]
+	path = extlibs/cjson_cmake/cJSON
+	url = https://github.com/DaveGamble/cJSON.git

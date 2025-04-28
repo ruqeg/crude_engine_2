@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #ifdef _WIN32
 #include <windows.h>
 #include <direct.h>
@@ -12,6 +11,19 @@
 #include <core/assert.h>
 
 #include <core/file.h>
+
+
+static long _get_file_size
+(
+  _In_ FILE                                               *f
+)
+{
+  long fileSizeSigned;
+  fseek( f, 0, SEEK_END );
+  fileSizeSigned = ftell( f );
+  fseek( f, 0, SEEK_SET );
+  return fileSizeSigned;
+}
 
 void
 crude_get_current_working_directory
@@ -70,4 +82,44 @@ crude_file_directory_from_path
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Malformed path %s", path );
     }
   }
+}
+
+bool
+crude_file_exist
+(
+  _In_ char                                     *path
+)
+{
+#if defined( _WIN64 )
+  WIN32_FILE_ATTRIBUTE_DATA unused;
+  return GetFileAttributesExA( path, GetFileExInfoStandard, &unused );
+#else
+  int result = access( path, F_OK );
+  return ( result == 0 );
+#endif
+}
+
+CRUDE_API bool
+crude_read_file
+(
+  _In_ char const                                         *filename,
+  _In_ crude_allocator                                     allocator,
+  _Out_ uint8                                            **buffer,
+  _Out_ uint32                                            *buffer_size
+)
+{
+  FILE* file = fopen( filename, "r" );
+  
+  if ( !file )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Cannor read file \"%s\"", filename );
+    return false;
+  }
+
+  sizet filesize = _get_file_size( file );
+  *buffer = CRUDE_REALLOCATE( allocator, *buffer, filesize + 1 );
+  *buffer_size = fread( *buffer, 1, filesize, file );
+  *buffer[ *buffer_size ] = 0;
+  fclose( file );
+  return true;
 }

@@ -68,6 +68,11 @@ typedef struct crude_gfx_pipeline_handle
   crude_gfx_resource_index                                 index;
 } crude_gfx_pipeline_handle;
 
+typedef struct crude_gfx_framebuffer_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_framebuffer_handle;
+
 /************************************************
  *
  * Invalid GPU Resoruces Handles

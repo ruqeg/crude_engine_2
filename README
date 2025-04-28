@@ -20,3 +20,7 @@ custom allocators for:
 - vma
 
 broo idk T_T
+
+
+TODO 
+use stack allocator plzzzz... currently heap allocators anyware T_T
