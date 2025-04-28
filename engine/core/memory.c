@@ -1,7 +1,10 @@
 #include <tlsf.h>
-#include <core/memory.h>
-#include <core/assert.h>
 #include <stdlib.h>
+
+#include <core/profiler.h>
+#include <core/assert.h>
+
+#include <core/memory.h>
 
 typedef struct memory_statistics
 {
@@ -31,13 +34,15 @@ void
 crude_initialize_heap_allocator
 (
   _In_ crude_heap_allocator  *allocator,
-  _In_ sizet                  capacity
+  _In_ sizet                  capacity,
+  char const                  *name
 )
 {
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
+  allocator->name = name;
   allocator->tlsf_handle = tlsf_create_with_pool( allocator->memory, capacity );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator of capacity %llu created", capacity );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator \"%s\" of capacity %llu created", name, capacity );
 }
 
 void
@@ -56,11 +61,11 @@ crude_deinitialize_heap_allocator
   
   if ( stats.allocated_bytes )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_MEMORY, "Heap allocator shutdown. Allocated memory detected. Allocated %llu, total %llu", stats.allocated_bytes, stats.total_bytes );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_MEMORY, "Heap allocator \"%s\" shutdown. Allocated memory detected. Allocated %llu, total %llu", allocator->name, stats.allocated_bytes, stats.total_bytes );
   }
   else
   {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator shutdown - all memory free" );
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator \"%s\" shutdown - all memory free", allocator->name );
   }
   
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, stats.allocated_bytes == 0, "Allocations still present. Check your code!" );
@@ -79,6 +84,25 @@ crude_allocate_heap
 {
   void* allocated_memory = alignment == 1 ? tlsf_malloc( allocator->tlsf_handle, size ) : tlsf_memalign( allocator->tlsf_handle, alignment, size );
   sizet actual_size = tlsf_block_size( allocated_memory );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
+  return allocated_memory;
+}
+
+void*
+crude_reallocate_heap
+(
+  _In_ crude_heap_allocator *allocator,
+  _In_ void                 *pointer,
+  _In_ sizet                 size
+)
+{
+  if ( pointer )
+  {
+    CRUDE_PROFILER_FREE_NAME( pointer, allocator->name );
+  }
+  void* allocated_memory = tlsf_realloc( allocator->tlsf_handle, pointer, size );
+  sizet actual_size = tlsf_block_size( allocated_memory );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
   return allocated_memory;
 }
 
@@ -90,6 +114,7 @@ crude_deallocate_heap
 )
 {
   tlsf_free( allocator->tlsf_handle, pointer );
+  CRUDE_PROFILER_FREE_NAME( pointer, allocator->name );
 }
 
 void

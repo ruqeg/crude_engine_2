@@ -449,8 +449,8 @@ typedef struct crude_gfx_shader_descriptor_reflect
 
 typedef struct crude_gfx_shader_input_reflect
 {
-  CRUDE_ARR( crude_gfx_vertex_stream )                     vertex_streams;
-  CRUDE_ARR( crude_gfx_vertex_attribute )                  vertex_attributes;
+  CRUDE_ARR( crude_gfx_vertex_stream )                   vertex_streams;
+  CRUDE_ARR( crude_gfx_vertex_attribute )                vertex_attributes;
 } crude_gfx_shader_input_reflect;
 
 typedef struct crude_gfx_shader_reflect

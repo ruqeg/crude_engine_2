@@ -4,6 +4,7 @@
 #include <platform/gui_components.h>
 #include <platform/input_components.h>
 #include <core/profiler.h>
+#include <core/memory.h>
 #include <core/assert.h>
 
 #include <platform/sdl_system.h>
@@ -205,7 +206,7 @@ sdl_process_events
   crude_window *app_windows = ecs_field( it, crude_window, 1 );
   crude_window_handle *app_windows_handles = ecs_field( it, crude_window_handle, 2 );
   
-  CRUDE_TRACING_ZONE_NAME( "SDLProcessEvents" );
+  CRUDE_PROFILER_ZONE_NAME( "SDLProcessEvents" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     for ( uint32 k = 0; k < 128; k++ )
@@ -299,8 +300,49 @@ sdl_process_events
       }
     }
   }
-  CRUDE_TRACING_END;
+  CRUDE_PROFILER_END;
 }
+
+SDL_malloc_func s_sdl_default_malloc_func;
+SDL_calloc_func s_sdl_default_calloc_func;
+SDL_realloc_func s_sdl_default_realloc_func;
+SDL_free_func s_sdl_default_free_func;
+
+void* SDLCALL _sdl_allocate( size_t size )
+{
+  void *allocated_memory = s_sdl_default_malloc_func( size );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
+  assert( allocated_memory );
+  return allocated_memory;
+}
+
+void* SDLCALL _sdl_callocate( size_t nmemb, size_t size )
+{
+  void *allocated_memory = s_sdl_default_calloc_func( nmemb, size );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, nmemb * size, "SDLAllocator" );
+  assert( allocated_memory );
+  return allocated_memory;
+}
+
+void* SDLCALL _sdl_reallocate( void *ptr, size_t size )
+{
+  if ( ptr )
+  {
+    CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
+  }
+  void *allocated_memory = s_sdl_default_realloc_func( ptr, size );
+  CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
+  assert( allocated_memory != ptr );
+  assert( allocated_memory );
+  return allocated_memory;
+}
+
+void SDLCALL _sdl_free( void *ptr )
+{
+  s_sdl_default_free_func( ptr );
+  CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
+}
+
 
 void
 crude_sdl_systemImport
@@ -335,6 +377,9 @@ crude_sdl_systemImport
     .events = { EcsOnRemove },
     .callback = sdl_destroy_window
     } );
+  
+  SDL_GetMemoryFunctions( &s_sdl_default_malloc_func, &s_sdl_default_calloc_func, &s_sdl_default_realloc_func, &s_sdl_default_free_func );
+  SDL_SetMemoryFunctions( _sdl_allocate, _sdl_callocate, _sdl_reallocate, _sdl_free );
 
   if ( !SDL_Init( SDL_INIT_VIDEO ) )
   {

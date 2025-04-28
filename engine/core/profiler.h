@@ -1,13 +1,23 @@
 #include <tracy/TracyC.h>
+
 #include <core/alias.h>
 
-#define CRUDE_TRACING_ZONE                     TracyCZone( _ctx, 1 )
-#define CRUDE_TRACING_ZONE_NAME( name )        TracyCZoneN( _ctx, name, 1 )
-#define CRUDE_TRACING_END                      TracyCZoneEnd( _ctx )
+#define CRUDE_PROFILER_ZONE                     TracyCZone( _ctx, 1 )
+#define CRUDE_PROFILER_ZONE_NAME( name )        TracyCZoneN( _ctx, name, 1 )
+#define CRUDE_PROFILER_END                      TracyCZoneEnd( _ctx )
 
-#define CRUDE_TRACING_MARK_FRAME               TracyCFrameMark
+#define CRUDE_PROFILER_MARK_FRAME               TracyCFrameMark
 
-#define CRUDE_TRACING_SET_THREAD_NAME( name )  TracyCSetThreadName( name )
+#define CRUDE_PROFILER_SET_THREAD_NAME( name )  TracyCSetThreadName( name )
+
+#define CRUDE_PROFILER_ALLOC( ptr, size )              TracyCAlloc( ptr, size )
+#define CRUDE_PROFILER_FREE( ptr )                     TracyCFree( ptr )
+#define CRUDE_PROFILER_ALLOC_NAME( ptr, size, name )   TracyCAllocN( ptr, size, name )
+#define CRUDE_PROFILER_FREE_NAME( ptr, name )          TracyCFreeN( ptr, name )
+#define CRUDE_PROFILER_SECURE_ALLOC( ptr, size )       TracyCSecureAlloc( ptr, size )
+#define CRUDE_PROFILER_SECURE_FREE( ptr )              TracyCSecureFree( ptr )
+
+
 //#define CRUDE_PROFILER_MESSAGE_TRACE( txt ) TracyCMessageLC( ( txt ), 0xffffff )
 //#define CRUDE_PROFILER_MESSAGE_DEBUG( txt ) TracyCMessageLC( ( txt ), 0xff1493 )
 //#define CRUDE_PROFILER_MESSAGE_INFO( txt ) TracyCMessageLC( ( txt ), 0x00ff00 )
@@ -15,8 +25,7 @@
 //#define CRUDE_PROFILER_MESSAGE_ERROR( txt ) TracyCMessageLC( ( txt ), 0xff6347 )
 //#define CRUDE_PROFILER_MESSAGE_FATAL( txt ) TracyCMessageLC( ( txt ), 0xff0000 )
 //#define CRUDE_PROFILER_RECORD_VALUE( name, value ) TracyCPlot( ( name ), ( value ) )
-
-
+//
 //#define message_trace(TXT) \
 //  MESSAGE_TRACE((TXT));    \
 //  log_trace((TXT));

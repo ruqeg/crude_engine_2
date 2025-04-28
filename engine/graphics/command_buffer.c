@@ -423,11 +423,11 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_gfx_descriptor_set_creation const            *creation
 )
 {
-  CRUDE_TRACING_ZONE_NAME( "CreateLocalDescriptorSet" );
+  CRUDE_PROFILER_ZONE_NAME( "CreateLocalDescriptorSet" );
   crude_gfx_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->frame_descriptor_sets ) };
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
-    CRUDE_TRACING_END;
+    CRUDE_PROFILER_END;
     return handle;
   }
   
@@ -507,7 +507,7 @@ crude_gfx_cmd_create_local_descriptor_set
   descriptor_set->layout = descriptor_set_layout;
 
   vkUpdateDescriptorSets( cmd->gpu->vk_device, num_resources, descriptor_write, 0, NULL );
-  CRUDE_TRACING_END;
+  CRUDE_PROFILER_END;
   return handle;
 }
 
@@ -770,7 +770,7 @@ crude_gfx_cmd_manager_reset
   _In_ uint32                                              frame
 )
 {
-  CRUDE_TRACING_ZONE_NAME( "ResetCommandBufferManager" );
+  CRUDE_PROFILER_ZONE_NAME( "ResetCommandBufferManager" );
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
@@ -790,7 +790,7 @@ crude_gfx_cmd_manager_reset
 
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
   }
-  CRUDE_TRACING_END;
+  CRUDE_PROFILER_END;
 }
 
 crude_gfx_cmd_buffer*

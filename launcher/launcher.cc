@@ -21,7 +21,8 @@ int main()
 {
   cr_plugin crude_sandbox, crude_editor, crude_paprika, crude_engine_simulation;
   
-  crude_engine engine = crude_engine_initialize( 1u );
+  crude_engine engine;
+  crude_engine_initialize( &engine, 1u );
   
   crude_sandbox.userdata           = engine.world;
   crude_editor.userdata            = engine.world;

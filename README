@@ -2,3 +2,19 @@ TODO:
 
 spirv editor
 pipeline cache
+
+add profiler for flecs
+https://www.flecs.dev/flecs/group__c__addons__stats.html
+https://www.flecs.dev/flecs/structecs__world__stats__t.html
+
+custom allocators for:
++ SDL
+- main
+- stb
+- cgltf
+- cimgui
+- cr
+- enkits
+- miniaudio
+- spirv_reflect
+- vma

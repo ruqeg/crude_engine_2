@@ -7,12 +7,14 @@ typedef struct crude_engine
   void              *world;
   bool               running;
   int64              time;
+  crude_heap_allocator  algorithms_allocator;    
 } crude_engine;
 
-CRUDE_API crude_engine
+CRUDE_API void
 crude_engine_initialize
 (
-  _In_ int32         num_threads
+  _In_ crude_engine                                       *engine,
+  _In_ int32                                               num_threads
 );
 
 CRUDE_API void

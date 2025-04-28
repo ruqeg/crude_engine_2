@@ -3,31 +3,35 @@
 #include <core/profiler.h>
 #include <core/time.h>
 #include <scene/entity.h>
+#include <core/algorithms.h>
+#include <core/log.h>
 
 #include <engine.h>
 
-crude_engine
+void
 crude_engine_initialize
 (
-  _In_ int32 num_threads
+  _In_ crude_engine                                       *engine,
+  _In_ int32                                               num_threads
 )
 {
-  crude_engine engine;
-  engine.world   = ecs_init();
-  engine.running = true;
-  engine.time    = 0;
+  engine->world   = ecs_init();
+  engine->running = true;
+  engine->time    = 0;
   
-  ECS_TAG_DEFINE( engine.world, Entity );
+  ECS_TAG_DEFINE( engine->world, Entity );
 
   if (num_threads > 1)
   {
-    ecs_set_threads( engine.world, num_threads );
+    ecs_set_threads( engine->world, num_threads );
   }
-
-  crude_initialize_log();
-  crude_initialize_time_service();
   
-  return engine;
+  crude_initialize_log();
+  
+  crude_initialize_heap_allocator( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
+  crude_array_set_allocator( &engine->algorithms_allocator );
+
+  crude_initialize_time_service();
 }
 
 void
@@ -36,6 +40,7 @@ crude_engine_deinitialize
   _In_ crude_engine *engine
 )
 {
+  crude_deinitialize_heap_allocator( &engine->algorithms_allocator );
   crude_deinitialize_log();
 }
 
@@ -55,12 +60,11 @@ crude_engine_update
   {
     ecs_world_info_t const *info = ecs_get_world_info( world );
     ecs_progress( world, delta_time );
-    CRUDE_TRACING_MARK_FRAME;
+    CRUDE_PROFILER_MARK_FRAME;
     return true;
   }
 
   ecs_fini( world );
   engine->running = false;
-  
   return false;
 }
