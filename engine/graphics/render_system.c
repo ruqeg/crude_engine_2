@@ -1,6 +1,6 @@
 #include <core/file.h>
 #include <core/string.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/profiler.h>
 #include <platform/gui_components.h>
 #include <graphics/render_components.h>
@@ -63,6 +63,7 @@ initialize_render_core
       .queries_per_frame      = 1u,
       .num_threads            = enkiGetNumTaskThreads( renderer->ets ),
       .max_frames             = render_create[ i ].max_frames,
+      .temporary_allocator    = render_create[ i ].temporary_allocator
     };
 
     renderer->gpu = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_device ) );
@@ -185,7 +186,7 @@ render
     
     // update mesh buffer
     CRUDE_PROFILER_ZONE_NAME( "UpdateMeshBuffer" );
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( renderer->scene->mesh_draws ); ++mesh_index )
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( renderer->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
       

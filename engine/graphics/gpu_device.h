@@ -18,7 +18,8 @@ typedef struct crude_gfx_device_creation
   SDL_Window                                              *sdl_window;
   char const                                              *vk_application_name;
   uint32                                                   vk_application_version;
-  crude_allocator                                          allocator;
+  crude_allocator_container                                allocator;
+  crude_stack_allocator                                   *temporary_allocator;
   uint16                                                   queries_per_frame;
   uint16                                                   max_frames;
   uint16                                                   num_threads;
@@ -135,7 +136,8 @@ typedef struct crude_gfx_device
    */
   VkAllocationCallbacks                                   *vk_allocation_callbacks;                               
   VmaAllocator                                             vma_allocator;
-  crude_allocator                                          allocator;
+  crude_allocator_container                                allocator;
+  crude_stack_allocator                                   *temporary_allocator;
   /**
    * UBO Buffers. //!TODO
    */

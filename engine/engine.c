@@ -3,7 +3,7 @@
 #include <core/profiler.h>
 #include <core/time.h>
 #include <scene/entity.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/log.h>
 
 #include <engine.h>
@@ -28,8 +28,7 @@ crude_engine_initialize
   
   crude_initialize_log();
   
-  crude_initialize_heap_allocator( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
-  crude_array_set_allocator( &engine->algorithms_allocator );
+  crude_heap_allocator_initialize( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
 
   crude_initialize_time_service();
 }
@@ -40,7 +39,7 @@ crude_engine_deinitialize
   _In_ crude_engine *engine
 )
 {
-  crude_deinitialize_heap_allocator( &engine->algorithms_allocator );
+  crude_heap_allocator_deinitialize( &engine->algorithms_allocator );
   crude_deinitialize_log();
 }
 

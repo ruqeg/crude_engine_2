@@ -11,8 +11,9 @@ typedef struct crude_render_create
   uint16            max_frames;
   char const       *vk_application_name;
   uint32            vk_application_version;
-  crude_allocator   allocator;
-  crude_allocator   gltf_allocator;
+  crude_allocator_container   allocator;
+  crude_allocator_container   gltf_allocator;
+  crude_stack_allocator      *temporary_allocator;
 } crude_render_create;
 
 typedef struct crude_renderer_component

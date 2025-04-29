@@ -49,16 +49,16 @@ typedef struct crude_gfx_cmd_buffer_manager
 {
   crude_gfx_device                                        *gpu;
 
-  CRUDE_ARR( VkCommandPool )                             vk_cmd_pools;
-  CRUDE_ARR( crude_gfx_cmd_buffer )                      primary_cmd_buffers;
-  CRUDE_ARR( crude_gfx_cmd_buffer )                      secondary_cmd_buffers;
+  VkCommandPool                                           *vk_cmd_pools;
+  crude_gfx_cmd_buffer                                    *primary_cmd_buffers;
+  crude_gfx_cmd_buffer                                    *secondary_cmd_buffers;
 
   uint32                                                   num_pools_per_frame;
   uint32                                                   num_primary_cmd_buffers_per_thread;
   uint32                                                   num_secondary_cmd_buffer_per_pool;
 
-  CRUDE_ARR( uint8 )                                     num_used_primary_cmd_buffers_per_frame;
-  CRUDE_ARR( uint8 )                                     num_used_secondary_cmd_buffers_per_frame;
+  uint8                                                   *num_used_primary_cmd_buffers_per_frame;
+  uint8                                                   *num_used_secondary_cmd_buffers_per_frame;
 } crude_gfx_cmd_buffer_manager;
 
 /************************************************

@@ -1,7 +1,7 @@
 #include <stb_image.h>
 
 #include <core/profiler.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/time.h>
 
 #include <graphics/asynchronous_loader.h>
@@ -90,7 +90,7 @@ crude_gfx_asynchronous_loader_request_texture_data
   strcpy( request.path, filename );
   request.texture = texture;
   request.buffer = CRUDE_GFX_INVALID_BUFFER_HANDLE;
-  CRUDE_ARR_PUSH( asynloader->file_load_requests, request );
+  CRUDE_ARRAY_PUSH( asynloader->file_load_requests, request );
 }
 
 void
@@ -106,7 +106,7 @@ crude_gfx_asynchronous_loader_request_buffer_copy
     .gpu_buffer = gpu_buffer,
     .texture    = CRUDE_GFX_INVALID_TEXTURE_HANDLE,
   };
-  CRUDE_ARR_PUSH( asynloader->upload_requests, request );
+  CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
 
   crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( asynloader->renderer->gpu, gpu_buffer );
   buffer->ready = false;
@@ -135,7 +135,7 @@ crude_gfx_asynchronous_loader_update
     asynloader->gpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
   }
   
-  if ( CRUDE_ARR_LEN( asynloader->upload_requests ) )
+  if ( CRUDE_ARRAY_LENGTH( asynloader->upload_requests ) )
   {
     CRUDE_PROFILER_ZONE_NAME( "UploadRequestAsynchronousLoader" );
     if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence ) != VK_SUCCESS )
@@ -146,7 +146,7 @@ crude_gfx_asynchronous_loader_update
     
     vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_fence );
     
-    crude_gfx_upload_request request = CRUDE_ARR_POP( asynloader->upload_requests );
+    crude_gfx_upload_request request = CRUDE_ARRAY_POP( asynloader->upload_requests );
 
     crude_gfx_cmd_buffer *cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
     crude_gfx_cmd_begin_primary( cmd );
@@ -198,9 +198,9 @@ crude_gfx_asynchronous_loader_update
     CRUDE_PROFILER_END;
   }
 
-  if ( CRUDE_ARR_LEN( asynloader->file_load_requests ) )
+  if ( CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ) )
   {
-    crude_gfx_file_load_request load_request = CRUDE_ARR_POP( asynloader->file_load_requests );
+    crude_gfx_file_load_request load_request = CRUDE_ARRAY_POP( asynloader->file_load_requests );
     
     int64 start_reading_file = crude_time_now();
     int x, y, comp;
@@ -213,7 +213,7 @@ crude_gfx_asynchronous_loader_update
       upload_request.data = texture_data;
       upload_request.texture = load_request.texture;
       upload_request.cpu_buffer = CRUDE_GFX_INVALID_BUFFER_HANDLE;
-      CRUDE_ARR_PUSH( asynloader->upload_requests, upload_request );
+      CRUDE_ARRAY_PUSH( asynloader->upload_requests, upload_request );
     }
     else
     {

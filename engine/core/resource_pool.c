@@ -8,7 +8,7 @@ void
 crude_initialize_resource_pool
 (
   _In_ crude_resource_pool *resource_pool,
-  _In_ crude_allocator      allocator,
+  _In_ crude_allocator_container      allocator,
   _In_ uint32               pool_size,
   _In_ uint32               resource_size
 )

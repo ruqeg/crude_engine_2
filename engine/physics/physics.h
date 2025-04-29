@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/math.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 
 /**
  * 

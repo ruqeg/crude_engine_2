@@ -2,7 +2,7 @@
 #include <SDL3/SDL_vulkan.h>
 
 #include <core/profiler.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/math.h>
 #include <core/assert.h>
 
@@ -35,6 +35,10 @@ static char const *const *vk_required_layers[] =
   "VK_LAYER_KHRONOS_validation"
 };
 
+static char const *instance_enabled_layers[] =
+{
+  "VK_LAYER_KHRONOS_validation"
+};
 
 /************************************************
  *
@@ -50,92 +54,98 @@ static crude_gfx_cmd_buffer_manager g_command_buffer_manager;
  * 
  ***********************************************/
 static VKAPI_ATTR VkBool32
-_vk_debug_callback
+vk_debug_callback_
 (
-  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT        messageSeverity,
-  _In_ VkDebugUtilsMessageTypeFlagsEXT               messageType,
-  _In_ VkDebugUtilsMessengerCallbackDataEXT const   *pCallbackData,
-  _In_ void                                         *pUserData
+  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT              messageSeverity,
+  _In_ VkDebugUtilsMessageTypeFlagsEXT                     messageType,
+  _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
+  _In_ void                                               *pUserData
 );
 static VkInstance
-_vk_create_instance
+vk_create_instance_
 (
-  _In_     char const                               *vk_application_name,
-  _In_     uint32                                    vk_application_version,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_     char const                                     *vk_application_name,
+  _In_     uint32                                          vk_application_version,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
+  _In_  crude_allocator_container                          temporary_allocator
 );
 static VkDebugUtilsMessengerEXT
-_vk_create_debug_utils_messsenger
+vk_create_debug_utils_messsenger_
 (
-  _In_     VkInstance                                instance,
-  _In_opt_ VkAllocationCallbacks                    *allocation_callbacks
+  _In_     VkInstance                                      instance,
+  _In_opt_ VkAllocationCallbacks                          *allocation_callbacks
 );
 static VkSurfaceKHR
-_vk_create_surface
+vk_create_surface_
 (
-  _In_     SDL_Window                               *sdl_window,
-  _In_     VkInstance                                vk_instance,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
-);
-static int32
-_vk_get_supported_queue_family_index
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
-);
-static bool
-_vk_check_support_required_extensions
-(
-  _In_ VkPhysicalDevice                              vk_physical_device
-);
-static bool
-_vk_check_swap_chain_adequate
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
-);
-static bool
-_vk_check_support_required_features
-(
-  _In_ VkPhysicalDevice                              vk_physical_device
+  _In_     SDL_Window                                     *sdl_window,
+  _In_     VkInstance                                      vk_instance,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks
 );
 static VkPhysicalDevice
-_vk_pick_physical_device
+vk_pick_physical_device_
 (
-  _In_  VkInstance                                   vk_instance,
-  _In_  VkSurfaceKHR                                 vk_surface
+  _In_  VkInstance                                         vk_instance,
+  _In_  VkSurfaceKHR                                       vk_surface,
+  _In_  crude_allocator_container                          temporary_allocator
 );
 static VkDevice
-_vk_create_device
+vk_create_device_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _Out_ VkQueue                                     *vk_main_queue,
-  _Out_ VkQueue                                     *vk_transfer_queue,
-  _Out_ uint32                                      *vk_main_queue_family,
-  _Out_ uint32                                      *vk_transfer_queue_family,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _Out_ VkQueue                                           *vk_main_queue,
+  _Out_ VkQueue                                           *vk_transfer_queue,
+  _Out_ uint32                                            *vk_main_queue_family,
+  _Out_ uint32                                            *vk_transfer_queue_family,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
+  _In_  crude_allocator_container                          temporary_allocator
 );
 static VkSwapchainKHR
 _vk_create_swapchain
 ( 
-  _In_      VkDevice                                 vk_device, 
-  _In_      VkPhysicalDevice                         vk_physical_device, 
-  _In_      VkSurfaceKHR                             vk_surface, 
-  _In_      int32                                    vk_queue_family_index,
-  _In_opt_  VkAllocationCallbacks                   *vk_allocation_callbacks,
-  _Out_     uint32                                  *vk_swapchain_images_count,
-  _Out_     VkImage                                 *vk_swapchain_images,
-  _Out_     VkImageView                             *vk_swapchain_images_views,
-  _Out_     VkSurfaceFormatKHR                      *vk_surface_format,
-  _Out_     uint16                                  *vk_swapchain_width,
-  _Out_     uint16                                  *vk_swapchain_height
+  _In_      VkDevice                                       vk_device, 
+  _In_      VkPhysicalDevice                               vk_physical_device, 
+  _In_      VkSurfaceKHR                                   vk_surface, 
+  _In_      int32                                          vk_queue_family_index,
+  _In_opt_  VkAllocationCallbacks                         *vk_allocation_callbacks,
+  _Out_     uint32                                        *vk_swapchain_images_count,
+  _Out_     VkImage                                       *vk_swapchain_images,
+  _Out_     VkImageView                                   *vk_swapchain_images_views,
+  _Out_     VkSurfaceFormatKHR                            *vk_surface_format,
+  _Out_     uint16                                        *vk_swapchain_width,
+  _Out_     uint16                                        *vk_swapchain_height,
+  _In_  crude_allocator_container                          temporary_allocator
 );
 static VmaAllocation
-_vk_create_vma_allocator
+vk_create_vma_allocator_
 (
   _In_ VkDevice                                      vk_device,
   _In_ VkPhysicalDevice                              vk_physical_device,
   _In_ VkInstance                                    vk_instance
+);
+static int32
+vk_get_supported_queue_family_index_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_ VkSurfaceKHR                                  vk_surface,
+  _In_  crude_allocator_container                    temporary_allocator
+);
+static bool
+vk_check_support_required_extensions_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_  crude_allocator_container                    temporary_allocator
+);
+static bool
+vk_check_swap_chain_adequate_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_ VkSurfaceKHR                                  vk_surface
+);
+static bool
+vk_check_support_required_features_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device
 );
 static void
 _vk_create_descriptor_pool
@@ -226,17 +236,19 @@ crude_gfx_initialize_device
   _In_ crude_gfx_device_creation                          *creation
 )
 {
+  crude_allocator_container temporary_allocator = crude_stack_allocator_pack( &creation->temporary_allocator );
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator  = creation->allocator;
   gpu->vk_allocation_callbacks = NULL;
   gpu->max_frames = creation->max_frames;
-  gpu->vk_instance = _vk_create_instance( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks );
-  gpu->vk_debug_utils_messenger = _vk_create_debug_utils_messsenger( gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_surface = _vk_create_surface( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_physical_device = _vk_pick_physical_device( gpu->vk_instance, gpu->vk_surface );
-  gpu->vk_device = _vk_create_device( gpu->vk_physical_device, &gpu->vk_main_queue, &gpu->vk_transfer_queue, &gpu->vk_main_queue_family, &gpu->vk_transfer_queue_family, gpu->vk_allocation_callbacks );
-  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height );
-  gpu->vma_allocator = _vk_create_vma_allocator( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
+  gpu->temporary_allocator = creation->temporary_allocator;
+  gpu->vk_instance = vk_create_instance_( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks, temporary_allocator );
+  gpu->vk_debug_utils_messenger = vk_create_debug_utils_messsenger_( gpu->vk_instance, gpu->vk_allocation_callbacks );
+  gpu->vk_surface = vk_create_surface_( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
+  gpu->vk_physical_device = vk_pick_physical_device_( gpu->vk_instance, gpu->vk_surface, temporary_allocator );
+  gpu->vk_device = vk_create_device_( gpu->vk_physical_device, &gpu->vk_main_queue, &gpu->vk_transfer_queue, &gpu->vk_main_queue_family, &gpu->vk_transfer_queue_family, gpu->vk_allocation_callbacks, temporary_allocator );
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height, temporary_allocator );
+  gpu->vma_allocator = vk_create_vma_allocator_( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
   _vk_create_descriptor_pool( gpu->vk_device, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool, &gpu->vk_bindless_descriptor_set_layout, &gpu->vk_bindless_descriptor_set );
   gpu->vk_timestamp_query_pool = _vk_create_timestamp_query_pool( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
   crude_initialize_resource_pool( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_gfx_buffer ) );
@@ -265,9 +277,9 @@ crude_gfx_initialize_device
   gpu->queued_command_buffers_count = 0;
 
   gpu->resource_deletion_queue = NULL;
-  CRUDE_ARR_SETCAP( gpu->resource_deletion_queue, 16 );
+  CRUDE_ARRAY_SET_CAPACITY( gpu->resource_deletion_queue, 16 );
   gpu->texture_to_update_bindless = NULL;
-  CRUDE_ARR_SETCAP( gpu->texture_to_update_bindless, 16 );
+  CRUDE_ARRAY_SET_CAPACITY( gpu->texture_to_update_bindless, 16 );
 
   crude_gfx_sampler_creation sampler_creation = {
     .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -347,7 +359,7 @@ crude_gfx_deinitialize_device
   crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
 
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( gpu->resource_deletion_queue ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
     crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
 
@@ -357,8 +369,8 @@ crude_gfx_deinitialize_device
     _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
   }
 
-  CRUDE_ARR_FREE( gpu->resource_deletion_queue );
-  CRUDE_ARR_FREE( gpu->texture_to_update_bindless );
+  CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
+  CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
 
   crude_deinitialize_resource_pool( &gpu->buffers );
   crude_deinitialize_resource_pool( &gpu->textures );
@@ -452,7 +464,7 @@ crude_gfx_present
   VkWriteDescriptorSet bindless_descriptor_writes[ MAX_BINDLESS_RESOURCES ];
   VkDescriptorImageInfo bindless_image_info[ MAX_BINDLESS_RESOURCES ];
   uint32 current_write_index = 0;
-  for ( int32 i = CRUDE_ARR_LEN( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
+  for ( int32 i = CRUDE_ARRAY_LENGTH( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
   {
     crude_gfx_resource_update* texture_to_update = &gpu->texture_to_update_bindless[ i ];
     
@@ -483,7 +495,7 @@ crude_gfx_present
     descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     descriptor_write->pImageInfo = descriptor_image_info;
     
-    CRUDE_ARR_DELSWAP( gpu->texture_to_update_bindless, i );
+    CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
 
     ++current_write_index;
   }
@@ -544,7 +556,7 @@ crude_gfx_present
   
   {
   CRUDE_PROFILER_ZONE_NAME( "DestroyResoucesInstants" );
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( gpu->resource_deletion_queue ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
     crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
     
@@ -556,7 +568,7 @@ crude_gfx_present
     _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
 
     resource_deletion->current_frame = UINT32_MAX;
-    CRUDE_ARR_DELSWAP( gpu->resource_deletion_queue, i );
+    CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
     --i;
   }
   CRUDE_PROFILER_END;
@@ -802,7 +814,7 @@ crude_gfx_destroy_sampler
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_SAMPLER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, sampler_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, sampler_update_event );
 }
 
 void
@@ -959,13 +971,13 @@ crude_gfx_destroy_texture
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, texture_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, texture_update_event );
 
   crude_gfx_resource_update texture_update_bindless_event = { 
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->texture_to_update_bindless, texture_update_event );
+  CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
 }
 
 void
@@ -1087,7 +1099,7 @@ crude_gfx_destroy_shader_state
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_SHADER_STATE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, shader_state_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, shader_state_update_event );
 }
 
 void
@@ -1173,7 +1185,7 @@ crude_gfx_destroy_render_pass
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_RENDER_PASS,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, render_pass_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, render_pass_update_event );
 }
 
 void
@@ -1246,12 +1258,12 @@ crude_gfx_create_pipeline
   VkPipelineVertexInputStateCreateInfo vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
   
   VkVertexInputAttributeDescription vk_vertex_attributes[ 8 ];
-  CRUDE_ARR( crude_gfx_vertex_attribute ) vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
-  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_attributes ) >= CRUDE_ARR_LEN( vertex_attributes ) );
+  crude_gfx_vertex_attribute *vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
+  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_attributes ) >= CRUDE_ARRAY_LENGTH( vertex_attributes ) );
 
-  if ( CRUDE_ARR_LEN( vertex_attributes ) )
+  if ( CRUDE_ARRAY_LENGTH( vertex_attributes ) )
   {
-    for ( uint32 i = 0; i < CRUDE_ARR_LEN( vertex_attributes ); ++i )
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_attributes ); ++i )
     {
       vk_vertex_attributes[ i ] = ( VkVertexInputAttributeDescription ){
         .location = vertex_attributes[ i ].location,
@@ -1260,7 +1272,7 @@ crude_gfx_create_pipeline
         .offset = vertex_attributes[ i ].offset
       };
     }
-    vertex_input_info.vertexAttributeDescriptionCount = CRUDE_ARR_LEN( vertex_attributes );
+    vertex_input_info.vertexAttributeDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_attributes );
     vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
   }
   else
@@ -1270,11 +1282,11 @@ crude_gfx_create_pipeline
   }
 
   VkVertexInputBindingDescription vk_vertex_bindings[ 8 ];
-  CRUDE_ARR( crude_gfx_vertex_stream ) vertex_streams = shader_state_data->reflect.input.vertex_streams;
-  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_bindings ) >= CRUDE_ARR_LEN( vertex_streams ) );
-  if ( CRUDE_ARR_LEN( vertex_streams ) )
+  crude_gfx_vertex_stream *vertex_streams = shader_state_data->reflect.input.vertex_streams;
+  CRUDE_ASSERT( CRUDE_STACK_ARRAY_SIZE( vk_vertex_bindings ) >= CRUDE_ARRAY_LENGTH( vertex_streams ) );
+  if ( CRUDE_ARRAY_LENGTH( vertex_streams ) )
   {
-    for ( uint32 i = 0; i < CRUDE_ARR_LEN( vertex_streams ); ++i )
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_streams ); ++i )
     {
       VkVertexInputRate vertex_rate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
       vk_vertex_bindings[ i ] = ( VkVertexInputBindingDescription ){
@@ -1283,7 +1295,7 @@ crude_gfx_create_pipeline
         .inputRate = vertex_rate
       };
     }
-    vertex_input_info.vertexBindingDescriptionCount = CRUDE_ARR_LEN( vertex_streams );
+    vertex_input_info.vertexBindingDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_streams );
     vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
   }
   else
@@ -1454,7 +1466,7 @@ crude_gfx_destroy_pipeline
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_PIPELINE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, pipeline_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, pipeline_update_event );
 
   crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( gpu, handle );
   crude_gfx_destroy_shader_state( gpu, pipeline->shader_state );
@@ -1576,7 +1588,7 @@ crude_gfx_destroy_buffer
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_BUFFER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, buffer_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, buffer_update_event );
 }
 
 void
@@ -1666,7 +1678,7 @@ crude_gfx_destroy_descriptor_set_layout
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
 }
 
 void
@@ -1700,12 +1712,12 @@ crude_gfx_compile_shader
  * 
  ***********************************************/
 VKAPI_ATTR VkBool32
-_vk_debug_callback
+vk_debug_callback_
 (
-  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT        messageSeverity,
-  _In_ VkDebugUtilsMessageTypeFlagsEXT               messageType,
-  _In_ VkDebugUtilsMessengerCallbackDataEXT const   *pCallbackData,
-  _In_ void                                         *pUserData
+  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT              messageSeverity,
+  _In_ VkDebugUtilsMessageTypeFlagsEXT                     messageType,
+  _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
+  _In_ void                                               *pUserData
 )
 {
   if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
@@ -1723,48 +1735,85 @@ _vk_debug_callback
   return VK_FALSE;
 }
 
-VkInstance
-_vk_create_instance
+VkDebugUtilsMessengerEXT
+vk_create_debug_utils_messsenger_
 (
-  _In_     char const                               *vk_application_name,
-  _In_     uint32                                    vk_application_version,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_     VkInstance                                      instance,
+  _In_opt_ VkAllocationCallbacks                          *allocation_callbacks
 )
 {
-  // extensions
-  uint32 surface_extensions_count;
-  char const *const *surface_extensions_array = SDL_Vulkan_GetInstanceExtensions( &surface_extensions_count );
-  uint32 const debug_extensions_count = CRUDE_STACK_ARRAY_SIZE( vk_instance_required_extensions );
+  VkDebugUtilsMessengerEXT                                 debug_utils_messenger;
+  VkDebugUtilsMessengerCreateInfoEXT                       create_info;
+  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
+  
+  vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
 
-  char const **instance_enabled_extensions = NULL;
-  uint32 const instance_enabled_extensions_count = surface_extensions_count + debug_extensions_count;
-  CRUDE_ARR_SETLEN( instance_enabled_extensions, instance_enabled_extensions_count ); // tofree
-  CRUDE_ASSERT( instance_enabled_extensions );
+  create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){
+    .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+    .pfnUserCallback  = vk_debug_callback_,
+    .messageSeverity  =
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+    .messageType      =
+      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    .pUserData        = NULL,
+    .pNext            = NULL,
+    .flags            = 0u,
+  };
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &debug_utils_messenger ), "failed to create debug utils messenger" );
+  return debug_utils_messenger;
+}
+
+VkInstance
+vk_create_instance_
+(
+  _In_     char const                                     *vk_application_name,
+  _In_     uint32                                          vk_application_version,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
+  _In_     crude_allocator_container                       temporary_allocator
+)
+{
+  VkInstance                                               instance;
+  VkDebugUtilsMessengerCreateInfoEXT                       debug_create_info;
+  VkInstanceCreateInfo                                     instance_create_info;
+  VkApplicationInfo                                        application;
+  char const                                       *const *surface_extensions_array;
+  char const                                             **instance_enabled_extensions;
+
+  uint32                                                   surface_extensions_count, debug_extensions_count, instance_enabled_extensions_count;
+  
+  /* Get enabled extensions */ 
+  surface_extensions_array = SDL_Vulkan_GetInstanceExtensions( &surface_extensions_count );
+  debug_extensions_count = CRUDE_STACK_ARRAY_SIZE( vk_instance_required_extensions );
+
+  instance_enabled_extensions_count = surface_extensions_count + debug_extensions_count;
+  CRUDE_ARRAY_INITIALIZE( instance_enabled_extensions, instance_enabled_extensions_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( instance_enabled_extensions, instance_enabled_extensions_count );
 
   for ( uint32 i = 0; i < surface_extensions_count; ++i )
   {
-    instance_enabled_extensions[i] = surface_extensions_array[i];
+    instance_enabled_extensions[ i ] = surface_extensions_array[ i ];
   }
   for ( uint32 i = 0; i < debug_extensions_count; ++i )
   {
-    instance_enabled_extensions[surface_extensions_count + i] = vk_instance_required_extensions [i];
+    instance_enabled_extensions[ surface_extensions_count + i ] = vk_instance_required_extensions[ i ];
   }
-
-  // layers
-  char const *instance_enabled_layers[] = { "VK_LAYER_KHRONOS_validation" };
-
-  // application
-  VkApplicationInfo application = ( VkApplicationInfo ) {
+  
+  /* Setup application */ 
+  application = ( VkApplicationInfo ) {
     .pApplicationName   = vk_application_name,
     .applicationVersion = vk_application_version,
     .pEngineName        = "crude_engine",
     .engineVersion      = VK_MAKE_VERSION( 1, 0, 0 ),
     .apiVersion         = VK_API_VERSION_1_3 
   };
-
-  // initialize instance & debug_utils_messenger
-  VkInstanceCreateInfo instance_create_info;
-  memset( &instance_create_info, 0u, sizeof( instance_create_info ) );
+  
+  /* Initialize instance & debug_utils_messenger */ 
+  instance_create_info = ( VkInstanceCreateInfo ){ 0 };
   instance_create_info.sType                    = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instance_create_info.pApplicationInfo         = &application;
   instance_create_info.flags                    = 0u;
@@ -1773,12 +1822,12 @@ _vk_create_instance
   instance_create_info.ppEnabledLayerNames     = instance_enabled_layers;
   instance_create_info.enabledLayerCount       = CRUDE_STACK_ARRAY_SIZE( instance_enabled_layers );
 #ifdef VK_EXT_debug_utils
-  VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
+  debug_create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){ 0 };
   memset( &debug_create_info, 0u, sizeof( debug_create_info ) );
   debug_create_info.sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   debug_create_info.pNext            = NULL;
   debug_create_info.flags            = 0u;
-  debug_create_info.pfnUserCallback  = _vk_debug_callback;
+  debug_create_info.pfnUserCallback  = vk_debug_callback_;
   debug_create_info.pUserData        = NULL;
   debug_create_info.messageSeverity =
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -1794,258 +1843,135 @@ _vk_create_instance
   instance_create_info.pNext = nullptr;
 #endif // VK_EXT_debug_utils
   
-  VkInstance handle;
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &handle ), "failed to create instance" );
-
-  CRUDE_ARR_FREE( instance_enabled_extensions );
-
-  return handle;
-}
-
-VkDebugUtilsMessengerEXT
-_vk_create_debug_utils_messsenger
-(
-  _In_     VkInstance                                instance,
-  _In_opt_ VkAllocationCallbacks                    *allocation_callbacks
-)
-{
-  VkDebugUtilsMessengerCreateInfoEXT create_info = {
-    .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-    .pfnUserCallback  = _vk_debug_callback,
-    .messageSeverity  =
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-    .messageType      =
-      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-    .pUserData        = NULL,
-    .pNext            = NULL,
-    .flags            = 0u,
-  };
-
-  VkDebugUtilsMessengerEXT handle;
-  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &handle ), "failed to create debug utils messenger" );
-  return handle;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &instance ), "failed to create instance" );
+  return instance;
 }
 
 VkSurfaceKHR
-_vk_create_surface
+vk_create_surface_
 (
-  _In_     SDL_Window                               *sdl_window,
-  _In_     VkInstance                                vk_instance,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_     SDL_Window                                     *sdl_window,
+  _In_     VkInstance                                      vk_instance,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks
 )
 {
-  VkSurfaceKHR handle;
-  if ( !SDL_Vulkan_CreateSurface( sdl_window, vk_instance, vk_allocation_callbacks, &handle ) )
+  VkSurfaceKHR surface;
+
+  if ( !SDL_Vulkan_CreateSurface( sdl_window, vk_instance, vk_allocation_callbacks, &surface ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
     return VK_NULL_HANDLE;
   }
-  return handle;
-}
-
-int32
-_vk_get_supported_queue_family_index
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
-)
-{
-  uint32 queue_family_count = 0u;
-  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
-  if ( queue_family_count == 0u )
-  {
-    return -1;
-  }
-  
-  VkQueueFamilyProperties *queue_families_properties = NULL;
-  CRUDE_ARR_SETLEN( queue_families_properties, queue_family_count ); // tofree
-  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families_properties );
-  
-  int32 queue_index = -1;
-  for ( uint32 i = 0; i < queue_family_count; ++i )
-  {
-    if ( queue_families_properties[i].queueCount > 0 && queue_families_properties[i].queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) )
-    {
-      VkBool32 surface_supported = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR( vk_physical_device, i, vk_surface, &surface_supported );
-      if ( surface_supported )
-      {
-        queue_index = i;
-        break;
-      }
-    }
-  }
-  CRUDE_ARR_FREE( queue_families_properties );
-  return queue_index;
-}
-
-bool
-_vk_check_support_required_extensions
-(
-  _In_ VkPhysicalDevice                              vk_physical_device
-)
-{
-  uint32 available_extensions_count = 0u;
-  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, NULL );
-  if ( available_extensions_count == 0u)
-  {
-    return false;
-  }
-    
-  VkExtensionProperties *available_extensions = NULL;
-  CRUDE_ARR_SETLEN( available_extensions, available_extensions_count ); // tofree
-  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
-
-  bool support_required_extensions = true;
-  for ( uint32 i = 0; i < CRUDE_STACK_ARRAY_SIZE( vk_device_required_extensions ); ++i )
-  {
-    bool extension_found = false;
-    for ( uint32 k = 0; k < available_extensions_count; ++k )
-    {
-      if ( strcmp( vk_device_required_extensions[i], available_extensions[k].extensionName ) == 0 )
-      {
-        extension_found = true;
-        break;
-      }
-    }
-    if ( !extension_found )
-    {
-      support_required_extensions = false;
-      break;
-    }
-  }
-
-  CRUDE_ARR_FREE( available_extensions );
-  return support_required_extensions;
-}
-
-bool
-_vk_check_swap_chain_adequate
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
-)
-{
-  uint32 formats_count;
-  vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &formats_count, NULL );
-  if ( formats_count == 0u )
-  {
-    return false;
-  }
-
-  uint32 presents_mode_count;
-  vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &presents_mode_count, NULL );
-  if ( presents_mode_count == 0u ) 
-  {
-    return false;
-  }
-
-  return true;
-}
-
-bool
-_vk_check_support_required_features
-(
-  _In_ VkPhysicalDevice                              vk_physical_device
-)
-{
-  VkPhysicalDeviceFeatures features;
-  vkGetPhysicalDeviceFeatures( vk_physical_device, &features );
-  return features.samplerAnisotropy;
+  return surface;
 }
 
 VkPhysicalDevice
-_vk_pick_physical_device
+vk_pick_physical_device_
 (
-  _In_  VkInstance                                   vk_instance,
-  _In_  VkSurfaceKHR                                 vk_surface
+  _In_  VkInstance                                         vk_instance,
+  _In_  VkSurfaceKHR                                       vk_surface,
+  _In_ crude_allocator_container                           temporary_allocator
 )
 {
-  uint32 physical_devices_count = 0u;
-  vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, NULL );
+  VkPhysicalDevice                                        *available_physical_devices;
+  VkPhysicalDevice                                         selected_physical_devices;
+  VkPhysicalDeviceProperties                               selected_physical_properties;
+
+  uint32                                                   available_physical_devices_count;
+
+  vkEnumeratePhysicalDevices( vk_instance, &available_physical_devices_count, NULL );
   
-  if ( physical_devices_count == 0u ) 
+  if ( available_physical_devices_count == 0u ) 
   {
     return VK_NULL_HANDLE;
   }
   
-  VkPhysicalDevice *physical_devices = NULL;
-  CRUDE_ARR_PUT( physical_devices, physical_devices_count ); // tofree
-  vkEnumeratePhysicalDevices( vk_instance, &physical_devices_count, physical_devices );
+  CRUDE_ARRAY_INITIALIZE( available_physical_devices, available_physical_devices_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( available_physical_devices, available_physical_devices_count );
+  vkEnumeratePhysicalDevices( vk_instance, &available_physical_devices_count, available_physical_devices );
   
-  VkPhysicalDevice selected_physical_devices = VK_NULL_HANDLE;
-  for ( uint32 physical_device_index = 0; physical_device_index < physical_devices_count; ++physical_device_index )
+  selected_physical_devices = VK_NULL_HANDLE;
+  for ( uint32 i = 0; i < available_physical_devices_count; ++i )
   {
-    VkPhysicalDeviceProperties vk_physical_properties;
-    VkPhysicalDevice physical_device = physical_devices[physical_device_index];
-    vkGetPhysicalDeviceProperties( physical_device, &vk_physical_properties );
+    VkPhysicalDeviceProperties                             current_physical_properties;
+    VkPhysicalDevice                                       current_physical_device;
+
+    int32                                                  queue_family_index;
+
+    current_physical_device = available_physical_devices[ i ];
+    vkGetPhysicalDeviceProperties( current_physical_device, &current_physical_properties );
     
-    if ( vk_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
+    if ( current_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
     {
       continue;
     }
-    if ( !_vk_check_support_required_extensions( physical_device ) )
+    if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator ) )
     {
       continue;
     }
-    if ( !_vk_check_swap_chain_adequate( physical_device, vk_surface ) )
+    if ( !vk_check_swap_chain_adequate_( current_physical_device, vk_surface ) )
     {
       continue;
     }
-    if ( !_vk_check_support_required_features( physical_device ) )
+    if ( !vk_check_support_required_features_( current_physical_device ) )
     {
       continue;
     }
-    int32 queue_family_index = _vk_get_supported_queue_family_index( physical_device, vk_surface ); 
+    
+    queue_family_index = vk_get_supported_queue_family_index_( current_physical_device, vk_surface, temporary_allocator ); 
     if ( queue_family_index == -1 )
     {
       continue;
     }
     
-    selected_physical_devices = physical_device;
+    selected_physical_devices = current_physical_device;
     break;
   }
   
   if ( selected_physical_devices == VK_NULL_HANDLE )
   {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", physical_devices_count );
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", available_physical_devices_count );
     return VK_NULL_HANDLE;
   }
-  VkPhysicalDeviceProperties properties;
-  vkGetPhysicalDeviceProperties( selected_physical_devices, &properties );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", properties.deviceName, properties.deviceType );
+
+  vkGetPhysicalDeviceProperties( selected_physical_devices, &selected_physical_properties );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", selected_physical_properties.deviceName, selected_physical_properties.deviceType );
 
   return selected_physical_devices;
 }
 
 VkDevice
-_vk_create_device
+vk_create_device_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _Out_ VkQueue                                     *vk_main_queue,
-  _Out_ VkQueue                                     *vk_transfer_queue,
-  _Out_ uint32                                      *vk_main_queue_family,
-  _Out_ uint32                                      *vk_transfer_queue_family,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _Out_ VkQueue                                           *vk_main_queue,
+  _Out_ VkQueue                                           *vk_transfer_queue,
+  _Out_ uint32                                            *vk_main_queue_family,
+  _Out_ uint32                                            *vk_transfer_queue_family,
+  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
+  _In_  crude_allocator_container                          temporary_allocator
 )
 {
-  uint32 queue_family_count = 0;
+  VkPhysicalDeviceDescriptorIndexingFeatures               indexing_features;
+  VkPhysicalDeviceFeatures2                                physical_features2;
+  VkDeviceCreateInfo                                       device_create_info;
+  VkDevice                                                 device;
+  VkDeviceQueueCreateInfo                                  queue_create_infos[ 2 ];
+  VkQueueFamilyProperties                                 *queue_families;
+
+  uint32                                                   queue_family_count, main_queue_index, transfer_queue_index, compute_queue_index, present_queue_index;
+
+  queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
   
-  VkQueueFamilyProperties *queue_families = NULL;
-  CRUDE_ARR_SETLEN( queue_families, queue_family_count );
+  CRUDE_ARRAY_INITIALIZE( queue_families, queue_family_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( queue_families, queue_family_count );
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families );
   
-  uint32 main_queue_index = UINT32_MAX;
-  uint32 transfer_queue_index = UINT32_MAX;
-  uint32 compute_queue_index = UINT32_MAX;
-  uint32 present_queue_index = UINT32_MAX;
+  main_queue_index = UINT32_MAX;
+  transfer_queue_index = UINT32_MAX;
+  compute_queue_index = UINT32_MAX;
+  present_queue_index = UINT32_MAX;
   for ( uint32 family_index = 0; family_index < queue_family_count; ++family_index )
   {
     VkQueueFamilyProperties queue_family = queue_families[ family_index ];
@@ -2069,50 +1995,48 @@ _vk_create_device
   *vk_main_queue_family = main_queue_index;
   *vk_transfer_queue_family = transfer_queue_index;
 
-  CRUDE_ARR_FREE( queue_families );
-
   float const queue_priority[] = { 1.0f };
 
-  VkDeviceQueueCreateInfo queue_info[ 2 ];
-  memset( queue_info, 0, sizeof( queue_info ) );
-  VkDeviceQueueCreateInfo *main_queue = &queue_info[ 0 ];
-  main_queue->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  main_queue->queueFamilyIndex = main_queue_index;
-  main_queue->queueCount = 1;
-  main_queue->pQueuePriorities = queue_priority;
+  queue_create_infos[ 0 ] = ( VkDeviceQueueCreateInfo ){
+    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+    .queueFamilyIndex = main_queue_index,
+    .queueCount = 1,
+    .pQueuePriorities = queue_priority,
+  };
   
   if ( transfer_queue_index < queue_family_count )
   {
-    VkDeviceQueueCreateInfo *transfer_queue_info = &queue_info[ 1 ];
-    transfer_queue_info->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    transfer_queue_info->queueFamilyIndex = transfer_queue_index;
-    transfer_queue_info->queueCount = 1;
-    transfer_queue_info->pQueuePriorities = queue_priority;
+    queue_create_infos[ 1 ]  = ( VkDeviceQueueCreateInfo ){
+    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+    .queueFamilyIndex = transfer_queue_index,
+    .queueCount = 1,
+    .pQueuePriorities = queue_priority,
+    };
   }
 
-  VkPhysicalDeviceDescriptorIndexingFeatures indexing_features = {
+  indexing_features = ( VkPhysicalDeviceDescriptorIndexingFeatures ) {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES
   };
 
-  VkPhysicalDeviceFeatures2 physical_features2 = { 
+  physical_features2 = ( VkPhysicalDeviceFeatures2 ){ 
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
     .pNext = &indexing_features,
   };
   vkGetPhysicalDeviceFeatures2( vk_physical_device, &physical_features2 );
 
-  VkDeviceCreateInfo device_create_info = {
+  device_create_info = ( VkDeviceCreateInfo ){
     .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     .pNext                    = &physical_features2,
     .flags                    = 0u,
     .queueCreateInfoCount     = transfer_queue_index < queue_family_count ? 2 : 1,
-    .pQueueCreateInfos        = queue_info,
+    .pQueueCreateInfos        = queue_create_infos,
     .pEnabledFeatures         = NULL,
     .enabledExtensionCount    = CRUDE_STACK_ARRAY_SIZE( vk_device_required_extensions ),
     .ppEnabledExtensionNames  = vk_device_required_extensions,
     .enabledLayerCount        = CRUDE_STACK_ARRAY_SIZE( vk_required_layers ),
     .ppEnabledLayerNames      = vk_required_layers,
   };
-  VkDevice device;
+
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDevice( vk_physical_device, &device_create_info, vk_allocation_callbacks, &device ), "failed to create logic device!" );
   vkGetDeviceQueue( device, main_queue_index, 0u, vk_main_queue );
   if ( transfer_queue_index < queue_family_count )
@@ -2126,23 +2050,34 @@ _vk_create_device
 VkSwapchainKHR
 _vk_create_swapchain
 ( 
-  _In_      VkDevice                                 vk_device, 
-  _In_      VkPhysicalDevice                         vk_physical_device, 
-  _In_      VkSurfaceKHR                             vk_surface, 
-  _In_      int32                                    vk_queue_family_index,
-  _In_opt_  VkAllocationCallbacks                   *vk_allocation_callbacks,
-  _Out_     uint32                                  *vk_swapchain_images_count,
-  _Out_     VkImage                                 *vk_swapchain_images,
-  _Out_     VkImageView                             *vk_swapchain_images_views,
-  _Out_     VkSurfaceFormatKHR                      *vk_surface_format,
-  _Out_     uint16                                  *vk_swapchain_width,
-  _Out_     uint16                                  *vk_swapchain_height
+  _In_      VkDevice                                       vk_device, 
+  _In_      VkPhysicalDevice                               vk_physical_device, 
+  _In_      VkSurfaceKHR                                   vk_surface, 
+  _In_      int32                                          vk_queue_family_index,
+  _In_opt_  VkAllocationCallbacks                         *vk_allocation_callbacks,
+  _Out_     uint32                                        *vk_swapchain_images_count,
+  _Out_     VkImage                                       *vk_swapchain_images,
+  _Out_     VkImageView                                   *vk_swapchain_images_views,
+  _Out_     VkSurfaceFormatKHR                            *vk_surface_format,
+  _Out_     uint16                                        *vk_swapchain_width,
+  _Out_     uint16                                        *vk_swapchain_height,
+  _In_  crude_allocator_container                          temporary_allocator
 )
 {
-  VkSurfaceCapabilitiesKHR surface_capabilities;
+  VkSwapchainKHR                                           vk_swapchain;
+  VkSwapchainCreateInfoKHR                                 swapchain_create_info;
+  VkPresentModeKHR                                         selected_present_mode;
+  VkPresentModeKHR                                        *available_present_modes;
+  VkSurfaceFormatKHR                                      *available_formats;
+  VkSurfaceCapabilitiesKHR                                 surface_capabilities;
+  VkExtent2D                                               swapchain_extent;
+  uint32                                                   available_formats_count, available_present_modes_count, image_count;
+  uint32                                                   queue_family_indices[ 1 ];
+  bool                                                     surface_format_found;
+
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR( vk_physical_device, vk_surface, &surface_capabilities);
   
-  VkExtent2D swapchain_extent = surface_capabilities.currentExtent;
+  swapchain_extent = surface_capabilities.currentExtent;
   if ( swapchain_extent.width == UINT32_MAX )
   {
     swapchain_extent.width = crude_clamp( swapchain_extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width );
@@ -2152,7 +2087,7 @@ _vk_create_swapchain
   *vk_swapchain_width  = swapchain_extent.width;
   *vk_swapchain_height = swapchain_extent.height;
   
-  uint32 available_formats_count;
+  available_formats_count;
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &available_formats_count, NULL );
 
   if ( available_formats_count == 0u )
@@ -2161,16 +2096,16 @@ _vk_create_swapchain
     return VK_NULL_HANDLE;
   }
 
-  VkSurfaceFormatKHR *available_formats = NULL;
-  CRUDE_ARR_SETLEN( available_formats, available_formats_count ); // tofree
+  CRUDE_ARRAY_INITIALIZE( available_formats, available_formats_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( available_formats, available_formats_count );
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &available_formats_count, available_formats );
 
-  bool surface_format_found = false;
+  surface_format_found = false;
   for ( uint32 i = 0; i < available_formats_count; ++i )
   {
-    if ( available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+    if ( available_formats[ i ].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
     {
-      *vk_surface_format = available_formats[i];
+      *vk_surface_format = available_formats[ i ];
       surface_format_found = true;
     }
   }
@@ -2178,37 +2113,38 @@ _vk_create_swapchain
   if ( !surface_format_found )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
-    CRUDE_ARR_FREE( available_formats );
+    CRUDE_ARRAY_FREE( available_formats );
     return VK_NULL_HANDLE;
   }
   
-  uint32 available_present_modes_count;
+  available_present_modes_count;
   vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, NULL );
   if ( available_present_modes_count == 0u ) 
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
-    CRUDE_ARR_FREE( available_formats );
+    CRUDE_ARRAY_FREE( available_formats );
     return VK_NULL_HANDLE;
   }
   
-  CRUDE_ARR( VkPresentModeKHR ) available_present_modes = NULL;
-  CRUDE_ARR_SETLEN( available_present_modes, available_present_modes_count ); // tofree
-  vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, available_present_modes );
   
-  VkPresentModeKHR surface_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  CRUDE_ARRAY_INITIALIZE( available_present_modes, available_present_modes_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( available_present_modes, available_present_modes_count );
+  vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, available_present_modes );
+
+  selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
   for ( uint32 i = 0; i < available_present_modes_count; ++i )
   {
     if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
     {
-      surface_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+      selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
       break;
     }
   }
 
-  uint32 const image_count = ( surface_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
-  uint32 const queue_family_indices[] = { vk_queue_family_index };
+  image_count = ( selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
+  queue_family_indices[ 0 ] = vk_queue_family_index;
   
-  VkSwapchainCreateInfoKHR swapchain_create_info = ( VkSwapchainCreateInfoKHR ) {
+  swapchain_create_info = ( VkSwapchainCreateInfoKHR ) {
     .sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     .pNext                  = NULL,
     .surface                = vk_surface,
@@ -2223,16 +2159,15 @@ _vk_create_swapchain
     .pQueueFamilyIndices    = queue_family_indices,
     .preTransform           = surface_capabilities.currentTransform,
     .compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-    .presentMode            = surface_present_mode,
+    .presentMode            = selected_present_mode,
     .clipped                = true,
     .oldSwapchain           = VK_NULL_HANDLE,
   };
   
-  VkSwapchainKHR vulkan_swapchain = VK_NULL_HANDLE;
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( vk_device, &swapchain_create_info, vk_allocation_callbacks, &vulkan_swapchain ), "failed to create swapchain!" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( vk_device, &swapchain_create_info, vk_allocation_callbacks, &vk_swapchain ), "Failed to create swapchain!" );
 
-  vkGetSwapchainImagesKHR( vk_device, vulkan_swapchain, vk_swapchain_images_count, NULL );
-  vkGetSwapchainImagesKHR( vk_device, vulkan_swapchain, vk_swapchain_images_count, vk_swapchain_images );
+  vkGetSwapchainImagesKHR( vk_device, vk_swapchain, vk_swapchain_images_count, NULL );
+  vkGetSwapchainImagesKHR( vk_device, vk_swapchain, vk_swapchain_images_count, vk_swapchain_images );
   
   for ( uint32 i = 0; i < *vk_swapchain_images_count; ++i )
   {
@@ -2249,33 +2184,150 @@ _vk_create_swapchain
       .components.b                = VK_COMPONENT_SWIZZLE_B,
       .components.a                = VK_COMPONENT_SWIZZLE_A,
     };
-    
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( vk_device, &image_view_info, vk_allocation_callbacks, &vk_swapchain_images_views[ i ] ), "Failed to create image view for swapchain image" );
   }
 
-  CRUDE_ARR_FREE( available_formats );
-  CRUDE_ARR_FREE( available_present_modes );
+  CRUDE_ARRAY_FREE( available_formats );
+  CRUDE_ARRAY_FREE( available_present_modes );
 
-  return vulkan_swapchain;
+  return vk_swapchain;
 }
 
 VmaAllocation
-_vk_create_vma_allocator
+vk_create_vma_allocator_
 (
-  _In_ VkDevice                                      vk_device,
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkInstance                                    vk_instance
+  _In_ VkDevice                                            vk_device,
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkInstance                                          vk_instance
 )
 {
-  VmaAllocatorCreateInfo allocator_info = {
+  VmaAllocation                                            vma_allocator;
+  VmaAllocatorCreateInfo                                   allocator_info;
+  
+  allocator_info = ( VmaAllocatorCreateInfo ) {
     .physicalDevice   = vk_physical_device,
     .device           = vk_device,
     .instance         = vk_instance,
   };
-
-  VmaAllocation vma_allocator;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &vma_allocator ), "Failed to create vma allocator" );
   return vma_allocator;
+}
+
+int32
+vk_get_supported_queue_family_index_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_ VkSurfaceKHR                                  vk_surface,
+  _In_  crude_allocator_container                    temporary_allocator
+)
+{
+  VkQueueFamilyProperties                                 *queue_families_properties;
+  uint32                                                   queue_family_count;
+  int32                                                    queue_index;
+
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
+  if ( queue_family_count == 0u )
+  {
+    return -1;
+  }
+  
+  CRUDE_ARRAY_INITIALIZE( queue_families_properties, queue_family_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( queue_families_properties, queue_family_count );
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families_properties );
+  
+  queue_index = -1;
+  for ( uint32 i = 0; i < queue_family_count; ++i )
+  {
+    if ( queue_families_properties[ i ].queueCount > 0 && queue_families_properties[ i ].queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) )
+    {
+      VkBool32 surface_supported = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR( vk_physical_device, i, vk_surface, &surface_supported );
+      if ( surface_supported )
+      {
+        queue_index = i;
+        break;
+      }
+    }
+  }
+  return queue_index;
+}
+
+bool
+vk_check_support_required_extensions_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_  crude_allocator_container                    temporary_allocator
+)
+{
+  VkExtensionProperties                                   *available_extensions;
+  uint32                                                   available_extensions_count;
+  bool                                                     support_required_extensions;
+  
+  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, NULL );
+  if ( available_extensions_count == 0u)
+  {
+    return false;
+  }
+    
+  CRUDE_ARRAY_INITIALIZE( available_extensions, available_extensions_count, temporary_allocator );
+  CRUDE_ARRAY_SET_LENGTH( available_extensions, available_extensions_count );
+  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
+
+  support_required_extensions = true;
+  for ( uint32 i = 0; i < CRUDE_STACK_ARRAY_SIZE( vk_device_required_extensions ); ++i )
+  {
+    bool extension_found = false;
+    for ( uint32 k = 0; k < available_extensions_count; ++k )
+    {
+      if ( strcmp( vk_device_required_extensions[i], available_extensions[k].extensionName ) == 0 )
+      {
+        extension_found = true;
+        break;
+      }
+    }
+    if ( !extension_found )
+    {
+      support_required_extensions = false;
+      break;
+    }
+  }
+
+  return support_required_extensions;
+}
+
+bool
+vk_check_swap_chain_adequate_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device,
+  _In_ VkSurfaceKHR                                  vk_surface
+)
+{
+  uint32 formats_count, presents_mode_count;
+
+  vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &formats_count, NULL );
+  if ( formats_count == 0u )
+  {
+    return false;
+  }
+
+  vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &presents_mode_count, NULL );
+  if ( presents_mode_count == 0u ) 
+  {
+    return false;
+  }
+
+  return true;
+}
+
+bool
+vk_check_support_required_features_
+(
+  _In_ VkPhysicalDevice                              vk_physical_device
+)
+{
+  VkPhysicalDeviceFeatures features;
+  vkGetPhysicalDeviceFeatures( vk_physical_device, &features );
+  return features.samplerAnisotropy;
 }
 
 void
@@ -2578,7 +2630,7 @@ _vk_create_texture
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARR_PUT( gpu->texture_to_update_bindless, texture_update_event );
+  CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
 }
 
 void
@@ -2637,7 +2689,7 @@ _vk_resize_swapchain
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Failed to create vk_surface: %s!", SDL_GetError() );
   }
   
-  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height);
+  gpu->vk_swapchain = _vk_create_swapchain( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height, temporary_allocator );
   
   crude_gfx_texture_handle texture_to_delete_handle = { CRUDE_GFX_OBTAIN_TEXTURE( gpu ) };
   crude_gfx_texture *texture_to_delete = CRUDE_GFX_ACCESS_TEXTURE( gpu, texture_to_delete_handle );
@@ -2698,8 +2750,8 @@ _vk_reflect_shader
   
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
-    CRUDE_ARR_SETLEN( reflect->input.vertex_attributes, spv_reflect.input_variable_count );
-    CRUDE_ARR_SETLEN( reflect->input.vertex_streams, spv_reflect.input_variable_count );
+    CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count );
+    CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count );
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {
       SpvReflectInterfaceVariable const *spv_input = spv_reflect.input_variables[ input_index ];

@@ -2,7 +2,7 @@
 #include <stb_image.h>
 
 #include <core/profiler.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/file.h>
 
 #include <scene/scene.h>
@@ -164,7 +164,7 @@ crude_gltf_scene_load_from_file
   crude_file_directory_from_path( gltf_base_path );
 
   scene->images = NULL;
-  CRUDE_ARR_SETCAP( scene->images, gltf->images_count );
+  CRUDE_ARRAY_SET_CAPACITY( scene->images, gltf->images_count );
   
   for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
   {
@@ -190,14 +190,14 @@ crude_gltf_scene_load_from_file
     };
 
     crude_gfx_renderer_texture *texture_resource = crude_gfx_renderer_create_texture( scene->renderer, &texture_creation );
-    CRUDE_ARR_PUSH( scene->images, *texture_resource );
+    CRUDE_ARRAY_PUSH( scene->images, *texture_resource );
 
     crude_gfx_asynchronous_loader_request_texture_data( scene->async_loader, image_full_filename, texture_resource->handle );
   }
 
   // Load all samplers
   scene->samplers = NULL;
-  CRUDE_ARR_SETCAP( scene->samplers, gltf->samplers_count );
+  CRUDE_ARRAY_SET_CAPACITY( scene->samplers, gltf->samplers_count );
 
   for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
   {
@@ -263,11 +263,11 @@ crude_gltf_scene_load_from_file
     creation.name = "";
     
     crude_gfx_renderer_sampler *sampler_resource = crude_gfx_renderer_create_sampler( scene->renderer, &creation );
-    CRUDE_ARR_PUSH( scene->samplers, *sampler_resource );
+    CRUDE_ARRAY_PUSH( scene->samplers, *sampler_resource );
   }
   
   scene->buffers = NULL;
-  CRUDE_ARR_SETCAP( scene->buffers, gltf->buffer_views_count );
+  CRUDE_ARRAY_SET_CAPACITY( scene->buffers, gltf->buffer_views_count );
 
   for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
   {
@@ -298,13 +298,13 @@ crude_gltf_scene_load_from_file
       .device_only = true
     };
     crude_gfx_renderer_buffer *gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene->renderer, &gpu_buffer_creation );
-    CRUDE_ARR_PUSH( scene->buffers, *gpu_buffer_resource );
+    CRUDE_ARRAY_PUSH( scene->buffers, *gpu_buffer_resource );
 
     crude_gfx_asynchronous_loader_request_buffer_copy( scene->async_loader, cpu_buffer, gpu_buffer_resource->handle );
   }
 
   scene->mesh_draws = NULL;
-  CRUDE_ARR_SETCAP( scene->mesh_draws, gltf->meshes_count );
+  CRUDE_ARRAY_SET_CAPACITY( scene->mesh_draws, gltf->meshes_count );
 
   cgltf_scene *root_scene = gltf->scene;
 
@@ -409,7 +409,7 @@ crude_gltf_scene_load_from_file
         }
       }
       mesh_draw.material = scene->material;
-      CRUDE_ARR_PUSH( scene->mesh_draws, mesh_draw );
+      CRUDE_ARRAY_PUSH( scene->mesh_draws, mesh_draw );
     }
   }
   cgltf_free( gltf );
@@ -424,31 +424,31 @@ crude_gltf_scene_unload
   crude_gfx_renderer_destroy_program( scene->renderer, scene->program );
   crude_gfx_renderer_destroy_material( scene->renderer, scene->material );
 
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->images ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->images ); ++i )
   {
     crude_gfx_renderer_destroy_texture( scene->renderer, &scene->images[ i ] );
   }
-  CRUDE_ARR_FREE( scene->images );
+  CRUDE_ARRAY_FREE( scene->images );
 
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->samplers ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->samplers ); ++i )
   {
     crude_gfx_renderer_destroy_sampler( scene->renderer, &scene->samplers[ i ] );
   }
-  CRUDE_ARR_FREE( scene->samplers );
+  CRUDE_ARRAY_FREE( scene->samplers );
   
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->buffers ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->buffers ); ++i )
   {
     crude_gfx_renderer_destroy_buffer( scene->renderer, &scene->buffers[ i ] );
   }
-  CRUDE_ARR_FREE( scene->buffers );
+  CRUDE_ARRAY_FREE( scene->buffers );
 
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( scene->mesh_draws ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->mesh_draws ); ++i )
   {
      crude_gfx_destroy_buffer( scene->renderer->gpu, scene->mesh_draws[ i ].material_buffer );
   }
-  CRUDE_ARR_FREE( scene->mesh_draws );
+  CRUDE_ARRAY_FREE( scene->mesh_draws );
 
-  CRUDE_ARR_FREE( scene->buffers );
+  CRUDE_ARRAY_FREE( scene->buffers );
 }
 
 void
@@ -668,7 +668,7 @@ _gltf_scene_primary_draw_task
   
   if ( draw_task->use_secondary )
   {
-    uint32 draws_per_secondary = CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) / _PARALLEL_RECORDINGS;
+    uint32 draws_per_secondary = CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) / _PARALLEL_RECORDINGS;
     uint32 offset = draws_per_secondary * _PARALLEL_RECORDINGS;
     
     enkiTaskSet *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
@@ -689,13 +689,13 @@ _gltf_scene_primary_draw_task
       enkiAddTaskSet( draw_task->task_scheduler, secondary_draw_tasks[ i ] );
     }
     
-    if ( offset < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) )
+    if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) )
     {
       offset_secondary_draw_tasks_data = ( _gltf_scene_secondary_draw_task_data ) {
         .scene = draw_task->scene,
         .parent_cmd = gpu_commands,
         .start_mesh_draw_index = offset,
-        .end_mesh_draw_index = CRUDE_ARR_LEN( draw_task->scene->mesh_draws )
+        .end_mesh_draw_index = CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws )
       };
       _gltf_scene_secondary_draw_task( NULL, NULL, thread_num, &offset_secondary_draw_tasks_data );
     }
@@ -706,7 +706,7 @@ _gltf_scene_primary_draw_task
       vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
     }
     
-    if ( offset < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ) )
+    if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) )
     {
       vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
     }
@@ -718,7 +718,7 @@ _gltf_scene_primary_draw_task
     crude_gfx_cmd_set_scissor( gpu_commands, NULL );
 
     crude_gfx_renderer_material *last_material = NULL;
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARR_LEN( draw_task->scene->mesh_draws ); ++mesh_index )
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ); ++mesh_index )
     {
       crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
       if ( mesh_draw->material != last_material )

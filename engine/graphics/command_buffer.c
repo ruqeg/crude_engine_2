@@ -1,5 +1,5 @@
 #include <core/assert.h>
-#include <core/algorithms.h>
+#include <core/array.h>
 #include <core/profiler.h>
 #include <graphics/gpu_device.h>
 
@@ -666,7 +666,7 @@ crude_gfx_initialize_cmd_manager
   cmd_manager->num_secondary_cmd_buffer_per_pool = 5;
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
-  CRUDE_ARR_SETLEN( cmd_manager->vk_cmd_pools, total_pools );
+  CRUDE_ARRAY_SET_LENGTH( cmd_manager->vk_cmd_pools, total_pools );
 
   for ( uint32 i = 0; i < total_pools; ++i )
   {
@@ -679,8 +679,8 @@ crude_gfx_initialize_cmd_manager
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );
   }
   
-  CRUDE_ARR_SETLEN( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools );
-  CRUDE_ARR_SETLEN( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools );
+  CRUDE_ARRAY_SET_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools );
+  CRUDE_ARRAY_SET_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools );
   for ( uint32 i = 0; i < total_pools; ++i )
   {
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ i ] = 0;
@@ -688,7 +688,7 @@ crude_gfx_initialize_cmd_manager
   }
   
   uint32 total_buffers = total_pools * cmd_manager->num_primary_cmd_buffers_per_thread;
-  CRUDE_ARR_SETLEN( cmd_manager->primary_cmd_buffers, total_pools );
+  CRUDE_ARRAY_SET_LENGTH( cmd_manager->primary_cmd_buffers, total_pools );
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {
@@ -709,7 +709,7 @@ crude_gfx_initialize_cmd_manager
   }
   
   uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_pool;
-  CRUDE_ARR_SETLEN( cmd_manager->secondary_cmd_buffers, total_secondary_buffers );
+  CRUDE_ARRAY_SET_LENGTH( cmd_manager->secondary_cmd_buffers, total_secondary_buffers );
 
   for ( uint32 pool_index = 0; pool_index < total_pools; ++pool_index )
   {
@@ -721,7 +721,7 @@ crude_gfx_initialize_cmd_manager
     };
     
     VkCommandBuffer *secondary_buffers = NULL;
-    CRUDE_ARR_SETLEN( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool );
+    CRUDE_ARRAY_SET_LENGTH( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool );
 
     vkAllocateCommandBuffers( gpu->vk_device, &cmd, secondary_buffers );
     
@@ -734,7 +734,7 @@ crude_gfx_initialize_cmd_manager
       cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_cmd_buffer_per_pool + second_cmd_index ] = cmd;
     }
 
-    CRUDE_ARR_FREE( secondary_buffers );
+    CRUDE_ARRAY_FREE( secondary_buffers );
   }
 }
 
@@ -744,23 +744,23 @@ crude_gfx_deinitialize_cmd_manager
   _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( cmd_manager->primary_cmd_buffers ) ; ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( cmd_manager->primary_cmd_buffers ) ; ++i )
   {
     crude_gfx_deinitialize_cmd( &cmd_manager->primary_cmd_buffers[ i ] );
   }
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( cmd_manager->secondary_cmd_buffers ) ; ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( cmd_manager->secondary_cmd_buffers ) ; ++i )
   {
     crude_gfx_deinitialize_cmd( &cmd_manager->secondary_cmd_buffers[ i ] );
   }
-  for ( uint32 i = 0; i < CRUDE_ARR_LEN( cmd_manager->vk_cmd_pools ) ; ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( cmd_manager->vk_cmd_pools ) ; ++i )
   {
     vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
   }
-  CRUDE_ARR_FREE( cmd_manager->vk_cmd_pools  );
-  CRUDE_ARR_FREE( cmd_manager->primary_cmd_buffers );
-  CRUDE_ARR_FREE( cmd_manager->secondary_cmd_buffers );
-  CRUDE_ARR_FREE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
-  CRUDE_ARR_FREE( cmd_manager->num_used_secondary_cmd_buffers_per_frame );
+  CRUDE_ARRAY_FREE( cmd_manager->vk_cmd_pools  );
+  CRUDE_ARRAY_FREE( cmd_manager->primary_cmd_buffers );
+  CRUDE_ARRAY_FREE( cmd_manager->secondary_cmd_buffers );
+  CRUDE_ARRAY_FREE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
+  CRUDE_ARRAY_FREE( cmd_manager->num_used_secondary_cmd_buffers_per_frame );
 }
 
 void

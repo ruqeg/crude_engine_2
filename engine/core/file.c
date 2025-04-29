@@ -18,11 +18,10 @@ static long _get_file_size
   _In_ FILE                                               *f
 )
 {
-  long fileSizeSigned;
   fseek( f, 0, SEEK_END );
-  fileSizeSigned = ftell( f );
+  long file_size_signed = ftell( f );
   fseek( f, 0, SEEK_SET );
-  return fileSizeSigned;
+  return file_size_signed;
 }
 
 void
@@ -103,7 +102,7 @@ CRUDE_API bool
 crude_read_file
 (
   _In_ char const                                         *filename,
-  _In_ crude_allocator                                     allocator,
+  _In_ crude_allocator_container                                     allocator,
   _Out_ uint8                                            **buffer,
   _Out_ uint32                                            *buffer_size
 )

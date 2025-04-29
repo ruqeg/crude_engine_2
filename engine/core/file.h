@@ -31,7 +31,7 @@ CRUDE_API bool
 crude_read_file
 (
   _In_ char const                                         *filename,
-  _In_ crude_allocator                                     allocator,
+  _In_ crude_allocator_container                                     allocator,
   _Out_ uint8                                            **buffer,
   _Out_ uint32                                            *buffer_size
 );

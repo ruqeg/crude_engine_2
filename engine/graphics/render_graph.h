@@ -75,8 +75,8 @@ typedef struct crude_gfx_render_graph_resource_output_creation
 
 typedef struct crude_gfx_render_graph_node_creation
 {
-  CRUDE_ARR( crude_gfx_render_graph_resource_input_creation )  inputs;
-  CRUDE_ARR( crude_gfx_render_graph_resource_output_creation ) outputs;
+  crude_gfx_render_graph_resource_input_creation          *inputs;
+  crude_gfx_render_graph_resource_output_creation         *outputs;
   bool                                                     enabled;
   char const                                              *name;
 } crude_gfx_render_graph_node_creation;
@@ -87,16 +87,16 @@ typedef struct crude_gfx_render_graph_node
   crude_gfx_render_pass_handle                             render_pass;
   crude_gfx_framebuffer_handle                             framebuffer;
   //crude_gfx_render_graph_render_pass                      *graph_render_pass;
-  CRUDE_ARR( crude_gfx_render_graph_resource_handle )      inputs;
-  CRUDE_ARR( crude_gfx_render_graph_resource_handle )      outputs;
-  CRUDE_ARR( crude_gfx_render_graph_node_handle )          edges;
+  crude_gfx_render_graph_resource_handle                  *inputs;
+  crude_gfx_render_graph_resource_handle                  *outputs;
+  crude_gfx_render_graph_node_handle                      *edges;
   bool                                                     enabled;
   char const                                              *name;
 } crude_gfx_render_graph_node;
 
 typedef struct crude_gfx_render_graph
 {
-  crude_allocator local_allocator;
+  crude_allocator_container local_allocator;
 } crude_gfx_render_graph;
 
 CRUDE_API void
@@ -104,5 +104,5 @@ crude_gfx_render_graph_parse_from_file
 (
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ char const                                         *file_path,
-  _In_ crude_allocator                                     temp_allocator
+  _In_ crude_allocator_container                                     temp_allocator
 );

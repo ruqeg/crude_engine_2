@@ -33,8 +33,8 @@ typedef struct crude_gfx_asynchronous_loader
 {
   crude_gfx_renderer                                      *renderer;
 
-  CRUDE_ARR( crude_gfx_file_load_request )               file_load_requests;
-  CRUDE_ARR( crude_gfx_upload_request )                  upload_requests;
+  crude_gfx_file_load_request                             *file_load_requests;
+  crude_gfx_upload_request                                *upload_requests;
   
   crude_gfx_buffer                                        *staging_buffer;
   uint32                                                   staging_buffer_offset;

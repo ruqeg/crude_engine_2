@@ -112,7 +112,7 @@ typedef struct crude_gfx_renderer_material
 typedef struct crude_gfx_renderer_creation
 {
   crude_gfx_device                                        *gpu;
-  crude_allocator                                          allocator;
+  crude_allocator_container                                          allocator;
 } crude_gfx_renderer_creation;
 
 typedef struct crude_gfx_renderer
@@ -123,7 +123,7 @@ typedef struct crude_gfx_renderer
   crude_resource_pool                                      textures;
   crude_resource_pool                                      samplers;
   crude_resource_pool                                      programs;
-  crude_allocator                                          allocator;
+  crude_allocator_container                                          allocator;
   crude_gfx_texture_handle                                 textures_to_update[ 128 ];
   uint32                                                   num_textures_to_update;
   mtx_t                                                    texture_update_mutex;
