@@ -107,7 +107,8 @@ initialize_render_core
       .renderer = renderer->renderer,
       .path = gltf_path,
       .async_loader = renderer->async_loader,
-      .gltf_allocator = render_create[ i ].gltf_allocator
+      .allocator = render_create[ i ].allocator,
+      .temprorary_stack_allocator = render_create[ i ].temporary_allocator
     };
     crude_gltf_scene_load_from_file( renderer->scene, &gltf_creation );
     

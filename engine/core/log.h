@@ -39,11 +39,11 @@ crude_deinitialize_log
 CRUDE_API void
 crude_log_common
 (
-  _In_ char const      *filename,
-  _In_ int32            line,
-  _In_ crude_channel    channel,
-  _In_ crude_verbosity  verbosity,
-  _In_ char const      *format,
+  _In_ char const                                         *filename,
+  _In_ int32                                               line,
+  _In_ crude_channel                                       channel,
+  _In_ crude_verbosity                                     verbosity,
+  _In_ char const                                         *format,
   _In_ ...
 );
 

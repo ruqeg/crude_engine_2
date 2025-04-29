@@ -1127,6 +1127,8 @@ crude_gfx_destroy_shader_state_instant
   crude_gfx_shader_state *shader_state = CRUDE_GFX_ACCESS_SHADER_STATE( gpu, handle );
   if ( shader_state )
   {
+    CRUDE_ARRAY_FREE( shader_state->reflect.input.vertex_attributes );
+    CRUDE_ARRAY_FREE( shader_state->reflect.input.vertex_streams );
     for ( uint32 i = 0; i < shader_state->active_shaders; ++i )
     {
       vkDestroyShaderModule( gpu->vk_device, shader_state->shader_stage_info[ i ].module, gpu->vk_allocation_callbacks );
@@ -2773,14 +2775,19 @@ _vk_reflect_shader
   _In_ crude_gfx_shader_reflect                           *reflect
 )
 {
-  SpvReflectShaderModule spv_reflect;
-  SpvReflectResult result = spvReflectCreateShaderModule( code_size, code, &spv_reflect );
+  SpvReflectShaderModule                                   spv_reflect;
+  SpvReflectResult                                         result;
+  
+  result = spvReflectCreateShaderModule( code_size, code, &spv_reflect );
   CRUDE_ASSERT( result == SPV_REFLECT_RESULT_SUCCESS );
   
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
+    CRUDE_ARRAY_INITIALIZE( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
+    CRUDE_ARRAY_INITIALIZE( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
     CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count );
     CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count );
+
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {
       SpvReflectInterfaceVariable const *spv_input = spv_reflect.input_variables[ input_index ];
@@ -2803,16 +2810,22 @@ _vk_reflect_shader
 
   for ( uint32 set_index = 0; set_index < spv_reflect.descriptor_set_count; ++set_index )
   {
-    SpvReflectDescriptorSet const *spv_descriptor_set = &spv_reflect.descriptor_sets[ set_index ];
-
-    crude_gfx_descriptor_set_layout_creation *set_layout = &reflect->descriptor.sets[ spv_descriptor_set->set ];
+    SpvReflectDescriptorSet const                         *spv_descriptor_set;
+    crude_gfx_descriptor_set_layout_creation              *set_layout;
+    
+    
+    spv_descriptor_set = &spv_reflect.descriptor_sets[ set_index ];
+    set_layout = &reflect->descriptor.sets[ spv_descriptor_set->set ];
     set_layout->set_index = spv_descriptor_set->set;
     set_layout->num_bindings = 0;
 
     for ( uint32 binding_index = 0; binding_index < spv_descriptor_set->binding_count; ++binding_index )
     {
-      SpvReflectDescriptorBinding const *spv_binding = spv_descriptor_set->bindings[ binding_index ];
-      crude_gfx_descriptor_set_layout_binding *binding = &set_layout->bindings[ binding_index ];
+      SpvReflectDescriptorBinding const                   *spv_binding;
+      crude_gfx_descriptor_set_layout_binding             *binding;
+
+      spv_binding = spv_descriptor_set->bindings[ binding_index ];
+      binding = &set_layout->bindings[ binding_index ];
       memset( binding, 0, sizeof( crude_gfx_descriptor_set_layout_binding ) );
       binding->start = spv_binding->binding;
       binding->name  = spv_binding->name; //!TODO UNSAFE

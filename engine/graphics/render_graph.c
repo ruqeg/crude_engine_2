@@ -62,32 +62,33 @@ crude_gfx_render_graph_parse_from_file
     return;
   }
 
-  //cJSON const *passes = cJSON_GetObjectItemCaseSensitive( graph_json, "passes" );
-  //cJSON const *pass = NULL;
-  //
-  //cJSON_ArrayForEach( pass, passes )
-  //{
-  //  cJSON const *pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
-  //  cJSON const *pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
+  cJSON const *passes = cJSON_GetObjectItemCaseSensitive( graph_json, "passes" );
+  cJSON const *pass = NULL;
+  
+  cJSON_ArrayForEach( pass, passes )
+  {
+    cJSON const *pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
+    cJSON const *pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
 
-  //  crude_gfx_render_graph_node_creation node_creation = { 0 };
-  //  CRUDE_ARR_SETLEN( node_creation.inputs, cJSON_GetArraySize( pass_inputs ) );
-  //  CRUDE_ARR_SETLEN( node_creation.outputs, cJSON_GetArraySize( pass_outputs ) );
-  //
-  //  uint32 input_index = 0u;
-  //  cJSON const *pass_input = NULL;
-  //  cJSON_ArrayForEach( pass_input, pass_inputs )
-  //  {
-  //    cJSON const *input_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
-  //    cJSON const *input_name = cJSON_GetObjectItemCaseSensitive( pass, "name" );
-  //    CRUDE_ASSERT( input_type && input_name );
-  //    
-  //    node_creation.inputs[ input_index++ ] = ( crude_gfx_render_graph_resource_input_creation ){
-  //      .type = _string_to_resource_type( input_name->string ),
-  //      .resource_info.external = false,
-  //      .name = string_buffer.append_use_f( "%s", input_name.c_str() ),
-  //    }; 
-  //  }
+    crude_gfx_render_graph_node_creation node_creation = { 0 };
+    CRUDE_ARR_SETLEN( node_creation.inputs, cJSON_GetArraySize( pass_inputs ) );
+    CRUDE_ARR_SETLEN( node_creation.outputs, cJSON_GetArraySize( pass_outputs ) );
+  
+    uint32 input_index = 0u;
+    cJSON const *pass_input = NULL;
+    cJSON_ArrayForEach( pass_input, pass_inputs )
+    {
+      cJSON const *input_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
+      cJSON const *input_name = cJSON_GetObjectItemCaseSensitive( pass, "name" );
+      CRUDE_ASSERT( input_type && input_name );
+      
+      
+      node_creation.inputs[ input_index++ ] = ( crude_gfx_render_graph_resource_input_creation ){
+        .type = _string_to_resource_type( input_name->string ),
+        .resource_info.external = false,
+        .name = string_buffer.append_use_f( "%s", input_name->valuestring ),
+      }; 
+    }
 
   //      for ( sizet oi = 0; oi < pass_outputs.size(); ++oi ) {
   //          json pass_output = pass_outputs[ oi ];

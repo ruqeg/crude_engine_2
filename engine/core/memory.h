@@ -69,13 +69,15 @@ typedef struct crude_stack_allocator
   void                                                    *memory;
   sizet                                                    capacity;
   sizet                                                    occupied;
+  char const                                              *name;
 } crude_stack_allocator;
 
 CRUDE_API void
 crude_stack_allocator_initialize
 (
   _In_ crude_stack_allocator                              *allocator,
-  _In_ sizet                                               capacity
+  _In_ sizet                                               capacity,
+  char const                                              *name
 );
 
 CRUDE_API void
