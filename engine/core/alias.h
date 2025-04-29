@@ -63,5 +63,4 @@ typedef size_t        sizet;
  * Utils Macros
  * 
  ***********************************************/
-#define CAST( t, exp ) ( ( t ) ( exp ) )
-#define CRUDE_STACK_ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[ 0 ] ) )
+#define ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[ 0 ] ) )

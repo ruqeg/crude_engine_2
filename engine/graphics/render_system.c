@@ -168,7 +168,7 @@ render
   
     // update fame buffer
     crude_gfx_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
-    crude_gfx_shader_frame_constants *frame_buffer_data = CAST( crude_gfx_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+    crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map );
     if ( frame_buffer_data )
     {
       CRUDE_PROFILER_ZONE_NAME( "UpdateFrameBuffer" );
@@ -192,7 +192,7 @@ render
       
       constant_buffer_map.buffer = mesh_draw->material_buffer;
       
-      crude_gfx_shader_mesh_constants *mesh_data = CAST( crude_gfx_shader_frame_constants*, crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map ) );
+      crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map );
       if ( mesh_data )
       {
         mesh_data->textures.x = mesh_draw->albedo_texture_index;

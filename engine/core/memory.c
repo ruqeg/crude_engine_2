@@ -29,7 +29,7 @@ exit_walker
     return;
   }
 
-  stats = CAST( memory_statistics*, user );
+  stats = user;
   stats->allocated_bytes += size;
   ++stats->allocation_count;
   CRUDE_LOG_WARNING( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
@@ -72,7 +72,7 @@ crude_heap_allocator_deinitialize
   };
   
   pool = tlsf_get_pool( allocator->tlsf_handle );
-  tlsf_walk_pool( pool, exit_walker, CAST( void*, &stats ) );
+  tlsf_walk_pool( pool, exit_walker, &stats );
   
   if ( stats.allocated_bytes )
   {
@@ -194,7 +194,7 @@ crude_stack_allocator_allocate
   {
     CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator!" );
   }
-  memory_block = CAST( int8*, allocator->memory ) + allocator->occupied;
+  memory_block = ( int8* )( allocator->memory ) + allocator->occupied;
   allocator->occupied += size;
   return memory_block;
 }
@@ -207,9 +207,9 @@ crude_stack_allocator_deallocate
 )
 {
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < CAST( int8*, allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
-  allocator->occupied = CAST( int8*, pointer ) - CAST( int8*, allocator->memory );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
+  allocator->occupied = ( int8* )( pointer ) - ( int8* )( allocator->memory );
 }
 
 size_t
@@ -253,10 +253,17 @@ static void* crude_heap_reallocate_raw( void *ctx, void *pointer, sizet size ) {
 static void* crude_heap_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { return crude_heap_allocator_allocate_align( ctx, size, alignment ); }
 static void* crude_stack_allocate_raw( void *ctx, sizet size ) { return crude_stack_allocator_allocate( ctx, size ); }
 static void crude_stack_deallocate_raw( void *ctx, void *pointer ) { crude_stack_deallocate_raw( ctx, pointer ); }
-static void* crude_stack_reallocate_raw( void *ctx, void *pointer, sizet size ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
-static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL }
+static void* crude_stack_reallocate_raw( void *ctx, void *pointer, sizet size )
+{
+  if ( pointer )
+  {
+    crude_stack_deallocate_raw( ctx, pointer );
+  }
+  return crude_stack_allocate_raw( ctx, size );
+}
+static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
 
-CRUDE_API crude_allocator_container 
+crude_allocator_container 
 crude_heap_allocator_pack
 (
   _In_ crude_heap_allocator                               *heap_allocator

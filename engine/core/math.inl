@@ -57,11 +57,11 @@ crude_sin_cos
   float32 quotient = CRUDE_C1DIV2PI * angle;
   if ( angle >= 0.0f )
   {
-    quotient = CAST( float32, CAST( int32, quotient + 0.5f ) );
+    quotient = ( int32 )( quotient + 0.5f );
   }
   else
   {
-    quotient = CAST( float32, CAST( int32, quotient - 0.5f ) );
+    quotient = ( int32 )( quotient - 0.5f );
   }
   float32 y = angle - CRUDE_C2PI * quotient;
   

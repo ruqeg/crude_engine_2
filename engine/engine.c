@@ -52,7 +52,7 @@ crude_engine_update
   ecs_world_t *world = engine->world;
   
   int64 const current_tick = crude_time_now();
-  float32 const delta_time = CAST( float32, crude_time_delta_seconds( engine->time, current_tick ) );
+  float32 const delta_time = crude_time_delta_seconds( engine->time, current_tick );
   engine->time = current_tick;
 
   if ( !ecs_should_quit( world ) )

@@ -7,10 +7,10 @@
 void
 crude_initialize_resource_pool
 (
-  _In_ crude_resource_pool *resource_pool,
-  _In_ crude_allocator_container      allocator,
-  _In_ uint32               pool_size,
-  _In_ uint32               resource_size
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ crude_allocator_container                           allocator,
+  _In_ uint32                                              pool_size,
+  _In_ uint32                                              resource_size
 )
 {
   resource_pool->allocator = allocator;
@@ -18,10 +18,10 @@ crude_initialize_resource_pool
   resource_pool->resource_size = resource_size;
 
   uint64 allocation_size = pool_size * ( resource_size + sizeof( uint32 ) );
-  resource_pool->memory = CAST( uint8*, CRUDE_ALLOCATE( allocator, allocation_size ) );
+  resource_pool->memory = CRUDE_ALLOCATE( allocator, allocation_size );
   memset( resource_pool->memory, 0, allocation_size );
   
-  resource_pool->free_indices = CAST( uint32*, resource_pool->memory + pool_size * resource_size );
+  resource_pool->free_indices = resource_pool->memory + pool_size * resource_size;
   resource_pool->free_indices_head = 0;
   
   for ( uint32 i = 0; i < pool_size; ++i )
@@ -35,7 +35,7 @@ crude_initialize_resource_pool
 void
 crude_deinitialize_resource_pool
 (
-  _In_ crude_resource_pool *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 )
 {
   CRUDE_ASSERT( resource_pool );
@@ -58,7 +58,7 @@ crude_deinitialize_resource_pool
 uint32
 crude_resource_pool_obtain_resource
 (
-  _In_ crude_resource_pool *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 )
 {
   if ( resource_pool->free_indices_head < resource_pool->pool_size )
@@ -74,8 +74,8 @@ crude_resource_pool_obtain_resource
 void
 crude_resource_pool_release_resource
 (
-  _In_ crude_resource_pool *resource_pool,
-  _In_ uint32               handle
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ uint32                                              handle
 )
 {
   resource_pool->free_indices[ --resource_pool->free_indices_head ] = handle;
@@ -85,7 +85,7 @@ crude_resource_pool_release_resource
 void
 crude_resource_pool_free_all_resource
 (
-  _In_ crude_resource_pool *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 )
 {
   resource_pool->free_indices_head = 0u;
@@ -100,8 +100,8 @@ crude_resource_pool_free_all_resource
 void*
 crude_resource_pool_access_resource
 (
-  _In_ crude_resource_pool *resource_pool,
-  _In_ uint32               handle
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ uint32                                              handle
 )
 {
   if ( handle != CRUDE_RESOURCE_INVALID_INDEX )

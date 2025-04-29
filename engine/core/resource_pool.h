@@ -6,54 +6,54 @@
 
 typedef struct crude_resource_pool
 {
-  crude_allocator_container              allocator;
-  uint8                       *memory;
-  uint32                      *free_indices;
-  uint32                       free_indices_head;
-  uint32                       pool_size;
-  uint32                       resource_size;
-  uint32                       used_indices;
+  crude_allocator_container                                allocator;
+  uint8                                                   *memory;
+  uint32                                                  *free_indices;
+  uint32                                                   free_indices_head;
+  uint32                                                   pool_size;
+  uint32                                                   resource_size;
+  uint32                                                   used_indices;
 } crude_resource_pool;
 
 CRUDE_API void
 crude_initialize_resource_pool
 (
-  _In_ crude_resource_pool    *resource_pool,
-  _In_ crude_allocator_container         allocator,
-  _In_ uint32                  pool_size,
-  _In_ uint32                  resource_size
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ crude_allocator_container                           allocator,
+  _In_ uint32                                              pool_size,
+  _In_ uint32                                              resource_size
 );
 
 CRUDE_API void
 crude_deinitialize_resource_pool
 ( 
-  _In_ crude_resource_pool    *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 );
 
 CRUDE_API uint32
 crude_resource_pool_obtain_resource
 (
-  _In_ crude_resource_pool    *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 );
 
 CRUDE_API void
 crude_resource_pool_release_resource
 (
-  _In_ crude_resource_pool    *resource_pool,
-  _In_ uint32                  index
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ uint32                                              index
 );
 
 CRUDE_API void
 crude_resource_pool_free_all_resource
 (
-  _In_ crude_resource_pool    *resource_pool
+  _In_ crude_resource_pool                                *resource_pool
 );
 
 CRUDE_API void*
 crude_resource_pool_access_resource
 (
-  _In_ crude_resource_pool    *resource_pool,
-  _In_ uint32                  index
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ uint32                                              index
 );
 
 #define CRUDE_OBTAIN_RESOURCE( resource_pool )\
@@ -63,7 +63,7 @@ crude_resource_pool_access_resource
 
 #define CRUDE_ACCESS_RESOURCE( resource_pool, resource_struct, handle )\
 (\
-  CAST( resource_struct*, crude_resource_pool_access_resource( &resource_pool, handle.index ) )\
+  ( resource_struct* ) crude_resource_pool_access_resource( &resource_pool, handle.index )\
 )
 
 #define CRUDE_RELEASE_RESOURCE( resource_pool, handle )\

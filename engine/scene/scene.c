@@ -656,7 +656,7 @@ _gltf_scene_primary_draw_task
 {
   CRUDE_PROFILER_SET_THREAD_NAME( "PrimaryDrawTaskThread" );
   CRUDE_PROFILER_ZONE_NAME( "PrimaryDrawTask" );
-  _gltf_scene_primary_draw_task_data *draw_task = CAST( _gltf_scene_primary_draw_task_data *, args );
+  _gltf_scene_primary_draw_task_data *draw_task = ( _gltf_scene_primary_draw_task_data* )args;
   
   draw_task->thread_id = thread_num;
 
@@ -744,7 +744,7 @@ _gltf_scene_secondary_draw_task
 {
   CRUDE_PROFILER_SET_THREAD_NAME( "SecondaryDrawTaskThread" );
   CRUDE_PROFILER_ZONE_NAME( "SecondaryDrawTask" );
-  _gltf_scene_secondary_draw_task_data *secondary_draw_task = CAST( _gltf_scene_secondary_draw_task_data *, args );
+  _gltf_scene_secondary_draw_task_data *secondary_draw_task = ( _gltf_scene_secondary_draw_task_data* )args;
   
   crude_gfx_cmd_buffer *secondary_cmd = crude_gfx_get_secondary_cmd( secondary_draw_task->scene->renderer->gpu, thread_num );
   
