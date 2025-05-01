@@ -16,7 +16,7 @@ typedef struct crude_resource_pool
 } crude_resource_pool;
 
 CRUDE_API void
-crude_initialize_resource_pool
+crude_resource_pool_initialize
 (
   _In_ crude_resource_pool                                *resource_pool,
   _In_ crude_allocator_container                           allocator,
@@ -25,7 +25,7 @@ crude_initialize_resource_pool
 );
 
 CRUDE_API void
-crude_deinitialize_resource_pool
+crude_resource_pool_deinitialize
 ( 
   _In_ crude_resource_pool                                *resource_pool
 );

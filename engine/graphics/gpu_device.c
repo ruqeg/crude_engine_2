@@ -263,13 +263,13 @@ crude_gfx_initialize_device
   vk_create_descriptor_pool_( gpu->vk_device, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool, &gpu->vk_bindless_descriptor_set_layout, &gpu->vk_bindless_descriptor_set );
   gpu->vk_timestamp_query_pool = vk_create_timestamp_query_pool_( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
   
-  crude_initialize_resource_pool( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_gfx_buffer ) );
-  crude_initialize_resource_pool( &gpu->textures, gpu->allocator, 512, sizeof( crude_gfx_texture ) );
-  crude_initialize_resource_pool( &gpu->render_passes, gpu->allocator, 256, sizeof( crude_gfx_render_pass ) );
-  crude_initialize_resource_pool( &gpu->descriptor_set_layouts, gpu->allocator, 128, sizeof( crude_gfx_descriptor_set_layout ) );
-  crude_initialize_resource_pool( &gpu->pipelines, gpu->allocator, 128, sizeof( crude_gfx_pipeline ) );
-  crude_initialize_resource_pool( &gpu->shaders, gpu->allocator, 128, sizeof( crude_gfx_shader_state ) );
-  crude_initialize_resource_pool( &gpu->samplers, gpu->allocator, 32, sizeof( crude_gfx_sampler ) );
+  crude_resource_pool_initialize( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_gfx_buffer ) );
+  crude_resource_pool_initialize( &gpu->textures, gpu->allocator, 512, sizeof( crude_gfx_texture ) );
+  crude_resource_pool_initialize( &gpu->render_passes, gpu->allocator, 256, sizeof( crude_gfx_render_pass ) );
+  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator, 128, sizeof( crude_gfx_descriptor_set_layout ) );
+  crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator, 128, sizeof( crude_gfx_pipeline ) );
+  crude_resource_pool_initialize( &gpu->shaders, gpu->allocator, 128, sizeof( crude_gfx_shader_state ) );
+  crude_resource_pool_initialize( &gpu->samplers, gpu->allocator, 32, sizeof( crude_gfx_sampler ) );
   
   semaphore_info = ( VkSemaphoreCreateInfo ){ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
   fence_info = ( VkFenceCreateInfo ){ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
@@ -387,13 +387,13 @@ crude_gfx_deinitialize_device
   CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
   CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
 
-  crude_deinitialize_resource_pool( &gpu->buffers );
-  crude_deinitialize_resource_pool( &gpu->textures );
-  crude_deinitialize_resource_pool( &gpu->render_passes );
-  crude_deinitialize_resource_pool( &gpu->descriptor_set_layouts );
-  crude_deinitialize_resource_pool( &gpu->pipelines );
-  crude_deinitialize_resource_pool( &gpu->shaders );
-  crude_deinitialize_resource_pool( &gpu->samplers );
+  crude_resource_pool_deinitialize( &gpu->buffers );
+  crude_resource_pool_deinitialize( &gpu->textures );
+  crude_resource_pool_deinitialize( &gpu->render_passes );
+  crude_resource_pool_deinitialize( &gpu->descriptor_set_layouts );
+  crude_resource_pool_deinitialize( &gpu->pipelines );
+  crude_resource_pool_deinitialize( &gpu->shaders );
+  crude_resource_pool_deinitialize( &gpu->samplers );
 
   vkDestroyDescriptorSetLayout( gpu->vk_device, gpu->vk_bindless_descriptor_set_layout, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
@@ -2779,6 +2779,8 @@ _vk_reflect_shader
   {
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
+
+    crude_array_header *header = CRUDE_ARRAY_HEADER( reflect->input.vertex_attributes ); 
 
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {

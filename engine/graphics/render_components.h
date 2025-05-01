@@ -4,6 +4,7 @@
 
 #include <scene/entity.h>
 #include <scene/scene.h>
+#include <graphics/render_graph.h>
 #include <TaskScheduler_c.h>
 
 typedef struct crude_render_create
@@ -22,6 +23,8 @@ typedef struct crude_renderer_component
   crude_gfx_renderer              *renderer;
   crude_gfx_asynchronous_loader *async_loader;
   crude_gltf_scene                 *scene;
+  crude_gfx_render_graph            *render_graph;
+  crude_gfx_render_graph_builder            *render_graph_builder;
   crude_entity                 camera;
   enkiTaskScheduler*           ets;
   enkiPinnedTask* pinned_task_run_pinned_task_loop;

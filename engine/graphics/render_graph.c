@@ -3,6 +3,7 @@
 #include <core/file.h>
 #include <core/log.h>
 #include <core/assert.h>
+#include <core/hash_map.h>
 #include <core/string.h>
 
 #include <graphics/render_graph.h>
@@ -43,7 +44,7 @@ string_to_render_pass_operation
   _In_ char const                                         *op
 )
 {
-  if ( strcmp( op, "clear" ) == 0 )
+  if ( strcmp( op, "VK_ATTACHMENT_LOAD_OP_CLEAR" ) == 0 )
   {
     return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   }
@@ -55,15 +56,18 @@ string_to_render_pass_operation
   CRUDE_ASSERT( false );
   return CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }
-
 void
 crude_gfx_render_graph_initialize
 (
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
   crude_linear_allocator_initialize( &render_graph->local_allocator, CRUDE_RMEGA( 1u ), "RenderGraphLocalAllocator" );
   render_graph->local_allocator_container = crude_linear_allocator_pack( &render_graph->local_allocator );
+  render_graph->builder = builder;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, render_graph->local_allocator_container); 
 }
 
 void
@@ -116,9 +120,7 @@ crude_gfx_render_graph_parse_from_file
 
     pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
-    pass_name = cJSON_GetObjectItemCaseSensitive( pass, "name" );
-    pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
-    CRUDE_ASSERT( pass_inputs && pass_outputs && pass_name && pass_enabled );
+    CRUDE_ASSERT( pass_inputs && pass_outputs );
 
     node_creation = ( crude_gfx_render_graph_node_creation ){ 0 };
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), temp_allocator_container );
@@ -135,7 +137,7 @@ crude_gfx_render_graph_parse_from_file
       CRUDE_ASSERT( input_type && input_name );
       
       CRUDE_ARRAY_PUSH( node_creation.inputs, ( ( crude_gfx_render_graph_resource_input_creation ){ 
-        .type = _string_to_resource_type( cJSON_GetStringValue( input_name ) ),
+        .type = _string_to_resource_type( cJSON_GetStringValue( input_type ) ),
         .resource_info.external = false,
         .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
       } ) );
@@ -187,13 +189,134 @@ crude_gfx_render_graph_parse_from_file
         
       CRUDE_ARRAY_PUSH( node_creation.outputs, output_creation );
     }
+    pass_name = cJSON_GetObjectItemCaseSensitive( pass, "name" );
+    pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
+    CRUDE_ASSERT( pass_name );
 
     node_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( pass_name ) );
-    node_creation.enabled = cJSON_GetNumberValue( pass_enabled );
+    node_creation.enabled = pass_enabled ? cJSON_GetNumberValue( pass_enabled ) : 0;
     
-    crude_gfx_render_graph_node_handle node_handle = builder->create_node( node_creation );
+    crude_gfx_render_graph_node_handle node_handle = crude_gfx_render_graph_builder_create_node( render_graph->builder, &node_creation );
     CRUDE_ARRAY_PUSH( render_graph->nodes, node_handle );
   }
 
   crude_stack_allocator_free_marker( temp_allocator, temp_allocator_container_maker );
+}
+
+crude_gfx_render_graph_node_handle
+crude_gfx_render_graph_builder_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  builder->allocator_container = gpu->allocator;
+  builder->gpu = gpu;
+  builder->node_cache;
+  builder->resource_cache;
+  
+  crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  builder->node_cache.node_map = NULL;
+
+  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  builder->resource_cache.resource_map = NULL;
+}
+
+crude_gfx_render_graph_node_handle
+crude_gfx_render_graph_builder_create_node
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ crude_gfx_render_graph_node_creation const         *creation
+)
+{
+  crude_gfx_render_graph_node_handle node_handle = { CRUDE_RESOURCE_INVALID_INDEX };
+  node_handle.index = CRUDE_OBTAIN_RESOURCE( builder->node_cache.nodes );
+
+  if ( node_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  {
+    return node_handle;
+  }
+
+  crude_gfx_render_graph_node *node = CRUDE_ACCESS_RESOURCE( builder->node_cache.nodes, crude_gfx_render_graph_node, node_handle );
+  node->name = creation->name;
+  node->enabled = creation->enabled;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, CRUDE_ARRAY_LENGTH( creation->inputs ), builder->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->outputs, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
+  node->framebuffer = CRUDE_GFX_INVALID_FRAMEBUFFER_HANDLE;
+  node->render_pass = CRUDE_GFX_INVALID_RENDER_PASS_HANDLE;
+  
+  uint64 key = stbds_hash_bytes( ( void* )node->name, strlen( node->name ), 0 );
+  hmput( builder->node_cache.node_map, key , node_handle.index );
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
+  {
+    node->outputs[ i ] = crude_gfx_render_graph_builder_create_node_output( builder, &creation->outputs[ i ], node_handle );
+  }
+  
+  for ( sizet i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+  {
+    node->inputs[ i ] = crude_gfx_render_graph_builder_create_node_input( builder, &creation->inputs[ i ] );
+  }
+  
+  return node_handle;
+}
+
+crude_gfx_render_graph_resource_handle
+crude_gfx_render_graph_builder_create_node_output
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_resource_output_creation const        *creation,
+  _In_ crude_gfx_render_graph_node_handle                            producer
+)
+{
+  crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
+  resource_handle.index = CRUDE_OBTAIN_RESOURCE( builder->resource_cache.resources );
+
+  if ( CRUDE_GFX_IS_HANDLE_INVALID( resource_handle ) )
+  {
+    return resource_handle;
+  }
+
+  crude_gfx_render_graph_resource* resource = CRUDE_ACCESS_RESOURCE( builder->resource_cache.resources, crude_gfx_render_graph_resource, resource_handle );
+  resource->name = creation->name;
+  resource->type = creation->type;
+  if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
+  {
+    resource->resource_info = creation->resource_info;
+    resource->output_handle = resource_handle;
+    resource->producer = producer;
+    resource->ref_count = 0;
+    
+    uint64 key = stbds_hash_bytes( ( void* )resource->name, strlen( creation->name ), 0 );
+    hmput( builder->resource_cache.resource_map, key, resource_handle.index );
+  }
+
+  return resource_handle;
+}
+
+crude_gfx_render_graph_resource_handle
+crude_gfx_render_graph_builder_create_node_input
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_resource_input_creation const         *creation
+)
+{
+  crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
+  resource_handle.index = CRUDE_OBTAIN_RESOURCE( builder->resource_cache.resources );
+  
+  if ( CRUDE_GFX_IS_HANDLE_INVALID( resource_handle ) )
+  {
+    return resource_handle;
+  }
+  
+  crude_gfx_render_graph_resource* resource = CRUDE_ACCESS_RESOURCE( builder->resource_cache.resources, crude_gfx_render_graph_resource, resource_handle );
+  resource->resource_info = ( crude_gfx_render_graph_resource_info ){ 0 };
+  resource->producer = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
+  resource->output_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
+  resource->type = creation->type;
+  resource->name = creation->name;
+  resource->ref_count = 0;
+  
+  return resource_handle;
 }

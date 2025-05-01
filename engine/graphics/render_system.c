@@ -76,6 +76,20 @@ initialize_render_core
 
     renderer->renderer = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_renderer ) );
     crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
+    
+    
+    renderer->render_graph = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_render_graph ) );
+    renderer->render_graph_builder = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_render_graph_builder ) );
+    
+    crude_allocator_container temporary_allocator_container = crude_stack_allocator_pack( render_create[ i ].temporary_allocator );
+    char working_directory[ 512 ];
+    crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+    crude_string_buffer temporary_name_buffer;
+    crude_string_buffer_initialize( &temporary_name_buffer, 1024, temporary_allocator_container );
+    char const *frame_graph_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s\\..\\..\\resources\\%s", working_directory, "graph.json" );
+    crude_gfx_render_graph_builder_initialize( renderer->render_graph_builder, renderer->gpu );
+    crude_gfx_render_graph_initialize( renderer->render_graph, renderer->render_graph_builder );
+    crude_gfx_render_graph_parse_from_file( renderer->render_graph, frame_graph_path, render_create[ i ].temporary_allocator );
 
     renderer->async_loader = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_asynchronous_loader ) );
 

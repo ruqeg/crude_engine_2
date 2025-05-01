@@ -61,7 +61,7 @@ crude_gfx_initialize_cmd
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( cmd->gpu->vk_device, &pool_info, cmd->gpu->vk_allocation_callbacks, &cmd->vk_descriptor_pool ), "Failed create descriptor pool" );
   
-  crude_initialize_resource_pool( &cmd->frame_descriptor_sets, cmd->gpu->allocator, 256, sizeof( crude_gfx_descriptor_set ) );
+  crude_resource_pool_initialize( &cmd->frame_descriptor_sets, cmd->gpu->allocator, 256, sizeof( crude_gfx_descriptor_set ) );
   
   crude_gfx_cmd_reset( cmd );
 }
@@ -73,7 +73,7 @@ crude_gfx_deinitialize_cmd
 )
 {
   crude_gfx_cmd_reset( cmd );
-  crude_deinitialize_resource_pool( &cmd->frame_descriptor_sets );
+  crude_resource_pool_deinitialize( &cmd->frame_descriptor_sets );
   vkDestroyDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, cmd->gpu->vk_allocation_callbacks );
 }
 

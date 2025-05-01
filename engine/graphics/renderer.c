@@ -15,11 +15,11 @@ crude_gfx_initialize_renderer
   renderer->gpu = creation->gpu;
   renderer->allocator = creation->allocator;
 
-  crude_initialize_resource_pool( &renderer->buffers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_buffer ) );
-  crude_initialize_resource_pool( &renderer->textures, renderer->allocator, 1024, sizeof( crude_gfx_renderer_texture ) );
-  crude_initialize_resource_pool( &renderer->samplers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_sampler ) );
-  crude_initialize_resource_pool( &renderer->programs, renderer->allocator, 1024, sizeof( crude_gfx_renderer_program ) );
-  crude_initialize_resource_pool( &renderer->materials, renderer->allocator, 1024, sizeof( crude_gfx_renderer_material ) );
+  crude_resource_pool_initialize( &renderer->buffers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_buffer ) );
+  crude_resource_pool_initialize( &renderer->textures, renderer->allocator, 1024, sizeof( crude_gfx_renderer_texture ) );
+  crude_resource_pool_initialize( &renderer->samplers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_sampler ) );
+  crude_resource_pool_initialize( &renderer->programs, renderer->allocator, 1024, sizeof( crude_gfx_renderer_program ) );
+  crude_resource_pool_initialize( &renderer->materials, renderer->allocator, 1024, sizeof( crude_gfx_renderer_material ) );
 
   renderer->num_textures_to_update = 0;
 
@@ -32,7 +32,7 @@ crude_gfx_deinitialize_renderer
   _In_ crude_gfx_renderer                                 *renderer
 )
 {
-  crude_deinitialize_resource_pool( &renderer->buffers );
+  crude_resource_pool_deinitialize( &renderer->buffers );
   mtx_destroy( &renderer->texture_update_mutex );
 }
 

@@ -118,7 +118,7 @@ crude_read_file
   sizet filesize = _get_file_size( file );
   *buffer = CRUDE_REALLOCATE( allocator, *buffer, filesize + 1 );
   *buffer_size = fread( *buffer, 1, filesize, file );
-  *buffer[ *buffer_size ] = 0;
+  (*buffer)[ *buffer_size ] = 0;
   fclose( file );
   return true;
 }

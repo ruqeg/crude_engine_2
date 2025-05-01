@@ -83,6 +83,8 @@ typedef struct crude_gfx_framebuffer_handle
 #define CRUDE_GFX_INVALID_SAMPLER_HANDLE ( ( crude_gfx_sampler_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
 #define CRUDE_GFX_INVALID_PIPELINE_HANDLE ( ( crude_gfx_pipeline_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
 #define CRUDE_GFX_INVALID_SHADER_STATE_HANDLE ( ( crude_gfx_shader_state_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
+#define CRUDE_GFX_INVALID_FRAMEBUFFER_HANDLE ( ( crude_gfx_framebuffer_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
+#define CRUDE_GFX_INVALID_RENDER_PASS_HANDLE ( ( crude_gfx_render_pass_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
 
 /************************************************
  *
