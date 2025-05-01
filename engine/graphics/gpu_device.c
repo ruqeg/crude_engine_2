@@ -288,8 +288,8 @@ crude_gfx_initialize_device
   gpu->vk_swapchain_image_index = 0;
   gpu->queued_command_buffers_count = 0;
 
-  CRUDE_ARRAY_INITIALIZE( gpu->resource_deletion_queue, 16, gpu->allocator );
-  CRUDE_ARRAY_INITIALIZE( gpu->texture_to_update_bindless, 16, gpu->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator );
   
   depth_texture_creation = ( crude_gfx_texture_creation ){ 
     .width    = gpu->vk_swapchain_width,
@@ -1808,7 +1808,7 @@ vk_create_instance_
   debug_extensions_count = ARRAY_SIZE( vk_instance_required_extensions );
 
   instance_enabled_extensions_count = surface_extensions_count + debug_extensions_count;
-  CRUDE_ARRAY_INITIALIZE( instance_enabled_extensions, instance_enabled_extensions_count, temporary_allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( instance_enabled_extensions, instance_enabled_extensions_count, temporary_allocator );
   CRUDE_ARRAY_SET_LENGTH( instance_enabled_extensions, instance_enabled_extensions_count );
 
   for ( uint32 i = 0; i < surface_extensions_count; ++i )
@@ -1903,8 +1903,7 @@ vk_pick_physical_device_
     return VK_NULL_HANDLE;
   }
   
-  CRUDE_ARRAY_INITIALIZE( available_physical_devices, available_physical_devices_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( available_physical_devices, available_physical_devices_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_physical_devices, available_physical_devices_count, temporary_allocator );
   vkEnumeratePhysicalDevices( vk_instance, &available_physical_devices_count, available_physical_devices );
   
   selected_physical_devices = VK_NULL_HANDLE;
@@ -1981,8 +1980,7 @@ vk_create_device_
   queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
   
-  CRUDE_ARRAY_INITIALIZE( queue_families, queue_family_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( queue_families, queue_family_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( queue_families, queue_family_count, temporary_allocator );
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families );
   
   main_queue_index = UINT32_MAX;
@@ -2113,8 +2111,7 @@ vk_create_swapchain_
     return VK_NULL_HANDLE;
   }
 
-  CRUDE_ARRAY_INITIALIZE( available_formats, available_formats_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( available_formats, available_formats_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_formats, available_formats_count, temporary_allocator );
   vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &available_formats_count, available_formats );
 
   surface_format_found = false;
@@ -2144,8 +2141,7 @@ vk_create_swapchain_
   }
   
   
-  CRUDE_ARRAY_INITIALIZE( available_present_modes, available_present_modes_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( available_present_modes, available_present_modes_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_present_modes, available_present_modes_count, temporary_allocator );
   vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &available_present_modes_count, available_present_modes );
 
   selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -2347,8 +2343,7 @@ vk_get_supported_queue_family_index_
     return -1;
   }
   
-  CRUDE_ARRAY_INITIALIZE( queue_families_properties, queue_family_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( queue_families_properties, queue_family_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( queue_families_properties, queue_family_count, temporary_allocator );
   vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families_properties );
   
   queue_index = -1;
@@ -2385,8 +2380,7 @@ vk_check_support_required_extensions_
     return false;
   }
     
-  CRUDE_ARRAY_INITIALIZE( available_extensions, available_extensions_count, temporary_allocator );
-  CRUDE_ARRAY_SET_LENGTH( available_extensions, available_extensions_count );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_extensions, available_extensions_count, temporary_allocator );
   vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
 
   support_required_extensions = true;
@@ -2783,10 +2777,8 @@ _vk_reflect_shader
   
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
-    CRUDE_ARRAY_INITIALIZE( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
-    CRUDE_ARRAY_INITIALIZE( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
-    CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count );
-    CRUDE_ARRAY_SET_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
 
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {

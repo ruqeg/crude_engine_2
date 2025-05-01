@@ -175,7 +175,7 @@ crude_gltf_scene_load_from_file
   memcpy( gltf_base_path, scene->path, sizeof( gltf_base_path ) );
   crude_file_directory_from_path( gltf_base_path );
 
-  CRUDE_ARRAY_INITIALIZE( scene->images, gltf->images_count, creation->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->images, gltf->images_count, creation->allocator );
   for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
   {
     crude_gfx_renderer_texture                            *texture_resource;
@@ -207,7 +207,7 @@ crude_gltf_scene_load_from_file
     crude_gfx_asynchronous_loader_request_texture_data( scene->async_loader, image_full_filename, texture_resource->handle );
   }
 
-  CRUDE_ARRAY_INITIALIZE( scene->samplers, gltf->samplers_count, creation->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->samplers, gltf->samplers_count, creation->allocator );
   for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
   {
     crude_gfx_renderer_sampler                            *sampler_resource;
@@ -278,7 +278,7 @@ crude_gltf_scene_load_from_file
     CRUDE_ARRAY_PUSH( scene->samplers, *sampler_resource );
   }
   
-  CRUDE_ARRAY_INITIALIZE( scene->buffers, gltf->buffer_views_count, creation->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->buffers, gltf->buffer_views_count, creation->allocator );
   for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
   {
     cgltf_buffer_view const                               *buffer_view;
@@ -321,7 +321,7 @@ crude_gltf_scene_load_from_file
     crude_gfx_asynchronous_loader_request_buffer_copy( scene->async_loader, cpu_buffer, gpu_buffer_resource->handle );
   }
   
-  CRUDE_ARRAY_INITIALIZE( scene->mesh_draws, gltf->meshes_count, creation->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->mesh_draws, gltf->meshes_count, creation->allocator );
 
   root_scene = gltf->scene;
   for ( uint32 node_index = 0; node_index < root_scene->nodes_count; ++node_index )

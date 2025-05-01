@@ -21,8 +21,8 @@ crude_gfx_initialize_asynchronous_loader
   asynloader->cpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
   asynloader->gpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
 
-  CRUDE_ARRAY_INITIALIZE( asynloader->file_load_requests, 16, renderer->allocator );
-  CRUDE_ARRAY_INITIALIZE( asynloader->upload_requests, 16, renderer->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( asynloader->file_load_requests, 16, renderer->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( asynloader->upload_requests, 16, renderer->allocator );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {

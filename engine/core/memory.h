@@ -93,13 +93,6 @@ crude_stack_allocator_allocate
   _In_ sizet                                               size
 );
 
-CRUDE_API void
-crude_stack_allocator_deallocate
-(
-  _In_ crude_stack_allocator                              *allocator,
-  _In_ void                                               *pointer
-);
-
 CRUDE_API size_t
 crude_stack_allocator_get_marker
 (
@@ -111,6 +104,47 @@ crude_stack_allocator_free_marker
 (
   _In_ crude_stack_allocator                              *allocator,
   _In_ size_t                                              marker
+);
+
+
+/*****************************************
+ *
+ * Linear Allocator
+ * 
+ ******************************************/
+typedef struct crude_linear_allocator
+{
+  void                                                    *memory;
+  sizet                                                    capacity;
+  sizet                                                    occupied;
+  char const                                              *name;
+} crude_linear_allocator;
+
+CRUDE_API void
+crude_linear_allocator_initialize
+(
+  _In_ crude_linear_allocator                             *allocator,
+  _In_ sizet                                               capacity,
+  char const                                              *name
+);
+
+CRUDE_API void
+crude_linear_allocator_deinitialize
+(
+  _In_ crude_linear_allocator                             *allocator
+);
+
+CRUDE_API void*
+crude_linear_allocator_allocate
+( 
+  _In_ crude_linear_allocator                             *allocator,
+  _In_ sizet                                               size
+);
+
+CRUDE_API void
+crude_linear_allocator_clear
+(
+  _In_ crude_linear_allocator                             *allocator
 );
 
 /*****************************************
@@ -158,6 +192,12 @@ CRUDE_API crude_allocator_container
 crude_stack_allocator_pack
 (
   _In_ crude_stack_allocator                              *stack_allocator
+);
+
+CRUDE_API crude_allocator_container 
+crude_linear_allocator_pack
+(
+  _In_ crude_linear_allocator                             *linear_allocator
 );
 
 #define CRUDE_ALLOCATE( allocator, size ) allocator.allocate( allocator.ctx, size )

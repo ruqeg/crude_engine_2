@@ -1,3 +1,7 @@
+#include <vulkan/vk_enum_string_helper.h>
+
+#include <core/assert.h>
+
 #include <graphics/gpu_resources.h>
 
 void
@@ -213,4 +217,15 @@ crude_gfx_determine_pipeline_stage_flags
   }
 
   return flags;
+}
+
+VkFormat
+crude_string_to_vk_format
+(
+  _In_ char const                                         *format
+)
+{
+  // !TODO HASH STRING
+  CRUDE_ASSERT( false );
+  return VK_FORMAT_UNDEFINED;
 }

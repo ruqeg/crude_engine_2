@@ -684,3 +684,9 @@ crude_gfx_determine_pipeline_stage_flags
   _In_ VkAccessFlags                                       access_flags,
   _In_ crude_gfx_queue_type                                queue_type
 );
+
+CRUDE_API VkFormat
+crude_string_to_vk_format
+(
+  _In_ char const                                         *format
+);

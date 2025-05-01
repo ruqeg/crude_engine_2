@@ -669,8 +669,7 @@ crude_gfx_initialize_cmd_manager
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
 
-  CRUDE_ARRAY_INITIALIZE( cmd_manager->vk_cmd_pools, total_pools, gpu->allocator );
-  CRUDE_ARRAY_SET_LENGTH( cmd_manager->vk_cmd_pools, total_pools );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->vk_cmd_pools, total_pools, gpu->allocator );
 
   for ( uint32 i = 0; i < total_pools; ++i )
   {
@@ -683,10 +682,8 @@ crude_gfx_initialize_cmd_manager
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );
   }
   
-  CRUDE_ARRAY_INITIALIZE( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator );
-  CRUDE_ARRAY_INITIALIZE( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools, gpu->allocator );
-  CRUDE_ARRAY_SET_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools );
-  CRUDE_ARRAY_SET_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools, gpu->allocator );
   for ( uint32 i = 0; i < total_pools; ++i )
   {
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ i ] = 0;
@@ -694,8 +691,7 @@ crude_gfx_initialize_cmd_manager
   }
   
   uint32 total_buffers = total_pools * cmd_manager->num_primary_cmd_buffers_per_thread;
-  CRUDE_ARRAY_INITIALIZE( cmd_manager->primary_cmd_buffers, total_pools, gpu->allocator );
-  CRUDE_ARRAY_SET_LENGTH( cmd_manager->primary_cmd_buffers, total_pools );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->primary_cmd_buffers, total_pools, gpu->allocator );
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {
@@ -716,8 +712,7 @@ crude_gfx_initialize_cmd_manager
   }
   
   uint32 total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_pool;
-  CRUDE_ARRAY_INITIALIZE( cmd_manager->secondary_cmd_buffers, total_secondary_buffers, gpu->allocator );
-  CRUDE_ARRAY_SET_LENGTH( cmd_manager->secondary_cmd_buffers, total_secondary_buffers );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->secondary_cmd_buffers, total_secondary_buffers, gpu->allocator );
 
   uint32 temporary_allocator_mark = crude_stack_allocator_get_marker( gpu->temporary_allocator );
   for ( uint32 pool_index = 0; pool_index < total_pools; ++pool_index )
@@ -730,8 +725,7 @@ crude_gfx_initialize_cmd_manager
     };
     
     VkCommandBuffer *secondary_buffers = NULL;
-    CRUDE_ARRAY_INITIALIZE( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool, temporary_allocator_container );
-    CRUDE_ARRAY_SET_LENGTH( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool, temporary_allocator_container );
 
     vkAllocateCommandBuffers( gpu->vk_device, &cmd, secondary_buffers );
     for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_cmd_buffer_per_pool; ++second_cmd_index )

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/alias.h>
+#include <core/memory.h>
 
 CRUDE_API void
 crude_strcat
@@ -18,11 +18,41 @@ crude_snprintf
   ...
 );
   
-CRUDE_API void
+CRUDE_API int32
 crude_vsnprintf
 (
   _Out_ char      *buffer,
   _In_ int         buffer_size,
   _In_ char const *format,
   va_list          args
+);
+
+typedef struct crude_string_buffer
+{
+  char                                                    *buffer;
+  sizet                                                    capacity;
+  sizet                                                    occupied;
+  crude_allocator_container                                allocator_container;
+} crude_string_buffer;
+
+CRUDE_API void
+crude_string_buffer_initialize
+(
+  _In_ crude_string_buffer                                *string_buffer,
+  _In_ size_t                                              capacity,
+  _In_ crude_allocator_container                           allocator_container
+);
+
+CRUDE_API void
+crude_string_buffer_deinitialize
+(
+  _In_ crude_string_buffer                                *string_buffer
+);
+
+CRUDE_API char*
+crude_string_buffer_append_use_f
+(
+  _In_ crude_string_buffer                                *string_buffer,
+  _In_ char const                                         *format,
+  _In_ ...
 );

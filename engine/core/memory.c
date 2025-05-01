@@ -202,18 +202,18 @@ crude_stack_allocator_allocate
   return memory_block;
 }
 
-void
-crude_stack_allocator_deallocate
-(
-  _In_ crude_stack_allocator                              *allocator,
-  _In_ void                                               *pointer
-)
-{
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
-  allocator->occupied = ( int8* )( pointer ) - ( int8* )( allocator->memory );
-}
+//void
+//crude_stack_allocator_deallocate
+//(
+//  _In_ crude_stack_allocator                              *allocator,
+//  _In_ void                                               *pointer
+//)
+//{
+//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
+//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
+//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
+//  allocator->occupied = ( int8* )( pointer ) - ( int8* )( allocator->memory );
+//}
 
 size_t
 crude_stack_allocator_get_marker
@@ -238,6 +238,68 @@ crude_stack_allocator_free_marker
   }
 }
 
+/*****************************************
+ *
+ * Linear Allocator
+ * 
+ ******************************************/
+void
+crude_linear_allocator_initialize
+(
+  _In_ crude_linear_allocator                             *allocator,
+  _In_ sizet                                               capacity,
+  char const                                              *name
+)
+{
+  allocator->memory = malloc( capacity );
+  allocator->capacity = capacity;
+  allocator->occupied = 0u;
+  allocator->name = name;
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Linear allocator of capacity %llu created", capacity );
+}
+
+void
+crude_linear_allocator_deinitialize
+(
+  _In_ crude_linear_allocator                             *allocator
+)
+{
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocator->occupied == 0u, "Linear allocator \"%s\" shutdown. Allocated memory detected. Allocated %llu, total %llu", allocator->name, allocator->occupied, allocator->capacity );
+  free( allocator->memory );
+}
+
+void*
+crude_linear_allocator_allocate
+( 
+  _In_ crude_linear_allocator                             *allocator,
+  _In_ sizet                                               size
+)
+{
+  void                                                    *memory_block;
+  
+  if ( allocator->occupied + size > allocator->capacity )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator!" );
+  }
+  memory_block = ( int8* )( allocator->memory ) + allocator->occupied;
+  allocator->occupied += size;
+  return memory_block;
+}
+
+void
+crude_linear_allocator_clear
+(
+  _In_ crude_linear_allocator                             *allocator
+)
+{
+  allocator->occupied = 0u;
+}
+
+/*****************************************
+ *
+ * Utils
+ * 
+ ******************************************/
 sizet
 crude_memory_align
 (
@@ -249,6 +311,11 @@ crude_memory_align
   return ( size + alignment_mask ) & ~alignment_mask;
 }
 
+/*****************************************
+ *
+ * Common Allocator Interface
+ * 
+ ******************************************/
 // Bro I'm done with this shit
 static void* crude_heap_allocate_raw( void *ctx, sizet size ) { return crude_heap_allocator_allocate( ctx, size ); }
 static void crude_heap_deallocate_raw( void *ctx, void *pointer ) { crude_heap_allocator_deallocate( ctx, pointer ); }
@@ -258,6 +325,10 @@ static void* crude_stack_allocate_raw( void *ctx, sizet size ) { return crude_st
 static void crude_stack_deallocate_raw( void *ctx, void *pointer ) {}
 static void* crude_stack_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_stack_allocate_raw( ctx, size ); }
 static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
+static void* crude_linear_allocate_raw( void *ctx, sizet size ) { return crude_linear_allocator_allocate( ctx, size ); }
+static void crude_linear_deallocate_raw( void *ctx, void *pointer ) {}
+static void* crude_linear_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_linear_allocator_allocate( ctx, size ); }
+static void* crude_linear_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
 
 crude_allocator_container 
 crude_heap_allocator_pack
@@ -287,6 +358,22 @@ crude_stack_allocator_pack
     .deallocate = crude_stack_deallocate_raw,
     .allocate_align = crude_stack_allocate_align_raw,
     .ctx = stack_allocator,
+  };
+  return allocator;
+}
+
+crude_allocator_container 
+crude_linear_allocator_pack
+(
+  _In_ crude_linear_allocator                             *linear_allocator
+)
+{
+  crude_allocator_container allocator = {
+    .allocate = crude_linear_allocate_raw,
+    .reallocate = crude_linear_reallocate_raw,
+    .deallocate = crude_linear_deallocate_raw,
+    .allocate_align = crude_linear_allocate_align_raw,
+    .ctx = linear_allocator,
   };
   return allocator;
 }

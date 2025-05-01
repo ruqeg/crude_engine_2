@@ -7,7 +7,7 @@ crude_array_growf
   _In_ size_t                                              elemsize,
   _In_ size_t                                              addlen,
   _In_ size_t                                              min_cap,
-  _In_ crude_allocator_container                                     allocator
+  _In_ crude_allocator_container                           allocator
 )
 {
   void                                                    *b;
