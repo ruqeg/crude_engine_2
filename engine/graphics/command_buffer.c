@@ -129,9 +129,9 @@ crude_gfx_cmd_begin_secondary
 
   VkCommandBufferInheritanceInfo inheritance = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-    .renderPass = render_pass->vk_render_pass,
+    .renderPass = VK_NULL_HANDLE,
     .subpass = 0,
-    .framebuffer = render_pass->vk_frame_buffer,
+    .framebuffer = VK_NULL_HANDLE,
   };
 
   VkCommandBufferBeginInfo begin_info = {
@@ -167,9 +167,9 @@ crude_gfx_cmd_end_render_pass
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  if ( cmd->is_recording && cmd->current_render_pass )
+  if ( cmd->is_recording && cmd->current_render_pass != NULL )
   {
-    vkCmdEndRenderPass( cmd->vk_cmd_buffer );
+    cmd->gpu->vkCmdEndRenderingKHR( cmd->vk_cmd_buffer );
     cmd->current_render_pass = NULL;
   }
 }
@@ -178,46 +178,115 @@ void
 crude_gfx_cmd_bind_render_pass
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass_handle                        handle,
+  _In_ crude_gfx_render_pass_handle                        render_pass_handle,
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
   _In_ bool                                                use_secondary
 )
 {
   cmd->is_recording = true;
   
-  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( cmd->gpu, handle );
+  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( cmd->gpu, render_pass_handle );
   if ( !render_pass )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to bind render pass! Invalid render pass %u!", handle.index );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to bind render pass! Invalid render pass %u!", render_pass_handle.index );
     return;
   }
 
   if ( render_pass == cmd->current_render_pass )
   {
-    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "Binding same render pass %s %u!", render_pass->name, handle.index );
+    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "Binding same render pass %s %u!", render_pass->name, render_pass_handle.index );
     return;
   }
 
-  if ( cmd->current_render_pass && ( cmd->current_render_pass->type != CRUDE_GFX_RENDER_PASS_TYPE_COMPUTE ) )
+  if ( cmd->current_render_pass )
   {
-    vkCmdEndRenderPass( cmd->vk_cmd_buffer );
+    crude_gfx_cmd_end_render_pass( cmd );
   }
   
-  if ( render_pass->type != CRUDE_GFX_RENDER_PASS_TYPE_COMPUTE )
+  crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( cmd->gpu, framebuffer_handle );
+  
+  // !TODO tmp allocator?
+  VkRenderingAttachmentInfoKHR *color_attachments_info;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( color_attachments_info, framebuffer->num_color_attachments, cmd->gpu->allocator );
+  memset( color_attachments_info, 0, sizeof( VkRenderingAttachmentInfoKHR ) * framebuffer->num_color_attachments );
+  
+  for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
   {
-    VkRenderPassBeginInfo render_pass_begin = {
-      .sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      .framebuffer       = render_pass->type == CRUDE_GFX_RENDER_PASS_TYPE_SWAPCHAIN ? cmd->gpu->vk_swapchain_framebuffers[ cmd->gpu->vk_swapchain_image_index ] : render_pass->vk_frame_buffer,
-      .renderPass        = render_pass->vk_render_pass,
-      .renderArea.offset = { 0, 0 },
-      .renderArea.extent = { render_pass->width, render_pass->height },
-      .clearValueCount   = 2,
-      .pClearValues      = cmd->clears,
-    };
+    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( cmd->gpu, framebuffer->color_attachments[ i ] );
     
-    vkCmdBeginRenderPass( cmd->vk_cmd_buffer, &render_pass_begin, use_secondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE );
+    VkAttachmentLoadOp color_op;
+    switch ( render_pass->output.color_operations[ i ] )
+    {
+      case CRUDE_GFX_RENDER_PASS_OPERATION_LOAD:
+        color_op = VK_ATTACHMENT_LOAD_OP_LOAD;
+        break;
+      case CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR:
+        color_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        break;
+      default:
+        color_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        break;
+    }
+    
+    VkRenderingAttachmentInfoKHR *color_attachment_info = &color_attachments_info[ i ];
+    color_attachment_info->sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+    color_attachment_info->imageView = texture->vk_image_view;
+    color_attachment_info->imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    color_attachment_info->resolveMode = VK_RESOLVE_MODE_NONE;
+    color_attachment_info->loadOp = color_op;
+    color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 0 ] : ( VkClearValue ) { 0 };
   }
-
+  
+  VkRenderingAttachmentInfoKHR depth_attachment_info = { 
+    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR
+  };
+  
+  bool has_depth_attachment = CRUDE_GFX_IS_HANDLE_VALID( framebuffer->depth_stencil_attachment );
+  if ( has_depth_attachment )
+  {
+    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( cmd->gpu, framebuffer->depth_stencil_attachment );
+  
+    VkAttachmentLoadOp depth_op;
+    switch ( render_pass->output.depth_operation )
+    {
+      case CRUDE_GFX_RENDER_PASS_OPERATION_LOAD:
+        depth_op = VK_ATTACHMENT_LOAD_OP_LOAD;
+        break;
+      case CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR:
+        depth_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        break;
+      default:
+        depth_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        break;
+    }
+    
+    depth_attachment_info.imageView = texture->vk_image_view;
+    depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
+    depth_attachment_info.loadOp = depth_op;
+    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 1 ] : ( VkClearValue ) { 0 };
+  }
+  
+  VkRenderingInfoKHR rendering_info = {
+    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+    .flags = use_secondary ? VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR : 0,
+    .renderArea = { 0, 0, framebuffer->width, framebuffer->height },
+    .layerCount = 1,
+    .viewMask = 0,
+    .colorAttachmentCount = framebuffer->num_color_attachments,
+    .pColorAttachments = framebuffer->num_color_attachments > 0 ? color_attachments_info : NULL,
+    .pDepthAttachment =  has_depth_attachment ? &depth_attachment_info : NULL,
+    .pStencilAttachment = NULL,
+  };
+  
+  cmd->gpu->vkCmdBeginRenderingKHR( cmd->vk_cmd_buffer, &rendering_info );
+  
+  CRUDE_ARRAY_FREE( color_attachments_info );
+  
   cmd->current_render_pass = render_pass;
+  cmd->current_framebuffer = framebuffer;
 }
 
 void
@@ -262,9 +331,9 @@ crude_gfx_cmd_set_viewport
     
     if ( cmd->current_render_pass )
     {
-      vk_viewport.width = cmd->current_render_pass->width * 1.f;
-      vk_viewport.y = cmd->current_render_pass->height * 1.f;
-      vk_viewport.height = -cmd->current_render_pass->height * 1.f;
+      vk_viewport.width = cmd->current_framebuffer->width * 1.f;
+      vk_viewport.y = cmd->current_framebuffer->height * 1.f;
+      vk_viewport.height = -cmd->current_framebuffer->height * 1.f;
     }
     else
     {

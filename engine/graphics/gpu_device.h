@@ -144,6 +144,10 @@ typedef struct crude_gfx_device
    */
   crude_gfx_buffer_handle                                  frame_buffer;
   crude_gfx_buffer_handle                                  mesh_buffer;
+
+
+  PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
+  PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
 } crude_gfx_device;                                
 
 /************************************************

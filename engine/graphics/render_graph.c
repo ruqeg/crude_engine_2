@@ -456,7 +456,7 @@ crude_gfx_render_graph_compile
     /* Create render pass */
     if ( CRUDE_GFX_IS_HANDLE_INVALID( node->render_pass ) )
     {
-      crude_gfx_render_pass_creation render_pass_creation = { 0 };
+      crude_gfx_render_pass_creation render_pass_creation = crude_gfx_render_pass_creation_empty();
       render_pass_creation.name = node->name;
       
       for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )

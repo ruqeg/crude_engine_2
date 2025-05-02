@@ -247,6 +247,9 @@ crude_gfx_initialize_device
 
   temporary_allocator = crude_stack_allocator_pack( creation->temporary_allocator );
   temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
+  
+  gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
+  gpu->vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
 
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator  = creation->allocator;
@@ -318,17 +321,17 @@ crude_gfx_initialize_device
     .usage      = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
     .size       = gpu->dynamic_per_frame_size * gpu->max_frames
   };
-
-  swapchain_pass_creation = ( crude_gfx_render_pass_creation ){
-    .name                  = "swapchain",
-    .type                  = CRUDE_GFX_RENDER_PASS_TYPE_SWAPCHAIN,
-    .color_operation       = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .depth_operation       = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .depth_stencil_texture = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .scale_x             = 1.f,
-    .scale_y             = 1.f,
-    .resize              = 1,
-  };
+  
+  swapchain_pass_creation = crude_gfx_render_pass_creation_empty();
+  swapchain_pass_creation.name = "Swapchain";
+  swapchain_pass_creation.color_formats[ 0 ] = gpu->vk_surface_format.format;
+  swapchain_pass_creation.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  swapchain_pass_creation.color_final_layouts[ 0 ] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  swapchain_pass_creation.num_render_targets = 1;
+  swapchain_pass_creation.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
+  swapchain_pass_creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  swapchain_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  swapchain_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
 
   gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   gpu->depth_texture = crude_gfx_create_texture( gpu, &depth_texture_creation );
@@ -1152,37 +1155,23 @@ crude_gfx_create_render_pass
   }
   
   crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, handle );
-  render_pass->type               = creation->type;
   render_pass->num_render_targets = creation->num_render_targets;
-  render_pass->dispatch_x         = 0;
-  render_pass->dispatch_y         = 0;
-  render_pass->dispatch_z         = 0;
   render_pass->name               = creation->name;
-  render_pass->vk_frame_buffer    = NULL;
-  render_pass->vk_render_pass     = NULL;
-  render_pass->scale_x            = creation->scale_x;
-  render_pass->scale_y            = creation->scale_y;
-  render_pass->resize             = creation->resize;
   
   for ( uint32 i = 0 ; i < creation->num_render_targets; ++i )
   {
-    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, creation->output_textures[ i ] );
-    
-    render_pass->width = texture->width;
-    render_pass->height = texture->height;
-    render_pass->output_textures[ i ] = creation->output_textures[ i ];
+    render_pass->output.color_final_layouts[ i ] = creation->color_final_layouts[ i ];
+    render_pass->output.color_formats[ i ] = creation->color_formats[ i ];
+    render_pass->output.color_operations[ i ] = creation->color_operations[ i ];
   }
-  
-  render_pass->output_depth = creation->depth_stencil_texture;
-  
-  switch ( creation->type )
+  if ( creation->depth_stencil_format != VK_FORMAT_UNDEFINED )
   {
-    case CRUDE_GFX_RENDER_PASS_TYPE_SWAPCHAIN:
-    {
-      _vk_create_swapchain_pass( gpu, creation, render_pass );
-      break;
-    }
+    render_pass->output.depth_stencil_final_layout = creation->depth_stencil_final_layout;
+    render_pass->output.depth_stencil_format = creation->depth_stencil_format;
   }
+
+  render_pass->output.depth_operation = creation->depth_operation;
+  render_pass->output.stencil_operation = creation->stencil_operation;
   
   return handle;
 }
@@ -1214,14 +1203,6 @@ crude_gfx_destroy_render_pass_instant
 )
 {
   crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, handle );
-  if ( render_pass )
-  {
-    if ( render_pass->num_render_targets )
-    {
-      vkDestroyFramebuffer( gpu->vk_device, render_pass->vk_frame_buffer, gpu->vk_allocation_callbacks );
-    }
-    vkDestroyRenderPass( gpu->vk_device, render_pass->vk_render_pass, gpu->vk_allocation_callbacks );
-  }
   CRUDE_GFX_RELEASE_RENDER_PASS( gpu, handle );
 }
 
@@ -1441,7 +1422,14 @@ crude_gfx_create_pipeline
     .pDynamicStates = dynamic_states,
   };
   
-  crude_gfx_render_pass *render_pass = crude_resource_pool_access_resource( &gpu->render_passes, gpu->swapchain_pass.index );
+  VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+    .viewMask = 0,
+    .colorAttachmentCount = creation->render_pass.num_color_formats,
+    .pColorAttachmentFormats = creation->render_pass.num_color_formats > 0 ? creation->render_pass.color_formats : NULL,
+    .depthAttachmentFormat = creation->render_pass.depth_stencil_format,
+    .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
+  };
 
   VkGraphicsPipelineCreateInfo pipeline_info = {
     .pStages = shader_state_data->shader_stage_info,
@@ -1454,12 +1442,13 @@ crude_gfx_create_pipeline
     .pMultisampleState = &multisampling,
     .pRasterizationState = &rasterizer,
     .pViewportState = &viewport_state,
-    .renderPass = render_pass->vk_render_pass,
+    .renderPass = NULL,
     .pDynamicState = &dynamic_state,
     .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
     .pStages = shader_state_data->shader_stage_info,
     .stageCount = shader_state_data->active_shaders,
     .layout = pipeline_layout,
+    .pNext = &pipeline_rendering_create_info
   };
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( gpu->vk_device, VK_NULL_HANDLE, 1, &pipeline_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
@@ -1710,35 +1699,6 @@ crude_gfx_destroy_descriptor_set_layout_instant
   CRUDE_DEALLOCATE( gpu->allocator, descriptor_set_layout->bindings );
   vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
   CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle );
-}
-
-crude_gfx_framebuffer_handle
-crude_gfx_create_framebuffer
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_framebuffer_creation const               *creation
-)
-{
-  crude_gfx_framebuffer_handle handle = { CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
-  {
-    return handle;
-  }
-  
-  crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, handle );
-  framebuffer->num_color_attachments = creation->num_render_targets;
-  for ( uint32 i = 0; i < creation->num_render_targets; ++i )
-  {
-    framebuffer->color_attachments[ i ] = creation->output_textures[ i ];
-  }
-  framebuffer->depth_stencil_attachment = creation->depth_stencil_texture;
-  framebuffer->width                    = creation->width;
-  framebuffer->height                   = creation->height;
-  framebuffer->resize                   = creation->resize;
-  framebuffer->name                     = creation->name;
-  framebuffer->render_pass              = creation->render_pass;
-  
-  return handle;
 }
 
 VkShaderModuleCreateInfo
@@ -2585,7 +2545,6 @@ _vk_destroy_swapchain
   for ( uint32 i = 0; i < vk_swapchain_images_count; ++i )
   {
     vkDestroyImageView( vk_device, vk_swapchain_images_views[ i ], vk_allocation_callbacks );
-    vkDestroyFramebuffer( vk_device, vk_swapchain_framebuffers[ i ], vk_allocation_callbacks );
   }
   vkDestroySwapchainKHR( vk_device, vulkan_swapchain, vk_allocation_callbacks );
 }
@@ -2739,7 +2698,6 @@ _vk_resize_swapchain
   }
 
   crude_gfx_render_pass* swapchain_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, gpu->swapchain_pass );
-  vkDestroyRenderPass( gpu->vk_device, swapchain_pass->vk_render_pass, gpu->vk_allocation_callbacks );
   
   _vk_destroy_swapchain( gpu->vk_device, gpu->vk_swapchain, gpu->vk_swapchain_images_count, gpu->vk_swapchain_images_views, gpu->vk_swapchain_framebuffers, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
@@ -2755,9 +2713,6 @@ _vk_resize_swapchain
   gpu->vk_swapchain = vk_create_swapchain_( gpu->vk_device, gpu->vk_physical_device, gpu->vk_surface, gpu->vk_main_queue_family, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_images_count, gpu->vk_swapchain_images, gpu->vk_swapchain_images_views, &gpu->vk_surface_format, &gpu->vk_swapchain_width, &gpu->vk_swapchain_height, temporary_allocator );
   crude_stack_allocator_free_marker( gpu->temporary_allocator, marker );
 
-
-  
-
   crude_gfx_texture_handle texture_to_delete_handle = { CRUDE_GFX_OBTAIN_TEXTURE( gpu ) };
   crude_gfx_texture *texture_to_delete = CRUDE_GFX_ACCESS_TEXTURE( gpu, texture_to_delete_handle );
   texture_to_delete->handle = texture_to_delete_handle;
@@ -2766,16 +2721,18 @@ _vk_resize_swapchain
   _vk_resize_texture( gpu, depth_texture, texture_to_delete, gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 );
   crude_gfx_destroy_texture( gpu, texture_to_delete_handle );
   
-  crude_gfx_render_pass_creation swapchain_pass_creation = {
-    .type                  = CRUDE_GFX_RENDER_PASS_TYPE_SWAPCHAIN,
-    .name                  = "swapchain",
-    .color_operation       = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .depth_operation       = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .depth_stencil_texture = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR,
-    .scale_x               = 1.f,
-    .scale_y               = 1.f,
-    .resize                = 1,
-  };
+  crude_gfx_render_pass_creation swapchain_pass_creation = crude_gfx_render_pass_creation_empty();
+  swapchain_pass_creation.name = "Swapchain";
+  swapchain_pass_creation.color_formats[ 0 ] = gpu->vk_surface_format.format;
+  swapchain_pass_creation.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  swapchain_pass_creation.color_final_layouts[ 0 ] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  swapchain_pass_creation.num_render_targets = 1;
+  swapchain_pass_creation.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
+  swapchain_pass_creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  swapchain_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  swapchain_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+
+
   _vk_create_swapchain_pass( gpu, &swapchain_pass_creation, swapchain_pass );
   
   vkDeviceWaitIdle( gpu->vk_device );

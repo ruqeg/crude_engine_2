@@ -314,19 +314,17 @@ typedef struct crude_gfx_buffer_creation
 typedef struct crude_gfx_render_pass_creation
 {
   uint16                                                   num_render_targets;
-  crude_gfx_render_pass_type                               type;
-  crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  float32                                                  scale_x;
-  float32                                                  scale_y;
-  uint8                                                    resize;
+  
   VkFormat                                                 color_formats[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
   crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
   VkImageLayout                                            color_final_layouts[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_render_pass_operation                          depth_operation;
-  crude_gfx_render_pass_operation                          stencil_operation;
-  crude_gfx_texture_handle                                 depth_stencil_texture;
+  
   VkFormat                                                 depth_stencil_format;
   VkImageLayout                                            depth_stencil_final_layout;
+  
+  crude_gfx_render_pass_operation                          depth_operation;
+  crude_gfx_render_pass_operation                          stencil_operation;
+  
   char const                                              *name;
 } crude_gfx_render_pass_creation;
 
@@ -384,9 +382,14 @@ typedef struct crude_gfx_texture_creation
 typedef struct crude_gfx_render_pass_output
 {
   VkFormat                                                 color_formats[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+
   VkFormat                                                 depth_stencil_format;
+  VkImageLayout                                            depth_stencil_final_layout;
+
   uint32                                                   num_color_formats;
-  crude_gfx_render_pass_operation                          color_operation;
+
   crude_gfx_render_pass_operation                          depth_operation;
   crude_gfx_render_pass_operation                          stencil_operation;
 } crude_gfx_render_pass_output;
@@ -578,20 +581,7 @@ typedef struct crude_gfx_pipeline
 
 typedef struct crude_gfx_render_pass
 {
-  VkRenderPass                                             vk_render_pass;
-  VkFramebuffer                                            vk_frame_buffer;
-  crude_gfx_render_pass_output                             output;  
-  crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_texture_handle                                 output_depth;
-  crude_gfx_render_pass_type                               type;
-  float32                                                  scale_x;
-  float32                                                  scale_y;
-  uint16                                                   width;
-  uint16                                                   height;
-  uint16                                                   dispatch_x;
-  uint16                                                   dispatch_y;
-  uint16                                                   dispatch_z;
-  uint8                                                    resize;
+  crude_gfx_render_pass_output                             output;
   uint8                                                    num_render_targets;
   char const                                              *name;
 } crude_gfx_render_pass;
@@ -658,6 +648,23 @@ typedef struct crude_gfx_shader_mesh_constants
   crude_float1a                                            alpha_cutoff;
   crude_uint1a                                             flags;
 } crude_gfx_shader_mesh_constants;
+
+/************************************************
+ *
+ * GPU Resoruces Creation Empty Functions
+ * 
+ ***********************************************/
+CRUDE_API CRUDE_INLINE crude_gfx_render_pass_creation
+crude_gfx_render_pass_creation_empty
+(
+)
+{
+  return ( crude_gfx_render_pass_creation ) {
+    .depth_stencil_format = VK_FORMAT_UNDEFINED,
+    .depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE,
+    .stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE
+  };
+}
 
 /************************************************
  *

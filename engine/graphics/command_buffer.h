@@ -24,6 +24,7 @@ typedef struct crude_gfx_cmd_buffer
    * The pipeline/renderpass bound to the command buffer.
    */
   crude_gfx_render_pass                                   *current_render_pass;
+  crude_gfx_framebuffer                                   *current_framebuffer;
   crude_gfx_pipeline                                      *current_pipeline;
   /**
    * Holds clear values for attachments.
@@ -114,7 +115,8 @@ CRUDE_API void
 crude_gfx_cmd_bind_render_pass
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass_handle                        handle,
+  _In_ crude_gfx_render_pass_handle                        render_pass_handle,
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
   _In_ bool                                                use_secondary
 );
 
