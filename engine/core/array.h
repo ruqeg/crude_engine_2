@@ -35,3 +35,4 @@ crude_array_growf
 #define CRUDE_ARRAY_LAST( a ) ( ( a )[ CRUDE_ARRAY_HEADER( a )->length - 1 ] )
 #define CRUDE_ARRAY_DELSWAP( a, i ) ( ( a )[ i ] = CRUDE_ARRAY_LAST( a ), CRUDE_ARRAY_HEADER( a )->length -= 1 )
 #define CRUDE_ARRAY_POP( a ) ( CRUDE_ARRAY_HEADER( a )->length--, ( a )[ CRUDE_ARRAY_HEADER( a )->length ] )
+#define CRUDE_ARRAY_BACK( a ) ( ( a )[ CRUDE_ARRAY_HEADER( a )->length - 1 ] )

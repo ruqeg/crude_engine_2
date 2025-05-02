@@ -316,15 +316,32 @@ typedef struct crude_gfx_render_pass_creation
   uint16                                                   num_render_targets;
   crude_gfx_render_pass_type                               type;
   crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_texture_handle                                 depth_stencil_texture;
   float32                                                  scale_x;
   float32                                                  scale_y;
   uint8                                                    resize;
-  crude_gfx_render_pass_operation                          color_operation;
+  VkFormat                                                 color_formats[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
   crude_gfx_render_pass_operation                          depth_operation;
   crude_gfx_render_pass_operation                          stencil_operation;
+  crude_gfx_texture_handle                                 depth_stencil_texture;
+  VkFormat                                                 depth_stencil_format;
+  VkImageLayout                                            depth_stencil_final_layout;
   char const                                              *name;
 } crude_gfx_render_pass_creation;
+
+typedef struct crude_gfx_framebuffer_creation
+{
+  crude_gfx_render_pass_handle                             render_pass;
+  char const                                              *name;
+  crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_texture_handle                                 depth_stencil_texture;
+  uint32                                                   num_render_targets;
+
+  uint16                                                   width;
+  uint16                                                   height;
+  uint8                                                    resize;
+} crude_gfx_framebuffer_creation;
 
 typedef struct crude_gfx_depth_stencil_creation
 {
@@ -361,6 +378,7 @@ typedef struct crude_gfx_texture_creation
   VkFormat                                                 format;
   crude_gfx_texture_type                                   type;
   char const                                              *name;
+  crude_gfx_texture_handle                                 alias;
 } crude_gfx_texture_creation;
 
 typedef struct crude_gfx_render_pass_output
@@ -577,6 +595,20 @@ typedef struct crude_gfx_render_pass
   uint8                                                    num_render_targets;
   char const                                              *name;
 } crude_gfx_render_pass;
+
+typedef struct crude_gfx_framebuffer
+{
+  crude_gfx_render_pass_handle                             render_pass;
+  uint16                                                   width;
+  uint16                                                   height;
+  float32                                                  scale_x;
+  float32                                                  scale_y;
+  crude_gfx_texture_handle                                 color_attachments[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_texture_handle                                 depth_stencil_attachment;
+  uint32                                                   num_color_attachments;
+  uint8                                                    resize;
+  char const                                              *name;
+} crude_gfx_framebuffer;
 
 typedef struct crude_gfx_shader_state
 {

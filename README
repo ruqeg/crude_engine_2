@@ -24,3 +24,5 @@ broo idk T_T
 
 TODO 
 use stack allocator plzzzz... currently heap allocators anyware T_T
+
+currently I have a lot of leaks, so maybe I should remove thm at future?

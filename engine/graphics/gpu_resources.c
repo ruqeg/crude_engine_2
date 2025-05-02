@@ -4,6 +4,11 @@
 
 #include <graphics/gpu_resources.h>
 
+/************************************************
+ *
+ * GPU Resoruces Functions
+ * 
+ ***********************************************/
 void
 crude_gfx_reset_render_pass_output
 (

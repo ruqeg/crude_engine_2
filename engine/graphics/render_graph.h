@@ -147,6 +147,12 @@ crude_gfx_render_graph_parse_from_file
   _In_ crude_stack_allocator                              *temp_allocator
 );
 
+CRUDE_API void
+crude_gfx_render_graph_compile
+(
+  _In_ crude_gfx_render_graph                             *render_graph
+);
+
 CRUDE_API crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_initialize
 (
@@ -174,4 +180,25 @@ crude_gfx_render_graph_builder_create_node_input
 (
   _In_ crude_gfx_render_graph_builder                               *builder,
   _In_ crude_gfx_render_graph_resource_input_creation const         *creation
+);
+
+CRUDE_API crude_gfx_render_graph_node*
+crude_gfx_render_graph_builder_access_node
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_node_handle                            handle
+);
+
+CRUDE_API crude_gfx_render_graph_resource*
+crude_gfx_render_graph_builder_access_resource
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_resource_handle                        handle
+);
+
+CRUDE_API crude_gfx_render_graph_resource*
+crude_gfx_render_graph_builder_access_resource_by_name
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ char const                                                   *name
 );

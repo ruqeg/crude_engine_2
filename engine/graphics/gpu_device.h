@@ -74,6 +74,7 @@ typedef struct crude_gfx_device
   crude_resource_pool                                      render_passes;
   crude_resource_pool                                      command_buffers;
   crude_resource_pool                                      shaders;
+  crude_resource_pool                                      framebuffers;
   /**
    * Queue to remove or update bindless texture.
    * Handle can be added to queue using the
@@ -414,6 +415,13 @@ crude_gfx_destroy_descriptor_set_layout_instant
   _In_ crude_gfx_descriptor_set_layout_handle              handle
 );
 
+CRUDE_API crude_gfx_framebuffer_handle
+crude_gfx_create_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_creation const               *creation
+);
+
 CRUDE_API VkShaderModuleCreateInfo                  
 crude_gfx_compile_shader                            
 (                                                   
@@ -428,6 +436,7 @@ crude_gfx_compile_shader
  * GPU Device Resource Macros
  * 
  ***********************************************/  
+// !IODO inline functions
 #define CRUDE_GFX_OBTAIN_SAMPLER( gpu )                                 CRUDE_OBTAIN_RESOURCE( gpu->samplers )
 #define CRUDE_GFX_ACCESS_SAMPLER( gpu, handle )                         CRUDE_ACCESS_RESOURCE( gpu->samplers, crude_gfx_sampler, handle  )
 #define CRUDE_GFX_RELEASE_SAMPLER( gpu, handle )                        CRUDE_RELEASE_RESOURCE( gpu->samplers, handle )
@@ -459,6 +468,10 @@ crude_gfx_compile_shader
 #define CRUDE_GFX_OBTAIN_DESCRIPTOR_SET_LAYOUT( gpu )                   CRUDE_OBTAIN_RESOURCE( gpu->descriptor_set_layouts )
 #define CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle )           CRUDE_ACCESS_RESOURCE( gpu->descriptor_set_layouts, crude_gfx_descriptor_set_layout, handle  )
 #define CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle )          CRUDE_RELEASE_RESOURCE( gpu->descriptor_set_layouts, handle )
+
+#define CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu )                             CRUDE_OBTAIN_RESOURCE( gpu->framebuffers )
+#define CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, handle )                     CRUDE_ACCESS_RESOURCE( gpu->framebuffers, crude_gfx_framebuffer, handle  )
+#define CRUDE_GFX_RELEASE_FRAMEBUFFER( gpu, handle )                    CRUDE_RELEASE_RESOURCE( gpu->framebuffers, handle )
 
 /************************************************
  *

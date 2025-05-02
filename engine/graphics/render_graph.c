@@ -203,6 +203,413 @@ crude_gfx_render_graph_parse_from_file
   crude_stack_allocator_free_marker( temp_allocator, temp_allocator_container_maker );
 }
 
+void
+crude_gfx_render_graph_compile
+(
+  _In_ crude_gfx_render_graph                             *render_graph
+)
+{
+  for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+    CRUDE_ARRAY_SET_LENGTH( node->edges, 0 );
+  }
+
+  /* Compute edges */
+  for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
+    {
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+      crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, resource->name );
+      if ( output_resource == NULL && !resource->resource_info.external )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Requested resource is not produced by any node and is not external." );
+        continue;
+      }
+
+      resource->producer = output_resource->producer;
+      resource->resource_info = output_resource->resource_info;
+      resource->output_handle = output_resource->output_handle;
+      
+      crude_gfx_render_graph_node *parent_node = crude_gfx_render_graph_builder_access_node( render_graph->builder, resource->producer );
+      CRUDE_ARRAY_PUSH( parent_node->edges, render_graph->nodes[ node_index ] );
+    }
+  }
+
+  crude_gfx_render_graph_node_handle *sorted_nodes;
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( sorted_nodes, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+  
+  uint8 *visited;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( visited, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+  memset( visited, 0, sizeof( uint8 ) * CRUDE_ARRAY_LENGTH( visited ) );
+  
+  crude_gfx_render_graph_node_handle *stack;
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( stack, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+  
+  /* Topological sorting... Magic works! */
+  for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++n )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ n ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    CRUDE_ARRAY_PUSH( stack, render_graph->nodes[ n ] );
+    
+    while ( CRUDE_ARRAY_LENGTH( stack ) > 0 )
+    {
+      crude_gfx_render_graph_node_handle node_handle = CRUDE_ARRAY_BACK( stack );
+      
+      if ( visited[ node_handle.index ] == 2 )
+      {
+        CRUDE_ARRAY_POP( stack );
+        continue;
+      }
+      
+      if ( visited[ node_handle.index ] == 1 )
+      {
+        visited[ node_handle.index ] = 2;
+        CRUDE_ARRAY_PUSH( sorted_nodes, node_handle );
+        CRUDE_ARRAY_POP( stack );
+        continue;
+      }
+      
+      visited[ node_handle.index ] = 1;
+      
+      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, node_handle );
+      
+      if ( CRUDE_ARRAY_LENGTH( node->edges ) == 0 )
+      {
+        continue;
+      }
+      
+      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->edges ); ++r )
+      {
+        crude_gfx_render_graph_node_handle child_handle = node->edges[ r ];
+        if ( !visited[ child_handle.index ] )
+        {
+          CRUDE_ARRAY_PUSH( stack, child_handle );
+        }
+      }
+    }
+  }
+  
+  CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
+  CRUDE_ARRAY_SET_LENGTH( render_graph->nodes, 0 );
+  
+  for ( int32 i = CRUDE_ARRAY_LENGTH( sorted_nodes ) - 1; i >= 0; --i )
+  {
+    CRUDE_ARRAY_PUSH( render_graph->nodes, sorted_nodes[ i ] );
+  }
+  
+  // TODO use temproray allocator? (currently linear)
+  CRUDE_ARRAY_FREE( visited );
+  CRUDE_ARRAY_FREE( stack );
+  CRUDE_ARRAY_FREE( sorted_nodes );
+  
+  sizet resource_count = render_graph->builder->resource_cache.resources.used_indices;
+  
+  crude_gfx_render_graph_node_handle *allocations;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+  for ( uint32 i = 0; i < resource_count; ++i)
+  {
+    allocations[ i ] = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
+  }
+  
+  crude_gfx_render_graph_node_handle *deallocations;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+  for ( uint32 i = 0; i < resource_count; ++i)
+  {
+    deallocations[ i ] = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
+  }
+  
+  crude_gfx_texture_handle *free_list;
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( free_list, resource_count, render_graph->local_allocator_container );
+  
+  size_t peak_memory = 0;
+  size_t instant_memory = 0;
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->inputs ); ++j )
+    {
+      crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ j ] );
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+      resource->ref_count++;
+    }
+  }
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->outputs ); ++j )
+    {
+      uint32 resource_index = node->outputs[ j ].index;
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ j ] );
+      
+      if ( !resource->resource_info.external && CRUDE_GFX_IS_HANDLE_INVALID( allocations[ resource_index ] ) )
+      {
+        CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( deallocations[ resource_index ] ) );
+        allocations[ resource_index ] = render_graph->nodes[ i ];
+        
+        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          crude_gfx_render_graph_resource_info *info = &resource->resource_info;
+          
+          if ( CRUDE_ARRAY_LENGTH( free_list ) > 0 )
+          {
+            crude_gfx_texture_handle alias_texture = CRUDE_ARRAY_POP( free_list );
+            
+            crude_gfx_texture_creation texture_creation = {
+              .name = resource->name,
+              .format = info->texture.format,
+              .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
+              .width = info->texture.width,
+              .height = info->texture.height,
+              .depth = info->texture.depth,
+              .flags = CRUDE_TEXTURE_FLAG_RENDER_TARGET,
+              .mipmaps = 1,
+              .alias = alias_texture
+            };
+            crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
+            info->texture.texture = handle;
+          }
+          else
+          {
+            crude_gfx_texture_creation texture_creation =
+            { 
+              .name = resource->name,
+              .format = info->texture.flags,
+              .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
+              .width = info->texture.width,
+              .height = info->texture.height,
+              .depth = info->texture.depth,
+              .flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET,
+              .mipmaps = 1
+            };
+            
+            crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
+            info->texture.texture = handle;
+          }
+        }
+        
+        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s allocated on node %d\n", resource->name, render_graph->nodes[ i ].index  );
+      }
+    }
+    
+    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->inputs ); ++j )
+    {
+      crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ j ] );
+      
+      uint32 resource_index = input_resource->output_handle.index;
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+      
+      resource->ref_count--;
+      
+      if ( !resource->resource_info.external && resource->ref_count == 0 )
+      {
+        CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( deallocations[ resource_index ] ) );
+        deallocations[ resource_index ] = render_graph->nodes[ i ];
+        
+        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT || resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+        {
+          CRUDE_ARRAY_PUSH( free_list, resource->resource_info.texture.texture );
+        }
+        
+        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s deallocated on node\n", resource->name, render_graph->nodes[ i ].index );
+      }
+    }
+  }
+  
+  // TODO use temproray allocator? (currently linear)
+  CRUDE_ARRAY_FREE( allocations );
+  CRUDE_ARRAY_FREE( deallocations );
+  CRUDE_ARRAY_FREE( free_list );
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    /* Create render pass */
+    if ( CRUDE_GFX_IS_HANDLE_INVALID( node->render_pass ) )
+    {
+      crude_gfx_render_pass_creation render_pass_creation = { 0 };
+      render_pass_creation.name = node->name;
+      
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
+      {
+        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ i ] );
+        crude_gfx_render_graph_resource_info *info = &output_resource->resource_info;
+
+        if ( output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
+          {
+            render_pass_creation.depth_operation = info->texture.format;
+            render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+          }
+          else
+          {
+            render_pass_creation.color_formats[ render_pass_creation.num_render_targets ] = info->texture.format;
+            render_pass_creation.color_operations[ render_pass_creation.num_render_targets ] = info->texture.load_op;
+            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            ++render_pass_creation.num_render_targets;
+          }
+        }
+      }
+
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+      {
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ i ] );
+        crude_gfx_render_graph_resource_info *info = &input_resource->resource_info;
+
+        if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
+          {
+            render_pass_creation.depth_operation = info->texture.format;
+            render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
+          }
+          else
+          {
+            render_pass_creation.color_formats[ render_pass_creation.num_render_targets ] = info->texture.format;
+            render_pass_creation.color_operations[ render_pass_creation.num_render_targets ] = CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
+            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            ++render_pass_creation.num_render_targets;
+          }
+        }
+      }
+
+      crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
+    }
+    
+    /* Create framebuffer */
+    if ( CRUDE_GFX_IS_HANDLE_INVALID( node->framebuffer ) )
+    {
+      crude_gfx_framebuffer_creation framebuffer_creation = { 0 };
+      framebuffer_creation.render_pass = node->render_pass;
+      framebuffer_creation.name = node->name;
+
+      uint32 width = 0;
+      uint32 height = 0;
+
+      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->outputs ); ++r )
+      {
+        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ i ] );
+        crude_gfx_render_graph_resource_info *info = &output_resource->resource_info;
+
+        if ( output_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          continue;
+        }
+
+        if ( width == 0 )
+        {
+          width = info->texture.width;
+        }
+        else
+        {
+          CRUDE_ASSERT( width == info->texture.width );
+        }
+
+        if ( height == 0 )
+        {
+          height = info->texture.height;
+        }
+        else
+        {
+          CRUDE_ASSERT( height == info->texture.height );
+        }
+        
+        if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
+        {
+          framebuffer_creation.depth_stencil_texture = info->texture.texture;
+        }
+        else
+        {
+          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = info->texture.texture;
+        }
+      }
+
+      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->inputs ); ++r )
+      {
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ r ] );
+
+        if ( input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT && input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
+        {
+          continue;
+        }
+          
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, input_resource->name );
+        crude_gfx_render_graph_resource_info *info = &resource->resource_info;
+
+        input_resource->resource_info.texture.texture = info->texture.texture;
+
+        if ( width == 0 )
+        {
+          width = info->texture.width;
+        }
+        else
+        {
+          CRUDE_ASSERT( width == info->texture.width );
+        }
+
+        if ( height == 0 )
+        {
+          height = info->texture.height;
+        }
+        else
+        {
+          CRUDE_ASSERT( width == info->texture.height );
+        }
+
+        if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+        {
+          continue;
+        }
+
+        if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
+        {
+          framebuffer_creation.depth_stencil_texture = info->texture.texture;
+        }
+        else
+        {
+          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = info->texture.texture;
+        }
+      }
+      
+      framebuffer_creation.width = width;
+      framebuffer_creation.height = height;
+      node->framebuffer = crude_gfx_create_framebuffer( render_graph->builder->gpu, &framebuffer_creation );
+    }
+  }
+}
+
 crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_initialize
 (
@@ -319,4 +726,41 @@ crude_gfx_render_graph_builder_create_node_input
   resource->ref_count = 0;
   
   return resource_handle;
+}
+
+crude_gfx_render_graph_node*
+crude_gfx_render_graph_builder_access_node
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_node_handle                            handle
+)
+{
+  return CRUDE_ACCESS_RESOURCE( builder->node_cache.nodes, crude_gfx_render_graph_node, handle );
+}
+
+crude_gfx_render_graph_resource*
+crude_gfx_render_graph_builder_access_resource
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ crude_gfx_render_graph_resource_handle                        handle
+)
+{
+  return CRUDE_ACCESS_RESOURCE( builder->resource_cache.resources, crude_gfx_render_graph_resource, handle );
+}
+
+crude_gfx_render_graph_resource*
+crude_gfx_render_graph_builder_access_resource_by_name
+(
+  _In_ crude_gfx_render_graph_builder                               *builder,
+  _In_ char const                                                   *name
+)
+{
+  uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
+  uint32 handle_index = hmgeti( builder->resource_cache.resource_map, key );
+  if ( handle_index != -1 )
+  {
+    return NULL;
+  }
+  
+  return CRUDE_ACCESS_RESOURCE( builder->resource_cache.resources, crude_gfx_render_graph_resource, ( crude_gfx_render_graph_resource_handle ){ builder->resource_cache.resource_map[ handle_index ].value } );
 }

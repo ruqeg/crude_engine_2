@@ -270,6 +270,7 @@ crude_gfx_initialize_device
   crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator, 128, sizeof( crude_gfx_pipeline ) );
   crude_resource_pool_initialize( &gpu->shaders, gpu->allocator, 128, sizeof( crude_gfx_shader_state ) );
   crude_resource_pool_initialize( &gpu->samplers, gpu->allocator, 32, sizeof( crude_gfx_sampler ) );
+  crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator, 128, sizeof( crude_gfx_framebuffer ) );
   
   semaphore_info = ( VkSemaphoreCreateInfo ){ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
   fence_info = ( VkFenceCreateInfo ){ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
@@ -1711,6 +1712,35 @@ crude_gfx_destroy_descriptor_set_layout_instant
   CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle );
 }
 
+crude_gfx_framebuffer_handle
+crude_gfx_create_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_creation const               *creation
+)
+{
+  crude_gfx_framebuffer_handle handle = { CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu ) };
+  if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
+  {
+    return handle;
+  }
+  
+  crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, handle );
+  framebuffer->num_color_attachments = creation->num_render_targets;
+  for ( uint32 i = 0; i < creation->num_render_targets; ++i )
+  {
+    framebuffer->color_attachments[ i ] = creation->output_textures[ i ];
+  }
+  framebuffer->depth_stencil_attachment = creation->depth_stencil_texture;
+  framebuffer->width                    = creation->width;
+  framebuffer->height                   = creation->height;
+  framebuffer->resize                   = creation->resize;
+  framebuffer->name                     = creation->name;
+  framebuffer->render_pass              = creation->render_pass;
+  
+  return handle;
+}
+
 VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
@@ -2617,7 +2647,19 @@ _vk_create_texture
     .usage = VMA_MEMORY_USAGE_GPU_ONLY
   };
   
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateImage( gpu->vma_allocator, &image_info, &memory_info, &texture->vk_image, &texture->vma_allocation, NULL ), "Failed to create image!" );
+  if ( CRUDE_GFX_IS_HANDLE_INVALID( creation->alias ) )
+  {
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateImage( gpu->vma_allocator, &image_info, &memory_info, &texture->vk_image, &texture->vma_allocation, NULL ), "Failed to create image!" );
+    vmaSetAllocationName( gpu->vma_allocator, texture->vma_allocation, creation->name );
+  }
+  else
+  {
+    crude_gfx_texture* alias_texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, creation->alias );
+    CRUDE_ASSERT( alias_texture );
+    
+    texture->vma_allocation = 0;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( gpu->vma_allocator, alias_texture->vma_allocation, &image_info, &texture->vk_image ), "Failed to create aliasing image!" );
+  }
   
   crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
   
