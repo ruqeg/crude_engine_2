@@ -379,33 +379,30 @@ crude_gfx_render_graph_compile
           {
             crude_gfx_texture_handle alias_texture = CRUDE_ARRAY_POP( free_list );
             
-            crude_gfx_texture_creation texture_creation = {
-              .name = resource->name,
-              .format = info->texture.format,
-              .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
-              .width = info->texture.width,
-              .height = info->texture.height,
-              .depth = info->texture.depth,
-              .flags = CRUDE_TEXTURE_FLAG_RENDER_TARGET,
-              .mipmaps = 1,
-              .alias = alias_texture
-            };
+            crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
+            texture_creation.name = resource->name;
+            texture_creation.format = info->texture.format;
+            texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+            texture_creation.width = info->texture.width;
+            texture_creation.height = info->texture.height;
+            texture_creation.depth = info->texture.depth;
+            texture_creation.flags = CRUDE_TEXTURE_FLAG_RENDER_TARGET;
+            texture_creation.mipmaps = 1;
+            texture_creation.alias = alias_texture;
             crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
             info->texture.texture = handle;
           }
           else
           {
-            crude_gfx_texture_creation texture_creation =
-            { 
-              .name = resource->name,
-              .format = info->texture.flags,
-              .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
-              .width = info->texture.width,
-              .height = info->texture.height,
-              .depth = info->texture.depth,
-              .flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET,
-              .mipmaps = 1
-            };
+            crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
+            texture_creation.name = resource->name;
+            texture_creation.format = info->texture.flags;
+            texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+            texture_creation.width = info->texture.width;
+            texture_creation.height = info->texture.height;
+            texture_creation.depth = info->texture.depth;
+            texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
+            texture_creation.mipmaps = 1;
             
             crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
             info->texture.texture = handle;
@@ -607,6 +604,98 @@ crude_gfx_render_graph_compile
       framebuffer_creation.height = height;
       node->framebuffer = crude_gfx_create_framebuffer( render_graph->builder->gpu, &framebuffer_creation );
     }
+  }
+}
+
+void
+crude_gfx_render_graph_render
+(
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+)
+{
+  for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    // TODO add clear to json
+    crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ){ .color = { 0.3f, 0.3f, 0.3f, 1.f } } );
+    crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ){ .depthStencil = { 1.0f, 0 } } );
+    
+    uint32 width = 0;
+    uint32 height = 0;
+    
+    for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
+    {
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+      
+      if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+      {
+        crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu_commands->gpu, resource->resource_info.texture.texture );
+        crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+      }
+      else if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+      {
+        crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu_commands->gpu, resource->resource_info.texture.texture );
+        
+        width = texture->width;
+        height = texture->height;
+      }
+    }
+    
+    for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
+    {
+      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
+      
+      if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+      {
+        crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu_commands->gpu, resource->resource_info.texture.texture );
+        
+        width = texture->width;
+        height = texture->height;
+        
+        if ( texture->vk_format == VK_FORMAT_D32_SFLOAT )
+        {
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+        }
+        else
+        {
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+        }
+      }
+    }
+    
+    crude_gfx_rect2d_int scissor = {
+      .x = 0, 
+      .y = 0,
+      .width = width, 
+      .height = height
+    };
+    crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
+    
+    crude_gfx_viewport viewport = { 
+      viewport.rect = ( crude_gfx_rect2d_int ){ 
+        .x = 0, 
+        .y = 0,
+        .width = width,
+        .height = height
+      },
+      viewport.min_depth = 0.0f,
+      viewport.max_depth = 1.0f,
+    };
+    crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
+    
+    //node->graph_render_pass->pre_render( node->graph_render_pass->ctx, gpu_commands, render_scene );
+    
+    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
+    
+    //node->graph_render_pass->render( node->graph_render_pass->ctx, gpu_commands, render_scene );
+    
+    crude_gfx_cmd_end_render_pass( gpu_commands );
   }
 }
 

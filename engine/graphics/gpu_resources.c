@@ -16,12 +16,13 @@ crude_gfx_reset_render_pass_output
 )
 {
   output->num_color_formats = 0;
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_IMAGE_OUTPUTS; ++i )
-  {
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_IMAGE_OUTPUTS; ++i) {
     output->color_formats[ i ] = VK_FORMAT_UNDEFINED;
+    output->color_final_layouts[ i ] = VK_IMAGE_LAYOUT_UNDEFINED;
+    output->color_operations[ i ] = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
   }
   output->depth_stencil_format = VK_FORMAT_UNDEFINED;
-  output->color_operation = output->depth_operation = output->stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
+  output->depth_operation = output->stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }
 
 VkImageType

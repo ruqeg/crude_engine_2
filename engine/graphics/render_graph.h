@@ -1,6 +1,7 @@
 #pragma once
 
 #include <graphics/gpu_device.h>
+#include <graphics/render_scene.h>
 #include <core/memory.h>
 
 typedef uint32                                             crude_gfx_render_graph_handle;
@@ -88,12 +89,25 @@ typedef struct crude_gfx_render_graph_node_creation
   char const                                              *name;
 } crude_gfx_render_graph_node_creation;
 
+
+typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands, crude_gfx_render_scene *render_scene );
+typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands, crude_gfx_render_scene *render_scene );
+typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
+
+typedef struct crude_gfx_render_graph_render_pass
+{
+  crude_gfx_render_graph_render_pass_pre_render            pre_render;
+  crude_gfx_render_graph_render_pass_render                render;
+  crude_gfx_render_graph_render_pass_on_resize             on_resize;
+  void                                                    *ctx;
+} crude_gfx_render_graph_render_pass;
+
 typedef struct crude_gfx_render_graph_node
 {
   int32                                                    ref_count;
   crude_gfx_render_pass_handle                             render_pass;
   crude_gfx_framebuffer_handle                             framebuffer;
-  //crude_gfx_render_graph_render_pass                      *graph_render_pass;
+  crude_gfx_render_graph_render_pass                      *graph_render_pass;
   crude_gfx_render_graph_resource_handle                  *inputs;
   crude_gfx_render_graph_resource_handle                  *outputs;
   crude_gfx_render_graph_node_handle                      *edges;
@@ -151,6 +165,13 @@ CRUDE_API void
 crude_gfx_render_graph_compile
 (
   _In_ crude_gfx_render_graph                             *render_graph
+);
+
+CRUDE_API void
+crude_gfx_render_graph_render
+(
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
 );
 
 CRUDE_API crude_gfx_render_graph_node_handle

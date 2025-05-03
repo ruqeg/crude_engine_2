@@ -115,9 +115,7 @@ typedef struct crude_gfx_device
    * the swapchain.
    */
   uint32                                                   vk_swapchain_images_count;
-  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  VkImageView                                              vk_swapchain_images_views[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  VkFramebuffer                                            vk_swapchain_framebuffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_framebuffer_handle                             swapchain_framebuffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   uint16                                                   vk_swapchain_width;
   uint16                                                   vk_swapchain_height;
   uint32                                                   vk_swapchain_image_index;

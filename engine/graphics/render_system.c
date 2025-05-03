@@ -232,7 +232,7 @@ render
     }
     CRUDE_PROFILER_END;
   
-    crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
+    //crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
   
     crude_gfx_present( renderer[ i ].gpu );
   }

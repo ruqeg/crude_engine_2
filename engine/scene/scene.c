@@ -190,17 +190,16 @@ crude_gltf_scene_load_from_file
     strcat( image_full_filename, image->uri );
     stbi_info( image_full_filename, &width, &height, &comp );
 
-    texture_creation = ( crude_gfx_texture_creation ){
-      .initial_data = NULL,
-      .width = width,
-      .height = height,
-      .depth = 1u,
-      .mipmaps = 1u,
-      .flags = 0u,
-      .format = VK_FORMAT_R8G8B8A8_UNORM,
-      .type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
-      .name = image_full_filename,
-    };
+    texture_creation = crude_gfx_texture_creation_empty();
+    texture_creation.initial_data = NULL;
+    texture_creation.width = width;
+    texture_creation.height = height;
+    texture_creation.depth = 1u;
+    texture_creation.mipmaps = 1u;
+    texture_creation.flags = 0u;
+    texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
+    texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+    texture_creation.name = image_full_filename;
 
     texture_resource = crude_gfx_renderer_create_texture( scene->renderer, &texture_creation );
     CRUDE_ARRAY_PUSH( scene->images, *texture_resource );
@@ -690,7 +689,7 @@ _gltf_scene_primary_draw_task
 
   crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0, 0, 0, 0 } });
   crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .color = { 1, 1, 1, 1 } });
-  crude_gfx_cmd_bind_render_pass( gpu_commands, draw_task->scene->renderer->gpu->swapchain_pass, draw_task->use_secondary );
+  //crude_gfx_cmd_bind_render_pass( gpu_commands, draw_task->scene->renderer->gpu->swapchain_pass, draw_task->use_secondary );
   
   if ( draw_task->use_secondary )
   {

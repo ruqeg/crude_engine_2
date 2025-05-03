@@ -666,6 +666,22 @@ crude_gfx_render_pass_creation_empty
   };
 }
 
+CRUDE_API CRUDE_INLINE crude_gfx_texture_creation
+crude_gfx_texture_creation_empty
+(
+)
+{
+  return ( crude_gfx_texture_creation ) {
+    .width   = 1,
+    .height  = 1,
+    .depth   = 1,
+    .mipmaps = 1,
+    .format  = VK_FORMAT_UNDEFINED,
+    .type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
+    .alias   = CRUDE_GFX_INVALID_TEXTURE_HANDLE
+  };
+}
+
 /************************************************
  *
  * GPU Resoruces Functions
