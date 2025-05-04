@@ -190,14 +190,6 @@ typedef enum crude_gfx_queue_type
   CRUDE_GFX_QUEUE_TYPE_COUNT
 } crude_gfx_queue_type;
 
-typedef enum crude_gfx_texture_flag
-{
-  CRUDE_TEXTURE_FLAG_DEFAULT,
-  CRUDE_TEXTURE_FLAG_RENDER_TARGET,
-  CRUDE_TEXTURE_FLAG_COMPUTE,
-  CRUDE_TEXTURE_FLAG_COUNT,
-} crude_gfx_texture_flag;
-
 typedef enum crude_gfx_texture_mask
 {
   CRUDE_GFX_TEXTURE_MASK_DEFAULT = 1 << 0,

@@ -130,7 +130,7 @@ typedef struct crude_gfx_device
    */
   VkAllocationCallbacks                                   *vk_allocation_callbacks;                               
   VmaAllocator                                             vma_allocator;
-  crude_allocator_container                                allocator;
+  crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
   /**
    * UBO Buffers. //!TODO
@@ -152,14 +152,14 @@ typedef struct crude_gfx_device
  * 
  ***********************************************/
 CRUDE_API void                                     
-crude_gfx_initialize_device                    
+crude_gfx_device_initialize                    
 (                                                  
   _Out_ crude_gfx_device                                  *gpu,
   _In_ crude_gfx_device_creation                          *creation
 );
 
 CRUDE_API void                                     
-crude_gfx_deinitialize_device
+crude_gfx_device_deinitialize
 (
   _In_ crude_gfx_device                                   *gpu
 );

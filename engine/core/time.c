@@ -13,7 +13,7 @@ static LARGE_INTEGER s_frequency;
 
 
 void
-crude_initialize_time_service
+crude_time_service_initialize
 (
 )
 {
@@ -23,7 +23,7 @@ crude_initialize_time_service
 }
 
 void  
-crude_deinitialize_time_service
+crude_time_service_deinitialize
 (
 )
 {

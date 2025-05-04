@@ -29,11 +29,11 @@ typedef enum crude_channel
 } crude_channel;
 
 CRUDE_API void
-crude_initialize_log
+crude_log_initialize
 ();
 
 CRUDE_API void
-crude_deinitialize_log
+crude_log_deinitialize
 ();
 
 CRUDE_API void

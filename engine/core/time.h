@@ -3,12 +3,12 @@
 #include <core/alias.h>
 
 CRUDE_API void
-crude_initialize_time_service
+crude_time_service_initialize
 (
 );
 
 CRUDE_API void  
-crude_deinitialize_time_service
+crude_time_service_deinitialize
 (
 );
 

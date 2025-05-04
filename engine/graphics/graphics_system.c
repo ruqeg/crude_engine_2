@@ -3,10 +3,8 @@
 #include <core/array.h>
 #include <core/profiler.h>
 #include <platform/gui_components.h>
-#include <graphics/render_components.h>
+#include <graphics/graphics_components.h>
 #include <graphics/command_buffer.h>
-
-#include <graphics/render_system.h>
 
 // !TODO
 #include <scene/scene_components.h>
@@ -67,7 +65,7 @@ initialize_render_core
     };
 
     renderer->gpu = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_device ) );
-    crude_gfx_initialize_device( renderer->gpu, &gpu_creation );
+    crude_gfx_device_initialize( renderer->gpu, &gpu_creation );
 
     crude_gfx_renderer_creation rendere_creation = {
       .allocator = render_create[ i ].allocator,
@@ -75,7 +73,7 @@ initialize_render_core
     };
 
     renderer->renderer = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_renderer ) );
-    crude_gfx_initialize_renderer( renderer->renderer, &rendere_creation );
+    crude_gfx_renderer_initialize( renderer->renderer, &rendere_creation );
     
     
     renderer->render_graph = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_render_graph ) );
@@ -96,7 +94,7 @@ initialize_render_core
 
     renderer->async_loader = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_asynchronous_loader ) );
 
-    crude_gfx_initialize_asynchronous_loader( renderer->async_loader, renderer->renderer );
+    crude_gfx_asynchronous_loader_initialize( renderer->async_loader, renderer->renderer );
     
     uint32 threadNumIOTasks = config.numTaskThreadsToCreate;
 
@@ -162,8 +160,8 @@ deinitialize_render_core
     enkiDeleteTaskScheduler( renderer[ i ].ets );
     crude_gltf_scene_unload( renderer[ i ].scene );
     crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
-    crude_gfx_deinitialize_renderer( renderer[ i ].renderer );
-    crude_gfx_deinitialize_device( renderer[ i ].gpu );
+    crude_gfx_renderer_deinitialize( renderer[ i ].renderer );
+    crude_gfx_device_deinitialize( renderer[ i ].gpu );
     //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
     //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
     //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
@@ -243,7 +241,7 @@ render
 }
 
 void
-crude_render_systemImport
+crude_graphics_systemImport
 (
   ecs_world_t *world
 )
@@ -251,19 +249,19 @@ crude_render_systemImport
   ECS_MODULE( world, crude_render_system );
   ECS_IMPORT( world, crude_gui_components );
   ECS_IMPORT( world, crude_scene_components );
-  ECS_IMPORT( world, crude_render_components );
+  ECS_IMPORT( world, crude_graphics_components );
  
   ecs_observer( world, {
     .query.terms = { 
-      ( ecs_term_t ) { .id = ecs_id( crude_render_create ), .oper = EcsAnd },
+      ( ecs_term_t ) { .id = ecs_id( crude_graphics_creation ), .oper = EcsAnd },
       ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsAnd },
-      ( ecs_term_t ) { .id = ecs_id( crude_renderer_component ), .oper = EcsNot }
+      ( ecs_term_t ) { .id = ecs_id( crude_graphics_component ), .oper = EcsNot }
     },
     .events = { EcsOnSet },
     .callback = initialize_render_core
     });
   ecs_observer( world, {
-    .query.terms = { { .id = ecs_id( crude_renderer_component ) } },
+    .query.terms = { { .id = ecs_id( crude_graphics_component ) } },
     .events = { EcsOnRemove },
     .callback = deinitialize_render_core
     } );
@@ -271,7 +269,7 @@ crude_render_systemImport
     .entity = ecs_entity( world, { .name = "render_system", .add = ecs_ids( ecs_dependson( EcsOnStore ) ) } ),
     .callback = render,
     .query.terms = { 
-      {.id = ecs_id( crude_renderer_component ) },
+      {.id = ecs_id( crude_graphics_component ) },
       {.id = ecs_id( crude_window ) },
     } } );
 }

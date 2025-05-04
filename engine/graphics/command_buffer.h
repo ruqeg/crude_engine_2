@@ -49,14 +49,14 @@ typedef struct crude_gfx_cmd_buffer_manager
  * 
  ***********************************************/
 CRUDE_API void
-crude_gfx_initialize_cmd
+crude_gfx_cmd_initialize
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_device                                   *gpu
 );
 
 CRUDE_API void
-crude_gfx_deinitialize_cmd
+crude_gfx_cmd_deinitialize
 (
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
@@ -234,7 +234,7 @@ crude_gfx_cmd_upload_buffer_data
  * 
  ***********************************************/
 CRUDE_API void
-crude_gfx_initialize_cmd_manager
+crude_gfx_cmd_manager_initialize
 (
   _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager,
   _In_ crude_gfx_device                                   *gpu,
@@ -242,7 +242,7 @@ crude_gfx_initialize_cmd_manager
 );
 
 CRUDE_API void
-crude_gfx_deinitialize_cmd_manager
+crude_gfx_cmd_manager_deinitialize
 (
   _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager
 );

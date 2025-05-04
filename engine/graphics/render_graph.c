@@ -8,54 +8,28 @@
 
 #include <graphics/render_graph.h>
 
-static crude_gfx_render_graph_resource_type
-_string_to_resource_type
+/************************************************
+ *
+ * Render Graph Utils Static Functions Declataion
+ * 
+ ***********************************************/
+crude_gfx_render_graph_resource_type
+string_to_resource_type_
 (
   _In_ char const                                         *input_type
-)
-{
-  if ( strcmp( input_type, "texture" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE;
-  }
-  
-  if ( strcmp( input_type, "attachment" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT;
-  }
-  
-  if ( strcmp( input_type, "buffer" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER;
-  }
-  
-  if ( strcmp( input_type, "reference" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE;
-  }
-  
-  CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );
-  return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_INVALID;
-}
+);
 
-static crude_gfx_render_pass_operation
-string_to_render_pass_operation
+crude_gfx_render_pass_operation
+string_to_render_pass_operation_
 (
   _In_ char const                                         *op
-)
-{
-  if ( strcmp( op, "VK_ATTACHMENT_LOAD_OP_CLEAR" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
-  }
-  else if ( strcmp( op, "load" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
-  }
-  
-  CRUDE_ASSERT( false );
-  return CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
-}
+);
+
+/************************************************
+ *
+ * Render Graph Functions
+ * 
+ ***********************************************/
 void
 crude_gfx_render_graph_initialize
 (
@@ -68,6 +42,14 @@ crude_gfx_render_graph_initialize
   render_graph->builder = builder;
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, render_graph->local_allocator_container); 
+}
+
+void
+crude_gfx_render_graph_deinitialize
+(
+  _In_ crude_gfx_render_graph                             *render_graph
+)
+{
 }
 
 void
@@ -137,7 +119,7 @@ crude_gfx_render_graph_parse_from_file
       CRUDE_ASSERT( input_type && input_name );
       
       CRUDE_ARRAY_PUSH( node_creation.inputs, ( ( crude_gfx_render_graph_resource_input_creation ){ 
-        .type = _string_to_resource_type( cJSON_GetStringValue( input_type ) ),
+        .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
         .resource_info.external = false,
         .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
       } ) );
@@ -155,7 +137,7 @@ crude_gfx_render_graph_parse_from_file
       CRUDE_ASSERT( output_type && output_name );
 
       output_creation = ( crude_gfx_render_graph_resource_output_creation ){ 0 };
-      output_creation.type = _string_to_resource_type( cJSON_GetStringValue( output_type ) );
+      output_creation.type = string_to_resource_type_( cJSON_GetStringValue( output_type ) );
       output_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( output_name ) );
 
       switch ( output_creation.type )
@@ -174,7 +156,7 @@ crude_gfx_render_graph_parse_from_file
           CRUDE_ASSERT( cJSON_GetArraySize( output_resolution ) == 2 );
 
           output_creation.resource_info.texture.format = crude_string_to_vk_format( cJSON_GetStringValue( output_format ) );
-          output_creation.resource_info.texture.load_op = string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
+          output_creation.resource_info.texture.load_op = string_to_render_pass_operation_( cJSON_GetStringValue( output_load_op ) );
           output_creation.resource_info.texture.width = cJSON_GetArrayItem( output_resolution, 0 );
           output_creation.resource_info.texture.height = cJSON_GetArrayItem( output_resolution, 1 );
           output_creation.resource_info.texture.depth = 1;
@@ -226,8 +208,13 @@ crude_gfx_render_graph_compile
     
     for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
     {
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
-      crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, resource->name );
+      crude_gfx_render_graph_resource                     *resource;
+      crude_gfx_render_graph_resource                     *output_resource;
+      crude_gfx_render_graph_node                         *parent_node;
+
+      
+      resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+      output_resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, resource->name );
       if ( output_resource == NULL && !resource->resource_info.external )
       {
         CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Requested resource is not produced by any node and is not external." );
@@ -238,213 +225,212 @@ crude_gfx_render_graph_compile
       resource->resource_info = output_resource->resource_info;
       resource->output_handle = output_resource->output_handle;
       
-      crude_gfx_render_graph_node *parent_node = crude_gfx_render_graph_builder_access_node( render_graph->builder, resource->producer );
+      parent_node = crude_gfx_render_graph_builder_access_node( render_graph->builder, resource->producer );
       CRUDE_ARRAY_PUSH( parent_node->edges, render_graph->nodes[ node_index ] );
     }
   }
 
-  crude_gfx_render_graph_node_handle *sorted_nodes;
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( sorted_nodes, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
-  
-  uint8 *visited;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( visited, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
-  memset( visited, 0, sizeof( uint8 ) * CRUDE_ARRAY_LENGTH( visited ) );
-  
-  crude_gfx_render_graph_node_handle *stack;
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( stack, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
-  
-  /* Topological sorting... Magic works! */
-  for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++n )
+  /* Topological sorting */
   {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ n ] );
-    if ( !node->enabled )
-    {
-      continue;
-    }
+    crude_gfx_render_graph_node_handle                    *sorted_nodes;
+    crude_gfx_render_graph_node_handle                    *stack;
+    uint8                                                 *visited;
+
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( sorted_nodes, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( visited, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+    memset( visited, 0, sizeof( uint8 ) * CRUDE_ARRAY_LENGTH( visited ) );
     
-    CRUDE_ARRAY_PUSH( stack, render_graph->nodes[ n ] );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( stack, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
     
-    while ( CRUDE_ARRAY_LENGTH( stack ) > 0 )
+    for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
     {
-      crude_gfx_render_graph_node_handle node_handle = CRUDE_ARRAY_BACK( stack );
-      
-      if ( visited[ node_handle.index ] == 2 )
-      {
-        CRUDE_ARRAY_POP( stack );
-        continue;
-      }
-      
-      if ( visited[ node_handle.index ] == 1 )
-      {
-        visited[ node_handle.index ] = 2;
-        CRUDE_ARRAY_PUSH( sorted_nodes, node_handle );
-        CRUDE_ARRAY_POP( stack );
-        continue;
-      }
-      
-      visited[ node_handle.index ] = 1;
-      
-      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, node_handle );
-      
-      if ( CRUDE_ARRAY_LENGTH( node->edges ) == 0 )
+      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+      if ( !node->enabled )
       {
         continue;
       }
       
-      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->edges ); ++r )
+      CRUDE_ARRAY_PUSH( stack, render_graph->nodes[ node_index ] );
+      
+      while ( CRUDE_ARRAY_LENGTH( stack ) > 0 )
       {
-        crude_gfx_render_graph_node_handle child_handle = node->edges[ r ];
-        if ( !visited[ child_handle.index ] )
+        crude_gfx_render_graph_node_handle                 node_handle;
+        crude_gfx_render_graph_node                       *node;
+        
+        node_handle = CRUDE_ARRAY_BACK( stack );
+        if ( visited[ node_handle.index ] == 2 )
         {
-          CRUDE_ARRAY_PUSH( stack, child_handle );
+          CRUDE_ARRAY_POP( stack );
+          continue;
+        }
+        
+        if ( visited[ node_handle.index ] == 1 )
+        {
+          visited[ node_handle.index ] = 2;
+          CRUDE_ARRAY_PUSH( sorted_nodes, node_handle );
+          CRUDE_ARRAY_POP( stack );
+          continue;
+        }
+        
+        visited[ node_handle.index ] = 1;
+        
+        node = crude_gfx_render_graph_builder_access_node( render_graph->builder, node_handle );
+
+        if ( CRUDE_ARRAY_LENGTH( node->edges ) == 0 )
+        {
+          continue;
+        }
+        
+        for ( uint32 edge_index = 0; edge_index < CRUDE_ARRAY_LENGTH( node->edges ); ++edge_index )
+        {
+          crude_gfx_render_graph_node_handle child_handle = node->edges[ edge_index ];
+          if ( !visited[ child_handle.index ] )
+          {
+            CRUDE_ARRAY_PUSH( stack, child_handle );
+          }
         }
       }
     }
-  }
-  
-  CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
-  CRUDE_ARRAY_SET_LENGTH( render_graph->nodes, 0 );
-  
-  for ( int32 i = CRUDE_ARRAY_LENGTH( sorted_nodes ) - 1; i >= 0; --i )
-  {
-    CRUDE_ARRAY_PUSH( render_graph->nodes, sorted_nodes[ i ] );
-  }
-  
-  // TODO use temproray allocator? (currently linear)
-  CRUDE_ARRAY_FREE( visited );
-  CRUDE_ARRAY_FREE( stack );
-  CRUDE_ARRAY_FREE( sorted_nodes );
-  
-  sizet resource_count = render_graph->builder->resource_cache.resources.used_indices;
-  
-  crude_gfx_render_graph_node_handle *allocations;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
-  for ( uint32 i = 0; i < resource_count; ++i)
-  {
-    allocations[ i ] = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
-  }
-  
-  crude_gfx_render_graph_node_handle *deallocations;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
-  for ( uint32 i = 0; i < resource_count; ++i)
-  {
-    deallocations[ i ] = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
-  }
-  
-  crude_gfx_texture_handle *free_list;
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( free_list, resource_count, render_graph->local_allocator_container );
-  
-  size_t peak_memory = 0;
-  size_t instant_memory = 0;
-  
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
-  {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
-    if ( !node->enabled )
+    
+    CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
+    CRUDE_ARRAY_SET_LENGTH( render_graph->nodes, 0 );
+    
+    for ( int32 i = CRUDE_ARRAY_LENGTH( sorted_nodes ) - 1; i >= 0; --i )
     {
-      continue;
+      CRUDE_ARRAY_PUSH( render_graph->nodes, sorted_nodes[ i ] );
     }
     
-    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->inputs ); ++j )
-    {
-      crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ j ] );
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
-      resource->ref_count++;
-    }
+    // TODO use temproray allocator? (currently linear)
+    CRUDE_ARRAY_FREE( visited );
+    CRUDE_ARRAY_FREE( stack );
+    CRUDE_ARRAY_FREE( sorted_nodes );
   }
   
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  /* Compute Resource Aliasing */
   {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
-    if ( !node->enabled )
+    crude_gfx_render_graph_node_handle                    *allocations;
+    crude_gfx_render_graph_node_handle                    *deallocations;
+    crude_gfx_texture_handle                              *free_list;
+    sizet                                                  resource_count, peak_memory, instant_memory;
+
+    resource_count = render_graph->builder->resource_cache.resources.used_indices;
+    
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+    for ( uint32 i = 0; i < resource_count; ++i)
     {
-      continue;
+      allocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
     }
     
-    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->outputs ); ++j )
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+    for ( uint32 i = 0; i < resource_count; ++i)
     {
-      uint32 resource_index = node->outputs[ j ].index;
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ j ] );
-      
-      if ( !resource->resource_info.external && CRUDE_RESOURCE_HANDLE_IS_INVALID( allocations[ resource_index ] ) )
+      deallocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
+    }
+    
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( free_list, resource_count, render_graph->local_allocator_container );
+    
+    peak_memory = 0;
+    instant_memory = 0;
+    for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
+    {
+      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+      if ( !node->enabled )
       {
-        CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ resource_index ] ) );
-        allocations[ resource_index ] = render_graph->nodes[ i ];
+        continue;
+      }
+      
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
+      {
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+        resource->ref_count++;
+      }
+    }
+    
+    for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
+    {
+      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+      if ( !node->enabled )
+      {
+        continue;
+      }
+      
+      for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
+      {
+        crude_gfx_render_graph_resource                   *output_resource;
+        uint32                                             output_resource_index;
+
+        output_resource_index = node->outputs[ output_index ].index;
+        output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
         
-        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        if ( !output_resource->resource_info.external && CRUDE_RESOURCE_HANDLE_IS_INVALID( allocations[ output_resource_index ] ) )
         {
-          crude_gfx_render_graph_resource_info *info = &resource->resource_info;
+          CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ output_resource_index ] ) );
+          allocations[ output_resource_index ] = render_graph->nodes[ node_index ];
           
-          if ( CRUDE_ARRAY_LENGTH( free_list ) > 0 )
+          if ( output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
           {
-            crude_gfx_texture_handle alias_texture = CRUDE_ARRAY_POP( free_list );
+            crude_gfx_render_graph_resource_info          *output_resource_info;
+            crude_gfx_texture_creation                     output_resource_texture_creation;
             
-            crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
-            texture_creation.name = resource->name;
-            texture_creation.format = info->texture.format;
-            texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-            texture_creation.width = info->texture.width;
-            texture_creation.height = info->texture.height;
-            texture_creation.depth = info->texture.depth;
-            texture_creation.flags = CRUDE_TEXTURE_FLAG_RENDER_TARGET;
-            texture_creation.mipmaps = 1;
-            texture_creation.alias = alias_texture;
-            crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
-            info->texture.texture = handle;
+            output_resource_info = &output_resource->resource_info;
+           
+            output_resource_texture_creation = crude_gfx_texture_creation_empty();
+            output_resource_texture_creation.name = output_resource->name;
+            output_resource_texture_creation.format = output_resource_info->texture.format;
+            output_resource_texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+            output_resource_texture_creation.width = output_resource_info->texture.width;
+            output_resource_texture_creation.height = output_resource_info->texture.height;
+            output_resource_texture_creation.depth = output_resource_info->texture.depth;
+            output_resource_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
+            output_resource_texture_creation.mipmaps = 1;
+            output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+
+            output_resource_info->texture.texture = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
           }
-          else
-          {
-            crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
-            texture_creation.name = resource->name;
-            texture_creation.format = info->texture.flags;
-            texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-            texture_creation.width = info->texture.width;
-            texture_creation.height = info->texture.height;
-            texture_creation.depth = info->texture.depth;
-            texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
-            texture_creation.mipmaps = 1;
-            
-            crude_gfx_texture_handle handle = crude_gfx_create_texture( render_graph->builder->gpu, &texture_creation );
-            info->texture.texture = handle;
-          }
+          
+          CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s allocated on node %d\n", output_resource->name, render_graph->nodes[ node_index ].index  );
         }
+      }
+      
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
+      {
+        crude_gfx_render_graph_resource                   *input_resource;
+        uint32                                             input_resource_index;
+        crude_gfx_render_graph_resource                   *input_resource_output_resource;
+
+
+        input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+        input_resource_index = input_resource->output_handle.index;
+
+        input_resource_output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+        input_resource_output_resource->ref_count--;
         
-        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s allocated on node %d\n", resource->name, render_graph->nodes[ i ].index  );
+        if ( !input_resource_output_resource->resource_info.external && input_resource_output_resource->ref_count == 0 )
+        {
+          CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ input_resource_index ] ) );
+          deallocations[ input_resource_index ] = render_graph->nodes[ node_index ];
+          
+          if ( input_resource_output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT || input_resource_output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+          {
+            CRUDE_ARRAY_PUSH( free_list, input_resource_output_resource->resource_info.texture.texture );
+          }
+          
+          CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s deallocated on node\n", input_resource_output_resource->name, render_graph->nodes[ node_index ].index );
+        }
       }
     }
     
-    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( node->inputs ); ++j )
-    {
-      crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ j ] );
-      
-      uint32 resource_index = input_resource->output_handle.index;
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
-      
-      resource->ref_count--;
-      
-      if ( !resource->resource_info.external && resource->ref_count == 0 )
-      {
-        CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ resource_index ] ) );
-        deallocations[ resource_index ] = render_graph->nodes[ i ];
-        
-        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT || resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
-        {
-          CRUDE_ARRAY_PUSH( free_list, resource->resource_info.texture.texture );
-        }
-        
-        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s deallocated on node\n", resource->name, render_graph->nodes[ i ].index );
-      }
-    }
+    // TODO use temproray allocator? (currently linear)
+    CRUDE_ARRAY_FREE( allocations );
+    CRUDE_ARRAY_FREE( deallocations );
+    CRUDE_ARRAY_FREE( free_list );
   }
   
-  // TODO use temproray allocator? (currently linear)
-  CRUDE_ARRAY_FREE( allocations );
-  CRUDE_ARRAY_FREE( deallocations );
-  CRUDE_ARRAY_FREE( free_list );
-  
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
     if ( !node->enabled )
     {
       continue;
@@ -456,9 +442,9 @@ crude_gfx_render_graph_compile
       crude_gfx_render_pass_creation render_pass_creation = crude_gfx_render_pass_creation_empty();
       render_pass_creation.name = node->name;
       
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
+      for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
       {
-        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ i ] );
+        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
         crude_gfx_render_graph_resource_info *info = &output_resource->resource_info;
 
         if ( output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
@@ -479,9 +465,9 @@ crude_gfx_render_graph_compile
         }
       }
 
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
       {
-        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ i ] );
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
         crude_gfx_render_graph_resource_info *info = &input_resource->resource_info;
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
@@ -508,17 +494,19 @@ crude_gfx_render_graph_compile
     /* Create framebuffer */
     if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node->framebuffer ) )
     {
-      crude_gfx_framebuffer_creation framebuffer_creation = crude_gfx_framebuffer_creation_empty();
+      crude_gfx_framebuffer_creation                       framebuffer_creation;
+      uint32                                               width, height;
+      
+      width = height = 0;
+
+      framebuffer_creation = crude_gfx_framebuffer_creation_empty();
       framebuffer_creation.render_pass = node->render_pass;
       framebuffer_creation.name = node->name;
 
-      uint32 width = 0;
-      uint32 height = 0;
-
-      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->outputs ); ++r )
+      for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
       {
-        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ i ] );
-        crude_gfx_render_graph_resource_info *info = &output_resource->resource_info;
+        crude_gfx_render_graph_resource *output_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
+        crude_gfx_render_graph_resource_info *output_resource_info = &output_resource->resource_info;
 
         if ( output_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
@@ -527,35 +515,35 @@ crude_gfx_render_graph_compile
 
         if ( width == 0 )
         {
-          width = info->texture.width;
+          width = output_resource_info->texture.width;
         }
         else
         {
-          CRUDE_ASSERT( width == info->texture.width );
+          CRUDE_ASSERT( width == output_resource_info->texture.width );
         }
 
         if ( height == 0 )
         {
-          height = info->texture.height;
+          height = output_resource_info->texture.height;
         }
         else
         {
-          CRUDE_ASSERT( height == info->texture.height );
+          CRUDE_ASSERT( height == output_resource_info->texture.height );
         }
         
-        if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
+        if ( output_resource_info->texture.format == VK_FORMAT_D32_SFLOAT )
         {
-          framebuffer_creation.depth_stencil_texture = info->texture.texture;
+          framebuffer_creation.depth_stencil_texture = output_resource_info->texture.texture;
         }
         else
         {
-          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = info->texture.texture;
+          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = output_resource_info->texture.texture;
         }
       }
 
-      for ( uint32 r = 0; r < CRUDE_ARRAY_LENGTH( node->inputs ); ++r )
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
       {
-        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ r ] );
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
 
         if ( input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT && input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
         {
@@ -611,13 +599,15 @@ void
 crude_gfx_render_graph_render
 (
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_cmd_buffer                               *gpu_commands,
-  _In_ crude_gfx_render_scene                             *render_scene
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
 )
 {
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+    crude_gfx_render_graph_node                           *node;
+    uint32                                                 width, height;
+
+    node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
     if ( !node->enabled )
     {
       continue;
@@ -627,9 +617,8 @@ crude_gfx_render_graph_render
     crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ){ .color = { 0.3f, 0.3f, 0.3f, 1.f } } );
     crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ){ .depthStencil = { 1.0f, 0 } } );
     
-    uint32 width = 0;
-    uint32 height = 0;
-    
+    width = height = 0;
+
     for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
     {
       crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
@@ -642,7 +631,6 @@ crude_gfx_render_graph_render
       else if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
       {
         crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        
         width = texture->width;
         height = texture->height;
       }
@@ -655,7 +643,6 @@ crude_gfx_render_graph_render
       if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
       {
         crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        
         width = texture->width;
         height = texture->height;
         
@@ -670,44 +657,50 @@ crude_gfx_render_graph_render
       }
     }
     
-    crude_gfx_rect2d_int scissor = {
-      .x = 0, 
-      .y = 0,
-      .width = width, 
-      .height = height
-    };
-    crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
-    
-    crude_gfx_viewport viewport = { 
-      viewport.rect = ( crude_gfx_rect2d_int ){ 
+    {
+      crude_gfx_rect2d_int scissor = {
         .x = 0, 
         .y = 0,
-        .width = width,
+        .width = width, 
         .height = height
-      },
-      viewport.min_depth = 0.0f,
-      viewport.max_depth = 1.0f,
-    };
-    crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
+      };
+      crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
+    }
+
+    {
+      crude_gfx_viewport viewport = { 
+        viewport.rect = ( crude_gfx_rect2d_int ){ 
+          .x = 0, 
+          .y = 0,
+          .width = width,
+          .height = height
+        },
+        viewport.min_depth = 0.0f,
+        viewport.max_depth = 1.0f,
+      };
+      crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
+    }
     
-    node->graph_render_pass->pre_render( node->graph_render_pass->ctx, gpu_commands, render_scene );
-    
+    node->graph_render_pass->pre_render( node->graph_render_pass->ctx, gpu_commands );
     crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
-    
-    node->graph_render_pass->render( node->graph_render_pass->ctx, gpu_commands, render_scene );
-    
+    node->graph_render_pass->render( node->graph_render_pass->ctx, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
   }
 }
 
-crude_gfx_render_graph_node_handle
+/************************************************
+ *
+ * Render Graph Builder Function Declaration
+ * 
+ ***********************************************/
+void
 crude_gfx_render_graph_builder_initialize
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  builder->allocator_container = gpu->allocator;
+  builder->allocator_container = gpu->allocator_container;
   builder->gpu = gpu;
   builder->node_cache;
   builder->resource_cache;
@@ -720,21 +713,29 @@ crude_gfx_render_graph_builder_initialize
 }
 
 void
+crude_gfx_render_graph_builder_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+}
+
+void
 crude_gfx_render_graph_builder_register_render_pass
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
-  char const                         *name,
-  crude_gfx_render_graph_pass *render_pass
+  _In_ char const                                         *name,
+  _In_ crude_gfx_render_graph_pass                        *render_pass
 )
 {
   uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
-  uint32 handle_index = hmgeti( builder->resource_cache.resource_map, key );
+  uint32 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
   if ( handle_index != -1 )
   {
     return NULL;
   }
   
-  hmput( builder->render_pass_cache.render_pass_map, key, render_pass );
+  CRUDE_HASHMAP_PUT( builder->render_pass_cache.render_pass_map, key, render_pass );
 
   crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( builder, ( crude_gfx_render_graph_node_handle ){ handle_index } );
   node->graph_render_pass = render_pass;
@@ -747,26 +748,29 @@ crude_gfx_render_graph_builder_create_node
   _In_ crude_gfx_render_graph_node_creation const         *creation
 )
 {
-  crude_gfx_render_graph_node_handle node_handle = { CRUDE_RESOURCE_INDEX_INVALID };
-  node_handle.index = crude_resource_pool_obtain_resource( &builder->node_cache.nodes );
-
-  if ( node_handle.index == CRUDE_RESOURCE_INDEX_INVALID )
+  crude_gfx_render_graph_node                             *node;
+  crude_gfx_render_graph_node_handle                       node_handle;
+  
+  node_handle = crude_gfx_render_graph_builder_obtain_node( builder );
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node_handle ) )
   {
     return node_handle;
   }
 
-  crude_gfx_render_graph_node *node = ( crude_gfx_render_graph_node* )crude_resource_pool_access_resource( &builder->node_cache.nodes, node_handle.index );
+  node = crude_gfx_render_graph_builder_access_node( builder, node_handle );
   node->name = creation->name;
   node->enabled = creation->enabled;
+  node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
+  node->render_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, CRUDE_ARRAY_LENGTH( creation->inputs ), builder->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->outputs, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
-  node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
-  node->render_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   
-  uint64 key = stbds_hash_bytes( ( void* )node->name, strlen( node->name ), 0 );
-  hmput( builder->node_cache.node_map, key , node_handle.index );
-  
+  {
+    uint64 key = stbds_hash_bytes( ( void* )node->name, strlen( node->name ), 0 );
+    hmput( builder->node_cache.node_map, key, node_handle.index );
+  }
+
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
   {
     node->outputs[ i ] = crude_gfx_render_graph_builder_create_node_output( builder, &creation->outputs[ i ], node_handle );
@@ -783,14 +787,12 @@ crude_gfx_render_graph_builder_create_node
 crude_gfx_render_graph_resource_handle
 crude_gfx_render_graph_builder_create_node_output
 (
-  _In_ crude_gfx_render_graph_builder                               *builder,
-  _In_ crude_gfx_render_graph_resource_output_creation const        *creation,
-  _In_ crude_gfx_render_graph_node_handle                            producer
+  _In_ crude_gfx_render_graph_builder                        *builder,
+  _In_ crude_gfx_render_graph_resource_output_creation const *creation,
+  _In_ crude_gfx_render_graph_node_handle                     producer
 )
 {
-  crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
-  resource_handle.index = crude_resource_pool_obtain_resource( &builder->resource_cache.resources );
-
+  crude_gfx_render_graph_resource_handle resource_handle = crude_gfx_render_graph_builder_obtain_resource( builder );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( resource_handle ) )
   {
     return resource_handle;
@@ -816,13 +818,11 @@ crude_gfx_render_graph_builder_create_node_output
 crude_gfx_render_graph_resource_handle
 crude_gfx_render_graph_builder_create_node_input
 (
-  _In_ crude_gfx_render_graph_builder                               *builder,
-  _In_ crude_gfx_render_graph_resource_input_creation const         *creation
+  _In_ crude_gfx_render_graph_builder                       *builder,
+  _In_ crude_gfx_render_graph_resource_input_creation const *creation
 )
 {
-  crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
-  resource_handle.index = crude_resource_pool_obtain_resource( &builder->resource_cache.resources );
-  
+  crude_gfx_render_graph_resource_handle resource_handle = crude_gfx_render_graph_builder_obtain_resource( builder );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( resource_handle ) )
   {
     return resource_handle;
@@ -830,8 +830,8 @@ crude_gfx_render_graph_builder_create_node_input
   
   crude_gfx_render_graph_resource* resource = crude_resource_pool_access_resource( &builder->resource_cache.resources, resource_handle.index );
   resource->resource_info = ( crude_gfx_render_graph_resource_info ){ 0 };
-  resource->producer = CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE;
-  resource->output_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
+  resource->producer = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
+  resource->output_handle = CRUDE_GFX_RENDER_GRAPH_RESOURCE_HANDLE_INVALID;
   resource->type = creation->type;
   resource->name = creation->name;
   resource->ref_count = 0;
@@ -842,18 +842,37 @@ crude_gfx_render_graph_builder_create_node_input
 crude_gfx_render_graph_node*
 crude_gfx_render_graph_builder_access_node
 (
-  _In_ crude_gfx_render_graph_builder                               *builder,
-  _In_ crude_gfx_render_graph_node_handle                            handle
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ crude_gfx_render_graph_node_handle                  handle
 )
 {
   return crude_resource_pool_access_resource( &builder->node_cache.nodes, handle.index );
 }
 
+crude_gfx_render_graph_node_handle
+crude_gfx_render_graph_builder_obtain_node
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  return ( crude_gfx_render_graph_node_handle ){ crude_resource_pool_obtain_resource( &builder->node_cache.nodes ) };
+}
+
+
+crude_gfx_render_graph_resource_handle
+crude_gfx_render_graph_builder_obtain_resource
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  return ( crude_gfx_render_graph_resource_handle ){ crude_resource_pool_obtain_resource( &builder->resource_cache.resources ) };
+}
+
 crude_gfx_render_graph_resource*
 crude_gfx_render_graph_builder_access_resource
 (
-  _In_ crude_gfx_render_graph_builder                               *builder,
-  _In_ crude_gfx_render_graph_resource_handle                        handle
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ crude_gfx_render_graph_resource_handle              handle
 )
 {
   return crude_resource_pool_access_resource( &builder->resource_cache.resources, handle.index );
@@ -862,8 +881,8 @@ crude_gfx_render_graph_builder_access_resource
 crude_gfx_render_graph_resource*
 crude_gfx_render_graph_builder_access_resource_by_name
 (
-  _In_ crude_gfx_render_graph_builder                               *builder,
-  _In_ char const                                                   *name
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ char const                                         *name
 )
 {
   uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
@@ -874,4 +893,58 @@ crude_gfx_render_graph_builder_access_resource_by_name
   }
   
   return crude_resource_pool_access_resource( &builder->resource_cache.resources, ( crude_gfx_render_graph_resource_handle ){ hmget( builder->resource_cache.resource_map, handle_index ) }.index );
+}
+
+/************************************************
+ *
+ * Render Graph Utils Static Functions Implementation
+ * 
+ ***********************************************/
+crude_gfx_render_graph_resource_type
+string_to_resource_type_
+(
+  _In_ char const                                         *input_type
+)
+{
+  if ( strcmp( input_type, "texture" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE;
+  }
+  
+  if ( strcmp( input_type, "attachment" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT;
+  }
+  
+  if ( strcmp( input_type, "buffer" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER;
+  }
+  
+  if ( strcmp( input_type, "reference" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE;
+  }
+  
+  CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );
+  return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_INVALID;
+}
+
+crude_gfx_render_pass_operation
+string_to_render_pass_operation_
+(
+  _In_ char const                                         *op
+)
+{
+  if ( strcmp( op, "VK_ATTACHMENT_LOAD_OP_CLEAR" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  }
+  else if ( strcmp( op, "load" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
+  }
+  
+  CRUDE_ASSERT( false );
+  return CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }

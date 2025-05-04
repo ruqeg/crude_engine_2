@@ -7,7 +7,7 @@
 #include <graphics/asynchronous_loader.h>
 
 void
-crude_gfx_initialize_asynchronous_loader
+crude_gfx_asynchronous_loader_initialize
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
   _In_ crude_gfx_renderer                                 *renderer
@@ -70,7 +70,7 @@ crude_gfx_initialize_asynchronous_loader
 }
 
 void
-crude_gfx_deinitialize_asynchronous_loader
+crude_gfx_asynchronous_loader_deinitialize
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )

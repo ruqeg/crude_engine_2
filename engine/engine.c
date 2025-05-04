@@ -26,11 +26,11 @@ crude_engine_initialize
     ecs_set_threads( engine->world, num_threads );
   }
   
-  crude_initialize_log();
+  crude_log_initialize();
   
   crude_heap_allocator_initialize( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
 
-  crude_initialize_time_service();
+  crude_time_service_initialize();
 }
 
 void
@@ -40,7 +40,7 @@ crude_engine_deinitialize
 )
 {
   crude_heap_allocator_deinitialize( &engine->algorithms_allocator );
-  crude_deinitialize_log();
+  crude_log_deinitialize();
 }
 
 bool

@@ -181,7 +181,7 @@ vk_destroy_resources_instant_
  * 
  ***********************************************/
 void
-crude_gfx_initialize_device
+crude_gfx_device_initialize
 (
   _Out_ crude_gfx_device                                  *gpu,
   _In_ crude_gfx_device_creation                          *creation
@@ -195,7 +195,7 @@ crude_gfx_initialize_device
 
   gpu->swapchain_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   gpu->sdl_window = creation->sdl_window;
-  gpu->allocator  = creation->allocator;
+  gpu->allocator_container  = creation->allocator;
   gpu->vk_allocation_callbacks = NULL;
   gpu->max_frames = creation->max_frames;
   gpu->temporary_allocator = creation->temporary_allocator;
@@ -210,14 +210,14 @@ crude_gfx_initialize_device
   vk_create_device_( gpu, temporary_allocator );
   vk_create_vma_allocator_( gpu );
   
-  crude_resource_pool_initialize( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_gfx_buffer ) );
-  crude_resource_pool_initialize( &gpu->textures, gpu->allocator, 512, sizeof( crude_gfx_texture ) );
-  crude_resource_pool_initialize( &gpu->render_passes, gpu->allocator, 256, sizeof( crude_gfx_render_pass ) );
-  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator, 128, sizeof( crude_gfx_descriptor_set_layout ) );
-  crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator, 128, sizeof( crude_gfx_pipeline ) );
-  crude_resource_pool_initialize( &gpu->shaders, gpu->allocator, 128, sizeof( crude_gfx_shader_state ) );
-  crude_resource_pool_initialize( &gpu->samplers, gpu->allocator, 32, sizeof( crude_gfx_sampler ) );
-  crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator, 128, sizeof( crude_gfx_framebuffer ) );
+  crude_resource_pool_initialize( &gpu->buffers, gpu->allocator_container, 4096, sizeof( crude_gfx_buffer ) );
+  crude_resource_pool_initialize( &gpu->textures, gpu->allocator_container, 512, sizeof( crude_gfx_texture ) );
+  crude_resource_pool_initialize( &gpu->render_passes, gpu->allocator_container, 256, sizeof( crude_gfx_render_pass ) );
+  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator_container, 128, sizeof( crude_gfx_descriptor_set_layout ) );
+  crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator_container, 128, sizeof( crude_gfx_pipeline ) );
+  crude_resource_pool_initialize( &gpu->shaders, gpu->allocator_container, 128, sizeof( crude_gfx_shader_state ) );
+  crude_resource_pool_initialize( &gpu->samplers, gpu->allocator_container, 32, sizeof( crude_gfx_sampler ) );
+  crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator_container, 128, sizeof( crude_gfx_framebuffer ) );
   
   {
     
@@ -231,10 +231,10 @@ crude_gfx_initialize_device
     }
   }
   
-  crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, creation->num_threads );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, gpu->allocator );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator );
+  crude_gfx_cmd_manager_initialize( &g_command_buffer_manager, gpu, creation->num_threads );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator_container );
   
   vk_create_swapchain_( gpu, temporary_allocator );
   vk_create_descriptor_pool_( gpu );
@@ -289,14 +289,14 @@ crude_gfx_initialize_device
  }
 
 void
-crude_gfx_deinitialize_device
+crude_gfx_device_deinitialize
 (
   _In_ crude_gfx_device                                   *gpu
 )
 {
   vkDeviceWaitIdle( gpu->vk_device );
   
-  crude_gfx_deinitialize_cmd_manager( &g_command_buffer_manager );
+  crude_gfx_cmd_manager_deinitialize( &g_command_buffer_manager );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -1558,7 +1558,7 @@ crude_gfx_create_descriptor_set_layout
   
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
   
-  uint8 *memory = CRUDE_ALLOCATE( gpu->allocator, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings );
+  uint8 *memory = CRUDE_ALLOCATE( gpu->allocator_container, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings );
   descriptor_set_layout->num_bindings = creation->num_bindings;
   descriptor_set_layout->bindings     = ( crude_gfx_descriptor_binding* )memory;
   descriptor_set_layout->vk_binding   = ( VkDescriptorSetLayoutBinding* )( memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
@@ -1624,7 +1624,7 @@ crude_gfx_destroy_descriptor_set_layout_instant
 )
 {
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
-  CRUDE_DEALLOCATE( gpu->allocator, descriptor_set_layout->bindings );
+  CRUDE_DEALLOCATE( gpu->allocator_container, descriptor_set_layout->bindings );
   vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
   crude_gfx_release_descriptor_set_layout( gpu, handle );
 }
@@ -2388,7 +2388,7 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
 
   VkImage *swapchain_images;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( swapchain_images, gpu->vk_swapchain_images_count, gpu->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( swapchain_images, gpu->vk_swapchain_images_count, gpu->allocator_container );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, swapchain_images );
 
   VkCommandBufferBeginInfo beginInfo = { 
@@ -2930,8 +2930,8 @@ vk_reflect_shader_
   
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator_container );
 
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {

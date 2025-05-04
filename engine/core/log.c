@@ -54,14 +54,14 @@ crude_get_channel_string
 }
 
 CRUDE_API void
-crude_initialize_log
+crude_log_initialize
 ()
 {
   g_log_file = fopen( "log.txt", "w" );
 }
 
 CRUDE_API void
-crude_deinitialize_log
+crude_log_deinitialize
 ()
 {
   fclose( g_log_file );

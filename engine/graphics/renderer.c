@@ -6,7 +6,7 @@
  * 
  ***********************************************/
 void
-crude_gfx_initialize_renderer
+crude_gfx_renderer_initialize
 (
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_renderer_creation const                  *creation
@@ -27,7 +27,7 @@ crude_gfx_initialize_renderer
 }
 
 void
-crude_gfx_deinitialize_renderer
+crude_gfx_renderer_deinitialize
 (
   _In_ crude_gfx_renderer                                 *renderer
 )
