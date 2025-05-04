@@ -98,7 +98,7 @@ crude_gfx_renderer_create_buffer
 )
 {
   crude_gfx_renderer_buffer_handle buffer_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( buffer_resource_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( buffer_resource_handle ) )
   {
     return NULL;
   }
@@ -137,7 +137,7 @@ crude_gfx_renderer_create_texture
 )
 {
   crude_gfx_renderer_texture_handle texture_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( texture_resource_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_resource_handle ) )
   {
     return NULL;
   }
@@ -175,7 +175,7 @@ crude_gfx_renderer_create_sampler
 )
 {
   crude_gfx_renderer_sampler_handle sampler_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( sampler_resource_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( sampler_resource_handle ) )
   {
     return NULL;
   }
@@ -213,7 +213,7 @@ crude_gfx_renderer_create_program
 )
 {
   crude_gfx_renderer_program_handle program_handle = { CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( program_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( program_handle ) )
   {
     return NULL;
   }
@@ -252,7 +252,7 @@ crude_gfx_renderer_create_material
 )
 {
   crude_gfx_renderer_material_handle material_handle = { CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( material_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( material_handle ) )
   {
     return NULL;
   }

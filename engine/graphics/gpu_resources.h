@@ -20,6 +20,8 @@
 #define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  16
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
+#define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024
+#define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
 
 /************************************************
  *
@@ -78,21 +80,13 @@ typedef struct crude_gfx_framebuffer_handle
  * Invalid GPU Resoruces Handles
  * 
  ***********************************************/
-#define CRUDE_GFX_INVALID_BUFFER_HANDLE ( ( crude_gfx_buffer_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_TEXTURE_HANDLE ( ( crude_gfx_texture_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_SAMPLER_HANDLE ( ( crude_gfx_sampler_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_PIPELINE_HANDLE ( ( crude_gfx_pipeline_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_SHADER_STATE_HANDLE ( ( crude_gfx_shader_state_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_FRAMEBUFFER_HANDLE ( ( crude_gfx_framebuffer_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_INVALID_RENDER_PASS_HANDLE ( ( crude_gfx_render_pass_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-
-/************************************************
- *
- * GPU Resoruces Handles Utils
- * 
- ***********************************************/
-#define CRUDE_GFX_IS_HANDLE_INVALID( handle ) ( handle.index == CRUDE_RESOURCE_INVALID_INDEX )
-#define CRUDE_GFX_IS_HANDLE_VALID( handle ) ( handle.index != CRUDE_RESOURCE_INVALID_INDEX )
+#define CRUDE_GFX_BUFFER_HANDLE_INVALID                    ( ( crude_gfx_buffer_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_TEXTURE_HANDLE_INVALID                   ( ( crude_gfx_texture_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_SAMPLER_HANDLE_INVALID                   ( ( crude_gfx_sampler_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_PIPELINE_HANDLE_INVALID                  ( ( crude_gfx_pipeline_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_SHADER_STATE_HANDLE_INVALID              ( ( crude_gfx_shader_state_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID               ( ( crude_gfx_framebuffer_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_RENDER_PASS_HANDLE_INVALID               ( ( crude_gfx_render_pass_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
 
 /************************************************
  *
@@ -655,45 +649,51 @@ typedef struct crude_gfx_shader_mesh_constants
  * GPU Resoruces Creation Empty Functions
  * 
  ***********************************************/
-CRUDE_API CRUDE_INLINE crude_gfx_render_pass_creation
+CRUDE_API crude_gfx_sampler_creation
+crude_gfx_sampler_creation_empty
+(
+);
+
+CRUDE_API crude_gfx_buffer_creation
+crude_gfx_buffer_creation_empty
+(
+);
+
+CRUDE_API crude_gfx_framebuffer_creation
+crude_gfx_framebuffer_creation_empty
+(
+);
+
+CRUDE_API crude_gfx_pipeline_creation
+crude_gfx_pipeline_creation_empty
+(
+);
+
+CRUDE_API crude_gfx_descriptor_set_creation
+crude_gfx_descriptor_set_creation_empty
+(
+);
+
+CRUDE_API crude_gfx_render_pass_creation
 crude_gfx_render_pass_creation_empty
 (
-)
-{
-  return ( crude_gfx_render_pass_creation ) {
-    .depth_stencil_format = VK_FORMAT_UNDEFINED,
-    .depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE,
-    .stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE
-  };
-}
+);
 
-CRUDE_API CRUDE_INLINE crude_gfx_texture_creation
+CRUDE_API crude_gfx_texture_creation
 crude_gfx_texture_creation_empty
 (
-)
-{
-  return ( crude_gfx_texture_creation ) {
-    .width   = 1,
-    .height  = 1,
-    .depth   = 1,
-    .mipmaps = 1,
-    .format  = VK_FORMAT_UNDEFINED,
-    .type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
-    .alias   = CRUDE_GFX_INVALID_TEXTURE_HANDLE
-  };
-}
+);
+
+CRUDE_API crude_gfx_render_pass_output
+crude_gfx_render_pass_output_empty
+(
+);
 
 /************************************************
  *
  * GPU Resoruces Functions
  * 
  ***********************************************/
-CRUDE_API void
-crude_gfx_reset_render_pass_output
-( 
-  _In_ crude_gfx_render_pass_output                       *output
-);
-
 CRUDE_API VkImageType
 crude_gfx_to_vk_image_type
 ( 

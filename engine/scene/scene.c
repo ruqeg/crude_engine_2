@@ -217,20 +217,19 @@ crude_gltf_scene_load_from_file
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", scene->path );
   }
 
-  pipeline_creation = ( crude_gfx_pipeline_creation ){
-    .shaders.name = "triangle",
-    .shaders.spv_input = true,
-    .shaders.stages[ 0 ].code = crude_compiled_shader_main_vert,
-    .shaders.stages[ 0 ].code_size = sizeof( crude_compiled_shader_main_vert ),
-    .shaders.stages[ 0 ].type = VK_SHADER_STAGE_VERTEX_BIT,
-    .shaders.stages[ 1 ].code = crude_compiled_shader_main_frag,
-    .shaders.stages[ 1 ].code_size = sizeof( crude_compiled_shader_main_frag ),
-    .shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT,
-    .shaders.stages_count = 2u,
-    .depth_stencil.depth_write_enable = true,
-    .depth_stencil.depth_enable = true,
-    .depth_stencil.depth_comparison = VK_COMPARE_OP_LESS,
-  };
+  pipeline_creation = crude_gfx_pipeline_creation_empty();
+  pipeline_creation.shaders.name = "triangle";
+  pipeline_creation.shaders.spv_input = true;
+  pipeline_creation.shaders.stages[ 0 ].code = crude_compiled_shader_main_vert;
+  pipeline_creation.shaders.stages[ 0 ].code_size = sizeof( crude_compiled_shader_main_vert );
+  pipeline_creation.shaders.stages[ 0 ].type = VK_SHADER_STAGE_VERTEX_BIT;
+  pipeline_creation.shaders.stages[ 1 ].code = crude_compiled_shader_main_frag;
+  pipeline_creation.shaders.stages[ 1 ].code_size = sizeof( crude_compiled_shader_main_frag );
+  pipeline_creation.shaders.stages[ 1 ].type = VK_SHADER_STAGE_FRAGMENT_BIT;
+  pipeline_creation.shaders.stages_count = 2u;
+  pipeline_creation.depth_stencil.depth_write_enable = true;
+  pipeline_creation.depth_stencil.depth_enable = true;
+  pipeline_creation.depth_stencil.depth_comparison = VK_COMPARE_OP_LESS;
 
   program_creation = ( crude_gfx_renderer_program_creation ){ 
     .pipeline_creation = pipeline_creation
@@ -283,11 +282,12 @@ crude_gltf_scene_load_from_file
   for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
   {
     crude_gfx_renderer_sampler                            *sampler_resource;
-    crude_gfx_sampler_creation                             creation = { 0 };
+    crude_gfx_sampler_creation                             creation;
     cgltf_sampler                                         *sampler;
 
     sampler = &gltf->samplers[ sampler_index ];
 
+    creation = crude_gfx_sampler_creation_empty();
     switch ( sampler->min_filter )
     {
     case cgltf_filter_type_nearest:
@@ -371,22 +371,20 @@ crude_gltf_scene_load_from_file
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Bufer name is null: %u", buffer_view_index );
     }
     
-    cpu_buffer_creation = ( crude_gfx_buffer_creation ){
-      .initial_data = buffer_data,
-      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
-      .size = buffer_view->size,
-      .type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      .name = buffer->name
-    };
+    cpu_buffer_creation = crude_gfx_buffer_creation_empty();
+    cpu_buffer_creation.initial_data = buffer_data;
+    cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    cpu_buffer_creation.size = buffer_view->size;
+    cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    cpu_buffer_creation.name = buffer->name;
     cpu_buffer = crude_gfx_create_buffer( scene->renderer->gpu, &cpu_buffer_creation );
 
-    gpu_buffer_creation = ( crude_gfx_buffer_creation ){
-      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
-      .size = buffer_view->size,
-      .type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-      .name = buffer->name,
-      .device_only = true
-    };
+    gpu_buffer_creation = crude_gfx_buffer_creation_empty();
+    gpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    gpu_buffer_creation.size = buffer_view->size;
+    gpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    gpu_buffer_creation.name = buffer->name;
+    gpu_buffer_creation.device_only = true;
     gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene->renderer, &gpu_buffer_creation );
     CRUDE_ARRAY_PUSH( scene->buffers, *gpu_buffer_resource );
 
@@ -703,12 +701,11 @@ _create_gltf_mesh_material
     mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
   }
   
-  crude_gfx_buffer_creation buffer_creation = {
-    .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC,
-    .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-    .size = sizeof ( crude_gfx_shader_mesh_constants ),
-    .name = "mesh_data"
-  };
+  crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty();
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+  buffer_creation.size = sizeof ( crude_gfx_shader_mesh_constants );
+  buffer_creation.name = "mesh_data";
   mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
   
   return transparent;
@@ -734,13 +731,16 @@ _draw_mesh
     return;
   }
 
-  crude_gfx_descriptor_set_creation ds_creation = {
-    .samplers = { CRUDE_GFX_INVALID_SAMPLER_HANDLE, CRUDE_GFX_INVALID_SAMPLER_HANDLE },
-    .bindings = { 0, 1 },
-    .resources= { gpu_commands->gpu->frame_buffer.index, mesh_draw->material_buffer.index },
-    .num_resources = 2,
-    .layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout
-  };
+  crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
+  ds_creation.samplers[ 0 ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
+  ds_creation.samplers[ 1 ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
+  ds_creation.bindings[ 0 ] = 0;
+  ds_creation.bindings[ 1 ] = 1;
+  ds_creation.resources[ 0 ] = gpu_commands->gpu->frame_buffer.index;
+  ds_creation.resources[ 1 ] = mesh_draw->material_buffer.index;
+  ds_creation.num_resources = 2;
+  ds_creation.layout = mesh_draw->material->program->passes[ 0 ].descriptor_set_layout;
+
   crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( gpu_commands, &ds_creation );
 
   crude_gfx_cmd_bind_vertex_buffer( gpu_commands, mesh_draw->position_buffer, 0, mesh_draw->position_offset );

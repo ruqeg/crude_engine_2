@@ -16,8 +16,8 @@ typedef struct crude_gfx_render_graph_node_handle
   crude_gfx_render_graph_handle                            index;
 } crude_gfx_render_graph_node_handle;
 
-#define CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE ( ( crude_gfx_render_graph_resource_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
-#define CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE ( ( crude_gfx_render_graph_node_handle ) { CRUDE_RESOURCE_INVALID_INDEX } )
+#define CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE ( ( crude_gfx_render_graph_resource_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_RENDER_GRAPH_INVALID_NODE_HANDLE ( ( crude_gfx_render_graph_node_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
 
 #define CRUDE_GFX_RENDER_GRAPH_MAX_RENDER_PASS_COUNT 256
 #define CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT   1024

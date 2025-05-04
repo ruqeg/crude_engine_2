@@ -366,9 +366,9 @@ crude_gfx_render_graph_compile
       uint32 resource_index = node->outputs[ j ].index;
       crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ j ] );
       
-      if ( !resource->resource_info.external && CRUDE_GFX_IS_HANDLE_INVALID( allocations[ resource_index ] ) )
+      if ( !resource->resource_info.external && CRUDE_RESOURCE_HANDLE_IS_INVALID( allocations[ resource_index ] ) )
       {
-        CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( deallocations[ resource_index ] ) );
+        CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ resource_index ] ) );
         allocations[ resource_index ] = render_graph->nodes[ i ];
         
         if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
@@ -424,7 +424,7 @@ crude_gfx_render_graph_compile
       
       if ( !resource->resource_info.external && resource->ref_count == 0 )
       {
-        CRUDE_ASSERT( CRUDE_GFX_IS_HANDLE_INVALID( deallocations[ resource_index ] ) );
+        CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( deallocations[ resource_index ] ) );
         deallocations[ resource_index ] = render_graph->nodes[ i ];
         
         if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT || resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
@@ -451,7 +451,7 @@ crude_gfx_render_graph_compile
     }
     
     /* Create render pass */
-    if ( CRUDE_GFX_IS_HANDLE_INVALID( node->render_pass ) )
+    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node->render_pass ) )
     {
       crude_gfx_render_pass_creation render_pass_creation = crude_gfx_render_pass_creation_empty();
       render_pass_creation.name = node->name;
@@ -506,9 +506,9 @@ crude_gfx_render_graph_compile
     }
     
     /* Create framebuffer */
-    if ( CRUDE_GFX_IS_HANDLE_INVALID( node->framebuffer ) )
+    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node->framebuffer ) )
     {
-      crude_gfx_framebuffer_creation framebuffer_creation = { 0 };
+      crude_gfx_framebuffer_creation framebuffer_creation = crude_gfx_framebuffer_creation_empty();
       framebuffer_creation.render_pass = node->render_pass;
       framebuffer_creation.name = node->name;
 
@@ -747,10 +747,10 @@ crude_gfx_render_graph_builder_create_node
   _In_ crude_gfx_render_graph_node_creation const         *creation
 )
 {
-  crude_gfx_render_graph_node_handle node_handle = { CRUDE_RESOURCE_INVALID_INDEX };
+  crude_gfx_render_graph_node_handle node_handle = { CRUDE_RESOURCE_INDEX_INVALID };
   node_handle.index = crude_resource_pool_obtain_resource( &builder->node_cache.nodes );
 
-  if ( node_handle.index == CRUDE_RESOURCE_INVALID_INDEX )
+  if ( node_handle.index == CRUDE_RESOURCE_INDEX_INVALID )
   {
     return node_handle;
   }
@@ -761,8 +761,8 @@ crude_gfx_render_graph_builder_create_node
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, CRUDE_ARRAY_LENGTH( creation->inputs ), builder->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->outputs, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
-  node->framebuffer = CRUDE_GFX_INVALID_FRAMEBUFFER_HANDLE;
-  node->render_pass = CRUDE_GFX_INVALID_RENDER_PASS_HANDLE;
+  node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
+  node->render_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   
   uint64 key = stbds_hash_bytes( ( void* )node->name, strlen( node->name ), 0 );
   hmput( builder->node_cache.node_map, key , node_handle.index );
@@ -791,7 +791,7 @@ crude_gfx_render_graph_builder_create_node_output
   crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
   resource_handle.index = crude_resource_pool_obtain_resource( &builder->resource_cache.resources );
 
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( resource_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( resource_handle ) )
   {
     return resource_handle;
   }
@@ -823,7 +823,7 @@ crude_gfx_render_graph_builder_create_node_input
   crude_gfx_render_graph_resource_handle resource_handle = CRUDE_GFX_RENDER_GRAPH_INVALID_RESOURCE_HANDLE;
   resource_handle.index = crude_resource_pool_obtain_resource( &builder->resource_cache.resources );
   
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( resource_handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( resource_handle ) )
   {
     return resource_handle;
   }

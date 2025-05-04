@@ -2,7 +2,7 @@
 
 #include <core/memory.h>
 
-#define CRUDE_RESOURCE_INVALID_INDEX 0xffffffff
+#define CRUDE_RESOURCE_INDEX_INVALID 0xffffffff
 
 typedef struct crude_resource_pool
 {
@@ -55,3 +55,6 @@ crude_resource_pool_access_resource
   _In_ crude_resource_pool                                *resource_pool,
   _In_ uint32                                              index
 );
+
+#define CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) ( ( handle ).index == CRUDE_RESOURCE_INDEX_INVALID )
+#define CRUDE_RESOURCE_HANDLE_IS_VALID( handle ) ( ( handle ).index != CRUDE_RESOURCE_INDEX_INVALID )

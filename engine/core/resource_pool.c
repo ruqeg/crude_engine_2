@@ -68,7 +68,7 @@ crude_resource_pool_obtain_resource
     return free_index;
   }
   CRUDE_ASSERT( false );
-  return CRUDE_RESOURCE_INVALID_INDEX;
+  return CRUDE_RESOURCE_INDEX_INVALID;
 }
 
 void
@@ -104,7 +104,7 @@ crude_resource_pool_access_resource
   _In_ uint32                                              handle
 )
 {
-  if ( handle != CRUDE_RESOURCE_INVALID_INDEX )
+  if ( handle != CRUDE_RESOURCE_INDEX_INVALID )
   {
     return &resource_pool->memory[ handle * resource_pool->resource_size ];
   }

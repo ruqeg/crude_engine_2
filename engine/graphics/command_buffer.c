@@ -242,7 +242,7 @@ crude_gfx_cmd_bind_render_pass
     .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR
   };
   
-  bool has_depth_attachment = CRUDE_GFX_IS_HANDLE_VALID( framebuffer->depth_stencil_attachment );
+  bool has_depth_attachment = CRUDE_RESOURCE_HANDLE_IS_VALID( framebuffer->depth_stencil_attachment );
   if ( has_depth_attachment )
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, framebuffer->depth_stencil_attachment );
@@ -453,7 +453,7 @@ crude_gfx_cmd_bind_vertex_buffer
   
   VkBuffer vk_buffer = buffer->vk_buffer;
   
-  if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
   {
     crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
     vk_buffer = parent_buffer->vk_buffer;
@@ -475,7 +475,7 @@ crude_gfx_cmd_bind_index_buffer
   
   VkBuffer vk_buffer = buffer->vk_buffer;
   
-  if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
   {
     crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
     vk_buffer = parent_buffer->vk_buffer;
@@ -494,7 +494,7 @@ crude_gfx_cmd_create_local_descriptor_set
 {
   CRUDE_PROFILER_ZONE_NAME( "CreateLocalDescriptorSet" );
   crude_gfx_descriptor_set_handle handle = { crude_resource_pool_obtain_resource( &cmd->frame_descriptor_sets ) };
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
   {
     CRUDE_PROFILER_END;
     return handle;
@@ -545,7 +545,7 @@ crude_gfx_cmd_create_local_descriptor_set
       
       descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-      if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
       {
         crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
         buffer_info[ i ].buffer = parent_buffer->vk_buffer;
