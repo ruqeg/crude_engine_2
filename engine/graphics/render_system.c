@@ -86,10 +86,13 @@ initialize_render_core
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     crude_string_buffer temporary_name_buffer;
     crude_string_buffer_initialize( &temporary_name_buffer, 1024, temporary_allocator_container );
-    char const *frame_graph_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s\\..\\..\\resources\\%s", working_directory, "graph.json" );
+    char const *frame_graph_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\graph.json" );
     crude_gfx_render_graph_builder_initialize( renderer->render_graph_builder, renderer->gpu );
     crude_gfx_render_graph_initialize( renderer->render_graph, renderer->render_graph_builder );
     crude_gfx_render_graph_parse_from_file( renderer->render_graph, frame_graph_path, render_create[ i ].temporary_allocator );
+
+    
+    char const *full_screen_pipeline_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\shaders.json" );
 
     renderer->async_loader = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_asynchronous_loader ) );
 
@@ -103,9 +106,7 @@ initialize_render_core
     renderer->async_load_task = enkiCreatePinnedTask( renderer->ets, PinnedTaskRunPinnedTaskLoopAsyns, threadNumIOTasks );
     enkiAddPinnedTaskArgs( renderer->ets, renderer->async_load_task, renderer->async_loader );
 
-    char gltf_path[ 1024 ];
-    crude_get_current_working_directory( gltf_path, sizeof( gltf_path ) );
-    crude_strcat( gltf_path, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+    char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
     
     crude_gfx_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -126,6 +127,8 @@ initialize_render_core
     };
     crude_gltf_scene_load_from_file( renderer->scene, &gltf_creation );
     
+    crude_register_render_passes( renderer->scene, renderer->render_graph );
+
     renderer[ i ].camera = crude_entity_create_empty( it->world, "camera1" );
     CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_camera, {
       .fov_radians = CRUDE_CPI4,
@@ -232,7 +235,7 @@ render
     }
     CRUDE_PROFILER_END;
   
-    //crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
+    crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
   
     crude_gfx_present( renderer[ i ].gpu );
   }

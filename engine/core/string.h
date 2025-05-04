@@ -2,31 +2,11 @@
 
 #include <core/memory.h>
 
-CRUDE_API void
-crude_strcat
-(
-  _Out_ char       *dst_buffer,
-  _In_ char        *src_buffer
-);
-
-CRUDE_API void
-crude_snprintf
-(
-  _Out_ char       *buffer,
-  _In_ int          buffer_size,
-  _In_ char const  *format,
-  ...
-);
-  
-CRUDE_API int32
-crude_vsnprintf
-(
-  _Out_ char      *buffer,
-  _In_ int         buffer_size,
-  _In_ char const *format,
-  va_list          args
-);
-
+/************************************************
+ *
+ * String Buffer
+ * 
+ ***********************************************/
 typedef struct crude_string_buffer
 {
   char                                                    *buffer;
@@ -55,4 +35,27 @@ crude_string_buffer_append_use_f
   _In_ crude_string_buffer                                *string_buffer,
   _In_ char const                                         *format,
   _In_ ...
+);
+
+/************************************************
+ *
+ * String Utils
+ * 
+ ***********************************************/
+CRUDE_API void
+crude_snprintf
+(
+  _Out_ char                                              *buffer,
+  _In_ int                                                 buffer_size,
+  _In_ char const                                         *format,
+  ...
+);
+  
+CRUDE_API int32
+crude_vsnprintf
+(
+  _Out_ char                                              *buffer,
+  _In_ int                                                 buffer_size,
+  _In_ char const                                         *format,
+  va_list                                                  args
 );

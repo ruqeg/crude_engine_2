@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include <core/assert.h>
-#include <graphics/gpu_resources.h>
 #include <graphics/command_buffer.h>
 
 /************************************************
@@ -42,7 +41,6 @@ typedef struct crude_gfx_device
    * pass output.
    */
   crude_gfx_render_pass_handle                             swapchain_pass;
-  crude_gfx_render_pass_output                             swapchain_output;
   /**
    * Serves as the primary dynamic buffer.
    * This buffer acts as a foundation for mapping 
@@ -77,8 +75,6 @@ typedef struct crude_gfx_device
   crude_resource_pool                                      framebuffers;
   /**
    * Queue to remove or update bindless texture.
-   * Handle can be added to queue using the
-   * CRUDE_RELEASE_RESOURCE macro.
    * Object will be released after the frame
    * is present.
    */
@@ -87,7 +83,6 @@ typedef struct crude_gfx_device
   /**
    * Stores current command buffers added to the queue.
    */
-  uint32                                                   queued_command_buffers_count;
   crude_gfx_cmd_buffer                                   **queued_command_buffers;
   /**
    * Vulkan handles and additional data related to the
@@ -146,6 +141,9 @@ typedef struct crude_gfx_device
 
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
   PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
+  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
+  PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
+  PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
 } crude_gfx_device;                                
 
 /************************************************
@@ -422,64 +420,192 @@ crude_gfx_create_framebuffer
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_framebuffer_creation const               *creation
+);   
+
+CRUDE_API void                                      
+crude_gfx_destroy_framebuffer
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
 );
 
-CRUDE_API VkShaderModuleCreateInfo                  
-crude_gfx_compile_shader                            
+CRUDE_API void
+crude_gfx_destroy_framebuffer_instant
 (                                                   
-  _In_ const                                              *code,
-  _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name
-);    
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+);
 
 /************************************************
  *
- * GPU Device Resource Macros
+ * GPU Device Resources Pools Functions
  * 
- ***********************************************/  
-// !IODO inline functions
-#define CRUDE_GFX_OBTAIN_SAMPLER( gpu )                                 CRUDE_OBTAIN_RESOURCE( gpu->samplers )
-#define CRUDE_GFX_ACCESS_SAMPLER( gpu, handle )                         CRUDE_ACCESS_RESOURCE( gpu->samplers, crude_gfx_sampler, handle  )
-#define CRUDE_GFX_RELEASE_SAMPLER( gpu, handle )                        CRUDE_RELEASE_RESOURCE( gpu->samplers, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_TEXTURE( gpu )                                 CRUDE_OBTAIN_RESOURCE( gpu->textures )
-#define CRUDE_GFX_ACCESS_TEXTURE( gpu, handle )                         CRUDE_ACCESS_RESOURCE( gpu->textures, crude_gfx_texture, handle  )
-#define CRUDE_GFX_RELEASE_TEXTURE( gpu, handle )                        CRUDE_RELEASE_RESOURCE( gpu->textures, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_RENDER_PASS( gpu )                             CRUDE_OBTAIN_RESOURCE( gpu->render_passes )
-#define CRUDE_GFX_ACCESS_RENDER_PASS( gpu, handle )                     CRUDE_ACCESS_RESOURCE( gpu->render_passes, crude_gfx_render_pass, handle  )
-#define CRUDE_GFX_RELEASE_RENDER_PASS( gpu, handle )                    CRUDE_RELEASE_RESOURCE( gpu->render_passes, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_SHADER_STATE( gpu )                            CRUDE_OBTAIN_RESOURCE( gpu->shaders )
-#define CRUDE_GFX_ACCESS_SHADER_STATE( gpu, handle )                    CRUDE_ACCESS_RESOURCE( gpu->shaders, crude_gfx_shader_state, handle  )
-#define CRUDE_GFX_RELEASE_SHADER_STATE( gpu, handle )                   CRUDE_RELEASE_RESOURCE( gpu->shaders, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_PIPELINE( gpu )                                CRUDE_OBTAIN_RESOURCE( gpu->pipelines )
-#define CRUDE_GFX_ACCESS_PIPELINE( gpu, handle )                        CRUDE_ACCESS_RESOURCE( gpu->pipelines, crude_gfx_pipeline, handle  )
-#define CRUDE_GFX_RELEASE_PIPELINE( gpu, handle )                       CRUDE_RELEASE_RESOURCE( gpu->pipelines, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_DESCRIPTOR_SET( gpu )                          CRUDE_OBTAIN_RESOURCE( gpu->descriptor_sets )
-#define CRUDE_GFX_ACCESS_DESCRIPTOR_SET( gpu, handle )                  CRUDE_ACCESS_RESOURCE( gpu->descriptor_sets, crude_gfx_descriptor_set, handle  )
-#define CRUDE_GFX_RELEASE_DESCRIPTOR_SET( gpu, handle )                 CRUDE_RELEASE_RESOURCE( gpu->descriptor_sets, handle )
-                                                                            
-#define CRUDE_GFX_OBTAIN_BUFFER( gpu )                                  CRUDE_OBTAIN_RESOURCE( gpu->buffers )
-#define CRUDE_GFX_ACCESS_BUFFER( gpu, handle )                          CRUDE_ACCESS_RESOURCE( gpu->buffers, crude_gfx_buffer, handle  )
-#define CRUDE_GFX_RELEASE_BUFFER( gpu, handle )                         CRUDE_RELEASE_RESOURCE( gpu->buffers, handle )
+ ***********************************************/
+CRUDE_API crude_gfx_sampler_handle
+crude_gfx_obtain_sampler
+(
+  _In_ crude_gfx_device                                   *gpu
+);
 
-#define CRUDE_GFX_OBTAIN_DESCRIPTOR_SET_LAYOUT( gpu )                   CRUDE_OBTAIN_RESOURCE( gpu->descriptor_set_layouts )
-#define CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle )           CRUDE_ACCESS_RESOURCE( gpu->descriptor_set_layouts, crude_gfx_descriptor_set_layout, handle  )
-#define CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle )          CRUDE_RELEASE_RESOURCE( gpu->descriptor_set_layouts, handle )
+CRUDE_API crude_gfx_sampler*
+crude_gfx_access_sampler
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_sampler_handle                            handle
+);
 
-#define CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu )                             CRUDE_OBTAIN_RESOURCE( gpu->framebuffers )
-#define CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, handle )                     CRUDE_ACCESS_RESOURCE( gpu->framebuffers, crude_gfx_framebuffer, handle  )
-#define CRUDE_GFX_RELEASE_FRAMEBUFFER( gpu, handle )                    CRUDE_RELEASE_RESOURCE( gpu->framebuffers, handle )
+CRUDE_API void
+crude_gfx_release_sampler
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_sampler_handle                            handle
+);
+
+CRUDE_API crude_gfx_texture_handle
+crude_gfx_obtain_texture
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_texture*
+crude_gfx_access_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            handle
+);
+
+CRUDE_API void
+crude_gfx_release_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            handle
+);
+
+CRUDE_API crude_gfx_render_pass_handle
+crude_gfx_obtain_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_render_pass*
+crude_gfx_access_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_render_pass_handle                        handle
+);
+
+CRUDE_API void
+crude_gfx_release_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_render_pass_handle                        handle
+);
+
+CRUDE_API crude_gfx_shader_state_handle
+crude_gfx_obtain_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_shader_state*
+crude_gfx_access_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_shader_state_handle                       handle
+);
+
+CRUDE_API void
+crude_gfx_release_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_shader_state_handle                       handle
+);
+
+CRUDE_API crude_gfx_pipeline_handle
+crude_gfx_obtain_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_pipeline*
+crude_gfx_access_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_pipeline_handle                           handle
+);
+
+CRUDE_API void
+crude_gfx_release_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_pipeline_handle                           handle
+);
+
+CRUDE_API crude_gfx_buffer_handle
+crude_gfx_obtain_buffer
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_buffer*
+crude_gfx_access_buffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+);
+
+CRUDE_API void
+crude_gfx_release_buffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+);
+
+CRUDE_API crude_gfx_descriptor_set_layout_handle
+crude_gfx_obtain_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_descriptor_set_layout*
+crude_gfx_access_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_layout_handle              handle
+);
+
+CRUDE_API void
+crude_gfx_release_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_layout_handle              handle
+);
+
+CRUDE_API crude_gfx_framebuffer_handle
+crude_gfx_obtain_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_framebuffer*
+crude_gfx_access_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+);
+
+CRUDE_API void
+crude_gfx_release_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+);
 
 /************************************************
  *
- * GPU Device Utils Macros
+ * GPU Device Utils
  * 
- ***********************************************/  
+ ***********************************************/ 
 #define CRUDE_GFX_HANDLE_VULKAN_RESULT( result, ... )\
 {\
   if ( result != VK_SUCCESS )\

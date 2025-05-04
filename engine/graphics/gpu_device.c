@@ -1,13 +1,6 @@
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
-
 #include <core/profiler.h>
-#include <core/array.h>
-#include <core/math.h>
-#include <core/assert.h>
 
 #include <graphics/gpu_device.h>
-
 
 /************************************************
  *
@@ -62,44 +55,35 @@ vk_debug_callback_
   _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
   _In_ void                                               *pUserData
 );
-static VkInstance
+static void
 vk_create_instance_
 (
-  _In_     char const                                     *vk_application_name,
-  _In_     uint32                                          vk_application_version,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _In_  crude_allocator_container                          temporary_allocator
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *vk_application_name,
+  _In_ uint32                                              vk_application_version,
+  _In_ crude_allocator_container                           temporary_allocator
 );
-static VkDebugUtilsMessengerEXT
+static void
 vk_create_debug_utils_messsenger_
 (
-  _In_     VkInstance                                      instance,
-  _In_opt_ VkAllocationCallbacks                          *allocation_callbacks
+  _In_ crude_gfx_device                                   *gpu
 );
-static VkSurfaceKHR
+static void
 vk_create_surface_
 (
-  _In_     SDL_Window                                     *sdl_window,
-  _In_     VkInstance                                      vk_instance,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks
+  _In_ crude_gfx_device                                   *gpu
 );
-static VkPhysicalDevice
+static void
 vk_pick_physical_device_
 (
-  _In_  VkInstance                                         vk_instance,
-  _In_  VkSurfaceKHR                                       vk_surface,
+  _In_ crude_gfx_device                                   *gpu,
   _In_  crude_allocator_container                          temporary_allocator
 );
-static VkDevice
+static void
 vk_create_device_
 (
-  _In_ VkPhysicalDevice                                    vk_physical_device,
-  _Out_ VkQueue                                           *vk_main_queue,
-  _Out_ VkQueue                                           *vk_transfer_queue,
-  _Out_ uint32                                            *vk_main_queue_family,
-  _Out_ uint32                                            *vk_transfer_queue_family,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _In_  crude_allocator_container                          temporary_allocator
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_allocator_container                           temporary_allocator
 );
 static void
 vk_create_swapchain_
@@ -107,88 +91,80 @@ vk_create_swapchain_
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_allocator_container                           temporary_allocator
 );
-static VmaAllocation
+static void
 vk_create_vma_allocator_
-(
-  _In_ VkDevice                                      vk_device,
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkInstance                                    vk_instance
-);
-static void
-vk_create_descriptor_pool_
-(
-  _In_     VkDevice                                        vk_device,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _Out_    VkDescriptorPool                               *vk_bindless_descriptor_pool,
-  _Out_    VkDescriptorSetLayout                          *vk_bindless_descriptor_set_layout,
-  _Out_    VkDescriptorSet                                *vk_bindless_descriptor_set
-);
-static VkQueryPool
-vk_create_timestamp_query_pool_
-(
-  _In_     VkDevice                                  vk_device, 
-  _In_     int32                                     max_frames,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
-);
-static int32
-vk_get_supported_queue_family_index_
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface,
-  _In_  crude_allocator_container                    temporary_allocator
-);
-static bool
-vk_check_support_required_extensions_
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_  crude_allocator_container                    temporary_allocator
-);
-static bool
-vk_check_swap_chain_adequate_
-(
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
-);
-static bool
-vk_check_support_required_features_
-(
-  _In_ VkPhysicalDevice                              vk_physical_device
-);
-static void
-_vk_destroy_swapchain
 (
   _In_ crude_gfx_device                                   *gpu
 );
 static void
-_vk_create_texture
+vk_create_descriptor_pool_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_texture_creation const                 *creation,
-  _In_ crude_gfx_texture_handle                          handle,
-  _In_ crude_gfx_texture                                *texture
+  _In_ crude_gfx_device                                   *gpu
 );
 static void
-_vk_resize_texture
+vk_create_timestamp_query_pool_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_texture                                *texture,
-  _In_ crude_gfx_texture                                *texture_to_delete,
-  _In_ uint16                                        width,
-  _In_ uint16                                        height,
-  _In_ uint16                                        depth
+  _In_ crude_gfx_device                                   *gpu
+);
+static int32
+vk_get_supported_queue_family_index_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_allocator_container                           temporary_allocator
+);
+static bool
+vk_check_support_required_extensions_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ crude_allocator_container                           temporary_allocator
+);
+static bool
+vk_check_swap_chain_adequate_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface
+);
+static bool
+vk_check_support_required_features_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device
 );
 static void
-_vk_resize_swapchain
+vk_destroy_swapchain_
 (
-  _In_ crude_gfx_device                             *gpu
+  _In_ crude_gfx_device                                   *gpu
 );
-static inline crude_gfx_vertex_component_format
-_reflect_format_to_vk_format
+static void
+vk_create_texture_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_creation const                   *creation,
+  _In_ crude_gfx_texture_handle                            handle,
+  _In_ crude_gfx_texture                                  *texture
+);
+static void
+vk_resize_texture_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture                                  *texture_to_delete,
+  _In_ uint16                                              width,
+  _In_ uint16                                              height,
+  _In_ uint16                                              depth
+);
+static void
+vk_resize_swapchain_
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+static crude_gfx_vertex_component_format
+reflect_format_to_vk_format_
 (
   _In_ SpvReflectFormat                                    format
 );
 static void
-_vk_reflect_shader
+vk_reflect_shader_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ void                                               *code,
@@ -196,11 +172,11 @@ _vk_reflect_shader
   _In_ crude_gfx_shader_reflect                           *reflect
 );
 static void
-_vk_destroy_resources_instant
+vk_destroy_resources_instant_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_resource_deletion_type                  type,
-  _In_ crude_gfx_resource_index                         handle
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_resource_deletion_type                    type,
+  _In_ crude_gfx_resource_index                            handle
 );
 
 /************************************************
@@ -215,14 +191,9 @@ crude_gfx_initialize_device
   _In_ crude_gfx_device_creation                          *creation
 )
 {
-  VkSemaphoreCreateInfo                                    semaphore_info;
-  VkFenceCreateInfo                                        fence_info;
   crude_allocator_container                                temporary_allocator;
-  crude_gfx_sampler_creation                               default_sampler_creation;
-  crude_gfx_texture_creation                               depth_texture_creation;
-  crude_gfx_buffer_creation                                dynamic_buffer_creation;
   uint32                                                   temporary_allocator_mark;
-
+  
   temporary_allocator = crude_stack_allocator_pack( creation->temporary_allocator );
   temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
 
@@ -232,16 +203,16 @@ crude_gfx_initialize_device
   gpu->vk_allocation_callbacks = NULL;
   gpu->max_frames = creation->max_frames;
   gpu->temporary_allocator = creation->temporary_allocator;
-  gpu->vk_instance = vk_create_instance_( creation->vk_application_name, creation->vk_application_version, gpu->vk_allocation_callbacks, temporary_allocator );
-  gpu->vk_debug_utils_messenger = vk_create_debug_utils_messsenger_( gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_surface = vk_create_surface_( creation->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks );
-  gpu->vk_physical_device = vk_pick_physical_device_( gpu->vk_instance, gpu->vk_surface, temporary_allocator );
-  gpu->vk_device = vk_create_device_( gpu->vk_physical_device, &gpu->vk_main_queue, &gpu->vk_transfer_queue, &gpu->vk_main_queue_family, &gpu->vk_transfer_queue_family, gpu->vk_allocation_callbacks, temporary_allocator );
-  
-  
-  gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
-  gpu->vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
-  
+  gpu->previous_frame = 0;
+  gpu->current_frame = 1;
+  gpu->vk_swapchain_image_index = 0;
+
+  vk_create_instance_( gpu, creation->vk_application_name, creation->vk_application_version, temporary_allocator );
+  vk_create_debug_utils_messsenger_( gpu );
+  vk_create_surface_( gpu );
+  vk_pick_physical_device_( gpu, temporary_allocator );
+  vk_create_device_( gpu, temporary_allocator );
+  vk_create_vma_allocator_( gpu );
   
   crude_resource_pool_initialize( &gpu->buffers, gpu->allocator, 4096, sizeof( crude_gfx_buffer ) );
   crude_resource_pool_initialize( &gpu->textures, gpu->allocator, 512, sizeof( crude_gfx_texture ) );
@@ -252,74 +223,73 @@ crude_gfx_initialize_device
   crude_resource_pool_initialize( &gpu->samplers, gpu->allocator, 32, sizeof( crude_gfx_sampler ) );
   crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator, 128, sizeof( crude_gfx_framebuffer ) );
   
-  semaphore_info = ( VkSemaphoreCreateInfo ){ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-  fence_info = ( VkFenceCreateInfo ){ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_finished_semaphores[ i ] );
-    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
-    vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
+    
+    VkSemaphoreCreateInfo semaphore_info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkFenceCreateInfo fence_info = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
+    for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+    {
+      vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_finished_semaphores[ i ] );
+      vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
+      vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
+    }
   }
   
   crude_gfx_initialize_cmd_manager( &g_command_buffer_manager, gpu, creation->num_threads );
-  gpu->queued_command_buffers = CRUDE_ALLOCATE( gpu->allocator, sizeof( crude_gfx_cmd_buffer* ) * 128 );
-
-  gpu->previous_frame = 0;
-  gpu->current_frame = 1;
-  gpu->vk_swapchain_image_index = 0;
-  gpu->queued_command_buffers_count = 0;
-
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, gpu->allocator );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator );
   
-  gpu->vma_allocator = vk_create_vma_allocator_( gpu->vk_device, gpu->vk_physical_device, gpu->vk_instance );
   vk_create_swapchain_( gpu, temporary_allocator );
-  vk_create_descriptor_pool_( gpu->vk_device, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool, &gpu->vk_bindless_descriptor_set_layout, &gpu->vk_bindless_descriptor_set );
-  gpu->vk_timestamp_query_pool = vk_create_timestamp_query_pool_( gpu->vk_device, gpu->max_frames, gpu->vk_allocation_callbacks );
-
-  depth_texture_creation = crude_gfx_texture_creation_empty();
-  depth_texture_creation.width    = gpu->vk_swapchain_width;
-  depth_texture_creation.height   = gpu->vk_swapchain_height; 
-  depth_texture_creation.depth    = 1;
-  depth_texture_creation.mipmaps  = 1; 
-  depth_texture_creation.format   = VK_FORMAT_D32_SFLOAT;
-  depth_texture_creation.type     = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-  depth_texture_creation.name     = "depth_image_texture";
-
-  default_sampler_creation = ( crude_gfx_sampler_creation ){
-    .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-    .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-    .address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-    .min_filter     = VK_FILTER_LINEAR,
-    .mag_filter     = VK_FILTER_LINEAR,
-    .mip_filter     = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-    .name           = "sampler default"
-  };
+  vk_create_descriptor_pool_( gpu );
+  vk_create_timestamp_query_pool_( gpu );
   
-  gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
-  gpu->depth_texture = crude_gfx_create_texture( gpu, &depth_texture_creation );
+  {
+    crude_gfx_texture_creation depth_texture_creation = crude_gfx_texture_creation_empty();
+    depth_texture_creation.width    = gpu->vk_swapchain_width;
+    depth_texture_creation.height   = gpu->vk_swapchain_height; 
+    depth_texture_creation.depth    = 1;
+    depth_texture_creation.mipmaps  = 1; 
+    depth_texture_creation.format   = VK_FORMAT_D32_SFLOAT;
+    depth_texture_creation.type     = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+    depth_texture_creation.name     = "depth_image_texture";
+    gpu->depth_texture = crude_gfx_create_texture( gpu, &depth_texture_creation );
+  }
+  
+  {
+    crude_gfx_sampler_creation default_sampler_creation = {
+      .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      .address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      .min_filter     = VK_FILTER_LINEAR,
+      .mag_filter     = VK_FILTER_LINEAR,
+      .mip_filter     = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+      .name           = "sampler default"
+    };
+    gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
+  }
+  
+  {
+    crude_gfx_map_buffer_parameters                        buffer_map;
+    crude_gfx_buffer_creation                              dynamic_buffer_creation;
+    
+    gpu->dynamic_allocated_size = 0;
+    gpu->dynamic_max_per_frame_size = 0;
+    gpu->dynamic_per_frame_size = 1024 * 1024 * 10;
 
-  crude_gfx_reset_render_pass_output( &gpu->swapchain_output );
-  gpu->swapchain_output.color_formats[ gpu->swapchain_output.num_color_formats++ ] = gpu->vk_surface_format.format;
-  gpu->swapchain_output.depth_operation = VK_FORMAT_D32_SFLOAT;
-  
-  gpu->dynamic_allocated_size = 0;
-  gpu->dynamic_max_per_frame_size = 0;
-  gpu->dynamic_per_frame_size = 1024 * 1024 * 10;
-  
-
-  dynamic_buffer_creation = ( crude_gfx_buffer_creation ){
-    .name       = "dynamic_persistent_buffer",
-    .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-    .usage      = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
-    .size       = gpu->dynamic_per_frame_size * gpu->max_frames
-  };
-  gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
-  
-  crude_gfx_map_buffer_parameters buffer_map = {
-    .buffer = gpu->dynamic_buffer
-  };
-  gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
+    dynamic_buffer_creation = ( crude_gfx_buffer_creation  ){
+      .name       = "dynamic_persistent_buffer",
+      .type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      .usage      = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE,
+      .size       = gpu->dynamic_per_frame_size * gpu->max_frames
+    };;
+    gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
+    
+    buffer_map = ( crude_gfx_map_buffer_parameters ){
+      .buffer = gpu->dynamic_buffer
+    };
+    gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
+  }
   
   crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
  }
@@ -354,7 +324,7 @@ crude_gfx_deinitialize_device
     if ( resource_deletion->current_frame == -1 )
       continue;
 
-    _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
+    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
   }
 
   CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
@@ -372,12 +342,11 @@ crude_gfx_deinitialize_device
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
 
   vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
-  _vk_destroy_swapchain( gpu );
+  vk_destroy_swapchain_( gpu );
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
-  PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = vkGetInstanceProcAddr( gpu->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
-  vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
+  gpu->vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
 }
 
@@ -408,7 +377,7 @@ crude_gfx_new_frame
   VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
   if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
   {
-    _vk_resize_swapchain( gpu );
+    vk_resize_swapchain_( gpu );
   }
   CRUDE_PROFILER_END;
   }
@@ -432,7 +401,7 @@ crude_gfx_present
   VkSemaphore *render_complete_semaphore = &gpu->vk_render_finished_semaphores[ gpu->current_frame ];
   
   VkCommandBuffer enqueued_command_buffers[ 4 ];
-  for ( uint32 i = 0; i < gpu->queued_command_buffers_count; ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
   {
     CRUDE_PROFILER_ZONE_NAME( "EndRenderPassAndCommandBuffers" );
     crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
@@ -453,7 +422,7 @@ crude_gfx_present
   {
     crude_gfx_resource_update* texture_to_update = &gpu->texture_to_update_bindless[ i ];
     
-    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, ( crude_gfx_texture_handle ) { texture_to_update->handle } );
+    crude_gfx_texture *texture = crude_gfx_access_texture( gpu, ( crude_gfx_texture_handle ) { texture_to_update->handle } );
 
     VkWriteDescriptorSet *descriptor_write = &bindless_descriptor_writes[ current_write_index ];
     memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
@@ -471,7 +440,7 @@ crude_gfx_present
     }
     else
     {
-      crude_gfx_sampler *default_sampler = CRUDE_GFX_ACCESS_SAMPLER( gpu, gpu->default_sampler );
+      crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
       descriptor_image_info->sampler = default_sampler->vk_sampler;
     }
     
@@ -499,7 +468,7 @@ crude_gfx_present
     .waitSemaphoreCount   = 1,
     .pWaitSemaphores      = wait_semaphores,
     .pWaitDstStageMask    = wait_stages,
-    .commandBufferCount   = gpu->queued_command_buffers_count,
+    .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
     .pCommandBuffers      = enqueued_command_buffers,
     .signalSemaphoreCount = 1,
     .pSignalSemaphores    = render_complete_semaphore,
@@ -525,11 +494,11 @@ crude_gfx_present
   CRUDE_PROFILER_ZONE_NAME( "QueuePresent" );
   VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
 
-  gpu->queued_command_buffers_count = 0u;
+  CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
 
   if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
   {
-    _vk_resize_swapchain( gpu );
+    vk_resize_swapchain_( gpu );
     CRUDE_PROFILER_END;
     return;
   }
@@ -550,7 +519,7 @@ crude_gfx_present
       continue;
     }
     
-    _vk_destroy_resources_instant( gpu, resource_deletion->type, resource_deletion->handle );
+    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
 
     resource_deletion->current_frame = UINT32_MAX;
     CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
@@ -598,7 +567,7 @@ crude_gfx_queue_cmd
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  cmd->gpu->queued_command_buffers[ cmd->gpu->queued_command_buffers_count++ ] = cmd;
+  CRUDE_ARRAY_PUSH( cmd->gpu->queued_command_buffers, cmd );
 }
 
 void*
@@ -613,7 +582,7 @@ crude_gfx_map_buffer
     return NULL;
   }
 
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, parameters->buffer );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, parameters->buffer );
   
   if ( buffer->parent_buffer.index == gpu->dynamic_buffer.index )
   {
@@ -638,7 +607,7 @@ crude_gfx_unmap_buffer
     return;
   }
 
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   if ( buffer->parent_buffer.index == gpu->dynamic_buffer.index )
   {
     return;
@@ -667,8 +636,8 @@ crude_gfx_link_texture_sampler
   _In_ crude_gfx_sampler_handle                            sampler
 )
 {
-  crude_gfx_texture* texture_vk = CRUDE_GFX_ACCESS_TEXTURE( gpu, texture );
-  crude_gfx_sampler* sampler_vk = CRUDE_GFX_ACCESS_SAMPLER( gpu, sampler );
+  crude_gfx_texture* texture_vk = crude_gfx_access_texture( gpu, texture );
+  crude_gfx_sampler* sampler_vk = crude_gfx_access_sampler( gpu, sampler );
   
   texture_vk->sampler = sampler_vk;
 }
@@ -681,7 +650,7 @@ crude_gfx_get_descriptor_set_layout
   _In_ uint32                                              layout_index
 )
 {
-  crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( gpu, pipeline_handle );
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, pipeline_handle );
   return pipeline->descriptor_set_layout_handle[ layout_index ];
 }
 
@@ -698,7 +667,7 @@ crude_gfx_query_buffer
     return;
   }
 
-  const crude_gfx_buffer* buffer_data = CRUDE_GFX_ACCESS_BUFFER( gpu, buffer );
+  const crude_gfx_buffer* buffer_data = crude_gfx_access_buffer( gpu, buffer );
   description->name = buffer_data->name;
   description->size = buffer_data->size;
   description->type_flags = buffer_data->type_flags;
@@ -722,8 +691,7 @@ crude_gfx_set_resource_name
     .objectHandle = handle,
     .pObjectName  = name,
   };
-  PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
-  vkSetDebugUtilsObjectNameEXT( gpu->vk_device, &name_info );
+  gpu->vkSetDebugUtilsObjectNameEXT( gpu->vk_device, &name_info );
 }
 
 bool
@@ -733,7 +701,7 @@ crude_gfx_buffer_ready
   _In_ crude_gfx_buffer_handle                             buffer_handle
 )
 {
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, buffer_handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, buffer_handle );
   return buffer->ready;
 }
 
@@ -749,13 +717,13 @@ crude_gfx_create_sampler
   _In_ crude_gfx_sampler_creation const                   *creation
 )
 {
-  crude_gfx_sampler_handle handle = { CRUDE_GFX_OBTAIN_SAMPLER( gpu ) };
+  crude_gfx_sampler_handle handle = crude_gfx_obtain_sampler( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_sampler *sampler = CRUDE_GFX_ACCESS_SAMPLER( gpu, handle );
+  crude_gfx_sampler *sampler = crude_gfx_access_sampler( gpu, handle );
   sampler->address_mode_u = creation->address_mode_u;
   sampler->address_mode_v = creation->address_mode_v;
   sampler->address_mode_w = creation->address_mode_w;
@@ -809,12 +777,12 @@ crude_gfx_destroy_sampler_instant
   _In_ crude_gfx_sampler_handle                            handle
 )
 {
-  crude_gfx_sampler *sampler = CRUDE_GFX_ACCESS_SAMPLER( gpu, handle );
+  crude_gfx_sampler *sampler = crude_gfx_access_sampler( gpu, handle );
   if ( sampler )
   {
     vkDestroySampler( gpu->vk_device, sampler->vk_sampler, gpu->vk_allocation_callbacks );
   }
-  CRUDE_GFX_RELEASE_SAMPLER( gpu, handle );
+  crude_gfx_release_sampler( gpu, handle );
 }
 
 crude_gfx_texture_handle
@@ -824,14 +792,14 @@ crude_gfx_create_texture
   _In_ crude_gfx_texture_creation const                   *creation
 )
 {
-  crude_gfx_texture_handle handle = { CRUDE_GFX_OBTAIN_TEXTURE( gpu ) };
+  crude_gfx_texture_handle handle = crude_gfx_obtain_texture( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, handle );
-  _vk_create_texture( gpu, creation, handle, texture );
+  crude_gfx_texture *texture = crude_gfx_access_texture( gpu, handle );
+  vk_create_texture_( gpu, creation, handle, texture );
 
   if ( creation->initial_data )
   {
@@ -972,14 +940,14 @@ crude_gfx_destroy_texture_instant
   _In_ crude_gfx_texture_handle                            handle
 )
 {
-  crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, handle );
+  crude_gfx_texture *texture = crude_gfx_access_texture( gpu, handle );
   
   if ( texture )
   {
     vkDestroyImageView( gpu->vk_device, texture->vk_image_view, gpu->vk_allocation_callbacks );
     vmaDestroyImage( gpu->vma_allocator, texture->vk_image, texture->vma_allocation );
   }
-  CRUDE_GFX_RELEASE_TEXTURE( gpu, handle );
+  crude_gfx_release_texture( gpu, handle );
 }
 
 crude_gfx_shader_state_handle
@@ -995,7 +963,7 @@ crude_gfx_create_shader_state
     return CRUDE_GFX_INVALID_SHADER_STATE_HANDLE;
   }
   
-  crude_gfx_shader_state_handle handle = { CRUDE_GFX_OBTAIN_SHADER_STATE( gpu ) };
+  crude_gfx_shader_state_handle handle = crude_gfx_obtain_shader_state( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
@@ -1003,7 +971,7 @@ crude_gfx_create_shader_state
 
   uint32 compiled_shaders = 0u;
 
-  crude_gfx_shader_state *shader_state = CRUDE_GFX_ACCESS_SHADER_STATE( gpu, handle );
+  crude_gfx_shader_state *shader_state = crude_gfx_access_shader_state( gpu, handle );
   shader_state->graphics_pipeline = true;
   shader_state->active_shaders = 0;
 
@@ -1024,7 +992,7 @@ crude_gfx_create_shader_state
     }
     else
     {
-      shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name );
+      CRUDE_ASSERT( false );
     }
   
     CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode, "Shader code is empty!" );
@@ -1044,7 +1012,7 @@ crude_gfx_create_shader_state
 
     if ( shader_create_info.pCode )
     {
-      _vk_reflect_shader( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->reflect );
+      vk_reflect_shader_( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->reflect );
     }
   }
   
@@ -1094,7 +1062,7 @@ crude_gfx_destroy_shader_state_instant
   _In_ crude_gfx_shader_state_handle                       handle
 )
 {
-  crude_gfx_shader_state *shader_state = CRUDE_GFX_ACCESS_SHADER_STATE( gpu, handle );
+  crude_gfx_shader_state *shader_state = crude_gfx_access_shader_state( gpu, handle );
   if ( shader_state )
   {
     CRUDE_ARRAY_FREE( shader_state->reflect.input.vertex_attributes );
@@ -1104,7 +1072,7 @@ crude_gfx_destroy_shader_state_instant
       vkDestroyShaderModule( gpu->vk_device, shader_state->shader_stage_info[ i ].module, gpu->vk_allocation_callbacks );
     }
   }
-  CRUDE_GFX_RELEASE_SHADER_STATE( gpu, handle );
+  crude_gfx_release_shader_state( gpu, handle );
 }
 
 crude_gfx_render_pass_handle
@@ -1114,13 +1082,13 @@ crude_gfx_create_render_pass
   _In_ crude_gfx_render_pass_creation const               *creation
 )
 {
-  crude_gfx_render_pass_handle handle = { CRUDE_GFX_OBTAIN_RENDER_PASS( gpu) };
+  crude_gfx_render_pass_handle handle = crude_gfx_obtain_render_pass( gpu);
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, handle );
+  crude_gfx_render_pass *render_pass = crude_gfx_access_render_pass( gpu, handle );
   render_pass->num_render_targets = creation->num_render_targets;
   render_pass->name               = creation->name;
   
@@ -1168,8 +1136,8 @@ crude_gfx_destroy_render_pass_instant
   _In_ crude_gfx_render_pass_handle                        handle
 )
 {
-  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, handle );
-  CRUDE_GFX_RELEASE_RENDER_PASS( gpu, handle );
+  crude_gfx_render_pass *render_pass = crude_gfx_access_render_pass( gpu, handle );
+  crude_gfx_release_render_pass( gpu, handle );
 }
 
 crude_gfx_pipeline_handle
@@ -1179,7 +1147,7 @@ crude_gfx_create_pipeline
   _In_ crude_gfx_pipeline_creation const                  *creation
 )
 {
-  crude_gfx_pipeline_handle handle = { CRUDE_GFX_OBTAIN_PIPELINE( gpu ) };
+  crude_gfx_pipeline_handle handle = crude_gfx_obtain_pipeline( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
@@ -1188,12 +1156,12 @@ crude_gfx_create_pipeline
   crude_gfx_shader_state_handle shader_state = crude_gfx_create_shader_state( gpu, &creation->shaders );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( shader_state ) )
   {
-    CRUDE_GFX_RELEASE_PIPELINE( gpu, handle );
+    crude_gfx_release_pipeline( gpu, handle );
     return CRUDE_GFX_INVALID_PIPELINE_HANDLE;
   }
 
-  crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( gpu, handle );
-  crude_gfx_shader_state *shader_state_data = CRUDE_GFX_ACCESS_SHADER_STATE( gpu, shader_state );
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, handle );
+  crude_gfx_shader_state *shader_state_data = crude_gfx_access_shader_state( gpu, shader_state );
   
   pipeline->shader_state = shader_state;
   
@@ -1202,7 +1170,7 @@ crude_gfx_create_pipeline
   for ( uint32 i = 0; i < shader_state_data->reflect.descriptor.sets_count; ++i )
   {
     pipeline->descriptor_set_layout_handle[ i ] = crude_gfx_create_descriptor_set_layout( gpu, &shader_state_data->reflect.descriptor.sets[ i ] );
-    crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, pipeline->descriptor_set_layout_handle[ i ] );
+    crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
     vk_layouts[ i ] = descriptor_set_layout->vk_descriptor_set_layout;
   }
 
@@ -1441,7 +1409,7 @@ crude_gfx_destroy_pipeline
     .current_frame = gpu->current_frame };
   CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, pipeline_update_event );
 
-  crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( gpu, handle );
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, handle );
   crude_gfx_destroy_shader_state( gpu, pipeline->shader_state );
 }
 
@@ -1452,7 +1420,7 @@ crude_gfx_destroy_pipeline_instant
   _In_ crude_gfx_pipeline_handle                           handle
 )
 {
-  crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( gpu, handle );
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, handle );
 
   if ( pipeline )
   {
@@ -1464,7 +1432,7 @@ crude_gfx_destroy_pipeline_instant
     vkDestroyPipelineLayout( gpu->vk_device, pipeline->vk_pipeline_layout, gpu->vk_allocation_callbacks );
   }
 
-  CRUDE_GFX_RELEASE_PIPELINE( gpu, handle );
+  crude_gfx_release_pipeline( gpu, handle );
 }
 
 crude_gfx_buffer_handle
@@ -1474,13 +1442,13 @@ crude_gfx_create_buffer
   _In_ crude_gfx_buffer_creation const                    *creation
 )
 {
-  crude_gfx_buffer_handle handle = { CRUDE_GFX_OBTAIN_BUFFER( gpu ) };
+  crude_gfx_buffer_handle handle = crude_gfx_obtain_buffer( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
       return handle;
   }
 
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   buffer->name = creation->name;
   buffer->size = creation->size;
   buffer->type_flags = creation->type_flags;
@@ -1571,14 +1539,14 @@ crude_gfx_destroy_buffer_instant
   _In_ crude_gfx_buffer_handle                             handle
 )
 {
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( gpu, handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
 
   if ( buffer && CRUDE_GFX_IS_HANDLE_INVALID( buffer->parent_buffer ) )
   {
     vmaDestroyBuffer( gpu->vma_allocator, buffer->vk_buffer, buffer->vma_allocation );
   }
 
-  CRUDE_GFX_RELEASE_BUFFER( gpu, handle );
+  crude_gfx_release_buffer( gpu, handle );
 }
 
 crude_gfx_descriptor_set_layout_handle
@@ -1588,13 +1556,13 @@ crude_gfx_create_descriptor_set_layout
   _In_ crude_gfx_descriptor_set_layout_creation const     *creation
 )
 {
-  crude_gfx_descriptor_set_layout_handle handle = { CRUDE_GFX_OBTAIN_DESCRIPTOR_SET_LAYOUT( gpu ) };
+  crude_gfx_descriptor_set_layout_handle handle = crude_gfx_obtain_descriptor_set_layout( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
+  crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
   
   uint8 *memory = CRUDE_ALLOCATE( gpu->allocator, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings );
   descriptor_set_layout->num_bindings = creation->num_bindings;
@@ -1661,10 +1629,10 @@ crude_gfx_destroy_descriptor_set_layout_instant
   _In_ crude_gfx_descriptor_set_layout_handle              handle
 )
 {
-  crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( gpu, handle );
+  crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
   CRUDE_DEALLOCATE( gpu->allocator, descriptor_set_layout->bindings );
   vkDestroyDescriptorSetLayout( gpu->vk_device, descriptor_set_layout->vk_descriptor_set_layout, gpu->vk_allocation_callbacks );
-  CRUDE_GFX_RELEASE_DESCRIPTOR_SET_LAYOUT( gpu, handle );
+  crude_gfx_release_descriptor_set_layout( gpu, handle );
 }
 
 crude_gfx_framebuffer_handle
@@ -1674,13 +1642,13 @@ crude_gfx_create_framebuffer
   _In_ crude_gfx_framebuffer_creation const               *creation
 )
 {
-  crude_gfx_framebuffer_handle handle = { CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu ) };
+  crude_gfx_framebuffer_handle handle = crude_gfx_obtain_framebuffer( gpu );
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, handle );
+  crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, handle );
   framebuffer->num_color_attachments = creation->num_render_targets;
   for ( uint32 i = 0; i < creation->num_render_targets; ++i )
   {
@@ -1696,16 +1664,283 @@ crude_gfx_create_framebuffer
   return handle;
 }
 
-VkShaderModuleCreateInfo
-crude_gfx_compile_shader
-(
-  _In_ const                                              *code,
-  _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name
+void                                      
+crude_gfx_destroy_framebuffer
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
 )
 {
-  CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO" );
+  if ( handle.index >= gpu->framebuffers.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid framebuffer %u", handle.index );
+    return;
+  }
+  crude_gfx_resource_update framebuffer_update_event = { 
+    .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_FRAMEBUFFER,
+    .handle        = handle.index,
+    .current_frame = gpu->current_frame };
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, framebuffer_update_event );
+}
+
+void
+crude_gfx_destroy_framebuffer_instant
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+)
+{
+  crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, handle );
+  if ( framebuffer )
+  {
+    for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
+    {
+      crude_gfx_destroy_texture_instant( gpu, framebuffer->color_attachments[ i ] );
+    }
+    
+    if ( CRUDE_GFX_IS_HANDLE_VALID( framebuffer->depth_stencil_attachment ) )
+    {
+      crude_gfx_destroy_texture_instant( gpu, framebuffer->depth_stencil_attachment );
+    }
+  }
+  crude_gfx_release_framebuffer( gpu, handle );
+}
+
+/************************************************
+ *
+ * GPU Device Resource Macros
+ * 
+ ***********************************************/  
+crude_gfx_sampler_handle
+crude_gfx_obtain_sampler
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_sampler_handle ){ crude_resource_pool_obtain_resource( &gpu->samplers ) };                   
+}
+
+crude_gfx_sampler*
+crude_gfx_access_sampler
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_sampler_handle                            handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->samplers, handle.index );
+}
+
+void
+crude_gfx_release_sampler
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_sampler_handle                            handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->samplers, handle.index );
+}
+
+crude_gfx_texture_handle
+crude_gfx_obtain_texture
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{                                            
+  return ( crude_gfx_texture_handle ) { crude_resource_pool_obtain_resource( &gpu->textures ) };
+}
+
+crude_gfx_texture*
+crude_gfx_access_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->textures, handle.index );
+}
+
+void
+crude_gfx_release_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->textures, handle.index );
+}
+           
+crude_gfx_render_pass_handle
+crude_gfx_obtain_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_render_pass_handle ) { crude_resource_pool_obtain_resource( &gpu->render_passes ) };
+}
+
+crude_gfx_render_pass*
+crude_gfx_access_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_render_pass_handle                        handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->render_passes, handle.index );
+}
+
+void
+crude_gfx_release_render_pass
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_render_pass_handle                        handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->render_passes, handle.index );
+}
+
+crude_gfx_shader_state_handle
+crude_gfx_obtain_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_shader_state_handle ){ crude_resource_pool_obtain_resource( &gpu->shaders ) };
+}
+
+crude_gfx_shader_state*
+crude_gfx_access_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_shader_state_handle                       handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->shaders, handle.index );
+}
+
+void
+crude_gfx_release_shader_state
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_shader_state_handle                       handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->shaders, handle.index );
+}
+
+crude_gfx_pipeline_handle
+crude_gfx_obtain_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_pipeline_handle ){ crude_resource_pool_obtain_resource( &gpu->pipelines ) };
+}
+
+crude_gfx_pipeline*
+crude_gfx_access_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_pipeline_handle                           handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->pipelines, handle.index );
+}
+
+void
+crude_gfx_release_pipeline
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_pipeline_handle                           handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->pipelines, handle.index );
+}
+
+crude_gfx_buffer_handle
+crude_gfx_obtain_buffer
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_buffer_handle ){ crude_resource_pool_obtain_resource( &gpu->buffers ) };
+}
+
+crude_gfx_buffer*
+crude_gfx_access_buffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->buffers, handle.index );
+}
+
+void
+crude_gfx_release_buffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->buffers, handle.index );
+}
+
+crude_gfx_descriptor_set_layout_handle
+crude_gfx_obtain_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_descriptor_set_layout_handle ){ crude_resource_pool_obtain_resource( &gpu->descriptor_set_layouts ) };
+}
+
+crude_gfx_descriptor_set_layout*
+crude_gfx_access_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_layout_handle              handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->descriptor_set_layouts, handle.index );
+}
+
+void
+crude_gfx_release_descriptor_set_layout
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_layout_handle              handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->descriptor_set_layouts, handle.index );
+}
+
+crude_gfx_framebuffer_handle
+crude_gfx_obtain_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return ( crude_gfx_framebuffer_handle ){ crude_resource_pool_obtain_resource( &gpu->framebuffers ) };
+}
+
+crude_gfx_framebuffer*
+crude_gfx_access_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+)
+{
+  return crude_resource_pool_access_resource( &gpu->framebuffers, handle.index );
+}
+
+void
+crude_gfx_release_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->framebuffers, handle.index );
 }
 
 /************************************************
@@ -1737,49 +1972,15 @@ vk_debug_callback_
   return VK_FALSE;
 }
 
-VkDebugUtilsMessengerEXT
-vk_create_debug_utils_messsenger_
-(
-  _In_     VkInstance                                      instance,
-  _In_opt_ VkAllocationCallbacks                          *allocation_callbacks
-)
-{
-  VkDebugUtilsMessengerEXT                                 debug_utils_messenger;
-  VkDebugUtilsMessengerCreateInfoEXT                       create_info;
-  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
-  
-  vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );  
-
-  create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){
-    .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-    .pfnUserCallback  = vk_debug_callback_,
-    .messageSeverity  =
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-    .messageType      =
-      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-    .pUserData        = NULL,
-    .pNext            = NULL,
-    .flags            = 0u,
-  };
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance, &create_info, allocation_callbacks, &debug_utils_messenger ), "failed to create debug utils messenger" );
-  return debug_utils_messenger;
-}
-
-VkInstance
+void
 vk_create_instance_
 (
-  _In_     char const                                     *vk_application_name,
-  _In_     uint32                                          vk_application_version,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _In_     crude_allocator_container                       temporary_allocator
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *vk_application_name,
+  _In_ uint32                                              vk_application_version,
+  _In_ crude_allocator_container                           temporary_allocator
 )
 {
-  VkInstance                                               instance;
   VkDebugUtilsMessengerCreateInfoEXT                       debug_create_info;
   VkInstanceCreateInfo                                     instance_create_info;
   VkApplicationInfo                                        application;
@@ -1845,43 +2046,63 @@ vk_create_instance_
   instance_create_info.pNext = nullptr;
 #endif // VK_EXT_debug_utils
   
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, vk_allocation_callbacks, &instance ), "failed to create instance" );
-  return instance;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, gpu->vk_allocation_callbacks, &gpu->vk_instance ), "failed to create instance" );
+  
+  gpu->vkCreateDebugUtilsMessengerEXT = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( gpu->vk_instance, "vkCreateDebugUtilsMessengerEXT" );
+  gpu->vkDestroyDebugUtilsMessengerEXT = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( gpu->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
 }
 
-VkSurfaceKHR
-vk_create_surface_
+void
+vk_create_debug_utils_messsenger_
 (
-  _In_     SDL_Window                                     *sdl_window,
-  _In_     VkInstance                                      vk_instance,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks
+  _In_ crude_gfx_device                                   *gpu
 )
 {
-  VkSurfaceKHR surface;
+  VkDebugUtilsMessengerCreateInfoEXT create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){
+    .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+    .pfnUserCallback  = vk_debug_callback_,
+    .messageSeverity  =
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+    .messageType      =
+      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    .pUserData        = NULL,
+    .pNext            = NULL,
+    .flags            = 0u,
+  };
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkCreateDebugUtilsMessengerEXT( gpu->vk_instance, &create_info, gpu->vk_allocation_callbacks, &gpu->vk_debug_utils_messenger ), "Failed to create debug utils messenger" );
+}
 
-  if ( !SDL_Vulkan_CreateSurface( sdl_window, vk_instance, vk_allocation_callbacks, &surface ) )
+void
+vk_create_surface_
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  if ( !SDL_Vulkan_CreateSurface( gpu->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks, &gpu->vk_surface ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
     return VK_NULL_HANDLE;
   }
-  return surface;
 }
 
-VkPhysicalDevice
+void
 vk_pick_physical_device_
 (
-  _In_  VkInstance                                         vk_instance,
-  _In_  VkSurfaceKHR                                       vk_surface,
+  _In_ crude_gfx_device                                   *gpu,
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
   VkPhysicalDevice                                        *available_physical_devices;
   VkPhysicalDevice                                         selected_physical_devices;
   VkPhysicalDeviceProperties                               selected_physical_properties;
-
   uint32                                                   available_physical_devices_count;
 
-  vkEnumeratePhysicalDevices( vk_instance, &available_physical_devices_count, NULL );
+  vkEnumeratePhysicalDevices( gpu->vk_instance, &available_physical_devices_count, NULL );
   
   if ( available_physical_devices_count == 0u ) 
   {
@@ -1889,7 +2110,7 @@ vk_pick_physical_device_
   }
   
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_physical_devices, available_physical_devices_count, temporary_allocator );
-  vkEnumeratePhysicalDevices( vk_instance, &available_physical_devices_count, available_physical_devices );
+  vkEnumeratePhysicalDevices( gpu->vk_instance, &available_physical_devices_count, available_physical_devices );
   
   selected_physical_devices = VK_NULL_HANDLE;
   for ( uint32 i = 0; i < available_physical_devices_count; ++i )
@@ -1910,7 +2131,7 @@ vk_pick_physical_device_
     {
       continue;
     }
-    if ( !vk_check_swap_chain_adequate_( current_physical_device, vk_surface ) )
+    if ( !vk_check_swap_chain_adequate_( current_physical_device, gpu->vk_surface ) )
     {
       continue;
     }
@@ -1919,7 +2140,7 @@ vk_pick_physical_device_
       continue;
     }
     
-    queue_family_index = vk_get_supported_queue_family_index_( current_physical_device, vk_surface, temporary_allocator ); 
+    queue_family_index = vk_get_supported_queue_family_index_( current_physical_device, gpu->vk_surface, temporary_allocator ); 
     if ( queue_family_index == -1 )
     {
       continue;
@@ -1938,36 +2159,29 @@ vk_pick_physical_device_
   vkGetPhysicalDeviceProperties( selected_physical_devices, &selected_physical_properties );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", selected_physical_properties.deviceName, selected_physical_properties.deviceType );
 
-  return selected_physical_devices;
+  gpu->vk_physical_device = selected_physical_devices;
 }
 
-VkDevice
+void
 vk_create_device_
 (
-  _In_ VkPhysicalDevice                                    vk_physical_device,
-  _Out_ VkQueue                                           *vk_main_queue,
-  _Out_ VkQueue                                           *vk_transfer_queue,
-  _Out_ uint32                                            *vk_main_queue_family,
-  _Out_ uint32                                            *vk_transfer_queue_family,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _In_  crude_allocator_container                          temporary_allocator
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_allocator_container                           temporary_allocator
 )
 {
   VkPhysicalDeviceDynamicRenderingFeaturesKHR              dynamic_rendering_features;
   VkPhysicalDeviceDescriptorIndexingFeatures               indexing_features;
   VkPhysicalDeviceFeatures2                                physical_features2;
   VkDeviceCreateInfo                                       device_create_info;
-  VkDevice                                                 device;
   VkDeviceQueueCreateInfo                                  queue_create_infos[ 2 ];
   VkQueueFamilyProperties                                 *queue_families;
-
   uint32                                                   queue_family_count, main_queue_index, transfer_queue_index, compute_queue_index, present_queue_index;
 
   queue_family_count = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
+  vkGetPhysicalDeviceQueueFamilyProperties( gpu->vk_physical_device, &queue_family_count, NULL );
   
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( queue_families, queue_family_count, temporary_allocator );
-  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families );
+  vkGetPhysicalDeviceQueueFamilyProperties( gpu->vk_physical_device, &queue_family_count, queue_families );
   
   main_queue_index = UINT32_MAX;
   transfer_queue_index = UINT32_MAX;
@@ -1993,8 +2207,8 @@ vk_create_device_
     }
   }
   
-  *vk_main_queue_family = main_queue_index;
-  *vk_transfer_queue_family = transfer_queue_index;
+  gpu->vk_main_queue_family = main_queue_index;
+  gpu->vk_transfer_queue_family = transfer_queue_index;
 
   float const queue_priority[] = { 1.0f };
 
@@ -2014,7 +2228,6 @@ vk_create_device_
     .pQueuePriorities = queue_priority,
     };
   }
-
   
   dynamic_rendering_features = ( VkPhysicalDeviceDynamicRenderingFeaturesKHR ){
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
@@ -2029,7 +2242,7 @@ vk_create_device_
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
     .pNext = &indexing_features,
   };
-  vkGetPhysicalDeviceFeatures2( vk_physical_device, &physical_features2 );
+  vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
   device_create_info = ( VkDeviceCreateInfo ){
     .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -2044,14 +2257,16 @@ vk_create_device_
     .ppEnabledLayerNames      = vk_required_layers,
   };
 
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDevice( vk_physical_device, &device_create_info, vk_allocation_callbacks, &device ), "failed to create logic device!" );
-  vkGetDeviceQueue( device, main_queue_index, 0u, vk_main_queue );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDevice( gpu->vk_physical_device, &device_create_info, gpu->vk_allocation_callbacks, &gpu->vk_device ), "failed to create logic device!" );
+  vkGetDeviceQueue( gpu->vk_device, main_queue_index, 0u, &gpu->vk_main_queue );
   if ( transfer_queue_index < queue_family_count )
   {
-    vkGetDeviceQueue( device, transfer_queue_index, 0, vk_transfer_queue );
+    vkGetDeviceQueue( gpu->vk_device, transfer_queue_index, 0, &gpu->vk_transfer_queue );
   }
-
-  return device;
+  
+  gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
+  gpu->vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
+  gpu->vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
 }
 
 void
@@ -2192,20 +2407,20 @@ vk_create_swapchain_
 
   for ( uint32 i = 0; i < gpu->vk_swapchain_images_count; i++ )
   {
-    gpu->swapchain_framebuffers[ i ] = ( crude_gfx_framebuffer_handle ) { CRUDE_GFX_OBTAIN_FRAMEBUFFER( gpu ) };
-    crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, gpu->swapchain_framebuffers[ i ] );
+    gpu->swapchain_framebuffers[ i ] = crude_gfx_obtain_framebuffer( gpu );
+    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
 
     framebuffer->render_pass = gpu->swapchain_pass;
     framebuffer->scale_x = 1.0f;
     framebuffer->scale_y = 1.0f;
     framebuffer->resize = 0;
     framebuffer->num_color_attachments = 1;
-    framebuffer->color_attachments[ 0 ] = ( crude_gfx_texture_handle ){ CRUDE_GFX_OBTAIN_TEXTURE( gpu ) };
+    framebuffer->color_attachments[ 0 ] = crude_gfx_obtain_texture( gpu );
     framebuffer->name = "Swapchain";
     framebuffer->width = gpu->vk_swapchain_width;
     framebuffer->height = gpu->vk_swapchain_height;
     
-    crude_gfx_texture *color = CRUDE_GFX_ACCESS_TEXTURE( gpu, framebuffer->color_attachments[ 0 ] );
+    crude_gfx_texture *color = crude_gfx_access_texture( gpu, framebuffer->color_attachments[ 0 ] );
     color->vk_image = swapchain_images[ i ];
     
     crude_gfx_texture_creation depth_texture_creation = crude_gfx_texture_creation_empty();
@@ -2221,7 +2436,7 @@ vk_create_swapchain_
     
     framebuffer->depth_stencil_attachment = crude_gfx_create_texture( gpu, &depth_texture_creation );
     
-    crude_gfx_texture *depth_stencil_texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, framebuffer->depth_stencil_attachment );
+    crude_gfx_texture *depth_stencil_texture = crude_gfx_access_texture( gpu, framebuffer->depth_stencil_attachment );
     
     VkImageViewCreateInfo view_info = {
       .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -2254,34 +2469,24 @@ vk_create_swapchain_
   vkQueueWaitIdle( gpu->vk_main_queue );
 }
 
-VmaAllocation
+void
 vk_create_vma_allocator_
 (
-  _In_ VkDevice                                            vk_device,
-  _In_ VkPhysicalDevice                                    vk_physical_device,
-  _In_ VkInstance                                          vk_instance
+  _In_ crude_gfx_device                                   *gpu
 )
 {
-  VmaAllocation                                            vma_allocator;
-  VmaAllocatorCreateInfo                                   allocator_info;
-  
-  allocator_info = ( VmaAllocatorCreateInfo ) {
-    .physicalDevice   = vk_physical_device,
-    .device           = vk_device,
-    .instance         = vk_instance,
+  VmaAllocatorCreateInfo allocator_info = {
+    .physicalDevice   = gpu->vk_physical_device,
+    .device           = gpu->vk_device,
+    .instance         = gpu->vk_instance,
   };
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &vma_allocator ), "Failed to create vma allocator" );
-  return vma_allocator;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &gpu->vma_allocator ), "Failed to create vma allocator" );
 }
 
 void
 vk_create_descriptor_pool_
 (
-  _In_     VkDevice                                        vk_device,
-  _In_opt_ VkAllocationCallbacks                          *vk_allocation_callbacks,
-  _Out_    VkDescriptorPool                               *vk_bindless_descriptor_pool,
-  _Out_    VkDescriptorSetLayout                          *vk_bindless_descriptor_set_layout,
-  _Out_    VkDescriptorSet                                *vk_bindless_descriptor_set
+  _In_ crude_gfx_device                                   *gpu
 )
 {
   VkDescriptorPoolSize                                     pool_sizes_bindless[ 2 ];
@@ -2304,7 +2509,7 @@ vk_create_descriptor_pool_
     .poolSizeCount = ARRAY_SIZE( pool_sizes_bindless ),
     .pPoolSizes    = pool_sizes_bindless,
   };
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( vk_device, &pool_info, vk_allocation_callbacks, vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
 
   pool_count = ARRAY_SIZE( pool_sizes_bindless );
   vk_binding[ 0 ] = ( VkDescriptorSetLayoutBinding ){
@@ -2339,49 +2544,42 @@ vk_create_descriptor_pool_
     .pNext = &extended_info
   };
   
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( vk_device, &layout_info, vk_allocation_callbacks, vk_bindless_descriptor_set_layout ), "Failed create descriptor set layout" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( gpu->vk_device, &layout_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_set_layout ), "Failed create descriptor set layout" );
   
   alloc_info = ( VkDescriptorSetAllocateInfo ){
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    .descriptorPool = *vk_bindless_descriptor_pool,
+    .descriptorPool = gpu->vk_bindless_descriptor_pool,
     .descriptorSetCount = 1,
-    .pSetLayouts = vk_bindless_descriptor_set_layout
+    .pSetLayouts = &gpu->vk_bindless_descriptor_set_layout
   };
   
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( vk_device, &alloc_info, vk_bindless_descriptor_set ), "Failed allocate descriptor set" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &alloc_info, &gpu->vk_bindless_descriptor_set ), "Failed allocate descriptor set" );
 }
 
-VkQueryPool
+void
 vk_create_timestamp_query_pool_
 (
-  _In_     VkDevice                                  vk_device, 
-  _In_     int32                                     max_frames,
-  _In_opt_ VkAllocationCallbacks                    *vk_allocation_callbacks
+  _In_ crude_gfx_device                                   *gpu
 )
 {
-  VkQueryPool                                              vk_timestamp_query_pool;
-  VkQueryPoolCreateInfo                                    query_pool_create_info;
-  uint32                                                   gpu_time_queries_per_frame;
-
-  gpu_time_queries_per_frame = 32;
-  query_pool_create_info = ( VkQueryPoolCreateInfo ){ 
+  uint32 gpu_time_queries_per_frame = 32;
+  VkQueryPoolCreateInfo query_pool_create_info = { 
     .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
     .pNext = NULL,
     .flags = 0u,
     .queryType = VK_QUERY_TYPE_TIMESTAMP,
-    .queryCount = gpu_time_queries_per_frame * 2u * max_frames,
+    .queryCount = gpu_time_queries_per_frame * 2u * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES,
     .pipelineStatistics = 0u,
   };
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateQueryPool( vk_device, &query_pool_create_info, vk_allocation_callbacks, &vk_timestamp_query_pool ), "Failed to create query pool" );
-  return vk_timestamp_query_pool;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateQueryPool( gpu->vk_device, &query_pool_create_info, gpu->vk_allocation_callbacks, &gpu->vk_timestamp_query_pool ), "Failed to create query pool" );
 }
 
 int32
 vk_get_supported_queue_family_index_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface,
-  _In_  crude_allocator_container                    temporary_allocator
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_allocator_container                           temporary_allocator
 )
 {
   VkQueueFamilyProperties                                 *queue_families_properties;
@@ -2417,8 +2615,8 @@ vk_get_supported_queue_family_index_
 bool
 vk_check_support_required_extensions_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_  crude_allocator_container                    temporary_allocator
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ crude_allocator_container                           temporary_allocator
 )
 {
   VkExtensionProperties                                   *available_extensions;
@@ -2459,8 +2657,8 @@ vk_check_support_required_extensions_
 bool
 vk_check_swap_chain_adequate_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device,
-  _In_ VkSurfaceKHR                                  vk_surface
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface
 )
 {
   uint32 formats_count, presents_mode_count;
@@ -2483,7 +2681,7 @@ vk_check_swap_chain_adequate_
 bool
 vk_check_support_required_features_
 (
-  _In_ VkPhysicalDevice                              vk_physical_device
+  _In_ VkPhysicalDevice                                    vk_physical_device
 )
 {
   VkPhysicalDeviceFeatures features;
@@ -2492,14 +2690,14 @@ vk_check_support_required_features_
 }
 
 void
-_vk_destroy_swapchain
+vk_destroy_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
 )
 {
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; i++ )
   {
-    crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( gpu, gpu->swapchain_framebuffers[ i ] );
+    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
     
     if ( framebuffer == NULL )
     {
@@ -2508,9 +2706,9 @@ _vk_destroy_swapchain
     
     for ( uint32 k = 0; k < framebuffer->num_color_attachments; ++k )
     {
-      crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, framebuffer->color_attachments[ k ] );
+      crude_gfx_texture *texture = crude_gfx_access_texture( gpu, framebuffer->color_attachments[ k ] );
       vkDestroyImageView( gpu->vk_device, texture->vk_image_view, gpu->vk_allocation_callbacks );
-      CRUDE_GFX_RELEASE_TEXTURE( gpu, framebuffer->color_attachments[ k ] );
+      crude_gfx_release_texture( gpu, framebuffer->color_attachments[ k ] );
     }
     
     if ( CRUDE_GFX_IS_HANDLE_VALID( framebuffer->depth_stencil_attachment ) )
@@ -2518,19 +2716,19 @@ _vk_destroy_swapchain
       crude_gfx_destroy_texture_instant( gpu, framebuffer->depth_stencil_attachment );
     }
     
-    CRUDE_GFX_RELEASE_FRAMEBUFFER( gpu, gpu->swapchain_framebuffers[ i ] );
+    crude_gfx_release_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
   }
   
   vkDestroySwapchainKHR( gpu->vk_device, gpu->vk_swapchain, gpu->vk_allocation_callbacks );
 }
 
 void
-_vk_create_texture
+vk_create_texture_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_texture_creation const                 *creation,
-  _In_ crude_gfx_texture_handle                          handle,
-  _In_ crude_gfx_texture                                *texture
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_creation const                   *creation,
+  _In_ crude_gfx_texture_handle                            handle,
+  _In_ crude_gfx_texture                                  *texture
 )
 {
   texture->width          = creation->width;
@@ -2544,98 +2742,112 @@ _vk_create_texture
   texture->flags          = creation->flags;
   texture->handle         = handle;
   
-  VkImageCreateInfo image_info = { 
-    .sType          = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-    .format         = texture->vk_format,
-    .flags          = 0,
-    .imageType      = crude_gfx_to_vk_image_type( creation->type ),
-    .extent.width   = creation->width,
-    .extent.height  = creation->height,
-    .extent.depth   = creation->depth,
-    .mipLevels      = creation->mipmaps,
-    .arrayLayers    = 1,
-    .samples        = VK_SAMPLE_COUNT_1_BIT,
-    .tiling         = VK_IMAGE_TILING_OPTIMAL,
-  };
-  
-  bool const is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
-  bool const is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;
-  
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-  image_info.usage |= is_compute_used ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
-  
-  if ( crude_gfx_has_depth_or_stencil( creation->format ) )
   {
-    image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  }
-  else
-  {
-    image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    image_info.usage |= is_render_target ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0;
-  }
-  
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  
-  VmaAllocationCreateInfo memory_info = {
-    .usage = VMA_MEMORY_USAGE_GPU_ONLY
-  };
-  
-  if ( CRUDE_GFX_IS_HANDLE_INVALID( creation->alias ) )
-  {
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateImage( gpu->vma_allocator, &image_info, &memory_info, &texture->vk_image, &texture->vma_allocation, NULL ), "Failed to create image!" );
-    vmaSetAllocationName( gpu->vma_allocator, texture->vma_allocation, creation->name );
-  }
-  else
-  {
-    crude_gfx_texture* alias_texture = CRUDE_GFX_ACCESS_TEXTURE( gpu, creation->alias );
-    CRUDE_ASSERT( alias_texture );
+    VmaAllocationCreateInfo                                memory_info;
+    VkImageCreateInfo                                      image_info;
+    bool                                                   is_render_target, is_compute_used;
+
+    image_info = ( VkImageCreateInfo ) {
+      .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .format = texture->vk_format,
+      .imageType = crude_gfx_to_vk_image_type( creation->type ),
+      .extent.width = creation->width,
+      .extent.height = creation->height,
+      .extent.depth = creation->depth,
+      .mipLevels = creation->mipmaps,
+      .arrayLayers = 1,
+      .samples = VK_SAMPLE_COUNT_1_BIT,
+      .tiling = VK_IMAGE_TILING_OPTIMAL,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+    };
     
-    texture->vma_allocation = 0;
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( gpu->vma_allocator, alias_texture->vma_allocation, &image_info, &texture->vk_image ), "Failed to create aliasing image!" );
+    
+    is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
+    is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;
+    
+    image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    if ( is_compute_used )
+    {
+      image_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+
+    if ( crude_gfx_has_depth_or_stencil( creation->format ) )
+    {
+      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
+    else
+    {
+      image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+      image_info.usage |= is_render_target ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0;
+    }
+
+    memory_info = ( VmaAllocationCreateInfo ){
+      .usage = VMA_MEMORY_USAGE_GPU_ONLY
+    };
+    
+    if ( CRUDE_GFX_IS_HANDLE_INVALID( creation->alias ) )
+    {
+      CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateImage( gpu->vma_allocator, &image_info, &memory_info, &texture->vk_image, &texture->vma_allocation, NULL ), "Failed to create image!" );
+      vmaSetAllocationName( gpu->vma_allocator, texture->vma_allocation, creation->name );
+    }
+    else
+    {
+      crude_gfx_texture* alias_texture = crude_gfx_access_texture( gpu, creation->alias );
+      CRUDE_ASSERT( alias_texture );
+      
+      texture->vma_allocation = 0;
+      CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( gpu->vma_allocator, alias_texture->vma_allocation, &image_info, &texture->vk_image ), "Failed to create aliasing image!" );
+    }
+    
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
   }
+
   
-  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
-  
-  VkImageViewCreateInfo info = {
-    .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-    .image    = texture->vk_image,
-    .viewType = crude_gfx_to_vk_image_view_type( creation->type ),
-    .format   = image_info.format,
-  };
-  
-  if ( crude_gfx_has_depth_or_stencil( creation->format ) )
   {
-    info.subresourceRange.aspectMask = crude_gfx_has_depth( creation->format ) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+    VkImageViewCreateInfo info = {
+      .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+      .image    = texture->vk_image,
+      .viewType = crude_gfx_to_vk_image_view_type( creation->type ),
+      .format   = texture->vk_format,
+    };
+    
+    if ( crude_gfx_has_depth_or_stencil( creation->format ) )
+    {
+      info.subresourceRange.aspectMask = crude_gfx_has_depth( creation->format ) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+    }
+    else
+    {
+      info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    info.subresourceRange.levelCount = 1;
+    info.subresourceRange.layerCount = 1;
+
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view" );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, texture->vk_image_view, creation->name );
   }
-  else
+
   {
-    info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    crude_gfx_resource_update texture_update_event = { 
+      .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
+      .handle        = handle.index,
+      .current_frame = gpu->current_frame
+    };
+    texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
   }
-  info.subresourceRange.levelCount = 1;
-  info.subresourceRange.layerCount = 1;
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view" );
-  
-  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, texture->vk_image_view, creation->name );
-  
-  texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-  
-  crude_gfx_resource_update texture_update_event = { 
-    .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
-    .handle        = handle.index,
-    .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
 }
 
 void
-_vk_resize_texture
+vk_resize_texture_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_texture                                *texture,
-  _In_ crude_gfx_texture                                *texture_to_delete,
-  _In_ uint16                                        width,
-  _In_ uint16                                        height,
-  _In_ uint16                                        depth
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture                                  *texture_to_delete,
+  _In_ uint16                                              width,
+  _In_ uint16                                              height,
+  _In_ uint16                                              depth
 )
 {
   texture_to_delete->vk_image_view = texture->vk_image_view;
@@ -2651,47 +2863,43 @@ _vk_resize_texture
   texture_creation.format   = texture->vk_format;
   texture_creation.type     = texture->type;
   texture_creation.name     = texture->name;
-  _vk_create_texture( gpu, &texture_creation, texture->handle, texture );
+  vk_create_texture_( gpu, &texture_creation, texture->handle, texture );
 }
 
 void
-_vk_resize_swapchain
+vk_resize_swapchain_
 (
-  _In_ crude_gfx_device *gpu
+  _In_ crude_gfx_device                                   *gpu
 )
 {
   vkDeviceWaitIdle( gpu->vk_device );
-
-  VkSurfaceCapabilitiesKHR surface_capabilities;
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( gpu->vk_physical_device, gpu->vk_surface, &surface_capabilities );
-  VkExtent2D swapchain_extent = surface_capabilities.currentExtent;
   
-  if ( swapchain_extent.width == 0 || swapchain_extent.height == 0 )
   {
-    return;
+    VkSurfaceCapabilitiesKHR new_surface_capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR( gpu->vk_physical_device, gpu->vk_surface, &new_surface_capabilities );
+    
+    if ( new_surface_capabilities.currentExtent.width == 0 || new_surface_capabilities.currentExtent.height == 0 )
+    {
+      return;
+    }
   }
 
-  crude_gfx_render_pass* swapchain_pass = CRUDE_GFX_ACCESS_RENDER_PASS( gpu, gpu->swapchain_pass );
-  
-  _vk_destroy_swapchain( gpu );
+  vk_destroy_swapchain_( gpu );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
+  vk_create_surface_( gpu );
 
-  if ( !SDL_Vulkan_CreateSurface( gpu->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks, &gpu->vk_surface ) )
   {
-    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Failed to create vk_surface: %s!", SDL_GetError() );
+    crude_allocator_container temporary_allocator = crude_stack_allocator_pack( gpu->temporary_allocator );
+    uint32 marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
+    vk_create_swapchain_( gpu, temporary_allocator );
+    crude_stack_allocator_free_marker( gpu->temporary_allocator, marker );
   }
 
-  crude_allocator_container temporary_allocator = crude_stack_allocator_pack( gpu->temporary_allocator );
-  
-  uint32 marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
-  vk_create_swapchain_( gpu, temporary_allocator );
-  crude_stack_allocator_free_marker( gpu->temporary_allocator, marker );
-  
   vkDeviceWaitIdle( gpu->vk_device );
 }
 
-inline crude_gfx_vertex_component_format
-_reflect_format_to_vk_format
+crude_gfx_vertex_component_format
+reflect_format_to_vk_format_
 (
   _In_ SpvReflectFormat                                    format
 )
@@ -2712,7 +2920,7 @@ _reflect_format_to_vk_format
 }
 
 void
-_vk_reflect_shader
+vk_reflect_shader_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ void                                               *code,
@@ -2731,20 +2939,20 @@ _vk_reflect_shader
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator );
 
-    crude_array_header *header = CRUDE_ARRAY_HEADER( reflect->input.vertex_attributes ); 
-
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {
-      SpvReflectInterfaceVariable const *spv_input = spv_reflect.input_variables[ input_index ];
-      
+      SpvReflectInterfaceVariable const                   *spv_input;
+      uint32                                               stride;
+
+      spv_input = spv_reflect.input_variables[ input_index ];
       reflect->input.vertex_attributes[ input_index ] = ( crude_gfx_vertex_attribute ) {
         .location = spv_input->location,
         .binding = spv_input->location,
         .offset = 0,
-        .format = _reflect_format_to_vk_format( spv_input->format )
+        .format = reflect_format_to_vk_format_( spv_input->format )
       };
       
-      uint32 const stride = ( spv_input->numeric.vector.component_count * spv_input->numeric.scalar.width ) / 8;
+      stride = ( spv_input->numeric.vector.component_count * spv_input->numeric.scalar.width ) / 8;
       reflect->input.vertex_streams[ input_index ] = ( crude_gfx_vertex_stream ){
         .binding = spv_input->location,
         .stride = stride,
@@ -2757,7 +2965,6 @@ _vk_reflect_shader
   {
     SpvReflectDescriptorSet const                         *spv_descriptor_set;
     crude_gfx_descriptor_set_layout_creation              *set_layout;
-    
     
     spv_descriptor_set = &spv_reflect.descriptor_sets[ set_index ];
     set_layout = &reflect->descriptor.sets[ spv_descriptor_set->set ];
@@ -2793,11 +3000,11 @@ _vk_reflect_shader
 }
 
 void
-_vk_destroy_resources_instant
+vk_destroy_resources_instant_
 (
-  _In_ crude_gfx_device                             *gpu,
-  _In_ crude_gfx_resource_deletion_type                  type,
-  _In_ crude_gfx_resource_index                         handle
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_resource_deletion_type                    type,
+  _In_ crude_gfx_resource_index                            handle
 )
 {
   switch ( type )
@@ -2835,6 +3042,11 @@ _vk_destroy_resources_instant
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT:
     {
       crude_gfx_destroy_descriptor_set_layout_instant( gpu, ( crude_gfx_descriptor_set_layout_handle ){ handle } );
+      break;
+    }
+    case CRUDE_GFX_RESOURCE_DELETION_TYPE_FRAMEBUFFER:
+    {
+      crude_gfx_destroy_framebuffer_instant( gpu, ( crude_gfx_framebuffer_handle ){ handle } );
       break;
     }
   }

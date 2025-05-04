@@ -246,22 +246,22 @@ crude_gfx_renderer_destroy_material
  * Renderer Resoruces Pools Macros
  * 
  ***********************************************/
-#define CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer )                   CRUDE_OBTAIN_RESOURCE( renderer->buffers )
-#define CRUDE_GFX_RENDERER_ACCESS_BUFFER( renderer, handle )           CRUDE_ACCESS_RESOURCE( renderer->buffers, crude_gfx_renderer_buffer, handle  )
-#define CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, handle )          CRUDE_RELEASE_RESOURCE( renderer->buffers, handle )
+#define CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer )                   crude_resource_pool_obtain_resource( &renderer->buffers )
+#define CRUDE_GFX_RENDERER_ACCESS_BUFFER( renderer, handle )           crude_resource_pool_access_resource( &renderer->buffers, handle.index  )
+#define CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, handle )          crude_resource_pool_release_resource( &renderer->buffers, handle.index )
 
-#define CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer )                  CRUDE_OBTAIN_RESOURCE( renderer->textures )
-#define CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, handle )          CRUDE_ACCESS_RESOURCE( renderer->textures, crude_gfx_renderer_texture, handle  )
-#define CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, handle )         CRUDE_RELEASE_RESOURCE( renderer->textures, handle )
+#define CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer )                  crude_resource_pool_obtain_resource( &renderer->textures )
+#define CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, handle )          crude_resource_pool_access_resource( &renderer->textures, handle.index )
+#define CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, handle )         crude_resource_pool_release_resource( &renderer->textures, handle.index )
 
-#define CRUDE_GFX_RENDERER_OBTAIN_SAMPLER( renderer )                  CRUDE_OBTAIN_RESOURCE( renderer->samplers )
-#define CRUDE_GFX_RENDERER_ACCESS_SAMPLER( renderer, handle )          CRUDE_ACCESS_RESOURCE( renderer->samplers, crude_gfx_renderer_texture, handle  )
-#define CRUDE_GFX_RENDERER_RELEASE_SAMPLER( renderer, handle )         CRUDE_RELEASE_RESOURCE( renderer->samplers, handle )
+#define CRUDE_GFX_RENDERER_OBTAIN_SAMPLER( renderer )                  crude_resource_pool_obtain_resource( &renderer->samplers )
+#define CRUDE_GFX_RENDERER_ACCESS_SAMPLER( renderer, handle )          crude_resource_pool_access_resource( &renderer->samplers, handle.index  )
+#define CRUDE_GFX_RENDERER_RELEASE_SAMPLER( renderer, handle )         crude_resource_pool_release_resource( &renderer->samplers, handle.index )
 
-#define CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer )                  CRUDE_OBTAIN_RESOURCE( renderer->programs )
-#define CRUDE_GFX_RENDERER_ACCESS_PROGRAM( renderer, handle )          CRUDE_ACCESS_RESOURCE( renderer->programs, crude_gfx_renderer_program, handle  )
-#define CRUDE_GFX_RENDERER_RELEASE_PROGRAM( renderer, handle )         CRUDE_RELEASE_RESOURCE( renderer->programs, handle )
+#define CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer )                  crude_resource_pool_obtain_resource( &renderer->programs )
+#define CRUDE_GFX_RENDERER_ACCESS_PROGRAM( renderer, handle )          crude_resource_pool_access_resource( &renderer->programs, handle.index )
+#define CRUDE_GFX_RENDERER_RELEASE_PROGRAM( renderer, handle )         crude_resource_pool_release_resource( &renderer->programs, handle.index )
 
-#define CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer )                 CRUDE_OBTAIN_RESOURCE( renderer->materials )
-#define CRUDE_GFX_RENDERER_ACCESS_MATERIAL( renderer, handle )         CRUDE_ACCESS_RESOURCE( renderer->materials, crude_gfx_renderer_material, handle  )
-#define CRUDE_GFX_RENDERER_RELEASE_MATERIAL( renderer, handle )        CRUDE_RELEASE_RESOURCE( renderer->materials, handle )
+#define CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer )                 crude_resource_pool_obtain_resource( &renderer->materials )
+#define CRUDE_GFX_RENDERER_ACCESS_MATERIAL( renderer, handle )         crude_resource_pool_access_resource( &renderer->materials, handle.index  )
+#define CRUDE_GFX_RENDERER_RELEASE_MATERIAL( renderer, handle )        crude_resource_pool_release_resource( &renderer->materials, handle.index )

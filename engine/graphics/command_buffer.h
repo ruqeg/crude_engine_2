@@ -11,38 +11,19 @@ typedef struct crude_gfx_device crude_gfx_device;
 
 typedef struct crude_gfx_cmd_buffer
 {
-  /**
-   * Holds the GPU Device on which the command buffer 
-   * was created created
-   */
   crude_gfx_device                                        *gpu;
-  /**
-   * !TODO
-   */
   bool                                                     is_recording;
-  /**
-   * The pipeline/renderpass bound to the command buffer.
-   */
   crude_gfx_render_pass                                   *current_render_pass;
   crude_gfx_framebuffer                                   *current_framebuffer;
   crude_gfx_pipeline                                      *current_pipeline;
-  /**
-   * Holds clear values for attachments.
-   */
   VkClearValue                                             clears[ 2 ];
   /**
-   * Holds the resource pool for descriptor sets for the current frame.
+   * frame_descriptor_sets holds the resource pool for descriptor sets for the current frame.
    * They will be automatically deallocated on the end of each frame.
    * Can be allocated by crude_gfx_cmd_create_local_descriptor_set()
    */
   crude_resource_pool                                      frame_descriptor_sets;
-  /**
-   * Holds the descriptor pool for frame descriptor sets.
-   */
   VkDescriptorPool                                         vk_descriptor_pool;
-  /**
-   * Holds the command buffer vulkan handle.
-   */
   VkCommandBuffer                                          vk_cmd_buffer;
 } crude_gfx_cmd_buffer;
 

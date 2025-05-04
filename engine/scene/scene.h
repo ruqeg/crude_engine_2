@@ -5,6 +5,7 @@
 #include <core/math.h>
 #include <graphics/renderer.h>
 #include <graphics/asynchronous_loader.h>
+#include <graphics/render_graph.h>
 
 /**
  *
@@ -60,6 +61,12 @@ typedef struct crude_gltf_scene_creation
   crude_stack_allocator                                   *temprorary_stack_allocator;
 } crude_gltf_scene_creation;
 
+
+typedef struct crude_gfx_gbuffer_pass
+{
+  crude_gfx_renderer         *renderer;
+}; // struct GBufferPass
+
 typedef struct crude_gltf_scene
 {
   crude_gfx_renderer                                      *renderer;
@@ -73,6 +80,8 @@ typedef struct crude_gltf_scene
 
   crude_gfx_renderer_program                              *program;
   crude_gfx_renderer_material                             *material;
+
+  crude_gfx_render_graph                                  *render_graph;
 } crude_gltf_scene;
 
 /**
@@ -99,4 +108,11 @@ crude_gltf_scene_submit_draw_task
   _In_ crude_gltf_scene                                   *scene,
   _In_ enkiTaskScheduler                                  *task_sheduler,
   _In_ bool                                                use_secondary
+);
+
+CRUDE_API void
+crude_register_render_passes
+(
+  _In_ crude_gltf_scene                                   *scene,
+  _In_ crude_gfx_render_graph  *render_graph
 );

@@ -91,7 +91,7 @@ crude_gfx_cmd_reset
   uint32 resource_count = cmd->frame_descriptor_sets.free_indices_head;
   for ( uint32 i = 0; i < resource_count; ++i )
   {
-    CRUDE_RELEASE_RESOURCE( cmd->frame_descriptor_sets, ( crude_gfx_descriptor_set_handle){ i } );
+    crude_resource_pool_release_resource( &cmd->frame_descriptor_sets, i );
   }
 }
 
@@ -185,7 +185,7 @@ crude_gfx_cmd_bind_render_pass
 {
   cmd->is_recording = true;
   
-  crude_gfx_render_pass *render_pass = CRUDE_GFX_ACCESS_RENDER_PASS( cmd->gpu, render_pass_handle );
+  crude_gfx_render_pass *render_pass = crude_gfx_access_render_pass( cmd->gpu, render_pass_handle );
   if ( !render_pass )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to bind render pass! Invalid render pass %u!", render_pass_handle.index );
@@ -203,7 +203,7 @@ crude_gfx_cmd_bind_render_pass
     crude_gfx_cmd_end_render_pass( cmd );
   }
   
-  crude_gfx_framebuffer *framebuffer = CRUDE_GFX_ACCESS_FRAMEBUFFER( cmd->gpu, framebuffer_handle );
+  crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( cmd->gpu, framebuffer_handle );
   
   // !TODO tmp allocator?
   VkRenderingAttachmentInfoKHR *color_attachments_info;
@@ -212,7 +212,7 @@ crude_gfx_cmd_bind_render_pass
   
   for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
   {
-    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( cmd->gpu, framebuffer->color_attachments[ i ] );
+    crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, framebuffer->color_attachments[ i ] );
     
     VkAttachmentLoadOp color_op;
     switch ( render_pass->output.color_operations[ i ] )
@@ -245,7 +245,7 @@ crude_gfx_cmd_bind_render_pass
   bool has_depth_attachment = CRUDE_GFX_IS_HANDLE_VALID( framebuffer->depth_stencil_attachment );
   if ( has_depth_attachment )
   {
-    crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( cmd->gpu, framebuffer->depth_stencil_attachment );
+    crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, framebuffer->depth_stencil_attachment );
   
     VkAttachmentLoadOp depth_op;
     switch ( render_pass->output.depth_operation )
@@ -296,7 +296,7 @@ crude_gfx_cmd_bind_pipeline
   _In_ crude_gfx_pipeline_handle                           handle
 )
 {
-  crude_gfx_pipeline *pipeline = CRUDE_GFX_ACCESS_PIPELINE( cmd->gpu, handle );
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( cmd->gpu, handle );
   if ( !pipeline )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to bind pipeline! Invalid pipeline %u!", handle.index );
@@ -393,7 +393,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   _In_ crude_gfx_descriptor_set_handle                     handle
 )
 {
-  crude_gfx_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->frame_descriptor_sets, crude_gfx_descriptor_set, handle );
+  crude_gfx_descriptor_set *descriptor_set = crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index );
   
   uint32 num_offsets = 0u;
   uint32 offsets_cache[ 8 ];
@@ -404,7 +404,7 @@ crude_gfx_cmd_bind_local_descriptor_set
         CRUDE_ASSERT( num_offsets < ARRAY_SIZE( offsets_cache ) );
         const uint32 resource_index = descriptor_set->bindings[ i ];
         crude_gfx_buffer_handle buffer_handle = { descriptor_set->resources[ resource_index ] };
-        crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, buffer_handle );
+        crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
     }
   }
@@ -448,14 +448,14 @@ crude_gfx_cmd_bind_vertex_buffer
   _In_ uint32                                              offset
 )
 {
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, handle );
   VkDeviceSize offsets[] = { offset };
   
   VkBuffer vk_buffer = buffer->vk_buffer;
   
   if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
   {
-    crude_gfx_buffer *parent_buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
     vk_buffer = parent_buffer->vk_buffer;
     offsets[ 0 ] = buffer->global_offset;
   }
@@ -471,13 +471,13 @@ crude_gfx_cmd_bind_index_buffer
   _In_ uint32                                              offset
 )
 {
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, handle );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, handle );
   
   VkBuffer vk_buffer = buffer->vk_buffer;
   
   if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
   {
-    crude_gfx_buffer *parent_buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
     vk_buffer = parent_buffer->vk_buffer;
     offset = buffer->global_offset;
   }
@@ -493,15 +493,15 @@ crude_gfx_cmd_create_local_descriptor_set
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "CreateLocalDescriptorSet" );
-  crude_gfx_descriptor_set_handle handle = { CRUDE_OBTAIN_RESOURCE( cmd->frame_descriptor_sets ) };
+  crude_gfx_descriptor_set_handle handle = { crude_resource_pool_obtain_resource( &cmd->frame_descriptor_sets ) };
   if ( CRUDE_GFX_IS_HANDLE_INVALID( handle ) )
   {
     CRUDE_PROFILER_END;
     return handle;
   }
   
-  crude_gfx_descriptor_set *descriptor_set = CRUDE_ACCESS_RESOURCE( cmd->frame_descriptor_sets, crude_gfx_descriptor_set , handle );
-  crude_gfx_descriptor_set_layout *descriptor_set_layout = CRUDE_GFX_ACCESS_DESCRIPTOR_SET_LAYOUT( cmd->gpu, creation->layout );
+  crude_gfx_descriptor_set *descriptor_set = crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index );
+  crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( cmd->gpu, creation->layout );
   
   VkDescriptorSetAllocateInfo vk_descriptor_info = {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -540,14 +540,14 @@ crude_gfx_cmd_create_local_descriptor_set
     {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
     {
-      crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, ( crude_gfx_buffer_handle ){ creation->resources[ i ] } );
+      crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, ( crude_gfx_buffer_handle ){ creation->resources[ i ] } );
       CRUDE_ASSERT( buffer );
       
       descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
       if ( CRUDE_GFX_IS_HANDLE_VALID( buffer->parent_buffer ) )
       {
-        crude_gfx_buffer *parent_buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, buffer->parent_buffer );
+        crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
         buffer_info[ i ].buffer = parent_buffer->vk_buffer;
       }
       else
@@ -665,8 +665,8 @@ crude_gfx_cmd_upload_texture_data
   _In_ uint64                                              staging_buffer_offset
 )
 {
-  crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( cmd->gpu, texture_handle );
-  crude_gfx_buffer *staging_buffer = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, staging_buffer_handle );
+  crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, texture_handle );
+  crude_gfx_buffer *staging_buffer = crude_gfx_access_buffer( cmd->gpu, staging_buffer_handle );
   uint32 image_size = texture->width * texture->height * 4u;
   memcpy( staging_buffer->mapped_data + staging_buffer_offset, texture_data, image_size );
 
@@ -699,8 +699,8 @@ crude_gfx_cmd_upload_buffer_data
   _In_ crude_gfx_buffer_handle                             dst_buffer
 )
 {
-  crude_gfx_buffer* src = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, src_buffer );
-  crude_gfx_buffer* dst = CRUDE_GFX_ACCESS_BUFFER( cmd->gpu, dst_buffer );
+  crude_gfx_buffer* src = crude_gfx_access_buffer( cmd->gpu, src_buffer );
+  crude_gfx_buffer* dst = crude_gfx_access_buffer( cmd->gpu, dst_buffer );
   
   CRUDE_ASSERT( src->size == dst->size );
   

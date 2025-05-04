@@ -4,43 +4,11 @@
 #include <core/assert.h>
 #include <core/string.h>
 
-void
-crude_strcat
-(
-  _Out_ char       *dst_buffer,
-  _In_ char        *src_buffer
-)
-{
-  strcat( dst_buffer, src_buffer );
-}
-
-void
-crude_snprintf
-(
-  _Out_ char       *buffer,
-  _In_ int          buffer_size,
-  _In_ char const  *format,
-  ...
-)
-{
-  va_list args;
-  va_start(args, format);
-  crude_vsnprintf( buffer, buffer_size, format, args );
-  va_end(args);
-}
-  
-int32
-crude_vsnprintf
-(
-  _Out_ char      *buffer,
-  _In_ int         buffer_size,
-  _In_ char const *format,
-  va_list          args
-)
-{
-  return stbsp_vsnprintf( buffer, buffer_size, format, args );
-}
-
+/************************************************
+ *
+ * String Buffer
+ * 
+ ***********************************************/
 void
 crude_string_buffer_initialize
 (
@@ -98,4 +66,37 @@ crude_string_buffer_append_use_f
   ++string_buffer->occupied;
   
   return string_buffer->buffer + cached_offset;
+}
+
+
+/************************************************
+ *
+ * String Utils
+ * 
+ ***********************************************/
+void
+crude_snprintf
+(
+  _Out_ char                                              *buffer,
+  _In_ int                                                 buffer_size,
+  _In_ char const                                         *format,
+  ...
+)
+{
+  va_list args;
+  va_start( args, format );
+  crude_vsnprintf( buffer, buffer_size, format, args );
+  va_end( args );
+}
+  
+int32
+crude_vsnprintf
+(
+  _Out_ char                                              *buffer,
+  _In_ int                                                 buffer_size,
+  _In_ char const                                         *format,
+  va_list                                                  args
+)
+{
+  return stbsp_vsnprintf( buffer, buffer_size, format, args );
 }

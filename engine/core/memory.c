@@ -202,19 +202,6 @@ crude_stack_allocator_allocate
   return memory_block;
 }
 
-//void
-//crude_stack_allocator_deallocate
-//(
-//  _In_ crude_stack_allocator                              *allocator,
-//  _In_ void                                               *pointer
-//)
-//{
-//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer >= allocator->memory, "New memory block is too big for current stack allocator!" );
-//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->capacity, "Out of bound free on stack allocator!" );
-//  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, pointer < ( int8* )( allocator->memory ) + allocator->occupied, "Out of bound free on stack allocator!" );
-//  allocator->occupied = ( int8* )( pointer ) - ( int8* )( allocator->memory );
-//}
-
 size_t
 crude_stack_allocator_get_marker
 (

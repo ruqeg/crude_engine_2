@@ -10,7 +10,7 @@ void
 crude_gfx_initialize_asynchronous_loader
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
-  _In_ crude_gfx_renderer                                     *renderer
+  _In_ crude_gfx_renderer                                 *renderer
 )
 {
   asynloader->renderer = renderer;
@@ -56,7 +56,7 @@ crude_gfx_initialize_asynchronous_loader
     .persistent = true
   };
   crude_gfx_buffer_handle staging_buffer_handle = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
-  asynloader->staging_buffer = CRUDE_GFX_ACCESS_BUFFER( renderer->gpu, staging_buffer_handle );
+  asynloader->staging_buffer = crude_gfx_access_buffer( renderer->gpu, staging_buffer_handle );
   
   VkSemaphoreCreateInfo semaphore_info = {
     .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
@@ -108,7 +108,7 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   };
   CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
 
-  crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( asynloader->renderer->gpu, gpu_buffer );
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( asynloader->renderer->gpu, gpu_buffer );
   buffer->ready = false;
 }
 
@@ -128,7 +128,7 @@ crude_gfx_asynchronous_loader_update
   {
     crude_gfx_destroy_buffer( asynloader->renderer->gpu, asynloader->cpu_buffer_ready );
 
-    crude_gfx_buffer *buffer = CRUDE_GFX_ACCESS_BUFFER( asynloader->renderer->gpu, asynloader->gpu_buffer_ready );
+    crude_gfx_buffer *buffer = crude_gfx_access_buffer( asynloader->renderer->gpu, asynloader->gpu_buffer_ready );
     buffer->ready = true;
 
     asynloader->cpu_buffer_ready = CRUDE_GFX_INVALID_BUFFER_HANDLE;
@@ -153,7 +153,7 @@ crude_gfx_asynchronous_loader_update
 
     if ( CRUDE_GFX_IS_HANDLE_VALID( request.texture ) )
     {
-      crude_gfx_texture *texture = CRUDE_GFX_ACCESS_TEXTURE( asynloader->renderer->gpu, request.texture );
+      crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->renderer->gpu, request.texture );
       uint32 texture_channels = 4;
       uint32 texture_alignment = 4;
       uint64 aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );

@@ -94,20 +94,20 @@ typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_
 typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands, crude_gfx_render_scene *render_scene );
 typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
 
-typedef struct crude_gfx_render_graph_render_pass
+typedef struct crude_gfx_render_graph_pass
 {
   crude_gfx_render_graph_render_pass_pre_render            pre_render;
   crude_gfx_render_graph_render_pass_render                render;
   crude_gfx_render_graph_render_pass_on_resize             on_resize;
   void                                                    *ctx;
-} crude_gfx_render_graph_render_pass;
+} crude_gfx_render_graph_pass;
 
 typedef struct crude_gfx_render_graph_node
 {
   int32                                                    ref_count;
   crude_gfx_render_pass_handle                             render_pass;
   crude_gfx_framebuffer_handle                             framebuffer;
-  crude_gfx_render_graph_render_pass                      *graph_render_pass;
+  crude_gfx_render_graph_pass                      *graph_render_pass;
   crude_gfx_render_graph_resource_handle                  *inputs;
   crude_gfx_render_graph_resource_handle                  *outputs;
   crude_gfx_render_graph_node_handle                      *edges;
@@ -129,12 +129,18 @@ typedef struct crude_gfx_render_graph_resource_cache
   crude_resource_pool                                      resources;
 } crude_gfx_render_graph_resource_cache;
 
+typedef struct crude_gfx_render_graph_pass_cache
+{
+  struct { uint64 key; crude_gfx_render_graph_pass *value; }                    *render_pass_map;
+} crude_gfx_render_graph_pass_cache;
+
 typedef struct crude_gfx_render_graph_builder
 {
   crude_gfx_device                                        *gpu;
   crude_allocator_container                                allocator_container;
   crude_gfx_render_graph_node_cache                            node_cache;
   crude_gfx_render_graph_resource_cache                        resource_cache;
+  crude_gfx_render_graph_pass_cache                         render_pass_cache;
 } crude_gfx_render_graph_builder;
 
 typedef struct crude_gfx_render_graph
@@ -171,7 +177,8 @@ CRUDE_API void
 crude_gfx_render_graph_render
 (
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands,
+  _In_ crude_gfx_render_scene                             *render_scene
 );
 
 CRUDE_API crude_gfx_render_graph_node_handle
@@ -179,6 +186,14 @@ crude_gfx_render_graph_builder_initialize
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_register_render_pass
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  char const                         *name,
+  crude_gfx_render_graph_pass *render_pass
 );
 
 CRUDE_API crude_gfx_render_graph_node_handle
