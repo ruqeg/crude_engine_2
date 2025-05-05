@@ -52,7 +52,7 @@ crude_gfx_asynchronous_loader_initialize
   buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_STREAM;
   buffer_creation.size = 64 * 1024 * 1024;
-  buffer_creation.name = "staging buffer";
+  buffer_creation.name = "AsynchronousLoaderStagingBuffer";
   buffer_creation.persistent = true;
   crude_gfx_buffer_handle staging_buffer_handle = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
   asynloader->staging_buffer = crude_gfx_access_buffer( renderer->gpu, staging_buffer_handle );
@@ -75,6 +75,18 @@ crude_gfx_asynchronous_loader_deinitialize
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
+  vkDestroyFence( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence, asynloader->renderer->gpu->vk_allocation_callbacks );
+  vkDestroySemaphore( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_complete_semaphore, asynloader->renderer->gpu->vk_allocation_callbacks );
+  
+  crude_gfx_destroy_buffer( asynloader->renderer->gpu, asynloader->staging_buffer->handle );
+  
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    vkDestroyCommandPool( asynloader->renderer->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->renderer->gpu->vk_allocation_callbacks );  
+  }
+
+  CRUDE_ARRAY_FREE( asynloader->file_load_requests );
+  CRUDE_ARRAY_FREE( asynloader->upload_requests );
 }
 
 void

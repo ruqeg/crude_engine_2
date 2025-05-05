@@ -16,21 +16,21 @@
  * Graphics Struct
  * 
  ***********************************************/
-typedef struct crude_graphics
+typedef struct crude_gfx_graphics
 {
   crude_gfx_device                                          gpu;
   crude_gfx_renderer                                        renderer;
   crude_gfx_render_graph                                    render_graph;
   crude_gfx_render_graph_builder                            render_graph_builder;
+  crude_gfx_asynchronous_loader                             async_loader;
   crude_allocator_container                                 allocator_container;
+  bool                                                      async_loader_execute;
 
-  crude_gfx_asynchronous_loader                            *async_loader;
   crude_gltf_scene                                         *scene;
   crude_entity                                              camera;
   enkiTaskScheduler                                        *ets;
-  enkiPinnedTask                                           *pinned_task_run_pinned_task_loop;
   enkiPinnedTask                                           *async_load_task;
-} crude_graphics;
+} crude_gfx_graphics;
 
 /************************************************
  *
@@ -60,26 +60,18 @@ graphics_process_
  * Graphics Functions Implementation
  * 
  ***********************************************/
-void PinnedTaskRunPinnedTaskLoop( void* pArgs_ )
+static void
+pinned_task_asyns_loop_
+(
+  _In_ void                                                *ctx
+)
 {
-  // !TODO
-  enkiTaskScheduler *ets = ( enkiTaskScheduler*) pArgs_;
-  
-  while( !enkiGetIsShutdownRequested( ets ) )
-  {
-    enkiWaitForNewPinnedTasks( ets );
-    enkiRunPinnedTasks( ets );
-  }
-}
-
-void PinnedTaskRunPinnedTaskLoopAsyns( void* pArgs_ )
-{
-  // !TODO
   CRUDE_PROFILER_SET_THREAD_NAME( "AsynchronousLoaderThread" );
-  while ( true )
+
+  crude_gfx_graphics *graphics = ( crude_gfx_graphics* )ctx;
+  while ( graphics->async_loader_execute )
   {
-    crude_gfx_asynchronous_loader *async_loader = ( crude_gfx_asynchronous_loader*) pArgs_;
-    crude_gfx_asynchronous_loader_update( async_loader );
+    crude_gfx_asynchronous_loader_update( &graphics->async_loader );
   }
 }
 
@@ -95,7 +87,7 @@ graphics_initialize_
   for ( size_t i = 0; i < it->count; ++i )
   {
     crude_graphics_creation                               *graphics_creation;
-    crude_graphics                                        *graphics;
+    crude_gfx_graphics                                        *graphics;
     crude_window_handle                                   *window_handle;
     crude_entity                                           entity;
 
@@ -106,8 +98,8 @@ graphics_initialize_
     // Ensure Graphics Component
     {
       crude_graphics_handle *graphics_handle = CRUDE_ENTITY_GET_OR_ADD_COMPONENT( entity, crude_graphics_handle );
-      graphics_handle->value = CRUDE_ALLOCATE( graphics_creation->allocator_container, sizeof( crude_graphics ) );
-      graphics = ( crude_graphics* )graphics_handle->value;
+      graphics_handle->value = CRUDE_ALLOCATE( graphics_creation->allocator_container, sizeof( crude_gfx_graphics ) );
+      graphics = ( crude_gfx_graphics* )graphics_handle->value;
     }
     
     graphics->allocator_container = graphics_creation->allocator_container;
@@ -135,74 +127,21 @@ graphics_initialize_
       crude_gfx_renderer_initialize( &graphics->renderer, &renderer_creation );
     }    
     
+    /* Create Render Graph */
     crude_gfx_render_graph_builder_initialize( &graphics->render_graph_builder, &graphics->gpu );
     crude_gfx_render_graph_initialize( &graphics->render_graph, &graphics->render_graph_builder );
     
-    /*
-    crude_allocator_container temporary_allocator_container = crude_stack_allocator_pack( render_create[ i ].temporary_allocator );
-    char working_directory[ 512 ];
-    crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-    crude_string_buffer temporary_name_buffer;
-    crude_string_buffer_initialize( &temporary_name_buffer, 1024, temporary_allocator_container );
-    char const *frame_graph_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\graph.json" );
-    crude_gfx_render_graph_builder_initialize( renderer->render_graph_builder, renderer->gpu );
-    crude_gfx_render_graph_initialize( renderer->render_graph, renderer->render_graph_builder );
-    crude_gfx_render_graph_parse_from_file( renderer->render_graph, frame_graph_path, render_create[ i ].temporary_allocator );
+    /* Create Async Loader */
+    {
+      struct enkiTaskSchedulerConfig                       config;
+      
+      crude_gfx_asynchronous_loader_initialize( &graphics->async_loader, &graphics->renderer );
+      graphics->async_loader_execute = true;
 
-    
-    char const *full_screen_pipeline_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\shaders.json" );
-
-    renderer->async_loader = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_asynchronous_loader ) );
-
-    crude_gfx_asynchronous_loader_initialize( renderer->async_loader, renderer->renderer );
-    
-    uint32 threadNumIOTasks = config.numTaskThreadsToCreate;
-
-    renderer->pinned_task_run_pinned_task_loop = enkiCreatePinnedTask( renderer->ets, PinnedTaskRunPinnedTaskLoop, threadNumIOTasks );
-    enkiAddPinnedTaskArgs( renderer->ets, renderer->pinned_task_run_pinned_task_loop, renderer->ets );
-    
-    renderer->async_load_task = enkiCreatePinnedTask( renderer->ets, PinnedTaskRunPinnedTaskLoopAsyns, threadNumIOTasks );
-    enkiAddPinnedTaskArgs( renderer->ets, renderer->async_load_task, renderer->async_loader );
-
-    char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
-    
-    crude_gfx_buffer_creation ubo_creation = {
-      .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
-      .size = sizeof( crude_gfx_shader_frame_constants ),
-      .name = "ubo",
-    };
-    renderer->gpu->frame_buffer = crude_gfx_create_buffer( renderer->gpu, &ubo_creation );
-
-    renderer->scene = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gltf_scene ) );
-    
-    crude_gltf_scene_creation gltf_creation = {
-      .renderer = renderer->renderer,
-      .path = gltf_path,
-      .async_loader = renderer->async_loader,
-      .allocator = render_create[ i ].allocator,
-      .temprorary_stack_allocator = render_create[ i ].temporary_allocator
-    };
-    crude_gltf_scene_load_from_file( renderer->scene, &gltf_creation );
-    
-    crude_register_render_passes( renderer->scene, renderer->render_graph );
-
-    renderer[ i ].camera = crude_entity_create_empty( it->world, "camera1" );
-    CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_camera, {
-      .fov_radians = CRUDE_CPI4,
-      .near_z = 0.01,
-      .far_z = 1000,
-      .aspect_ratio = 1.0 } );
-    CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_transform, {
-      .translation = { 0, 0, -5 },
-      .rotation = { 0, 0, 0, 1 },
-      .scale = { 1, 1, 1 }, } );
-    
-    CRUDE_ENTITY_SET_COMPONENT( renderer[ i ].camera, crude_free_camera, {
-      .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
-      .rotating_speed_multiplier  = { -0.15f, -0.15f },
-      .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
-  }*/
+      config = enkiGetTaskSchedulerConfig( graphics_creation->task_sheduler );
+      graphics->async_load_task = enkiCreatePinnedTask( graphics_creation->task_sheduler, pinned_task_asyns_loop_, config.numTaskThreadsToCreate );
+      enkiAddPinnedTaskArgs( graphics_creation->task_sheduler, graphics->async_load_task, graphics );
+    }
   }
 }
 
@@ -216,26 +155,21 @@ graphics_deinitialize_
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_graphics                                        *graphics;
+    crude_gfx_graphics                                        *graphics;
 
-    graphics = ( crude_graphics* )graphics_per_entity[ i ].value;
+    graphics = ( crude_gfx_graphics* )graphics_per_entity[ i ].value;
     
+    graphics->async_loader_execute = false;
+    crude_gfx_asynchronous_loader_deinitialize( &graphics->async_loader );
     crude_gfx_render_graph_deinitialize( &graphics->render_graph );
     crude_gfx_render_graph_builder_deinitialize( &graphics->render_graph_builder );
     crude_gfx_renderer_deinitialize( &graphics->renderer );
     crude_gfx_device_deinitialize( &graphics->gpu );
     CRUDE_DEALLOCATE( graphics->allocator_container, graphics );
-    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
-    //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
-    //enkiWaitforAllAndShutdown( renderer[ i ].ets );
-    //enkiDeletePinnedTask( renderer[ i ].ets, renderer[ i ].pinned_task_run_pinned_task_loop );
     //crude_gltf_scene_unload( renderer[ i ].scene );
     //crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
     //crude_gfx_renderer_deinitialize( renderer[ i ].renderer );
     //crude_gfx_device_deinitialize( renderer[ i ].gpu );
-    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
-    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
-    //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
   }
 }
 

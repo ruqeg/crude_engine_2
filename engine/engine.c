@@ -8,6 +8,21 @@
 
 #include <engine.h>
 
+static void
+pinned_task_run_loop_
+(
+  _In_ void                                               *ctx
+)
+{
+  crude_engine *engine = ( crude_engine* )ctx;
+  
+  while( !enkiGetIsShutdownRequested( engine->task_sheduler ) && engine->running )
+  {
+    enkiWaitForNewPinnedTasks( engine->task_sheduler );
+    enkiRunPinnedTasks( engine->task_sheduler );
+  }
+}
+
 void
 crude_engine_initialize
 (
@@ -32,10 +47,17 @@ crude_engine_initialize
 
   crude_time_service_initialize();
 
-  engine->task_sheduler = enkiNewTaskScheduler();
-  struct enkiTaskSchedulerConfig config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
-  config.numTaskThreadsToCreate += 1;
-  enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
+  {
+    struct enkiTaskSchedulerConfig                         config;
+
+    engine->task_sheduler = enkiNewTaskScheduler();
+    config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
+    config.numTaskThreadsToCreate += 1;
+    enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
+
+    engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate );
+    enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
+  }
 }
 
 void
@@ -44,6 +66,8 @@ crude_engine_deinitialize
   _In_ crude_engine *engine
 )
 {
+  enkiWaitforAllAndShutdown( engine->task_sheduler );
+  enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
   enkiDeleteTaskScheduler( engine->task_sheduler );
   crude_heap_allocator_deinitialize( &engine->algorithms_allocator );
   crude_log_deinitialize();
