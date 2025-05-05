@@ -50,6 +50,7 @@ crude_gfx_render_graph_deinitialize
   _In_ crude_gfx_render_graph                             *render_graph
 )
 {
+  crude_linear_allocator_deinitialize( &render_graph->local_allocator );
 }
 
 void
@@ -718,6 +719,8 @@ crude_gfx_render_graph_builder_deinitialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
+  crude_resource_pool_deinitialize( &builder->node_cache.nodes );
+  crude_resource_pool_deinitialize( &builder->resource_cache.resources );
 }
 
 void

@@ -20,12 +20,12 @@ typedef struct crude_graphics
 {
   crude_gfx_device                                          gpu;
   crude_gfx_renderer                                        renderer;
+  crude_gfx_render_graph                                    render_graph;
+  crude_gfx_render_graph_builder                            render_graph_builder;
   crude_allocator_container                                 allocator_container;
 
   crude_gfx_asynchronous_loader                            *async_loader;
   crude_gltf_scene                                         *scene;
-  crude_gfx_render_graph                                   *render_graph;
-  crude_gfx_render_graph_builder                           *render_graph_builder;
   crude_entity                                              camera;
   enkiTaskScheduler                                        *ets;
   enkiPinnedTask                                           *pinned_task_run_pinned_task_loop;
@@ -132,13 +132,13 @@ graphics_initialize_
         .allocator_container = graphics_creation->allocator_container,
         .gpu                 = &graphics->gpu
       };
-      //crude_gfx_renderer_initialize(& graphics->renderer, &renderer_creation );
+      crude_gfx_renderer_initialize( &graphics->renderer, &renderer_creation );
     }    
     
-    /*
-    renderer->render_graph = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_render_graph ) );
-    renderer->render_graph_builder = CRUDE_ALLOCATE( render_create[ i ].allocator, sizeof( crude_gfx_render_graph_builder ) );
+    crude_gfx_render_graph_builder_initialize( &graphics->render_graph_builder, &graphics->gpu );
+    crude_gfx_render_graph_initialize( &graphics->render_graph, &graphics->render_graph_builder );
     
+    /*
     crude_allocator_container temporary_allocator_container = crude_stack_allocator_pack( render_create[ i ].temporary_allocator );
     char working_directory[ 512 ];
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
@@ -219,7 +219,10 @@ graphics_deinitialize_
     crude_graphics                                        *graphics;
 
     graphics = ( crude_graphics* )graphics_per_entity[ i ].value;
-    //crude_gfx_renderer_deinitialize( &graphics->renderer );
+    
+    crude_gfx_render_graph_deinitialize( &graphics->render_graph );
+    crude_gfx_render_graph_builder_deinitialize( &graphics->render_graph_builder );
+    crude_gfx_renderer_deinitialize( &graphics->renderer );
     crude_gfx_device_deinitialize( &graphics->gpu );
     CRUDE_DEALLOCATE( graphics->allocator_container, graphics );
     //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );

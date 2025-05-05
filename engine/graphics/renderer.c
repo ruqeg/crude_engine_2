@@ -33,6 +33,10 @@ crude_gfx_renderer_deinitialize
 )
 {
   crude_resource_pool_deinitialize( &renderer->buffers );
+  crude_resource_pool_deinitialize( &renderer->textures );
+  crude_resource_pool_deinitialize( &renderer->samplers );
+  crude_resource_pool_deinitialize( &renderer->programs );
+  crude_resource_pool_deinitialize( &renderer->materials );
   mtx_destroy( &renderer->texture_update_mutex );
 }
 

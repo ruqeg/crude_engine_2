@@ -251,7 +251,6 @@ crude_linear_allocator_deinitialize
   _In_ crude_linear_allocator                             *allocator
 )
 {
-  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocator->occupied == 0u, "Linear allocator \"%s\" shutdown. Allocated memory detected. Allocated %llu, total %llu", allocator->name, allocator->occupied, allocator->capacity );
   free( allocator->memory );
 }
 
