@@ -19,8 +19,8 @@ cr_main
     return 0;
   }
 
-  ecs_world_t* world = ctx->userdata;
-
+  crude_sandbox *sandbox = ctx->userdata;
+  crude_sandbox_update( sandbox );
  
   return 0;
 }

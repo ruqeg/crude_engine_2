@@ -217,7 +217,6 @@ crude_gfx_device_initialize
   crude_resource_pool_initialize( &gpu->shaders, gpu->allocator_container, 128, sizeof( crude_gfx_shader_state ) );
   crude_resource_pool_initialize( &gpu->samplers, gpu->allocator_container, 32, sizeof( crude_gfx_sampler ) );
   crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator_container, 128, sizeof( crude_gfx_framebuffer ) );
-  
   {
     
     VkSemaphoreCreateInfo semaphore_info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -238,6 +237,7 @@ crude_gfx_device_initialize
   vk_create_swapchain_( gpu, temporary_allocator );
   vk_create_descriptor_pool_( gpu );
   vk_create_timestamp_query_pool_( gpu );
+  crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
   
   {
     crude_gfx_texture_creation depth_texture_creation = crude_gfx_texture_creation_empty();
@@ -294,6 +294,33 @@ crude_gfx_device_deinitialize
 )
 {
   vkDeviceWaitIdle( gpu->vk_device );
+
+  crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
+  crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
+  crude_gfx_destroy_texture( gpu, gpu->depth_texture );
+  crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
+  
+  crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
+  {
+    crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
+  
+    if ( resource_deletion->current_frame == -1 )
+    {
+      continue;
+    }
+
+    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
+  }
+  
+  vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
+  vkDestroyDescriptorSetLayout( gpu->vk_device, gpu->vk_bindless_descriptor_set_layout, gpu->vk_allocation_callbacks );
+  vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
+  vk_destroy_swapchain_( gpu );
+
+  CRUDE_ARRAY_FREE( gpu->queued_command_buffers );
+  CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
+  CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
   
   crude_gfx_cmd_manager_deinitialize( &g_command_buffer_manager );
 
@@ -304,25 +331,6 @@ crude_gfx_device_deinitialize
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
   
-  crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
-  crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
-  crude_gfx_destroy_texture( gpu, gpu->depth_texture );
-  crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
-  crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
-
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
-  {
-    crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
-
-    if ( resource_deletion->current_frame == -1 )
-      continue;
-
-    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
-  }
-
-  CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
-  CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
-
   crude_resource_pool_deinitialize( &gpu->buffers );
   crude_resource_pool_deinitialize( &gpu->textures );
   crude_resource_pool_deinitialize( &gpu->render_passes );
@@ -330,12 +338,8 @@ crude_gfx_device_deinitialize
   crude_resource_pool_deinitialize( &gpu->pipelines );
   crude_resource_pool_deinitialize( &gpu->shaders );
   crude_resource_pool_deinitialize( &gpu->samplers );
-
-  vkDestroyDescriptorSetLayout( gpu->vk_device, gpu->vk_bindless_descriptor_set_layout, gpu->vk_allocation_callbacks );
-  vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
-
-  vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
-  vk_destroy_swapchain_( gpu );
+  crude_resource_pool_deinitialize( &gpu->framebuffers );
+  
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
@@ -2387,7 +2391,7 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
 
   VkImage *swapchain_images;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( swapchain_images, gpu->vk_swapchain_images_count, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( swapchain_images, gpu->vk_swapchain_images_count, temporary_allocator );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, swapchain_images );
 
   VkCommandBufferBeginInfo beginInfo = { 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <flecs.h>
-
 #include <engine.h>
 
 typedef struct crude_sandbox
@@ -20,6 +18,12 @@ crude_sandbox_initialize
 
 CRUDE_API void
 crude_sandbox_deinitialize
+(
+  _In_ crude_sandbox                                      *sandbox
+);
+
+CRUDE_API bool
+crude_sandbox_update
 (
   _In_ crude_sandbox                                      *sandbox
 );

@@ -20,6 +20,8 @@ typedef struct crude_graphics
 {
   crude_gfx_device                                          gpu;
   crude_gfx_renderer                                        renderer;
+  crude_allocator_container                                 allocator_container;
+
   crude_gfx_asynchronous_loader                            *async_loader;
   crude_gltf_scene                                         *scene;
   crude_gfx_render_graph                                   *render_graph;
@@ -108,6 +110,8 @@ graphics_initialize_
       graphics = ( crude_graphics* )graphics_handle->value;
     }
     
+    graphics->allocator_container = graphics_creation->allocator_container;
+
     /* Create Device */
     {
       crude_gfx_device_creation device_creation = {
@@ -128,7 +132,7 @@ graphics_initialize_
         .allocator_container = graphics_creation->allocator_container,
         .gpu                 = &graphics->gpu
       };
-      crude_gfx_renderer_initialize(& graphics->renderer, &renderer_creation );
+      //crude_gfx_renderer_initialize(& graphics->renderer, &renderer_creation );
     }    
     
     /*
@@ -208,21 +212,28 @@ graphics_deinitialize_
   ecs_iter_t *it
 )
 {
-  //crude_renderer_component *renderer = ecs_field( it, crude_renderer_component, 0 );
+  crude_graphics_handle *graphics_per_entity = ecs_field( it, crude_graphics_handle, 0 );
 
-  //for ( uint32 i = 0; i < it->count; ++i )
-  //{
-  //  enkiWaitforAllAndShutdown( renderer[ i ].ets );
-  //  enkiDeletePinnedTask( renderer[ i ].ets, renderer[ i ].pinned_task_run_pinned_task_loop );
-  //  enkiDeleteTaskScheduler( renderer[ i ].ets );
-  //  crude_gltf_scene_unload( renderer[ i ].scene );
-  //  crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
-  //  crude_gfx_renderer_deinitialize( renderer[ i ].renderer );
-  //  crude_gfx_device_deinitialize( renderer[ i ].gpu );
-  //  //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
-  //  //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
-  //  //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
-  //}
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_graphics                                        *graphics;
+
+    graphics = ( crude_graphics* )graphics_per_entity[ i ].value;
+    //crude_gfx_renderer_deinitialize( &graphics->renderer );
+    crude_gfx_device_deinitialize( &graphics->gpu );
+    CRUDE_DEALLOCATE( graphics->allocator_container, graphics );
+    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
+    //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
+    //enkiWaitforAllAndShutdown( renderer[ i ].ets );
+    //enkiDeletePinnedTask( renderer[ i ].ets, renderer[ i ].pinned_task_run_pinned_task_loop );
+    //crude_gltf_scene_unload( renderer[ i ].scene );
+    //crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
+    //crude_gfx_renderer_deinitialize( renderer[ i ].renderer );
+    //crude_gfx_device_deinitialize( renderer[ i ].gpu );
+    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].scene );
+    //renderer[ i ].renderer->allocator.deallocate( renderer[ i ].renderer );
+    //renderer[ i ].gpu->allocator.deallocate( renderer[ i ].gpu );
+  }
 }
 
 static void

@@ -44,6 +44,7 @@ crude_engine_deinitialize
   _In_ crude_engine *engine
 )
 {
+  enkiDeleteTaskScheduler( engine->task_sheduler );
   crude_heap_allocator_deinitialize( &engine->algorithms_allocator );
   crude_log_deinitialize();
 }
