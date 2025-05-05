@@ -13,13 +13,13 @@ crude_gfx_renderer_initialize
 )
 {
   renderer->gpu = creation->gpu;
-  renderer->allocator = creation->allocator;
+  renderer->allocator_container = creation->allocator_container;
 
-  crude_resource_pool_initialize( &renderer->buffers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_buffer ) );
-  crude_resource_pool_initialize( &renderer->textures, renderer->allocator, 1024, sizeof( crude_gfx_renderer_texture ) );
-  crude_resource_pool_initialize( &renderer->samplers, renderer->allocator, 1024, sizeof( crude_gfx_renderer_sampler ) );
-  crude_resource_pool_initialize( &renderer->programs, renderer->allocator, 1024, sizeof( crude_gfx_renderer_program ) );
-  crude_resource_pool_initialize( &renderer->materials, renderer->allocator, 1024, sizeof( crude_gfx_renderer_material ) );
+  crude_resource_pool_initialize( &renderer->buffers, renderer->allocator_container, 1024, sizeof( crude_gfx_renderer_buffer ) );
+  crude_resource_pool_initialize( &renderer->textures, renderer->allocator_container, 1024, sizeof( crude_gfx_renderer_texture ) );
+  crude_resource_pool_initialize( &renderer->samplers, renderer->allocator_container, 1024, sizeof( crude_gfx_renderer_sampler ) );
+  crude_resource_pool_initialize( &renderer->programs, renderer->allocator_container, 1024, sizeof( crude_gfx_renderer_program ) );
+  crude_resource_pool_initialize( &renderer->materials, renderer->allocator_container, 1024, sizeof( crude_gfx_renderer_material ) );
 
   renderer->num_textures_to_update = 0;
 
@@ -97,13 +97,13 @@ crude_gfx_renderer_create_buffer
   _In_ crude_gfx_buffer_creation const                    *creation
 )
 {
-  crude_gfx_renderer_buffer_handle buffer_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer ) };
+  crude_gfx_renderer_buffer_handle buffer_resource_handle = crude_gfx_renderer_obtain_buffer( renderer );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( buffer_resource_handle ) )
   {
     return NULL;
   }
   
-  crude_gfx_renderer_buffer *buffer_resource = CRUDE_GFX_RENDERER_ACCESS_BUFFER( renderer, buffer_resource_handle );
+  crude_gfx_renderer_buffer *buffer_resource = crude_gfx_renderer_access_buffer( renderer, buffer_resource_handle );
   buffer_resource->handle = crude_gfx_create_buffer( renderer->gpu, creation );
   buffer_resource->name = creation->name;
   buffer_resource->pool_index = buffer_resource_handle.index;
@@ -126,7 +126,7 @@ crude_gfx_renderer_destroy_buffer
 )
 {
   crude_gfx_destroy_buffer( renderer->gpu, buffer->handle );
-  CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, ( crude_gfx_renderer_buffer_handle ){ buffer->pool_index } );
+  crude_gfx_renderer_release_buffer( renderer, ( crude_gfx_renderer_buffer_handle ){ buffer->pool_index } );
 }
 
 crude_gfx_renderer_texture*
@@ -136,13 +136,13 @@ crude_gfx_renderer_create_texture
   _In_ crude_gfx_texture_creation const                   *creation
 )
 {
-  crude_gfx_renderer_texture_handle texture_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
+  crude_gfx_renderer_texture_handle texture_resource_handle = crude_gfx_renderer_obtain_texture( renderer );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_resource_handle ) )
   {
     return NULL;
   }
   
-  crude_gfx_renderer_texture *texture_resource = CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, texture_resource_handle );
+  crude_gfx_renderer_texture *texture_resource = crude_gfx_renderer_access_texture( renderer, texture_resource_handle );
   texture_resource->handle = crude_gfx_create_texture( renderer->gpu, creation );
   texture_resource->name = creation->name;
   texture_resource->pool_index = texture_resource_handle.index;
@@ -164,7 +164,7 @@ crude_gfx_renderer_destroy_texture
 )
 {
   crude_gfx_destroy_texture( renderer->gpu, texture->handle );
-  CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, ( crude_gfx_renderer_texture_handle ){ texture->pool_index } );
+  crude_gfx_renderer_release_texture( renderer, ( crude_gfx_renderer_texture_handle ){ texture->pool_index } );
 }
 
 crude_gfx_renderer_sampler*
@@ -174,13 +174,13 @@ crude_gfx_renderer_create_sampler
   _In_ crude_gfx_sampler_creation const                   *creation
 )
 {
-  crude_gfx_renderer_sampler_handle sampler_resource_handle = { CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer ) };
+  crude_gfx_renderer_sampler_handle sampler_resource_handle = crude_gfx_renderer_obtain_sampler( renderer );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( sampler_resource_handle ) )
   {
     return NULL;
   }
   
-  crude_gfx_renderer_sampler *sampler_resource = CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, sampler_resource_handle );
+  crude_gfx_renderer_sampler *sampler_resource = crude_gfx_renderer_access_sampler( renderer, sampler_resource_handle );
   sampler_resource->handle = crude_gfx_create_sampler( renderer->gpu, creation );
   sampler_resource->name = creation->name;
   sampler_resource->pool_index = sampler_resource_handle.index;
@@ -202,7 +202,7 @@ crude_gfx_renderer_destroy_sampler
 )
 {
   crude_gfx_destroy_sampler( renderer->gpu, sampler->handle );
-  CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, ( crude_gfx_renderer_sampler_handle ) { sampler->pool_index } );
+  crude_gfx_renderer_release_sampler( renderer, ( crude_gfx_renderer_sampler_handle ) { sampler->pool_index } );
 }
 
 crude_gfx_renderer_program*
@@ -212,13 +212,13 @@ crude_gfx_renderer_create_program
   _In_ crude_gfx_renderer_program_creation const          *creation
 )
 {
-  crude_gfx_renderer_program_handle program_handle = { CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer ) };
+  crude_gfx_renderer_program_handle program_handle = crude_gfx_renderer_obtain_program( renderer );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( program_handle ) )
   {
     return NULL;
   }
   
-  crude_gfx_renderer_program *program = CRUDE_GFX_RENDERER_ACCESS_PROGRAM( renderer, program_handle );
+  crude_gfx_renderer_program *program = crude_gfx_renderer_access_program( renderer, program_handle );
   program->name = creation->pipeline_creation.name;
   program->pool_index = program_handle.index;
   program->passes[ 0 ].pipeline = crude_gfx_create_pipeline( renderer->gpu, &creation->pipeline_creation );
@@ -240,7 +240,7 @@ crude_gfx_renderer_destroy_program
 )
 {
   crude_gfx_destroy_pipeline( renderer->gpu, program->passes[ 0 ].pipeline );
-  CRUDE_GFX_RENDERER_RELEASE_PROGRAM( renderer, ( crude_gfx_renderer_program_handle ) { program->pool_index } );
+  crude_gfx_renderer_release_program( renderer, ( crude_gfx_renderer_program_handle ) { program->pool_index } );
   return program;
 }
 
@@ -251,13 +251,13 @@ crude_gfx_renderer_create_material
   _In_ crude_gfx_renderer_material_creation const         *creation
 )
 {
-  crude_gfx_renderer_material_handle material_handle = { CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer ) };
+  crude_gfx_renderer_material_handle material_handle = crude_gfx_renderer_obtain_material( renderer );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( material_handle ) )
   {
     return NULL;
   }
   
-  crude_gfx_renderer_material *material = CRUDE_GFX_RENDERER_ACCESS_MATERIAL( renderer, material_handle );
+  crude_gfx_renderer_material *material = crude_gfx_renderer_access_material( renderer, material_handle );
   material->name = creation->name;
   material->pool_index = material_handle.index;
   material->program = creation->program;
@@ -277,6 +277,156 @@ crude_gfx_renderer_destroy_material
   _In_ crude_gfx_renderer_material                        *material
 )
 {
-  CRUDE_GFX_RENDERER_RELEASE_MATERIAL( renderer, ( crude_gfx_renderer_material_handle ){ material->pool_index } );
+  crude_gfx_renderer_release_material( renderer, ( crude_gfx_renderer_material_handle ){ material->pool_index } );
   return material;
+}
+
+/************************************************
+ *
+ * Renderer Resoruces Pools Functions
+ * 
+ ***********************************************/
+crude_gfx_renderer_buffer_handle
+crude_gfx_renderer_obtain_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer
+)
+{
+  return ( crude_gfx_renderer_buffer_handle ){ crude_resource_pool_obtain_resource( &renderer->buffers ) };
+}
+
+crude_gfx_renderer_buffer*
+crude_gfx_renderer_access_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_buffer_handle                    handle
+)
+{
+  return crude_resource_pool_access_resource( &renderer->buffers, handle.index );
+}
+
+void
+crude_gfx_renderer_release_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_buffer_handle                    handle
+)
+{
+  crude_resource_pool_release_resource( &renderer->buffers, handle.index );
+}
+
+crude_gfx_renderer_texture_handle
+crude_gfx_renderer_obtain_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer
+)
+{
+  return ( crude_gfx_renderer_texture_handle ){ crude_resource_pool_obtain_resource( &renderer->textures ) };
+}
+
+crude_gfx_renderer_texture*
+crude_gfx_renderer_access_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_texture_handle                   handle
+)
+{
+  return crude_resource_pool_access_resource( &renderer->textures, handle.index );
+}
+
+void
+crude_gfx_renderer_release_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_texture_handle                   handle
+)
+{
+  crude_resource_pool_release_resource( &renderer->textures, handle.index );
+}
+
+crude_gfx_renderer_sampler_handle
+crude_gfx_renderer_obtain_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer
+)
+{
+  return ( crude_gfx_renderer_sampler_handle ){ crude_resource_pool_obtain_resource( &renderer->samplers ) };
+}
+
+crude_gfx_renderer_sampler*
+crude_gfx_renderer_access_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_sampler_handle                   handle
+)
+{
+  return crude_resource_pool_access_resource( &renderer->samplers, handle.index );
+}
+
+void
+crude_gfx_renderer_release_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_sampler_handle                   handle
+)
+{
+  crude_resource_pool_release_resource( &renderer->samplers, handle.index );
+}
+
+crude_gfx_renderer_program_handle
+crude_gfx_renderer_obtain_program
+(
+  _In_ crude_gfx_renderer                                 *renderer
+)
+{
+  return ( crude_gfx_renderer_program_handle ){ crude_resource_pool_obtain_resource( &renderer->programs ) };
+}
+
+crude_gfx_renderer_program*
+crude_gfx_renderer_access_program
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_program_handle                   handle
+)
+{
+  return crude_resource_pool_access_resource( &renderer->programs, handle.index );
+}
+
+void
+crude_gfx_renderer_release_program
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_program_handle                   handle
+)
+{
+  crude_resource_pool_release_resource( &renderer->programs, handle.index );
+}
+
+crude_gfx_renderer_material_handle
+crude_gfx_renderer_obtain_material
+(
+  _In_ crude_gfx_renderer                                 *renderer
+)
+{
+  return ( crude_gfx_renderer_material_handle ){ crude_resource_pool_obtain_resource( &renderer->materials ) };
+}
+
+crude_gfx_renderer_material*
+crude_gfx_renderer_access_material
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_material_handle                  handle
+)
+{
+  return crude_resource_pool_access_resource( &renderer->materials, handle.index );
+}
+
+void
+crude_gfx_renderer_release_material
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_material_handle                  handle
+)
+{
+   crude_resource_pool_release_resource( &renderer->materials, handle.index );
 }

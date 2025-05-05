@@ -2,107 +2,8 @@
 
 #include <threads.h>
 
+#include <graphics/renderer_resources.h>
 #include <graphics/gpu_device.h>
-
-/************************************************
- *
- * Invalid Renderer Resoruces Indices
- * 
- ***********************************************/
-#define CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX ( ~0u )
-
-/************************************************
- *
- * Renderer Resoruces Handles
- * 
- ***********************************************/
-typedef struct crude_gfx_renderer_buffer_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_buffer_handle;
-
-typedef struct crude_gfx_renderer_texture_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_texture_handle;
-
-typedef struct crude_gfx_renderer_sampler_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_sampler_handle;
-
-typedef struct crude_gfx_renderer_program_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_program_handle;
-
-typedef struct crude_gfx_renderer_material_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_material_handle;
-
-/************************************************
- *
- * Renderer Resoruces Structs
- * 
- ***********************************************/
-typedef struct crude_gfx_renderer_buffer
-{
-  uint32                                                   references;
-  crude_gfx_buffer_handle                                  handle;
-  uint32                                                   pool_index;
-  crude_gfx_buffer_description                             desc;
-  char const                                              *name;
-} crude_gfx_renderer_buffer;
-
-typedef struct crude_gfx_renderer_texture
-{
-  uint32                                                   references;
-  crude_gfx_texture_handle                                 handle;
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_renderer_texture;
-
-typedef struct crude_gfx_renderer_sampler
-{
-  uint32                                                   references;
-  crude_gfx_sampler_handle                                 handle;
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_renderer_sampler;
-
-typedef struct crude_gfx_renderer_program_creation
-{
-  crude_gfx_pipeline_creation                             pipeline_creation;
-} crude_gfx_renderer_program_creation;
-
-typedef struct crude_gfx_renderer_program_pass
-{
-  crude_gfx_pipeline_handle                               pipeline;
-  crude_gfx_descriptor_set_layout_handle                  descriptor_set_layout;
-} crude_gfx_renderer_program_pass;
-
-typedef struct crude_gfx_renderer_program
-{
-  crude_gfx_renderer_program_pass                          passes[ 1 ];
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_renderer_program;
-
-typedef struct crude_gfx_renderer_material_creation
-{
-  crude_gfx_renderer_program                              *program;
-  char const                                              *name;
-  uint32                                                   render_index;
-} crude_gfx_renderer_material_creation;
-
-typedef struct crude_gfx_renderer_material
-{
-  crude_gfx_renderer_program                              *program;
-  uint32                                                   render_index;
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_renderer_material;
 
 /************************************************
  *
@@ -112,7 +13,7 @@ typedef struct crude_gfx_renderer_material
 typedef struct crude_gfx_renderer_creation
 {
   crude_gfx_device                                        *gpu;
-  crude_allocator_container                                allocator;
+  crude_allocator_container                                allocator_container;
 } crude_gfx_renderer_creation;
 
 typedef struct crude_gfx_renderer
@@ -123,7 +24,7 @@ typedef struct crude_gfx_renderer
   crude_resource_pool                                      textures;
   crude_resource_pool                                      samplers;
   crude_resource_pool                                      programs;
-  crude_allocator_container                                allocator;
+  crude_allocator_container                                allocator_container;
   crude_gfx_texture_handle                                 textures_to_update[ 128 ];
   uint32                                                   num_textures_to_update;
   mtx_t                                                    texture_update_mutex;
@@ -243,25 +144,105 @@ crude_gfx_renderer_destroy_material
 
 /************************************************
  *
- * Renderer Resoruces Pools Macros
+ * Renderer Resoruces Pools Functions
  * 
  ***********************************************/
-#define CRUDE_GFX_RENDERER_OBTAIN_BUFFER( renderer )                   crude_resource_pool_obtain_resource( &renderer->buffers )
-#define CRUDE_GFX_RENDERER_ACCESS_BUFFER( renderer, handle )           crude_resource_pool_access_resource( &renderer->buffers, handle.index  )
-#define CRUDE_GFX_RENDERER_RELEASE_BUFFER( renderer, handle )          crude_resource_pool_release_resource( &renderer->buffers, handle.index )
+CRUDE_API crude_gfx_renderer_buffer_handle
+crude_gfx_renderer_obtain_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
 
-#define CRUDE_GFX_RENDERER_OBTAIN_TEXTURE( renderer )                  crude_resource_pool_obtain_resource( &renderer->textures )
-#define CRUDE_GFX_RENDERER_ACCESS_TEXTURE( renderer, handle )          crude_resource_pool_access_resource( &renderer->textures, handle.index )
-#define CRUDE_GFX_RENDERER_RELEASE_TEXTURE( renderer, handle )         crude_resource_pool_release_resource( &renderer->textures, handle.index )
+CRUDE_API crude_gfx_renderer_buffer*
+crude_gfx_renderer_access_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_buffer_handle                    handle
+);
 
-#define CRUDE_GFX_RENDERER_OBTAIN_SAMPLER( renderer )                  crude_resource_pool_obtain_resource( &renderer->samplers )
-#define CRUDE_GFX_RENDERER_ACCESS_SAMPLER( renderer, handle )          crude_resource_pool_access_resource( &renderer->samplers, handle.index  )
-#define CRUDE_GFX_RENDERER_RELEASE_SAMPLER( renderer, handle )         crude_resource_pool_release_resource( &renderer->samplers, handle.index )
+CRUDE_API void
+crude_gfx_renderer_release_buffer
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_buffer_handle                    handle
+);
 
-#define CRUDE_GFX_RENDERER_OBTAIN_PROGRAM( renderer )                  crude_resource_pool_obtain_resource( &renderer->programs )
-#define CRUDE_GFX_RENDERER_ACCESS_PROGRAM( renderer, handle )          crude_resource_pool_access_resource( &renderer->programs, handle.index )
-#define CRUDE_GFX_RENDERER_RELEASE_PROGRAM( renderer, handle )         crude_resource_pool_release_resource( &renderer->programs, handle.index )
+CRUDE_API crude_gfx_renderer_texture_handle
+crude_gfx_renderer_obtain_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
 
-#define CRUDE_GFX_RENDERER_OBTAIN_MATERIAL( renderer )                 crude_resource_pool_obtain_resource( &renderer->materials )
-#define CRUDE_GFX_RENDERER_ACCESS_MATERIAL( renderer, handle )         crude_resource_pool_access_resource( &renderer->materials, handle.index  )
-#define CRUDE_GFX_RENDERER_RELEASE_MATERIAL( renderer, handle )        crude_resource_pool_release_resource( &renderer->materials, handle.index )
+CRUDE_API crude_gfx_renderer_texture*
+crude_gfx_renderer_access_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_texture_handle                   handle
+);
+
+CRUDE_API void
+crude_gfx_renderer_release_texture
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_texture_handle                   handle
+);
+
+CRUDE_API crude_gfx_renderer_sampler_handle
+crude_gfx_renderer_obtain_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
+
+CRUDE_API crude_gfx_renderer_sampler*
+crude_gfx_renderer_access_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_sampler_handle                   handle
+);
+
+CRUDE_API void
+crude_gfx_renderer_release_sampler
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_sampler_handle                   handle
+);
+
+CRUDE_API crude_gfx_renderer_program_handle
+crude_gfx_renderer_obtain_program
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
+
+CRUDE_API crude_gfx_renderer_program*
+crude_gfx_renderer_access_program
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_program_handle                   handle
+);
+
+CRUDE_API void
+crude_gfx_renderer_release_program
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_program_handle                   handle
+);
+
+CRUDE_API crude_gfx_renderer_material_handle
+crude_gfx_renderer_obtain_material
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
+
+CRUDE_API crude_gfx_renderer_material*
+crude_gfx_renderer_access_material
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_material_handle                  handle
+);
+
+CRUDE_API void
+crude_gfx_renderer_release_material
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_material_handle                  handle
+);

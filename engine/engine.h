@@ -1,13 +1,16 @@
 #pragma once
 
+#include <TaskScheduler_c.h>
+
 #include <core/memory.h>
 
 typedef struct crude_engine
 {
-  void              *world;
-  bool               running;
-  int64              time;
-  crude_heap_allocator  algorithms_allocator;    
+  void                                                    *world;
+  bool                                                     running;
+  int64                                                    time;
+  crude_heap_allocator                                     algorithms_allocator;    
+  enkiTaskScheduler                                       *task_sheduler; 
 } crude_engine;
 
 CRUDE_API void

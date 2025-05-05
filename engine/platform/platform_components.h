@@ -38,10 +38,24 @@ typedef struct crude_input
   crude_mouse_input            wrapwnd;
 } crude_input;
 
+typedef struct crude_window
+{
+  int32                  width;
+  int32                  height;
+  bool                   maximized;
+} crude_window;
+
+typedef struct crude_window_handle
+{
+  void                  *value;
+} crude_window_handle;
+
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window_handle );
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_input );
 
 CRUDE_API void
-crude_input_componentsImport
+crude_platform_componentsImport
 (
   ecs_world_t                 *world
 );

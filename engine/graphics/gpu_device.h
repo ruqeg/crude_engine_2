@@ -17,10 +17,9 @@ typedef struct crude_gfx_device_creation
   SDL_Window                                              *sdl_window;
   char const                                              *vk_application_name;
   uint32                                                   vk_application_version;
-  crude_allocator_container                                allocator;
+  crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
   uint16                                                   queries_per_frame;
-  uint16                                                   max_frames;
   uint16                                                   num_threads;
 } crude_gfx_device_creation;
 
@@ -33,7 +32,6 @@ typedef struct crude_gfx_device
   /**
    * The maximum/current/previous swapchain frame index.
    */
-  uint16                                                   max_frames;
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
   /**

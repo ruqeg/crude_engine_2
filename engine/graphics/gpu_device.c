@@ -195,9 +195,8 @@ crude_gfx_device_initialize
 
   gpu->swapchain_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   gpu->sdl_window = creation->sdl_window;
-  gpu->allocator_container  = creation->allocator;
+  gpu->allocator_container  = creation->allocator_container;
   gpu->vk_allocation_callbacks = NULL;
-  gpu->max_frames = creation->max_frames;
   gpu->temporary_allocator = creation->temporary_allocator;
   gpu->previous_frame = 0;
   gpu->current_frame = 1;
@@ -276,7 +275,7 @@ crude_gfx_device_initialize
     dynamic_buffer_creation.name = "dynamic_persistent_buffer";
     dynamic_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     dynamic_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * gpu->max_frames;
+    dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
     gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
     
     buffer_map = ( crude_gfx_map_buffer_parameters ){

@@ -1,9 +1,8 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <engine.h>
-#include <platform/sdl_system.h>
-#include <platform/input_components.h>
-#include <platform/gui_components.h>
+#include <platform/platform_system.h>
+#include <platform/platform_components.h>
 #include <cr/cr.h>
 
 static bool CR_STATE g_initialized = false;

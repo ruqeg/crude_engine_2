@@ -46,9 +46,9 @@ crude_entity_valid
 }
 
 #define CRUDE_ENTITY_GET_OR_ADD_COMPONENT( entity, component )\
-\({\
-  ecs_ensure( entity.world, entity.handle, component );\
-})
+(\
+  ecs_ensure( entity.world, entity.handle, component )\
+)
 
 #define CRUDE_ENTITY_GET_NAME( entity )\
 (\
@@ -75,7 +75,7 @@ crude_entity_valid
   ecs_remove( entity.world, entity.handle, component )\
 )
 
-#define CRUDE_ENTITY_remove_COMPONEN_ID( entity, id )\
+#define CRUDE_ENTITY_REMOVE_COMPONEN_ID( entity, id )\
 (\
   ecs_remove_id( entity.world, entity.handle, id )\
 )

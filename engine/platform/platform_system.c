@@ -1,13 +1,12 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include <platform/gui_components.h>
-#include <platform/input_components.h>
+#include <platform/platform_components.h>
 #include <core/profiler.h>
 #include <core/memory.h>
 #include <core/assert.h>
 
-#include <platform/sdl_system.h>
+#include <platform/platform_system.h>
 
 static uint32
 key_sym
@@ -222,7 +221,10 @@ sdl_process_events
     SDL_Event sdl_event;
     while (SDL_PollEvent( &sdl_event ))
     {
-      inputs[ i ].callback(&sdl_event);
+      if ( inputs[ i ].callback )
+      {
+        inputs[ i ].callback(&sdl_event);
+      }
 
       if ( sdl_event.type == SDL_EVENT_QUIT )
       {
@@ -345,14 +347,13 @@ void SDLCALL _sdl_free( void *ptr )
 
 
 void
-crude_sdl_systemImport
+crude_platform_systemImport
 (
   ecs_world_t *world
 )
 {
-  ECS_MODULE( world, crude_sdl_system );
-  ECS_IMPORT( world, crude_gui_components );
-  ECS_IMPORT( world, crude_input_components );
+  ECS_MODULE( world, crude_platform_system );
+  ECS_IMPORT( world, crude_platform_components );
  
   ecs_observer( world, {
     .query.terms = { 

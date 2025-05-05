@@ -1,4 +1,4 @@
-#include <platform/input_components.h>
+#include <platform/platform_components.h>
 #include <scene/scene_components.h>
 #include <scene/free_camera_system.h>
 #include <core/log.h>
@@ -67,7 +67,7 @@ crude_free_camera_systemImport
   ECS_MODULE( world, crude_free_camera_system );
   ECS_IMPORT( world, crude_scripts_components );
   ECS_IMPORT( world, crude_scene_components );
-  ECS_IMPORT( world, crude_input_components );
+  ECS_IMPORT( world, crude_platform_components );
 
   ecs_system( world, {
     .entity = ecs_entity( world, { .name = "free_camera_update", .add = ecs_ids( ecs_dependson( EcsOnUpdate ) ) } ),

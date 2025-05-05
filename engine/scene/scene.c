@@ -654,7 +654,7 @@ _create_gltf_mesh_material
   }
   else
   {
-    mesh_draw->albedo_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
+    mesh_draw->albedo_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
   }
   
   if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
@@ -668,7 +668,7 @@ _create_gltf_mesh_material
   }
   else
   {
-    mesh_draw->roughness_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
+    mesh_draw->roughness_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
   }
 
   if ( material->occlusion_texture.texture )
@@ -684,7 +684,7 @@ _create_gltf_mesh_material
   }
   else
   {
-    mesh_draw->occlusion_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
+    mesh_draw->occlusion_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
   }
   
   if ( material->normal_texture.texture )
@@ -698,7 +698,7 @@ _create_gltf_mesh_material
   }
   else
   {
-    mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_INVALID_TEXTURE_INDEX;
+    mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
   }
   
   crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty();

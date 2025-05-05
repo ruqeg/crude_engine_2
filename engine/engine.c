@@ -31,6 +31,11 @@ crude_engine_initialize
   crude_heap_allocator_initialize( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
 
   crude_time_service_initialize();
+
+  engine->task_sheduler = enkiNewTaskScheduler();
+  struct enkiTaskSchedulerConfig config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
+  config.numTaskThreadsToCreate += 1;
+  enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
 }
 
 void

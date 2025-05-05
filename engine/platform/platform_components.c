@@ -1,20 +1,17 @@
-#include <platform/gui_components.h>
+#include <platform/platform_components.h>
 
-ECS_COMPONENT_DECLARE( crude_gui_system );
-ECS_COMPONENT_DECLARE( crude_gui_context );
+ECS_COMPONENT_DECLARE( crude_input );
 ECS_COMPONENT_DECLARE( crude_window );
 ECS_COMPONENT_DECLARE( crude_window_handle );
 
 void
-crude_gui_componentsImport
+crude_platform_componentsImport
 (
   ecs_world_t *world
 )
 {
-  ECS_MODULE( world, crude_gui_components );
-
-  ECS_COMPONENT_DEFINE( world, crude_gui_system );
-  ECS_COMPONENT_DEFINE( world, crude_gui_context );
+  ECS_MODULE( world, crude_platform_components );
+  ECS_COMPONENT_DEFINE( world, crude_input );
   ECS_COMPONENT_DEFINE( world, crude_window );
   ECS_COMPONENT_DEFINE( world, crude_window_handle );
   
