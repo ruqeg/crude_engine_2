@@ -31,7 +31,7 @@ crude_sandbox_initialize
     .height    = 600,
     .maximized = false });
   ecs_set( sandbox->engine->world, scene, crude_input, { 0 } );
-  ecs_set( sandbox->engine->world, scene, crude_graphics_creation, {
+  ecs_set( sandbox->engine->world, scene, crude_gfx_graphics_creation, {
     .task_sheduler       = sandbox->engine->task_sheduler,
     .allocator_container = crude_heap_allocator_pack( &sandbox->graphics_allocator ),
     .allocator_container = crude_heap_allocator_pack( &sandbox->graphics_allocator ),

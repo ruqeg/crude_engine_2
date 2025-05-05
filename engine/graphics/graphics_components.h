@@ -6,20 +6,20 @@
 #include <scene/scene.h>
 #include <TaskScheduler_c.h>
 
-typedef struct crude_graphics_creation
+typedef struct crude_gfx_graphics_creation
 {
   enkiTaskScheduler                                       *task_sheduler;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
-} crude_graphics_creation;
+} crude_gfx_graphics_creation;
 
-typedef struct crude_graphics_handle
+typedef struct crude_gfx_graphics_handle
 {
   void                                                    *value;
-} crude_graphics_handle;
+} crude_gfx_graphics_handle;
 
-CRUDE_API ECS_COMPONENT_DECLARE( crude_graphics_handle );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_graphics_creation );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_gfx_graphics_handle );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_gfx_graphics_creation );
 
 CRUDE_API void
 crude_graphics_componentsImport
