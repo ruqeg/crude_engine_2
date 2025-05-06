@@ -14,37 +14,9 @@
 #define _PARALLEL_RECORDINGS 4
 
 
-//void geometry_pass_render( crude_gfx_cmd_buffer *gpu_commands, void *render_scene )
-//{
-//  crude_gltf_scene *scene = ( crude_gltf_scene* )render_scene;
-//  
-//  crude_gfx_renderer_material *last_material = NULL;
-//  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ); ++mesh_index )
-//  {
-//    crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
-//    if ( mesh_draw->material != last_material )
-//    {
-//      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
-//      last_material = mesh_draw->material;
-//    }
-//    _draw_mesh( gpu_commands, mesh_draw );
-//  }
-//  Material* last_material = nullptr;
-//  for ( u32 mesh_index = 0; mesh_index < mesh_instances.size; ++mesh_index ) {
-//      MeshInstance& mesh_instance = mesh_instances[ mesh_index ];
-//      Mesh& mesh = *mesh_instance.mesh;
-//  
-//      if ( mesh.pbr_material.material != last_material ) {
-//          PipelineHandle pipeline = renderer->get_pipeline( mesh.pbr_material.material, mesh_instance.material_pass_index );
-//  
-//          gpu_commands->bind_pipeline( pipeline );
-//  
-//          last_material = mesh.pbr_material.material;
-//      }
-//  
-//      scene->draw_mesh( gpu_commands, mesh );
-//  }
-//}
+void geometry_pass_render( crude_gfx_cmd_buffer *gpu_commands, void *render_scene )
+{
+}
 //
 //void geometry_prepare_draws( glTFScene& scene, FrameGraph* frame_graph, Allocator* resident_allocator, StackAllocator* scratch_allocator ) {
 //    renderer = scene.renderer;
@@ -83,7 +55,7 @@
 //        mesh_instances.push( mesh_instance );
 //    }
 //
-//    //qsort( mesh_draws.data, mesh_draws.size, sizeof( MeshDraw ), gltf_mesh_material_compare );
+//    //qsort( meshes.data, meshes.size, sizeof( MeshDraw ), gltf_mesh_material_compare );
 //}
 
 /**
@@ -149,15 +121,24 @@ _create_gltf_mesh_material
   _In_ crude_gfx_renderer                       *renderer,
   _In_ crude_gltf_scene                         *scene,
   _In_ cgltf_material                           *material,
-  _In_ crude_mesh_draw                          *mesh_draw
+  _In_ crude_gfx_mesh                          *mesh_draw
 );
 
 static void
 _draw_mesh
 (
   _In_ crude_gfx_cmd_buffer                               *gpu_commands,
-  _In_ crude_mesh_draw                                    *mesh_draw
+  _In_ crude_gfx_mesh                                    *mesh_draw
 );
+
+bool
+crude_gfx_mesh_is_transparent
+(
+  _In_ crude_gfx_mesh                                     *mesh
+)
+{
+  return ( mesh->flags & ( CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK | CRUDE_GFX_DRAW_FLAGS_TRANSPARENT_MASK ) ) != 0;
+}
 
 /**
  *
@@ -391,7 +372,7 @@ crude_gltf_scene_load_from_file
     crude_gfx_asynchronous_loader_request_buffer_copy( scene->async_loader, cpu_buffer, gpu_buffer_resource->handle );
   }
   
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->mesh_draws, gltf->meshes_count, creation->allocator );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->meshes, gltf->meshes_count, creation->allocator );
 
   root_scene = gltf->scene;
   for ( uint32 node_index = 0; node_index < root_scene->nodes_count; ++node_index )
@@ -421,7 +402,7 @@ crude_gltf_scene_load_from_file
   
     for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
     {
-      crude_mesh_draw                                      mesh_draw;
+      crude_gfx_mesh                                      mesh_draw;
       cgltf_primitive                                     *mesh_primitive;
       cgltf_accessor                                      *indices_accessor;
       cgltf_buffer_view                                   *indices_buffer_view;
@@ -430,7 +411,7 @@ crude_gltf_scene_load_from_file
       
       mesh_primitive = &node->mesh->primitives[ primitive_index ];
 
-      mesh_draw = ( crude_mesh_draw ){ 0 };
+      mesh_draw = ( crude_gfx_mesh ){ 0 };
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
         crude_gfx_renderer_buffer *buffer_gpu = &scene->buffers[ cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
@@ -504,7 +485,7 @@ crude_gltf_scene_load_from_file
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
       mesh_draw.material = scene->material;
-      CRUDE_ARRAY_PUSH( scene->mesh_draws, mesh_draw );
+      CRUDE_ARRAY_PUSH( scene->meshes, mesh_draw );
     }
   }
   cgltf_free( gltf );
@@ -538,11 +519,11 @@ crude_gltf_scene_unload
   }
   CRUDE_ARRAY_FREE( scene->buffers );
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->mesh_draws ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->meshes ); ++i )
   {
-     crude_gfx_destroy_buffer( scene->renderer->gpu, scene->mesh_draws[ i ].material_buffer );
+     crude_gfx_destroy_buffer( scene->renderer->gpu, scene->meshes[ i ].material_buffer );
   }
-  CRUDE_ARRAY_FREE( scene->mesh_draws );
+  CRUDE_ARRAY_FREE( scene->meshes );
 
   CRUDE_ARRAY_FREE( scene->buffers );
 }
@@ -584,6 +565,78 @@ crude_register_render_passes
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_of_field_pass", &dof_pass );
 }
 
+
+/**
+ *
+ * Scene Geometry Pass
+ * 
+ */
+void
+crude_gfx_geometry_pass_render
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+)
+{
+  crude_gfx_renderer_material *last_material = NULL;
+  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
+  {
+    crude_gfx_mesh_instance                               *mesh_instance;
+    crude_gfx_mesh                                        *mesh;
+
+    mesh_instance = &pass->mesh_instances[ mesh_index ];
+    mesh = mesh_instance->mesh;
+    if ( mesh->material != last_material )
+    {
+      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh->material->program->passes[ mesh_instance->material_pass_index ].pipeline );
+      last_material = mesh->material;
+    }
+    _draw_mesh( gpu_commands, mesh );
+  }
+}
+
+void
+crude_gfx_geometry_pass_prepare_draws
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, "gbuffer_pass" );
+  if ( node == NULL )
+  {
+    CRUDE_ASSERT( false );
+    return;
+  }
+
+  const uint64 hashed_name = hash_calculate( "main" );
+  crude_gfx_renderer_technique *main_technique = renderer->resource_cache.techniques.get( hashed_name );
+  
+  crude_gfx_renderer_material_creation material_creation;
+  
+  material_creation.set_name( "material_no_cull" ).set_technique( main_technique ).set_render_index( 0 );
+  crude_gfx_renderer_material *material = renderer->create_material( material_creation );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( pass->mesh_instances, 16, pass->scene->renderer->allocator_container );
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene->meshes ); ++i ) {
+  
+    crude_gfx_mesh_instance                                mesh_instance;
+    crude_gfx_mesh                                        *mesh;
+
+    crude_gfx_mesh *mesh = &pass->scene->meshes[ i ];
+    if ( crude_gfx_mesh_is_transparent( mesh ) )
+    {
+      continue;
+    }
+  
+    mesh_instance.mesh = mesh;
+    mesh_instance.material_pass_index = 1;
+    CRUDE_ARRAY_PUSH( pass->mesh_instances, mesh_instance );
+  }
+}
+
 /**
  *
  * GLTF Utils Functinos Implementation
@@ -619,7 +672,7 @@ _create_gltf_mesh_material
   _In_ crude_gfx_renderer                       *renderer,
   _In_ crude_gltf_scene                         *scene,
   _In_ cgltf_material                           *material,
-  _In_ crude_mesh_draw                          *mesh_draw
+  _In_ crude_gfx_mesh                          *mesh_draw
 )
 {
   bool transparent = false;
@@ -715,7 +768,7 @@ void
 _draw_mesh
 (
   _In_ crude_gfx_cmd_buffer                               *gpu_commands,
-  _In_ crude_mesh_draw                                    *mesh_draw
+  _In_ crude_gfx_mesh                                    *mesh_draw
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "DrawMesh" );
@@ -775,7 +828,7 @@ _gltf_scene_primary_draw_task
 
   crude_gfx_cmd_buffer *gpu_commands = crude_gfx_get_primary_cmd( draw_task->scene->renderer->gpu, draw_task->thread_id, true );
 
-  //crude_gfx_render_graph_render( draw_task->scene->render_graph, gpu_commands );
+  crude_gfx_render_graph_render( draw_task->scene->render_graph, gpu_commands );
   //crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ) { .color = { 0.3, 0.3, 0.3, 1.0 } });
   //crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ) { .depthStencil = { .depth = 1.0, .stencil = 0 } } );
   //
@@ -783,7 +836,7 @@ _gltf_scene_primary_draw_task
   //
   //if ( draw_task->use_secondary )
   //{
-  //  uint32 draws_per_secondary = CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) / _PARALLEL_RECORDINGS;
+  //  uint32 draws_per_secondary = CRUDE_ARRAY_LENGTH( draw_task->scene->meshes ) / _PARALLEL_RECORDINGS;
   //  uint32 offset = draws_per_secondary * _PARALLEL_RECORDINGS;
   //  
   //  enkiTaskSet *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
@@ -804,13 +857,13 @@ _gltf_scene_primary_draw_task
   //    enkiAddTaskSet( draw_task->task_scheduler, secondary_draw_tasks[ i ] );
   //  }
   //  
-  //  if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) )
+  //  if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->meshes ) )
   //  {
   //    offset_secondary_draw_tasks_data = ( _gltf_scene_secondary_draw_task_data ) {
   //      .scene = draw_task->scene,
   //      .parent_cmd = gpu_commands,
   //      .start_mesh_draw_index = offset,
-  //      .end_mesh_draw_index = CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws )
+  //      .end_mesh_draw_index = CRUDE_ARRAY_LENGTH( draw_task->scene->meshes )
   //    };
   //    _gltf_scene_secondary_draw_task( NULL, NULL, thread_num, &offset_secondary_draw_tasks_data );
   //  }
@@ -821,7 +874,7 @@ _gltf_scene_primary_draw_task
   //    vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
   //  }
   //  
-  //  if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ) )
+  //  if ( offset < CRUDE_ARRAY_LENGTH( draw_task->scene->meshes ) )
   //  {
   //    vkCmdExecuteCommands( gpu_commands->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
   //  }
@@ -833,9 +886,9 @@ _gltf_scene_primary_draw_task
   //  crude_gfx_cmd_set_scissor( gpu_commands, NULL );
   //
   //  crude_gfx_renderer_material *last_material = NULL;
-  //  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( draw_task->scene->mesh_draws ); ++mesh_index )
+  //  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( draw_task->scene->meshes ); ++mesh_index )
   //  {
-  //    crude_mesh_draw *mesh_draw = &draw_task->scene->mesh_draws[ mesh_index ];
+  //    crude_gfx_mesh *mesh_draw = &draw_task->scene->meshes[ mesh_index ];
   //    if ( mesh_draw->material != last_material )
   //    {
   //      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh_draw->material->program->passes[ 0 ].pipeline );
@@ -870,7 +923,7 @@ _gltf_scene_secondary_draw_task
   crude_gfx_renderer_material *last_material = NULL;
   for ( uint32 mesh_index = secondary_draw_task->start_mesh_draw_index; mesh_index < secondary_draw_task->end_mesh_draw_index; ++mesh_index )
   {
-    crude_mesh_draw const *mesh_draw = &secondary_draw_task->scene->mesh_draws[ mesh_index ];
+    crude_gfx_mesh const *mesh_draw = &secondary_draw_task->scene->meshes[ mesh_index ];
   
     if ( mesh_draw->material != last_material )
     {

@@ -95,6 +95,21 @@ crude_gfx_render_pass_output_empty
   output.depth_operation = output.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }
 
+void
+crude_shader_state_creation_add_state
+(
+  _In_ crude_gfx_shader_state_creation                    *shader_state_creation,
+  _In_ char const                                         *code,
+  _In_ size_t                                              code_size,
+  _In_ VkShaderStageFlagBits                               type
+)
+{
+  shader_state_creation->stages[ shader_state_creation->stages_count ].code = code;
+  shader_state_creation->stages[ shader_state_creation->stages_count ].code_size = ( uint32 )code_size;
+  shader_state_creation->stages[ shader_state_creation->stages_count ].type = type;
+  ++shader_state_creation->stages_count;
+}
+
 /************************************************
  *
  * GPU Resoruces Functions

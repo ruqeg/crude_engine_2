@@ -863,6 +863,24 @@ crude_gfx_render_graph_builder_access_node
   return crude_resource_pool_access_resource( &builder->node_cache.nodes, handle.index );
 }
 
+crude_gfx_render_graph_node*
+crude_gfx_render_graph_builder_access_node_by_name
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ char const                                         *name
+)
+{
+  uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
+  uint32 handle_index = hmgeti( builder->node_cache.node_map, key );
+  if ( handle_index != -1 )
+  {
+    return NULL;
+  }
+  
+  return crude_resource_pool_access_resource( &builder->node_cache.nodes, ( crude_gfx_render_graph_resource_handle ){ hmget( builder->node_cache.node_map, handle_index ) }.index );
+
+}
+
 crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_obtain_node
 (

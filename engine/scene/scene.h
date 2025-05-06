@@ -12,7 +12,7 @@
  * Common Scene Structes
  * 
  */
-typedef struct crude_mesh_draw
+typedef struct crude_gfx_mesh
 {
   crude_gfx_renderer_material                             *material;
   crude_float3                                             scale;
@@ -38,7 +38,19 @@ typedef struct crude_mesh_draw
   uint16                                                   roughness_texture_index;
   uint16                                                   normal_texture_index;
   uint16                                                   occlusion_texture_index;
-} crude_mesh_draw;
+} crude_gfx_mesh;
+
+typedef struct crude_gfx_mesh_instance
+{
+  crude_gfx_mesh                                          *mesh;
+  uint32                                                   material_pass_index;
+} crude_gfx_mesh_instance;
+
+CRUDE_API bool
+crude_gfx_mesh_is_transparent
+(
+  _In_ crude_gfx_mesh                                     *mesh
+);
 
 /**
  *
@@ -73,7 +85,7 @@ typedef struct crude_gltf_scene
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
-  crude_mesh_draw                                         *mesh_draws;
+  crude_gfx_mesh                                          *meshes;
   char const                                               path[ CRUDE_MAX_GLTF_SCENE_PATH_LEN ];
   
   crude_gfx_asynchronous_loader                           *async_loader;
@@ -115,4 +127,31 @@ crude_register_render_passes
 (
   _In_ crude_gltf_scene                                   *scene,
   _In_ crude_gfx_render_graph  *render_graph
+);
+
+/**
+ *
+ * Scene Geometry Pass
+ * 
+ */
+typedef struct crude_gfx_geometry_pass
+{
+  crude_gltf_scene                                        *scene;
+  crude_gfx_mesh_instance                                 *mesh_instances;
+  crude_gfx_renderer                                      *renderer;
+} crude_gfx_geometry_pass;
+
+CRUDE_API void
+crude_gfx_geometry_pass_render
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+);
+
+CRUDE_API void
+crude_gfx_geometry_pass_prepare_draws
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
 );

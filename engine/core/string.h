@@ -37,6 +37,24 @@ crude_string_buffer_append_use_f
   _In_ ...
 );
 
+CRUDE_API void
+crude_string_buffer_clear
+(
+  _In_ crude_string_buffer                                *string_buffer
+);
+
+CRUDE_API char*
+crude_string_buffer_current
+(
+  _In_ crude_string_buffer                                *string_buffer
+);
+
+CRUDE_API void
+crude_string_buffer_close_current_string
+(
+  _In_ crude_string_buffer                                *string_buffer
+);
+
 /************************************************
  *
  * String Utils

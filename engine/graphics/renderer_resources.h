@@ -87,8 +87,27 @@ typedef struct crude_gfx_renderer_program
   char const                                              *name;
 } crude_gfx_renderer_program;
 
+typedef struct crude_gfx_renderer_technique_creation
+{
+  crude_gfx_pipeline_creation                              creations[ 8 ];
+  uint32                                                   num_creations;
+  char const                                              *name;
+} crude_gfx_renderer_technique_creation;
+
+typedef struct crude_gfx_renderer_technique_pass
+{
+  crude_gfx_pipeline_handle                                pipeline;
+} crude_gfx_renderer_technique_pass;
+
+typedef struct crude_gfx_renderer_technique
+{
+  crude_gfx_renderer_technique_pass                       *passes;
+  uint32                                                   pool_index;
+} crude_gfx_renderer_technique;
+
 typedef struct crude_gfx_renderer_material_creation
 {
+  crude_gfx_renderer_technique                            *technique;
   crude_gfx_renderer_program                              *program;
   char const                                              *name;
   uint32                                                   render_index;
@@ -96,7 +115,7 @@ typedef struct crude_gfx_renderer_material_creation
 
 typedef struct crude_gfx_renderer_material
 {
-  crude_gfx_renderer_program                              *program;
+  crude_gfx_renderer_technique                            *technique;
   uint32                                                   render_index;
   uint32                                                   pool_index;
   char const                                              *name;

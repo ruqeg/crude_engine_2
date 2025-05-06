@@ -155,16 +155,16 @@ typedef struct crude_gfx_render_graph_resource_cache
 
 typedef struct crude_gfx_render_graph_pass_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_pass *value; }  *render_pass_map;
+  struct { uint64 key; crude_gfx_render_graph_pass *value; } *render_pass_map;
 } crude_gfx_render_graph_pass_cache;
 
 typedef struct crude_gfx_render_graph_builder
 {
   crude_gfx_device                                        *gpu;
-  crude_allocator_container                                 allocator_container;
-  crude_gfx_render_graph_node_cache                         node_cache;
-  crude_gfx_render_graph_resource_cache                     resource_cache;
-  crude_gfx_render_graph_pass_cache                         render_pass_cache;
+  crude_allocator_container                                allocator_container;
+  crude_gfx_render_graph_node_cache                        node_cache;
+  crude_gfx_render_graph_resource_cache                    resource_cache;
+  crude_gfx_render_graph_pass_cache                        render_pass_cache;
 } crude_gfx_render_graph_builder;
 
 /************************************************
@@ -273,6 +273,13 @@ crude_gfx_render_graph_builder_access_node
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ crude_gfx_render_graph_node_handle                  handle
+);
+
+CRUDE_API crude_gfx_render_graph_node*
+crude_gfx_render_graph_builder_access_node_by_name
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ char const                                         *name
 );
 
 CRUDE_API crude_gfx_render_graph_node_handle

@@ -68,6 +68,34 @@ crude_string_buffer_append_use_f
   return string_buffer->buffer + cached_offset;
 }
 
+void
+crude_string_buffer_clear
+(
+  _In_ crude_string_buffer                                *string_buffer
+)
+{
+  string_buffer->occupied = 0;
+  string_buffer->buffer[ 0 ] = 0;
+}
+
+char*
+crude_string_buffer_current
+(
+  _In_ crude_string_buffer                                *string_buffer
+)
+{
+  return string_buffer->buffer + string_buffer->occupied;
+}
+
+void
+crude_string_buffer_close_current_string
+(
+  _In_ crude_string_buffer                                *string_buffer
+)
+{
+  string_buffer->buffer[ string_buffer->occupied ] = 0;
+  ++string_buffer->occupied;
+}
 
 /************************************************
  *

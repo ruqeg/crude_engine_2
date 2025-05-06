@@ -228,6 +228,7 @@ typedef enum crude_gfx_vertex_input_rate
 typedef enum crude_gfx_draw_flags
 {
   CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK = 1 << 0,
+  CRUDE_GFX_DRAW_FLAGS_TRANSPARENT_MASK = 2 << 0,
 } crude_gfx_draw_flags;
 
 /************************************************
@@ -441,7 +442,7 @@ typedef struct crude_gfx_pipeline_creation
   crude_gfx_depth_stencil_creation                         depth_stencil;
   crude_gfx_blend_state_creation                           blend_state;
   crude_gfx_shader_state_creation                          shaders;
-  crude_gfx_render_pass_output                             render_pass;
+  crude_gfx_render_pass_output                             render_pass_output;
   crude_gfx_viewport_state const                          *viewport;
   char const                                              *name;
 } crude_gfx_pipeline_creation;
@@ -679,6 +680,15 @@ crude_gfx_texture_creation_empty
 CRUDE_API crude_gfx_render_pass_output
 crude_gfx_render_pass_output_empty
 (
+);
+
+CRUDE_API void
+crude_shader_state_creation_add_state
+(
+  _In_ crude_gfx_shader_state_creation                    *shader_state_creation,
+  _In_ char const                                         *code,
+  _In_ size_t                                              code_size,
+  _In_ VkShaderStageFlagBits                               type
 );
 
 /************************************************

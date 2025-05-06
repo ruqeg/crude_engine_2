@@ -135,6 +135,7 @@ typedef struct crude_gfx_device
    */
   crude_gfx_buffer_handle                                  frame_buffer;
   crude_gfx_buffer_handle                                  mesh_buffer;
+  crude_gfx_render_pass_output                             swapchain_output;
 
 
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;

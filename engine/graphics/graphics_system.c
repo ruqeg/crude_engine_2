@@ -270,9 +270,9 @@ graphics_process_
     
     // update mesh buffer
     CRUDE_PROFILER_ZONE_NAME( "UpdateMeshBuffer" );
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.mesh_draws ); ++mesh_index )
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.meshes ); ++mesh_index )
     {
-      crude_mesh_draw *mesh_draw = &graphics->scene.mesh_draws[ mesh_index ];
+      crude_gfx_mesh *mesh_draw = &graphics->scene.meshes[ mesh_index ];
       
       constant_buffer_map.buffer = mesh_draw->material_buffer;
       
