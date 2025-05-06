@@ -143,14 +143,12 @@ typedef struct crude_gfx_render_graph_node
  ***********************************************/
 typedef struct crude_gfx_render_graph_node_cache
 {
-  crude_gfx_device                                        *device;
   struct { uint64 key; uint32 value; }                    *node_map;
   crude_resource_pool                                      nodes;
 } crude_gfx_render_graph_node_cache;
 
 typedef struct crude_gfx_render_graph_resource_cache
 {
-  crude_gfx_device                                        *device;
   struct { uint64 key; uint32 value; }                    *resource_map;
   crude_resource_pool                                      resources;
 } crude_gfx_render_graph_resource_cache;
@@ -301,4 +299,40 @@ crude_gfx_render_graph_builder_access_resource_by_name
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_resource_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_node_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_render_pass_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_resource_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_node_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
+CRUDE_API void
+crude_gfx_render_graph_builder_render_pass_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
 );

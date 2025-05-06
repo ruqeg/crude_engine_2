@@ -24,12 +24,10 @@ typedef struct crude_gfx_graphics
   crude_gfx_render_graph_builder                            render_graph_builder;
   crude_gfx_asynchronous_loader                             async_loader;
   crude_allocator_container                                 allocator_container;
-  bool                                                      async_loader_execute;
-
-  crude_gltf_scene                                         *scene;
-  crude_entity                                              camera;
-  enkiTaskScheduler                                        *ets;
   enkiPinnedTask                                           *async_load_task;
+  bool                                                      async_loader_execute;
+  crude_gltf_scene                                          scene;
+  crude_entity                                              camera;
 } crude_gfx_graphics;
 
 /************************************************
@@ -86,15 +84,18 @@ graphics_initialize_
 
   for ( size_t i = 0; i < it->count; ++i )
   {
-    crude_gfx_graphics_creation                               *graphics_creation;
-    crude_gfx_graphics                                        *graphics;
+    crude_gfx_graphics_creation                           *graphics_creation;
+    crude_gfx_graphics                                    *graphics;
     crude_window_handle                                   *window_handle;
     crude_entity                                           entity;
+    uint32                                                 temporary_allocator_marker;
 
     graphics_creation = &graphics_creation_per_entity[ i ];
     window_handle = &window_handle_per_entity[ i ];
     entity = ( crude_entity ){ it->entities[ i ], it->world };
     
+    temporary_allocator_marker = crude_stack_allocator_get_marker( graphics_creation->temporary_allocator );
+
     // Ensure Graphics Component
     {
       crude_gfx_graphics_handle *graphics_handle = CRUDE_ENTITY_GET_OR_ADD_COMPONENT( entity, crude_gfx_graphics_handle );
@@ -142,6 +143,66 @@ graphics_initialize_
       graphics->async_load_task = enkiCreatePinnedTask( graphics_creation->task_sheduler, pinned_task_asyns_loop_, config.numTaskThreadsToCreate );
       enkiAddPinnedTaskArgs( graphics_creation->task_sheduler, graphics->async_load_task, graphics );
     }
+
+    /* Parse */
+    {
+      crude_string_buffer                                  temporary_name_buffer;
+      crude_allocator_container                            temporary_allocator_container;
+      char                                                 working_directory[ 512 ];
+      
+      crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+      temporary_allocator_container = crude_stack_allocator_pack( graphics_creation->temporary_allocator );
+      crude_string_buffer_initialize( &temporary_name_buffer, 1024, temporary_allocator_container );
+
+      /* Parse render graph*/
+      {
+        char const *render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\graph.json" );
+        crude_gfx_render_graph_parse_from_file( &graphics->render_graph, render_graph_file_path, graphics_creation->temporary_allocator );
+      }
+      
+      /* Parse gltf*/
+      {
+        char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+        crude_gltf_scene_creation gltf_creation = {
+          .renderer = &graphics->renderer,
+          .path = gltf_path,
+          .async_loader = &graphics->async_loader,
+          .allocator = graphics_creation->allocator_container,
+          .temprorary_stack_allocator = graphics_creation->temporary_allocator
+        };
+        crude_gltf_scene_load_from_file( &graphics->scene, &gltf_creation );
+      }
+    }
+    
+    crude_register_render_passes( &graphics->scene, &graphics->render_graph );
+    
+    crude_gfx_buffer_creation ubo_creation = {
+      .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
+      .size = sizeof( crude_gfx_shader_frame_constants ),
+      .name = "ubo",
+    };
+    graphics->gpu.frame_buffer = crude_gfx_create_buffer( &graphics->gpu, &ubo_creation );
+
+    /* Create free camera */
+    {
+      graphics->camera = crude_entity_create_empty( it->world, "camera1" );
+      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_camera, {
+        .fov_radians = CRUDE_CPI4,
+        .near_z = 0.01,
+        .far_z = 1000,
+        .aspect_ratio = 1.0 } );
+      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_transform, {
+        .translation = { 0, 0, -5 },
+        .rotation = { 0, 0, 0, 1 },
+        .scale = { 1, 1, 1 }, } );
+      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_free_camera, {
+        .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
+        .rotating_speed_multiplier  = { -0.15f, -0.15f },
+        .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
+    }
+
+    crude_stack_allocator_free_marker( graphics_creation->temporary_allocator, temporary_allocator_marker );
   }
 }
 
@@ -159,6 +220,9 @@ graphics_deinitialize_
 
     graphics = ( crude_gfx_graphics* )graphics_per_entity[ i ].value;
     
+    vkDeviceWaitIdle( graphics->gpu.vk_device );
+    crude_gfx_destroy_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
+    crude_gltf_scene_unload( &graphics->scene );
     graphics->async_loader_execute = false;
     crude_gfx_asynchronous_loader_deinitialize( &graphics->async_loader );
     crude_gfx_render_graph_deinitialize( &graphics->render_graph );
@@ -166,10 +230,6 @@ graphics_deinitialize_
     crude_gfx_renderer_deinitialize( &graphics->renderer );
     crude_gfx_device_deinitialize( &graphics->gpu );
     CRUDE_DEALLOCATE( graphics->allocator_container, graphics );
-    //crude_gltf_scene_unload( renderer[ i ].scene );
-    //crude_gfx_destroy_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
-    //crude_gfx_renderer_deinitialize( renderer[ i ].renderer );
-    //crude_gfx_device_deinitialize( renderer[ i ].gpu );
   }
 }
 
@@ -190,57 +250,57 @@ graphics_process_
 
     crude_gfx_new_frame( &graphics->gpu );
   
-    //// update fame buffer
-    //crude_gfx_map_buffer_parameters constant_buffer_map = { renderer[ i ].gpu->frame_buffer, 0, 0 };
-    //crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map );
-    //if ( frame_buffer_data )
-    //{
-    //  CRUDE_PROFILER_ZONE_NAME( "UpdateFrameBuffer" );
-    //  crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_camera );
-    //  crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( renderer[ i ].camera, crude_transform );
-    //
-    //  crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( renderer[ i ].camera, transform ) );
-    //  crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
-    //  
-    //  crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
-    //  crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
-    //  crude_gfx_unmap_buffer( renderer[ i ].gpu, renderer[ i ].gpu->frame_buffer );
-    //  CRUDE_PROFILER_END;
-    //}
-    //
-    //// update mesh buffer
-    //CRUDE_PROFILER_ZONE_NAME( "UpdateMeshBuffer" );
-    //for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( renderer->scene->mesh_draws ); ++mesh_index )
-    //{
-    //  crude_mesh_draw *mesh_draw = &renderer->scene->mesh_draws[ mesh_index ];
-    //  
-    //  constant_buffer_map.buffer = mesh_draw->material_buffer;
-    //  
-    //  crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( renderer[ i ].gpu, &constant_buffer_map );
-    //  if ( mesh_data )
-    //  {
-    //    mesh_data->textures.x = mesh_draw->albedo_texture_index;
-    //    mesh_data->textures.y = mesh_draw->roughness_texture_index;
-    //    mesh_data->textures.z = mesh_draw->normal_texture_index;
-    //    mesh_data->textures.w = mesh_draw->occlusion_texture_index;
-    //    mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
-    //    mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
-    //    mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
-    //    mesh_data->flags.x = mesh_draw->flags;
-    //    
-    //    crude_transform model_transform = {
-    //      .translation = { 0.0, 0.0, -4.0 },
-    //      .rotation = { 0.0, 0.0, 0.0, 0.0 },
-    //      .scale = { 0.005,0.005,0.005 },
-    //    };
-    //    crude_matrix model_to_world = crude_transform_node_to_world( renderer[ i ].camera, &model_transform );
-    //    crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
-    //  
-    //    crude_gfx_unmap_buffer( renderer[ i ].gpu, mesh_draw->material_buffer );
-    //  }
-    //}
-    //CRUDE_PROFILER_END;
-    //
+    // update fame buffer
+    crude_gfx_map_buffer_parameters constant_buffer_map = { graphics->gpu.frame_buffer, 0, 0 };
+    crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );
+    if ( frame_buffer_data )
+    {
+      CRUDE_PROFILER_ZONE_NAME( "UpdateFrameBuffer" );
+      crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_camera );
+      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_transform );
+    
+      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( graphics->camera, transform ) );
+      crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+      
+      crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
+      crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
+      crude_gfx_unmap_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
+      CRUDE_PROFILER_END;
+    }
+    
+    // update mesh buffer
+    CRUDE_PROFILER_ZONE_NAME( "UpdateMeshBuffer" );
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.mesh_draws ); ++mesh_index )
+    {
+      crude_mesh_draw *mesh_draw = &graphics->scene.mesh_draws[ mesh_index ];
+      
+      constant_buffer_map.buffer = mesh_draw->material_buffer;
+      
+      crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );
+      if ( mesh_data )
+      {
+        mesh_data->textures.x = mesh_draw->albedo_texture_index;
+        mesh_data->textures.y = mesh_draw->roughness_texture_index;
+        mesh_data->textures.z = mesh_draw->normal_texture_index;
+        mesh_data->textures.w = mesh_draw->occlusion_texture_index;
+        mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
+        mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
+        mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
+        mesh_data->flags.x = mesh_draw->flags;
+        
+        crude_transform model_transform = {
+          .translation = { 0.0, 0.0, -4.0 },
+          .rotation = { 0.0, 0.0, 0.0, 0.0 },
+          .scale = { 0.005,0.005,0.005 },
+        };
+        crude_matrix model_to_world = crude_transform_node_to_world( graphics->camera, &model_transform );
+        crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
+      
+        crude_gfx_unmap_buffer( &graphics->gpu, mesh_draw->material_buffer );
+      }
+    }
+    CRUDE_PROFILER_END;
+    
     //crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
   
     crude_gfx_present( &graphics->gpu );

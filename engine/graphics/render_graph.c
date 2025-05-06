@@ -50,6 +50,20 @@ crude_gfx_render_graph_deinitialize
   _In_ crude_gfx_render_graph                             *render_graph
 )
 {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    
+    crude_gfx_destroy_render_pass( render_graph->builder->gpu, node->render_pass );
+    crude_gfx_destroy_framebuffer( render_graph->builder->gpu, node->framebuffer );
+    
+    CRUDE_ARRAY_FREE( node->inputs ); 
+    CRUDE_ARRAY_FREE( node->outputs ); 
+    CRUDE_ARRAY_FREE( node->edges ); 
+  }
+  
+  CRUDE_ARRAY_FREE( render_graph->nodes ); 
+
   crude_linear_allocator_deinitialize( &render_graph->local_allocator );
 }
 
@@ -691,7 +705,7 @@ crude_gfx_render_graph_render
 
 /************************************************
  *
- * Render Graph Builder Function Declaration
+ * Render Graph Builder Function Implementation
  * 
  ***********************************************/
 void
@@ -703,14 +717,10 @@ crude_gfx_render_graph_builder_initialize
 {
   builder->allocator_container = gpu->allocator_container;
   builder->gpu = gpu;
-  builder->node_cache;
-  builder->resource_cache;
   
-  crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, sizeof( crude_gfx_render_graph_node ) );
-  builder->node_cache.node_map = NULL;
-
-  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_node ) );
-  builder->resource_cache.resource_map = NULL;
+  crude_gfx_render_graph_builder_resource_cache_initialize( builder );
+  crude_gfx_render_graph_builder_node_cache_initialize( builder );
+  crude_gfx_render_graph_builder_render_pass_cache_initialize( builder );
 }
 
 void
@@ -719,8 +729,9 @@ crude_gfx_render_graph_builder_deinitialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  crude_resource_pool_deinitialize( &builder->node_cache.nodes );
-  crude_resource_pool_deinitialize( &builder->resource_cache.resources );
+  crude_gfx_render_graph_builder_resource_cache_deinitialize( builder );
+  crude_gfx_render_graph_builder_node_cache_deinitialize( builder );
+  crude_gfx_render_graph_builder_render_pass_cache_deinitialize( builder );
 }
 
 void
@@ -896,6 +907,84 @@ crude_gfx_render_graph_builder_access_resource_by_name
   }
   
   return crude_resource_pool_access_resource( &builder->resource_cache.resources, ( crude_gfx_render_graph_resource_handle ){ hmget( builder->resource_cache.resource_map, handle_index ) }.index );
+}
+
+void
+crude_gfx_render_graph_builder_resource_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  builder->resource_cache.resource_map = NULL;
+}
+
+void
+crude_gfx_render_graph_builder_node_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  builder->node_cache.node_map = NULL;
+}
+
+void
+crude_gfx_render_graph_builder_render_pass_cache_initialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  builder->render_pass_cache.render_pass_map = NULL;
+}
+
+void
+crude_gfx_render_graph_builder_resource_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  for ( int32 i = 0; i < hmlen( builder->resource_cache.resource_map ); ++i )
+  {
+    crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( builder, ( crude_gfx_render_graph_resource_handle ){ builder->resource_cache.resource_map[ i ].value } );
+
+    bool is_texture_type = ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE || resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT );
+    bool is_buffer_type = ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER );
+    if ( is_texture_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.texture.texture ) )
+    {
+      crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.texture );
+      crude_gfx_destroy_texture( builder->gpu, texture->handle );
+    }
+    else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.buffer ) )
+    {
+      crude_gfx_buffer *buffer = crude_gfx_access_buffer( builder->gpu, resource->resource_info.buffer.buffer );
+      crude_gfx_destroy_buffer( builder->gpu, buffer->handle );
+    }
+  }
+
+  crude_resource_pool_free_all_resource( &builder->resource_cache.resources );
+  crude_resource_pool_deinitialize( &builder->resource_cache.resources );
+  hmfree( builder->resource_cache.resource_map );
+}
+
+void
+crude_gfx_render_graph_builder_node_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  crude_resource_pool_free_all_resource( &builder->node_cache.nodes );
+  crude_resource_pool_deinitialize( &builder->node_cache.nodes );
+  hmfree( builder->node_cache.node_map );
+}
+
+void
+crude_gfx_render_graph_builder_render_pass_cache_deinitialize
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  hmfree( builder->render_pass_cache.render_pass_map );
 }
 
 /************************************************
