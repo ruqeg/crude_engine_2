@@ -74,10 +74,35 @@ typedef struct crude_gltf_scene_creation
 } crude_gltf_scene_creation;
 
 
-typedef struct crude_gfx_gbuffer_pass
+/**
+ *
+ * Scene Geometry Pass
+ * 
+ */
+
+typedef struct crude_gltf_scene crude_gltf_scene;
+
+typedef struct crude_gfx_geometry_pass
 {
-  crude_gfx_renderer         *renderer;
-}; // struct GBufferPass
+  crude_gltf_scene                                        *scene;
+  crude_gfx_mesh_instance                                 *mesh_instances;
+  crude_gfx_renderer                                      *renderer;
+} crude_gfx_geometry_pass;
+
+CRUDE_API void
+crude_gfx_geometry_pass_render
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+);
+
+CRUDE_API void
+crude_gfx_geometry_pass_prepare_draws
+(
+  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
 
 typedef struct crude_gltf_scene
 {
@@ -89,6 +114,8 @@ typedef struct crude_gltf_scene
   crude_gfx_renderer_buffer                               *buffers;
   crude_gfx_mesh                                          *meshes;
   char const                                               path[ CRUDE_MAX_GLTF_SCENE_PATH_LEN ];
+
+  crude_gfx_geometry_pass                                  geometry_pass;
 } crude_gltf_scene;
 
 /**
@@ -110,6 +137,13 @@ crude_gltf_scene_unload
 );
 
 CRUDE_API void
+crude_gfx_scene_prepare_draws
+(
+  _In_ crude_gltf_scene                                   *scene,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API void
 crude_gltf_scene_submit_draw_task
 (
   _In_ crude_gltf_scene                                   *scene,
@@ -122,31 +156,4 @@ crude_register_render_passes
 (
   _In_ crude_gltf_scene                                   *scene,
   _In_ crude_gfx_render_graph  *render_graph
-);
-
-/**
- *
- * Scene Geometry Pass
- * 
- */
-typedef struct crude_gfx_geometry_pass
-{
-  crude_gltf_scene                                        *scene;
-  crude_gfx_mesh_instance                                 *mesh_instances;
-  crude_gfx_renderer                                      *renderer;
-} crude_gfx_geometry_pass;
-
-CRUDE_API void
-crude_gfx_geometry_pass_render
-(
-  _In_ crude_gfx_geometry_pass                            *pass,
-  _In_ crude_gfx_cmd_buffer                               *gpu_commands
-);
-
-CRUDE_API void
-crude_gfx_geometry_pass_prepare_draws
-(
-  _In_ crude_gfx_geometry_pass                            *pass,
-  _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_stack_allocator                              *temporary_allocator
 );

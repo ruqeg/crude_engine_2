@@ -1,5 +1,6 @@
 #include <graphics/renderer.h>
 
+#include <core/hash_map.h>
 #include <core/string.h>
 
 /************************************************
@@ -26,6 +27,8 @@ crude_gfx_renderer_initialize
   renderer->num_textures_to_update = 0;
 
   mtx_init( &renderer->texture_update_mutex, mtx_plain );
+
+  renderer->resource_cache.techniques = NULL;
 }
 
 void
@@ -34,6 +37,7 @@ crude_gfx_renderer_deinitialize
   _In_ crude_gfx_renderer                                 *renderer
 )
 {
+  hmfree( renderer->resource_cache.techniques );
   crude_resource_pool_deinitialize( &renderer->buffers );
   crude_resource_pool_deinitialize( &renderer->textures );
   crude_resource_pool_deinitialize( &renderer->samplers );
@@ -281,7 +285,8 @@ crude_gfx_renderer_create_technique
   
   if ( creation->name )
   {
-    // !TODO resource_cache.techniques.insert( hash_calculate( creation.name ), technique );
+    uint64 key = stbds_hash_bytes( ( void* )creation->name, strlen( creation->name ), 0 );
+    hmput( renderer->resource_cache.techniques, key, technique );
   }
   
   technique->pool_index = technique_handle.index;

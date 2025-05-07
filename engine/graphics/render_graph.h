@@ -107,13 +107,13 @@ typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_
 typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
 
-typedef struct crude_gfx_render_graph_pass
+typedef struct crude_gfx_render_graph_pass_container
 {
   crude_gfx_render_graph_render_pass_pre_render            pre_render;
   crude_gfx_render_graph_render_pass_render                render;
   crude_gfx_render_graph_render_pass_on_resize             on_resize;
   void                                                    *ctx;
-} crude_gfx_render_graph_pass;
+} crude_gfx_render_graph_pass_container;
 
 typedef struct crude_gfx_render_graph_node_creation
 {
@@ -128,7 +128,7 @@ typedef struct crude_gfx_render_graph_node
   int32                                                    ref_count;
   crude_gfx_render_pass_handle                             render_pass;
   crude_gfx_framebuffer_handle                             framebuffer;
-  crude_gfx_render_graph_pass                             *graph_render_pass;
+  crude_gfx_render_graph_pass_container                    graph_render_pass;
   crude_gfx_render_graph_resource_handle                  *inputs;
   crude_gfx_render_graph_resource_handle                  *outputs;
   crude_gfx_render_graph_node_handle                      *edges;
@@ -155,7 +155,7 @@ typedef struct crude_gfx_render_graph_resource_cache
 
 typedef struct crude_gfx_render_graph_pass_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_pass *value; } *render_pass_map;
+  struct { uint64 key; crude_gfx_render_graph_pass_container value; } *render_pass_map;
 } crude_gfx_render_graph_pass_cache;
 
 typedef struct crude_gfx_render_graph_builder
@@ -243,7 +243,7 @@ crude_gfx_render_graph_builder_register_render_pass
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ char const                                         *name,
-  _In_ crude_gfx_render_graph_pass                        *render_pass
+  _In_ crude_gfx_render_graph_pass_container               render_pass
 );
 
 CRUDE_API crude_gfx_render_graph_node_handle

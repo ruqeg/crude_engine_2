@@ -5,6 +5,11 @@
 #include <graphics/renderer_resources.h>
 #include <graphics/gpu_device.h>
 
+typedef struct crude_gfx_renderer_resource_cache
+{
+  struct{ uint64 key; crude_gfx_renderer_technique *value; }         *techniques;
+} crude_gfx_renderer_resource_cache;
+
 /************************************************
  *
  * Renderer Structs
@@ -28,6 +33,9 @@ typedef struct crude_gfx_renderer
   crude_gfx_texture_handle                                 textures_to_update[ 128 ];
   uint32                                                   num_textures_to_update;
   mtx_t                                                    texture_update_mutex;
+
+  
+  crude_gfx_renderer_resource_cache               resource_cache;
 } crude_gfx_renderer;
 
 /************************************************

@@ -3,7 +3,7 @@
   "pipelines": [
     {
       "name": "geometry",
-      "render_pass": "swapchain",
+      "render_pass": "geometry_pass",
       "depth": {
         "write": false,
         "test": "equal"

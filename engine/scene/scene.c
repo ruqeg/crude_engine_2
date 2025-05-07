@@ -4,6 +4,7 @@
 #include <core/profiler.h>
 #include <core/array.h>
 #include <core/file.h>
+#include <core/hash_map.h>
 
 #include <scene/scene.h>
 
@@ -14,9 +15,9 @@
 #define _PARALLEL_RECORDINGS 4
 
 
-void geometry_pass_render( crude_gfx_cmd_buffer *gpu_commands, void *render_scene )
-{
-}
+//void geometry_pass_render( crude_gfx_cmd_buffer *gpu_commands, void *render_scene )
+//{
+//}
 //
 //void geometry_prepare_draws( glTFScene& scene, FrameGraph* frame_graph, Allocator* resident_allocator, StackAllocator* scratch_allocator ) {
 //    renderer = scene.renderer;
@@ -497,6 +498,16 @@ crude_gltf_scene_unload
 }
 
 void
+crude_gfx_scene_prepare_draws
+(
+  _In_ crude_gltf_scene                                   *scene,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  crude_gfx_geometry_pass_prepare_draws( &scene->geometry_pass, scene->render_graph, temporary_allocator );
+}
+
+void
 crude_gltf_scene_submit_draw_task
 (
   _In_ crude_gltf_scene                                   *scene,
@@ -518,6 +529,10 @@ crude_gltf_scene_submit_draw_task
   CRUDE_PROFILER_END;
 }
 
+void nothing_fun( void *ctx, crude_gfx_cmd_buffer *gpu_commands )
+{
+}
+
 void
 crude_register_render_passes
 (
@@ -525,8 +540,15 @@ crude_register_render_passes
   _In_ crude_gfx_render_graph  *render_graph
 )
 {
+  scene->geometry_pass.scene = scene;
+  scene->geometry_pass.renderer = scene->renderer;
+
   scene->render_graph = render_graph;
-  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pre_pass", &depth_pre_pass );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "geometry_pass", ( crude_gfx_render_graph_pass_container ){
+    .pre_render = nothing_fun,
+    .render = crude_gfx_geometry_pass_render,
+    .ctx = &scene->geometry_pass 
+  } );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_pass", &gbuffer_pass );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "lighting_pass", &light_pass );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "transparent_pass", &transparent_pass );
@@ -546,21 +568,21 @@ crude_gfx_geometry_pass_render
   _In_ crude_gfx_cmd_buffer                               *gpu_commands
 )
 {
-  //crude_gfx_renderer_material *last_material = NULL;
-  //for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
-  //{
-  //  crude_gfx_mesh_instance                               *mesh_instance;
-  //  crude_gfx_mesh                                        *mesh;
+  crude_gfx_renderer_material *last_material = NULL;
+  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
+  {
+    crude_gfx_mesh_instance                               *mesh_instance;
+    crude_gfx_mesh                                        *mesh;
 
-  //  mesh_instance = &pass->mesh_instances[ mesh_index ];
-  //  mesh = mesh_instance->mesh;
-  //  if ( mesh->material != last_material )
-  //  {
-  //    crude_gfx_cmd_bind_pipeline( gpu_commands, mesh->material->program->passes[ mesh_instance->material_pass_index ].pipeline );
-  //    last_material = mesh->material;
-  //  }
-  //  _draw_mesh( gpu_commands, mesh );
-  //}
+    mesh_instance = &pass->mesh_instances[ mesh_index ];
+    mesh = mesh_instance->mesh;
+    if ( mesh->material != last_material )
+    {
+      crude_gfx_cmd_bind_pipeline( gpu_commands, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
+      last_material = mesh->material;
+    }
+    _draw_mesh( gpu_commands, mesh );
+  }
 }
 
 void
@@ -571,38 +593,41 @@ crude_gfx_geometry_pass_prepare_draws
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  //crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, "gbuffer_pass" );
-  //if ( node == NULL )
-  //{
-  //  CRUDE_ASSERT( false );
-  //  return;
-  //}
+  crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, "gbuffer_pass" );
+  if ( node == NULL )
+  {
+    CRUDE_ASSERT( false );
+    return;
+  }
+  
+  uint64 hashed_name = stbds_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
+  crude_gfx_renderer_technique *main_technique = hmgeti( pass->renderer->resource_cache.techniques, hashed_name );
+  
+  crude_gfx_renderer_material_creation material_creation = {
+    .name = "material_no_cull",
+    .technique = main_technique,
+    .render_index = 0
+  };
+  
+  crude_gfx_renderer_material *material = crude_gfx_renderer_create_material( pass->renderer, &material_creation );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( pass->mesh_instances, 16, pass->scene->renderer->allocator_container );
+  
+  for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene->meshes ); ++i ) {
+  
+    crude_gfx_mesh_instance                                mesh_instance;
+    crude_gfx_mesh                                        *mesh;
 
-  //const uint64 hashed_name = hash_calculate( "main" );
-  //crude_gfx_renderer_technique *main_technique = renderer->resource_cache.techniques.get( hashed_name );
-  //
-  //crude_gfx_renderer_material_creation material_creation;
-  //
-  //material_creation.set_name( "material_no_cull" ).set_technique( main_technique ).set_render_index( 0 );
-  //crude_gfx_renderer_material *material = renderer->create_material( material_creation );
-  //
-  //CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( pass->mesh_instances, 16, pass->scene->renderer->allocator_container );
-  //
-  //for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene->meshes ); ++i ) {
-  //
-  //  crude_gfx_mesh_instance                                mesh_instance;
-  //  crude_gfx_mesh                                        *mesh;
-
-  //  crude_gfx_mesh *mesh = &pass->scene->meshes[ i ];
-  //  if ( crude_gfx_mesh_is_transparent( mesh ) )
-  //  {
-  //    continue;
-  //  }
-  //
-  //  mesh_instance.mesh = mesh;
-  //  mesh_instance.material_pass_index = 1;
-  //  CRUDE_ARRAY_PUSH( pass->mesh_instances, mesh_instance );
-  //}
+    mesh = &pass->scene->meshes[ i ];
+    if ( crude_gfx_mesh_is_transparent( mesh ) )
+    {
+      continue;
+    }
+  
+    mesh_instance.mesh = mesh;
+    mesh_instance.material_pass_index = 1;
+    CRUDE_ARRAY_PUSH( pass->mesh_instances, mesh_instance );
+  }
 }
 
 /**

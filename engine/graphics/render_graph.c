@@ -172,8 +172,8 @@ crude_gfx_render_graph_parse_from_file
 
           output_creation.resource_info.texture.format = crude_string_to_vk_format( cJSON_GetStringValue( output_format ) );
           output_creation.resource_info.texture.load_op = string_to_render_pass_operation_( cJSON_GetStringValue( output_load_op ) );
-          output_creation.resource_info.texture.width = cJSON_GetArrayItem( output_resolution, 0 );
-          output_creation.resource_info.texture.height = cJSON_GetArrayItem( output_resolution, 1 );
+          output_creation.resource_info.texture.width = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 0 ) );
+          output_creation.resource_info.texture.height = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 1 ) );
           output_creation.resource_info.texture.depth = 1;
           break;
         }
@@ -338,7 +338,7 @@ crude_gfx_render_graph_compile
       allocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
     }
     
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( deallocations, resource_count, render_graph->local_allocator_container );
     for ( uint32 i = 0; i < resource_count; ++i)
     {
       deallocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
@@ -504,7 +504,7 @@ crude_gfx_render_graph_compile
         }
       }
 
-      crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
+      node->render_pass = crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
     }
     
     /* Create framebuffer */
@@ -697,9 +697,9 @@ crude_gfx_render_graph_render
       crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
     }
     
-    node->graph_render_pass->pre_render( node->graph_render_pass->ctx, gpu_commands );
+    node->graph_render_pass.pre_render( node->graph_render_pass.ctx, gpu_commands );
     crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
-    node->graph_render_pass->render( node->graph_render_pass->ctx, gpu_commands );
+    node->graph_render_pass.render( node->graph_render_pass.ctx, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
   }
 }
@@ -740,14 +740,22 @@ crude_gfx_render_graph_builder_register_render_pass
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
   _In_ char const                                         *name,
-  _In_ crude_gfx_render_graph_pass                        *render_pass
+  _In_ crude_gfx_render_graph_pass_container               render_pass
 )
 {
   uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
-  uint32 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
-  if ( handle_index != -1 )
+  int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->render_pass_cache.render_pass_map, key );
+  if (handle_index >= 0 )
   {
-    return NULL;
+    CRUDE_ASSERT( false );
+    return;
+  }
+
+  handle_index = CRUDE_HASHMAP_GET_INDEX( builder->node_cache.node_map, key );
+  if ( handle_index < 0 )
+  {
+    CRUDE_ASSERT( false );
+    return;
   }
   
   CRUDE_HASHMAP_PUT( builder->render_pass_cache.render_pass_map, key, render_pass );

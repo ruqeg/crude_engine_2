@@ -27,6 +27,7 @@ typedef struct crude_gfx_graphics
   crude_allocator_container                                 allocator_container;
   enkiPinnedTask                                           *async_load_task;
   bool                                                      async_loader_execute;
+  enkiTaskScheduler                                        *task_sheduler;
   crude_gltf_scene                                          scene;
   crude_entity                                              camera;
 } crude_gfx_graphics;
@@ -105,6 +106,7 @@ graphics_initialize_
     }
     
     graphics->allocator_container = graphics_creation->allocator_container;
+    graphics->task_sheduler = graphics_creation->task_sheduler;
 
     /* Create Device */
     {
@@ -160,6 +162,8 @@ graphics_initialize_
         char const *render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
         crude_gfx_render_graph_parse_from_file( &graphics->render_graph, render_graph_file_path, graphics_creation->temporary_allocator );
       }
+
+      crude_gfx_render_graph_compile( &graphics->render_graph );
       
       /* Parse gltf*/
       {
@@ -174,6 +178,8 @@ graphics_initialize_
         crude_gltf_scene_load_from_file( &graphics->scene, &gltf_creation );
       }
     }
+
+    crude_gfx_renderer_resource_load_technique( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
     
     crude_register_render_passes( &graphics->scene, &graphics->render_graph );
     
@@ -203,7 +209,7 @@ graphics_initialize_
         .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
     }
 
-    crude_gfx_renderer_resource_load_technique( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
+    crude_gfx_scene_prepare_draws( &graphics->scene, graphics_creation->temporary_allocator );
 
     crude_stack_allocator_free_marker( graphics_creation->temporary_allocator, temporary_allocator_marker );
   }
@@ -304,7 +310,7 @@ graphics_process_
     }
     CRUDE_PROFILER_END;
     
-    //crude_gltf_scene_submit_draw_task( renderer[ i ].scene, renderer->ets, true );
+    crude_gltf_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
   
     crude_gfx_present( &graphics->gpu );
   }
