@@ -268,20 +268,16 @@ crude_gfx_renderer_create_technique
 
   crude_gfx_renderer_technique *technique = crude_gfx_renderer_access_technique( renderer, technique_handle );
   
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
-  
-  crude_string_buffer pipeline_cache_path;
-  crude_string_buffer_initialize( &pipeline_cache_path, 1024, renderer->gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
   
   for ( size_t i = 0; i < creation->num_creations; ++i )
   {
     crude_gfx_renderer_technique_pass *pass = &technique->passes[ i ];
     
     crude_gfx_pipeline_creation *const pass_creation = &creation->creations[ i ];
-    crude_gfx_create_pipeline( renderer->gpu, pass_creation );
+    crude_gfx_renderer_technique_pass technique_pass = { .pipeline =  crude_gfx_create_pipeline( renderer->gpu, pass_creation ) };
+    CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
   }
-  
-  crude_string_buffer_deinitialize( &pipeline_cache_path );
   
   if ( creation->name )
   {

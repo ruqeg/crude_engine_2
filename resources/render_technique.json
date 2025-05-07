@@ -5,8 +5,8 @@
       "name": "geometry",
       "render_pass": "geometry_pass",
       "depth": {
-        "write": false,
-        "test": "equal"
+        "write": 1,
+        "test": "less_or_equal"
       },
       "shaders": [
         {

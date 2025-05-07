@@ -467,7 +467,7 @@ crude_gfx_render_graph_compile
         {
           if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
           {
-            render_pass_creation.depth_operation = info->texture.format;
+            render_pass_creation.depth_stencil_format = info->texture.format;
             render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
           }
@@ -490,7 +490,7 @@ crude_gfx_render_graph_compile
         {
           if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
           {
-            render_pass_creation.depth_operation = info->texture.format;
+            render_pass_creation.depth_stencil_format = info->texture.format;
             render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
           }
@@ -504,7 +504,7 @@ crude_gfx_render_graph_compile
         }
       }
 
-      node->render_pass = crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
+      node->render_pass =  crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
     }
     
     /* Create framebuffer */
@@ -881,7 +881,7 @@ crude_gfx_render_graph_builder_access_node_by_name
 {
   uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
   uint32 handle_index = hmgeti( builder->node_cache.node_map, key );
-  if ( handle_index != -1 )
+  if ( handle_index < 0 )
   {
     return NULL;
   }
@@ -928,7 +928,7 @@ crude_gfx_render_graph_builder_access_resource_by_name
 {
   uint64 key = stbds_hash_bytes( ( void* )name, strlen( name ), 0 );
   uint32 handle_index = hmgeti( builder->resource_cache.resource_map, key );
-  if ( handle_index != -1 )
+  if ( handle_index < 0 )
   {
     return NULL;
   }

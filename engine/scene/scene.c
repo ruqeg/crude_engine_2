@@ -593,16 +593,14 @@ crude_gfx_geometry_pass_prepare_draws
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, "gbuffer_pass" );
-  if ( node == NULL )
+  uint64 hashed_name = stbds_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
+  int64 main_technique_index = hmgeti( pass->renderer->resource_cache.techniques, hashed_name );
+  if ( main_technique_index < 0)
   {
     CRUDE_ASSERT( false );
     return;
   }
-  
-  uint64 hashed_name = stbds_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
-  crude_gfx_renderer_technique *main_technique = hmgeti( pass->renderer->resource_cache.techniques, hashed_name );
-  
+  crude_gfx_renderer_technique *main_technique = pass->renderer->resource_cache.techniques[ main_technique_index ].value;
   crude_gfx_renderer_material_creation material_creation = {
     .name = "material_no_cull",
     .technique = main_technique,
@@ -610,6 +608,13 @@ crude_gfx_geometry_pass_prepare_draws
   };
   
   crude_gfx_renderer_material *material = crude_gfx_renderer_create_material( pass->renderer, &material_creation );
+
+  crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, "gbuffer_pass" );
+  if ( node == NULL )
+  {
+    CRUDE_ASSERT( false );
+    return;
+  }
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( pass->mesh_instances, 16, pass->scene->renderer->allocator_container );
   
@@ -624,8 +629,9 @@ crude_gfx_geometry_pass_prepare_draws
       continue;
     }
   
+    mesh->material = material;
     mesh_instance.mesh = mesh;
-    mesh_instance.material_pass_index = 1;
+    mesh_instance.material_pass_index = 0;
     CRUDE_ARRAY_PUSH( pass->mesh_instances, mesh_instance );
   }
 }
