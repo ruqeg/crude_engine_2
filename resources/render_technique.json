@@ -1,0 +1,23 @@
+{
+  "name": "main",
+  "pipelines": [
+    {
+      "name": "geometry",
+      "render_pass": "swapchain",
+      "depth": {
+        "write": false,
+        "test": "equal"
+      },
+      "shaders": [
+        {
+          "stage": "vertex",
+          "shader": "main.vert"
+        },
+        {
+          "stage": "fragment",
+          "shader": "main.frag"
+        }
+      ]
+    }
+  ]
+}

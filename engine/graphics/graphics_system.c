@@ -7,6 +7,7 @@
 #include <graphics/command_buffer.h>
 
 // !TODO
+#include <graphics/renderer_resources_loader.h>
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <scene/free_camera_system.h>
@@ -156,7 +157,7 @@ graphics_initialize_
 
       /* Parse render graph*/
       {
-        char const *render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\graph.json" );
+        char const *render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
         crude_gfx_render_graph_parse_from_file( &graphics->render_graph, render_graph_file_path, graphics_creation->temporary_allocator );
       }
       
@@ -201,6 +202,8 @@ graphics_initialize_
         .rotating_speed_multiplier  = { -0.15f, -0.15f },
         .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
     }
+
+    crude_gfx_renderer_resource_load_technique( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
 
     crude_stack_allocator_free_marker( graphics_creation->temporary_allocator, temporary_allocator_marker );
   }

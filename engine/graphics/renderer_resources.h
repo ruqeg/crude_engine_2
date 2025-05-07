@@ -29,15 +29,15 @@ typedef struct crude_gfx_renderer_sampler_handle
   crude_gfx_resource_index                                 index;
 } crude_gfx_renderer_sampler_handle;
 
-typedef struct crude_gfx_renderer_program_handle
-{
-  crude_gfx_resource_index                                 index;
-} crude_gfx_renderer_program_handle;
-
 typedef struct crude_gfx_renderer_material_handle
 {
   crude_gfx_resource_index                                 index;
 } crude_gfx_renderer_material_handle;
+
+typedef struct crude_gfx_renderer_technique_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_renderer_technique_handle;
 
 /************************************************
  *
@@ -69,23 +69,11 @@ typedef struct crude_gfx_renderer_sampler
   char const                                              *name;
 } crude_gfx_renderer_sampler;
 
-typedef struct crude_gfx_renderer_program_creation
-{
-  crude_gfx_pipeline_creation                              pipeline_creation;
-} crude_gfx_renderer_program_creation;
-
 typedef struct crude_gfx_renderer_program_pass
 {
   crude_gfx_pipeline_handle                                pipeline;
   crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout;
 } crude_gfx_renderer_program_pass;
-
-typedef struct crude_gfx_renderer_program
-{
-  crude_gfx_renderer_program_pass                          passes[ 1 ];
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_renderer_program;
 
 typedef struct crude_gfx_renderer_technique_creation
 {
@@ -108,7 +96,6 @@ typedef struct crude_gfx_renderer_technique
 typedef struct crude_gfx_renderer_material_creation
 {
   crude_gfx_renderer_technique                            *technique;
-  crude_gfx_renderer_program                              *program;
   char const                                              *name;
   uint32                                                   render_index;
 } crude_gfx_renderer_material_creation;

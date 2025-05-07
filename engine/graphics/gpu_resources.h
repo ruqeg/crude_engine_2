@@ -750,3 +750,15 @@ crude_string_to_vk_format
 (
   _In_ char const                                         *format
 );
+
+CRUDE_API char const*
+crude_vk_shader_stage_to_defines
+(
+  _In_ VkShaderStageFlagBits                              value
+);
+
+CRUDE_API char const*
+crude_vk_shader_stage_to_compiler_extension
+(
+  _In_ VkShaderStageFlagBits                               value
+);

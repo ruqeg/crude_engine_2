@@ -5,87 +5,98 @@
 
 #include <graphics/renderer_resources_loader.h>
 
-void
-crude_gfx_renderer_resource_loader_initialize
-(
-  _In_ crude_gfx_renderer_resource_loader                 *resource_loader,
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_stack_allocator                              *temporary_allocator
-)
-{
-}
-
-void
-crude_gfx_renderer_resource_loader_deinitialize
-(
-  _In_ crude_gfx_renderer_resource_loader                 *resource_loader
-)
-{
-}
 
 void parse_gpu_pipeline
 (
   cJSON const                                             *pipeline_json,
   crude_gfx_pipeline_creation                             *pipeline_creation,
   crude_string_buffer                                     *path_buffer,
-  crude_string_buffer                                     *shader_buffer,
-  crude_gfx_render_graph                                  *render_graph
+  crude_gfx_render_graph                                  *render_graph,
+  crude_stack_allocator                                   *temporary_allocator
 );
 
 void
-crude_gfx_renderer_resource_loader_load_technique
+crude_gfx_renderer_resource_load_technique
 (
-  _In_ crude_gfx_renderer_resource_loader                 *resource_loader,
-  _In_ char const                                         *json_path
+  _In_ char const                                         *json_name,
+  crude_gfx_renderer                                      *renderer,
+  crude_gfx_render_graph                                  *render_graph,
+  crude_stack_allocator                                   *temporary_allocator
 )
 {
+  char                                                     working_directory[ 512 ];
+  char const                                              *json_path;
+  crude_gfx_renderer_technique_creation                    technique_creation;
   cJSON                                                   *technique_json;
   cJSON const                                             *passes;
-  size_t                                                   allocated_marker;
   uint8                                                   *technique_json_buffer;
+  crude_string_buffer                                      shader_code_buffer;
+  crude_string_buffer                                      path_buffer;
+  size_t                                                   allocated_marker;
   uint32                                                   technique_json_buffer_size;
 
-  allocated_marker = crude_stack_allocator_get_marker( resource_loader->temporary_allocator );
+  allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
+  
+  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 64 ), crude_stack_allocator_pack( temporary_allocator ) );
+  crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
+
+  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+  json_path = crude_string_buffer_append_use_f( &path_buffer, "%s%s", working_directory, json_name );;
   if ( !crude_file_exist( json_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
     return;
   }
-
-  crude_read_file( json_path, crude_stack_allocator_pack( resource_loader->temporary_allocator ), &technique_json_buffer, technique_json_buffer_size );
+  
+  crude_read_file( json_path, crude_stack_allocator_pack( temporary_allocator ), &technique_json_buffer, &technique_json_buffer_size );
 
   technique_json = cJSON_ParseWithLength( technique_json_buffer, technique_json_buffer_size );
   if ( !technique_json )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file \"%s\" for technique... Error %s", json_path, cJSON_GetErrorPtr() );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file for technique... Error %s", cJSON_GetErrorPtr() );
     return;
   }
   
-  cJSON const *technique_name_json = cJSON_GetObjectItemCaseSensitive( technique_json, "name" );
-  char const *technique_name = cJSON_GetStringValue( technique_name_json );
+  technique_creation = ( crude_gfx_renderer_technique_creation ){ 0 };
 
-  crude_gfx_renderer_technique_creation technique_creation = ( crude_gfx_renderer_technique_creation ){ 0 };
-  
-  // !TODO unsafe
-  technique_creation.name = technique_name;
-  
-  cJSON const *pipelines_json = cJSON_GetObjectItemCaseSensitive( technique_json, "pipelines" );
-  if ( cJSON_GetArraySize( pipelines_json ) > 0 )
   {
-    uint32 pipelines_num = cJSON_GetArraySize( pipelines_json );
-    for ( uint32 i = 0; i < pipelines_num; ++i )
-    {
-      cJSON const *pipeline = cJSON_GetArrayItem( pipelines_json, i );
+    cJSON const                                           *technique_name_json;
+    char const                                            *technique_name;
+    
+    technique_name_json = cJSON_GetObjectItemCaseSensitive( technique_json, "name" );
+    technique_name = cJSON_GetStringValue( technique_name_json );
+    // !TODO unsafe
+    technique_creation.name = technique_name;
+  }
 
-      crude_gfx_pipeline_creation pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline( pipeline, &pipeline_creation, path_buffer, shader_code_buffer, resource_loader->render_graph );
-      technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
+  {
+    cJSON const                                           *pipelines_json;
+
+    pipelines_json = cJSON_GetObjectItemCaseSensitive( technique_json, "pipelines" );
+    if ( cJSON_GetArraySize( pipelines_json ) > 0 )
+    {
+      uint32                                               pipelines_num;
+      
+      pipelines_num = cJSON_GetArraySize( pipelines_json );
+      for ( uint32 i = 0; i < pipelines_num; ++i )
+      {
+        cJSON const                                       *pipeline;
+        crude_gfx_pipeline_creation                        pipeline_creation;
+
+        pipeline = cJSON_GetArrayItem( pipelines_json, i );
+        pipeline_creation = crude_gfx_pipeline_creation_empty();
+        parse_gpu_pipeline( pipeline, &pipeline_creation, &path_buffer, render_graph, temporary_allocator );
+        technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
+      }
     }
   }
 
-  crude_gfx_renderer_technique *technique = renderer->create_technique( technique_creation );
-  crude_stack_allocator_free_marker( resource_loader->temporary_allocator, allocated_marker  );
+  {
+    crude_gfx_renderer_technique *technique = crude_gfx_renderer_create_technique( renderer, &technique_creation );
+  }
+  
+  cJSON_Delete( technique_json );
+  crude_stack_allocator_free_marker( temporary_allocator, allocated_marker  );
 }
 
 VkBlendFactor
@@ -206,8 +217,8 @@ void parse_gpu_pipeline
   cJSON const                                             *pipeline_json,
   crude_gfx_pipeline_creation                             *pipeline_creation,
   crude_string_buffer                                     *path_buffer,
-  crude_string_buffer                                     *shader_buffer,
-  crude_gfx_render_graph                                  *render_graph
+  crude_gfx_render_graph                                  *render_graph,
+  crude_stack_allocator                                   *temporary_allocator
 )
 {
   char working_directory[ 512 ];
@@ -218,14 +229,15 @@ void parse_gpu_pipeline
   {
     for ( size_t shader_index = 0; shader_index < cJSON_GetArraySize( shaders_json ); ++shader_index )
     {
-      cJSON const *shader_stage_json = &shaders_json[ shader_index ];
+      cJSON const *shader_stage_json = cJSON_GetArrayItem( shaders_json, shader_index );
 
-      crude_string_buffer_clear( shader_buffer );
+      crude_string_buffer_clear( path_buffer );
 
-      char const *code = crude_string_buffer_current( shader_buffer );
+      uint32 code_size;
+      char const *code;
       const char *shader_filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "shader" ) );
-      const char *shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s", working_directory, shader_filename );
-      crude_string_buffer_close_current_string( shader_buffer );
+      const char *shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s%s", working_directory, "\\..\\..\\shaders\\", shader_filename );
+      crude_read_file( shader_path, crude_stack_allocator_pack( temporary_allocator ), &code, &code_size );
       
       char const *name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
       

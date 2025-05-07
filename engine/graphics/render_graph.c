@@ -196,7 +196,8 @@ crude_gfx_render_graph_parse_from_file
     crude_gfx_render_graph_node_handle node_handle = crude_gfx_render_graph_builder_create_node( render_graph->builder, &node_creation );
     CRUDE_ARRAY_PUSH( render_graph->nodes, node_handle );
   }
-
+  
+  cJSON_Delete( render_graph_json );
   crude_stack_allocator_free_marker( temp_allocator, temp_allocator_container_maker );
 }
 

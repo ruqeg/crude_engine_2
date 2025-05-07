@@ -98,11 +98,11 @@ crude_file_exist
 #endif
 }
 
-CRUDE_API bool
+bool
 crude_read_file
 (
   _In_ char const                                         *filename,
-  _In_ crude_allocator_container                           allocator,
+  _In_ crude_allocator_container                           allocator_container,
   _Out_ uint8                                            **buffer,
   _Out_ uint32                                            *buffer_size
 )
@@ -116,9 +116,62 @@ crude_read_file
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REALLOCATE( allocator, *buffer, filesize + 1 );
+  *buffer = CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 );
   *buffer_size = fread( *buffer, 1, filesize, file );
   (*buffer)[ *buffer_size ] = 0;
   fclose( file );
   return true;
+}
+
+bool
+crude_read_file_binary
+(
+  _In_ char const                                         *filename,
+  _In_ crude_allocator_container                           allocator_container,
+  _Out_ uint8                                            **buffer,
+  _Out_ uint32                                            *buffer_size
+)
+{
+  FILE* file = fopen( filename, "rb" );
+  
+  if ( !file )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Cannor read file \"%s\"", filename );
+    return false;
+  }
+
+  sizet filesize = _get_file_size( file );
+  *buffer = CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 );
+  *buffer_size = fread( *buffer, 1, filesize, file );
+  (*buffer)[ *buffer_size ] = 0;
+  fclose( file );
+  return true;
+}
+
+void
+crude_write_file
+(
+  _In_ char const                                         *filename,
+  _In_ void                                               *buffer,
+  _In_ size_t                                              buffer_size
+)
+{
+  FILE* file = fopen( filename, "w" );
+  fwrite( buffer, buffer_size, 1, file );
+  fclose( file );
+}
+
+bool
+crude_file_delete
+(
+  _In_ char const                                         *path
+)
+{
+#if defined(_WIN64)
+  int result = remove( path );
+  return result != 0;
+#else
+  int result = remove( path );
+  return ( result == 0 );
+#endif
 }

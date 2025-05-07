@@ -346,3 +346,33 @@ crude_string_to_vk_format
   CRUDE_ASSERT( false );
   return VK_FORMAT_UNDEFINED;
 }
+
+char const*
+crude_vk_shader_stage_to_defines
+(
+  _In_ VkShaderStageFlagBits                              value
+)
+{
+  switch ( value )
+  {
+    case VK_SHADER_STAGE_VERTEX_BIT:      return "VERTEX";
+    case VK_SHADER_STAGE_FRAGMENT_BIT:    return "FRAGMENT";
+    case VK_SHADER_STAGE_COMPUTE_BIT:     return "COMPUTE";
+  }
+   return "";
+}
+
+char const*
+crude_vk_shader_stage_to_compiler_extension
+(
+  _In_ VkShaderStageFlagBits                               value
+)
+{
+  switch ( value )
+  {
+    case VK_SHADER_STAGE_VERTEX_BIT:        return "vert";
+    case VK_SHADER_STAGE_FRAGMENT_BIT:      return "frag";
+    case VK_SHADER_STAGE_COMPUTE_BIT:       return "comp";
+  }
+   return "";
+}

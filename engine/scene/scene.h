@@ -82,18 +82,13 @@ typedef struct crude_gfx_gbuffer_pass
 typedef struct crude_gltf_scene
 {
   crude_gfx_renderer                                      *renderer;
+  crude_gfx_render_graph                                  *render_graph;
+  crude_gfx_asynchronous_loader                           *async_loader;
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
   crude_gfx_mesh                                          *meshes;
   char const                                               path[ CRUDE_MAX_GLTF_SCENE_PATH_LEN ];
-  
-  crude_gfx_asynchronous_loader                           *async_loader;
-
-  crude_gfx_renderer_program                              *program;
-  crude_gfx_renderer_material                             *material;
-
-  crude_gfx_render_graph                                  *render_graph;
 } crude_gltf_scene;
 
 /**

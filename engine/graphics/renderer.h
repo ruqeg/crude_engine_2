@@ -23,7 +23,7 @@ typedef struct crude_gfx_renderer
   crude_resource_pool                                      buffers;
   crude_resource_pool                                      textures;
   crude_resource_pool                                      samplers;
-  crude_resource_pool                                      programs;
+  crude_resource_pool                                      techniques;
   crude_allocator_container                                allocator_container;
   crude_gfx_texture_handle                                 textures_to_update[ 128 ];
   uint32                                                   num_textures_to_update;
@@ -114,20 +114,6 @@ crude_gfx_renderer_destroy_sampler
   _In_ crude_gfx_renderer_sampler                         *sampler
 );
 
-CRUDE_API crude_gfx_renderer_program*
-crude_gfx_renderer_create_program
-(
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_renderer_program_creation const          *creation
-);
-
-CRUDE_API void
-crude_gfx_renderer_destroy_program
-(
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_renderer_program                         *program
-);
-
 CRUDE_API crude_gfx_renderer_material*
 crude_gfx_renderer_create_material
 (
@@ -140,6 +126,20 @@ crude_gfx_renderer_destroy_material
 (
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_renderer_material                        *material
+);
+
+CRUDE_API crude_gfx_renderer_technique*
+crude_gfx_renderer_create_technique
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_technique_creation const        *creation
+);
+
+CRUDE_API void
+crude_gfx_renderer_destroy_technique
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_technique                       *technique
 );
 
 /************************************************
@@ -207,26 +207,6 @@ crude_gfx_renderer_release_sampler
   _In_ crude_gfx_renderer_sampler_handle                   handle
 );
 
-CRUDE_API crude_gfx_renderer_program_handle
-crude_gfx_renderer_obtain_program
-(
-  _In_ crude_gfx_renderer                                 *renderer
-);
-
-CRUDE_API crude_gfx_renderer_program*
-crude_gfx_renderer_access_program
-(
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_renderer_program_handle                   handle
-);
-
-CRUDE_API void
-crude_gfx_renderer_release_program
-(
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_renderer_program_handle                   handle
-);
-
 CRUDE_API crude_gfx_renderer_material_handle
 crude_gfx_renderer_obtain_material
 (
@@ -245,4 +225,24 @@ crude_gfx_renderer_release_material
 (
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_renderer_material_handle                  handle
+);
+
+CRUDE_API crude_gfx_renderer_technique_handle
+crude_gfx_renderer_obtain_technique
+(
+  _In_ crude_gfx_renderer                                 *renderer
+);
+
+CRUDE_API crude_gfx_renderer_technique*
+crude_gfx_renderer_access_technique
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_technique_handle                 handle
+);
+
+CRUDE_API void
+crude_gfx_renderer_release_technique
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_renderer_technique_handle                 handle
 );

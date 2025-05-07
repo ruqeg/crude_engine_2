@@ -1,4 +1,10 @@
 #include <core/profiler.h>
+#include <core/string.h>
+#include <core/file.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <Windows.h>
 
 #include <graphics/gpu_device.h>
 
@@ -36,6 +42,205 @@ static char const *instance_enabled_layers[] =
  * 
  ***********************************************/
 static crude_gfx_cmd_buffer_manager g_command_buffer_manager;
+
+#define CRUDE_PROCESS_LOG_BUFFER_SIZE 256
+char                s_process_log_buffer[ CRUDE_PROCESS_LOG_BUFFER_SIZE ];
+static char         k_process_output_buffer[ 1025 ];
+
+void win32_get_error( char* buffer, uint32 size ) {
+    DWORD errorCode = GetLastError();
+
+    char* error_string;
+    if ( !FormatMessageA( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, errorCode, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ), (LPSTR)&error_string, 0, NULL ) )
+        return;
+
+    sprintf_s( buffer, size, "%s", error_string );
+
+    LocalFree( error_string );
+}
+
+bool process_execute( char const *working_directory, char const *process_fullpath, char const *arguments, char const *search_error_string )
+{
+    // From the post in https://stackoverflow.com/questions/35969730/how-to-read-output-from-cmd-exe-using-createprocess-and-createpipe/55718264#55718264
+    HANDLE handle_stdin_pipe_read = NULL;
+    HANDLE handle_stdin_pipe_write = NULL;
+    HANDLE handle_stdout_pipe_read = NULL;
+    HANDLE handle_std_pipe_write = NULL;
+
+    SECURITY_ATTRIBUTES security_attributes = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
+
+    BOOL ok = CreatePipe( &handle_stdin_pipe_read, &handle_stdin_pipe_write, &security_attributes, 0 );
+    if ( ok == FALSE )
+        return false;
+    ok = CreatePipe( &handle_stdout_pipe_read, &handle_std_pipe_write, &security_attributes, 0 );
+    if ( ok == FALSE )
+        return false;
+
+    // Create startup informations with std redirection
+    STARTUPINFOA startup_info = { 0 };
+    startup_info.cb = sizeof( startup_info );
+    startup_info.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+    startup_info.hStdInput = handle_stdin_pipe_read;
+    startup_info.hStdError = handle_std_pipe_write;
+    startup_info.hStdOutput = handle_std_pipe_write;
+    startup_info.wShowWindow = SW_SHOW;
+
+    bool execution_success = false;
+    // Execute the process
+    PROCESS_INFORMATION process_info = { 0 };
+    BOOL inherit_handles = TRUE;
+    if ( CreateProcessA( process_fullpath, (char*)arguments, 0, 0, inherit_handles, 0, 0, working_directory, &startup_info, &process_info ) ) {
+
+        CloseHandle( process_info.hThread );
+        CloseHandle( process_info.hProcess );
+
+        execution_success = true;
+    } else {
+        win32_get_error( &s_process_log_buffer[0], CRUDE_PROCESS_LOG_BUFFER_SIZE );
+
+        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Execute process error.\n Exe: \"%s\" - Args: \"%s\" - Work_dir: \"%s\"", process_fullpath, arguments, working_directory );
+        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Message: %s\n", s_process_log_buffer );
+    }
+    CloseHandle( handle_stdin_pipe_read );
+    CloseHandle( handle_std_pipe_write );
+
+    // Output
+    DWORD bytes_read;
+    ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
+    
+    // Consume all outputs.
+    // Terminate current read and initialize the next.
+    while ( ok == TRUE ) {
+        k_process_output_buffer[bytes_read] = 0;
+        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", k_process_output_buffer );
+
+        ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
+    }
+
+    if ( strlen(search_error_string) > 0 && strstr( k_process_output_buffer, search_error_string ) ) {
+        execution_success = false;
+    }
+
+    // Close handles.
+    CloseHandle( handle_stdout_pipe_read );
+    CloseHandle( handle_stdin_pipe_write );
+
+    DWORD process_exit_code = 0;
+    GetExitCodeProcess( process_info.hProcess, &process_exit_code );
+
+    return execution_success;
+}
+
+bool is_end_of_line( char c ) {
+    bool result = ( ( c == '\n' ) || ( c == '\r' ) );
+    return( result );
+}
+
+void dump_shader_code( crude_string_buffer *temporary_string_buffer, char const *code, VkShaderStageFlagBits stage, char const *name ) {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_vk_shader_stage_to_defines( stage ) );
+
+    char const * current_code = code;
+    uint32 line_index = 1;
+    while ( current_code ) {
+
+        char const * end_of_line = current_code;
+        if ( !end_of_line || *end_of_line == 0 ) {
+            break;
+        }
+        while ( !is_end_of_line( *end_of_line ) ) {
+            ++end_of_line;
+        }
+        if ( *end_of_line == '\r' ) {
+            ++end_of_line;
+        }
+        if ( *end_of_line == '\n' ) {
+            ++end_of_line;
+        }
+
+        crude_string_buffer_clear( temporary_string_buffer );
+        
+        char* line = crude_string_buffer_append_use_f( temporary_string_buffer, current_code, 0, ( end_of_line - current_code ) );
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u: %s", line_index++, line );
+
+        current_code = end_of_line;
+    }
+}
+
+VkShaderModuleCreateInfo
+crude_gfx_compile_shader
+(
+  _In_ char const                                         *code,
+  _In_ uint32                                              code_size,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  VkShaderModuleCreateInfo shader_create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+  
+  const char* temp_filename = "temp.shader";
+  
+  crude_write_file( temp_filename, code, code_size );
+  
+  crude_string_buffer temporary_string_buffer;
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+  
+  char* stage_define = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s_%s", crude_vk_shader_stage_to_defines( stage ), name );
+  sizet stage_define_length = strlen( stage_define );
+  for ( size_t i = 0; i < stage_define_length; ++i )
+  {
+    stage_define[ i ] = toupper( stage_define[ i ] );
+  }
+  
+  char* vulkan_binaries_path;
+
+#if defined(_MSC_VER)
+    char vulkan_env[ 512 ];
+    ExpandEnvironmentStringsA( "%VULKAN_SDK%", vulkan_env, 512 );
+    vulkan_binaries_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\Bin\\", vulkan_env );
+#else
+#error
+    //char* vulkan_env = getenv ("VULKAN_SDK");
+    //char* compiler_path = string_buffer.append_use_f( "%s/bin/", vulkan_env );
+#endif
+
+#if defined(_MSC_VER)
+  char* glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
+  char* final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
+  char* arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_vk_shader_stage_to_compiler_extension( stage ), stage_define, crude_vk_shader_stage_to_defines( stage ) );
+#endif
+  process_execute( ".", glsl_compiler_path, arguments, "" );
+  
+  bool optimize_shaders = false;
+  
+  if ( optimize_shaders )
+  {
+    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
+    char* optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer,"shader_opt.spv" );
+    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
+    
+    process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
+    
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+    
+    crude_file_delete( optimized_spirv_filename );
+  }
+  else
+  {
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+  }
+  
+  if ( !shader_create_info.pCode )
+  {
+    dump_shader_code( &temporary_string_buffer, code, stage, name );
+  }
+  
+  crude_file_delete( temp_filename );
+  crude_file_delete( final_spirv_filename );
+
+  return shader_create_info;
+}
 
 
 /************************************************
@@ -283,6 +488,18 @@ crude_gfx_device_initialize
     };
     gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
   }
+
+  
+  gpu->swapchain_output.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
+  gpu->swapchain_output.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  gpu->swapchain_output.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  gpu->swapchain_output.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+
+  gpu->swapchain_output.color_final_layouts[ 0 ] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  gpu->swapchain_output.color_formats[ 0 ] = gpu->vk_surface_format.format;
+  gpu->swapchain_output.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  gpu->swapchain_output.num_color_formats = 1u;
   
   crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
  }
@@ -974,6 +1191,7 @@ crude_gfx_create_shader_state
 
   for ( compiled_shaders = 0; compiled_shaders < creation->stages_count; ++compiled_shaders )
   {
+    size_t temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
     crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders ];
   
     if ( stage->type == VK_SHADER_STAGE_COMPUTE_BIT )
@@ -989,7 +1207,7 @@ crude_gfx_create_shader_state
     }
     else
     {
-      CRUDE_ASSERT( false );
+      shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
     }
   
     CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode, "Shader code is empty!" );
@@ -1011,6 +1229,8 @@ crude_gfx_create_shader_state
     {
       vk_reflect_shader_( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->reflect );
     }
+  
+    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
   }
   
   shader_state->active_shaders = compiled_shaders;
@@ -1356,9 +1576,9 @@ crude_gfx_create_pipeline
   VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
     .viewMask = 0,
-    .colorAttachmentCount = creation->render_pass.num_color_formats,
-    .pColorAttachmentFormats = creation->render_pass.num_color_formats > 0 ? creation->render_pass.color_formats : NULL,
-    .depthAttachmentFormat = creation->render_pass.depth_stencil_format,
+    .colorAttachmentCount = creation->render_pass_output.num_color_formats,
+    .pColorAttachmentFormats = creation->render_pass_output.num_color_formats > 0 ? creation->render_pass_output.color_formats : NULL,
+    .depthAttachmentFormat = creation->render_pass_output.depth_stencil_format,
     .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
   };
 

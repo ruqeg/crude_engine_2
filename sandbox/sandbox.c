@@ -34,7 +34,6 @@ crude_sandbox_initialize
   ecs_set( sandbox->engine->world, scene, crude_gfx_graphics_creation, {
     .task_sheduler       = sandbox->engine->task_sheduler,
     .allocator_container = crude_heap_allocator_pack( &sandbox->graphics_allocator ),
-    .allocator_container = crude_heap_allocator_pack( &sandbox->graphics_allocator ),
     .temporary_allocator = &sandbox->temporary_allocator,
   } );
 }
