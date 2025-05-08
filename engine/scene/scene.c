@@ -896,6 +896,7 @@ _gltf_scene_primary_draw_task
   //    _draw_mesh( gpu_commands, mesh_draw );
   //  }
   //}
+
   crude_gfx_queue_cmd( gpu_commands );
   CRUDE_PROFILER_END;
 }

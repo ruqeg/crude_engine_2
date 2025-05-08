@@ -35,11 +35,6 @@ typedef struct crude_gfx_device
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
   /**
-   * The swapchain render pass and swapchain render
-   * pass output.
-   */
-  crude_gfx_render_pass_handle                             swapchain_pass;
-  /**
    * Serves as the primary dynamic buffer.
    * This buffer acts as a foundation for mapping 
    * other buffers to its memory space.
@@ -93,8 +88,8 @@ typedef struct crude_gfx_device
   VkPhysicalDevice                                         vk_physical_device;
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
-  VkSemaphore                                              vk_render_finished_semaphores[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkFence                                                  vk_command_buffer_executed_fences[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   /**
    * Vulkan queues
@@ -107,8 +102,8 @@ typedef struct crude_gfx_device
    * Vulkan handles and additional data related to
    * the swapchain.
    */
+  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   uint32                                                   vk_swapchain_images_count;
-  crude_gfx_framebuffer_handle                             swapchain_framebuffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   uint16                                                   vk_swapchain_width;
   uint16                                                   vk_swapchain_height;
   uint32                                                   vk_swapchain_image_index;
@@ -186,7 +181,8 @@ crude_gfx_new_frame
 CRUDE_API void                                     
 crude_gfx_present                                  
 (                                                  
-  _In_ crude_gfx_device                                   *gpu
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture                                  *texture
 );
                                                    
 CRUDE_API crude_gfx_cmd_buffer*                    

@@ -311,8 +311,14 @@ graphics_process_
     CRUDE_PROFILER_END;
     
     crude_gltf_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
+    
   
-    crude_gfx_present( &graphics->gpu );
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( &graphics->render_graph_builder, "geometry_pass" );
+    CRUDE_ASSERT( node );
+    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( &graphics->gpu, node->framebuffer );
+    crude_gfx_texture *texture = crude_gfx_access_texture( &graphics->gpu, framebuffer->color_attachments[ 0 ] );
+ 
+    crude_gfx_present( &graphics->gpu, texture );
   }
   CRUDE_PROFILER_END;
 }

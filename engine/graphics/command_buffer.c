@@ -877,7 +877,7 @@ crude_gfx_cmd_manager_get_primary_cmd
   uint32 current_used_buffer = cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ];
   uint32 cmd_index = ( pool_index * cmd_manager->num_primary_cmd_buffers_per_thread ) + current_used_buffer;
   crude_gfx_cmd_buffer *cmd = &cmd_manager->primary_cmd_buffers[ cmd_index ];
-
+  
   if ( begin )
   {  
     crude_gfx_cmd_reset( cmd );

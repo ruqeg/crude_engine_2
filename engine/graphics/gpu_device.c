@@ -398,7 +398,6 @@ crude_gfx_device_initialize
   temporary_allocator = crude_stack_allocator_pack( creation->temporary_allocator );
   temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
 
-  gpu->swapchain_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator_container  = creation->allocator_container;
   gpu->vk_allocation_callbacks = NULL;
@@ -428,8 +427,8 @@ crude_gfx_device_initialize
     VkFenceCreateInfo fence_info = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
     for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
     {
-      vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_render_finished_semaphores[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
+      vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_updated_semaphore[ i ] );
       vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
     }
   }
@@ -517,7 +516,6 @@ crude_gfx_device_deinitialize
   crude_gfx_destroy_texture( gpu, gpu->depth_texture );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
   
-  crude_gfx_destroy_render_pass( gpu, gpu->swapchain_pass );
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
     crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
@@ -543,8 +541,8 @@ crude_gfx_device_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    vkDestroySemaphore( gpu->vk_device, gpu->vk_render_finished_semaphores[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
+    vkDestroySemaphore( gpu->vk_device, gpu->vk_swapchain_updated_semaphore[ i ], gpu->vk_allocation_callbacks );
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
   
@@ -576,15 +574,15 @@ crude_gfx_new_frame
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "GPUNewFrame" );
-  VkFence *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-  if ( vkGetFenceStatus( gpu->vk_device, *render_complete_fence ) != VK_SUCCESS )
+  VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
+  if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
   {
     CRUDE_PROFILER_ZONE_NAME( "WaitForRenderComplete" );
-    vkWaitForFences( gpu->vk_device, 1, render_complete_fence, VK_TRUE, UINT64_MAX );
+    vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
     CRUDE_PROFILER_END;
   }
   
-  vkResetFences( gpu->vk_device, 1, render_complete_fence );
+  vkResetFences( gpu->vk_device, 1, swapchain_updated_fence );
   
   {
   CRUDE_PROFILER_ZONE_NAME( "AcquireImage" );
@@ -607,13 +605,14 @@ crude_gfx_new_frame
 void
 crude_gfx_present
 (
-  _In_ crude_gfx_device                                   *gpu
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture                                  *texture
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "GPUPresent" );
-  VkFence     *render_complete_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-  VkSemaphore *render_complete_semaphore = &gpu->vk_render_finished_semaphores[ gpu->current_frame ];
-  
+  VkFence     *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
+  VkSemaphore *swapchain_updated_semaphore = &gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ];
+
   VkCommandBuffer enqueued_command_buffers[ 4 ];
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
   {
@@ -674,31 +673,76 @@ crude_gfx_present
     vkUpdateDescriptorSets( gpu->vk_device, current_write_index, bindless_descriptor_writes, 0, NULL );
     CRUDE_PROFILER_END;
   }
-
-  VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
-  VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-  VkSubmitInfo submit_info = { 
-    .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    .waitSemaphoreCount   = 1,
-    .pWaitSemaphores      = wait_semaphores,
-    .pWaitDstStageMask    = wait_stages,
-    .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
-    .pCommandBuffers      = enqueued_command_buffers,
-    .signalSemaphoreCount = 1,
-    .pSignalSemaphores    = render_complete_semaphore,
-  };
   
   {
-  CRUDE_PROFILER_ZONE_NAME( "QueueSubmit" );
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *render_complete_fence ), "Failed to sumbit queue" );
-  CRUDE_PROFILER_END;
+    CRUDE_PROFILER_ZONE_NAME( "QueueSubmit" );
+    VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
+    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submit_info = { 
+      .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      .waitSemaphoreCount   = 1,
+      .pWaitSemaphores      = wait_semaphores,
+      .pWaitDstStageMask    = wait_stages,
+      .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
+      .pCommandBuffers      = enqueued_command_buffers,
+    };
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *swapchain_updated_fence ), "Failed to sumbit queue" );
+    CRUDE_PROFILER_END;
+  }
+  
+  if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
+  {
+    CRUDE_PROFILER_ZONE_NAME( "WaitForRenderComplete" );
+    vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
+    CRUDE_PROFILER_END;
+  }
+  vkResetFences( gpu->vk_device, 1u, swapchain_updated_fence );
+  crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
+  VkImageCopy region = {
+    .srcSubresource = { 
+      .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+      .mipLevel = 0,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
+    .srcOffset = { 0 },
+    .dstSubresource = { 
+      .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+      .mipLevel = 0,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
+    .dstOffset = { 0 },
+    .extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 },
+  };
+  
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, true );
+  crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
+  crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
+  crude_gfx_cmd_end( cmd );
+  
+  {
+    CRUDE_PROFILER_ZONE_NAME( "QueueSubmit" );
+    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submit_info = { 
+      .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      .pWaitDstStageMask    = wait_stages,
+      .commandBufferCount   = 1u,
+      .pCommandBuffers      = &cmd->vk_cmd_buffer,
+      .signalSemaphoreCount = 1,
+      .pSignalSemaphores    = swapchain_updated_semaphore,
+    };
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *swapchain_updated_fence ), "Failed to sumbit queue" );
+    CRUDE_PROFILER_END;
   }
 
   VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
   VkPresentInfoKHR present_info = {
     .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
     .waitSemaphoreCount = 1,
-    .pWaitSemaphores    = render_complete_semaphore,
+    .pWaitSemaphores    = swapchain_updated_semaphore,
     .swapchainCount     = ARRAY_SIZE( swap_chains ),
     .pSwapchains        = swap_chains,
     .pImageIndices      = &gpu->vk_swapchain_image_index,
@@ -2579,7 +2623,7 @@ vk_create_swapchain_
     .imageColorSpace        = gpu->vk_surface_format.colorSpace,
     .imageExtent            = swapchain_extent,
     .imageArrayLayers       = 1,
-    .imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    .imageUsage             = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
     .imageSharingMode       = ARRAY_SIZE( queue_family_indices ) > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
     .queueFamilyIndexCount  = ARRAY_SIZE( queue_family_indices ),
     .pQueueFamilyIndices    = queue_family_indices,
@@ -2592,28 +2636,8 @@ vk_create_swapchain_
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( gpu->vk_device, &swapchain_create_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain ), "Failed to create swapchain!" );
 
+  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images );
   
-  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( gpu->swapchain_pass ) )
-  {
-    crude_gfx_render_pass_creation swapchain_pass_creation = crude_gfx_render_pass_creation_empty();
-    swapchain_pass_creation.name = "Swapchain";
-    swapchain_pass_creation.color_final_layouts[ 0 ] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    swapchain_pass_creation.color_formats[ 0 ] = gpu->vk_surface_format.format;
-    swapchain_pass_creation.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ;
-    swapchain_pass_creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    swapchain_pass_creation.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
-    swapchain_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
-    swapchain_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
-    
-    gpu->swapchain_pass = crude_gfx_create_render_pass( gpu, &swapchain_pass_creation );
-  }
-
-  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
-
-  VkImage *swapchain_images;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( swapchain_images, gpu->vk_swapchain_images_count, temporary_allocator );
-  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, swapchain_images );
-
   VkCommandBufferBeginInfo beginInfo = { 
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
@@ -2621,59 +2645,10 @@ vk_create_swapchain_
   
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, false );
   vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
-
-  for ( uint32 i = 0; i < gpu->vk_swapchain_images_count; i++ )
+  for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    gpu->swapchain_framebuffers[ i ] = crude_gfx_obtain_framebuffer( gpu );
-    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
-
-    framebuffer->render_pass = gpu->swapchain_pass;
-    framebuffer->scale_x = 1.0f;
-    framebuffer->scale_y = 1.0f;
-    framebuffer->resize = 0;
-    framebuffer->num_color_attachments = 1;
-    framebuffer->color_attachments[ 0 ] = crude_gfx_obtain_texture( gpu );
-    framebuffer->name = "Swapchain";
-    framebuffer->width = gpu->vk_swapchain_width;
-    framebuffer->height = gpu->vk_swapchain_height;
-    
-    crude_gfx_texture *color = crude_gfx_access_texture( gpu, framebuffer->color_attachments[ 0 ] );
-    color->vk_image = swapchain_images[ i ];
-    
-    crude_gfx_texture_creation depth_texture_creation = crude_gfx_texture_creation_empty();
-    depth_texture_creation.width = gpu->vk_swapchain_width;
-    depth_texture_creation.height = gpu->vk_swapchain_height;
-    depth_texture_creation.depth = 1;
-    depth_texture_creation.mipmaps = 1;
-    depth_texture_creation.flags = 0;
-    depth_texture_creation.format = VK_FORMAT_D32_SFLOAT;
-    depth_texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-    depth_texture_creation.alias = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-    depth_texture_creation.name = "SwapchainDepthImage_Texture";
-    
-    framebuffer->depth_stencil_attachment = crude_gfx_create_texture( gpu, &depth_texture_creation );
-    
-    crude_gfx_texture *depth_stencil_texture = crude_gfx_access_texture( gpu, framebuffer->depth_stencil_attachment );
-    
-    VkImageViewCreateInfo view_info = {
-      .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-      .viewType = VK_IMAGE_VIEW_TYPE_2D,
-      .format = gpu->vk_surface_format.format,
-      .image = swapchain_images[ i ],
-      .subresourceRange.levelCount = 1,
-      .subresourceRange.layerCount = 1,
-      .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-      .components.r = VK_COMPONENT_SWIZZLE_R,
-      .components.g = VK_COMPONENT_SWIZZLE_G,
-      .components.b = VK_COMPONENT_SWIZZLE_B,
-      .components.a = VK_COMPONENT_SWIZZLE_A,
-    
-    };
-    
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &view_info, gpu->vk_allocation_callbacks, &color->vk_image_view ), "Failed to create swapchain image view" );
-    crude_gfx_cmd_add_image_barrier( cmd, color->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
   }
-  
   vkEndCommandBuffer( cmd->vk_cmd_buffer );
 
   VkSubmitInfo submitInfo = { 
@@ -2912,30 +2887,6 @@ vk_destroy_swapchain_
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  for ( size_t i = 0; i < gpu->vk_swapchain_images_count; i++ )
-  {
-    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
-    
-    if ( framebuffer == NULL )
-    {
-      continue;
-    }
-    
-    for ( uint32 k = 0; k < framebuffer->num_color_attachments; ++k )
-    {
-      crude_gfx_texture *texture = crude_gfx_access_texture( gpu, framebuffer->color_attachments[ k ] );
-      vkDestroyImageView( gpu->vk_device, texture->vk_image_view, gpu->vk_allocation_callbacks );
-      crude_gfx_release_texture( gpu, framebuffer->color_attachments[ k ] );
-    }
-    
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( framebuffer->depth_stencil_attachment ) )
-    {
-      crude_gfx_destroy_texture_instant( gpu, framebuffer->depth_stencil_attachment );
-    }
-    
-    crude_gfx_release_framebuffer( gpu, gpu->swapchain_framebuffers[ i ] );
-  }
-  
   vkDestroySwapchainKHR( gpu->vk_device, gpu->vk_swapchain, gpu->vk_allocation_callbacks );
 }
 
