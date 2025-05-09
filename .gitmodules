@@ -27,7 +27,7 @@
 	url = https://github.com/cimgui/cimgui.git
 [submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
 	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
-	url = git@github.com:KhronosGroup/SPIRV-Reflect.git
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
 [submodule "extlibs/miniaudio"]
 	path = extlibs/miniaudio
 	url = https://github.com/mackron/miniaudio.git
