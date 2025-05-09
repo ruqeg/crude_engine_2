@@ -7,9 +7,16 @@
 #include <graphics/asynchronous_loader.h>
 #include <graphics/render_graph.h>
 
+/************************************************
+ *
+ * Renderer Scene Constants
+ * 
+ ***********************************************/
+#define CRUDE_GFX_MAX_SCENE_PATH_LEN                           ( 512 )
+
 /**
  *
- * Common Scene Structes
+ * Common Renderer Scene Structes
  * 
  */
 typedef struct crude_gfx_mesh
@@ -54,106 +61,106 @@ crude_gfx_mesh_is_transparent
 
 /**
  *
- * GLTF Scene Constants
+ * Renderer Scene Geometry Pass
  * 
  */
-#define CRUDE_MAX_GLTF_SCENE_PATH_LEN 512
+typedef struct crude_gfx_renderer_scene crude_gfx_renderer_scene;
 
-/**
- *
- * GLTF Scene
- * 
- */
-typedef struct crude_gltf_scene_creation
+typedef struct crude_gfx_renderer_scene_geometry_pass
 {
-  crude_gfx_renderer                                      *renderer;
-  char const                                              *path;
-  crude_gfx_asynchronous_loader                           *async_loader;
-  crude_allocator_container                                allocator;
-  crude_stack_allocator                                   *temprorary_stack_allocator;
-} crude_gltf_scene_creation;
-
-
-/**
- *
- * Scene Geometry Pass
- * 
- */
-
-typedef struct crude_gltf_scene crude_gltf_scene;
-
-typedef struct crude_gfx_geometry_pass
-{
-  crude_gltf_scene                                        *scene;
+  crude_gfx_renderer_scene                                *scene;
   crude_gfx_mesh_instance                                 *mesh_instances;
-  crude_gfx_renderer                                      *renderer;
-} crude_gfx_geometry_pass;
+} crude_gfx_renderer_scene_geometry_pass;
 
 CRUDE_API void
-crude_gfx_geometry_pass_render
+crude_gfx_renderer_scene_geometry_pass_render
 (
-  _In_ crude_gfx_geometry_pass                            *pass,
-  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+  _In_ crude_gfx_renderer_scene_geometry_pass             *pass,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
 CRUDE_API void
-crude_gfx_geometry_pass_prepare_draws
+crude_gfx_renderer_scene_geometry_pass_prepare_draws
 (
-  _In_ crude_gfx_geometry_pass                            *pass,
+  _In_ crude_gfx_renderer_scene_geometry_pass             *pass,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
-typedef struct crude_gltf_scene
+CRUDE_API crude_gfx_render_graph_pass_container
+crude_gfx_renderer_scene_geometry_pass_pack
+(
+  _In_ crude_gfx_renderer_scene_geometry_pass             *pass
+);
+
+/**
+ *
+ * Renderer Scene Strctus
+ * 
+ */
+typedef struct crude_gfx_renderer_scene_creation
 {
+  crude_gfx_renderer                                      *renderer;
+  crude_gfx_asynchronous_loader                           *async_loader;
+  crude_allocator_container                                allocator_container;
+  enkiTaskScheduler                                       *task_scheduler;
+} crude_gfx_renderer_scene_creation;
+
+typedef struct crude_gfx_renderer_scene
+{
+  char const                                               path[ CRUDE_GFX_MAX_SCENE_PATH_LEN ];
+
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
+  enkiTaskScheduler                                       *task_scheduler;
+
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
   crude_gfx_mesh                                          *meshes;
-  char const                                               path[ CRUDE_MAX_GLTF_SCENE_PATH_LEN ];
 
-  crude_gfx_geometry_pass                                  geometry_pass;
-} crude_gltf_scene;
+  crude_allocator_container                                allocator_container;
+
+  crude_gfx_renderer_scene_geometry_pass                   geometry_pass;
+} crude_gfx_renderer_scene;
 
 /**
  *
- * GLTF Scene Function
+ * Renderer Scene Function
  * 
  */
 CRUDE_API void
-crude_gltf_scene_load_from_file
+crude_gfx_renderer_scene_initialize
 (
-  _In_ crude_gltf_scene                                   *scene,
-  _In_ crude_gltf_scene_creation const                    *creation
+  _In_ crude_gfx_renderer_scene                           *scene,
+  _In_ crude_gfx_renderer_scene_creation                  *creation
 );
 
 CRUDE_API void
-crude_gltf_scene_unload
+crude_gfx_renderer_scene_deinitialize
 (
-  _In_ crude_gltf_scene                                   *scene
+  _In_ crude_gfx_renderer_scene                           *scene
 );
 
 CRUDE_API void
-crude_gfx_scene_prepare_draws
+crude_gfx_renderer_scene_prepare_draws
 (
-  _In_ crude_gltf_scene                                   *scene,
+  _In_ crude_gfx_renderer_scene                           *scene,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API void
-crude_gltf_scene_submit_draw_task
+crude_gfx_renderer_scene_submit_draw_task
 (
-  _In_ crude_gltf_scene                                   *scene,
+  _In_ crude_gfx_renderer_scene                           *scene,
   _In_ enkiTaskScheduler                                  *task_sheduler,
   _In_ bool                                                use_secondary
 );
 
 CRUDE_API void
-crude_register_render_passes
+crude_gfx_renderer_scene_register_render_passes
 (
-  _In_ crude_gltf_scene                                   *scene,
-  _In_ crude_gfx_render_graph  *render_graph
+  _In_ crude_gfx_renderer_scene                           *scene,
+  _In_ crude_gfx_render_graph                             *render_graph
 );

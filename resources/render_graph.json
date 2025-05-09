@@ -1,5 +1,5 @@
 {
-  "name": "gltf_graph",
+  "name": "main_graph",
   "passes": [
     {
       "inputs": [],

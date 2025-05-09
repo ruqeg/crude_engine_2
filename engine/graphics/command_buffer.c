@@ -119,31 +119,42 @@ void
 crude_gfx_cmd_begin_secondary
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass                              *render_pass
+  _In_ crude_gfx_render_pass                              *render_pass,
+  _In_ crude_gfx_framebuffer                              *framebuffer
 )
 {
   if ( cmd->is_recording )
   {
     return;
   }
-
+  
+  VkCommandBufferInheritanceRenderingInfo rendering_info = {
+    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+    .flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+    .viewMask = 0,
+    .colorAttachmentCount = render_pass->num_render_targets,
+    .pColorAttachmentFormats = render_pass->num_render_targets > 0 ? render_pass->output.color_formats : NULL,
+    .depthAttachmentFormat = render_pass->output.depth_stencil_format,
+    .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
+    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+  };
   VkCommandBufferInheritanceInfo inheritance = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
     .renderPass = VK_NULL_HANDLE,
     .subpass = 0,
     .framebuffer = VK_NULL_HANDLE,
+    .pNext = &rendering_info
   };
-
   VkCommandBufferBeginInfo begin_info = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
     .pInheritanceInfo = &inheritance,
   };
-
   vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
 
   cmd->is_recording = true;
   cmd->current_render_pass = render_pass;
+  cmd->current_framebuffer = framebuffer;
 }
 
 CRUDE_API void

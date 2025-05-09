@@ -1,10 +1,10 @@
 #pragma once
 
 #include <flecs.h>
-
-#include <scene/entity.h>
-#include <scene/scene.h>
 #include <TaskScheduler_c.h>
+
+#include <core/memory.h>
+#include <scene/entity.h>
 
 typedef struct crude_gfx_graphics_creation
 {

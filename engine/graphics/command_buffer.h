@@ -77,7 +77,8 @@ CRUDE_API void
 crude_gfx_cmd_begin_secondary
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass                              *render_pass
+  _In_ crude_gfx_render_pass                              *render_pass,
+  _In_ crude_gfx_framebuffer                              *framebuffer
 );
 
 CRUDE_API void

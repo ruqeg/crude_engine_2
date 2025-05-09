@@ -698,7 +698,7 @@ crude_gfx_render_graph_render
     }
     
     node->graph_render_pass.pre_render( node->graph_render_pass.ctx, gpu_commands );
-    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
+    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, true );
     node->graph_render_pass.render( node->graph_render_pass.ctx, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
   }

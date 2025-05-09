@@ -2,15 +2,19 @@
 #include <core/string.h>
 #include <core/array.h>
 #include <core/profiler.h>
+
 #include <platform/platform_components.h>
 #include <graphics/graphics_components.h>
 #include <graphics/command_buffer.h>
-
-// !TODO
 #include <graphics/renderer_resources_loader.h>
+#include <graphics/renderer_scene.h>
+
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <scene/free_camera_system.h>
+
+#include <graphics/graphics_system.h>
+
 
 /************************************************
  *
@@ -24,11 +28,11 @@ typedef struct crude_gfx_graphics
   crude_gfx_render_graph                                    render_graph;
   crude_gfx_render_graph_builder                            render_graph_builder;
   crude_gfx_asynchronous_loader                             async_loader;
+  crude_gfx_renderer_scene                                  scene;
   crude_allocator_container                                 allocator_container;
   enkiPinnedTask                                           *async_load_task;
   bool                                                      async_loader_execute;
   enkiTaskScheduler                                        *task_sheduler;
-  crude_gltf_scene                                          scene;
   crude_entity                                              camera;
 } crude_gfx_graphics;
 
@@ -167,21 +171,22 @@ graphics_initialize_
       
       /* Parse gltf*/
       {
-        char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
-        crude_gltf_scene_creation gltf_creation = {
-          .renderer = &graphics->renderer,
-          .path = gltf_path,
+        crude_gfx_renderer_scene_creation scene_creation = {
+          .task_scheduler = graphics->task_sheduler,
+          .allocator_container = graphics->allocator_container,
           .async_loader = &graphics->async_loader,
-          .allocator = graphics_creation->allocator_container,
-          .temprorary_stack_allocator = graphics_creation->temporary_allocator
+          .renderer = &graphics->renderer
         };
-        crude_gltf_scene_load_from_file( &graphics->scene, &gltf_creation );
+        crude_gfx_renderer_scene_initialize( &graphics->scene, &scene_creation );
+
+        char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+        crude_gfx_renderer_scene_load_from_file( &graphics->scene, gltf_path, graphics_creation->temporary_allocator );
       }
     }
 
-    crude_gfx_renderer_resource_load_technique( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
+    crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
     
-    crude_register_render_passes( &graphics->scene, &graphics->render_graph );
+    crude_gfx_renderer_scene_register_render_passes( &graphics->scene, &graphics->render_graph );
     
     crude_gfx_buffer_creation ubo_creation = {
       .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -209,7 +214,7 @@ graphics_initialize_
         .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
     }
 
-    crude_gfx_scene_prepare_draws( &graphics->scene, graphics_creation->temporary_allocator );
+    crude_gfx_renderer_scene_prepare_draws( &graphics->scene, graphics_creation->temporary_allocator );
 
     crude_stack_allocator_free_marker( graphics_creation->temporary_allocator, temporary_allocator_marker );
   }
@@ -231,7 +236,7 @@ graphics_deinitialize_
     
     vkDeviceWaitIdle( graphics->gpu.vk_device );
     crude_gfx_destroy_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
-    crude_gltf_scene_unload( &graphics->scene );
+    crude_gfx_renderer_scene_deinitialize( &graphics->scene );
     graphics->async_loader_execute = false;
     crude_gfx_asynchronous_loader_deinitialize( &graphics->async_loader );
     crude_gfx_render_graph_deinitialize( &graphics->render_graph );
@@ -310,7 +315,7 @@ graphics_process_
     }
     CRUDE_PROFILER_END;
     
-    crude_gltf_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
+    crude_gfx_renderer_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
     
     {
       crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &graphics->render_graph_builder, "geometry_pass" );
