@@ -9,7 +9,6 @@ typedef struct crude_engine
   void                                                    *world;
   bool                                                     running;
   int64                                                    time;
-  crude_heap_allocator                                     algorithms_allocator;
   enkiTaskScheduler                                       *task_sheduler;
   enkiPinnedTask                                          *pinned_task_loop;
 } crude_engine;

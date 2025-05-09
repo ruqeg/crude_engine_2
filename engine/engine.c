@@ -42,8 +42,6 @@ crude_engine_initialize
   }
   
   crude_log_initialize();
-  
-  crude_heap_allocator_initialize( &engine->algorithms_allocator, 1024 * 1024 * 1024, "AlgorithmsAllocator" );
 
   crude_time_service_initialize();
 
@@ -69,7 +67,6 @@ crude_engine_deinitialize
   enkiWaitforAllAndShutdown( engine->task_sheduler );
   enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
   enkiDeleteTaskScheduler( engine->task_sheduler );
-  crude_heap_allocator_deinitialize( &engine->algorithms_allocator );
   crude_log_deinitialize();
 }
 
