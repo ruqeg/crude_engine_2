@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include <core/string.h>
 #include <core/assert.h>
 #include <graphics/command_buffer.h>
 
@@ -126,6 +127,9 @@ typedef struct crude_gfx_device
   VmaAllocator                                             vma_allocator;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
+
+  crude_string_buffer                                      objects_names_string_buffer;
+
   /**
    * UBO Buffers. //!TODO
    */

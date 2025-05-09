@@ -230,6 +230,10 @@ crude_gfx_renderer_scene_initialize
   scene->task_scheduler = creation->task_scheduler;
 
   scene->geometry_pass.scene = scene;
+  scene->images = NULL;
+  scene->samplers = NULL;
+  scene->buffers = NULL;
+  scene->meshes = NULL;
 }
 
 void
@@ -261,8 +265,8 @@ crude_gfx_renderer_scene_deinitialize
      crude_gfx_destroy_buffer( scene->renderer->gpu, scene->meshes[ i ].material_buffer );
   }
   CRUDE_ARRAY_FREE( scene->meshes );
-
   CRUDE_ARRAY_FREE( scene->buffers );
+  CRUDE_ARRAY_FREE( scene->geometry_pass.mesh_instances );
 }
 
 void

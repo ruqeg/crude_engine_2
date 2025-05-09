@@ -980,7 +980,7 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
     if ( is_texture_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.texture.texture ) )
     {
       crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.texture );
-      crude_gfx_destroy_texture( builder->gpu, texture->handle );
+      //crude_gfx_destroy_texture( builder->gpu, texture->handle );
     }
     else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.buffer ) )
     {

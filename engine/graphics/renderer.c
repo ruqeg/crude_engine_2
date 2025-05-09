@@ -29,6 +29,7 @@ crude_gfx_renderer_initialize
   mtx_init( &renderer->texture_update_mutex, mtx_plain );
 
   renderer->resource_cache.techniques = NULL;
+  renderer->resource_cache.materials = NULL;
 }
 
 void
@@ -37,7 +38,18 @@ crude_gfx_renderer_deinitialize
   _In_ crude_gfx_renderer                                 *renderer
 )
 {
+  for ( uint32 i = 0; i < hmlen( renderer->resource_cache.techniques ); ++i )
+  {
+    crude_gfx_renderer_destroy_technique( renderer, renderer->resource_cache.techniques[ i ].value );
+  }
   hmfree( renderer->resource_cache.techniques );
+
+  for ( uint32 i = 0; i < hmlen( renderer->resource_cache.materials ); ++i )
+  {
+    crude_gfx_renderer_destroy_material( renderer, renderer->resource_cache.materials[ i ].value );
+  }
+  hmfree( renderer->resource_cache.materials );
+  
   crude_resource_pool_deinitialize( &renderer->buffers );
   crude_resource_pool_deinitialize( &renderer->textures );
   crude_resource_pool_deinitialize( &renderer->samplers );
@@ -234,9 +246,11 @@ crude_gfx_renderer_create_material
   material->pool_index = material_handle.index;
   material->technique = creation->technique;
   material->render_index = creation->render_index;
+
   if ( material->name )
   {
-    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+    uint64 key = stbds_hash_bytes( ( void* )material->name, strlen( material->name ), 0 );
+    hmput( renderer->resource_cache.materials, key, material );
   }
 
   return material;
@@ -308,7 +322,7 @@ crude_gfx_renderer_destroy_technique
   
   CRUDE_ARRAY_FREE( technique->passes );
   
-  crude_gfx_renderer_release_technique( &renderer->techniques, ( crude_gfx_renderer_technique_handle ){ technique->pool_index } );
+  crude_gfx_renderer_release_technique( renderer, ( crude_gfx_renderer_technique_handle ){ technique->pool_index } );
 }
 
 /************************************************

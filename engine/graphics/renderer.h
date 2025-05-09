@@ -8,6 +8,7 @@
 typedef struct crude_gfx_renderer_resource_cache
 {
   struct{ uint64 key; crude_gfx_renderer_technique *value; }         *techniques;
+  struct{ uint64 key; crude_gfx_renderer_material *value; }          *materials;
 } crude_gfx_renderer_resource_cache;
 
 /************************************************

@@ -225,6 +225,8 @@ crude_gfx_device_initialize
   gpu->current_frame = 1;
   gpu->vk_swapchain_image_index = 0;
 
+  crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
+
   vk_create_instance_( gpu, creation->vk_application_name, creation->vk_application_version, temporary_allocator );
   vk_create_debug_utils_messsenger_( gpu );
   vk_create_surface_( gpu );
@@ -330,7 +332,7 @@ crude_gfx_device_deinitialize
 )
 {
   vkDeviceWaitIdle( gpu->vk_device );
-
+  
   crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_texture( gpu, gpu->depth_texture );
@@ -381,6 +383,8 @@ crude_gfx_device_deinitialize
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
   gpu->vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
+
+  crude_string_buffer_deinitialize( &gpu->objects_names_string_buffer );
 }
 
 /************************************************
@@ -2801,7 +2805,7 @@ vk_create_texture_
   texture->depth          = creation->depth;
   texture->mipmaps        = creation->mipmaps;
   texture->type           = creation->type;
-  texture->name           = creation->name;
+  texture->name           = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", creation->name );
   texture->vk_format      = creation->format;
   texture->sampler        = NULL;
   texture->flags          = creation->flags;
@@ -2826,8 +2830,7 @@ vk_create_texture_
       .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
     };
-    
-    
+
     is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
     is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;
     

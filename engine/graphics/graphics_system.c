@@ -254,7 +254,7 @@ graphics_process_
 )
 {
   crude_gfx_graphics_handle *graphics_per_entity = ecs_field( it, crude_gfx_graphics_handle, 0 );
-  
+
   CRUDE_PROFILER_ZONE_NAME( "Rendering" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
