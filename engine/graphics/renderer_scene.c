@@ -83,6 +83,17 @@ crude_gfx_render_graph_pass_container_pre_render_empry
 {
 }
 
+static void
+crude_gfx_render_graph_pass_container_on_resize_empty
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+}
+
 void
 crude_gfx_renderer_scene_geometry_pass_render
 (
@@ -207,6 +218,7 @@ crude_gfx_renderer_scene_geometry_pass_pack
   crude_gfx_render_graph_pass_container container = {
     .pre_render = crude_gfx_render_graph_pass_container_pre_render_empry,
     .render     = crude_gfx_renderer_scene_geometry_pass_render,
+    .on_resize  = crude_gfx_render_graph_pass_container_on_resize_empty,
     .ctx        = pass 
   };
   return container;

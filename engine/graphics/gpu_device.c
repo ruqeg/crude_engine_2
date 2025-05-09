@@ -146,16 +146,6 @@ vk_create_texture_
   _In_ crude_gfx_texture                                  *texture
 );
 static void
-vk_resize_texture_
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_texture                                  *texture,
-  _In_ crude_gfx_texture                                  *texture_to_delete,
-  _In_ uint16                                              width,
-  _In_ uint16                                              height,
-  _In_ uint16                                              depth
-);
-static void
 vk_resize_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
@@ -224,6 +214,7 @@ crude_gfx_device_initialize
   gpu->previous_frame = 0;
   gpu->current_frame = 1;
   gpu->vk_swapchain_image_index = 0;
+  gpu->swapchain_resized_last_frame = false;
 
   crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
 
@@ -415,7 +406,8 @@ crude_gfx_new_frame
     VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
-      vk_resize_swapchain_( gpu );
+      CRUDE_ASSERT( false );
+      //vk_resize_swapchain_( gpu );
     }
     CRUDE_PROFILER_END;
   }
@@ -585,7 +577,8 @@ crude_gfx_present
     CRUDE_PROFILER_MARK_FRAME;
 
     CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
-
+    
+    gpu->swapchain_resized_last_frame = false;
     if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
     {
       vk_resize_swapchain_( gpu );
@@ -862,6 +855,80 @@ crude_gfx_compile_shader
   crude_file_delete( final_spirv_filename );
 
   return shader_create_info;
+}
+
+VkShaderModuleCreateInfo
+crude_gfx_resize_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height
+)
+{
+  crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, framebuffer_handle );
+  if ( !framebuffer )
+  {
+    return;
+  }
+
+  if ( !framebuffer->resize )
+  {
+    return;
+  }
+  
+  uint16 new_width = width * framebuffer->scale_x;
+  uint16 new_height = height * framebuffer->scale_y;
+  
+  for ( size_t i = 0; i < framebuffer->num_color_attachments; ++i )
+  {
+    crude_gfx_resize_texture( gpu, framebuffer->color_attachments[ i ], new_width, new_height );
+  }
+  
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( framebuffer->depth_stencil_attachment ) )
+  {
+    crude_gfx_resize_texture( gpu, framebuffer->depth_stencil_attachment, new_width, new_height );
+  }
+  
+  framebuffer->width = new_width;
+  framebuffer->height = new_height;
+}
+
+void
+crude_gfx_resize_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            texture_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height
+)
+{
+  crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
+  
+  if ( texture->width == width && texture->height == height )
+  {
+    return;
+  }
+  
+  crude_gfx_texture_handle texture_to_delete_handle = crude_gfx_obtain_texture( gpu );
+  crude_gfx_texture *texture_to_delete = crude_gfx_access_texture( gpu, texture_to_delete_handle );
+  
+  memcpy( texture_to_delete, texture, sizeof( crude_gfx_texture ) );
+  texture_to_delete->handle = texture_to_delete_handle;
+  
+  crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
+  texture_creation.flags = texture->flags;
+  texture_creation.mipmaps = texture->mipmaps;
+  texture_creation.format = texture->vk_format;
+  texture_creation.type = texture->type;
+  texture_creation.name = texture->name;
+  texture_creation.width = width;
+  texture_creation.height = height;
+  texture_creation.depth = 1;
+
+  vk_create_texture_( gpu, &texture_creation, texture->handle, texture );
+  
+  crude_gfx_destroy_texture( gpu, texture_to_delete_handle );
 }
 
 /************************************************
@@ -1822,6 +1889,8 @@ crude_gfx_create_framebuffer
   framebuffer->resize = creation->resize;
   framebuffer->name = creation->name;
   framebuffer->render_pass = creation->render_pass;
+  framebuffer->scale_x = 1.0;
+  framebuffer->scale_y = 1.0;
   
   return handle;
 }
@@ -2908,33 +2977,6 @@ vk_create_texture_
 }
 
 void
-vk_resize_texture_
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_texture                                  *texture,
-  _In_ crude_gfx_texture                                  *texture_to_delete,
-  _In_ uint16                                              width,
-  _In_ uint16                                              height,
-  _In_ uint16                                              depth
-)
-{
-  texture_to_delete->vk_image_view = texture->vk_image_view;
-  texture_to_delete->vk_image = texture->vk_image;
-  texture_to_delete->vma_allocation = texture->vma_allocation;
-  
-  crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
-  texture_creation.width    = width;
-  texture_creation.height   = height;
-  texture_creation.depth    = depth;
-  texture_creation.mipmaps  = texture->mipmaps;
-  texture_creation.flags    = texture->flags;
-  texture_creation.format   = texture->vk_format;
-  texture_creation.type     = texture->type;
-  texture_creation.name     = texture->name;
-  vk_create_texture_( gpu, &texture_creation, texture->handle, texture );
-}
-
-void
 vk_resize_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
@@ -2962,6 +3004,8 @@ vk_resize_swapchain_
     vk_create_swapchain_( gpu, temporary_allocator );
     crude_stack_allocator_free_marker( gpu->temporary_allocator, marker );
   }
+
+  gpu->swapchain_resized_last_frame = true;
 
   vkDeviceWaitIdle( gpu->vk_device );
 }

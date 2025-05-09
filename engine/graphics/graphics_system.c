@@ -264,6 +264,11 @@ graphics_process_
 
     crude_gfx_new_frame( &graphics->gpu );
   
+    if ( graphics->gpu.swapchain_resized_last_frame )
+    {
+      crude_gfx_render_graph_on_resize( &graphics->render_graph, graphics->gpu.vk_swapchain_width, graphics->gpu.vk_swapchain_height );
+    }
+
     // update fame buffer
     crude_gfx_map_buffer_parameters constant_buffer_map = { graphics->gpu.frame_buffer, 0, 0 };
     crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );

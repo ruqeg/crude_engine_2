@@ -109,6 +109,7 @@ typedef struct crude_gfx_device
   uint16                                                   vk_swapchain_width;
   uint16                                                   vk_swapchain_height;
   uint32                                                   vk_swapchain_image_index;
+  bool                                                     swapchain_resized_last_frame;
   /**
    * Descriptor pools/sets automatically generated
    * based on the reflection of the pipeline shaders.
@@ -263,7 +264,7 @@ crude_gfx_buffer_ready
   _In_ crude_gfx_buffer_handle                             buffer_handle
 );
 
-VkShaderModuleCreateInfo
+CRUDE_API VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
   _In_ char const                                         *code,
@@ -271,6 +272,24 @@ crude_gfx_compile_shader
   _In_ VkShaderStageFlagBits                               stage,
   _In_ char const                                         *name,
   _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API VkShaderModuleCreateInfo
+crude_gfx_resize_framebuffer
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height
+);
+
+CRUDE_API void
+crude_gfx_resize_texture
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            texture_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height
 );
 
 /************************************************

@@ -697,10 +697,31 @@ crude_gfx_render_graph_render
       crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
     }
     
-    node->graph_render_pass.pre_render( node->graph_render_pass.ctx, gpu_commands );
+    crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
     crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, true );
-    node->graph_render_pass.render( node->graph_render_pass.ctx, gpu_commands );
+    crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
+  }
+}
+
+void
+crude_gfx_render_graph_on_resize
+(
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+  for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    if ( !node->enabled )
+    {
+      continue;
+    }
+    
+    crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, render_graph->builder->gpu, new_width, new_height );
+    crude_gfx_resize_framebuffer( render_graph->builder->gpu, node->framebuffer, new_width, new_height );
   }
 }
 
@@ -761,7 +782,7 @@ crude_gfx_render_graph_builder_register_render_pass
   CRUDE_HASHMAP_PUT( builder->render_pass_cache.render_pass_map, key, render_pass );
 
   crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( builder, ( crude_gfx_render_graph_node_handle ){ handle_index } );
-  node->graph_render_pass = render_pass;
+  node->render_graph_pass_container = render_pass;
 }
 
 crude_gfx_render_graph_node_handle
@@ -1012,6 +1033,43 @@ crude_gfx_render_graph_builder_render_pass_cache_deinitialize
 )
 {
   hmfree( builder->render_pass_cache.render_pass_map );
+}
+
+/************************************************
+ *
+ * Render Graph Pass Container Utils
+ * 
+ ***********************************************/
+void
+crude_gfx_render_graph_render_pass_container_pre_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  container.pre_render( container.ctx, primary_cmd );
+}
+
+void
+crude_gfx_render_graph_render_pass_container_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  container.render( container.ctx, primary_cmd );
+}
+
+CRUDE_API void
+crude_gfx_render_graph_render_pass_container_on_resize
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+  container.on_resize( container.ctx, gpu, new_width, new_height );
 }
 
 /************************************************

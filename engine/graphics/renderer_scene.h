@@ -7,18 +7,8 @@
 #include <graphics/asynchronous_loader.h>
 #include <graphics/render_graph.h>
 
-/************************************************
- *
- * Renderer Scene Constants
- * 
- ***********************************************/
-#define CRUDE_GFX_MAX_SCENE_PATH_LEN                           ( 512 )
+#define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
-/**
- *
- * Common Renderer Scene Structes
- * 
- */
 typedef struct crude_gfx_mesh
 {
   crude_gfx_renderer_material                             *material;
@@ -53,6 +43,46 @@ typedef struct crude_gfx_mesh_instance
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance;
 
+typedef struct crude_gfx_renderer_scene crude_gfx_renderer_scene;
+
+typedef struct crude_gfx_renderer_scene_geometry_pass
+{
+  crude_gfx_renderer_scene                                *scene;
+  crude_gfx_mesh_instance                                 *mesh_instances;
+} crude_gfx_renderer_scene_geometry_pass;
+
+typedef struct crude_gfx_renderer_scene_creation
+{
+  crude_gfx_renderer                                      *renderer;
+  crude_gfx_asynchronous_loader                           *async_loader;
+  crude_allocator_container                                allocator_container;
+  enkiTaskScheduler                                       *task_scheduler;
+} crude_gfx_renderer_scene_creation;
+
+typedef struct crude_gfx_renderer_scene
+{
+  char const                                               path[ CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN ];
+
+  crude_gfx_renderer                                      *renderer;
+  crude_gfx_render_graph                                  *render_graph;
+  crude_gfx_asynchronous_loader                           *async_loader;
+  enkiTaskScheduler                                       *task_scheduler;
+
+  crude_gfx_renderer_sampler                              *samplers;
+  crude_gfx_renderer_texture                              *images;
+  crude_gfx_renderer_buffer                               *buffers;
+  crude_gfx_mesh                                          *meshes;
+
+  crude_allocator_container                                allocator_container;
+
+  crude_gfx_renderer_scene_geometry_pass                   geometry_pass;
+} crude_gfx_renderer_scene;
+
+/**
+ *
+ * Common Renderer Scene Structes
+ * 
+ */
 CRUDE_API bool
 crude_gfx_mesh_is_transparent
 (
@@ -64,14 +94,6 @@ crude_gfx_mesh_is_transparent
  * Renderer Scene Geometry Pass
  * 
  */
-typedef struct crude_gfx_renderer_scene crude_gfx_renderer_scene;
-
-typedef struct crude_gfx_renderer_scene_geometry_pass
-{
-  crude_gfx_renderer_scene                                *scene;
-  crude_gfx_mesh_instance                                 *mesh_instances;
-} crude_gfx_renderer_scene_geometry_pass;
-
 CRUDE_API void
 crude_gfx_renderer_scene_geometry_pass_render
 (
@@ -95,39 +117,7 @@ crude_gfx_renderer_scene_geometry_pass_pack
 
 /**
  *
- * Renderer Scene Strctus
- * 
- */
-typedef struct crude_gfx_renderer_scene_creation
-{
-  crude_gfx_renderer                                      *renderer;
-  crude_gfx_asynchronous_loader                           *async_loader;
-  crude_allocator_container                                allocator_container;
-  enkiTaskScheduler                                       *task_scheduler;
-} crude_gfx_renderer_scene_creation;
-
-typedef struct crude_gfx_renderer_scene
-{
-  char const                                               path[ CRUDE_GFX_MAX_SCENE_PATH_LEN ];
-
-  crude_gfx_renderer                                      *renderer;
-  crude_gfx_render_graph                                  *render_graph;
-  crude_gfx_asynchronous_loader                           *async_loader;
-  enkiTaskScheduler                                       *task_scheduler;
-
-  crude_gfx_renderer_sampler                              *samplers;
-  crude_gfx_renderer_texture                              *images;
-  crude_gfx_renderer_buffer                               *buffers;
-  crude_gfx_mesh                                          *meshes;
-
-  crude_allocator_container                                allocator_container;
-
-  crude_gfx_renderer_scene_geometry_pass                   geometry_pass;
-} crude_gfx_renderer_scene;
-
-/**
- *
- * Renderer Scene Function
+ * Renderer Scene
  * 
  */
 CRUDE_API void

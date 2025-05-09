@@ -30,7 +30,7 @@ crude_gfx_framebuffer_creation_empty
 (
 )
 {
-  return ( crude_gfx_framebuffer_creation ){ 0 };
+  return ( crude_gfx_framebuffer_creation ){ .resize = true };
 }
 
 crude_gfx_pipeline_creation
