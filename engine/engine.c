@@ -89,7 +89,6 @@ crude_engine_update
   {
     ecs_world_info_t const *info = ecs_get_world_info( world );
     ecs_progress( world, delta_time );
-    CRUDE_PROFILER_MARK_FRAME;
     return true;
   }
 

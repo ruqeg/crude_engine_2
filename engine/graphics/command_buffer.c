@@ -733,7 +733,7 @@ crude_gfx_cmd_manager_initialize
   cmd_manager->gpu = gpu;
   cmd_manager->num_pools_per_frame = num_threads;
 
-  cmd_manager->num_primary_cmd_buffers_per_thread = 1;
+  cmd_manager->num_primary_cmd_buffers_per_thread = 3;
   cmd_manager->num_secondary_cmd_buffer_per_pool = 5;
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
@@ -760,7 +760,7 @@ crude_gfx_cmd_manager_initialize
   }
   
   uint32 total_buffers = total_pools * cmd_manager->num_primary_cmd_buffers_per_thread;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->primary_cmd_buffers, total_pools, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->primary_cmd_buffers, total_buffers, gpu->allocator_container );
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {

@@ -89,6 +89,7 @@ typedef struct crude_gfx_device
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
   VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkFence                                                  vk_command_buffer_executed_fences[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   /**
@@ -256,6 +257,16 @@ crude_gfx_buffer_ready
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_buffer_handle                             buffer_handle
+);
+
+VkShaderModuleCreateInfo
+crude_gfx_compile_shader
+(
+  _In_ char const                                         *code,
+  _In_ uint32                                              code_size,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 /************************************************

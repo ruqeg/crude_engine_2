@@ -3,7 +3,6 @@
 #include <graphics/renderer.h>
 
 /**
- * crude_asynchronous_loader has the following responsibilities:
  * - Process load from file request
  * - Process gpu upload transfers
  * - Manage a staging buffer to handle a copy of the data

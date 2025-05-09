@@ -200,7 +200,7 @@ crude_linear_allocator_pack
   _In_ crude_linear_allocator                             *linear_allocator
 );
 
-#define CRUDE_ALLOCATE( allocator, size ) allocator.allocate( allocator.ctx, size )
-#define CRUDE_DEALLOCATE( allocator, ptr ) allocator.deallocate( allocator.ctx, ptr )
-#define CRUDE_REALLOCATE( allocator, ptr, size ) allocator.reallocate( allocator.ctx, ptr, size )
-#define CRUDE_ALLOCATE_ALIGN( allocator, size, alignment ) allocator.allocate_align( allocator.ctx, size, alignment )
+#define CRUDE_ALLOCATE( allocator_container, size ) ( ( allocator_container ).allocate( ( allocator_container ).ctx, size ) )
+#define CRUDE_DEALLOCATE( allocator_container, ptr ) ( ( allocator_container ).deallocate( ( allocator_container ).ctx, ptr ) )
+#define CRUDE_REALLOCATE( allocator_container, ptr, size ) ( ( allocator_container ).reallocate( ( allocator_container ).ctx, ptr, size ) )
+#define CRUDE_ALLOCATE_ALIGN( allocator_container, size, alignment ) ( ( allocator_container ).allocate_align( ( allocator_container ).ctx, size, alignment ) )

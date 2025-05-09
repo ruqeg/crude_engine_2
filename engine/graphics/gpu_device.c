@@ -1,10 +1,11 @@
 #include <core/profiler.h>
 #include <core/string.h>
 #include <core/file.h>
+#include <core/process.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <Windows.h>
 
 #include <graphics/gpu_device.h>
 
@@ -42,206 +43,6 @@ static char const *instance_enabled_layers[] =
  * 
  ***********************************************/
 static crude_gfx_cmd_buffer_manager g_command_buffer_manager;
-
-#define CRUDE_PROCESS_LOG_BUFFER_SIZE 256
-char                s_process_log_buffer[ CRUDE_PROCESS_LOG_BUFFER_SIZE ];
-static char         k_process_output_buffer[ 1025 ];
-
-void win32_get_error( char* buffer, uint32 size ) {
-    DWORD errorCode = GetLastError();
-
-    char* error_string;
-    if ( !FormatMessageA( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL, errorCode, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ), (LPSTR)&error_string, 0, NULL ) )
-        return;
-
-    sprintf_s( buffer, size, "%s", error_string );
-
-    LocalFree( error_string );
-}
-
-bool process_execute( char const *working_directory, char const *process_fullpath, char const *arguments, char const *search_error_string )
-{
-    // From the post in https://stackoverflow.com/questions/35969730/how-to-read-output-from-cmd-exe-using-createprocess-and-createpipe/55718264#55718264
-    HANDLE handle_stdin_pipe_read = NULL;
-    HANDLE handle_stdin_pipe_write = NULL;
-    HANDLE handle_stdout_pipe_read = NULL;
-    HANDLE handle_std_pipe_write = NULL;
-
-    SECURITY_ATTRIBUTES security_attributes = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
-
-    BOOL ok = CreatePipe( &handle_stdin_pipe_read, &handle_stdin_pipe_write, &security_attributes, 0 );
-    if ( ok == FALSE )
-        return false;
-    ok = CreatePipe( &handle_stdout_pipe_read, &handle_std_pipe_write, &security_attributes, 0 );
-    if ( ok == FALSE )
-        return false;
-
-    // Create startup informations with std redirection
-    STARTUPINFOA startup_info = { 0 };
-    startup_info.cb = sizeof( startup_info );
-    startup_info.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
-    startup_info.hStdInput = handle_stdin_pipe_read;
-    startup_info.hStdError = handle_std_pipe_write;
-    startup_info.hStdOutput = handle_std_pipe_write;
-    startup_info.wShowWindow = SW_SHOW;
-
-    bool execution_success = false;
-    // Execute the process
-    PROCESS_INFORMATION process_info = { 0 };
-    BOOL inherit_handles = TRUE;
-    if ( CreateProcessA( process_fullpath, (char*)arguments, 0, 0, inherit_handles, 0, 0, working_directory, &startup_info, &process_info ) ) {
-
-        CloseHandle( process_info.hThread );
-        CloseHandle( process_info.hProcess );
-
-        execution_success = true;
-    } else {
-        win32_get_error( &s_process_log_buffer[0], CRUDE_PROCESS_LOG_BUFFER_SIZE );
-
-        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Execute process error.\n Exe: \"%s\" - Args: \"%s\" - Work_dir: \"%s\"", process_fullpath, arguments, working_directory );
-        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Message: %s\n", s_process_log_buffer );
-    }
-    CloseHandle( handle_stdin_pipe_read );
-    CloseHandle( handle_std_pipe_write );
-
-    // Output
-    DWORD bytes_read;
-    ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
-    
-    // Consume all outputs.
-    // Terminate current read and initialize the next.
-    while ( ok == TRUE ) {
-        k_process_output_buffer[bytes_read] = 0;
-        CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", k_process_output_buffer );
-
-        ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
-    }
-
-    if ( strlen(search_error_string) > 0 && strstr( k_process_output_buffer, search_error_string ) ) {
-        execution_success = false;
-    }
-
-    // Close handles.
-    CloseHandle( handle_stdout_pipe_read );
-    CloseHandle( handle_stdin_pipe_write );
-
-    DWORD process_exit_code = 0;
-    GetExitCodeProcess( process_info.hProcess, &process_exit_code );
-
-    return execution_success;
-}
-
-bool is_end_of_line( char c ) {
-    bool result = ( ( c == '\n' ) || ( c == '\r' ) );
-    return( result );
-}
-
-void dump_shader_code( crude_string_buffer *temporary_string_buffer, char const *code, VkShaderStageFlagBits stage, char const *name ) {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_vk_shader_stage_to_defines( stage ) );
-
-    char const * current_code = code;
-    uint32 line_index = 1;
-    while ( current_code ) {
-
-        char const * end_of_line = current_code;
-        if ( !end_of_line || *end_of_line == 0 ) {
-            break;
-        }
-        while ( !is_end_of_line( *end_of_line ) ) {
-            ++end_of_line;
-        }
-        if ( *end_of_line == '\r' ) {
-            ++end_of_line;
-        }
-        if ( *end_of_line == '\n' ) {
-            ++end_of_line;
-        }
-
-        crude_string_buffer_clear( temporary_string_buffer );
-        
-        char* line = crude_string_buffer_append_use_f( temporary_string_buffer, current_code, 0, ( end_of_line - current_code ) );
-        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u: %s", line_index++, line );
-
-        current_code = end_of_line;
-    }
-}
-
-VkShaderModuleCreateInfo
-crude_gfx_compile_shader
-(
-  _In_ char const                                         *code,
-  _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name,
-  _In_ crude_stack_allocator                              *temporary_allocator
-)
-{
-  VkShaderModuleCreateInfo shader_create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-  
-  const char* temp_filename = "temp.shader";
-  
-  crude_write_file( temp_filename, code, code_size );
-  
-  crude_string_buffer temporary_string_buffer;
-  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
-  
-  char* stage_define = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s_%s", crude_vk_shader_stage_to_defines( stage ), name );
-  sizet stage_define_length = strlen( stage_define );
-  for ( size_t i = 0; i < stage_define_length; ++i )
-  {
-    stage_define[ i ] = toupper( stage_define[ i ] );
-  }
-  
-  char* vulkan_binaries_path;
-
-#if defined(_MSC_VER)
-    char vulkan_env[ 512 ];
-    ExpandEnvironmentStringsA( "%VULKAN_SDK%", vulkan_env, 512 );
-    vulkan_binaries_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\Bin\\", vulkan_env );
-#else
-#error
-    //char* vulkan_env = getenv ("VULKAN_SDK");
-    //char* compiler_path = string_buffer.append_use_f( "%s/bin/", vulkan_env );
-#endif
-
-#if defined(_MSC_VER)
-  char* glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
-  char* final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
-  char* arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_vk_shader_stage_to_compiler_extension( stage ), stage_define, crude_vk_shader_stage_to_defines( stage ) );
-#endif
-  process_execute( ".", glsl_compiler_path, arguments, "" );
-  
-  bool optimize_shaders = false;
-  
-  if ( optimize_shaders )
-  {
-    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
-    char* optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer,"shader_opt.spv" );
-    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
-    
-    process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
-    
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
-    
-    crude_file_delete( optimized_spirv_filename );
-  }
-  else
-  {
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
-  }
-  
-  if ( !shader_create_info.pCode )
-  {
-    dump_shader_code( &temporary_string_buffer, code, stage, name );
-  }
-  
-  crude_file_delete( temp_filename );
-  crude_file_delete( final_spirv_filename );
-
-  return shader_create_info;
-}
-
 
 /************************************************
  *
@@ -380,6 +181,24 @@ vk_destroy_resources_instant_
   _In_ crude_gfx_resource_index                            handle
 );
 
+void dump_shader_code_
+(
+  _In_ char const                                         *code,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_string_buffer                                *temporary_string_buffer
+);
+
+VkShaderModuleCreateInfo
+crude_gfx_compile_shader
+(
+  _In_ char const                                         *code,
+  _In_ uint32                                              code_size,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
 /************************************************
  *
  * GPU Device Initialize/Deinitialize
@@ -429,6 +248,7 @@ crude_gfx_device_initialize
     {
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_updated_semaphore[ i ] );
+      vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_rendering_finished_semaphore[ i ] );
       vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
     }
   }
@@ -543,6 +363,7 @@ crude_gfx_device_deinitialize
   {
     vkDestroySemaphore( gpu->vk_device, gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_swapchain_updated_semaphore[ i ], gpu->vk_allocation_callbacks );
+    vkDestroySemaphore( gpu->vk_device, gpu->vk_rendering_finished_semaphore[ i ], gpu->vk_allocation_callbacks );
     vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
   
@@ -574,31 +395,34 @@ crude_gfx_new_frame
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "GPUNewFrame" );
-  VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-  if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
   {
-    CRUDE_PROFILER_ZONE_NAME( "WaitForRenderComplete" );
-    vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
+    CRUDE_PROFILER_ZONE_NAME( "WaitForSwachainUpdatedComplete" );
+    VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
+    if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
+    {
+      vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
+    }
+    vkResetFences( gpu->vk_device, 1, swapchain_updated_fence );
     CRUDE_PROFILER_END;
   }
-  
-  vkResetFences( gpu->vk_device, 1, swapchain_updated_fence );
-  
+
   {
-  CRUDE_PROFILER_ZONE_NAME( "AcquireImage" );
-  VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
-  if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
-  {
-    vk_resize_swapchain_( gpu );
-  }
-  CRUDE_PROFILER_END;
+    CRUDE_PROFILER_ZONE_NAME( "AcquireNextImage" );
+    VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
+    if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
+    {
+      vk_resize_swapchain_( gpu );
+    }
+    CRUDE_PROFILER_END;
   }
 
   crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
 
-  uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
-  gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
-  gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
+  {
+    uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
+    gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
+    gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
+  }
   CRUDE_PROFILER_END;
 }
 
@@ -610,73 +434,80 @@ crude_gfx_present
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "GPUPresent" );
-  VkFence     *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-  VkSemaphore *swapchain_updated_semaphore = &gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ];
+  VkCommandBuffer                                          enqueued_command_buffers[ 4 ];
 
-  VkCommandBuffer enqueued_command_buffers[ 4 ];
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
   {
-    CRUDE_PROFILER_ZONE_NAME( "EndRenderPassAndCommandBuffers" );
-    crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
-    enqueued_command_buffers[ i ] = command_buffer->vk_cmd_buffer;
+    CRUDE_PROFILER_ZONE_NAME( "EndQueuedPassesAndCommandBuffers" );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
+    {
+      crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
+      enqueued_command_buffers[ i ] = command_buffer->vk_cmd_buffer;
 
-    crude_gfx_cmd_end_render_pass( command_buffer );
-    vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
-    command_buffer->is_recording = false;
-    command_buffer->current_render_pass = NULL;
-    command_buffer->current_framebuffer = NULL;
+      crude_gfx_cmd_end_render_pass( command_buffer );
+      vkEndCommandBuffer( command_buffer->vk_cmd_buffer );
+      command_buffer->is_recording = false;
+      command_buffer->current_render_pass = NULL;
+      command_buffer->current_framebuffer = NULL;
+    }
     CRUDE_PROFILER_END;
   }
 
-  VkWriteDescriptorSet bindless_descriptor_writes[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
-  VkDescriptorImageInfo bindless_image_info[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
-  uint32 current_write_index = 0;
-  for ( int32 i = CRUDE_ARRAY_LENGTH( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
-  {
-    crude_gfx_resource_update* texture_to_update = &gpu->texture_to_update_bindless[ i ];
-    
-    crude_gfx_texture *texture = crude_gfx_access_texture( gpu, ( crude_gfx_texture_handle ) { texture_to_update->handle } );
-
-    VkWriteDescriptorSet *descriptor_write = &bindless_descriptor_writes[ current_write_index ];
-    memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
-    descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_write->descriptorCount = 1;
-    descriptor_write->dstArrayElement = texture_to_update->handle;
-    descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptor_write->dstSet = gpu->vk_bindless_descriptor_set;
-    descriptor_write->dstBinding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING;
-
-    VkDescriptorImageInfo *descriptor_image_info = &bindless_image_info[ current_write_index ];    
-    if ( texture->sampler )
-    {
-      descriptor_image_info->sampler = texture->sampler->vk_sampler;
-    }
-    else
-    {
-      crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
-      descriptor_image_info->sampler = default_sampler->vk_sampler;
-    }
-    
-    CRUDE_ASSERT( texture->vk_format != VK_FORMAT_UNDEFINED );
-    descriptor_image_info->imageView = texture->vk_image_view;
-    descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    descriptor_write->pImageInfo = descriptor_image_info;
-    
-    CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
-
-    ++current_write_index;
-  }
-
-  if ( current_write_index )
   {
     CRUDE_PROFILER_ZONE_NAME( "UpdateDescriptorSets" );
-    vkUpdateDescriptorSets( gpu->vk_device, current_write_index, bindless_descriptor_writes, 0, NULL );
+    VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
+    VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
+    uint32                                                 current_write_index;
+
+    current_write_index = 0;
+    for ( int32 i = CRUDE_ARRAY_LENGTH( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
+    {
+      VkDescriptorImageInfo                               *descriptor_image_info;
+      VkWriteDescriptorSet                                *descriptor_write;
+      crude_gfx_resource_update                           *texture_to_update;
+      crude_gfx_texture                                   *texture;
+
+      texture_to_update = &gpu->texture_to_update_bindless[ i ];
+      texture = crude_gfx_access_texture( gpu, ( crude_gfx_texture_handle ) { texture_to_update->handle } );
+      descriptor_write = &bindless_descriptor_writes[ current_write_index ];
+      memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
+      descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      descriptor_write->descriptorCount = 1;
+      descriptor_write->dstArrayElement = texture_to_update->handle;
+      descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      descriptor_write->dstSet = gpu->vk_bindless_descriptor_set;
+      descriptor_write->dstBinding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING;
+
+      descriptor_image_info = &bindless_image_info[ current_write_index ];    
+      if ( texture->sampler )
+      {
+        descriptor_image_info->sampler = texture->sampler->vk_sampler;
+      }
+      else
+      {
+        crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
+        descriptor_image_info->sampler = default_sampler->vk_sampler;
+      }
+      
+      CRUDE_ASSERT( texture->vk_format != VK_FORMAT_UNDEFINED );
+      descriptor_image_info->imageView = texture->vk_image_view;
+      descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      descriptor_write->pImageInfo = descriptor_image_info;
+      
+      CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
+
+      ++current_write_index;
+    }
+
+    if ( current_write_index )
+    {
+      vkUpdateDescriptorSets( gpu->vk_device, current_write_index, bindless_descriptor_writes, 0, NULL );
+    }
     CRUDE_PROFILER_END;
   }
   
   {
-    CRUDE_PROFILER_ZONE_NAME( "QueueSubmit" );
     VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
+    VkSemaphore signal_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ]};
     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSubmitInfo submit_info = { 
       .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -685,105 +516,100 @@ crude_gfx_present
       .pWaitDstStageMask    = wait_stages,
       .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
       .pCommandBuffers      = enqueued_command_buffers,
+      .pSignalSemaphores    = signal_semaphores,
+      .signalSemaphoreCount = 1,
     };
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *swapchain_updated_fence ), "Failed to sumbit queue" );
-    CRUDE_PROFILER_END;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
   }
   
-  if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
   {
-    CRUDE_PROFILER_ZONE_NAME( "WaitForRenderComplete" );
-    vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
-    CRUDE_PROFILER_END;
-  }
-  vkResetFences( gpu->vk_device, 1u, swapchain_updated_fence );
-  crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
-  VkImageCopy region = {
-    .srcSubresource = { 
-      .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-      .mipLevel = 0,
-      .baseArrayLayer = 0,
-      .layerCount = 1,
-    },
-    .srcOffset = { 0 },
-    .dstSubresource = { 
-      .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-      .mipLevel = 0,
-      .baseArrayLayer = 0,
-      .layerCount = 1,
-    },
-    .dstOffset = { 0 },
-    .extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 },
-  };
+    VkImageCopy region = {
+      .srcSubresource = { 
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .mipLevel = 0,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+      },
+      .srcOffset = { 0 },
+      .dstSubresource = { 
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .mipLevel = 0,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+      },
+      .dstOffset = { 0 },
+      .extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 },
+    };
+    
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, true );
+    crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
+    crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_end( cmd );
   
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, true );
-  crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
-  crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
-  vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
-  crude_gfx_cmd_add_image_barrier( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
-  crude_gfx_cmd_end( cmd );
-  
-  {
-    CRUDE_PROFILER_ZONE_NAME( "QueueSubmit" );
+    VkSemaphore wait_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ]};
+    VkSemaphore signal_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ]};
     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSubmitInfo submit_info = { 
       .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      .waitSemaphoreCount   = 1u,
+      .pWaitSemaphores      = wait_semaphores,
       .pWaitDstStageMask    = wait_stages,
       .commandBufferCount   = 1u,
       .pCommandBuffers      = &cmd->vk_cmd_buffer,
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = swapchain_updated_semaphore,
+      .pSignalSemaphores    = signal_semaphores,
     };
+    VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, *swapchain_updated_fence ), "Failed to sumbit queue" );
-    CRUDE_PROFILER_END;
   }
-
-  VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
-  VkPresentInfoKHR present_info = {
-    .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-    .waitSemaphoreCount = 1,
-    .pWaitSemaphores    = swapchain_updated_semaphore,
-    .swapchainCount     = ARRAY_SIZE( swap_chains ),
-    .pSwapchains        = swap_chains,
-    .pImageIndices      = &gpu->vk_swapchain_image_index,
-  };
   
   {
-  CRUDE_PROFILER_ZONE_NAME( "QueuePresent" );
-  VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
+    VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ]};
+    VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
+    VkPresentInfoKHR present_info = {
+      .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+      .waitSemaphoreCount = 1,
+      .pWaitSemaphores    = wait_semaphores,
+      .swapchainCount     = ARRAY_SIZE( swap_chains ),
+      .pSwapchains        = swap_chains,
+      .pImageIndices      = &gpu->vk_swapchain_image_index,
+    };
+  
+    VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
+    CRUDE_PROFILER_MARK_FRAME;
 
-  CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
+    CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
 
-  if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
-  {
-    vk_resize_swapchain_( gpu );
-    CRUDE_PROFILER_END;
-    return;
-  }
-  CRUDE_PROFILER_END;
+    if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
+    {
+      vk_resize_swapchain_( gpu );
+      return;
+    }
   }
 
   gpu->previous_frame = gpu->current_frame;
   gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
   
   {
-  CRUDE_PROFILER_ZONE_NAME( "DestroyResoucesInstants" );
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
-  {
-    crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
-    
-    if ( resource_deletion->current_frame != gpu->current_frame )
+    CRUDE_PROFILER_ZONE_NAME( "DestroyResoucesInstants" );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
     {
-      continue;
-    }
-    
-    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
+      crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
+      
+      if ( resource_deletion->current_frame != gpu->current_frame )
+      {
+        continue;
+      }
+      
+      vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
 
-    resource_deletion->current_frame = UINT32_MAX;
-    CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
-    --i;
-  }
-  CRUDE_PROFILER_END;
+      resource_deletion->current_frame = UINT32_MAX;
+      CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
+      --i;
+    }
+    CRUDE_PROFILER_END;
   }
 
   CRUDE_PROFILER_END;
@@ -961,6 +787,77 @@ crude_gfx_buffer_ready
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, buffer_handle );
   return buffer->ready;
+}
+
+VkShaderModuleCreateInfo
+crude_gfx_compile_shader
+(
+  _In_ char const                                         *code,
+  _In_ uint32                                              code_size,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  VkShaderModuleCreateInfo                                 shader_create_info;
+  crude_string_buffer                                      temporary_string_buffer;
+  char const                                              *temp_filename;
+  char                                                    *stage_define, *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
+
+  shader_create_info = ( VkShaderModuleCreateInfo ){ VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+  
+  temp_filename = "temp.shader";
+  crude_write_file( temp_filename, code, code_size );
+  
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+  
+  stage_define = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s_%s", crude_vk_shader_stage_to_defines( stage ), name );
+  {
+    sizet stage_define_length = strlen( stage_define );
+    for ( size_t i = 0; i < stage_define_length; ++i )
+    {
+      stage_define[ i ] = toupper( stage_define[ i ] );
+    }
+  }
+
+  {
+    char vulkan_env[ 512 ];
+    crude_process_expand_environment_strings( "%VULKAN_SDK%", vulkan_env, 512 );
+    vulkan_binaries_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\Bin\\", vulkan_env );
+  }
+
+#if defined(_MSC_VER)
+  glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
+  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_vk_shader_stage_to_compiler_extension( stage ), stage_define, crude_vk_shader_stage_to_defines( stage ) );
+#endif
+  crude_process_execute( ".", glsl_compiler_path, arguments, "" );
+  
+  bool optimize_shaders = false;
+  if ( optimize_shaders )
+  {
+    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
+    char* optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer,"shader_opt.spv" );
+    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
+    
+    crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+    crude_file_delete( optimized_spirv_filename );
+  }
+  else
+  {
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+  }
+  
+  if ( !shader_create_info.pCode )
+  {
+    dump_shader_code_( code, stage, name, &temporary_string_buffer );
+  }
+  
+  crude_file_delete( temp_filename );
+  crude_file_delete( final_spirv_filename );
+
+  return shader_create_info;
 }
 
 /************************************************
@@ -3217,5 +3114,46 @@ vk_destroy_resources_instant_
       crude_gfx_destroy_framebuffer_instant( gpu, ( crude_gfx_framebuffer_handle ){ handle } );
       break;
     }
+  }
+}
+
+void dump_shader_code_
+(
+  _In_ char const                                         *code,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ char const                                         *name,
+  _In_ crude_string_buffer                                *temporary_string_buffer
+)
+{
+  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_vk_shader_stage_to_defines( stage ) );
+  
+  char const * current_code = code;
+  uint32 line_index = 1;
+  while ( current_code )
+  {
+    char const *end_of_line = current_code;
+    if ( !end_of_line || *end_of_line == 0 )
+    {
+      break;
+    }
+    while ( ( *end_of_line != '\n' ) && ( *end_of_line != '\r' ) )
+    {
+      ++end_of_line;
+    }
+    if ( *end_of_line == '\r' )
+    {
+      ++end_of_line;
+    }
+    if ( *end_of_line == '\n' )
+    {
+        ++end_of_line;
+    }
+    
+    crude_string_buffer_clear( temporary_string_buffer );
+    
+    char *line = crude_string_buffer_append_use_f( temporary_string_buffer, current_code, 0, ( end_of_line - current_code ) );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u: %s", line_index++, line );
+    
+    current_code = end_of_line;
   }
 }

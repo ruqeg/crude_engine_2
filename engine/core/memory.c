@@ -289,8 +289,8 @@ crude_linear_allocator_clear
 sizet
 crude_memory_align
 (
-  _In_ sizet                   size,
-  _In_ sizet                   alignment
+  _In_ sizet                                               size,
+  _In_ sizet                                               alignment
 )
 {
   sizet alignment_mask = alignment - 1;

@@ -312,13 +312,12 @@ graphics_process_
     
     crude_gltf_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
     
-  
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( &graphics->render_graph_builder, "geometry_pass" );
-    CRUDE_ASSERT( node );
-    crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( &graphics->gpu, node->framebuffer );
-    crude_gfx_texture *texture = crude_gfx_access_texture( &graphics->gpu, framebuffer->color_attachments[ 0 ] );
- 
-    crude_gfx_present( &graphics->gpu, texture );
+    {
+      crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &graphics->render_graph_builder, "geometry_pass" );
+      crude_gfx_framebuffer *final_render_framebuffer = crude_gfx_access_framebuffer( &graphics->gpu, final_render_graph_node->framebuffer );
+      crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &graphics->gpu, final_render_framebuffer->color_attachments[ 0 ] );
+      crude_gfx_present( &graphics->gpu, final_render_texture );
+    }
   }
   CRUDE_PROFILER_END;
 }

@@ -44,7 +44,7 @@ crude_log_common
   _In_ crude_channel                                       channel,
   _In_ crude_verbosity                                     verbosity,
   _In_ char const                                         *format,
-  _In_ ...
+  ...
 );
 
 #define CRUDE_LOG( channel, format, ... )\
