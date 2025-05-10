@@ -164,6 +164,7 @@ crude_gfx_renderer_scene_load_from_file
   cgltf_options                                            gltf_options;
   crude_gfx_renderer_material_creation                     material_creatoin;
   crude_allocator_container                                temporary_allocator_container;
+  crude_string_buffer                                      temporary_string_buffer;
   cgltf_result                                             result;
   cgltf_data                                              *gltf;
   cgltf_scene                                             *root_scene;
@@ -175,6 +176,8 @@ crude_gfx_renderer_scene_load_from_file
 
   temporary_allocator_container = crude_stack_allocator_pack( temporary_allocator );
   temporary_allocator_mark = crude_stack_allocator_get_marker( temporary_allocator );
+
+  crude_string_buffer_initialize( &temporary_string_buffer, 1024, temporary_allocator_container );
 
   gltf_options = ( cgltf_options ){ 
     .memory = {
@@ -319,6 +322,7 @@ crude_gfx_renderer_scene_load_from_file
     crude_gfx_buffer_handle                                cpu_buffer;
     crude_gfx_renderer_buffer                             *gpu_buffer_resource;
     uint8                                                 *buffer_data;
+    char const                                            *buffer_name;
 
     buffer_view = &gltf->buffer_views[ buffer_view_index ];
     buffer = buffer_view->buffer;
@@ -327,7 +331,11 @@ crude_gfx_renderer_scene_load_from_file
   
     if ( buffer_view->name == NULL )
     {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Bufer name is null: %u", buffer_view_index );
+      buffer_name = crude_string_buffer_append_use_f( &temporary_string_buffer, "renderer_scene_buffer%i", buffer_view_index );
+    }
+    else
+    {
+      buffer_name = buffer_view->name;
     }
     
     cpu_buffer_creation = crude_gfx_buffer_creation_empty();
@@ -335,19 +343,21 @@ crude_gfx_renderer_scene_load_from_file
     cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     cpu_buffer_creation.size = buffer_view->size;
     cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    cpu_buffer_creation.name = buffer->name;
+    cpu_buffer_creation.name = buffer_name;
     cpu_buffer = crude_gfx_create_buffer( scene->renderer->gpu, &cpu_buffer_creation );
 
     gpu_buffer_creation = crude_gfx_buffer_creation_empty();
     gpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     gpu_buffer_creation.size = buffer_view->size;
     gpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    gpu_buffer_creation.name = buffer->name;
+    gpu_buffer_creation.name = buffer_name;
     gpu_buffer_creation.device_only = true;
     gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene->renderer, &gpu_buffer_creation );
     CRUDE_ARRAY_PUSH( scene->buffers, *gpu_buffer_resource );
 
     crude_gfx_asynchronous_loader_request_buffer_copy( scene->async_loader, cpu_buffer, gpu_buffer_resource->handle );
+
+    crude_string_buffer_clear( &temporary_string_buffer );
   }
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->meshes, gltf->meshes_count, scene->allocator_container );

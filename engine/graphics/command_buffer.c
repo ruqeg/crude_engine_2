@@ -603,6 +603,8 @@ crude_gfx_cmd_add_image_barrier
   _In_ bool                                                is_depth
 )
 {
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
     .image = image,
@@ -642,6 +644,8 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ crude_gfx_queue_type                                destination_queue_type
 )
 {
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
     .image = image,
