@@ -331,7 +331,6 @@ secondary_draw_task_
 )
 {
   CRUDE_PROFILER_SET_THREAD_NAME( "SecondaryDrawTaskThread" );
-  CRUDE_PROFILER_ZONE_NAME( "SecondaryDrawTask" );
 
   secondary_draw_task_container *secondary_draw_task = ctx;
   
@@ -344,8 +343,6 @@ secondary_draw_task_
 
   crude_gfx_cmd_end( secondary_cmd );
   secondary_draw_task->secondary_cmd = secondary_cmd;
-
-  CRUDE_PROFILER_END;
 }
 
 /**
@@ -360,7 +357,6 @@ draw_mesh_
   _In_ crude_gfx_mesh                                     *mesh
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "DrawMesh" );
   bool mesh_buffers_ready = crude_gfx_buffer_ready( cmd->gpu, mesh->position_buffer )
     && crude_gfx_buffer_ready( cmd->gpu, mesh->tangent_buffer )
     && crude_gfx_buffer_ready( cmd->gpu, mesh->normal_buffer )
@@ -369,7 +365,6 @@ draw_mesh_
 
   if ( !mesh_buffers_ready )
   {
-    CRUDE_PROFILER_END;
     return;
   }
 
@@ -392,7 +387,6 @@ draw_mesh_
   crude_gfx_cmd_bind_index_buffer( cmd, mesh->index_buffer, mesh->index_offset );
   crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
   crude_gfx_cmd_draw_indexed( cmd, mesh->primitive_count, 1, 0, 0, 0 );
-  CRUDE_PROFILER_END;
 }
 
 void

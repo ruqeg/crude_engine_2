@@ -59,7 +59,6 @@ crude_process_execute
     }
   }
 
-  /* Create startup informations with std redirection */
   {
     STARTUPINFOA                                           startup_info;
     BOOL                                                   inherit_handles;
@@ -73,7 +72,6 @@ crude_process_execute
     startup_info.wShowWindow = SW_SHOW;
     
     execution_success = false;
-    /* Execute the process */
     process_info = ( PROCESS_INFORMATION ){ 0 };
     inherit_handles = TRUE;
     if ( CreateProcessA( process_fullpath, (char*)arguments, 0, 0, inherit_handles, 0, 0, working_directory, &startup_info, &process_info ) )

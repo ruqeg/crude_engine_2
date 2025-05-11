@@ -163,10 +163,8 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
 
-    CRUDE_PROFILER_ZONE_NAME( "UploadRequestAsynchronousLoader" );
     if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence ) != VK_SUCCESS )
     {
-      CRUDE_PROFILER_END;
       return;
     }
     
@@ -228,7 +226,6 @@ crude_gfx_asynchronous_loader_update
       asynloader->cpu_buffer_ready = request.cpu_buffer;
       asynloader->gpu_buffer_ready = request.gpu_buffer;
     }
-    CRUDE_PROFILER_END;
   }
 
   if ( CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ) )

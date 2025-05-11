@@ -255,7 +255,6 @@ graphics_process_
 {
   crude_gfx_graphics_handle *graphics_per_entity = ecs_field( it, crude_gfx_graphics_handle, 0 );
 
-  CRUDE_PROFILER_ZONE_NAME( "Rendering" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_gfx_graphics                                        *graphics;
@@ -274,7 +273,6 @@ graphics_process_
     crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );
     if ( frame_buffer_data )
     {
-      CRUDE_PROFILER_ZONE_NAME( "UpdateFrameBuffer" );
       crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_transform );
     
@@ -284,11 +282,9 @@ graphics_process_
       crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
       crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
       crude_gfx_unmap_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
-      CRUDE_PROFILER_END;
     }
     
     // update mesh buffer
-    CRUDE_PROFILER_ZONE_NAME( "UpdateMeshBuffer" );
     for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.meshes ); ++mesh_index )
     {
       crude_gfx_mesh *mesh_draw = &graphics->scene.meshes[ mesh_index ];
@@ -318,7 +314,6 @@ graphics_process_
         crude_gfx_unmap_buffer( &graphics->gpu, mesh_draw->material_buffer );
       }
     }
-    CRUDE_PROFILER_END;
     
     crude_gfx_renderer_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
     
@@ -329,7 +324,6 @@ graphics_process_
       crude_gfx_present( &graphics->gpu, final_render_texture );
     }
   }
-  CRUDE_PROFILER_END;
 }
 
 void

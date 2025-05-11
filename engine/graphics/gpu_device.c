@@ -389,27 +389,22 @@ crude_gfx_new_frame
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "GPUNewFrame" );
   {
-    CRUDE_PROFILER_ZONE_NAME( "WaitForSwachainUpdatedComplete" );
     VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
     if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
     {
       vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
     }
     vkResetFences( gpu->vk_device, 1, swapchain_updated_fence );
-    CRUDE_PROFILER_END;
   }
 
   {
-    CRUDE_PROFILER_ZONE_NAME( "AcquireNextImage" );
     VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
       CRUDE_ASSERT( false );
       //vk_resize_swapchain_( gpu );
     }
-    CRUDE_PROFILER_END;
   }
 
   crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
@@ -419,7 +414,6 @@ crude_gfx_new_frame
     gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
     gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
   }
-  CRUDE_PROFILER_END;
 }
 
 void
@@ -429,11 +423,9 @@ crude_gfx_present
   _In_ crude_gfx_texture                                  *texture
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "GPUPresent" );
   VkCommandBuffer                                          enqueued_command_buffers[ 4 ];
 
   {
-    CRUDE_PROFILER_ZONE_NAME( "EndQueuedPassesAndCommandBuffers" );
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
     {
       crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
@@ -445,11 +437,9 @@ crude_gfx_present
       command_buffer->current_render_pass = NULL;
       command_buffer->current_framebuffer = NULL;
     }
-    CRUDE_PROFILER_END;
   }
 
   {
-    CRUDE_PROFILER_ZONE_NAME( "UpdateDescriptorSets" );
     VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
     VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
     uint32                                                 current_write_index;
@@ -498,7 +488,6 @@ crude_gfx_present
     {
       vkUpdateDescriptorSets( gpu->vk_device, current_write_index, bindless_descriptor_writes, 0, NULL );
     }
-    CRUDE_PROFILER_END;
   }
   
   {
@@ -590,7 +579,6 @@ crude_gfx_present
   gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
   
   {
-    CRUDE_PROFILER_ZONE_NAME( "DestroyResoucesInstants" );
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
     {
       crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
@@ -606,10 +594,7 @@ crude_gfx_present
       CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
       --i;
     }
-    CRUDE_PROFILER_END;
   }
-
-  CRUDE_PROFILER_END;
 }
 
 crude_gfx_cmd_buffer*

@@ -2,6 +2,7 @@
 #include <cr/cr.h>
 #include <filesystem>
 
+#include <core/profiler.h>
 #include <engine.h>
 #include <sandbox.h>
 
@@ -36,6 +37,7 @@ int main()
   {
     cr_plugin_update( crude_sandbox_cr );
     cr_plugin_update( crude_engine_simulation_cr );
+    CRUDE_PROFILER_MARK_FRAME;
   }
 
   cr_plugin_close( crude_engine_simulation_cr );
