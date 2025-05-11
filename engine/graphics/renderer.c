@@ -28,8 +28,8 @@ crude_gfx_renderer_initialize
 
   mtx_init( &renderer->texture_update_mutex, mtx_plain );
 
-  renderer->resource_cache.techniques = NULL;
-  renderer->resource_cache.materials = NULL;
+  CRUDE_HASHMAP_INITIALIZE( renderer->resource_cache.techniques, renderer->allocator_container );
+  CRUDE_HASHMAP_INITIALIZE( renderer->resource_cache.materials, renderer->allocator_container );
 }
 
 void
@@ -38,17 +38,23 @@ crude_gfx_renderer_deinitialize
   _In_ crude_gfx_renderer                                 *renderer
 )
 {
-  for ( uint32 i = 0; i < hmlen( renderer->resource_cache.techniques ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( renderer->resource_cache.techniques ); ++i )
   {
-    crude_gfx_renderer_destroy_technique( renderer, renderer->resource_cache.techniques[ i ].value );
+    if ( renderer->resource_cache.techniques[ i ].key )
+    {
+      crude_gfx_renderer_destroy_technique( renderer, renderer->resource_cache.techniques[ i ].value );
+    }
   }
-  hmfree( renderer->resource_cache.techniques );
+  CRUDE_HASHMAP_DEINITIALIZE( renderer->resource_cache.techniques );
 
-  for ( uint32 i = 0; i < hmlen( renderer->resource_cache.materials ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( renderer->resource_cache.materials ); ++i )
   {
-    crude_gfx_renderer_destroy_material( renderer, renderer->resource_cache.materials[ i ].value );
+    if ( renderer->resource_cache.materials[ i ].key )
+    {
+      crude_gfx_renderer_destroy_material( renderer, renderer->resource_cache.materials[ i ].value );
+    }
   }
-  hmfree( renderer->resource_cache.materials );
+  CRUDE_HASHMAP_DEINITIALIZE( renderer->resource_cache.materials );
   
   crude_resource_pool_deinitialize( &renderer->buffers );
   crude_resource_pool_deinitialize( &renderer->textures );
@@ -249,8 +255,8 @@ crude_gfx_renderer_create_material
 
   if ( material->name )
   {
-    uint64 key = stbds_hash_bytes( ( void* )material->name, strlen( material->name ), 0 );
-    hmput( renderer->resource_cache.materials, key, material );
+    uint64 key = crude_hash_bytes( ( void* )material->name, strlen( material->name ), 0 );
+    CRUDE_HASHMAP_SET( renderer->resource_cache.materials, key, material );
   }
 
   return material;
@@ -295,8 +301,8 @@ crude_gfx_renderer_create_technique
   
   if ( creation->name )
   {
-    uint64 key = stbds_hash_bytes( ( void* )creation->name, strlen( creation->name ), 0 );
-    hmput( renderer->resource_cache.techniques, key, technique );
+    uint64 key = crude_hash_bytes( ( void* )creation->name, strlen( creation->name ), 0 );
+    CRUDE_HASHMAP_SET( renderer->resource_cache.techniques, key, technique );
   }
   
   technique->pool_index = technique_handle.index;

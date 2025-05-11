@@ -142,19 +142,19 @@ typedef struct crude_gfx_render_graph_node
  ***********************************************/
 typedef struct crude_gfx_render_graph_node_cache
 {
-  struct { uint64 key; uint32 value; }                    *node_map;
-  crude_resource_pool                                      nodes;
+  struct { uint64 key; crude_gfx_render_graph_node_handle value; }            *node_map;
+  crude_resource_pool                                                          nodes;
 } crude_gfx_render_graph_node_cache;
 
 typedef struct crude_gfx_render_graph_resource_cache
 {
-  struct { uint64 key; uint32 value; }                    *resource_map;
-  crude_resource_pool                                      resources;
+  struct { uint64 key; crude_gfx_render_graph_resource_handle value; }        *resource_map;
+  crude_resource_pool                                                          resources;
 } crude_gfx_render_graph_resource_cache;
 
 typedef struct crude_gfx_render_graph_pass_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_pass_container value; } *render_pass_map;
+  struct { uint64 key; crude_gfx_render_graph_pass_container value; }         *render_pass_map;
 } crude_gfx_render_graph_pass_cache;
 
 typedef struct crude_gfx_render_graph_builder

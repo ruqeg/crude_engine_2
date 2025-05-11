@@ -26,13 +26,7 @@ typedef struct crude_gfx_device_creation
 
 typedef struct crude_gfx_device                    
 {
-  /**
-   * Holds the window for the surface.
-   */
   SDL_Window                                              *sdl_window;
-  /**
-   * The maximum/current/previous swapchain frame index.
-   */
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
   /**
@@ -55,8 +49,6 @@ typedef struct crude_gfx_device
   crude_gfx_texture_handle                                 depth_texture;
   /**
    * GPU Device resources memory pools.
-   * For implementation details and usage guidelines
-   * refer to "GPU Device Resource Macros"
    */
   crude_resource_pool                                      buffers;
   crude_resource_pool                                      textures;
@@ -69,8 +61,6 @@ typedef struct crude_gfx_device
   crude_resource_pool                                      framebuffers;
   /**
    * Queue to remove or update bindless texture.
-   * Object will be released after the frame
-   * is present.
    */
   crude_gfx_resource_update                               *resource_deletion_queue;
   crude_gfx_resource_update                               *texture_to_update_bindless;
@@ -101,8 +91,7 @@ typedef struct crude_gfx_device
   uint32                                                   vk_main_queue_family;
   uint32                                                   vk_transfer_queue_family;
   /**
-   * Vulkan handles and additional data related to
-   * the swapchain.
+   * Additional data related to the swapchain.
    */
   VkImage                                                  vk_swapchain_images[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   uint32                                                   vk_swapchain_images_count;
@@ -176,7 +165,7 @@ crude_gfx_set_resource_name
   _In_ VkObjectType                                        type,
   _In_ uint64                                              handle,
   _In_ char const                                         *name
-);                                                 
+);
                                                    
 CRUDE_API void                                     
 crude_gfx_new_frame                                

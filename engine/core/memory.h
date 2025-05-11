@@ -159,6 +159,22 @@ crude_memory_align
   _In_ sizet                                               alignment
 );
 
+CRUDE_API void
+crude_memory_copy
+(
+  _Out_ void                                              *dst,
+  _In_ void                                               *src,
+  _In_ sizet                                               size
+);
+
+CRUDE_API void
+crude_memory_set
+(
+  _Out_ void                                              *dst,
+  _In_ int32                                               val,
+  _In_ sizet                                               size
+);
+
 #define CRUDE_RKILO( size ) ( size * 1024u )
 #define CRUDE_RMEGA( size ) ( size * 1024u * 1024u )
 #define CRUDE_RGIGA( size ) ( size * 1024u * 1024u * 1024u )

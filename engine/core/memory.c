@@ -1,5 +1,6 @@
 #include <tlsf.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <core/profiler.h>
 #include <core/assert.h>
@@ -295,6 +296,28 @@ crude_memory_align
 {
   sizet alignment_mask = alignment - 1;
   return ( size + alignment_mask ) & ~alignment_mask;
+}
+
+void
+crude_memory_copy
+(
+  _Out_ void                                              *dst,
+  _In_ void                                               *src,
+  _In_ sizet                                               size
+)
+{
+  memcpy( dst, src, size );
+}
+
+void
+crude_memory_set
+(
+  _Out_ void                                              *dst,
+  _In_ int32                                               val,
+  _In_ sizet                                               size
+)
+{
+  memset( dst, val, size );
 }
 
 /*****************************************

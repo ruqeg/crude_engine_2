@@ -167,8 +167,8 @@ crude_gfx_renderer_scene_geometry_pass_prepare_draws
   crude_gfx_renderer_technique                            *main_technique;
   uint64                                                   main_technique_name_hashed, main_technique_index;
 
-  main_technique_name_hashed = stbds_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
-  main_technique_index = hmgeti( pass->scene->renderer->resource_cache.techniques, main_technique_name_hashed );
+  main_technique_name_hashed = crude_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
+  main_technique_index = CRUDE_HASHMAP_GET_INDEX( pass->scene->renderer->resource_cache.techniques, main_technique_name_hashed );
   if ( main_technique_index < 0)
   {
     CRUDE_ASSERT( false );
