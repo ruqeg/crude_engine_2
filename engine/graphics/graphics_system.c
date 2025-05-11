@@ -203,14 +203,14 @@ graphics_initialize_
         .fov_radians = CRUDE_CPI4,
         .near_z = 0.01,
         .far_z = 1000,
-        .aspect_ratio = 1.0 } );
+        .aspect_ratio = 4.0 / 3.0 } );
       CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_transform, {
         .translation = { 0, 0, -5 },
         .rotation = { 0, 0, 0, 1 },
         .scale = { 1, 1, 1 }, } );
       CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_free_camera, {
         .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
-        .rotating_speed_multiplier  = { -0.15f, -0.15f },
+        .rotating_speed_multiplier  = { -0.25f, -0.25f },
         .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
     }
 
