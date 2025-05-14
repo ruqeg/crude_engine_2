@@ -339,9 +339,9 @@ crude_gfx_device_deinitialize
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
   vk_destroy_swapchain_( gpu );
 
-  CRUDE_ARRAY_FREE( gpu->queued_command_buffers );
-  CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
-  CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
+  CRUDE_ARRAY_DEINITIALIZE( gpu->queued_command_buffers );
+  CRUDE_ARRAY_DEINITIALIZE( gpu->resource_deletion_queue );
+  CRUDE_ARRAY_DEINITIALIZE( gpu->texture_to_update_bindless );
   
   crude_gfx_cmd_manager_deinitialize( &gpu->cmd_buffer_manager );
 
@@ -1272,8 +1272,8 @@ crude_gfx_destroy_shader_state_instant
   crude_gfx_shader_state *shader_state = crude_gfx_access_shader_state( gpu, handle );
   if ( shader_state )
   {
-    CRUDE_ARRAY_FREE( shader_state->reflect.input.vertex_attributes );
-    CRUDE_ARRAY_FREE( shader_state->reflect.input.vertex_streams );
+    CRUDE_ARRAY_DEINITIALIZE( shader_state->reflect.input.vertex_attributes );
+    CRUDE_ARRAY_DEINITIALIZE( shader_state->reflect.input.vertex_streams );
     for ( uint32 i = 0; i < shader_state->active_shaders; ++i )
     {
       vkDestroyShaderModule( gpu->vk_device, shader_state->shader_stage_info[ i ].module, gpu->vk_allocation_callbacks );
@@ -2532,7 +2532,7 @@ vk_create_swapchain_
   if ( !surface_format_found )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
-    CRUDE_ARRAY_FREE( available_formats );
+    CRUDE_ARRAY_DEINITIALIZE( available_formats );
     return VK_NULL_HANDLE;
   }
   
@@ -2541,7 +2541,7 @@ vk_create_swapchain_
   if ( available_present_modes_count == 0u ) 
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
-    CRUDE_ARRAY_FREE( available_formats );
+    CRUDE_ARRAY_DEINITIALIZE( available_formats );
     return VK_NULL_HANDLE;
   }
   

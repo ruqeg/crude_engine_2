@@ -57,12 +57,12 @@ crude_gfx_render_graph_deinitialize
     crude_gfx_destroy_render_pass( render_graph->builder->gpu, node->render_pass );
     crude_gfx_destroy_framebuffer( render_graph->builder->gpu, node->framebuffer );
     
-    CRUDE_ARRAY_FREE( node->inputs ); 
-    CRUDE_ARRAY_FREE( node->outputs ); 
-    CRUDE_ARRAY_FREE( node->edges ); 
+    CRUDE_ARRAY_DEINITIALIZE( node->inputs ); 
+    CRUDE_ARRAY_DEINITIALIZE( node->outputs ); 
+    CRUDE_ARRAY_DEINITIALIZE( node->edges ); 
   }
   
-  CRUDE_ARRAY_FREE( render_graph->nodes ); 
+  CRUDE_ARRAY_DEINITIALIZE( render_graph->nodes ); 
 
   crude_linear_allocator_deinitialize( &render_graph->local_allocator );
 }
@@ -318,9 +318,9 @@ crude_gfx_render_graph_compile
     }
     
     // TODO use temproray allocator? (currently linear)
-    CRUDE_ARRAY_FREE( visited );
-    CRUDE_ARRAY_FREE( stack );
-    CRUDE_ARRAY_FREE( sorted_nodes );
+    CRUDE_ARRAY_DEINITIALIZE( visited );
+    CRUDE_ARRAY_DEINITIALIZE( stack );
+    CRUDE_ARRAY_DEINITIALIZE( sorted_nodes );
   }
   
   /* Compute Resource Aliasing */
@@ -439,9 +439,9 @@ crude_gfx_render_graph_compile
     }
     
     // TODO use temproray allocator? (currently linear)
-    CRUDE_ARRAY_FREE( allocations );
-    CRUDE_ARRAY_FREE( deallocations );
-    CRUDE_ARRAY_FREE( free_list );
+    CRUDE_ARRAY_DEINITIALIZE( allocations );
+    CRUDE_ARRAY_DEINITIALIZE( deallocations );
+    CRUDE_ARRAY_DEINITIALIZE( free_list );
   }
   
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )

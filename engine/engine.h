@@ -2,6 +2,7 @@
 
 #include <TaskScheduler_c.h>
 
+#include <graphics/asynchronous_loader_manager.h>
 #include <core/memory.h>
 
 typedef struct crude_engine
@@ -11,6 +12,8 @@ typedef struct crude_engine
   int64                                                    time;
   enkiTaskScheduler                                       *task_sheduler;
   enkiPinnedTask                                          *pinned_task_loop;
+  crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
+  crude_heap_allocator                                     allocator;
 } crude_engine;
 
 CRUDE_API void

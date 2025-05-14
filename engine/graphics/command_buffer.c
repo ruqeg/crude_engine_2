@@ -294,7 +294,7 @@ crude_gfx_cmd_bind_render_pass
   
   cmd->gpu->vkCmdBeginRenderingKHR( cmd->vk_cmd_buffer, &rendering_info );
   
-  CRUDE_ARRAY_FREE( color_attachments_info );
+  CRUDE_ARRAY_DEINITIALIZE( color_attachments_info );
   
   cmd->current_render_pass = render_pass;
   cmd->current_framebuffer = framebuffer;
@@ -839,11 +839,11 @@ crude_gfx_cmd_manager_deinitialize
   {
     vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
   }
-  CRUDE_ARRAY_FREE( cmd_manager->vk_cmd_pools  );
-  CRUDE_ARRAY_FREE( cmd_manager->primary_cmd_buffers );
-  CRUDE_ARRAY_FREE( cmd_manager->secondary_cmd_buffers );
-  CRUDE_ARRAY_FREE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
-  CRUDE_ARRAY_FREE( cmd_manager->num_used_secondary_cmd_buffers_per_frame );
+  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->vk_cmd_pools  );
+  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->primary_cmd_buffers );
+  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->secondary_cmd_buffers );
+  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
+  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->num_used_secondary_cmd_buffers_per_frame );
 }
 
 void

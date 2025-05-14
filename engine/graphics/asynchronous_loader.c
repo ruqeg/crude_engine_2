@@ -97,8 +97,8 @@ crude_gfx_asynchronous_loader_deinitialize
     vkDestroyCommandPool( asynloader->renderer->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->renderer->gpu->vk_allocation_callbacks );  
   }
 
-  CRUDE_ARRAY_FREE( asynloader->file_load_requests );
-  CRUDE_ARRAY_FREE( asynloader->upload_requests );
+  CRUDE_ARRAY_DEINITIALIZE( asynloader->file_load_requests );
+  CRUDE_ARRAY_DEINITIALIZE( asynloader->upload_requests );
 }
 
 void

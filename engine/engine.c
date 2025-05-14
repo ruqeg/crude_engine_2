@@ -50,6 +50,13 @@ crude_engine_initialize
     engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate - 1 );
     enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
   }
+  
+  crude_heap_allocator_initialize( &engine->allocator, CRUDE_RKILO( 16 ), "main_engine_allocator" );
+
+  {
+    crude_gfx_asynchronous_loader_manager_creation creation = { .allocator_container = crude_heap_allocator_pack( &engine->allocator ), .task_sheduler = engine->task_sheduler };
+    crude_gfx_async_loader_task_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
+  }
 }
 
 void
@@ -58,6 +65,8 @@ crude_engine_deinitialize
   _In_ crude_engine                                       *engine
 )
 {
+  crude_gfx_async_loader_task_manager_deintiailize( &engine->asynchronous_loader_manager );
+  crude_heap_allocator_deinitialize( &engine->allocator );
   enkiWaitforAllAndShutdown( engine->task_sheduler );
   enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
   enkiDeleteTaskScheduler( engine->task_sheduler );

@@ -911,7 +911,7 @@ crude_store_float4
   _In_ crude_vector                              v
 )
 {
-  _mm_storeu_ps( f, v );
+  _mm_storeu_ps( &f->x, v );
 }
 
 void

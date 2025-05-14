@@ -1,7 +1,5 @@
 #pragma once
 
-#include <TaskScheduler_c.h>
-
 #include <core/math.h>
 #include <graphics/renderer.h>
 #include <graphics/asynchronous_loader.h>
@@ -56,7 +54,7 @@ typedef struct crude_gfx_renderer_scene_creation
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_allocator_container                                allocator_container;
-  enkiTaskScheduler                                       *task_scheduler;
+  void                                                    *task_scheduler;
 } crude_gfx_renderer_scene_creation;
 
 typedef struct crude_gfx_renderer_scene
@@ -66,7 +64,7 @@ typedef struct crude_gfx_renderer_scene
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
-  enkiTaskScheduler                                       *task_scheduler;
+  void                                                    *task_scheduler;
 
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
@@ -144,7 +142,6 @@ CRUDE_API void
 crude_gfx_renderer_scene_submit_draw_task
 (
   _In_ crude_gfx_renderer_scene                           *scene,
-  _In_ enkiTaskScheduler                                  *task_sheduler,
   _In_ bool                                                use_secondary
 );
 

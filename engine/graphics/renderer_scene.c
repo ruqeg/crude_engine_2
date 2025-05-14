@@ -1,3 +1,5 @@
+#include <TaskScheduler_c.h>
+
 #include <core/profiler.h>
 #include <core/array.h>
 #include <core/file.h>
@@ -258,27 +260,27 @@ crude_gfx_renderer_scene_deinitialize
   {
     crude_gfx_renderer_destroy_texture( scene->renderer, &scene->images[ i ] );
   }
-  CRUDE_ARRAY_FREE( scene->images );
+  CRUDE_ARRAY_DEINITIALIZE( scene->images );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->samplers ); ++i )
   {
     crude_gfx_renderer_destroy_sampler( scene->renderer, &scene->samplers[ i ] );
   }
-  CRUDE_ARRAY_FREE( scene->samplers );
+  CRUDE_ARRAY_DEINITIALIZE( scene->samplers );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->buffers ); ++i )
   {
     crude_gfx_renderer_destroy_buffer( scene->renderer, &scene->buffers[ i ] );
   }
-  CRUDE_ARRAY_FREE( scene->buffers );
+  CRUDE_ARRAY_DEINITIALIZE( scene->buffers );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->meshes ); ++i )
   {
      crude_gfx_destroy_buffer( scene->renderer->gpu, scene->meshes[ i ].material_buffer );
   }
-  CRUDE_ARRAY_FREE( scene->meshes );
-  CRUDE_ARRAY_FREE( scene->buffers );
-  CRUDE_ARRAY_FREE( scene->geometry_pass.mesh_instances );
+  CRUDE_ARRAY_DEINITIALIZE( scene->meshes );
+  CRUDE_ARRAY_DEINITIALIZE( scene->buffers );
+  CRUDE_ARRAY_DEINITIALIZE( scene->geometry_pass.mesh_instances );
 }
 
 void
@@ -295,7 +297,6 @@ void
 crude_gfx_renderer_scene_submit_draw_task
 (
   _In_ crude_gfx_renderer_scene                           *scene,
-  _In_ enkiTaskScheduler                                  *task_sheduler,
   _In_ bool                                                use_secondary
 )
 {

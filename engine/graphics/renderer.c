@@ -326,7 +326,7 @@ crude_gfx_renderer_destroy_technique
     crude_gfx_destroy_pipeline( renderer->gpu, technique->passes[ i ].pipeline );
   }
   
-  CRUDE_ARRAY_FREE( technique->passes );
+  CRUDE_ARRAY_DEINITIALIZE( technique->passes );
   
   crude_gfx_renderer_release_technique( renderer, ( crude_gfx_renderer_technique_handle ){ technique->pool_index } );
 }

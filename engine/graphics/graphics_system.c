@@ -1,3 +1,5 @@
+#include <TaskScheduler_c.h>
+
 #include <core/file.h>
 #include <core/string.h>
 #include <core/array.h>
@@ -29,10 +31,9 @@ typedef struct crude_gfx_graphics
   crude_gfx_asynchronous_loader                             async_loader;
   crude_gfx_renderer_scene                                  scene;
   crude_allocator_container                                 allocator_container;
-  enkiPinnedTask                                           *async_load_task;
-  bool                                                      async_loader_execute;
-  enkiTaskScheduler                                        *task_sheduler;
   crude_entity                                              camera;
+  void                                                     *task_sheduler;
+  crude_gfx_asynchronous_loader_manager                    *asynchronous_loader_manager;
 } crude_gfx_graphics;
 
 /************************************************
@@ -64,21 +65,6 @@ graphics_process_
  * 
  ***********************************************/
 static void
-pinned_task_asyns_loop_
-(
-  _In_ void                                                *ctx
-)
-{
-  CRUDE_PROFILER_SET_THREAD_NAME( "AsynchronousLoaderThread" );
-
-  crude_gfx_graphics *graphics = ( crude_gfx_graphics* )ctx;
-  while ( graphics->async_loader_execute )
-  {
-    crude_gfx_asynchronous_loader_update( &graphics->async_loader );
-  }
-}
-
-static void
 graphics_initialize_
 (
   ecs_iter_t *it
@@ -108,8 +94,9 @@ graphics_initialize_
       graphics = ( crude_gfx_graphics* )graphics_handle->value;
     }
     
-    graphics->allocator_container = graphics_creation->allocator_container;
+    graphics->asynchronous_loader_manager = graphics_creation->asynchronous_loader_manager;
     graphics->task_sheduler = graphics_creation->task_sheduler;
+    graphics->allocator_container = graphics_creation->allocator_container;
 
     /* Create Device */
     {
@@ -140,14 +127,8 @@ graphics_initialize_
     
     /* Create Async Loader */
     {
-      struct enkiTaskSchedulerConfig                       config;
-      
       crude_gfx_asynchronous_loader_initialize( &graphics->async_loader, &graphics->renderer );
-      graphics->async_loader_execute = true;
-
-      config = enkiGetTaskSchedulerConfig( graphics_creation->task_sheduler );
-      graphics->async_load_task = enkiCreatePinnedTask( graphics_creation->task_sheduler, pinned_task_asyns_loop_, config.numTaskThreadsToCreate );
-      enkiAddPinnedTaskArgs( graphics_creation->task_sheduler, graphics->async_load_task, graphics );
+      crude_gfx_async_loader_task_manager_add_loader( graphics_creation->asynchronous_loader_manager, &graphics->async_loader );
     }
 
     /* Parse */
@@ -171,7 +152,7 @@ graphics_initialize_
       /* Parse gltf*/
       {
         crude_gfx_renderer_scene_creation scene_creation = {
-          .task_scheduler = graphics->task_sheduler,
+          .task_scheduler = graphics_creation->task_sheduler,
           .allocator_container = graphics->allocator_container,
           .async_loader = &graphics->async_loader,
           .renderer = &graphics->renderer
@@ -217,10 +198,10 @@ graphics_deinitialize_
 
     graphics = ( crude_gfx_graphics* )graphics_per_entity[ i ].value;
     
+    crude_gfx_async_loader_task_manager_remove_loader( graphics->asynchronous_loader_manager, &graphics->async_loader );
     vkDeviceWaitIdle( graphics->gpu.vk_device );
     crude_gfx_destroy_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
     crude_gfx_renderer_scene_deinitialize( &graphics->scene );
-    graphics->async_loader_execute = false;
     crude_gfx_asynchronous_loader_deinitialize( &graphics->async_loader );
     crude_gfx_render_graph_deinitialize( &graphics->render_graph );
     crude_gfx_render_graph_builder_deinitialize( &graphics->render_graph_builder );
