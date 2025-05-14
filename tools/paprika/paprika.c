@@ -66,6 +66,12 @@ crude_paprika_deinitialize
   _In_ crude_paprika                                      *paprika
 )
 {
+  if ( !paprika->working )
+  {
+    return;
+  }
+
+  paprika->working = false;
   crude_entity_destroy( paprika->camera );
   crude_entity_destroy( paprika->scene );
   crude_heap_allocator_deinitialize( &paprika->graphics_allocator );

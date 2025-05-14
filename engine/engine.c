@@ -47,7 +47,7 @@ crude_engine_initialize
     config.numTaskThreadsToCreate += 1;
     enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
 
-    engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate );
+    engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate - 1 );
     enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
   }
 }

@@ -41,8 +41,14 @@ int main()
 
   while ( engine.running )
   {
-    cr_plugin_update( crude_sandbox_cr );
-    cr_plugin_update( crude_paprika_cr );
+    if ( sandbox.working )
+    {
+      cr_plugin_update( crude_sandbox_cr );
+    }
+    if ( paprika.working )
+    {
+      cr_plugin_update( crude_paprika_cr );
+    }
     cr_plugin_update( crude_engine_simulation_cr );
     CRUDE_PROFILER_MARK_FRAME;
   }

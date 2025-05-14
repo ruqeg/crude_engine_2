@@ -57,7 +57,7 @@ crude_gfx_asynchronous_loader_initialize
     buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_STREAM;
     buffer_creation.size = 64 * 1024 * 1024;
-    buffer_creation.name = "AsynchronousLoaderStagingBuffer";
+    buffer_creation.name = "asynchronous_loader_staging_buffer";
     buffer_creation.persistent = true;
     
     staging_buffer_handle = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
