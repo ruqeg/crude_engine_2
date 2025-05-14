@@ -1,10 +1,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include <platform/platform_components.h>
+#include <core/ecs_utils.h>
 #include <core/profiler.h>
 #include <core/memory.h>
 #include <core/assert.h>
+#include <platform/platform_components.h>
 
 #include <platform/platform_system.h>
 
@@ -105,12 +106,12 @@ sdl_create_window
   ecs_iter_t *it
 )
 {
-  crude_window *windows = ecs_field( it, crude_window, 0 );
+  crude_window *windows_per_entity = ecs_field( it, crude_window, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     ecs_world_t *world = it->world;
-    crude_window *window = &windows[ i ];
+    crude_window *window = &windows_per_entity[ i ];
     ecs_entity_t *entity = it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
@@ -175,11 +176,11 @@ sdl_destroy_window
   ecs_iter_t *it
 )
 {
-  crude_window_handle *windows = ecs_field( it, crude_window_handle, 0 );
+  crude_window_handle *windows_per_entity = ecs_field( it, crude_window_handle, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    SDL_DestroyWindow( windows[ i ].value );
+    SDL_DestroyWindow( windows_per_entity[ i ].value );
   }
 }
 
@@ -201,156 +202,193 @@ sdl_process_events
   ecs_iter_t *it
 )
 {
-  crude_input *inputs = ecs_field( it, crude_input, 0 );
-  crude_window *app_windows = ecs_field( it, crude_window, 1 );
-  crude_window_handle *app_windows_handles = ecs_field( it, crude_window_handle, 2 );
+  crude_input *inputs_per_entity = ecs_field( it, crude_input, 0 );
+  crude_window *windows_per_entity = ecs_field( it, crude_window, 1 );
+  crude_window_handle *windows_handles_per_entity = ecs_field( it, crude_window_handle, 2 );
   
   CRUDE_PROFILER_ZONE_NAME( "SDLProcessEvents" );
+
+  /* Reset input */
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    crude_input *input = &inputs_per_entity[ i ];
+
     for ( uint32 k = 0; k < 128; k++ )
     {
-      key_reset( &inputs[ i ].keys[ k ] );
+      key_reset( &input->keys[ k ] );
     }
 
-    key_reset( &inputs[ i ].mouse.left );
-    key_reset( &inputs[ i ].mouse.right );
+    key_reset( &input->mouse.left );
+    key_reset( &input->mouse.right );
 
-    mouse_reset( &inputs[ i ].mouse );
+    mouse_reset( &input->mouse );
+  }
 
-    SDL_Event sdl_event;
-    while (SDL_PollEvent( &sdl_event ))
+  /* Handle new input for each window*/
+  SDL_Event sdl_event;
+  while (SDL_PollEvent( &sdl_event ))
+  {
+    /* Handle Global event */
+    if ( sdl_event.type == SDL_EVENT_QUIT )
     {
-      if ( inputs[ i ].callback )
-      {
-        inputs[ i ].callback(&sdl_event);
-      }
+      ecs_quit( it->world );
+    }
+    
+    /* Handle Window event */
+    {
+      crude_entity                                         focused_entity;
+      crude_input                                         *focused_input;
+      crude_window                                        *focused_window;
+      crude_window_handle                                 *focused_window_handle;
+      bool                                                 window_event;
+          
+      focused_input = focused_window = focused_window_handle = NULL;
+      window_event = ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED ) || ( sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ) || ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED );
 
-      if ( sdl_event.type == SDL_EVENT_QUIT )
+      if ( window_event )
       {
-        ecs_quit( it->world );
-      }
-      else if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
-      {
-        if ( SDL_GetWindowID( app_windows_handles[ i ].value) == sdl_event.window.windowID )
+        for ( uint32 i = 0; i < it->count; ++i )
         {
-          int actual_width, actual_height;
-          SDL_GetWindowSizeInPixels( app_windows_handles[ i ].value, &actual_width, &actual_height );
-          app_windows[ i ].width  = actual_width;
-          app_windows[ i ].height = actual_height;
-          ecs_modified( it->world, it->entities[ i ], crude_window );
-          break;
+          if ( sdl_event.window.windowID == SDL_GetWindowID( windows_handles_per_entity[ i ].value ) )
+          {
+            focused_input = &inputs_per_entity[ i ];
+            focused_window = &windows_per_entity[ i ];
+            focused_window_handle = &windows_handles_per_entity[ i ];
+            focused_entity = ( crude_entity ){ .handle = it->entities[ i ], .world = it->world };
+          }
+        }
+        
+        if ( focused_input && focused_window && focused_window_handle )
+        {
+          if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
+          {
+            int actual_width, actual_height;
+            SDL_GetWindowSizeInPixels( focused_window_handle->value, &actual_width, &actual_height );
+            focused_window->width  = actual_width;
+            focused_window->height = actual_height;
+            ecs_modified( it->world, focused_entity.handle, crude_window );
+          }
+          else if ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
+          {
+            focused_input->should_close_window = true;
+          }
         }
       }
-      else if ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
+    }
+
+    /* Handle Mouse event */
+    {
+      crude_input                                         *focused_input;
+      crude_window                                        *focused_window;
+      crude_window_handle                                 *focused_window_handle;
+      bool                                                 mouse_event;
+    
+      focused_input = focused_window = focused_window_handle = NULL;
+      mouse_event = ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ) || ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP ) || ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )  || ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL );
+    
+      if ( mouse_event )
       {
-        ecs_quit( it->world );
-      }
-      else if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
-      {
-        uint32 sym = key_sym( sdl_event.key.key );
-        key_down( &inputs[ i ].keys[ sym ] );
-      }
-      else if ( sdl_event.type == SDL_EVENT_KEY_UP )
-      {
-        uint32 sym = key_sym( sdl_event.key.key );
-        key_up( &inputs[ i ].keys[ sym ] );
-      }
-      else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN )
-      {
-        if ( sdl_event.button.button == SDL_BUTTON_LEFT )
+        for ( uint32 i = 0; i < it->count; ++i )
         {
-          key_down( &inputs[ i ].mouse.left );
+          if ( SDL_GetMouseFocus() == windows_handles_per_entity[ i ].value )
+          {
+            focused_input = &inputs_per_entity[ i ];
+            focused_window = &windows_per_entity[ i ];
+            focused_window_handle = &windows_handles_per_entity[ i ];
+          }
         }
-        else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
+
+        if ( focused_input && focused_window && focused_window_handle )
         {
-          inputs[ i ].wrapwnd.x = sdl_event.motion.x;
-          inputs[ i ].wrapwnd.y = sdl_event.motion.y;
-          SDL_HideCursor();
-          key_down( &inputs[ i ].mouse.right );
-        }
-      }
-      else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP )
-      {
-        if ( sdl_event.button.button == SDL_BUTTON_LEFT )
-        {
-          key_up( &inputs[ i ].mouse.left );
-        }
-        else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
-        {
-          SDL_WarpMouseInWindow( app_windows_handles[ i ].value, inputs[ i ].wrapwnd.x, inputs[ i ].wrapwnd.y );
-          SDL_ShowCursor();
-          key_up( &inputs[ i ].mouse.right );
-        }
-      }
-      else if ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )
-      {
-        inputs[ i ].mouse.wnd.x = sdl_event.motion.x;
-        inputs[ i ].mouse.wnd.y = sdl_event.motion.y;
-        inputs[ i ].mouse.rel.x = sdl_event.motion.xrel;
-        inputs[ i ].mouse.rel.y = sdl_event.motion.yrel;
+          if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN )
+          {
+            if ( sdl_event.button.button == SDL_BUTTON_LEFT )
+            {
+              key_down( &focused_input->mouse.left );
+            }
+            else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
+            {
+              focused_input->wrapwnd.x = sdl_event.motion.x;
+              focused_input->wrapwnd.y = sdl_event.motion.y;
+              SDL_HideCursor();
+              key_down( &focused_input->mouse.right );
+            }
+          }
+          else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP )
+          {
+            if ( sdl_event.button.button == SDL_BUTTON_LEFT )
+            {
+              key_up( &focused_input->mouse.left );
+            }
+            else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
+            {
+              SDL_WarpMouseInWindow( focused_window_handle->value, focused_input->wrapwnd.x, focused_input->wrapwnd.y );
+              SDL_ShowCursor();
+              key_up( &focused_input->mouse.right );
+            }
+          }
+          else if ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )
+          {
+            focused_input->mouse.wnd.x = sdl_event.motion.x;
+            focused_input->mouse.wnd.y = sdl_event.motion.y;
+            focused_input->mouse.rel.x = sdl_event.motion.xrel;
+            focused_input->mouse.rel.y = sdl_event.motion.yrel;
   
-        if ( !SDL_CursorVisible() )
-        {
-          SDL_WarpMouseInWindow( app_windows_handles[ i ].value, inputs[ i ].wrapwnd.x, inputs[ i ].wrapwnd.y );
+            if ( !SDL_CursorVisible() )
+            {
+              SDL_WarpMouseInWindow( focused_window_handle->value, focused_input->wrapwnd.x, focused_input->wrapwnd.y );
+            }
+          }
+          else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
+          {
+            focused_input->mouse.scroll.x = sdl_event.wheel.x;
+            focused_input->mouse.scroll.y = sdl_event.wheel.y;
+          }
         }
       }
-      else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
+    }
+    /* Handle Keyboard event */
+    {
+      crude_input                                         *focused_input;
+      crude_window                                        *focused_window;
+      crude_window_handle                                 *focused_window_handle;
+      bool                                                 keyboard_event;
+      
+      focused_input = focused_window = focused_window_handle = NULL;
+      keyboard_event = ( sdl_event.type == SDL_EVENT_KEY_DOWN ) || ( sdl_event.type == SDL_EVENT_KEY_UP );
+
+      if ( keyboard_event )
       {
-        inputs[ i ].mouse.scroll.x = sdl_event.wheel.x;
-        inputs[ i ].mouse.scroll.y = sdl_event.wheel.y;
+        for ( uint32 i = 0; i < it->count; ++i )
+        {
+          if ( SDL_GetKeyboardFocus() == windows_handles_per_entity[ i ].value )
+          {
+            focused_input = &inputs_per_entity[ i ];
+            focused_window = &windows_per_entity[ i ];
+            focused_window_handle = &windows_handles_per_entity[ i ];
+          }
+        }
+
+        if ( focused_input && focused_window && focused_window_handle )
+        {
+          if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
+          {
+            uint32 sym = key_sym( sdl_event.key.key );
+            key_down( &focused_input->keys[ sym ] );
+          }
+          else if ( sdl_event.type == SDL_EVENT_KEY_UP )
+          {
+            uint32 sym = key_sym( sdl_event.key.key );
+            key_up( &focused_input->keys[ sym ] );
+          }
+        }
       }
     }
   }
   CRUDE_PROFILER_END;
 }
 
-SDL_malloc_func s_sdl_default_malloc_func;
-SDL_calloc_func s_sdl_default_calloc_func;
-SDL_realloc_func s_sdl_default_realloc_func;
-SDL_free_func s_sdl_default_free_func;
-
-void* SDLCALL _sdl_allocate( size_t size )
-{
-  void *allocated_memory = s_sdl_default_malloc_func( size );
-  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
-  assert( allocated_memory );
-  return allocated_memory;
-}
-
-void* SDLCALL _sdl_callocate( size_t nmemb, size_t size )
-{
-  void *allocated_memory = s_sdl_default_calloc_func( nmemb, size );
-  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, nmemb * size, "SDLAllocator" );
-  assert( allocated_memory );
-  return allocated_memory;
-}
-
-void* SDLCALL _sdl_reallocate( void *ptr, size_t size )
-{
-  if ( ptr )
-  {
-    CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
-  }
-  void *allocated_memory = s_sdl_default_realloc_func( ptr, size );
-  //CRUDE_PROFILER_ALLOC_NAME( allocated_memory, size, "SDLAllocator" );
-  assert( allocated_memory != ptr );
-  assert( allocated_memory );
-  return allocated_memory;
-}
-
-void SDLCALL _sdl_free( void *ptr )
-{
-  s_sdl_default_free_func( ptr );
-  //CRUDE_PROFILER_FREE_NAME( ptr, "SDLAllocator" );
-}
-
-
-void
-crude_platform_systemImport
-(
-  ecs_world_t *world
-)
+CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
 {
   ECS_MODULE( world, crude_platform_system );
   ECS_IMPORT( world, crude_platform_components );
@@ -362,7 +400,7 @@ crude_platform_systemImport
     },
     .events = { EcsOnSet },
     .callback = sdl_create_window
-    });
+    } );
   
   ecs_system( world, {
     .entity = ecs_entity( world, { .name = "sdl_process_events", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
@@ -378,9 +416,6 @@ crude_platform_systemImport
     .events = { EcsOnRemove },
     .callback = sdl_destroy_window
     } );
-  
-  SDL_GetMemoryFunctions( &s_sdl_default_malloc_func, &s_sdl_default_calloc_func, &s_sdl_default_realloc_func, &s_sdl_default_free_func );
-  SDL_SetMemoryFunctions( _sdl_allocate, _sdl_callocate, _sdl_reallocate, _sdl_free );
 
   if ( !SDL_Init( SDL_INIT_VIDEO ) )
   {

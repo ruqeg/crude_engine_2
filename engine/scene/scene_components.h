@@ -1,9 +1,8 @@
 #pragma once
 
-#include <flecs.h>
-
 #include <core/math.h>
-#include <scene/entity.h>
+#include <core/ecs.h>
+#include <scene/scene.h>
 
 typedef struct crude_transform
 {
@@ -20,8 +19,9 @@ typedef struct crude_camera
   float32                      aspect_ratio;
 } crude_camera;
 
-CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
+CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_transform );
+CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_camera );
+CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_scene );
 
 CRUDE_API crude_matrix
 crude_camera_view_to_clip
@@ -36,8 +36,4 @@ crude_transform_node_to_world
   _In_ crude_transform        *transform
 );
 
-CRUDE_API void
-crude_scene_componentsImport
-(
-  _In_ ecs_world_t            *world
-);
+CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );

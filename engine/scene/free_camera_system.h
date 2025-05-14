@@ -1,11 +1,5 @@
 #pragma once
 
-#include <flecs.h>
+#include <core/ecs.h>
 
-#include <core/alias.h>
-
-CRUDE_API void
-crude_free_camera_systemImport
-(
-  _In_ ecs_world_t *world
-);
+CRUDE_ECS_MODULE_IMPORT_DECL( crude_free_camera_system );

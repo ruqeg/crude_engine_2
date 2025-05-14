@@ -1,13 +1,14 @@
-#include <platform/platform_components.h>
-#include <scene/scene_components.h>
-#include <scene/free_camera_system.h>
 #include <core/log.h>
 #include <core/profiler.h>
-
+#include <core/ecs_utils.h>
 #include <scene/scripts_components.h>
+#include <scene/scene_components.h>
+#include <platform/platform_components.h>
+
+#include <scene/free_camera_system.h>
 
 static void
-crude_update_free_camera
+update_free_camera_
 (
   _In_ ecs_iter_t *it
 )
@@ -58,11 +59,7 @@ crude_update_free_camera
   CRUDE_PROFILER_END;
 }
 
-void
-crude_free_camera_systemImport
-(
-  _In_ ecs_world_t *world
-)
+CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
 {
   ECS_MODULE( world, crude_free_camera_system );
   ECS_IMPORT( world, crude_scripts_components );
@@ -71,7 +68,7 @@ crude_free_camera_systemImport
 
   ecs_system( world, {
     .entity = ecs_entity( world, { .name = "free_camera_update", .add = ecs_ids( ecs_dependson( EcsOnUpdate ) ) } ),
-    .callback = crude_update_free_camera,
+    .callback = update_free_camera_,
     .query.terms = { 
       {.id = ecs_id( crude_transform ) },
       {.id = ecs_id( crude_free_camera ) },

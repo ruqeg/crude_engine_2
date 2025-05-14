@@ -23,11 +23,11 @@ crude_engine_initialize
 CRUDE_API void
 crude_engine_deinitialize
 (
-  _In_ crude_engine *engine
+  _In_ crude_engine                                       *engine
 );
 
 CRUDE_API bool
 crude_engine_update
 (
-  _In_ crude_engine *engine
+  _In_ crude_engine                                       *engine
 );

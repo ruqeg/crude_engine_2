@@ -57,7 +57,7 @@ crude_physics_particle_clear_force_accum
  * 
  */
 void
-crude_physics_update_force
+crude_physics_particle_spring_update_force
 (
   _In_ crude_physics_particle_spring            *spring,
   _In_ crude_physics_particle                   *particle,

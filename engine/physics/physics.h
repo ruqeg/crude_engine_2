@@ -14,34 +14,34 @@ typedef struct crude_physics_particle
     * Holds the linear position of the particle in
     * world space.
     */
-  crude_float3                                   position;
+  crude_float3                                             position;
   /*
    * Holds the linear velocity of the particle in
    * world space
    */
-  crude_float3                                   velocity;
+  crude_float3                                             velocity;
   /*
    * Holds the acceleration of the particle. This value
    * can be used to set acceleration due to gravity or
    * any other constants acceleration;
    */
-  crude_float3                                   acceleration;
+  crude_float3                                             acceleration;
   /**
     * Holds the accumulated force to be applied at the next
     * simulation iteration only. This value is zeroed at each
     * integration step;
     */
-  crude_float3                                   force_accum;
+  crude_float3                                             force_accum;
   /**
     * Holds the amount of damping applied to linear motion. 
     */
-  float32                                        damping;
+  float32                                                  damping;
   /**
     * Holds the inverse of the mass of the particle.
     * Useful to simulate objects with infinite mass 
     * (immovable).
     */
-  float32                                        inverse_mass;
+  float32                                                  inverse_mass;
 } crude_physics_particle;
 
 /**
@@ -52,11 +52,11 @@ typedef struct crude_physics_particle
 typedef struct crude_physics_particle_spring
 {
   /** The particle at the other end of the string. */
-  crude_physics_particle                        *particle;
+  crude_physics_particle                                  *particle;
   /** Holds the spring constant. */
-  float32                                        spring_constant;
+  float32                                                  spring_constant;
   /** Holds the rest length of the spring. */
-  float32                                        rest_length;
+  float32                                                  rest_length;
 } crude_physics_particle_spring;
 
 /**
@@ -67,21 +67,21 @@ typedef struct crude_physics_particle_spring
 CRUDE_API void
 crude_physics_particle_integrate
 (
-  _In_ crude_physics_particle                   *particle,
-  _In_ float32                                   duration
+  _In_ crude_physics_particle                             *particle,
+  _In_ float32                                             duration
 );
 
 CRUDE_API void
 crude_physics_particle_add_force
 (
-  _In_ crude_physics_particle                   *particle,
-  _In_ crude_vector const                        force
+  _In_ crude_physics_particle                             *particle,
+  _In_ crude_vector const                                  force
 );
 
 CRUDE_API void
 crude_physics_particle_clear_force_accum
 (
-  _In_ crude_physics_particle                   *particle
+  _In_ crude_physics_particle                             *particle
 );
 
 /**
@@ -90,9 +90,9 @@ crude_physics_particle_clear_force_accum
  * 
  */
 CRUDE_API void
-crude_physics_update_force
+crude_physics_particle_spring_update_force
 (
-  _In_ crude_physics_particle_spring            *spring,
-  _In_ crude_physics_particle                   *particle,
-  _In_ float32                                   duration
+  _In_ crude_physics_particle_spring                      *spring,
+  _In_ crude_physics_particle                             *particle,
+  _In_ float32                                             duration
 );

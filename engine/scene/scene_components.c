@@ -1,7 +1,10 @@
+#include <core/ecs_utils.h>
+
 #include <scene/scene_components.h>
 
-ECS_COMPONENT_DECLARE( crude_transform );
-ECS_COMPONENT_DECLARE( crude_camera );
+CRUDE_ECS_COMPONENT_DECLARE( crude_transform );
+CRUDE_ECS_COMPONENT_DECLARE( crude_camera );
+CRUDE_ECS_COMPONENT_DECLARE( crude_scene );
 
 static crude_matrix
 get_node_to_parent_matrix
@@ -28,9 +31,9 @@ crude_transform_node_to_world
   _In_ crude_transform        *transform
 )
 {
-  crude_entity parent = CRUDE_ENTITY_GET_PARENT( node );
+  crude_entity parent = crude_entity_get_parent( node );
   
-  if ( CRUDE_ENTITY_VALID( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
+  if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
   {
     crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
     return crude_mat_multiply( get_node_to_parent_matrix( transform ), crude_transform_node_to_world( parent, parent_transform ) );
@@ -38,13 +41,10 @@ crude_transform_node_to_world
   return get_node_to_parent_matrix( transform );
 }
 
-void
-crude_scene_componentsImport
-(
-  ecs_world_t *world
-)
+CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
 {
   ECS_MODULE( world, crude_scene_components );
   ECS_COMPONENT_DEFINE( world, crude_transform );
   ECS_COMPONENT_DEFINE( world, crude_camera );
+  ECS_COMPONENT_DEFINE( world, crude_scene );
 }

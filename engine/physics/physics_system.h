@@ -1,11 +1,5 @@
 #pragma once
 
-#include <flecs.h>
+#include <core/ecs.h>
 
-#include <core/alias.h>
-
-CRUDE_API void
-crude_physics_systemImport
-(
-  ecs_world_t *world
-);
+CRUDE_ECS_MODULE_IMPORT_DECL( crude_physics_system );

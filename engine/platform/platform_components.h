@@ -1,12 +1,19 @@
 #pragma once
 
-#include <SDL3/SDL.h>
-#include <flecs.h>
+#include <core/ecs.h>
 
-#include <core/alias.h>
-
+/************************************************
+ *
+ * Typedef
+ * 
+ ***********************************************/
 typedef bool ( *crude_input_event_callback )( const void * );
 
+/************************************************
+ *
+ * Structs
+ * 
+ ***********************************************/
 typedef struct crude_key_state
 {
   bool                         pressed;
@@ -30,14 +37,6 @@ typedef struct crude_mouse_state
   crude_mouse_input            scroll;
 } crude_mouse_state;
 
-typedef struct crude_input
-{
-  crude_input_event_callback   callback;
-  crude_key_state              keys[ 128 ];
-  crude_mouse_state            mouse;
-  crude_mouse_input            wrapwnd;
-} crude_input;
-
 typedef struct crude_window
 {
   int32                  width;
@@ -50,12 +49,34 @@ typedef struct crude_window_handle
   void                  *value;
 } crude_window_handle;
 
-CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window );
-CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window_handle );
-CRUDE_API extern ECS_COMPONENT_DECLARE( crude_input );
+typedef struct crude_input
+{
+  crude_input_event_callback   callback;
+  crude_key_state              keys[ 128 ];
+  crude_mouse_state            mouse;
+  crude_mouse_input            wrapwnd;
+  bool                         should_close_window;
+} crude_input;
 
-CRUDE_API void
-crude_platform_componentsImport
-(
-  ecs_world_t                 *world
-);
+/************************************************
+ *
+ * Gloval Variables
+ * 
+ ***********************************************/
+crude_input g_crude_input;
+
+/************************************************
+ *
+ * ECS Components Declaration
+ * 
+ ***********************************************/
+CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_window );
+CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_window_handle );
+CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_input );
+
+/************************************************
+ *
+ * Functions Declaratin
+ * 
+ ***********************************************/
+CRUDE_ECS_MODULE_IMPORT_DECL( crude_platform_components );

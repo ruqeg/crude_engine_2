@@ -1,9 +1,7 @@
 #pragma once
 
-#include <flecs.h>
-
 #include <core/math.h>
-#include <scene/entity.h>
+#include <core/ecs.h>
 
 typedef struct crude_free_camera
 {
@@ -12,10 +10,6 @@ typedef struct crude_free_camera
   crude_entity  entity_input;
 } crude_free_camera;
 
-CRUDE_API ECS_COMPONENT_DECLARE( crude_free_camera );
+CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_free_camera );
 
-CRUDE_API void
-crude_scripts_componentsImport
-(
-  _In_ ecs_world_t            *world
-);
+CRUDE_ECS_MODULE_IMPORT_DECL( crude_scripts_components );

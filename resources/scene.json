@@ -1,0 +1,49 @@
+{
+  "name": "scene1",
+  "nodes": [
+    {
+      "name": "main",
+      "components": [],
+      "tags": [],
+      "transform": 0
+    },
+    {
+      "name": "editor_camera",
+      "components": [
+        0
+      ],
+      "tags": [
+        "editor_camera"
+      ],
+      "transform": 0
+    },
+    {
+      "name": "particles_instances",
+      "components": [
+        1
+      ],
+      "tags": [],
+      "transform": 0
+    }
+  ],
+  "transforms": [
+    {
+        "translation": [ 0, 0, 0 ],
+        "rotation:": [ 0, 0, 0, 0 ],
+        "scale": [ 1, 1, 1 ]
+    }
+  ],
+  "components": [
+    {
+      "name": "free_camera",
+      "fov_radians": 0.8,
+      "near_z": 0.01,
+      "far_z": 1000,
+      "aspect_ratio": 1.0
+    },
+    {
+      "name": "gltf",
+      "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
+    }
+  ]
+}

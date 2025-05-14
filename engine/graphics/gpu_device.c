@@ -39,13 +39,6 @@ static char const *instance_enabled_layers[] =
 
 /************************************************
  *
- * Global variables
- * 
- ***********************************************/
-static crude_gfx_cmd_buffer_manager g_command_buffer_manager;
-
-/************************************************
- *
  * Local Vulkan Helper Functions Declaration.
  * 
  ***********************************************/
@@ -246,7 +239,7 @@ crude_gfx_device_initialize
     }
   }
   
-  crude_gfx_cmd_manager_initialize( &g_command_buffer_manager, gpu, creation->num_threads );
+  crude_gfx_cmd_manager_initialize( &gpu->cmd_buffer_manager, gpu, creation->num_threads );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator_container );
@@ -350,7 +343,7 @@ crude_gfx_device_deinitialize
   CRUDE_ARRAY_FREE( gpu->resource_deletion_queue );
   CRUDE_ARRAY_FREE( gpu->texture_to_update_bindless );
   
-  crude_gfx_cmd_manager_deinitialize( &g_command_buffer_manager );
+  crude_gfx_cmd_manager_deinitialize( &gpu->cmd_buffer_manager );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -407,7 +400,7 @@ crude_gfx_new_frame
     }
   }
 
-  crude_gfx_cmd_manager_reset( &g_command_buffer_manager, gpu->current_frame );
+  crude_gfx_cmd_manager_reset( &gpu->cmd_buffer_manager, gpu->current_frame );
 
   {
     uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
@@ -605,7 +598,7 @@ crude_gfx_get_primary_cmd
   _In_ bool                                                begin
 )
 {
-  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &g_command_buffer_manager, gpu->current_frame, thread_index, begin );
+  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, thread_index, begin );
 
   if ( /*gpu_timestamp_reset &&*/ begin )
   {
@@ -623,7 +616,7 @@ crude_gfx_get_secondary_cmd
   _In_ uint32                                              thread_index
 )
 {
-  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_secondary_cmd( &g_command_buffer_manager, gpu->current_frame, thread_index );
+  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_secondary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, thread_index );
   return cmd;
 }
 
@@ -1039,7 +1032,7 @@ crude_gfx_create_texture
     memcpy( destination_data, creation->initial_data, image_size );
     vmaUnmapMemory( gpu->vma_allocator, staging_allocation );
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &g_command_buffer_manager, gpu->current_frame, 0u, true );
+    crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, 0u, true );
     
     VkBufferImageCopy region =
     {

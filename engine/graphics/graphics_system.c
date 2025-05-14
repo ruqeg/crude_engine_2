@@ -2,6 +2,7 @@
 #include <core/string.h>
 #include <core/array.h>
 #include <core/profiler.h>
+#include <core/ecs_utils.h>
 
 #include <platform/platform_components.h>
 #include <graphics/graphics_components.h>
@@ -10,8 +11,6 @@
 #include <graphics/renderer_scene.h>
 
 #include <scene/scene_components.h>
-#include <scene/scripts_components.h>
-#include <scene/free_camera_system.h>
 
 #include <graphics/graphics_system.h>
 
@@ -179,42 +178,26 @@ graphics_initialize_
         };
         crude_gfx_renderer_scene_initialize( &graphics->scene, &scene_creation );
 
-        char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf" );
+        char const *gltf_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf" );
         crude_gfx_renderer_scene_load_from_file( &graphics->scene, gltf_path, graphics_creation->temporary_allocator );
       }
     }
 
     crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\render_technique.json", &graphics->renderer, &graphics->render_graph, graphics_creation->temporary_allocator );
-    
     crude_gfx_renderer_scene_register_render_passes( &graphics->scene, &graphics->render_graph );
+    crude_gfx_renderer_scene_prepare_draws( &graphics->scene, graphics_creation->temporary_allocator );
     
-    crude_gfx_buffer_creation ubo_creation = {
-      .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
-      .size = sizeof( crude_gfx_shader_frame_constants ),
-      .name = "ubo",
-    };
-    graphics->gpu.frame_buffer = crude_gfx_create_buffer( &graphics->gpu, &ubo_creation );
-
-    /* Create free camera */
     {
-      graphics->camera = crude_entity_create_empty( it->world, "camera1" );
-      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_camera, {
-        .fov_radians = CRUDE_CPI4,
-        .near_z = 0.01,
-        .far_z = 1000,
-        .aspect_ratio = 4.0 / 3.0 } );
-      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_transform, {
-        .translation = { 0, 0, -5 },
-        .rotation = { 0, 0, 0, 1 },
-        .scale = { 1, 1, 1 }, } );
-      CRUDE_ENTITY_SET_COMPONENT( graphics->camera, crude_free_camera, {
-        .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
-        .rotating_speed_multiplier  = { -0.25f, -0.25f },
-        .entity_input = ( crude_entity ){ it->entities[ i ], it->world } } );
+      crude_gfx_buffer_creation frame_buffer_creation = {
+        .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
+        .size = sizeof( crude_gfx_frame_buffer_data ),
+        .name = "FrameBuffer",
+      };
+      graphics->gpu.frame_buffer = crude_gfx_create_buffer( &graphics->gpu, &frame_buffer_creation );
     }
 
-    crude_gfx_renderer_scene_prepare_draws( &graphics->scene, graphics_creation->temporary_allocator );
+    graphics->camera = graphics_creation->camera;
 
     crude_stack_allocator_free_marker( graphics_creation->temporary_allocator, temporary_allocator_marker );
   }
@@ -268,50 +251,53 @@ graphics_process_
       crude_gfx_render_graph_on_resize( &graphics->render_graph, graphics->gpu.vk_swapchain_width, graphics->gpu.vk_swapchain_height );
     }
 
-    // update fame buffer
-    crude_gfx_map_buffer_parameters constant_buffer_map = { graphics->gpu.frame_buffer, 0, 0 };
-    crude_gfx_shader_frame_constants *frame_buffer_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );
-    if ( frame_buffer_data )
+    /* Update fame buffer */
     {
-      crude_camera const *camera =  CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_camera );
-      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_transform );
-    
-      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( graphics->camera, transform ) );
-      crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+      crude_gfx_map_buffer_parameters frame_buffer_map = { graphics->gpu.frame_buffer, 0, 0 };
+      crude_gfx_frame_buffer_data *frame_buffer_data = crude_gfx_map_buffer( &graphics->gpu, &frame_buffer_map );
+      if ( frame_buffer_data )
+      {
+        crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_camera );
+        crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->camera, crude_transform );
       
-      crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
-      crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
-      crude_gfx_unmap_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
+        crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( graphics->camera, transform ) );
+        crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+        
+        crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
+        crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
+        crude_gfx_unmap_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
+      }
     }
     
-    // update mesh buffer
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.meshes ); ++mesh_index )
+    /* update mesh buffer */
     {
-      crude_gfx_mesh *mesh_draw = &graphics->scene.meshes[ mesh_index ];
-      
-      constant_buffer_map.buffer = mesh_draw->material_buffer;
-      
-      crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( &graphics->gpu, &constant_buffer_map );
-      if ( mesh_data )
+      for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( graphics->scene.meshes ); ++mesh_index )
       {
-        mesh_data->textures.x = mesh_draw->albedo_texture_index;
-        mesh_data->textures.y = mesh_draw->roughness_texture_index;
-        mesh_data->textures.z = mesh_draw->normal_texture_index;
-        mesh_data->textures.w = mesh_draw->occlusion_texture_index;
-        mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
-        mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
-        mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
-        mesh_data->flags.x = mesh_draw->flags;
+        crude_gfx_mesh *mesh_draw = &graphics->scene.meshes[ mesh_index ];
+
+        crude_gfx_map_buffer_parameters mesh_buffer_map = { mesh_draw->material_buffer, 0, 0 };
+        crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( &graphics->gpu, &mesh_buffer_map );
+        if ( mesh_data )
+        {
+          mesh_data->textures.x = mesh_draw->albedo_texture_index;
+          mesh_data->textures.y = mesh_draw->roughness_texture_index;
+          mesh_data->textures.z = mesh_draw->normal_texture_index;
+          mesh_data->textures.w = mesh_draw->occlusion_texture_index;
+          mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
+          mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
+          mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
+          mesh_data->flags.x = mesh_draw->flags;
+          
+          crude_transform model_transform = {
+            .translation = { 0.0, 0.0, -4.0 },
+            .rotation = { 0.0, 0.0, 0.0, 0.0 },
+            .scale = { 0.3, 0.3, 0.3 },
+          };
+          crude_matrix model_to_world = crude_transform_node_to_world( graphics->camera, &model_transform );
+          crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
         
-        crude_transform model_transform = {
-          .translation = { 0.0, 0.0, -4.0 },
-          .rotation = { 0.0, 0.0, 0.0, 0.0 },
-          .scale = { 0.005,0.005,0.005 },
-        };
-        crude_matrix model_to_world = crude_transform_node_to_world( graphics->camera, &model_transform );
-        crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
-      
-        crude_gfx_unmap_buffer( &graphics->gpu, mesh_draw->material_buffer );
+          crude_gfx_unmap_buffer( &graphics->gpu, mesh_draw->material_buffer );
+        }
       }
     }
     
@@ -326,11 +312,7 @@ graphics_process_
   }
 }
 
-void
-crude_graphics_systemImport
-(
-  ecs_world_t *world
-)
+CRUDE_ECS_MODULE_IMPORT_IMPL( crude_graphics_system )
 {
   ECS_MODULE( world, crude_graphics_system );
   ECS_IMPORT( world, crude_platform_components );

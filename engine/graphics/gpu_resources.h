@@ -621,11 +621,11 @@ typedef struct crude_gfx_resource_update
   uint32                                                   current_frame;
 } crude_gfx_resource_update;
 
-typedef struct crude_gfx_shader_frame_constants
+typedef struct crude_gfx_frame_buffer_data
 {
   crude_float4x4a                                          world_to_view;
   crude_float4x4a                                          view_to_clip;
-} crude_gfx_shader_frame_constants;
+} crude_gfx_frame_buffer_data;
 
 typedef struct crude_gfx_shader_mesh_constants
 {

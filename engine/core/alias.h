@@ -35,6 +35,8 @@
 #define CRUDE_API CRUDE_IMPORT
 #endif
 
+#define CRUDE_STATIC_ASSERT( x, m ) _Static_assert( x, m );
+
 #define CRUDE_DEBUG_BREAK       __debugbreak()
 #define CRUDE_INLINE            inline
 

@@ -127,6 +127,8 @@ typedef struct crude_gfx_device
   crude_gfx_buffer_handle                                  mesh_buffer;
   crude_gfx_render_pass_output                             swapchain_output;
 
+  crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
+
 
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
   PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;

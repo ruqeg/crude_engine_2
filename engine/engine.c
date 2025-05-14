@@ -1,10 +1,9 @@
-#include <flecs.h>
-
 #include <core/profiler.h>
 #include <core/time.h>
-#include <scene/entity.h>
 #include <core/array.h>
 #include <core/log.h>
+#include <core/ecs.h>
+#include <core/ecs_utils.h>
 
 #include <engine.h>
 
@@ -30,17 +29,12 @@ crude_engine_initialize
   _In_ int32                                               num_threads
 )
 {
-  engine->world   = ecs_init();
+  engine->world   = crude_ecs_init();
   engine->running = true;
   engine->time    = 0;
   
   ECS_TAG_DEFINE( engine->world, Entity );
 
-  if (num_threads > 1)
-  {
-    ecs_set_threads( engine->world, num_threads );
-  }
-  
   crude_log_initialize();
 
   crude_time_service_initialize();
@@ -61,7 +55,7 @@ crude_engine_initialize
 void
 crude_engine_deinitialize
 (
-  _In_ crude_engine *engine
+  _In_ crude_engine                                       *engine
 )
 {
   enkiWaitforAllAndShutdown( engine->task_sheduler );
@@ -73,7 +67,7 @@ crude_engine_deinitialize
 bool
 crude_engine_update
 (
-  _In_ crude_engine *engine
+  _In_ crude_engine                                       *engine
 )
 {
   ecs_world_t *world = engine->world;
@@ -82,14 +76,13 @@ crude_engine_update
   float32 const delta_time = crude_time_delta_seconds( engine->time, current_tick );
   engine->time = current_tick;
 
-  if ( !ecs_should_quit( world ) )
+  if ( !crude_ecs_should_quit( world ) )
   {
-    ecs_world_info_t const *info = ecs_get_world_info( world );
-    ecs_progress( world, delta_time );
+    crude_ecs_progress( world, delta_time );
     return true;
   }
 
-  ecs_fini( world );
+  crude_ecs_fini( world );
   engine->running = false;
   return false;
 }
