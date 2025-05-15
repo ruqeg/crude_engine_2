@@ -6,18 +6,22 @@
 
 typedef struct crude_scene_creation
 {
-  crude_allocator_container                                allocator_container;
+  void                                                    *world;
+  crude_entity                                             input_entity;
   char const                                              *resources_path;
   crude_stack_allocator                                   *temporary_allocator;
+  crude_allocator_container                                allocator_container;
 } crude_scene_creation;
 
 typedef struct crude_scene
 {
+  void                                                    *world;
   crude_entity                                            *nodes;
   char                                                    *resources_path;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
   crude_string_buffer                                      path_bufffer;
+  crude_entity                                             input_entity;
 } crude_scene;
 
 CRUDE_API void

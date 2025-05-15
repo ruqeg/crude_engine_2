@@ -77,11 +77,24 @@ crude_vsnprintf
   _In_ char const                                         *format,
   va_list                                                  args
 );
-  
+
 CRUDE_API void
 crude_string_copy
 (
   _Out_ char                                              *dst,
   _In_ char const                                         *src,
   _In_ size_t                                              n
+);
+
+CRUDE_API size_t
+crude_string_length
+(
+  _In_ char const                                         *s
+);
+
+CRUDE_API size_t
+crude_string_cmp
+(
+  _In_ char const                                         *s1,
+  _In_ char const                                         *s2
 );

@@ -122,21 +122,15 @@ crude_gfx_renderer_technique_load_from_file
     cJSON const                                           *pipelines_json;
 
     pipelines_json = cJSON_GetObjectItemCaseSensitive( technique_json, "pipelines" );
-    if ( cJSON_GetArraySize( pipelines_json ) > 0 )
+    for ( uint32 i = 0; i < cJSON_GetArraySize( pipelines_json ); ++i )
     {
-      uint32                                               pipelines_num;
-      
-      pipelines_num = cJSON_GetArraySize( pipelines_json );
-      for ( uint32 i = 0; i < pipelines_num; ++i )
-      {
-        cJSON const                                       *pipeline;
-        crude_gfx_pipeline_creation                        pipeline_creation;
+      cJSON const                                       *pipeline;
+      crude_gfx_pipeline_creation                        pipeline_creation;
 
-        pipeline = cJSON_GetArrayItem( pipelines_json, i );
-        pipeline_creation = crude_gfx_pipeline_creation_empty();
-        parse_gpu_pipeline_( pipeline, &pipeline_creation, &path_buffer, render_graph, temporary_allocator );
-        technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
-      }
+      pipeline = cJSON_GetArrayItem( pipelines_json, i );
+      pipeline_creation = crude_gfx_pipeline_creation_empty();
+      parse_gpu_pipeline_( pipeline, &pipeline_creation, &path_buffer, render_graph, temporary_allocator );
+      technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
     }
   }
 

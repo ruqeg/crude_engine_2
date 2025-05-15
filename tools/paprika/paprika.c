@@ -27,18 +27,20 @@ crude_paprika_initialize
   ECS_IMPORT( paprika->engine->world, crude_graphics_system );
   ECS_IMPORT( paprika->engine->world, crude_free_camera_system );
   
+  paprika->scene = crude_entity_create_empty( paprika->engine->world, "paprika" );
+
   {
     crude_scene_creation creation = {
       .allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator ), 
       .resources_path = "\\..\\..\\resources\\",
-      .temporary_allocator = &paprika->temporary_allocator
+      .temporary_allocator = &paprika->temporary_allocator,
+      .world = paprika->engine->world,
+      .input_entity = paprika->scene,
     };
     crude_scene_initialize( &paprika->scenee, &creation );
   }
 
   crude_scene_load( &paprika->scenee, "scene.json" );
-
-  paprika->scene = crude_entity_create_empty( paprika->engine->world, "paprika" );
 
   /* Create free camera */
   paprika->camera = crude_entity_create_empty( paprika->engine->world, "camera1" );

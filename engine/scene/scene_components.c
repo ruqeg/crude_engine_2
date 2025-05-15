@@ -7,6 +7,7 @@ CRUDE_ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_ECS_COMPONENT_DECLARE( crude_scene );
 CRUDE_ECS_COMPONENT_DECLARE( crude_scene_creation );
 CRUDE_ECS_COMPONENT_DECLARE( crude_scene_handle );
+CRUDE_ECS_COMPONENT_DECLARE( crude_gltf );
 
 static crude_matrix
 get_node_to_parent_matrix
@@ -49,6 +50,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_transform );
   ECS_COMPONENT_DEFINE( world, crude_camera );
   ECS_COMPONENT_DEFINE( world, crude_scene );
+  ECS_COMPONENT_DEFINE( world, crude_gltf );
   ECS_COMPONENT_DEFINE( world, crude_scene_creation );
   ECS_COMPONENT_DEFINE( world, crude_scene_handle );
 }

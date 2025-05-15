@@ -5,45 +5,110 @@
       "name": "main",
       "components": [],
       "tags": [],
-      "transform": 0
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
     },
     {
       "name": "editor_camera",
       "components": [
-        0
+        {
+          "type": "crude_camera",
+          "fov_radians": 0.8,
+          "near_z": 0.01,
+          "far_z": 1000,
+          "aspect_ratio": 1.0
+        },
+        {
+          "type": "crude_free_camera",
+          "moving_speed_multiplier": [
+            7.0,
+            7.0,
+            7.0
+          ],
+          "rotating_speed_multiplier": [
+            -0.25,
+            -0.25
+          ]
+        }
       ],
       "tags": [
         "editor_camera"
       ],
-      "transform": 0
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
     },
     {
       "name": "particles_instances",
       "components": [
-        1
+        {
+          "type": "gltf",
+          "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
+        }
       ],
       "tags": [],
-      "transform": 0
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
     }
   ],
-  "transforms": [
-    {
-        "translation": [ 0, 0, 0 ],
-        "rotation:": [ 0, 0, 0, 0 ],
-        "scale": [ 1, 1, 1 ]
-    }
-  ],
-  "components": [
-    {
-      "name": "free_camera",
-      "fov_radians": 0.8,
-      "near_z": 0.01,
-      "far_z": 1000,
-      "aspect_ratio": 1.0
-    },
-    {
-      "name": "gltf",
-      "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
-    }
-  ]
+  "hierarchy ": {
+    "node": 0,
+    "children": [
+      {
+        "node": 1,
+        "children": []
+      },
+      {
+        "node": 2,
+        "children": []
+      }
+    ]
+  }
 }

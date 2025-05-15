@@ -10,7 +10,7 @@
 #include <platform/platform_system.h>
 
 static uint32
-key_sym
+key_sym_
 (
   _In_ uint32 sdl_sym
 )
@@ -37,7 +37,7 @@ key_sym
 }
 
 static void
-key_down
+key_down_
 (
   _In_ crude_key_state *key
 )
@@ -56,7 +56,7 @@ key_down
 }
 
 static void
-key_up
+key_up_
 (
   _In_ crude_key_state *key
 )
@@ -65,7 +65,7 @@ key_up
 }
 
 static void
-key_reset
+key_reset_
 (
   _In_ crude_key_state *key
 )
@@ -82,7 +82,7 @@ key_reset
 }
 
 static void
-mouse_reset
+mouse_reset_
 (
   _In_ crude_mouse_state *state
 )
@@ -101,7 +101,7 @@ mouse_reset
 }
 
 static void
-sdl_create_window
+create_window_
 (
   ecs_iter_t *it
 )
@@ -171,7 +171,7 @@ sdl_create_window
 }
 
 static void
-sdl_destroy_window
+destroy_window_
 (
   ecs_iter_t *it
 )
@@ -185,7 +185,7 @@ sdl_destroy_window
 }
 
 static void
-sdl_shutdown
+shutdown_
 (
   ecs_world_t *world,
   void        *ctx
@@ -197,7 +197,7 @@ sdl_shutdown
 }
 
 static void
-sdl_process_events
+process_events_
 (
   ecs_iter_t *it
 )
@@ -215,13 +215,13 @@ sdl_process_events
 
     for ( uint32 k = 0; k < 128; k++ )
     {
-      key_reset( &input->keys[ k ] );
+      key_reset_( &input->keys[ k ] );
     }
 
-    key_reset( &input->mouse.left );
-    key_reset( &input->mouse.right );
+    key_reset_( &input->mouse.left );
+    key_reset_( &input->mouse.right );
 
-    mouse_reset( &input->mouse );
+    mouse_reset_( &input->mouse );
   }
 
   /* Handle new input for each window*/
@@ -304,27 +304,27 @@ sdl_process_events
           {
             if ( sdl_event.button.button == SDL_BUTTON_LEFT )
             {
-              key_down( &focused_input->mouse.left );
+              key_down_( &focused_input->mouse.left );
             }
             else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
             {
               focused_input->wrapwnd.x = sdl_event.motion.x;
               focused_input->wrapwnd.y = sdl_event.motion.y;
               SDL_HideCursor();
-              key_down( &focused_input->mouse.right );
+              key_down_( &focused_input->mouse.right );
             }
           }
           else if ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP )
           {
             if ( sdl_event.button.button == SDL_BUTTON_LEFT )
             {
-              key_up( &focused_input->mouse.left );
+              key_up_( &focused_input->mouse.left );
             }
             else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
             {
               SDL_WarpMouseInWindow( focused_window_handle->value, focused_input->wrapwnd.x, focused_input->wrapwnd.y );
               SDL_ShowCursor();
-              key_up( &focused_input->mouse.right );
+              key_up_( &focused_input->mouse.right );
             }
           }
           else if ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )
@@ -373,13 +373,13 @@ sdl_process_events
         {
           if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
           {
-            uint32 sym = key_sym( sdl_event.key.key );
-            key_down( &focused_input->keys[ sym ] );
+            uint32 sym = key_sym_( sdl_event.key.key );
+            key_down_( &focused_input->keys[ sym ] );
           }
           else if ( sdl_event.type == SDL_EVENT_KEY_UP )
           {
-            uint32 sym = key_sym( sdl_event.key.key );
-            key_up( &focused_input->keys[ sym ] );
+            uint32 sym = key_sym_( sdl_event.key.key );
+            key_up_( &focused_input->keys[ sym ] );
           }
         }
       }
@@ -399,12 +399,12 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
       ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsNot }
     },
     .events = { EcsOnSet },
-    .callback = sdl_create_window
+    .callback = create_window_
     } );
   
   ecs_system( world, {
-    .entity = ecs_entity( world, { .name = "sdl_process_events", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
-    .callback = sdl_process_events,
+    .entity = ecs_entity( world, { .name = "process_events_", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
+    .callback = process_events_,
     .query.terms = { 
       {.id = ecs_id( crude_input ) },
       {.id = ecs_id( crude_window ) },
@@ -414,7 +414,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
   ecs_observer( world, {
     .query.terms = { { ecs_id( crude_window_handle ) } },
     .events = { EcsOnRemove },
-    .callback = sdl_destroy_window
+    .callback = destroy_window_
     } );
 
   if ( !SDL_Init( SDL_INIT_VIDEO ) )
@@ -429,5 +429,5 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
     return;
   }
 
-  ecs_atfini( world, sdl_shutdown, NULL );
+  ecs_atfini( world, shutdown_, NULL );
 }

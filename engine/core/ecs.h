@@ -162,6 +162,13 @@ crude_entity_remove
   _In_ crude_ecs_id                                        id
 );
 
+CRUDE_API void
+crude_entity_set_parent
+(
+  _In_ crude_entity                                        entity,
+  _In_ crude_entity                                        parent
+);
+
 CRUDE_API crude_entity
 crude_entity_get_parent
 (

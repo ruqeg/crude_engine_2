@@ -180,6 +180,16 @@ crude_entity_remove
   return ecs_remove_id( entity.world, entity.handle, id );
 }
 
+void
+crude_entity_set_parent
+(
+  _In_ crude_entity                                        entity,
+  _In_ crude_entity                                        parent
+)
+{
+  ecs_add_pair( entity.world, entity.handle, EcsChildOf, parent.handle );
+}
+
 crude_entity
 crude_entity_get_parent
 (

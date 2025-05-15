@@ -139,3 +139,22 @@ crude_string_copy
 {
   strncpy( dst, src, n );
 }
+
+size_t
+crude_string_length
+(
+  _In_ char const                                         *s
+)
+{
+  return strlen( s );
+}
+
+CRUDE_API size_t
+crude_string_cmp
+(
+  _In_ char const                                         *s1,
+  _In_ char const                                         *s2
+)
+{
+  return strcmp( s1, s2 );
+}
