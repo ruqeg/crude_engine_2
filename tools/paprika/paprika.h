@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine.h>
+#include <scene/scene.h>
 #include <core/ecs.h>
 
 typedef struct crude_paprika
@@ -8,6 +9,7 @@ typedef struct crude_paprika
   crude_engine                                            *engine;
   crude_heap_allocator                                     graphics_allocator;
   crude_stack_allocator                                    temporary_allocator;
+  crude_scene                                              scenee;
   crude_entity                                             camera;
   crude_entity                                             scene;
   bool                                                     working;

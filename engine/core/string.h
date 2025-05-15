@@ -18,7 +18,7 @@ typedef struct crude_string_buffer
 CRUDE_API void
 crude_string_buffer_initialize
 (
-  _In_ crude_string_buffer                                *string_buffer,
+  _Out_ crude_string_buffer                               *string_buffer,
   _In_ size_t                                              capacity,
   _In_ crude_allocator_container                           allocator_container
 );
@@ -76,4 +76,12 @@ crude_vsnprintf
   _In_ int                                                 buffer_size,
   _In_ char const                                         *format,
   va_list                                                  args
+);
+  
+CRUDE_API void
+crude_string_copy
+(
+  _Out_ char                                              *dst,
+  _In_ char const                                         *src,
+  _In_ size_t                                              n
 );
