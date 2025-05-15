@@ -53,7 +53,6 @@ crude_paprika_initialize
   CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_scene, { 0 } );
   CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_input, { 0 } );
   CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_gfx_graphics_creation, {
-    .task_sheduler                = paprika->engine->task_sheduler,
     .allocator_container          = crude_heap_allocator_pack( &paprika->graphics_allocator ),
     .temporary_allocator          = &paprika->temporary_allocator,
     .camera                       = paprika->camera,

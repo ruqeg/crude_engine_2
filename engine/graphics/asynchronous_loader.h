@@ -10,6 +10,11 @@
  * - Signal to the renderer that a texture has finished a transfer
  */
 
+/************************************************
+ *
+ * Asynchronous Loader Structs
+ * 
+ ***********************************************/
 typedef struct crude_gfx_file_load_request
 {
   char                                                     path[ 512 ];
@@ -49,6 +54,31 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_asynchronous_loader;
 
+/************************************************
+ *
+ * Asynchronous Loader Manager Structs
+ * 
+ ***********************************************/
+typedef struct crude_gfx_asynchronous_loader_manager_creation
+{
+  void                                                    *task_sheduler;
+  crude_allocator_container                                allocator_container;
+} crude_gfx_asynchronous_loader_manager_creation;
+
+typedef struct crude_gfx_asynchronous_loader_manager
+{
+  crude_gfx_asynchronous_loader                          **async_loaders;
+  bool                                                     async_loaders_valid;
+  void                                                    *async_loader_task;
+  void                                                    *task_sheduler;
+  mtx_t                                                    task_mutex;
+} crude_gfx_asynchronous_loader_manager;
+
+/************************************************
+ *
+ * Asynchronous Functions Declaration
+ * 
+ ***********************************************/
 CRUDE_API void
 crude_gfx_asynchronous_loader_initialize
 (
@@ -82,4 +112,36 @@ CRUDE_API void
 crude_gfx_asynchronous_loader_update
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
+);
+
+/************************************************
+ *
+ * Asynchronous Loader Manager Functions Declaration
+ * 
+ ***********************************************/
+CRUDE_API void
+crude_gfx_asynchronous_loader_manager_intiailize
+(
+  _In_ crude_gfx_asynchronous_loader_manager                *manager,
+  _In_ crude_gfx_asynchronous_loader_manager_creation const *creation
+);
+
+CRUDE_API void
+crude_gfx_asynchronous_loader_manager_add_loader
+(
+  _In_ crude_gfx_asynchronous_loader_manager              *manager,
+  _In_ crude_gfx_asynchronous_loader                      *async_loader
+);
+
+CRUDE_API void
+crude_gfx_asynchronous_loader_manager_remove_loader
+(
+  _In_ crude_gfx_asynchronous_loader_manager              *manager,
+  _In_ crude_gfx_asynchronous_loader                      *async_loader
+);
+
+CRUDE_API void
+crude_gfx_asynchronous_loader_manager_deintiailize
+(
+  _In_ crude_gfx_asynchronous_loader_manager              *manager
 );

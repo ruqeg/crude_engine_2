@@ -55,7 +55,7 @@ crude_engine_initialize
 
   {
     crude_gfx_asynchronous_loader_manager_creation creation = { .allocator_container = crude_heap_allocator_pack( &engine->allocator ), .task_sheduler = engine->task_sheduler };
-    crude_gfx_async_loader_task_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
+    crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
   }
 }
 
@@ -65,7 +65,7 @@ crude_engine_deinitialize
   _In_ crude_engine                                       *engine
 )
 {
-  crude_gfx_async_loader_task_manager_deintiailize( &engine->asynchronous_loader_manager );
+  crude_gfx_asynchronous_loader_manager_deintiailize( &engine->asynchronous_loader_manager );
   crude_heap_allocator_deinitialize( &engine->allocator );
   enkiWaitforAllAndShutdown( engine->task_sheduler );
   enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );

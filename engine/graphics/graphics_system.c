@@ -32,7 +32,6 @@ typedef struct crude_gfx_graphics
   crude_gfx_renderer_scene                                  scene;
   crude_allocator_container                                 allocator_container;
   crude_entity                                              camera;
-  void                                                     *task_sheduler;
   crude_gfx_asynchronous_loader_manager                    *asynchronous_loader_manager;
 } crude_gfx_graphics;
 
@@ -95,7 +94,6 @@ graphics_initialize_
     }
     
     graphics->asynchronous_loader_manager = graphics_creation->asynchronous_loader_manager;
-    graphics->task_sheduler = graphics_creation->task_sheduler;
     graphics->allocator_container = graphics_creation->allocator_container;
 
     /* Create Device */
@@ -106,7 +104,7 @@ graphics_initialize_
         .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
         .allocator_container    = graphics_creation->allocator_container,
         .queries_per_frame      = 1u,
-        .num_threads            = enkiGetNumTaskThreads( graphics_creation->task_sheduler ),
+        .num_threads            = enkiGetNumTaskThreads( graphics->asynchronous_loader_manager->task_sheduler ),
         .temporary_allocator    = graphics_creation->temporary_allocator
       };
       crude_gfx_device_initialize( &graphics->gpu, &device_creation );
@@ -128,7 +126,7 @@ graphics_initialize_
     /* Create Async Loader */
     {
       crude_gfx_asynchronous_loader_initialize( &graphics->async_loader, &graphics->renderer );
-      crude_gfx_async_loader_task_manager_add_loader( graphics_creation->asynchronous_loader_manager, &graphics->async_loader );
+      crude_gfx_asynchronous_loader_manager_add_loader( graphics_creation->asynchronous_loader_manager, &graphics->async_loader );
     }
 
     /* Parse */
@@ -152,7 +150,7 @@ graphics_initialize_
       /* Parse gltf*/
       {
         crude_gfx_renderer_scene_creation scene_creation = {
-          .task_scheduler = graphics_creation->task_sheduler,
+          .task_scheduler = graphics->asynchronous_loader_manager->task_sheduler,
           .allocator_container = graphics->allocator_container,
           .async_loader = &graphics->async_loader,
           .renderer = &graphics->renderer
@@ -198,7 +196,7 @@ graphics_deinitialize_
 
     graphics = ( crude_gfx_graphics* )graphics_per_entity[ i ].value;
     
-    crude_gfx_async_loader_task_manager_remove_loader( graphics->asynchronous_loader_manager, &graphics->async_loader );
+    crude_gfx_asynchronous_loader_manager_remove_loader( graphics->asynchronous_loader_manager, &graphics->async_loader );
     vkDeviceWaitIdle( graphics->gpu.vk_device );
     crude_gfx_destroy_buffer( &graphics->gpu, graphics->gpu.frame_buffer );
     crude_gfx_renderer_scene_deinitialize( &graphics->scene );
@@ -282,7 +280,7 @@ graphics_process_
       }
     }
     
-    crude_gfx_renderer_scene_submit_draw_task( &graphics->scene, graphics->task_sheduler, true );
+    crude_gfx_renderer_scene_submit_draw_task( &graphics->scene, graphics->asynchronous_loader_manager->task_sheduler, true );
     
     {
       crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &graphics->render_graph_builder, "geometry_pass" );

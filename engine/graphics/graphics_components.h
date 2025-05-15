@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/asynchronous_loader_manager.h>
+#include <graphics/asynchronous_loader.h>
 #include <core/memory.h>
 #include <core/ecs.h>
 
@@ -10,7 +10,6 @@ typedef struct crude_gfx_graphics_creation
   crude_stack_allocator                                   *temporary_allocator;
   crude_entity                                             camera;
   crude_gfx_asynchronous_loader_manager                   *asynchronous_loader_manager;
-  void                                                    *task_sheduler;
 } crude_gfx_graphics_creation;
 
 typedef struct crude_gfx_graphics_handle

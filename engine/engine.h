@@ -2,7 +2,7 @@
 
 #include <TaskScheduler_c.h>
 
-#include <graphics/asynchronous_loader_manager.h>
+#include <graphics/asynchronous_loader.h>
 #include <core/memory.h>
 
 typedef struct crude_engine

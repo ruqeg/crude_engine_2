@@ -52,7 +52,6 @@ crude_sandbox_initialize
   CRUDE_ENTITY_SET_COMPONENT( sandbox->scene, crude_scene, { 0 } );
   CRUDE_ENTITY_SET_COMPONENT( sandbox->scene, crude_input, { 0 } );
   CRUDE_ENTITY_SET_COMPONENT( sandbox->scene, crude_gfx_graphics_creation, {
-    .task_sheduler                = sandbox->engine->task_sheduler,
     .allocator_container          = crude_heap_allocator_pack( &sandbox->graphics_allocator ),
     .temporary_allocator          = &sandbox->temporary_allocator,
     .camera                       = sandbox->camera,
