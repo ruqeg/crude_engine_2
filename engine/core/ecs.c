@@ -10,7 +10,7 @@
 CRUDE_STATIC_ASSERT( sizeof( ecs_entity_t ) == sizeof( crude_entity_handle ), "crude_entity_handle != ecs_entity_t" );
 CRUDE_STATIC_ASSERT( sizeof( ecs_id_t ) == sizeof( crude_ecs_id ), "crude_entity_handle != ecs_entity_t" );
 
-ECS_DECLARE(Entity);
+ECS_DECLARE( crude_entity_tag );
 
 /************************************************
  *
@@ -67,7 +67,7 @@ crude_entity_create_empty
 {
   crude_entity entity = ( crude_entity ){ ecs_new( world, 0 ), world };
   ecs_doc_set_name( world, entity.handle, name == NULL || name[0] == '\0' ? "entity" : name );
-  ecs_add( entity.world, entity.handle, Entity );
+  ecs_add( entity.world, entity.handle, crude_entity_tag );
   return entity;
 }
 

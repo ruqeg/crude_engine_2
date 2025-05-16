@@ -111,6 +111,10 @@ crude_scene_deinitialize
   _In_ crude_scene                                        *scene
 )
 {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->nodes ); ++i )
+  {
+    crude_entity_destroy( scene->nodes[ i ] );
+  }
   CRUDE_ARRAY_DEINITIALIZE( scene->nodes );
   crude_string_buffer_deinitialize( &scene->path_bufffer );
 }

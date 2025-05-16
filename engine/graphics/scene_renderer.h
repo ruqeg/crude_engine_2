@@ -41,25 +41,25 @@ typedef struct crude_gfx_mesh_instance
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance;
 
-typedef struct crude_gfx_renderer_scene crude_gfx_renderer_scene;
+typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
-typedef struct crude_gfx_renderer_scene_geometry_pass
+typedef struct crude_gfx_scene_renderer_geometry_pass
 {
-  crude_gfx_renderer_scene                                *scene;
+  crude_gfx_scene_renderer                                *scene;
   crude_gfx_mesh_instance                                 *mesh_instances;
-} crude_gfx_renderer_scene_geometry_pass;
+} crude_gfx_scene_renderer_geometry_pass;
 
-typedef struct crude_gfx_renderer_scene_creation
+typedef struct crude_gfx_scene_renderer_creation
 {
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_allocator_container                                allocator_container;
   void                                                    *task_scheduler;
-} crude_gfx_renderer_scene_creation;
+} crude_gfx_scene_renderer_creation;
 
-typedef struct crude_gfx_renderer_scene
+typedef struct crude_gfx_scene_renderer
 {
-  char const                                               path[ CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN ];
+  void                                                    *world;
 
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
@@ -73,8 +73,8 @@ typedef struct crude_gfx_renderer_scene
 
   crude_allocator_container                                allocator_container;
 
-  crude_gfx_renderer_scene_geometry_pass                   geometry_pass;
-} crude_gfx_renderer_scene;
+  crude_gfx_scene_renderer_geometry_pass                   geometry_pass;
+} crude_gfx_scene_renderer;
 
 /**
  *
@@ -93,24 +93,24 @@ crude_gfx_mesh_is_transparent
  * 
  */
 CRUDE_API void
-crude_gfx_renderer_scene_geometry_pass_render
+crude_gfx_scene_renderer_geometry_pass_render
 (
-  _In_ crude_gfx_renderer_scene_geometry_pass             *pass,
+  _In_ crude_gfx_scene_renderer_geometry_pass             *pass,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
 CRUDE_API void
-crude_gfx_renderer_scene_geometry_pass_prepare_draws
+crude_gfx_scene_renderer_geometry_pass_prepare_draws
 (
-  _In_ crude_gfx_renderer_scene_geometry_pass             *pass,
+  _In_ crude_gfx_scene_renderer_geometry_pass             *pass,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API crude_gfx_render_graph_pass_container
-crude_gfx_renderer_scene_geometry_pass_pack
+crude_gfx_scene_renderer_geometry_pass_pack
 (
-  _In_ crude_gfx_renderer_scene_geometry_pass             *pass
+  _In_ crude_gfx_scene_renderer_geometry_pass             *pass
 );
 
 /**
@@ -119,35 +119,35 @@ crude_gfx_renderer_scene_geometry_pass_pack
  * 
  */
 CRUDE_API void
-crude_gfx_renderer_scene_initialize
+crude_gfx_scene_renderer_initialize
 (
-  _In_ crude_gfx_renderer_scene                           *scene,
-  _In_ crude_gfx_renderer_scene_creation                  *creation
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_gfx_scene_renderer_creation                  *creation
 );
 
 CRUDE_API void
-crude_gfx_renderer_scene_deinitialize
+crude_gfx_scene_renderer_deinitialize
 (
-  _In_ crude_gfx_renderer_scene                           *scene
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
 CRUDE_API void
-crude_gfx_renderer_scene_prepare_draws
+crude_gfx_scene_renderer_prepare_draws
 (
-  _In_ crude_gfx_renderer_scene                           *scene,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API void
-crude_gfx_renderer_scene_submit_draw_task
+crude_gfx_scene_renderer_submit_draw_task
 (
-  _In_ crude_gfx_renderer_scene                           *scene,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ bool                                                use_secondary
 );
 
 CRUDE_API void
-crude_gfx_renderer_scene_register_render_passes
+crude_gfx_scene_renderer_register_render_passes
 (
-  _In_ crude_gfx_renderer_scene                           *scene,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_render_graph                             *render_graph
 );

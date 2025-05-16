@@ -6,10 +6,6 @@
 typedef struct crude_sandbox
 {
   crude_engine                                            *engine;
-  crude_heap_allocator                                     graphics_allocator;
-  crude_stack_allocator                                    temporary_allocator;
-  crude_entity                                             camera;
-  crude_entity                                             scene;
   bool                                                     working;
 } crude_sandbox;
 

@@ -32,6 +32,7 @@ typedef struct crude_entity
 #define CRUDE_ECS_ID( T ) FLECS_ID##T##ID_
 /* ECS_DECLARE */
 #define CRUDE_ECS_DECLARE( T ) crude_entity_handle T, CRUDE_ECS_ID( T )
+#define CRUDE_ECS_TAG_DECLARE CRUDE_ECS_DECLARE
 /* ECS_COMPONENT_DECLARE */
 #define CRUDE_ECS_COMPONENT_DECLARE( T ) crude_entity_handle CRUDE_ECS_ID( T )
 
@@ -43,7 +44,16 @@ typedef struct crude_entity
  * ECS Entity Tag Declaration 
  * 
  ***********************************************/
-CRUDE_API CRUDE_ECS_DECLARE( Entity );
+CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_entity_tag );
+
+/************************************************
+ *
+ * ECS Pipeline Tag Declaration 
+ * 
+ ***********************************************/
+CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_input_tag );
+CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_update_tag );
+CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_render_tag );
 
 /************************************************
  *

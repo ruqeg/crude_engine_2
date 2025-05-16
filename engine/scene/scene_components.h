@@ -22,6 +22,7 @@ typedef struct crude_camera
 typedef struct crude_gltf
 {
   char                                                    *path;
+  char const                                              *resources_path;
 } crude_gltf;
 
 typedef struct crude_scene_handle

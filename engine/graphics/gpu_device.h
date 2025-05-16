@@ -99,6 +99,7 @@ typedef struct crude_gfx_device
   uint16                                                   vk_swapchain_height;
   uint32                                                   vk_swapchain_image_index;
   bool                                                     swapchain_resized_last_frame;
+  crude_gfx_render_pass_output                             swapchain_output;
   /**
    * Descriptor pools/sets automatically generated
    * based on the reflection of the pipeline shaders.
@@ -121,13 +122,10 @@ typedef struct crude_gfx_device
   crude_string_buffer                                      objects_names_string_buffer;
 
   /**
-   * UBO Buffers. //!TODO
+   * //!TODO
    */
-  crude_gfx_buffer_handle                                  frame_buffer;
-  crude_gfx_buffer_handle                                  mesh_buffer;
-  crude_gfx_render_pass_output                             swapchain_output;
-
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
+  crude_gfx_buffer_handle                                  frame_buffer;
 
 
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
