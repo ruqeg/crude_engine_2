@@ -22,9 +22,9 @@ typedef struct crude_paprika
   crude_engine                                            *engine;
   crude_heap_allocator                                     graphics_allocator;
   crude_stack_allocator                                    temporary_allocator;
-  crude_scene                                              scenee;
+  crude_scene                                              scene;
   crude_paprika_graphics                                   graphics;
-  crude_entity                                             scene;
+  crude_entity                                             platform_node;
   bool                                                     working;
 } crude_paprika;
 

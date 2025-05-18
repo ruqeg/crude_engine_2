@@ -44,35 +44,35 @@ crude_paprika_initialize
   ECS_IMPORT( paprika->engine->world, crude_platform_system );
   ECS_IMPORT( paprika->engine->world, crude_free_camera_system );
   
-  paprika->scene = crude_entity_create_empty( paprika->engine->world, "paprika" );
-
+  paprika->platform_node = crude_entity_create_empty( paprika->engine->world, "paprika" );
+  CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_window, { 
+    .width     = 800,
+    .height    = 600,
+    .maximized = false });
+  CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_input, { 0 } );
+  
+  /* Create scene */
   {
     crude_scene_creation creation = {
       .allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator ), 
       .resources_path = "\\..\\..\\resources\\",
       .temporary_allocator = &paprika->temporary_allocator,
       .world = paprika->engine->world,
-      .input_entity = paprika->scene,
+      .input_entity = paprika->platform_node,
     };
-    crude_scene_initialize( &paprika->scenee, &creation );
+    crude_scene_initialize( &paprika->scene, &creation );
   }
-
-  crude_scene_load( &paprika->scenee, "scene.json" );
-
-  /* Create scene */
-  CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_window, { 
-    .width     = 800,
-    .height    = 600,
-    .maximized = false });
-  CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_scene, { 0 } );
-  CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_input, { 0 } );
-
-  crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene, crude_window_handle );
-  paprika_graphics_initialize_( paprika, *window_handle );
-  ecs_system( paprika->engine->world, {
-    .entity = ecs_entity( paprika->engine->world, { .name = "paprika_graphics_system", .add = ecs_ids( ecs_dependson( EcsPreStore ) ) } ),
-    .callback = paprika_graphics_process_,
-    .ctx = paprika } );
+  crude_scene_load( &paprika->scene, "scene.json" );
+  
+  /* Create Graphics */
+  {
+    crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->platform_node, crude_window_handle );
+    paprika_graphics_initialize_( paprika, *window_handle );
+    ecs_system( paprika->engine->world, {
+      .entity = ecs_entity( paprika->engine->world, { .name = "paprika_graphics_system", .add = ecs_ids( ecs_dependson( EcsPreStore ) ) } ),
+      .callback = paprika_graphics_process_,
+      .ctx = paprika } );
+  }
 }
 
 void
@@ -87,8 +87,8 @@ crude_paprika_deinitialize
   }
 
   paprika->working = false;
-  crude_entity_destroy( paprika->scene );
-  crude_scene_deinitialize( &paprika->scenee );
+  crude_entity_destroy( paprika->platform_node );
+  crude_scene_deinitialize( &paprika->scene );
   paprika_graphics_deinitialize_( paprika );
   crude_heap_allocator_deinitialize( &paprika->graphics_allocator );
   crude_stack_allocator_deinitialize( &paprika->temporary_allocator );
@@ -100,7 +100,7 @@ crude_paprika_update
   _In_ crude_paprika                                      *paprika
 )
 {
-  crude_input *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene, crude_input );
+  crude_input *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->platform_node, crude_input );
   if ( input && input->should_close_window )
   {
     crude_paprika_deinitialize( paprika );
@@ -182,7 +182,7 @@ paprika_graphics_initialize_
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\render_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_scene_renderer_register_render_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
-  crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scenee.main_node, &paprika->temporary_allocator );
+  crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scene.main_node, &paprika->temporary_allocator );
   
   /* Create Frame Buffer */
   {
@@ -219,10 +219,10 @@ paprika_graphics_process_
     crude_gfx_frame_buffer_data *frame_buffer_data = crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map );
     if ( frame_buffer_data )
     {
-      crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scenee.main_camera, crude_camera );
-      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scenee.main_camera, crude_transform );
+      crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
+      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
     
-      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scenee.main_camera, transform ) );
+      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scene.main_camera, transform ) );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
       
       crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
@@ -255,7 +255,7 @@ paprika_graphics_process_
           .rotation = { 0.0, 0.0, 0.0, 0.0 },
           .scale = { 0.3, 0.3, 0.3 },
         };
-        crude_matrix model_to_world = crude_transform_node_to_world( paprika->scenee.main_camera, &model_transform );
+        crude_matrix model_to_world = crude_transform_node_to_world( paprika->scene.main_camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
       
         crude_gfx_unmap_buffer( &paprika->graphics.gpu, mesh_draw->material_buffer );
