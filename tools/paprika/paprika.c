@@ -199,7 +199,7 @@ paprika_graphics_initialize_
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\render_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_scene_renderer_register_render_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
-  crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, &paprika->temporary_allocator );
+  crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scenee.main_node, &paprika->temporary_allocator );
   
   /* Create Frame Buffer */
   {
@@ -232,7 +232,7 @@ paprika_graphics_process_
     crude_gfx_render_graph_on_resize( &paprika->graphics.render_graph, paprika->graphics.gpu.vk_swapchain_width, paprika->graphics.gpu.vk_swapchain_height );
   }
   
-  /* Update fame buffer */
+  /* Update frame buffer */
   {
     crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.gpu.frame_buffer, 0, 0 };
     crude_gfx_frame_buffer_data *frame_buffer_data = crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map );
@@ -250,7 +250,7 @@ paprika_graphics_process_
     }
   }
   
-  /* update mesh buffer */
+  /* Update mesh buffer */
   {
     for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( paprika->graphics.scene_renderer.meshes ); ++mesh_index )
     {

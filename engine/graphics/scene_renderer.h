@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/math.h>
+#include <core/ecs.h>
 #include <graphics/renderer.h>
 #include <graphics/asynchronous_loader.h>
 #include <graphics/render_graph.h>
@@ -135,6 +136,7 @@ CRUDE_API void
 crude_gfx_scene_renderer_prepare_draws
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        node,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 

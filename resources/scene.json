@@ -1,7 +1,7 @@
 {
   "name": "scene1",
-  "nodes": [
-    {
+  "hierarchy": {
+    "node": {
       "name": "main",
       "components": [],
       "tags": [],
@@ -24,89 +24,84 @@
         ]
       }
     },
-    {
-      "name": "editor_camera",
-      "components": [
-        {
-          "type": "crude_camera",
-          "fov_radians": 0.8,
-          "near_z": 0.01,
-          "far_z": 1000,
-          "aspect_ratio": 1.0
-        },
-        {
-          "type": "crude_free_camera",
-          "moving_speed_multiplier": [
-            7.0,
-            7.0,
-            7.0
-          ],
-          "rotating_speed_multiplier": [
-            -0.25,
-            -0.25
-          ]
-        }
-      ],
-      "tags": [
-        "editor_camera"
-      ],
-      "transform": {
-        "translation": [
-          0,
-          0,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0,
-          0
-        ],
-        "scale": [
-          1,
-          1,
-          1
-        ]
-      }
-    },
-    {
-      "name": "particles_instances",
-      "components": [
-        {
-          "type": "gltf",
-          "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
-        }
-      ],
-      "tags": [],
-      "transform": {
-        "translation": [
-          0,
-          0,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0,
-          0
-        ],
-        "scale": [
-          1,
-          1,
-          1
-        ]
-      }
-    }
-  ],
-  "hierarchy ": {
-    "node": 0,
     "children": [
       {
-        "node": 1,
+        "node": {
+          "name": "editor_camera",
+          "components": [
+            {
+              "type": "crude_camera",
+              "fov_radians": 0.8,
+              "near_z": 0.01,
+              "far_z": 1000,
+              "aspect_ratio": 1.0
+            },
+            {
+              "type": "crude_free_camera",
+              "moving_speed_multiplier": [
+                7.0,
+                7.0,
+                7.0
+              ],
+              "rotating_speed_multiplier": [
+                -0.25,
+                -0.25
+              ]
+            }
+          ],
+          "tags": [
+            "editor_camera"
+          ],
+          "transform": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
         "children": []
       },
       {
-        "node": 2,
+        "node": {
+          "name": "particles_instances",
+          "components": [
+            {
+              "type": "crude_gltf",
+              "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
+            }
+          ],
+          "tags": [],
+          "transform": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
         "children": []
       }
     ]

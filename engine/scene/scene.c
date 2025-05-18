@@ -56,31 +56,85 @@ json_object_to_float4_
   return result;
 }
 
-static void
-load_scene_hierarchy_
+static crude_entity
+scene_load_hierarchy_
 (
   _In_ crude_scene                                        *scene,
   _In_ cJSON                                              *hierarchy_json
 )
 {
-  cJSON                                                   *hierarchy_children_json;
-  cJSON const                                             *node_json;
-  size_t                                                   parent_node_index;
+  crude_entity                                             node;
   
-  parent_node_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ) ); 
-
-  hierarchy_children_json = cJSON_GetObjectItemCaseSensitive( hierarchy_json, "children" );
-  for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( hierarchy_children_json ); ++child_index )
   {
-    cJSON                                                 *child_json;
-    size_t                                                 child_node_index;
-
-    child_json = cJSON_GetArrayItem( hierarchy_children_json, child_index );
-    child_node_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( child_json, "node" ) ); 
-    crude_entity_set_parent( scene->nodes[ child_node_index ], scene->nodes[ parent_node_index ] );
-
-    load_scene_hierarchy_( scene, child_json );
+    cJSON const                                           *node_json;
+    char const                                            *node_name;
+    cJSON const                                           *node_transform_json;
+    cJSON const                                           *node_components_json;
+  
+    node_json = cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ); 
+    node_name = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "name") );
+    node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
+    node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
+  
+    node = crude_entity_create_empty( scene->world, node_name );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
+      .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
+      .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
+      .rotation    = json_object_to_float4_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "rotation" ) ),
+    } );
+  
+    for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
+    {
+      cJSON const                                       *component_json;
+      cJSON const                                       *component_type_json;
+      char const                                        *component_type;
+  
+      component_json = cJSON_GetArrayItem( node_components_json, component_index );
+      component_type_json = cJSON_GetObjectItemCaseSensitive( component_json, "type" );
+      component_type = cJSON_GetStringValue( component_type_json );
+  
+      if ( crude_string_cmp( component_type, "crude_gltf" ) == 0 )
+      {
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, {
+          .path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) )
+        } );
+      }
+      else if ( crude_string_cmp( component_type, "crude_camera" ) == 0 )
+      {
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, {
+          .fov_radians = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ),
+          .near_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "near_z" ) ),
+          .far_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "far_z" ) ),
+          .aspect_ratio = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "aspect_ratio" ) ),
+        } );
+      }
+      else if ( crude_string_cmp( component_type, "crude_free_camera" ) == 0 )
+      {
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, {
+          .moving_speed_multiplier   = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) ),
+          .rotating_speed_multiplier = json_object_to_float2_( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) ),
+          .entity_input              = scene->input_entity,
+        } );
+      }
+    }
+  
+    CRUDE_ARRAY_PUSH( scene->nodes, node );
   }
+  
+  {
+    cJSON                                                 *hierarchy_children_json;
+    cJSON                                                 *child_json;
+  
+    hierarchy_children_json = cJSON_GetObjectItemCaseSensitive( hierarchy_json, "children" );
+    for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( hierarchy_children_json ); ++child_index )
+    {
+      child_json = cJSON_GetArrayItem( hierarchy_children_json, child_index );
+      crude_entity child_node = scene_load_hierarchy_( scene, child_json );
+      crude_entity_set_parent( child_node, node );
+    }
+  }
+
+  return node;
 }
 
 void
@@ -157,75 +211,11 @@ crude_scene_load
     }
   }
 
-  /* Load nodes */
-  {
-    cJSON                                                 *nodes_json;
-
-    nodes_json = cJSON_GetObjectItemCaseSensitive( scene_json, "nodes" );
-    CRUDE_ARRAY_SET_LENGTH( scene->nodes, cJSON_GetArraySize( nodes_json ) );
-    for ( uint32 node_index = 0; node_index < cJSON_GetArraySize( nodes_json ); ++node_index )
-    {
-      cJSON const                                         *node_json;
-      char const                                          *node_name;
-      cJSON const                                         *node_transform_json;
-      cJSON const                                         *node_components_json;
-
-      node_json = cJSON_GetArrayItem( nodes_json, node_index );
-      node_name = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "name") );
-      node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
-      node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
-
-      crude_entity node = crude_entity_create_empty( scene->world, node_name );
-      CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
-        .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
-        .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
-        .rotation    = json_object_to_float4_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "rotation" ) ),
-      } );
-
-      for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
-      {
-        cJSON const                                       *component_json;
-        cJSON const                                       *component_type_json;
-        char const                                        *component_type;
-
-        component_json = cJSON_GetArrayItem( node_components_json, component_index );
-        component_type_json = cJSON_GetObjectItemCaseSensitive( component_json, "type" );
-        component_type = cJSON_GetStringValue( component_type_json );
-
-        if ( crude_string_cmp( component_type_json, "crude_gltf" ) == 0 )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, {
-            .path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) )
-          } );
-        }
-        else if ( crude_string_cmp( component_type_json, "crude_camera" ) == 0 )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, {
-            .fov_radians = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ),
-            .near_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "near_z" ) ),
-            .far_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "far_z" ) ),
-            .aspect_ratio = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "aspect_ratio" ) ),
-          } );
-        }
-        else if ( crude_string_cmp( component_type_json, "crude_free_camera" ) == 0 )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, {
-            .moving_speed_multiplier   = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) ),
-            .rotating_speed_multiplier = json_object_to_float2_( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) ),
-            .entity_input              = scene->input_entity,
-          } );
-        }
-      }
-
-      scene->nodes[ node_index ] = node;
-    }
-  }
-  
   /* Load hierarchy */
   {
     cJSON                                                 *hierarchy_json;
     hierarchy_json = cJSON_GetObjectItemCaseSensitive( scene_json, "hierarchy" );
-    load_scene_hierarchy_( scene, hierarchy_json );
+    scene->main_node = scene_load_hierarchy_( scene, hierarchy_json );
   }
 
   cJSON_Delete( scene_json );
