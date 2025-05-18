@@ -70,11 +70,13 @@ scene_load_hierarchy_
     char const                                            *node_name;
     cJSON const                                           *node_transform_json;
     cJSON const                                           *node_components_json;
+    cJSON const                                           *node_tags_json;
   
     node_json = cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ); 
     node_name = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "name") );
     node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
+    node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
   
     node = crude_entity_create_empty( scene->world, node_name );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
@@ -115,6 +117,20 @@ scene_load_hierarchy_
           .rotating_speed_multiplier = json_object_to_float2_( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) ),
           .entity_input              = scene->input_entity,
         } );
+      }
+    }
+
+    for ( uint32 tag_index = 0; tag_index < cJSON_GetArraySize( node_tags_json ); ++tag_index )
+    {
+      cJSON const                                       *tag_json;
+      char const                                        *tag;
+  
+      tag_json = cJSON_GetArrayItem( node_tags_json, tag_index );
+      tag = cJSON_GetStringValue( tag_json );
+  
+      if ( crude_string_cmp( tag, "crude_main_camera" ) == 0 )
+      {
+        scene->main_camera = node;
       }
     }
   

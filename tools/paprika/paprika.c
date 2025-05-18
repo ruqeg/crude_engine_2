@@ -59,22 +59,6 @@ crude_paprika_initialize
 
   crude_scene_load( &paprika->scenee, "scene.json" );
 
-  /* Create free camera */
-  paprika->camera = crude_entity_create_empty( paprika->engine->world, "camera1" );
-  CRUDE_ENTITY_SET_COMPONENT( paprika->camera, crude_camera, {
-    .fov_radians = CRUDE_CPI4,
-    .near_z = 0.01,
-    .far_z = 1000,
-    .aspect_ratio = 4.0 / 3.0 } );
-  CRUDE_ENTITY_SET_COMPONENT( paprika->camera, crude_transform, {
-    .translation = { 0, 0, -5 },
-    .rotation = { 0, 0, 0, 1 },
-    .scale = { 1, 1, 1 }, } );
-  CRUDE_ENTITY_SET_COMPONENT( paprika->camera, crude_free_camera, {
-    .moving_speed_multiplier = { 7.0, 7.0, 7.0 },
-    .rotating_speed_multiplier  = { -0.25f, -0.25f },
-    .entity_input = paprika->scene } );
-  
   /* Create scene */
   CRUDE_ENTITY_SET_COMPONENT( paprika->scene, crude_window, { 
     .width     = 800,
@@ -103,7 +87,6 @@ crude_paprika_deinitialize
   }
 
   paprika->working = false;
-  crude_entity_destroy( paprika->camera );
   crude_entity_destroy( paprika->scene );
   crude_scene_deinitialize( &paprika->scenee );
   paprika_graphics_deinitialize_( paprika );
@@ -212,8 +195,6 @@ paprika_graphics_initialize_
     paprika->graphics.gpu.frame_buffer = crude_gfx_create_buffer( &paprika->graphics.gpu, &frame_buffer_creation );
   }
   
-  paprika->graphics.camera = paprika->camera;
-  
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
 }
 
@@ -238,10 +219,10 @@ paprika_graphics_process_
     crude_gfx_frame_buffer_data *frame_buffer_data = crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map );
     if ( frame_buffer_data )
     {
-      crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->graphics.camera, crude_camera );
-      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->graphics.camera, crude_transform );
+      crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scenee.main_camera, crude_camera );
+      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scenee.main_camera, crude_transform );
     
-      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->graphics.camera, transform ) );
+      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scenee.main_camera, transform ) );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
       
       crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
@@ -274,7 +255,7 @@ paprika_graphics_process_
           .rotation = { 0.0, 0.0, 0.0, 0.0 },
           .scale = { 0.3, 0.3, 0.3 },
         };
-        crude_matrix model_to_world = crude_transform_node_to_world( paprika->graphics.camera, &model_transform );
+        crude_matrix model_to_world = crude_transform_node_to_world( paprika->scenee.main_camera, &model_transform );
         crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
       
         crude_gfx_unmap_buffer( &paprika->graphics.gpu, mesh_draw->material_buffer );

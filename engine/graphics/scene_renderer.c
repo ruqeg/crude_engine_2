@@ -103,6 +103,19 @@ crude_gfx_mesh_is_transparent
 
 /**
  *
+ * TODO
+ * 
+ */
+void
+scene_renderer_prepare_node_draws_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        node,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+/**
+ *
  * Renderer Scene Geometry Pass
  * 
  */
@@ -321,22 +334,7 @@ crude_gfx_scene_renderer_prepare_draws
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  ecs_iter_t it = ecs_children( node.world, node.handle );
-  while ( ecs_children_next( &it ) )
-  {
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-      crude_entity child = ( crude_entity ){ .handle = it.entities[ i ], .world = node.world };
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
-      {
-        crude_gltf *child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
-        upload_gltf_to_scene_renderer_( scene_renderer, child_gltf->path, child, temporary_allocator );
-      }
-
-      crude_gfx_scene_renderer_prepare_draws( scene_renderer, child, temporary_allocator );
-    }
-  }
-
+  scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
 }
 
@@ -900,4 +898,34 @@ create_gltf_mesh_material_
   mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
   
   return transparent;
+}
+
+/**
+ *
+ * TODO
+ * 
+ */
+void
+scene_renderer_prepare_node_draws_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        node,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  ecs_iter_t it = ecs_children( node.world, node.handle );
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = ( crude_entity ){ .handle = it.entities[ i ], .world = node.world };
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
+      {
+        crude_gltf *child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
+        upload_gltf_to_scene_renderer_( scene_renderer, child_gltf->path, child, temporary_allocator );
+      }
+
+      scene_renderer_prepare_node_draws_( scene_renderer, child, temporary_allocator );
+    }
+  }
 }

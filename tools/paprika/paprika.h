@@ -14,7 +14,6 @@ typedef struct crude_paprika_graphics
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_allocator_container                                allocator_container;
-  crude_entity                                             camera;
   crude_gfx_asynchronous_loader_manager                   *asynchronous_loader_manager;
 } crude_paprika_graphics;
 
@@ -25,7 +24,6 @@ typedef struct crude_paprika
   crude_stack_allocator                                    temporary_allocator;
   crude_scene                                              scenee;
   crude_paprika_graphics                                   graphics;
-  crude_entity                                             camera;
   crude_entity                                             scene;
   bool                                                     working;
 } crude_paprika;
