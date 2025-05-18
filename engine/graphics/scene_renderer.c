@@ -321,24 +321,6 @@ crude_gfx_scene_renderer_prepare_draws
 )
 {
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
-  
-  // !TODO
-  ecs_query_t *q = ecs_query( scene_renderer->world, {
-    .terms = {
-      { ecs_id( crude_gltf ) }
-    }
-  });
- 
-  ecs_iter_t it = ecs_query_iter( scene_renderer->world, q );
-  while ( ecs_query_next( &it ) )
-  {
-    crude_gltf *gltf = ecs_field( &it, crude_gltf, 0 );
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-        // Do the thing
-    }
-  }
-
 }
 
 void

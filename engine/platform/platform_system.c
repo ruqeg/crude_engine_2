@@ -401,9 +401,9 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
     .events = { EcsOnSet },
     .callback = create_window_
     } );
-  
+
   ecs_system( world, {
-    .entity = ecs_entity( world, { .name = "process_events_", .add = ecs_ids( ecs_dependson( crude_on_input_tag ) ) } ),
+    .entity = ecs_entity( world, { .name = "process_events_", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
     .callback = process_events_,
     .query.terms = { 
       {.id = ecs_id( crude_input ) },

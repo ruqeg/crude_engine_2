@@ -48,15 +48,6 @@ CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_entity_tag );
 
 /************************************************
  *
- * ECS Pipeline Tag Declaration 
- * 
- ***********************************************/
-CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_input_tag );
-CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_update_tag );
-CRUDE_API CRUDE_ECS_TAG_DECLARE( crude_on_render_tag );
-
-/************************************************
- *
  * ECS World Functions Declaration 
  * 
  ***********************************************/

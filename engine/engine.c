@@ -7,10 +7,6 @@
 
 #include <engine.h>
 
-ECS_TAG_DECLARE( crude_on_input_tag );
-ECS_TAG_DECLARE( crude_on_update_tag );
-ECS_TAG_DECLARE( crude_on_render_tag );
-
 static void
 pinned_task_run_loop_
 (
@@ -42,24 +38,7 @@ crude_engine_initialize
   crude_time_service_initialize();
  
   ECS_TAG_DEFINE( engine->world, crude_entity_tag );
-  ECS_TAG_DEFINE( engine->world, crude_on_input_tag );
-  ECS_TAG_DEFINE( engine->world, crude_on_update_tag );
-  ECS_TAG_DEFINE( engine->world, crude_on_render_tag );
-
-  /* Create custom pipeline */
-  engine->pipeline.world = engine->world;
-  engine->pipeline.handle = ecs_pipeline_init( engine->world, &( ecs_pipeline_desc_t ){
-    .query.terms = {
-      { .id = EcsSystem },
-      { .id = crude_on_input_tag },
-      { .id = crude_on_update_tag },
-      { .id = crude_on_render_tag },
-    }
-  } );
- 
-  // Configure the world to use the custom pipeline
-  ecs_set_pipeline( engine->world, engine->pipeline.handle );
-
+  
   {
     struct enkiTaskSchedulerConfig                         config;
 

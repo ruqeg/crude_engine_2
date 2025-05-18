@@ -65,9 +65,9 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
   ECS_IMPORT( world, crude_scripts_components );
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_platform_components );
-
+  
   ecs_system( world, {
-    .entity = ecs_entity( world, { .name = "free_camera_update", .add = ecs_ids( ecs_dependson( crude_on_update_tag ) ) } ),
+    .entity = ecs_entity( world, { .name = "free_camera_update", .add = ecs_ids( ecs_dependson( EcsOnUpdate ) ) } ),
     .callback = update_free_camera_,
     .query.terms = { 
       {.id = ecs_id( crude_transform ) },
