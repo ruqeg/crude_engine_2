@@ -35,20 +35,19 @@ crude_gfx_asynchronous_loader_initialize
     VkCommandPoolCreateInfo                                cmd_pool_info;
     VkCommandBufferAllocateInfo                            cmd;
 
-    cmd_pool_info = ( VkCommandPoolCreateInfo ){
+    cmd_pool_info = CRUDE_COMPOUNT( VkCommandPoolCreateInfo, {
       .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .queueFamilyIndex = renderer->gpu->vk_transfer_queue_family,
       .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-    };
+      .queueFamilyIndex = renderer->gpu->vk_transfer_queue_family,
+    } );
     vkCreateCommandPool( renderer->gpu->vk_device, &cmd_pool_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_cmd_pools[ i ] );
     
-    cmd = ( VkCommandBufferAllocateInfo ){
+    cmd = CRUDE_COMPOUNT( VkCommandBufferAllocateInfo, {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
       .commandPool = asynloader->vk_cmd_pools[ i ],
       .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 1,
-    
-    };
+    } );
     vkAllocateCommandBuffers( renderer->gpu->vk_device, &cmd, &asynloader->cmd_buffers[ i ].vk_cmd_buffer );
     
     asynloader->cmd_buffers[ i ].is_recording = false;
@@ -74,15 +73,15 @@ crude_gfx_asynchronous_loader_initialize
     VkSemaphoreCreateInfo                                  semaphore_info;
     VkFenceCreateInfo                                      fence_info;
     
-    semaphore_info = ( VkSemaphoreCreateInfo ){
+    semaphore_info = CRUDE_COMPOUNT( VkSemaphoreCreateInfo, {
       .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
-    };
+    });
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSemaphore( renderer->gpu->vk_device, &semaphore_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_complete_semaphore ), "Failed to create semaphore" );
     
-    fence_info = ( VkFenceCreateInfo ){
+    fence_info = CRUDE_COMPOUNT( VkFenceCreateInfo, {
       .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
       .flags = VK_FENCE_CREATE_SIGNALED_BIT
-    };
+    });
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_fence ), "Failed to create fence" );
   }
 }
@@ -131,9 +130,9 @@ crude_gfx_asynchronous_loader_request_buffer_copy
 )
 {
   crude_gfx_upload_request request = {
+    .texture    = CRUDE_GFX_TEXTURE_HANDLE_INVALID,
     .cpu_buffer = cpu_buffer,
     .gpu_buffer = gpu_buffer,
-    .texture    = CRUDE_GFX_TEXTURE_HANDLE_INVALID,
   };
   CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
 
@@ -210,10 +209,10 @@ crude_gfx_asynchronous_loader_update
       VkSemaphore wait_semaphore[] = { asynloader->vk_transfer_complete_semaphore };
       VkSubmitInfo submitInfo = { 
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmd->vk_cmd_buffer,
         .pWaitSemaphores = wait_semaphore,
         .pWaitDstStageMask = wait_flag,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd->vk_cmd_buffer,
       };
 
       VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
@@ -272,9 +271,11 @@ crude_gfx_asynchronous_loader_update
 static void
 pinned_task_asynchronous_loader_loop_
 (
-  _In_ crude_gfx_asynchronous_loader_manager              *ctx
+  _In_ void                                               *args
 )
 {
+  crude_gfx_asynchronous_loader_manager *ctx = CRUDE_REINTERPRET_CAST( crude_gfx_asynchronous_loader_manager*, args );
+
   CRUDE_PROFILER_SET_THREAD_NAME( "AsynchronousLoaderThread" );
 
   while ( ctx->async_loaders_valid )
@@ -300,11 +301,11 @@ crude_gfx_asynchronous_loader_manager_intiailize
   _In_ crude_gfx_asynchronous_loader_manager_creation const *creation
 )
 {
-  struct enkiTaskSchedulerConfig config = enkiGetTaskSchedulerConfig( creation->task_sheduler );
+  struct enkiTaskSchedulerConfig config = enkiGetTaskSchedulerConfig( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, creation->task_sheduler ) );
   manager->task_sheduler = creation->task_sheduler;
   manager->async_loaders_valid = true;
-  manager->async_loader_task = enkiCreatePinnedTask( creation->task_sheduler, pinned_task_asynchronous_loader_loop_, config.numTaskThreadsToCreate );
-  enkiAddPinnedTaskArgs( creation->task_sheduler, manager->async_loader_task, manager );
+  manager->async_loader_task = enkiCreatePinnedTask( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, creation->task_sheduler ), pinned_task_asynchronous_loader_loop_, config.numTaskThreadsToCreate );
+  enkiAddPinnedTaskArgs( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, creation->task_sheduler ), CRUDE_REINTERPRET_CAST( enkiPinnedTask*, manager->async_loader_task ), manager );
   mtx_init( &manager->task_mutex, mtx_plain );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->async_loaders, config.numTaskThreadsToCreate, creation->allocator_container );

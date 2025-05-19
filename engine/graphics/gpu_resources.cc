@@ -14,7 +14,7 @@ crude_gfx_sampler_creation_empty
 (
 )
 {
-  return ( crude_gfx_sampler_creation ){ 0 };
+  return CRUDE_COMPOUNT_EMPTY( crude_gfx_sampler_creation );
 }
 
 crude_gfx_buffer_creation
@@ -22,7 +22,7 @@ crude_gfx_buffer_creation_empty
 (
 )
 {
-  return ( crude_gfx_buffer_creation ){ 0 };
+  return CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
 }
 
 crude_gfx_framebuffer_creation
@@ -30,7 +30,7 @@ crude_gfx_framebuffer_creation_empty
 (
 )
 {
-  return ( crude_gfx_framebuffer_creation ){ .resize = true };
+  return CRUDE_COMPOUNT( crude_gfx_framebuffer_creation, { .resize = true } );
 }
 
 crude_gfx_pipeline_creation
@@ -38,7 +38,7 @@ crude_gfx_pipeline_creation_empty
 (
 )
 {
-  return ( crude_gfx_pipeline_creation ){ 0 };
+  return CRUDE_COMPOUNT_EMPTY( crude_gfx_pipeline_creation );
 }
 
 crude_gfx_descriptor_set_creation
@@ -46,7 +46,7 @@ crude_gfx_descriptor_set_creation_empty
 (
 )
 {
-  return ( crude_gfx_descriptor_set_creation ){ 0 };
+  return CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
 }
 
 crude_gfx_render_pass_creation
@@ -54,11 +54,11 @@ crude_gfx_render_pass_creation_empty
 (
 )
 {
-  return ( crude_gfx_render_pass_creation ) {
+  return CRUDE_COMPOUNT( crude_gfx_render_pass_creation, {
     .depth_stencil_format = VK_FORMAT_UNDEFINED,
     .depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE,
     .stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE
-  };
+  } );
 }
 
 crude_gfx_texture_creation
@@ -66,7 +66,7 @@ crude_gfx_texture_creation_empty
 (
 )
 {
-  return ( crude_gfx_texture_creation ) {
+  return CRUDE_COMPOUNT( crude_gfx_texture_creation, {
     .width   = 1,
     .height  = 1,
     .depth   = 1,
@@ -74,7 +74,7 @@ crude_gfx_texture_creation_empty
     .format  = VK_FORMAT_UNDEFINED,
     .type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
     .alias   = CRUDE_GFX_TEXTURE_HANDLE_INVALID
-  };
+  } );
 }
 
 CRUDE_API crude_gfx_render_pass_output
@@ -93,6 +93,8 @@ crude_gfx_render_pass_output_empty
   }
   output.depth_stencil_format = VK_FORMAT_UNDEFINED;
   output.depth_operation = output.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
+
+  return output;
 }
 
 void

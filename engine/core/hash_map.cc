@@ -11,7 +11,7 @@ typedef struct hash_backet
 uint64
 crude_hash_bytes
 (
-  _In_ uint8                                              *p,
+  _In_ uint8 const                                        *p,
   _In_ size_t                                              len,
   _In_ size_t                                              seed
 )
@@ -25,10 +25,10 @@ crude_hash_bytes
   return hash;
 }
 
-uint8*
+void*
 crude_hashmap_growf
 (
-  _In_opt_ int8                                           *h,
+  _In_opt_ uint8                                          *h,
   _In_ size_t                                              elemsize,
   _In_ size_t                                              cap,
   _In_ crude_allocator_container                           allocator
@@ -36,7 +36,7 @@ crude_hashmap_growf
 {
   uint8                                                   *nh;
   
-  nh = CRUDE_ALLOCATE( allocator, sizeof( crude_hashmap_header ) + elemsize * cap );
+  nh = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_ALLOCATE( allocator, sizeof( crude_hashmap_header ) + elemsize * cap ) );
   nh = nh + sizeof( crude_hashmap_header );
   CRUDE_HASHMAP_HEADER( nh )->capacity = cap;
   CRUDE_HASHMAP_HEADER( nh )->allocator = allocator;
@@ -47,14 +47,13 @@ crude_hashmap_growf
   {
     for ( size_t i = 0; i < CRUDE_HASHMAP_CAPACITY( h ); i++ )
     {
-      hash_backet *backet = h + i * elemsize;
+      hash_backet *backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + i * elemsize );
       if ( backet->key )
       {
         crude_hashmap_set_index( nh, backet->key, elemsize );
         crude_memory_copy( nh + CRUDE_HASHMAP_TEMP( nh ) * elemsize, backet, elemsize );
       }
     }
-
     CRUDE_DEALLOCATE( CRUDE_HASHMAP_ALLOCATOR( h ), h );
   }
 
@@ -64,7 +63,7 @@ crude_hashmap_growf
 int64
 crude_hashmap_get_index
 (
-  _In_ int8                                               *h,
+  _In_ uint8                                              *h,
   _In_ uint64                                              key,
   _In_ size_t                                              elemsize
 )
@@ -72,8 +71,8 @@ crude_hashmap_get_index
   hash_backet                                             *backet;
   int64                                                    index;
     
-  index = (size_t)( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( h ) - 1 ) );
-  backet = h + elemsize * index;
+  index = ( size_t )( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( h ) - 1 ) );
+  backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + elemsize * index );
   while ( backet->key )
   {
     if ( key == backet->key )
@@ -87,7 +86,7 @@ crude_hashmap_get_index
     {
       index = 0;
     }
-    backet = h + elemsize * index;
+    backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + elemsize * index );
   }
   
   CRUDE_HASHMAP_HEADER( h )->temp = -1;
@@ -97,18 +96,18 @@ crude_hashmap_get_index
 int64
 crude_hashmap_set_index
 (
-  _In_ int8                                               *h,
+  _In_ uint8                                              *h,
   _In_ uint64                                              key,
   _In_ size_t                                              elemsize
 )
 {
-  int8                                                    *nh;
+  uint8                                                   *nh;
   hash_backet                                             *backet;
   int64                                                    index;
 
   if ( CRUDE_HASHMAP_LENGTH( h ) >= CRUDE_HASHMAP_CAPACITY( h ) / 2 )
   {
-    nh = crude_hashmap_growf( h, elemsize, CRUDE_HASHMAP_CAPACITY( h ) * 2, CRUDE_HASHMAP_ALLOCATOR( h ) );
+    nh = CRUDE_REINTERPRET_CAST( uint8*, crude_hashmap_growf( h, elemsize, CRUDE_HASHMAP_CAPACITY( h ) * 2, CRUDE_HASHMAP_ALLOCATOR( h ) ) );
   }
   else
   {
@@ -118,7 +117,7 @@ crude_hashmap_set_index
   ++CRUDE_HASHMAP_HEADER( nh )->length;
 
   index = (size_t)( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( nh ) - 1 ) );
-  backet = nh + elemsize * index;
+  backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   while ( backet->key )
   {
     if ( key == backet->key )
@@ -132,7 +131,7 @@ crude_hashmap_set_index
     {
       index = 0;
     }
-    backet = nh + elemsize * index;
+    backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   }
   
   backet->key = key;

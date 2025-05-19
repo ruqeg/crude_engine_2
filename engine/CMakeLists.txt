@@ -4,7 +4,7 @@ project(crude_engine)
 
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE SRC *.c)
+file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h *.inl)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
@@ -20,6 +20,7 @@ source_group(graphics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/*
 source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(physics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/physics/*")
 source_group(sound REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/sound/*")
+source_group(ui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/ui/*")
 source_group(engine FILES engine.c engine.h)
 
 if(MSVC)

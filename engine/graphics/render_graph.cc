@@ -96,7 +96,7 @@ crude_gfx_render_graph_parse_from_file
 
   crude_read_file( file_path, temp_allocator_container, &render_graph_json_buffer, &render_graph_json_buffer_size );
 
-  render_graph_json = cJSON_ParseWithLength( render_graph_json_buffer, render_graph_json_buffer_size );
+  render_graph_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, render_graph_json_buffer ), render_graph_json_buffer_size );
   if ( !render_graph_json )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file \"%s\" for render graph... Error %s", file_path, cJSON_GetErrorPtr() );
@@ -119,7 +119,7 @@ crude_gfx_render_graph_parse_from_file
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
     CRUDE_ASSERT( pass_inputs && pass_outputs );
 
-    node_creation = ( crude_gfx_render_graph_node_creation ){ 0 };
+    node_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_node_creation );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), temp_allocator_container );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), temp_allocator_container );
   
@@ -132,10 +132,11 @@ crude_gfx_render_graph_parse_from_file
       input_type = cJSON_GetObjectItemCaseSensitive( pass_input, "type" );
       input_name = cJSON_GetObjectItemCaseSensitive( pass_input, "name" );
       CRUDE_ASSERT( input_type && input_name );
-      
-      CRUDE_ARRAY_PUSH( node_creation.inputs, ( ( crude_gfx_render_graph_resource_input_creation ){ 
+      CRUDE_ARRAY_PUSH( node_creation.inputs, CRUDE_COMPOUNT( crude_gfx_render_graph_resource_input_creation, {
         .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
-        .resource_info.external = false,
+        .resource_info = {
+          .external = false,
+        },
         .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
       } ) );
     }
@@ -151,7 +152,7 @@ crude_gfx_render_graph_parse_from_file
       output_name = cJSON_GetObjectItemCaseSensitive( pass_output, "name" );
       CRUDE_ASSERT( output_type && output_name );
 
-      output_creation = ( crude_gfx_render_graph_resource_output_creation ){ 0 };
+      output_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_output_creation );
       output_creation.type = string_to_resource_type_( cJSON_GetStringValue( output_type ) );
       output_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( output_name ) );
 
@@ -468,7 +469,7 @@ crude_gfx_render_graph_compile
           if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
           {
             render_pass_creation.depth_stencil_format = info->texture.format;
-            render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            render_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
             render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
           }
           else
@@ -491,7 +492,7 @@ crude_gfx_render_graph_compile
           if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
           {
             render_pass_creation.depth_stencil_format = info->texture.format;
-            render_pass_creation.stencil_operation = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            render_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
             render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
           }
           else
@@ -630,8 +631,8 @@ crude_gfx_render_graph_render
     }
     
     // TODO add clear to json
-    crude_gfx_cmd_set_clear_color( gpu_commands, 0, ( VkClearValue ){ .color = { 0.3f, 0.3f, 0.3f, 1.f } } );
-    crude_gfx_cmd_set_clear_color( gpu_commands, 1, ( VkClearValue ){ .depthStencil = { 1.0f, 0 } } );
+    crude_gfx_cmd_set_clear_color( gpu_commands, 0, CRUDE_COMPOUNT( VkClearValue, { .color = { 0.3f, 0.3f, 0.3f, 1.f } } ) );
+    crude_gfx_cmd_set_clear_color( gpu_commands, 1, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
     
     width = height = 0;
 
@@ -677,19 +678,19 @@ crude_gfx_render_graph_render
       crude_gfx_rect2d_int scissor = {
         .x = 0, 
         .y = 0,
-        .width = width, 
-        .height = height
+        .width = CRUDE_STATIC_CAST( uint16, width ),
+        .height = CRUDE_STATIC_CAST( uint16, height )
       };
       crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
     }
 
     {
       crude_gfx_viewport viewport = { 
-        viewport.rect = ( crude_gfx_rect2d_int ){ 
+        viewport.rect = { 
           .x = 0, 
           .y = 0,
-          .width = width,
-          .height = height
+          .width = CRUDE_STATIC_CAST( uint16, width ),
+          .height = CRUDE_STATIC_CAST( uint16, height )
         },
         viewport.min_depth = 0.0f,
         viewport.max_depth = 1.0f,
@@ -764,7 +765,7 @@ crude_gfx_render_graph_builder_register_render_pass
   _In_ crude_gfx_render_graph_pass_container               render_pass
 )
 {
-  uint64 key = crude_hash_bytes( ( void* )name, strlen( name ), 0 );
+  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
   int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->render_pass_cache.render_pass_map, key );
   if ( handle_index >= 0 )
   {
@@ -811,7 +812,7 @@ crude_gfx_render_graph_builder_create_node
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   
   {
-    uint64 key = crude_hash_bytes( ( void* )node->name, strlen( node->name ), 0 );
+    uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, node->name ), strlen( node->name ), 0 );
     CRUDE_HASHMAP_SET( builder->node_cache.node_map, key, node_handle );
   }
 
@@ -842,7 +843,7 @@ crude_gfx_render_graph_builder_create_node_output
     return resource_handle;
   }
 
-  crude_gfx_render_graph_resource* resource = crude_resource_pool_access_resource( &builder->resource_cache.resources, resource_handle.index );
+  crude_gfx_render_graph_resource* resource = crude_gfx_render_graph_builder_access_resource( builder, resource_handle );
   resource->name = creation->name;
   resource->type = creation->type;
   if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
@@ -852,7 +853,7 @@ crude_gfx_render_graph_builder_create_node_output
     resource->producer = producer;
     resource->ref_count = 0;
     
-    uint64 key = crude_hash_bytes( ( void* )resource->name, strlen( creation->name ), 0 );
+    uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, resource->name ), strlen( creation->name ), 0 );
     CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
   }
 
@@ -872,8 +873,8 @@ crude_gfx_render_graph_builder_create_node_input
     return resource_handle;
   }
   
-  crude_gfx_render_graph_resource* resource = crude_resource_pool_access_resource( &builder->resource_cache.resources, resource_handle.index );
-  resource->resource_info = ( crude_gfx_render_graph_resource_info ){ 0 };
+  crude_gfx_render_graph_resource* resource = crude_gfx_render_graph_builder_access_resource( builder, resource_handle );
+  resource->resource_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_info );
   resource->producer = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
   resource->output_handle = CRUDE_GFX_RENDER_GRAPH_RESOURCE_HANDLE_INVALID;
   resource->type = creation->type;
@@ -890,7 +891,7 @@ crude_gfx_render_graph_builder_access_node
   _In_ crude_gfx_render_graph_node_handle                  handle
 )
 {
-  return crude_resource_pool_access_resource( &builder->node_cache.nodes, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_render_graph_node*, crude_resource_pool_access_resource( &builder->node_cache.nodes, handle.index ) );
 }
 
 crude_gfx_render_graph_node*
@@ -900,13 +901,13 @@ crude_gfx_render_graph_builder_access_node_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_bytes( ( void* )name, strlen( name ), 0 );
+  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
   int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->node_cache.node_map, key );
   if ( handle_index < 0 )
   {
     return NULL;
   }
-  return crude_resource_pool_access_resource( &builder->node_cache.nodes, builder->node_cache.node_map[ handle_index ].value.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_render_graph_node*, crude_resource_pool_access_resource( &builder->node_cache.nodes, builder->node_cache.node_map[ handle_index ].value.index ) );
 
 }
 
@@ -916,7 +917,7 @@ crude_gfx_render_graph_builder_obtain_node
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  return ( crude_gfx_render_graph_node_handle ){ crude_resource_pool_obtain_resource( &builder->node_cache.nodes ) };
+  return CRUDE_COMPOUNT( crude_gfx_render_graph_node_handle, { crude_resource_pool_obtain_resource( &builder->node_cache.nodes ) } );
 }
 
 
@@ -926,7 +927,7 @@ crude_gfx_render_graph_builder_obtain_resource
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  return ( crude_gfx_render_graph_resource_handle ){ crude_resource_pool_obtain_resource( &builder->resource_cache.resources ) };
+  return CRUDE_COMPOUNT( crude_gfx_render_graph_resource_handle, { crude_resource_pool_obtain_resource( &builder->resource_cache.resources ) } );
 }
 
 crude_gfx_render_graph_resource*
@@ -936,7 +937,7 @@ crude_gfx_render_graph_builder_access_resource
   _In_ crude_gfx_render_graph_resource_handle              handle
 )
 {
-  return crude_resource_pool_access_resource( &builder->resource_cache.resources, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_render_graph_resource*, crude_resource_pool_access_resource( &builder->resource_cache.resources, handle.index ) );
 }
 
 crude_gfx_render_graph_resource*
@@ -946,14 +947,14 @@ crude_gfx_render_graph_builder_access_resource_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_bytes( ( void* )name, strlen( name ), 0 );
+  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
   uint32 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
   if ( handle_index < 0 )
   {
     return NULL;
   }
   
-  return crude_resource_pool_access_resource( &builder->resource_cache.resources, builder->resource_cache.resource_map[ handle_index ].value.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_render_graph_resource*, crude_resource_pool_access_resource( &builder->resource_cache.resources, builder->resource_cache.resource_map[ handle_index ].value.index ) );
 }
 
 void

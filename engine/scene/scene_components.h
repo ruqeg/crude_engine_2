@@ -30,12 +30,12 @@ typedef struct crude_scene_handle
   void                                                    *value;
 } crude_scene_handle;
 
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_transform );
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_camera );
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_scene );
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_scene_creation );
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_scene_handle );
-CRUDE_API CRUDE_ECS_COMPONENT_DECLARE( crude_gltf );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_scene );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_creation );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 
 CRUDE_API crude_matrix
 crude_camera_view_to_clip

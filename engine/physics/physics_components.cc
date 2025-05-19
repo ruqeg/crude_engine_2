@@ -1,5 +1,3 @@
-#include <core/ecs_utils.h>
-
 #include <physics/physics_components.h>
 
 ECS_COMPONENT_DECLARE( crude_physics_particle );

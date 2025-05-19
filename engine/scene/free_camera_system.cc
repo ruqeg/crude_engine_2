@@ -1,6 +1,5 @@
 #include <core/log.h>
 #include <core/profiler.h>
-#include <core/ecs_utils.h>
 #include <scene/scripts_components.h>
 #include <scene/scene_components.h>
 #include <platform/platform_components.h>
@@ -26,7 +25,7 @@ update_free_camera_
     int32 moving_right = input->keys[ 'd' ].current - input->keys[ 'a' ].current;
 
     crude_vector translation = crude_load_float3( &transforms[ i ].translation );
-    crude_matrix node_to_world = crude_transform_node_to_world( ( crude_entity ) { it->entities[ i ], it->world }, &transforms[ i ] );
+    crude_matrix node_to_world = crude_transform_node_to_world( CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } ), &transforms[ i ] );
 
     crude_vector basis_right = crude_vec_normalize3( node_to_world.r[ 0 ] );
     crude_vector basis_up = crude_vec_normalize3( node_to_world.r[ 1 ] );
@@ -65,12 +64,5 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
   ECS_IMPORT( world, crude_scripts_components );
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_platform_components );
-  
-  ecs_system( world, {
-    .entity = ecs_entity( world, { .name = "free_camera_update", .add = ecs_ids( ecs_dependson( EcsOnUpdate ) ) } ),
-    .callback = update_free_camera_,
-    .query.terms = { 
-      {.id = ecs_id( crude_transform ) },
-      {.id = ecs_id( crude_free_camera ) },
-    } } );
+  ECS_SYSTEM( world, update_free_camera_, EcsOnUpdate, crude_transform, crude_free_camera );
 }

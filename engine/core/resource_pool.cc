@@ -18,10 +18,10 @@ crude_resource_pool_initialize
   resource_pool->resource_size = resource_size;
 
   uint64 allocation_size = pool_size * ( resource_size + sizeof( uint32 ) );
-  resource_pool->memory = CRUDE_ALLOCATE( allocator, allocation_size );
+  resource_pool->memory = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_ALLOCATE( allocator, allocation_size ) );
   memset( resource_pool->memory, 0, allocation_size );
   
-  resource_pool->free_indices = resource_pool->memory + pool_size * resource_size;
+  resource_pool->free_indices = CRUDE_REINTERPRET_CAST( uint32*, resource_pool->memory + pool_size * resource_size );
   resource_pool->free_indices_head = 0;
   
   for ( uint32 i = 0; i < pool_size; ++i )

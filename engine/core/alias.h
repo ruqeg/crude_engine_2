@@ -35,10 +35,38 @@
 #define CRUDE_API CRUDE_IMPORT
 #endif
 
+#ifndef __cplusplus
 #define CRUDE_STATIC_ASSERT( x, m ) _Static_assert( x, m );
+#else
+#define CRUDE_STATIC_ASSERT( x, m ) static_assert( x, m );
+#endif
 
 #define CRUDE_DEBUG_BREAK       __debugbreak()
 #define CRUDE_INLINE            inline
+
+#ifndef __cplusplus
+#define CRUDE_CAST( t, v ) ( ( t )( v ) )
+#define CRUDE_STATIC_CAST( t, v ) ( ( t ) ( v ) )
+#define CRUDE_REINTERPRET_CAST( t, v ) ( ( t ) ( v ) )
+#else
+#define CRUDE_CAST( t, v ) ( ( t )( v ) )
+#define CRUDE_STATIC_CAST( t, v ) ( static_cast<t>( v ) )
+#define CRUDE_REINTERPRET_CAST( t, v ) ( reinterpret_cast<t>( v ) )
+#endif
+
+#ifndef __cplusplus
+#define CRUDE_COMPOUNT( t, ... ) ( ( t ) ##__VA_ARGS__ )
+#define CRUDE_COMPOUNT_EMPTY( t ) (( t ) { 0 } )
+#else
+#define CRUDE_COMPOUNT( t, ... ) ( t ##__VA_ARGS__ )
+#define CRUDE_COMPOUNT_EMPTY( t ) ( t {} )
+#endif
+
+#ifndef __cplusplus
+#define CRUDE_TYPE( v ) typeof( v )
+#else
+#define CRUDE_TYPE( v ) decltype( v )
+#endif
 
 /************************************************
  *

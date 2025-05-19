@@ -80,13 +80,13 @@ typedef struct crude_gfx_framebuffer_handle
  * Invalid GPU Resoruces Handles
  * 
  ***********************************************/
-#define CRUDE_GFX_BUFFER_HANDLE_INVALID                    ( ( crude_gfx_buffer_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_TEXTURE_HANDLE_INVALID                   ( ( crude_gfx_texture_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_SAMPLER_HANDLE_INVALID                   ( ( crude_gfx_sampler_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_PIPELINE_HANDLE_INVALID                  ( ( crude_gfx_pipeline_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_SHADER_STATE_HANDLE_INVALID              ( ( crude_gfx_shader_state_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID               ( ( crude_gfx_framebuffer_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
-#define CRUDE_GFX_RENDER_PASS_HANDLE_INVALID               ( ( crude_gfx_render_pass_handle ) { CRUDE_RESOURCE_INDEX_INVALID } )
+#define CRUDE_GFX_BUFFER_HANDLE_INVALID                    ( CRUDE_COMPOUNT( crude_gfx_buffer_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_TEXTURE_HANDLE_INVALID                   ( CRUDE_COMPOUNT( crude_gfx_texture_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_SAMPLER_HANDLE_INVALID                   ( CRUDE_COMPOUNT( crude_gfx_sampler_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_PIPELINE_HANDLE_INVALID                  ( CRUDE_COMPOUNT( crude_gfx_pipeline_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_SHADER_STATE_HANDLE_INVALID              ( CRUDE_COMPOUNT( crude_gfx_shader_state_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_RENDER_PASS_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_render_pass_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 
 /************************************************
  *
@@ -384,16 +384,16 @@ typedef struct crude_gfx_render_pass_output
 
 typedef struct crude_gfx_vertex_attribute
 {
-  uint16                                                   location;
-  uint16                                                   binding;
+  uint32                                                   location;
+  uint32                                                   binding;
   uint32                                                   offset;
   crude_gfx_vertex_component_format                        format;
 } crude_gfx_vertex_attribute;
 
 typedef struct crude_gfx_vertex_stream
 {
-  uint16                                                   binding;
-  uint16                                                   stride;
+  uint32                                                   binding;
+  uint32                                                   stride;
   crude_gfx_vertex_input_rate                              input_rate;
 } crude_gfx_vertex_stream;
 

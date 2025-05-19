@@ -18,7 +18,7 @@ crude_string_buffer_initialize
 )
 {
   string_buffer->allocator_container = allocator_container;
-  string_buffer->buffer = CRUDE_ALLOCATE( allocator_container, capacity + 1 );
+  string_buffer->buffer = CRUDE_REINTERPRET_CAST( char*, CRUDE_ALLOCATE( allocator_container, capacity + 1 ) );
   string_buffer->buffer[ 0 ] = 0;
   string_buffer->capacity = capacity;
   string_buffer->occupied = 0;

@@ -2,7 +2,6 @@
 #include <cgltf.h>
 #include <stb_image.h>
 
-#include <core/ecs_utils.h>
 #include <core/profiler.h>
 #include <core/array.h>
 #include <core/file.h>

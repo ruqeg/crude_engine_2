@@ -240,7 +240,7 @@ CRUDE_INLINE float32                   crude_tan( _In_ float32 s );
 CRUDE_INLINE float32                   crude_arc_sin( _In_ float32 s );
 CRUDE_INLINE float32                   crude_arc_cos( _In_ float32 s );
 CRUDE_INLINE float32                   crude_arc_tan( _In_ float32 s );
-CRUDE_INLINE float32
+CRUDE_INLINE void
 crude_sin_cos
 (
   _Out_ float32                                 *sinangle,

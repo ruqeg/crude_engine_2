@@ -140,10 +140,10 @@ crude_gfx_cmd_begin_secondary
   };
   VkCommandBufferInheritanceInfo inheritance = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+    .pNext = &rendering_info,
     .renderPass = VK_NULL_HANDLE,
     .subpass = 0,
     .framebuffer = VK_NULL_HANDLE,
-    .pNext = &rendering_info
   };
   VkCommandBufferBeginInfo begin_info = {
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -246,7 +246,7 @@ crude_gfx_cmd_bind_render_pass
     color_attachment_info->resolveMode = VK_RESOLVE_MODE_NONE;
     color_attachment_info->loadOp = color_op;
     color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 0 ] : ( VkClearValue ) { 0 };
+    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 0 ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   VkRenderingAttachmentInfoKHR depth_attachment_info = { 
@@ -277,12 +277,11 @@ crude_gfx_cmd_bind_render_pass
     depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
     depth_attachment_info.loadOp = depth_op;
     depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 1 ] : ( VkClearValue ) { 0 };
+    depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 1 ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   VkRenderingInfoKHR rendering_info = {
     .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-    .flags = use_secondary ? VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR : 0,
     .renderArea = { 0, 0, framebuffer->width, framebuffer->height },
     .layerCount = 1,
     .viewMask = 0,
@@ -291,6 +290,11 @@ crude_gfx_cmd_bind_render_pass
     .pDepthAttachment =  has_depth_attachment ? &depth_attachment_info : NULL,
     .pStencilAttachment = NULL,
   };
+
+  if ( use_secondary )
+  {
+    rendering_info.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
+  }
   
   cmd->gpu->vkCmdBeginRenderingKHR( cmd->vk_cmd_buffer, &rendering_info );
   
@@ -404,7 +408,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   _In_ crude_gfx_descriptor_set_handle                     handle
 )
 {
-  crude_gfx_descriptor_set *descriptor_set = crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index );
+  crude_gfx_descriptor_set *descriptor_set = CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index ) );
   
   uint32 num_offsets = 0u;
   uint32 offsets_cache[ 8 ];
@@ -509,7 +513,7 @@ crude_gfx_cmd_create_local_descriptor_set
     return handle;
   }
   
-  crude_gfx_descriptor_set *descriptor_set = crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index );
+  crude_gfx_descriptor_set *descriptor_set = CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index ) );
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( cmd->gpu, creation->layout );
   
   VkDescriptorSetAllocateInfo vk_descriptor_info = {
@@ -549,7 +553,7 @@ crude_gfx_cmd_create_local_descriptor_set
     {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
     {
-      crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, ( crude_gfx_buffer_handle ){ creation->resources[ i ] } );
+      crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
       CRUDE_ASSERT( buffer );
       
       descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -604,19 +608,20 @@ crude_gfx_cmd_add_image_barrier
 
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .image = image,
-    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-    .subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
-    .subresourceRange.baseArrayLayer = 0,
-    .subresourceRange.layerCount = 1,
-    .subresourceRange.levelCount = mip_count,
-
-    .subresourceRange.baseMipLevel = base_mip_level,
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
-    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
     .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
     .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+    .image = image,
+    .subresourceRange = {
+      .aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ),
+      .baseMipLevel = base_mip_level,
+      .levelCount = mip_count,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
   };
   
   VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
@@ -645,19 +650,20 @@ crude_gfx_cmd_add_image_barrier_ext
 
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .image = image,
-    .srcQueueFamilyIndex = source_queue_family,
-    .dstQueueFamilyIndex = destination_family,
-    .subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
-    .subresourceRange.baseArrayLayer = 0,
-    .subresourceRange.layerCount = 1,
-    .subresourceRange.levelCount = mip_count,
-
-    .subresourceRange.baseMipLevel = base_mip_level,
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
-    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
     .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
     .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+    .srcQueueFamilyIndex = source_queue_family,
+    .dstQueueFamilyIndex = destination_family,
+    .image = image,
+    .subresourceRange = {
+      .aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ),
+      .baseMipLevel = base_mip_level,
+      .levelCount = mip_count,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
   };
   
   VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, source_queue_type );
@@ -687,10 +693,12 @@ crude_gfx_cmd_upload_texture_data
     .bufferRowLength = 0,
     .bufferImageHeight = 0,
     
-    .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-    .imageSubresource.mipLevel = 0,
-    .imageSubresource.baseArrayLayer = 0,
-    .imageSubresource.layerCount = 1,
+    .imageSubresource = {
+      .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+      .mipLevel = 0,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
     
     .imageOffset = { 0, 0, 0 },
     .imageExtent = { texture->width, texture->height, texture->depth },
@@ -756,8 +764,8 @@ crude_gfx_cmd_manager_initialize
   {
     VkCommandPoolCreateInfo cmd_pool_info = {
       .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .queueFamilyIndex = gpu->vk_main_queue_family,
       .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      .queueFamilyIndex = gpu->vk_main_queue_family,
     };
     
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );

@@ -24,7 +24,7 @@ crude_file_directory_from_path
 CRUDE_API bool
 crude_file_exist
 (
-  _In_ char                                               *path
+  _In_ char const                                         *path
 );
 
 CRUDE_API bool
@@ -49,7 +49,7 @@ CRUDE_API void
 crude_write_file
 (
   _In_ char const                                         *filename,
-  _In_ void                                               *buffer,
+  _In_ void const                                         *buffer,
   _In_ size_t                                              buffer_size
 );
 

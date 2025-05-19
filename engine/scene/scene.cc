@@ -18,8 +18,8 @@ json_object_to_float2_
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 2 );
 
   crude_float2 result = {
-    .x = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ),
-    .y = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ),\
+    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
+    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
   };
   return result;
 }
@@ -33,9 +33,9 @@ json_object_to_float3_
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 3 );
 
   crude_float3 result = {
-    .x = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ),
-    .y = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ),
-    .z = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) )
+    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
+    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
+    .z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) ),
   };
   return result;
 }
@@ -48,10 +48,10 @@ json_object_to_float4_
 {
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 4 );
   crude_float4 result = {
-    .x = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ),
-    .y = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ),
-    .z = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ),
-    .w = cJSON_GetNumberValue( cJSON_GetArrayItem( json , 3 ) )
+    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
+    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
+    .z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) ),
+    .w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 4 ) ) ),
   };
   return result;
 }
@@ -79,6 +79,7 @@ scene_load_hierarchy_
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
   
     node = crude_entity_create_empty( scene->world, node_name );
+    
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
       .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
       .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
@@ -208,7 +209,7 @@ crude_scene_load
   {
     char const                                            *json_path;
     uint8                                                 *json_buffer;
-    size_t                                                 json_buffer_size;
+    uint32                                                 json_buffer_size;
 
     json_path = crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, json_name );
     if ( !crude_file_exist( json_path ) )
@@ -219,7 +220,7 @@ crude_scene_load
 
     crude_read_file( json_path, crude_stack_allocator_pack( scene->temporary_allocator ), &json_buffer, &json_buffer_size );
 
-    scene_json = cJSON_ParseWithLength( json_buffer, json_buffer_size );
+    scene_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, json_buffer ), json_buffer_size );
     if ( !scene_json )
     {
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file for scene... Error %s", cJSON_GetErrorPtr() );

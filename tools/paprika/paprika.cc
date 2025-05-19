@@ -1,4 +1,3 @@
-#include <core/ecs_utils.h>
 #include <core/file.h>
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>

@@ -1,7 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include <core/ecs_utils.h>
 #include <core/profiler.h>
 #include <core/memory.h>
 #include <core/assert.h>
@@ -112,7 +111,7 @@ create_window_
   {
     ecs_world_t *world = it->world;
     crude_window *window = &windows_per_entity[ i ];
-    ecs_entity_t *entity = it->entities[i];
+    ecs_entity_t const *entity = &it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
 

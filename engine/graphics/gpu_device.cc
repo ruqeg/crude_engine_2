@@ -22,12 +22,12 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 };
 
-static char const *const *vk_instance_required_extensions[] =
+static char const *const vk_instance_required_extensions[] =
 {
   VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 };
 
-static char const *const *vk_required_layers[] =
+static char const *const vk_required_layers[] =
 {
   "VK_LAYER_KHRONOS_validation"
 };
@@ -152,7 +152,7 @@ static void
 vk_reflect_shader_
 (
   _In_ crude_gfx_device                                   *gpu,
-  _In_ void                                               *code,
+  _In_ void const                                         *code,
   _In_ uint32                                              code_size,
   _In_ crude_gfx_shader_reflect                           *reflect
 );
@@ -288,9 +288,7 @@ crude_gfx_device_initialize
     dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
     gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
     
-    buffer_map = ( crude_gfx_map_buffer_parameters ){
-      .buffer = gpu->dynamic_buffer
-    };
+    buffer_map = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { .buffer = gpu->dynamic_buffer } );
     gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
   }
 
@@ -446,7 +444,7 @@ crude_gfx_present
       crude_gfx_texture                                   *texture;
 
       texture_to_update = &gpu->texture_to_update_bindless[ i ];
-      texture = crude_gfx_access_texture( gpu, ( crude_gfx_texture_handle ) { texture_to_update->handle } );
+      texture = crude_gfx_access_texture( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { texture_to_update->handle } ) );
       descriptor_write = &bindless_descriptor_writes[ current_write_index ];
       memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
       descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -494,8 +492,8 @@ crude_gfx_present
       .pWaitDstStageMask    = wait_stages,
       .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
       .pCommandBuffers      = enqueued_command_buffers,
-      .pSignalSemaphores    = signal_semaphores,
       .signalSemaphoreCount = 1,
+      .pSignalSemaphores    = signal_semaphores,
     };
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
   }
@@ -557,7 +555,7 @@ crude_gfx_present
   
     VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
     CRUDE_PROFILER_MARK_FRAME;
-
+    
     CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
     
     gpu->swapchain_resized_last_frame = false;
@@ -726,7 +724,7 @@ crude_gfx_query_buffer
     return;
   }
 
-  const crude_gfx_buffer* buffer_data = crude_gfx_access_buffer( gpu, buffer );
+  crude_gfx_buffer* buffer_data = crude_gfx_access_buffer( gpu, buffer );
   description->name = buffer_data->name;
   description->size = buffer_data->size;
   description->type_flags = buffer_data->type_flags;
@@ -778,8 +776,8 @@ crude_gfx_compile_shader
   crude_string_buffer                                      temporary_string_buffer;
   char const                                              *temp_filename;
   char                                                    *stage_define, *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
-
-  shader_create_info = ( VkShaderModuleCreateInfo ){ VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+  uint8                                                   *spirv_code;
+  uint32                                                   spirv_codesize;
   
   temp_filename = "temp.shader";
   crude_write_file( temp_filename, code, code_size );
@@ -816,26 +814,31 @@ crude_gfx_compile_shader
     char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
     
     crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
     crude_file_delete( optimized_spirv_filename );
   }
   else
   {
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &shader_create_info.pCode, &shader_create_info.codeSize );
+    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
   }
-  
-  if ( !shader_create_info.pCode )
+
+  if ( !spirv_code )
   {
     dump_shader_code_( code, stage, name, &temporary_string_buffer );
   }
   
   crude_file_delete( temp_filename );
   crude_file_delete( final_spirv_filename );
-
+  
+  shader_create_info = CRUDE_COMPOUNT( VkShaderModuleCreateInfo, {
+    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    .codeSize = spirv_codesize,
+    .pCode = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code ),
+  } );
   return shader_create_info;
 }
 
-VkShaderModuleCreateInfo
+void
 crude_gfx_resize_framebuffer
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -938,16 +941,16 @@ crude_gfx_create_sampler
   
   VkSamplerCreateInfo create_info = { 
     .sType                    = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    .magFilter                = creation->mag_filter,
+    .minFilter                = creation->min_filter,
+    .mipmapMode               = creation->mip_filter,
     .addressModeU             = creation->address_mode_u,
     .addressModeV             = creation->address_mode_v,
     .addressModeW             = creation->address_mode_w,
-    .minFilter                = creation->min_filter,
-    .magFilter                = creation->mag_filter,
-    .mipmapMode               = creation->mip_filter,
     .anisotropyEnable         = 0,
     .compareEnable            = 0,
-    .unnormalizedCoordinates  = 0,
     .borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+    .unnormalizedCoordinates  = 0,
   };
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
@@ -1039,10 +1042,12 @@ crude_gfx_create_texture
       .bufferOffset = 0,
       .bufferRowLength = 0,
       .bufferImageHeight = 0,
-      .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-      .imageSubresource.mipLevel = 0,
-      .imageSubresource.baseArrayLayer = 0,
-      .imageSubresource.layerCount = 1,
+      .imageSubresource = {
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .mipLevel = 0,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+      },
       .imageOffset = { 0, 0, 0 },
       .imageExtent = { creation->width, creation->height, creation->depth }
     };
@@ -1065,21 +1070,26 @@ crude_gfx_create_texture
     
       VkImageBlit blit_region =
       { 
-        .srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .srcSubresource.mipLevel = mip_index - 1,
-        .srcSubresource.baseArrayLayer = 0,
-        .srcSubresource.layerCount = 1,
-    
-        .srcOffsets[0] = { 0, 0, 0 },
-        .srcOffsets[1] = { w, h, 1 },
-    
-        .dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .dstSubresource.mipLevel = mip_index,
-        .dstSubresource.baseArrayLayer = 0,
-        .dstSubresource.layerCount = 1,
-    
-        .dstOffsets[0] = { 0, 0, 0 },
-        .dstOffsets[1] = { w / 2, h / 2, 1 },
+        .srcSubresource = {
+          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+          .mipLevel = CRUDE_STATIC_CAST( uint32, mip_index - 1 ),
+          .baseArrayLayer = 0,
+          .layerCount = 1,
+        },
+        .srcOffsets = {
+          { 0, 0, 0 },
+          { w, h, 1 },
+        },
+        .dstSubresource = {
+          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+          .mipLevel = CRUDE_STATIC_CAST( uint32, mip_index ),
+          .baseArrayLayer = 0,
+          .layerCount = 1,
+        },
+        .dstOffsets = {
+          { 0, 0, 0 },
+          { w / 2, h / 2, 1 },
+        }
       };
     
       w /= 2;
@@ -1385,8 +1395,8 @@ crude_gfx_create_pipeline
 
   VkPipelineLayoutCreateInfo pipeline_layout_info = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-    .pSetLayouts = vk_layouts,
     .setLayoutCount = shader_state_data->reflect.descriptor.sets_count + 1,
+    .pSetLayouts = vk_layouts,
   };
   
   VkPipelineLayout pipeline_layout;
@@ -1405,12 +1415,12 @@ crude_gfx_create_pipeline
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_attributes ); ++i )
     {
-      vk_vertex_attributes[ i ] = ( VkVertexInputAttributeDescription ){
+      vk_vertex_attributes[ i ] = CRUDE_COMPOUNT( VkVertexInputAttributeDescription, {
         .location = vertex_attributes[ i ].location,
         .binding = vertex_attributes[ i ].binding,
         .format = crude_gfx_to_vk_vertex_format( vertex_attributes[ i ].format ),
         .offset = vertex_attributes[ i ].offset
-      };
+      } );
     }
     vertex_input_info.vertexAttributeDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_attributes );
     vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
@@ -1429,11 +1439,11 @@ crude_gfx_create_pipeline
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_streams ); ++i )
     {
       VkVertexInputRate vertex_rate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-      vk_vertex_bindings[ i ] = ( VkVertexInputBindingDescription ){
+      vk_vertex_bindings[ i ] = CRUDE_COMPOUNT( VkVertexInputBindingDescription, {
         .binding = vertex_streams[ i ].binding,
         .stride = vertex_streams[ i ].stride,
         .inputRate = vertex_rate
-      };
+      } );
     }
     vertex_input_info.vertexBindingDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_streams );
     vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
@@ -1491,18 +1501,15 @@ crude_gfx_create_pipeline
     .logicOp = VK_LOGIC_OP_COPY,
     .attachmentCount = creation->blend_state.active_states ? creation->blend_state.active_states : 1,
     .pAttachments = color_blend_attachment,
-    .blendConstants[0] = 0.0f,
-    .blendConstants[1] = 0.0f,
-    .blendConstants[2] = 0.0f,
-    .blendConstants[3] = 0.0f,
+    .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f }
   };
   
   VkPipelineDepthStencilStateCreateInfo depth_stencil = { 
     .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-    .depthWriteEnable = creation->depth_stencil.depth_write_enable ? VK_TRUE : VK_FALSE,
-    .stencilTestEnable = creation->depth_stencil.stencil_enable ? VK_TRUE : VK_FALSE,
     .depthTestEnable = creation->depth_stencil.depth_enable ? VK_TRUE : VK_FALSE,
+    .depthWriteEnable = creation->depth_stencil.depth_write_enable ? VK_TRUE : VK_FALSE,
     .depthCompareOp = creation->depth_stencil.depth_comparison,
+    .stencilTestEnable = creation->depth_stencil.stencil_enable ? VK_TRUE : VK_FALSE,
   };
   
   if ( creation->depth_stencil.stencil_enable )
@@ -1512,8 +1519,8 @@ crude_gfx_create_pipeline
   
   VkPipelineMultisampleStateCreateInfo multisampling = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-    .sampleShadingEnable = VK_FALSE,
     .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    .sampleShadingEnable = VK_FALSE,
     .minSampleShading = 1.0f,
     .pSampleMask = NULL,
     .alphaToCoverageEnable = VK_FALSE,
@@ -1525,20 +1532,20 @@ crude_gfx_create_pipeline
     .depthClampEnable = VK_FALSE,
     .rasterizerDiscardEnable = VK_FALSE,
     .polygonMode = VK_POLYGON_MODE_FILL,
-    .lineWidth = 1.0f,
-    .cullMode = creation->rasterization.cull_mode,
+    .cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization.cull_mode ),
     .frontFace = creation->rasterization.front,
     .depthBiasEnable = VK_FALSE,
     .depthBiasConstantFactor = 0.0f,
     .depthBiasClamp = 0.0f,
     .depthBiasSlopeFactor = 0.0f,
+    .lineWidth = 1.0f,
   };
   
   VkViewport viewport = {
     .x = 0.0f,
     .y = 0.0f,
-    .width = gpu->vk_swapchain_width,
-    .height = gpu->vk_swapchain_height,
+    .width = CRUDE_STATIC_CAST( float32, gpu->vk_swapchain_width ),
+    .height = CRUDE_STATIC_CAST( float32, gpu->vk_swapchain_height ),
     .minDepth = 0.0f,
     .maxDepth = 1.0f,
   };
@@ -1571,25 +1578,22 @@ crude_gfx_create_pipeline
     .depthAttachmentFormat = creation->render_pass_output.depth_stencil_format,
     .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
   };
-
+  
   VkGraphicsPipelineCreateInfo pipeline_info = {
-    .pStages = shader_state_data->shader_stage_info,
+    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    .pNext = &pipeline_rendering_create_info,
     .stageCount = shader_state_data->active_shaders,
-    .layout = pipeline_layout,
+    .pStages = shader_state_data->shader_stage_info,
     .pVertexInputState = &vertex_input_info,
     .pInputAssemblyState = &input_assembly,
-    .pColorBlendState = &color_blending,
-    .pDepthStencilState = &depth_stencil,
-    .pMultisampleState = &multisampling,
-    .pRasterizationState = &rasterizer,
     .pViewportState = &viewport_state,
-    .renderPass = NULL,
+    .pRasterizationState = &rasterizer,
+    .pMultisampleState = &multisampling,
+    .pDepthStencilState = &depth_stencil,
+    .pColorBlendState = &color_blending,
     .pDynamicState = &dynamic_state,
-    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-    .pStages = shader_state_data->shader_stage_info,
-    .stageCount = shader_state_data->active_shaders,
     .layout = pipeline_layout,
-    .pNext = &pipeline_rendering_create_info
+    .renderPass = NULL,
   };
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( gpu->vk_device, VK_NULL_HANDLE, 1, &pipeline_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
@@ -1674,8 +1678,8 @@ crude_gfx_create_buffer
 
   VkBufferCreateInfo buffer_info = {
     .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-    .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | creation->type_flags,
     .size = creation->size > 0 ? creation->size : 1,
+    .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | creation->type_flags,
   };
   
   VmaAllocationCreateInfo allocation_create_info = {
@@ -1771,7 +1775,7 @@ crude_gfx_create_descriptor_set_layout
   
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
   
-  uint8 *memory = CRUDE_ALLOCATE( gpu->allocator_container, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings );
+  uint8 *memory = CRUDE_CAST( uint8*, CRUDE_ALLOCATE( gpu->allocator_container, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings ) );
   descriptor_set_layout->num_bindings = creation->num_bindings;
   descriptor_set_layout->bindings     = ( crude_gfx_descriptor_binding* )memory;
   descriptor_set_layout->vk_binding   = ( VkDescriptorSetLayoutBinding* )( memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
@@ -1926,7 +1930,7 @@ crude_gfx_obtain_sampler
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_sampler_handle ){ crude_resource_pool_obtain_resource( &gpu->samplers ) };                   
+  return CRUDE_COMPOUNT( crude_gfx_sampler_handle, { crude_resource_pool_obtain_resource( &gpu->samplers ) } );
 }
 
 crude_gfx_sampler*
@@ -1936,7 +1940,7 @@ crude_gfx_access_sampler
   _In_ crude_gfx_sampler_handle                            handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->samplers, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_sampler*, crude_resource_pool_access_resource( &gpu->samplers, handle.index ) );
 }
 
 void
@@ -1954,8 +1958,8 @@ crude_gfx_obtain_texture
 (
   _In_ crude_gfx_device                                   *gpu
 )
-{                                            
-  return ( crude_gfx_texture_handle ) { crude_resource_pool_obtain_resource( &gpu->textures ) };
+{
+  return CRUDE_COMPOUNT( crude_gfx_texture_handle, { crude_resource_pool_obtain_resource( &gpu->textures ) } );
 }
 
 crude_gfx_texture*
@@ -1965,7 +1969,7 @@ crude_gfx_access_texture
   _In_ crude_gfx_texture_handle                            handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->textures, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_texture*, crude_resource_pool_access_resource( &gpu->textures, handle.index ) );
 }
 
 void
@@ -1984,7 +1988,7 @@ crude_gfx_obtain_render_pass
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_render_pass_handle ) { crude_resource_pool_obtain_resource( &gpu->render_passes ) };
+  return CRUDE_COMPOUNT( crude_gfx_render_pass_handle, { crude_resource_pool_obtain_resource( &gpu->render_passes ) } );
 }
 
 crude_gfx_render_pass*
@@ -1994,7 +1998,7 @@ crude_gfx_access_render_pass
   _In_ crude_gfx_render_pass_handle                        handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->render_passes, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_render_pass*, crude_resource_pool_access_resource( &gpu->render_passes, handle.index ) );
 }
 
 void
@@ -2013,7 +2017,7 @@ crude_gfx_obtain_shader_state
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_shader_state_handle ){ crude_resource_pool_obtain_resource( &gpu->shaders ) };
+  return CRUDE_COMPOUNT( crude_gfx_shader_state_handle, { crude_resource_pool_obtain_resource( &gpu->shaders ) } );
 }
 
 crude_gfx_shader_state*
@@ -2023,7 +2027,7 @@ crude_gfx_access_shader_state
   _In_ crude_gfx_shader_state_handle                       handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->shaders, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_shader_state*, crude_resource_pool_access_resource( &gpu->shaders, handle.index ) );
 }
 
 void
@@ -2042,7 +2046,7 @@ crude_gfx_obtain_pipeline
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_pipeline_handle ){ crude_resource_pool_obtain_resource( &gpu->pipelines ) };
+  return CRUDE_COMPOUNT( crude_gfx_pipeline_handle,  { crude_resource_pool_obtain_resource( &gpu->pipelines ) } );
 }
 
 crude_gfx_pipeline*
@@ -2052,7 +2056,7 @@ crude_gfx_access_pipeline
   _In_ crude_gfx_pipeline_handle                           handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->pipelines, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_pipeline*, crude_resource_pool_access_resource( &gpu->pipelines, handle.index ) );
 }
 
 void
@@ -2071,7 +2075,7 @@ crude_gfx_obtain_buffer
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_buffer_handle ){ crude_resource_pool_obtain_resource( &gpu->buffers ) };
+  return CRUDE_COMPOUNT( crude_gfx_buffer_handle, { crude_resource_pool_obtain_resource( &gpu->buffers ) } );
 }
 
 crude_gfx_buffer*
@@ -2081,7 +2085,7 @@ crude_gfx_access_buffer
   _In_ crude_gfx_buffer_handle                             handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->buffers, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_buffer*, crude_resource_pool_access_resource( &gpu->buffers, handle.index ) );
 }
 
 void
@@ -2100,7 +2104,7 @@ crude_gfx_obtain_descriptor_set_layout
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_descriptor_set_layout_handle ){ crude_resource_pool_obtain_resource( &gpu->descriptor_set_layouts ) };
+  return CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_handle, { crude_resource_pool_obtain_resource( &gpu->descriptor_set_layouts ) } );
 }
 
 crude_gfx_descriptor_set_layout*
@@ -2110,7 +2114,7 @@ crude_gfx_access_descriptor_set_layout
   _In_ crude_gfx_descriptor_set_layout_handle              handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->descriptor_set_layouts, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set_layout*, crude_resource_pool_access_resource( &gpu->descriptor_set_layouts, handle.index ) );
 }
 
 void
@@ -2129,7 +2133,7 @@ crude_gfx_obtain_framebuffer
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  return ( crude_gfx_framebuffer_handle ){ crude_resource_pool_obtain_resource( &gpu->framebuffers ) };
+  return CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { crude_resource_pool_obtain_resource( &gpu->framebuffers ) } );
 }
 
 crude_gfx_framebuffer*
@@ -2139,7 +2143,7 @@ crude_gfx_access_framebuffer
   _In_ crude_gfx_framebuffer_handle                        handle
 )
 {
-  return crude_resource_pool_access_resource( &gpu->framebuffers, handle.index );
+  return CRUDE_REINTERPRET_CAST( crude_gfx_framebuffer*, crude_resource_pool_access_resource( &gpu->framebuffers, handle.index ) );
 }
 
 void
@@ -2216,16 +2220,16 @@ vk_create_instance_
   }
   
   /* Setup application */ 
-  application = ( VkApplicationInfo ) {
+  application = CRUDE_COMPOUNT( VkApplicationInfo, {
     .pApplicationName   = vk_application_name,
     .applicationVersion = vk_application_version,
     .pEngineName        = "crude_engine",
     .engineVersion      = VK_MAKE_VERSION( 1, 0, 0 ),
     .apiVersion         = VK_API_VERSION_1_3 
-  };
+  } );
   
   /* Initialize instance & debug_utils_messenger */ 
-  instance_create_info = ( VkInstanceCreateInfo ){ 0 };
+  instance_create_info = CRUDE_COMPOUNT_EMPTY( VkInstanceCreateInfo );
   instance_create_info.sType                    = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instance_create_info.pApplicationInfo         = &application;
   instance_create_info.flags                    = 0u;
@@ -2234,7 +2238,7 @@ vk_create_instance_
   instance_create_info.ppEnabledLayerNames     = instance_enabled_layers;
   instance_create_info.enabledLayerCount       = ARRAY_SIZE( instance_enabled_layers );
 #ifdef VK_EXT_debug_utils
-  debug_create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){ 0 };
+  debug_create_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsMessengerCreateInfoEXT );
   memset( &debug_create_info, 0u, sizeof( debug_create_info ) );
   debug_create_info.sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   debug_create_info.pNext            = NULL;
@@ -2267,9 +2271,10 @@ vk_create_debug_utils_messsenger_
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  VkDebugUtilsMessengerCreateInfoEXT create_info = ( VkDebugUtilsMessengerCreateInfoEXT ){
+  VkDebugUtilsMessengerCreateInfoEXT create_info = CRUDE_COMPOUNT( VkDebugUtilsMessengerCreateInfoEXT, {
     .sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-    .pfnUserCallback  = vk_debug_callback_,
+    .pNext            = NULL,
+    .flags            = 0u,
     .messageSeverity  =
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
@@ -2279,10 +2284,9 @@ vk_create_debug_utils_messsenger_
       VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    .pfnUserCallback  = vk_debug_callback_,
     .pUserData        = NULL,
-    .pNext            = NULL,
-    .flags            = 0u,
-  };
+  } );
   CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkCreateDebugUtilsMessengerEXT( gpu->vk_instance, &create_info, gpu->vk_allocation_callbacks, &gpu->vk_debug_utils_messenger ), "Failed to create debug utils messenger" );
 }
 
@@ -2295,7 +2299,7 @@ vk_create_surface_
   if ( !SDL_Vulkan_CreateSurface( gpu->sdl_window, gpu->vk_instance, gpu->vk_allocation_callbacks, &gpu->vk_surface ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
-    return VK_NULL_HANDLE;
+    return;
   }
 }
 
@@ -2311,11 +2315,13 @@ vk_pick_physical_device_
   VkPhysicalDeviceProperties                               selected_physical_properties;
   uint32                                                   available_physical_devices_count;
 
+  gpu->vk_physical_device = VK_NULL_HANDLE;
+
   vkEnumeratePhysicalDevices( gpu->vk_instance, &available_physical_devices_count, NULL );
   
   if ( available_physical_devices_count == 0u ) 
   {
-    return VK_NULL_HANDLE;
+    return;
   }
   
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_physical_devices, available_physical_devices_count, temporary_allocator );
@@ -2362,7 +2368,7 @@ vk_pick_physical_device_
   if ( selected_physical_devices == VK_NULL_HANDLE )
   {
     CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", available_physical_devices_count );
-    return VK_NULL_HANDLE;
+    return;
   }
 
   vkGetPhysicalDeviceProperties( selected_physical_devices, &selected_physical_properties );
@@ -2421,50 +2427,50 @@ vk_create_device_
 
   float const queue_priority[] = { 1.0f };
 
-  queue_create_infos[ 0 ] = ( VkDeviceQueueCreateInfo ){
+  queue_create_infos[ 0 ] = CRUDE_COMPOUNT( VkDeviceQueueCreateInfo, {
     .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
     .queueFamilyIndex = main_queue_index,
     .queueCount = 1,
     .pQueuePriorities = queue_priority,
-  };
+  } );
   
   if ( transfer_queue_index < queue_family_count )
   {
-    queue_create_infos[ 1 ]  = ( VkDeviceQueueCreateInfo ){
+    queue_create_infos[ 1 ] = CRUDE_COMPOUNT( VkDeviceQueueCreateInfo, {
     .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
     .queueFamilyIndex = transfer_queue_index,
     .queueCount = 1,
     .pQueuePriorities = queue_priority,
-    };
+    } );
   }
   
-  dynamic_rendering_features = ( VkPhysicalDeviceDynamicRenderingFeaturesKHR ){
+  dynamic_rendering_features = CRUDE_COMPOUNT( VkPhysicalDeviceDynamicRenderingFeaturesKHR, {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-  };
+  } );
 
-  indexing_features = ( VkPhysicalDeviceDescriptorIndexingFeatures ) {
+  indexing_features = CRUDE_COMPOUNT( VkPhysicalDeviceDescriptorIndexingFeatures, {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
     .pNext = &dynamic_rendering_features
-  };
+  } );
 
-  physical_features2 = ( VkPhysicalDeviceFeatures2 ){ 
+  physical_features2 = CRUDE_COMPOUNT( VkPhysicalDeviceFeatures2, {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
     .pNext = &indexing_features,
-  };
+  } );
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
-  device_create_info = ( VkDeviceCreateInfo ){
+  device_create_info = CRUDE_COMPOUNT( VkDeviceCreateInfo, {
     .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     .pNext                    = &physical_features2,
-    .flags                    = 0u,
-    .queueCreateInfoCount     = transfer_queue_index < queue_family_count ? 2 : 1,
+    .flags                    = 0,
+    .queueCreateInfoCount     = CRUDE_STATIC_CAST( uint32, transfer_queue_index < queue_family_count ? 2 : 1 ),
     .pQueueCreateInfos        = queue_create_infos,
-    .pEnabledFeatures         = NULL,
-    .enabledExtensionCount    = ARRAY_SIZE( vk_device_required_extensions ),
-    .ppEnabledExtensionNames  = vk_device_required_extensions,
     .enabledLayerCount        = ARRAY_SIZE( vk_required_layers ),
     .ppEnabledLayerNames      = vk_required_layers,
-  };
+    .enabledExtensionCount    = ARRAY_SIZE( vk_device_required_extensions ),
+    .ppEnabledExtensionNames  = vk_device_required_extensions,
+    .pEnabledFeatures         = NULL,
+  } );
 
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDevice( gpu->vk_physical_device, &device_create_info, gpu->vk_allocation_callbacks, &gpu->vk_device ), "failed to create logic device!" );
   vkGetDeviceQueue( gpu->vk_device, main_queue_index, 0u, &gpu->vk_main_queue );
@@ -2474,8 +2480,8 @@ vk_create_device_
   }
   
   gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
-  gpu->vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
-  gpu->vkSetDebugUtilsObjectNameEXT = vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
+  gpu->vkCmdEndRenderingKHR = ( PFN_vkCmdEndRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
+  gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
 }
 
 void
@@ -2513,7 +2519,6 @@ vk_create_swapchain_
   if ( available_formats_count == 0u )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
-    return VK_NULL_HANDLE;
   }
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_formats, available_formats_count, temporary_allocator );
@@ -2533,7 +2538,6 @@ vk_create_swapchain_
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
     CRUDE_ARRAY_DEINITIALIZE( available_formats );
-    return VK_NULL_HANDLE;
   }
   
   available_present_modes_count;
@@ -2542,7 +2546,6 @@ vk_create_swapchain_
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
     CRUDE_ARRAY_DEINITIALIZE( available_formats );
-    return VK_NULL_HANDLE;
   }
   
   
@@ -2562,7 +2565,7 @@ vk_create_swapchain_
   image_count = ( selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
   queue_family_indices[ 0 ] = gpu->vk_main_queue_family;
   
-  swapchain_create_info = ( VkSwapchainCreateInfoKHR ) {
+  swapchain_create_info = CRUDE_COMPOUNT( VkSwapchainCreateInfoKHR, {
     .sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     .pNext                  = NULL,
     .surface                = gpu->vk_surface,
@@ -2580,7 +2583,7 @@ vk_create_swapchain_
     .presentMode            = selected_present_mode,
     .clipped                = true,
     .oldSwapchain           = VK_NULL_HANDLE,
-  };
+  } );
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( gpu->vk_device, &swapchain_create_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain ), "Failed to create swapchain!" );
 
@@ -2640,59 +2643,59 @@ vk_create_descriptor_pool_
   VkDescriptorSetLayoutCreateInfo                          layout_info;
   VkDescriptorSetAllocateInfo                              alloc_info;
 
-  pool_sizes_bindless[ 0 ] = ( VkDescriptorPoolSize ){ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_MAX_BINDLESS_RESOURCES };
-  pool_sizes_bindless[ 1 ] = ( VkDescriptorPoolSize ){ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_MAX_BINDLESS_RESOURCES };
+  pool_sizes_bindless[ 0 ] = CRUDE_COMPOUNT( VkDescriptorPoolSize, { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_MAX_BINDLESS_RESOURCES } );
+  pool_sizes_bindless[ 1 ] = CRUDE_COMPOUNT( VkDescriptorPoolSize, { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_MAX_BINDLESS_RESOURCES } );
   
-  pool_info = ( VkDescriptorPoolCreateInfo ){
+  pool_info = CRUDE_COMPOUNT( VkDescriptorPoolCreateInfo, {
     .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,
     .maxSets       = CRUDE_GFX_MAX_BINDLESS_RESOURCES * ARRAY_SIZE( pool_sizes_bindless ),
     .poolSizeCount = ARRAY_SIZE( pool_sizes_bindless ),
     .pPoolSizes    = pool_sizes_bindless,
-  };
+  } );
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
 
   pool_count = ARRAY_SIZE( pool_sizes_bindless );
-  vk_binding[ 0 ] = ( VkDescriptorSetLayoutBinding ){
+  vk_binding[ 0 ] = CRUDE_COMPOUNT( VkDescriptorSetLayoutBinding, {
+    .binding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING,
     .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     .descriptorCount = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
-    .binding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING,
     .stageFlags = VK_SHADER_STAGE_ALL,
     .pImmutableSamplers = NULL,
-  };
-  vk_binding[ 1 ] = ( VkDescriptorSetLayoutBinding ){
+  } );
+  vk_binding[ 1 ] = CRUDE_COMPOUNT( VkDescriptorSetLayoutBinding, {
+    .binding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING + 1,
     .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
     .descriptorCount = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
-    .binding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING + 1,
     .stageFlags = VK_SHADER_STAGE_ALL,
     .pImmutableSamplers = NULL,
-  };
+  } );
 
   binding_flags[ 0 ] = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
   binding_flags[ 1 ] = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
   
-  extended_info = ( VkDescriptorSetLayoutBindingFlagsCreateInfoEXT ){
+  extended_info = CRUDE_COMPOUNT( VkDescriptorSetLayoutBindingFlagsCreateInfoEXT, {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
     .bindingCount = pool_count,
     .pBindingFlags = binding_flags
-  };
+  } );
 
-  layout_info = ( VkDescriptorSetLayoutCreateInfo ){
+  layout_info = CRUDE_COMPOUNT( VkDescriptorSetLayoutCreateInfo, {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+    .pNext = &extended_info,
+    .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,
     .bindingCount = pool_count,
     .pBindings = vk_binding,
-    .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,
-    .pNext = &extended_info
-  };
+  } );
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( gpu->vk_device, &layout_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_set_layout ), "Failed create descriptor set layout" );
   
-  alloc_info = ( VkDescriptorSetAllocateInfo ){
+  alloc_info = CRUDE_COMPOUNT( VkDescriptorSetAllocateInfo, {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     .descriptorPool = gpu->vk_bindless_descriptor_pool,
     .descriptorSetCount = 1,
     .pSetLayouts = &gpu->vk_bindless_descriptor_set_layout
-  };
+  } );
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &alloc_info, &gpu->vk_bindless_descriptor_set ), "Failed allocate descriptor set" );
 }
@@ -2864,20 +2867,22 @@ vk_create_texture_
     VkImageCreateInfo                                      image_info;
     bool                                                   is_render_target, is_compute_used;
 
-    image_info = ( VkImageCreateInfo ) {
+    image_info = CRUDE_COMPOUNT( VkImageCreateInfo, {
       .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-      .format = texture->vk_format,
       .imageType = crude_gfx_to_vk_image_type( creation->type ),
-      .extent.width = creation->width,
-      .extent.height = creation->height,
-      .extent.depth = creation->depth,
+      .format = texture->vk_format,
+      .extent = {
+        .width = creation->width,
+        .height = creation->height,
+        .depth = creation->depth,
+      },
       .mipLevels = creation->mipmaps,
       .arrayLayers = 1,
       .samples = VK_SAMPLE_COUNT_1_BIT,
       .tiling = VK_IMAGE_TILING_OPTIMAL,
       .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
-    };
+    } );
 
     is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
     is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;
@@ -2899,9 +2904,7 @@ vk_create_texture_
       image_info.usage |= is_render_target ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0;
     }
 
-    memory_info = ( VmaAllocationCreateInfo ){
-      .usage = VMA_MEMORY_USAGE_GPU_ONLY
-    };
+    memory_info = CRUDE_COMPOUNT( VmaAllocationCreateInfo, { .usage = VMA_MEMORY_USAGE_GPU_ONLY } );
     
     if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( creation->alias ) )
     {
@@ -3014,7 +3017,7 @@ void
 vk_reflect_shader_
 (
   _In_ crude_gfx_device                                   *gpu,
-  _In_ void                                               *code,
+  _In_ void const                                         *code,
   _In_ uint32                                              code_size,
   _In_ crude_gfx_shader_reflect                           *reflect
 )
@@ -3036,19 +3039,19 @@ vk_reflect_shader_
       uint32                                               stride;
 
       spv_input = spv_reflect.input_variables[ input_index ];
-      reflect->input.vertex_attributes[ input_index ] = ( crude_gfx_vertex_attribute ) {
+      reflect->input.vertex_attributes[ input_index ] = CRUDE_COMPOUNT( crude_gfx_vertex_attribute, {
         .location = spv_input->location,
         .binding = spv_input->location,
         .offset = 0,
         .format = reflect_format_to_vk_format_( spv_input->format )
-      };
+      } );
       
       stride = ( spv_input->numeric.vector.component_count * spv_input->numeric.scalar.width ) / 8;
-      reflect->input.vertex_streams[ input_index ] = ( crude_gfx_vertex_stream ){
+      reflect->input.vertex_streams[ input_index ] = CRUDE_COMPOUNT( crude_gfx_vertex_stream, {
         .binding = spv_input->location,
         .stride = stride,
         .input_rate = CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX
-      };
+      } );
     }
   }
 
@@ -3102,42 +3105,42 @@ vk_destroy_resources_instant_
   {
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_SAMPLER:
     {
-      crude_gfx_destroy_sampler_instant( gpu, ( crude_gfx_sampler_handle ){ handle } );
+      crude_gfx_destroy_sampler_instant( gpu, CRUDE_COMPOUNT( crude_gfx_sampler_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE:
     {
-      crude_gfx_destroy_texture_instant( gpu, ( crude_gfx_texture_handle ){ handle } );
+      crude_gfx_destroy_texture_instant( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_RENDER_PASS:
     {
-      crude_gfx_destroy_render_pass_instant( gpu, ( crude_gfx_render_pass_handle ){ handle } );
+      crude_gfx_destroy_render_pass_instant( gpu, CRUDE_COMPOUNT( crude_gfx_render_pass_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_SHADER_STATE:
     {
-      crude_gfx_destroy_shader_state_instant( gpu, ( crude_gfx_shader_state_handle ){ handle } );
+      crude_gfx_destroy_shader_state_instant( gpu, CRUDE_COMPOUNT( crude_gfx_shader_state_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_PIPELINE:
     {
-      crude_gfx_destroy_pipeline_instant( gpu, ( crude_gfx_pipeline_handle ){ handle } );
+      crude_gfx_destroy_pipeline_instant( gpu, CRUDE_COMPOUNT( crude_gfx_pipeline_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_BUFFER:
     {
-      crude_gfx_destroy_buffer_instant( gpu, ( crude_gfx_buffer_handle ){ handle } );
+      crude_gfx_destroy_buffer_instant( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT:
     {
-      crude_gfx_destroy_descriptor_set_layout_instant( gpu, ( crude_gfx_descriptor_set_layout_handle ){ handle } );
+      crude_gfx_destroy_descriptor_set_layout_instant( gpu, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_FRAMEBUFFER:
     {
-      crude_gfx_destroy_framebuffer_instant( gpu, ( crude_gfx_framebuffer_handle ){ handle } );
+      crude_gfx_destroy_framebuffer_instant( gpu, CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { handle } ) );
       break;
     }
   }

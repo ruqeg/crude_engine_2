@@ -6,7 +6,7 @@
 
 typedef struct crude_scene_creation
 {
-  void                                                    *world;
+  ecs_world_t                                             *world;
   crude_entity                                             input_entity;
   char const                                              *resources_path;
   crude_stack_allocator                                   *temporary_allocator;
@@ -15,7 +15,7 @@ typedef struct crude_scene_creation
 
 typedef struct crude_scene
 {
-  void                                                    *world;
+  ecs_world_t                                             *world;
   crude_entity                                            *nodes;
   crude_entity                                             main_node;
   crude_entity                                             main_camera;

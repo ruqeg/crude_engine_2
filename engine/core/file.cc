@@ -86,7 +86,7 @@ crude_file_directory_from_path
 bool
 crude_file_exist
 (
-  _In_ char                                               *path
+  _In_ char const                                         *path
 )
 {
 #if defined( _WIN64 )
@@ -116,7 +116,7 @@ crude_read_file
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 );
+  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 ) );
   *buffer_size = fread( *buffer, 1, filesize, file );
   (*buffer)[ *buffer_size ] = 0;
   fclose( file );
@@ -141,7 +141,7 @@ crude_read_file_binary
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 );
+  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 ) );
   *buffer_size = fread( *buffer, 1, filesize, file );
   (*buffer)[ *buffer_size ] = 0;
   fclose( file );
@@ -152,7 +152,7 @@ void
 crude_write_file
 (
   _In_ char const                                         *filename,
-  _In_ void                                               *buffer,
+  _In_ void const                                         *buffer,
   _In_ size_t                                              buffer_size
 )
 {

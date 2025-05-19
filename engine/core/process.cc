@@ -46,7 +46,7 @@ crude_process_execute
   {
     SECURITY_ATTRIBUTES                                    security_attributes;
     
-    security_attributes = ( SECURITY_ATTRIBUTES ){ sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
+    security_attributes = CRUDE_COMPOUNT( SECURITY_ATTRIBUTES, { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE } );
     ok = CreatePipe( &handle_stdin_pipe_read, &handle_stdin_pipe_write, &security_attributes, 0 );
     if ( ok == FALSE )
     {
@@ -63,7 +63,7 @@ crude_process_execute
     STARTUPINFOA                                           startup_info;
     BOOL                                                   inherit_handles;
 
-    startup_info = ( STARTUPINFOA ){ 0 };
+    startup_info = CRUDE_COMPOUNT_EMPTY( STARTUPINFOA );
     startup_info.cb = sizeof( startup_info );
     startup_info.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
     startup_info.hStdInput = handle_stdin_pipe_read;
@@ -72,7 +72,7 @@ crude_process_execute
     startup_info.wShowWindow = SW_SHOW;
     
     execution_success = false;
-    process_info = ( PROCESS_INFORMATION ){ 0 };
+    process_info = CRUDE_COMPOUNT_EMPTY( PROCESS_INFORMATION );
     inherit_handles = TRUE;
     if ( CreateProcessA( process_fullpath, (char*)arguments, 0, 0, inherit_handles, 0, 0, working_directory, &startup_info, &process_info ) )
     {
@@ -121,7 +121,7 @@ crude_process_execute
   return execution_success;
 }
 
-bool
+void
 crude_process_expand_environment_strings
 (
   _In_ char const                                         *environment,

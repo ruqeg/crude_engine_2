@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(crude_sandbox)
 
-file(GLOB_RECURSE SRC *.c)
+file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})

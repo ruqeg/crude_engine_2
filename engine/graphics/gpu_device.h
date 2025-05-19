@@ -263,7 +263,7 @@ crude_gfx_compile_shader
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
-CRUDE_API VkShaderModuleCreateInfo
+CRUDE_API void
 crude_gfx_resize_framebuffer
 (
   _In_ crude_gfx_device                                   *gpu,

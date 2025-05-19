@@ -30,7 +30,7 @@ exit_walker
     return;
   }
 
-  stats = user;
+  stats = CRUDE_REINTERPRET_CAST( memory_statistics*, user );
   stats->allocated_bytes += size;
   ++stats->allocation_count;
   CRUDE_LOG_WARNING( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
@@ -66,11 +66,11 @@ crude_heap_allocator_deinitialize
   memory_statistics                                        stats;
   
   
-  stats = ( memory_statistics ){
+  stats = CRUDE_COMPOUNT( memory_statistics, {
     .allocated_bytes = 0,
     .total_bytes = 0,
     .allocation_count = 0
-  };
+  } );
   
   pool = tlsf_get_pool( allocator->tlsf_handle );
   tlsf_walk_pool( pool, exit_walker, &stats );
@@ -325,18 +325,18 @@ crude_memory_set
  * Common Allocator Interface
  * 
  ******************************************/
-// Bro I'm done with this shit
-static void* crude_heap_allocate_raw( void *ctx, sizet size ) { return crude_heap_allocator_allocate( ctx, size ); }
-static void crude_heap_deallocate_raw( void *ctx, void *pointer ) { crude_heap_allocator_deallocate( ctx, pointer ); }
-static void* crude_heap_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_heap_allocator_reallocate( ctx, pointer, size ); }
-static void* crude_heap_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { return crude_heap_allocator_allocate_align( ctx, size, alignment ); }
-static void* crude_stack_allocate_raw( void *ctx, sizet size ) { return crude_stack_allocator_allocate( ctx, size ); }
+// I'm done with this shit
+static void* crude_heap_allocate_raw( void *ctx, sizet size ) { return crude_heap_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_heap_allocator*, ctx ), size ); }
+static void crude_heap_deallocate_raw( void *ctx, void *pointer ) { crude_heap_allocator_deallocate( CRUDE_REINTERPRET_CAST( crude_heap_allocator*, ctx ), pointer ); }
+static void* crude_heap_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_heap_allocator_reallocate( CRUDE_REINTERPRET_CAST( crude_heap_allocator*, ctx ), pointer, size ); }
+static void* crude_heap_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { return crude_heap_allocator_allocate_align( CRUDE_REINTERPRET_CAST( crude_heap_allocator*, ctx ), size, alignment ); }
+static void* crude_stack_allocate_raw( void *ctx, sizet size ) { return crude_stack_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_stack_allocator*, ctx ), size ); }
 static void crude_stack_deallocate_raw( void *ctx, void *pointer ) {}
 static void* crude_stack_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_stack_allocate_raw( ctx, size ); }
 static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
-static void* crude_linear_allocate_raw( void *ctx, sizet size ) { return crude_linear_allocator_allocate( ctx, size ); }
+static void* crude_linear_allocate_raw( void *ctx, sizet size ) { return crude_linear_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_linear_allocator*, ctx ), size ); }
 static void crude_linear_deallocate_raw( void *ctx, void *pointer ) {}
-static void* crude_linear_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_linear_allocator_allocate( ctx, size ); }
+static void* crude_linear_reallocate_raw( void *ctx, void *pointer, sizet size ) { return crude_linear_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_linear_allocator*, ctx ), size ); }
 static void* crude_linear_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
 
 crude_allocator_container 

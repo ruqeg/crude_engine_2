@@ -72,14 +72,14 @@ crude_gfx_renderer_technique_load_from_file
   
   crude_read_file( json_path, crude_stack_allocator_pack( temporary_allocator ), &technique_json_buffer, &technique_json_buffer_size );
 
-  technique_json = cJSON_ParseWithLength( technique_json_buffer, technique_json_buffer_size );
+  technique_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, technique_json_buffer ), technique_json_buffer_size );
   if ( !technique_json )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file for technique... Error %s", cJSON_GetErrorPtr() );
     return;
   }
   
-  technique_creation = ( crude_gfx_renderer_technique_creation ){ 0 };
+  technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_technique_creation );
 
   {
     cJSON const                                           *technique_name_json;
@@ -143,10 +143,10 @@ parse_gpu_pipeline_
       crude_string_buffer_clear( path_buffer );
 
       uint32 code_size;
-      char const *code;
+      char *code;
       const char *shader_filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "shader" ) );
       const char *shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s%s", working_directory, "\\..\\..\\shaders\\", shader_filename );
-      crude_read_file( shader_path, crude_stack_allocator_pack( temporary_allocator ), &code, &code_size );
+      crude_read_file( shader_path, crude_stack_allocator_pack( temporary_allocator ), CRUDE_REINTERPRET_CAST( uint8**, &code ), &code_size );
       
       char const *name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
       
@@ -212,10 +212,10 @@ parse_gpu_pipeline_
       char const *blend_op = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "op" ) );
       
       crude_gfx_blend_state blend_state = {
-        .blend_enabled = ( strcmp( enabled, "true" ) == 0 ),
         .source_color = get_blend_factor_( src_colour ),
         .destination_color = get_blend_factor_( dst_colour ),
         .color_operation = get_blend_op_( blend_op ),
+        .blend_enabled = ( strcmp( enabled, "true" ) == 0 ),
       };
       pipeline_creation->blend_state.blend_states[ pipeline_creation->blend_state.active_states++ ] = blend_state;
     }

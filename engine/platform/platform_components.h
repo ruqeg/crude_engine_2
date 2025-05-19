@@ -70,9 +70,9 @@ crude_input g_crude_input;
  * ECS Components Declaration
  * 
  ***********************************************/
-CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_window );
-CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_window_handle );
-CRUDE_API extern CRUDE_ECS_COMPONENT_DECLARE( crude_input );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_window_handle );
+CRUDE_API extern ECS_COMPONENT_DECLARE( crude_input );
 
 /************************************************
  *

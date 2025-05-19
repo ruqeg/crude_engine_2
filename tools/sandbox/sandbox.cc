@@ -1,5 +1,4 @@
 #include <engine.h>
-#include <core/ecs_utils.h>
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>
 #include <scene/free_camera_system.h>

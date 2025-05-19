@@ -45,7 +45,7 @@ crude_pow
   return powf( s1, s2 );
 }
 
-float32
+void
 crude_sin_cos
 (
   _Out_ float32                                 *sinangle,
