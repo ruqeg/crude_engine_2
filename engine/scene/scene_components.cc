@@ -10,7 +10,7 @@ ECS_COMPONENT_DECLARE( crude_gltf );
 static crude_matrix
 get_node_to_parent_matrix
 (
-  _In_ crude_transform        *transform
+  _In_ crude_transform const                              *transform
 )
 {
   return crude_mat_affine_transformation( crude_load_float3( &transform->scale ), crude_vec_zero(), crude_load_float4( &transform->rotation ), crude_load_float3( &transform->translation ) );
@@ -19,7 +19,7 @@ get_node_to_parent_matrix
 crude_matrix
 crude_camera_view_to_clip
 (
-  _In_ crude_camera           *camera
+  _In_ crude_camera const                                 *camera
 )
 {
   return crude_mat_perspective_fov_lh( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
@@ -28,8 +28,8 @@ crude_camera_view_to_clip
 crude_matrix
 crude_transform_node_to_world
 (
-  _In_ crude_entity            node,
-  _In_ crude_transform        *transform
+  _In_ crude_entity                                        node,
+  _In_ crude_transform const                              *transform
 )
 {
   crude_entity parent = crude_entity_get_parent( node );

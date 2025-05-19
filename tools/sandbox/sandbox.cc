@@ -30,7 +30,7 @@ crude_sandbox_deinitialize
   sandbox->working = false;
 }
 
-bool
+void
 crude_sandbox_update
 (
   _In_ crude_sandbox                                      *sandbox

@@ -41,7 +41,7 @@ crude_paprika_deinitialize
   _In_ crude_paprika                                      *paprika
 );
 
-CRUDE_API bool
+CRUDE_API void
 crude_paprika_update
 (
   _In_ crude_paprika                                      *paprika

@@ -8,6 +8,10 @@
 
 #include <platform/platform_system.h>
 
+CRUDE_ECS_SYSTEM_DECLARE( crude_process_events_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_window_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_window_destrotion_observer_ );
+
 static uint32
 key_sym_
 (
@@ -100,7 +104,7 @@ mouse_reset_
 }
 
 static void
-create_window_
+crude_window_creation_observer_
 (
   ecs_iter_t *it
 )
@@ -111,7 +115,7 @@ create_window_
   {
     ecs_world_t *world = it->world;
     crude_window *window = &windows_per_entity[ i ];
-    ecs_entity_t const *entity = &it->entities[i];
+    ecs_entity_t entity = it->entities[i];
 
     crude_window_handle *window_handle = ecs_ensure( world, entity, crude_window_handle );
 
@@ -170,7 +174,7 @@ create_window_
 }
 
 static void
-destroy_window_
+crude_window_destrotion_observer_
 (
   ecs_iter_t *it
 )
@@ -179,7 +183,7 @@ destroy_window_
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    SDL_DestroyWindow( windows_per_entity[ i ].value );
+    SDL_DestroyWindow( CRUDE_REINTERPRET_CAST( SDL_Window*, windows_per_entity[ i ].value ) );
   }
 }
 
@@ -196,7 +200,7 @@ shutdown_
 }
 
 static void
-process_events_
+crude_process_events_system_
 (
   ecs_iter_t *it
 )
@@ -241,19 +245,21 @@ process_events_
       crude_window_handle                                 *focused_window_handle;
       bool                                                 window_event;
           
-      focused_input = focused_window = focused_window_handle = NULL;
+      focused_input = NULL;
+      focused_window = NULL;
+      focused_window_handle = NULL;
       window_event = ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED ) || ( sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ) || ( sdl_event.window.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED );
 
       if ( window_event )
       {
         for ( uint32 i = 0; i < it->count; ++i )
         {
-          if ( sdl_event.window.windowID == SDL_GetWindowID( windows_handles_per_entity[ i ].value ) )
+          if ( sdl_event.window.windowID == SDL_GetWindowID( CRUDE_REINTERPRET_CAST( SDL_Window*, windows_handles_per_entity[ i ].value ) ) )
           {
             focused_input = &inputs_per_entity[ i ];
             focused_window = &windows_per_entity[ i ];
             focused_window_handle = &windows_handles_per_entity[ i ];
-            focused_entity = ( crude_entity ){ .handle = it->entities[ i ], .world = it->world };
+            focused_entity = CRUDE_COMPOUNT( crude_entity, { .handle = it->entities[ i ], .world = it->world } );
           }
         }
         
@@ -262,7 +268,7 @@ process_events_
           if ( sdl_event.window.type == SDL_EVENT_WINDOW_RESIZED || sdl_event.window.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED )
           {
             int actual_width, actual_height;
-            SDL_GetWindowSizeInPixels( focused_window_handle->value, &actual_width, &actual_height );
+            SDL_GetWindowSizeInPixels( CRUDE_REINTERPRET_CAST( SDL_Window*, focused_window_handle->value ), &actual_width, &actual_height );
             focused_window->width  = actual_width;
             focused_window->height = actual_height;
             ecs_modified( it->world, focused_entity.handle, crude_window );
@@ -282,7 +288,9 @@ process_events_
       crude_window_handle                                 *focused_window_handle;
       bool                                                 mouse_event;
     
-      focused_input = focused_window = focused_window_handle = NULL;
+      focused_input = NULL;
+      focused_window = NULL;
+      focused_window_handle = NULL;
       mouse_event = ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ) || ( sdl_event.type == SDL_EVENT_MOUSE_BUTTON_UP ) || ( sdl_event.type == SDL_EVENT_MOUSE_MOTION )  || ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL );
     
       if ( mouse_event )
@@ -321,7 +329,7 @@ process_events_
             }
             else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
             {
-              SDL_WarpMouseInWindow( focused_window_handle->value, focused_input->wrapwnd.x, focused_input->wrapwnd.y );
+              SDL_WarpMouseInWindow( CRUDE_REINTERPRET_CAST( SDL_Window*, focused_window_handle->value ), focused_input->wrapwnd.x, focused_input->wrapwnd.y );
               SDL_ShowCursor();
               key_up_( &focused_input->mouse.right );
             }
@@ -335,7 +343,7 @@ process_events_
   
             if ( !SDL_CursorVisible() )
             {
-              SDL_WarpMouseInWindow( focused_window_handle->value, focused_input->wrapwnd.x, focused_input->wrapwnd.y );
+              SDL_WarpMouseInWindow( CRUDE_REINTERPRET_CAST( SDL_Window*, focused_window_handle->value ), focused_input->wrapwnd.x, focused_input->wrapwnd.y );
             }
           }
           else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
@@ -353,7 +361,9 @@ process_events_
       crude_window_handle                                 *focused_window_handle;
       bool                                                 keyboard_event;
       
-      focused_input = focused_window = focused_window_handle = NULL;
+      focused_input = NULL;
+      focused_window = NULL;
+      focused_window_handle = NULL;
       keyboard_event = ( sdl_event.type == SDL_EVENT_KEY_DOWN ) || ( sdl_event.type == SDL_EVENT_KEY_UP );
 
       if ( keyboard_event )
@@ -391,30 +401,21 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
 {
   ECS_MODULE( world, crude_platform_system );
   ECS_IMPORT( world, crude_platform_components );
- 
-  ecs_observer( world, {
-    .query.terms = { 
-      ( ecs_term_t ) { .id = ecs_id( crude_window ) },
-      ( ecs_term_t ) { .id = ecs_id( crude_window_handle ), .oper = EcsNot }
-    },
-    .events = { EcsOnSet },
-    .callback = create_window_
-    } );
 
-  ecs_system( world, {
-    .entity = ecs_entity( world, { .name = "process_events_", .add = ecs_ids( ecs_dependson( EcsPreUpdate ) ) } ),
-    .callback = process_events_,
-    .query.terms = { 
-      {.id = ecs_id( crude_input ) },
-      {.id = ecs_id( crude_window ) },
-      {.id = ecs_id( crude_window_handle ) },
-    } } );
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_creation_observer_, EcsOnSet, { 
+    { .id = ecs_id( crude_window ) },
+    { .id = ecs_id( crude_window_handle ), .oper = EcsNot }
+  } );
 
-  ecs_observer( world, {
-    .query.terms = { { ecs_id( crude_window_handle ) } },
-    .events = { EcsOnRemove },
-    .callback = destroy_window_
-    } );
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_destrotion_observer_, EcsOnRemove, { 
+    { .id = ecs_id( crude_window_handle ) }
+  } );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_process_events_system_, EcsPreUpdate, NULL, {
+    { .id = ecs_id( crude_input ) },
+    { .id = ecs_id( crude_window ) },
+    { .id = ecs_id( crude_window_handle ) },
+  } );
 
   if ( !SDL_Init( SDL_INIT_VIDEO ) )
   {

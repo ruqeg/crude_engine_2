@@ -22,7 +22,7 @@ crude_sandbox_deinitialize
   _In_ crude_sandbox                                      *sandbox
 );
 
-CRUDE_API bool
+CRUDE_API void
 crude_sandbox_update
 (
   _In_ crude_sandbox                                      *sandbox

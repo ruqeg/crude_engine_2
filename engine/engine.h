@@ -8,7 +8,7 @@
 
 typedef struct crude_engine
 {
-  void                                                    *world;
+  ecs_world_t                                             *world;
   bool                                                     running;
   int64                                                    time;
   enkiTaskScheduler                                       *task_sheduler;

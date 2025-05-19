@@ -8,6 +8,8 @@
 
 #include <paprika.h>
 
+CRUDE_ECS_SYSTEM_DECLARE( paprika_graphics_system_ );
+
 static void
 paprika_graphics_initialize_
 (
@@ -16,7 +18,7 @@ paprika_graphics_initialize_
 );
 
 static void
-paprika_graphics_process_
+paprika_graphics_system_
 (
   _In_ ecs_iter_t                                         *it
 );
@@ -53,11 +55,11 @@ crude_paprika_initialize
   /* Create scene */
   {
     crude_scene_creation creation = {
-      .allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator ), 
-      .resources_path = "\\..\\..\\resources\\",
-      .temporary_allocator = &paprika->temporary_allocator,
       .world = paprika->engine->world,
       .input_entity = paprika->platform_node,
+      .resources_path = "\\..\\..\\resources\\",
+      .temporary_allocator = &paprika->temporary_allocator,
+      .allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator ), 
     };
     crude_scene_initialize( &paprika->scene, &creation );
   }
@@ -67,10 +69,10 @@ crude_paprika_initialize
   {
     crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->platform_node, crude_window_handle );
     paprika_graphics_initialize_( paprika, *window_handle );
-    ecs_system( paprika->engine->world, {
-      .entity = ecs_entity( paprika->engine->world, { .name = "paprika_graphics_system", .add = ecs_ids( ecs_dependson( EcsPreStore ) ) } ),
-      .callback = paprika_graphics_process_,
-      .ctx = paprika } );
+    CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_graphics_system_, EcsPreStore, paprika, {
+      { .id = ecs_id( crude_transform ) },
+      { .id = ecs_id( crude_free_camera ) },
+    } );
   }
 }
 
@@ -93,13 +95,13 @@ crude_paprika_deinitialize
   crude_stack_allocator_deinitialize( &paprika->temporary_allocator );
 }
 
-bool
+void
 crude_paprika_update
 (
   _In_ crude_paprika                                      *paprika
 )
 {
-  crude_input *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->platform_node, crude_input );
+  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->platform_node, crude_input );
   if ( input && input->should_close_window )
   {
     crude_paprika_deinitialize( paprika );
@@ -123,13 +125,13 @@ paprika_graphics_initialize_
   /* Create Device */
   {
     crude_gfx_device_creation device_creation = {
-      .sdl_window             = window_handle.value,
+      .sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle.value ),
       .vk_application_name    = "CrudeEngine",
       .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
       .allocator_container    = paprika->graphics.allocator_container,
+      .temporary_allocator    = &paprika->temporary_allocator,
       .queries_per_frame      = 1u,
-      .num_threads            = enkiGetNumTaskThreads( paprika->graphics.asynchronous_loader_manager->task_sheduler ),
-      .temporary_allocator    = &paprika->temporary_allocator
+      .num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, paprika->graphics.asynchronous_loader_manager->task_sheduler ) ) ),
     };
     crude_gfx_device_initialize( &paprika->graphics.gpu, &device_creation );
   }
@@ -137,8 +139,8 @@ paprika_graphics_initialize_
   /* Create Renderer */
   {
     crude_gfx_renderer_creation renderer_creation = {
+      .gpu                 = &paprika->graphics.gpu,
       .allocator_container = paprika->graphics.allocator_container,
-      .gpu                 = &paprika->graphics.gpu
     };
     crude_gfx_renderer_initialize( &paprika->graphics.renderer, &renderer_creation );
   }    
@@ -170,10 +172,10 @@ paprika_graphics_initialize_
   /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation rendere_scene_creation = {
-      .task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler,
-      .allocator_container = paprika->graphics.allocator_container,
+      .renderer = &paprika->graphics.renderer,
       .async_loader = &paprika->graphics.async_loader,
-      .renderer = &paprika->graphics.renderer
+      .allocator_container = paprika->graphics.allocator_container,
+      .task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler,
     };
     crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &rendere_scene_creation );
   }
@@ -198,7 +200,7 @@ paprika_graphics_initialize_
 }
 
 void
-paprika_graphics_process_
+paprika_graphics_system_
 (
   _In_ ecs_iter_t                                         *it
 )
@@ -215,7 +217,7 @@ paprika_graphics_process_
   /* Update frame buffer */
   {
     crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.gpu.frame_buffer, 0, 0 };
-    crude_gfx_frame_buffer_data *frame_buffer_data = crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map );
+    crude_gfx_frame_buffer_data *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_frame_buffer_data*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
     if ( frame_buffer_data )
     {
       crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
@@ -237,15 +239,15 @@ paprika_graphics_process_
       crude_gfx_mesh *mesh_draw = &paprika->graphics.scene_renderer.meshes[ mesh_index ];
   
       crude_gfx_map_buffer_parameters mesh_buffer_map = { mesh_draw->material_buffer, 0, 0 };
-      crude_gfx_shader_mesh_constants *mesh_data = crude_gfx_map_buffer( &paprika->graphics.gpu, &mesh_buffer_map );
+      crude_gfx_shader_mesh_constants *mesh_data = CRUDE_REINTERPRET_CAST( crude_gfx_shader_mesh_constants*, crude_gfx_map_buffer( &paprika->graphics.gpu, &mesh_buffer_map ) );
       if ( mesh_data )
       {
         mesh_data->textures.x = mesh_draw->albedo_texture_index;
         mesh_data->textures.y = mesh_draw->roughness_texture_index;
         mesh_data->textures.z = mesh_draw->normal_texture_index;
         mesh_data->textures.w = mesh_draw->occlusion_texture_index;
-        mesh_data->base_color_factor = ( crude_float4a ){ mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } ;
-        mesh_data->metallic_roughness_occlusion_factor = ( crude_float3a ){ mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z };
+        mesh_data->base_color_factor = CRUDE_COMPOUNT( crude_float4a, { mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } );
+        mesh_data->metallic_roughness_occlusion_factor = CRUDE_COMPOUNT( crude_float3a, { mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z } );
         mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
         mesh_data->flags.x = mesh_draw->flags;
         
@@ -262,7 +264,7 @@ paprika_graphics_process_
     }
   }
   
-  crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, paprika->graphics.asynchronous_loader_manager->task_sheduler, true );
+  crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, true );
   
   {
     crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "geometry_pass" );

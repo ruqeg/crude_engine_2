@@ -954,7 +954,7 @@ crude_gfx_create_sampler
   };
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
-  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, sampler->vk_sampler, creation->name );
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, CRUDE_CAST( uint64, sampler->vk_sampler ), creation->name );
   return handle;
 }
 
@@ -2588,7 +2588,7 @@ vk_create_swapchain_
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( gpu->vk_device, &swapchain_create_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain ), "Failed to create swapchain!" );
 
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
-  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images );
+  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
   VkCommandBufferBeginInfo beginInfo = { 
     .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -2920,7 +2920,7 @@ vk_create_texture_
       CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( gpu->vma_allocator, alias_texture->vma_allocation, &image_info, &texture->vk_image ), "Failed to create aliasing image!" );
     }
     
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, texture->vk_image, creation->name );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, CRUDE_CAST( uint64, texture->vk_image ), creation->name );
   }
 
   
@@ -2944,7 +2944,7 @@ vk_create_texture_
     info.subresourceRange.layerCount = 1;
 
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view" );
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, texture->vk_image_view, creation->name );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, CRUDE_CAST( uint64, texture->vk_image_view ), creation->name );
   }
 
   {

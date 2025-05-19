@@ -7,7 +7,7 @@ ECS_DECLARE( crude_entity_tag );
  * ECS World Functions Implementatino
  * 
  ***********************************************/
-void*
+ecs_world_t*
 crude_ecs_init
 (
 )

@@ -6,8 +6,10 @@
 
 #include <scene/free_camera_system.h>
 
+CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system );
+
 static void
-update_free_camera_
+crude_free_camera_update_system
 (
   _In_ ecs_iter_t *it
 )
@@ -64,5 +66,9 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
   ECS_IMPORT( world, crude_scripts_components );
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_platform_components );
-  ECS_SYSTEM( world, update_free_camera_, EcsOnUpdate, crude_transform, crude_free_camera );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, NULL, {
+    { .id = ecs_id( crude_transform ) },
+    { .id = ecs_id( crude_free_camera ) },
+  } );
 }

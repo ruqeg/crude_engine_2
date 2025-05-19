@@ -1,5 +1,3 @@
-#include <core/ecs_utils.h>
-
 #include <scene/scripts_components.h>
 
 ECS_COMPONENT_DECLARE( crude_free_camera );

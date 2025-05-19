@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.25)
 
 project(crude_launcher CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 add_executable(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine_simulation crude_sandbox crude_paprika)

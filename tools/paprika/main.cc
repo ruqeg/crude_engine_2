@@ -19,7 +19,7 @@ cr_main
     return 0;
   }
 
-  crude_paprika *paprika = ctx->userdata;
+  crude_paprika *paprika = CRUDE_REINTERPRET_CAST( crude_paprika*, ctx->userdata );
   crude_paprika_update( paprika );
  
   return 0;

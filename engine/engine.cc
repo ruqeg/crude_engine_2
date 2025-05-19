@@ -3,7 +3,6 @@
 #include <core/array.h>
 #include <core/log.h>
 #include <core/ecs.h>
-#include <core/ecs_utils.h>
 
 #include <engine.h>
 
@@ -54,7 +53,10 @@ crude_engine_initialize
   crude_heap_allocator_initialize( &engine->allocator, CRUDE_RKILO( 16 ), "main_engine_allocator" );
 
   {
-    crude_gfx_asynchronous_loader_manager_creation creation = { .allocator_container = crude_heap_allocator_pack( &engine->allocator ), .task_sheduler = engine->task_sheduler };
+    crude_gfx_asynchronous_loader_manager_creation creation = {
+      .task_sheduler = engine->task_sheduler,
+      .allocator_container = crude_heap_allocator_pack( &engine->allocator )
+    };
     crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
   }
 }

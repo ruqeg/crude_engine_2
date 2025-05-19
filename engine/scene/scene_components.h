@@ -40,14 +40,14 @@ CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 CRUDE_API crude_matrix
 crude_camera_view_to_clip
 (
-  _In_ crude_camera                                       *camera
+  _In_ crude_camera const                                 *camera
 );
 
 CRUDE_API crude_matrix
 crude_transform_node_to_world
 (
   _In_ crude_entity                                        node,
-  _In_ crude_transform                                    *transform
+  _In_ crude_transform const                              *transform
 );
 
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );

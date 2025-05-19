@@ -268,7 +268,7 @@ crude_vec_scale_add
   return result;
 }
 
-crude_vector
+void
 crude_vec_sin_cos
 (
   _Out_ crude_vector                            *sin,

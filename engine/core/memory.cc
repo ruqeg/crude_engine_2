@@ -302,7 +302,7 @@ void
 crude_memory_copy
 (
   _Out_ void                                              *dst,
-  _In_ void                                               *src,
+  _In_ void const                                         *src,
   _In_ sizet                                               size
 )
 {

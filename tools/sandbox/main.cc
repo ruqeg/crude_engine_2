@@ -19,7 +19,7 @@ cr_main
     return 0;
   }
 
-  crude_sandbox *sandbox = ctx->userdata;
+  crude_sandbox *sandbox = CRUDE_REINTERPRET_CAST( crude_sandbox*, ctx->userdata );
   crude_sandbox_update( sandbox );
  
   return 0;

@@ -158,32 +158,32 @@ crude_gfx_scene_renderer_geometry_pass_render
 
     for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
     {
-      secondary_draw_tasks_data[ i ] = ( secondary_draw_task_container ) {
+      secondary_draw_tasks_data[ i ] = CRUDE_COMPOUNT( secondary_draw_task_container, {
         .pass                   = pass,
         .primary_cmd            = primary_cmd,
         .start_mesh_draw_index  = draws_per_secondary * i,
         .end_mesh_draw_index    = draws_per_secondary * i + draws_per_secondary
-      };
+      } );
       
-      secondary_draw_tasks[ i ] = enkiCreateTaskSet( pass->scene->task_scheduler, secondary_draw_task_ );
+      secondary_draw_tasks[ i ] = enkiCreateTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene->task_scheduler ), secondary_draw_task_ );
       enkiSetArgsTaskSet( secondary_draw_tasks[ i ], &secondary_draw_tasks_data[ i ] );
-      enkiAddTaskSet( pass->scene->task_scheduler, secondary_draw_tasks[ i ] );
+      enkiAddTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene->task_scheduler ), secondary_draw_tasks[ i ] );
     }
     
     if ( offset < CRUDE_ARRAY_LENGTH( pass->mesh_instances ) )
     {
-      offset_secondary_draw_tasks_data = ( secondary_draw_task_container ) {
+      offset_secondary_draw_tasks_data = CRUDE_COMPOUNT( secondary_draw_task_container, {
         .pass                   = pass,
         .primary_cmd            = primary_cmd,
         .start_mesh_draw_index  = offset,
         .end_mesh_draw_index    = CRUDE_ARRAY_LENGTH( pass->mesh_instances )
-      };
+      } );
       secondary_draw_task_( NULL, NULL, 0, &offset_secondary_draw_tasks_data );
     }
     
     for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
     {
-      enkiWaitForTaskSet( pass->scene->task_scheduler, secondary_draw_tasks[ i ] );
+      enkiWaitForTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene->task_scheduler ), secondary_draw_tasks[ i ] );
       vkCmdExecuteCommands( primary_cmd->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
     }
     
@@ -211,7 +211,7 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
   crude_gfx_renderer_technique                            *main_technique;
   uint64                                                   main_technique_name_hashed, main_technique_index;
 
-  main_technique_name_hashed = crude_hash_bytes( ( void* )"main", strlen( "main" ), 0 );
+  main_technique_name_hashed = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, "main" ), strlen( "main" ), 0 );
   main_technique_index = CRUDE_HASHMAP_GET_INDEX( pass->scene->renderer->resource_cache.techniques, main_technique_name_hashed );
   if ( main_technique_index < 0)
   {
@@ -223,9 +223,9 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
 
   {
     crude_gfx_renderer_material_creation material_creation = {
-      .name         = "material_no_cull",
       .technique    = main_technique,
-      .render_index = 0
+      .name         = "material_no_cull",
+      .render_index = 0,
     };
     main_material = crude_gfx_renderer_create_material( pass->scene->renderer, &material_creation );
   }
@@ -253,6 +253,17 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
   }
 }
 
+
+void
+crude_gfx_scene_renderer_geometry_pass_render_raw
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  crude_gfx_scene_renderer_geometry_pass_render( CRUDE_REINTERPRET_CAST( crude_gfx_scene_renderer_geometry_pass*, ctx ), primary_cmd );
+}
+
 crude_gfx_render_graph_pass_container
 crude_gfx_scene_renderer_geometry_pass_pack
 (
@@ -261,9 +272,9 @@ crude_gfx_scene_renderer_geometry_pass_pack
 {
   crude_gfx_render_graph_pass_container container = {
     .pre_render = crude_gfx_render_graph_pass_container_pre_render_empry,
-    .render     = crude_gfx_scene_renderer_geometry_pass_render,
+    .render     = crude_gfx_scene_renderer_geometry_pass_render_raw,
     .on_resize  = crude_gfx_render_graph_pass_container_on_resize_empty,
-    .ctx        = pass 
+    .ctx        = pass,
   };
   return container;
 }
@@ -377,7 +388,7 @@ secondary_draw_task_
 {
   CRUDE_PROFILER_SET_THREAD_NAME( "SecondaryDrawTaskThread" );
 
-  secondary_draw_task_container *secondary_draw_task = ctx;
+  secondary_draw_task_container *secondary_draw_task = CRUDE_REINTERPRET_CAST( secondary_draw_task_container*, ctx );
   
   crude_gfx_cmd_buffer *secondary_cmd = crude_gfx_get_secondary_cmd( secondary_draw_task->pass->scene->renderer->gpu, thread_num );
   crude_gfx_cmd_begin_secondary( secondary_cmd, secondary_draw_task->primary_cmd->current_render_pass, secondary_draw_task->primary_cmd->current_framebuffer );
@@ -493,13 +504,13 @@ upload_gltf_to_scene_renderer_
     cgltf_result                                           result;
     cgltf_options                                          gltf_options;
 
-    gltf_options = ( cgltf_options ){ 
+    gltf_options = CRUDE_COMPOUNT( cgltf_options, { 
       .memory = {
         .alloc_func = temporary_allocator_container.allocate,
         .free_func  = temporary_allocator_container.deallocate,
         .user_data = temporary_allocator_container.ctx
       },
-    };
+    } );
     
     gltf = NULL;
     result = cgltf_parse_file( &gltf_options, gltf_path, &gltf );
@@ -688,17 +699,17 @@ upload_gltf_to_scene_renderer_
     crude_float3 node_scale = { 1.0f, 1.0f, 1.0f };
     if ( node->has_scale )
     {
-      node_scale = ( crude_float3 ){ node->scale[0], node->scale[1], node->scale[2] };
+      node_scale = CRUDE_COMPOUNT( crude_float3, { node->scale[0], node->scale[1], node->scale[2] } );
     }
     crude_float3 node_translation = { 1.0f, 1.0f, 1.0f };
     if ( node->has_translation )
     {
-      node_translation = ( crude_float3 ){ node->translation[0], node->translation[1], node->translation[2] };
+      node_translation = CRUDE_COMPOUNT( crude_float3, { node->translation[0], node->translation[1], node->translation[2] } );
     }
     crude_float4 node_rotation = { 1.0f, 1.0f, 1.0f };
     if ( node->has_rotation )
     {
-      node_rotation = ( crude_float4 ){ node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[4] };
+      node_rotation = CRUDE_COMPOUNT( crude_float4, { node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[4] } );
     }
   
     for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
@@ -712,7 +723,7 @@ upload_gltf_to_scene_renderer_
       
       mesh_primitive = &node->mesh->primitives[ primitive_index ];
 
-      mesh_draw = ( crude_gfx_mesh ){ 0 };
+      mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh );
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
         crude_gfx_renderer_buffer *buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
@@ -814,12 +825,12 @@ create_gltf_mesh_material_
   
   mesh_draw->flags = 0;
 
-  mesh_draw->base_color_factor = ( crude_float4 ) {
+  mesh_draw->base_color_factor = CRUDE_COMPOUNT( crude_float4, {
     material->pbr_metallic_roughness.base_color_factor[ 0 ],
     material->pbr_metallic_roughness.base_color_factor[ 1 ],
     material->pbr_metallic_roughness.base_color_factor[ 2 ],
     material->pbr_metallic_roughness.base_color_factor[ 3 ],
-  };
+  } );
   
   mesh_draw->metallic_roughness_occlusion_factor.x = material->pbr_metallic_roughness.roughness_factor;
   mesh_draw->metallic_roughness_occlusion_factor.y = material->pbr_metallic_roughness.metallic_factor;
@@ -917,10 +928,10 @@ scene_renderer_prepare_node_draws_
   {
     for ( size_t i = 0; i < it.count; ++i )
     {
-      crude_entity child = ( crude_entity ){ .handle = it.entities[ i ], .world = node.world };
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
       {
-        crude_gltf *child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
+        crude_gltf const* child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
         upload_gltf_to_scene_renderer_( scene_renderer, child_gltf->path, child, temporary_allocator );
       }
 

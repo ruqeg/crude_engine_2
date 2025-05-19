@@ -5,8 +5,8 @@
 CR_EXPORT int
 cr_main
 (
-  struct cr_plugin *ctx,
-  enum cr_op        operation
+  struct cr_plugin                                        *ctx,
+  enum cr_op                                               operation
 )
 {
   assert( ctx );

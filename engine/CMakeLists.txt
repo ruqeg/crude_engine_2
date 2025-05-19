@@ -12,7 +12,7 @@ set(CRUDE_SOURCES ${SRC} ${HEADERS})
 add_library(${PROJECT_NAME} SHARED ${CRUDE_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${PROJECT_NAME} PUBLIC stb flecs tlsf SDL3::SDL3-shared ${Vulkan_LIBRARY} vma cgltf crude_shaders cimgui spirv_reflect miniaudio enkiTS TracyClient cjson_cmake)
+target_link_libraries(${PROJECT_NAME} PUBLIC stb flecs tlsf SDL3::SDL3-shared ${Vulkan_LIBRARY} vma cgltf crude_shaders spirv_reflect miniaudio enkiTS TracyClient cjson_cmake)
 
 source_group(core REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/core/*")
 source_group(platform REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/platform/*")
@@ -21,7 +21,7 @@ source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(physics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/physics/*")
 source_group(sound REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/sound/*")
 source_group(ui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/ui/*")
-source_group(engine FILES engine.c engine.h)
+source_group(engine FILES engine.cc engine.h)
 
 if(MSVC)
  target_compile_options(${PROJECT_NAME} PRIVATE "/MP")

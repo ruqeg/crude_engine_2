@@ -426,7 +426,7 @@ CRUDE_INLINE crude_vector              crude_vec_tan( _In_ crude_vector const *v
 CRUDE_INLINE crude_vector              crude_vec_arc_cos( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_arc_sin( _In_ crude_vector const *v );
 CRUDE_INLINE crude_vector              crude_vec_arc_tan( _In_ crude_vector const *v );
-CRUDE_INLINE crude_vector
+CRUDE_INLINE void
 crude_vec_sin_cos
 (
   _Out_ crude_vector                            *sin,

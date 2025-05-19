@@ -10,11 +10,11 @@
  ***********************************************/
 #if defined(_MSC_VER)
 #if defined(__cplusplus)
-#define CRUDE_EXPORT extern "C" __declspec(dllexport)
-#define CRUDE_IMPORT extern "C" __declspec(dllimport)
+#define CRUDE_EXPORT extern "C" __declspec( dllexport )
+#define CRUDE_IMPORT extern "C" __declspec( dllimport )
 #else
-#define CRUDE_EXPORT __declspec(dllexport)
-#define CRUDE_IMPORT __declspec(dllimport)
+#define CRUDE_EXPORT __declspec( dllexport )
+#define CRUDE_IMPORT __declspec( dllimport )
 #endif
 #endif
 

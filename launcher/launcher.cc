@@ -1,9 +1,11 @@
+#include <flecs.h>
+
 #define CR_HOST
 #include <cr/cr.h>
 #include <filesystem>
 
-#include <core/profiler.h>
 #include <engine.h>
+#include <core/profiler.h>
 #include <sandbox.h>
 #include <paprika.h>
 
@@ -26,11 +28,11 @@ int main()
   crude_sandbox                                            sandbox;
   crude_paprika                                            paprika;
   cr_plugin                                                crude_sandbox_cr, crude_paprika_cr, crude_engine_simulation_cr;
-  
+
   crude_engine_initialize( &engine, 1u );
   crude_sandbox_initialize( &sandbox, &engine );
   crude_paprika_initialize( &paprika, &engine );
-  
+
   crude_sandbox_cr.userdata           = &sandbox;
   crude_paprika_cr.userdata           = &paprika;
   crude_engine_simulation_cr.userdata = &engine;

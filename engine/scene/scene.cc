@@ -82,8 +82,8 @@ scene_load_hierarchy_
     
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
       .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
-      .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
       .rotation    = json_object_to_float4_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "rotation" ) ),
+      .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
     } );
   
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
@@ -105,10 +105,10 @@ scene_load_hierarchy_
       else if ( crude_string_cmp( component_type, "crude_camera" ) == 0 )
       {
         CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, {
-          .fov_radians = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ),
-          .near_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "near_z" ) ),
-          .far_z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "far_z" ) ),
-          .aspect_ratio = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "aspect_ratio" ) ),
+          .fov_radians = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ) ),
+          .near_z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "near_z" ) ) ),
+          .far_z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "far_z" ) ) ),
+          .aspect_ratio = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "aspect_ratio" ) ) ),
         } );
       }
       else if ( crude_string_cmp( component_type, "crude_free_camera" ) == 0 )
