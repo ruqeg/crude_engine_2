@@ -51,7 +51,7 @@ json_object_to_float4_
     .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
     .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
     .z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) ),
-    .w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 4 ) ) ),
+    .w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 3 ) ) ),
   };
   return result;
 }

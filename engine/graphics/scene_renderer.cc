@@ -145,7 +145,7 @@ crude_gfx_scene_renderer_geometry_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  bool use_secondary = true;
+  bool use_secondary = false;
   if ( use_secondary )
   {
     enkiTaskSet                                           *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];

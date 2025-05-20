@@ -520,6 +520,7 @@ typedef struct crude_gfx_texture
   crude_gfx_texture_type                                   type;
   crude_gfx_sampler                                       *sampler;
   char const                                              *name;
+  crude_gfx_resource_state                                 state;
 } crude_gfx_texture;
 
 typedef struct crude_gfx_descriptor_binding
@@ -746,19 +747,25 @@ crude_gfx_determine_pipeline_stage_flags
 );
 
 CRUDE_API VkFormat
-crude_string_to_vk_format
+crude_gfx_string_to_vk_format
 (
   _In_ char const                                         *format
 );
 
 CRUDE_API char const*
-crude_vk_shader_stage_to_defines
+crude_gfx_vk_shader_stage_to_defines
 (
   _In_ VkShaderStageFlagBits                              value
 );
 
 CRUDE_API char const*
-crude_vk_shader_stage_to_compiler_extension
+crude_gfx_vk_shader_stage_to_compiler_extension
 (
   _In_ VkShaderStageFlagBits                               value
+);
+
+CRUDE_API char const*
+crude_gfx_resource_state_to_name
+(
+  _In_ crude_gfx_resource_state                            value
 );

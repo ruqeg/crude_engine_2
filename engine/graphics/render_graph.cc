@@ -171,7 +171,7 @@ crude_gfx_render_graph_parse_from_file
           CRUDE_ASSERT( output_format && output_load_op && output_resolution );
           CRUDE_ASSERT( cJSON_GetArraySize( output_resolution ) == 2 );
 
-          output_creation.resource_info.texture.format = crude_string_to_vk_format( cJSON_GetStringValue( output_format ) );
+          output_creation.resource_info.texture.format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( output_format ) );
           output_creation.resource_info.texture.load_op = string_to_render_pass_operation_( cJSON_GetStringValue( output_load_op ) );
           output_creation.resource_info.texture.width = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 0 ) );
           output_creation.resource_info.texture.height = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 1 ) );
@@ -643,7 +643,7 @@ crude_gfx_render_graph_render
       if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
       {
         crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+        crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
       }
       else if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
       {
@@ -665,11 +665,11 @@ crude_gfx_render_graph_render
         
         if ( texture->vk_format == VK_FORMAT_D32_SFLOAT )
         {
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
         }
         else
         {
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
         }
       }
     }
@@ -686,20 +686,20 @@ crude_gfx_render_graph_render
 
     {
       crude_gfx_viewport viewport = { 
-        viewport.rect = { 
+        .rect = { 
           .x = 0, 
           .y = 0,
           .width = CRUDE_STATIC_CAST( uint16, width ),
           .height = CRUDE_STATIC_CAST( uint16, height )
         },
-        viewport.min_depth = 0.0f,
-        viewport.max_depth = 1.0f,
+        .min_depth = 0.0f,
+        .max_depth = 1.0f,
       };
       crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
     }
     
     crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
-    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, true );
+    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
     crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
   }

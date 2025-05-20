@@ -6,6 +6,7 @@
 {\
   if ( !( condition ) )\
   {\
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GENERAL, "Crude Error" );\
     CRUDE_DEBUG_BREAK;\
   }\
 }

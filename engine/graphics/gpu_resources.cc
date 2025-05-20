@@ -335,7 +335,7 @@ crude_gfx_determine_pipeline_stage_flags
 }
 
 VkFormat
-crude_string_to_vk_format
+crude_gfx_string_to_vk_format
 (
   _In_ char const                                         *format
 )
@@ -350,7 +350,7 @@ crude_string_to_vk_format
 }
 
 char const*
-crude_vk_shader_stage_to_defines
+crude_gfx_vk_shader_stage_to_defines
 (
   _In_ VkShaderStageFlagBits                              value
 )
@@ -365,7 +365,7 @@ crude_vk_shader_stage_to_defines
 }
 
 char const*
-crude_vk_shader_stage_to_compiler_extension
+crude_gfx_vk_shader_stage_to_compiler_extension
 (
   _In_ VkShaderStageFlagBits                               value
 )
@@ -377,4 +377,35 @@ crude_vk_shader_stage_to_compiler_extension
     case VK_SHADER_STAGE_COMPUTE_BIT:       return "comp";
   }
    return "";
+}
+
+char const*
+crude_gfx_resource_state_to_name
+(
+  _In_ crude_gfx_resource_state                            value
+)
+{
+  switch ( value )
+  {
+    case CRUDE_GFX_RESOURCE_STATE_UNDEFINED:                          return "Undefined";
+    case CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER:         return "Vertex And Constant";
+    case CRUDE_GFX_RESOURCE_STATE_INDEX_BUFFER:                       return "Index Buffer";
+    case CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET:                      return "Render Target";
+    case CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS:                   return "UAV";
+    case CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE:                        return "Depth Write";
+    case CRUDE_GFX_RESOURCE_STATE_DEPTH_READ:                         return "Depth Read";
+    case CRUDE_GFX_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE:          return "Non Pixel Shader Resource";
+    case CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE:              return "Pixel Shader Resource";
+    case CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE:                    return "Shader Resource";
+    case CRUDE_GFX_RESOURCE_STATE_STREAM_OUT:                         return "Stream Out";
+    case CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT:                  return "Indirect Argument";
+    case CRUDE_GFX_RESOURCE_STATE_COPY_DEST:                          return "Copy Dest";
+    case CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE:                        return "Copy Source";
+    case CRUDE_GFX_RESOURCE_STATE_GENERIC_READ:                       return "Generic Read";
+    case CRUDE_GFX_RESOURCE_STATE_PRESENT:                            return "Present";
+    case CRUDE_GFX_RESOURCE_STATE_COMMON:                             return "Common";
+    case CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE:  return "Raytracing";
+    case CRUDE_GFX_RESOURCE_STATE_SHADING_RATE_SOURCE:                return "Shading Rate";
+  }
+  return "UnknownState";
 }

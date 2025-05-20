@@ -264,7 +264,7 @@ paprika_graphics_system_
     }
   }
   
-  crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, true );
+  crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
   {
     crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "geometry_pass" );

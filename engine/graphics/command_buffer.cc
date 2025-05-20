@@ -178,10 +178,11 @@ crude_gfx_cmd_end_render_pass
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  if ( cmd->is_recording && cmd->current_render_pass != NULL )
+  if ( cmd->is_recording && cmd->current_render_pass != NULL && cmd->current_framebuffer != NULL )
   {
     cmd->gpu->vkCmdEndRenderingKHR( cmd->vk_cmd_buffer );
     cmd->current_render_pass = NULL;
+    cmd->current_framebuffer = NULL;
   }
 }
 
@@ -596,25 +597,25 @@ void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             image,
-  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_texture                                  *texture,
   _In_ crude_gfx_resource_state                            new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth
 )
 {
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, texture->vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
 
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
+    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( texture->state ),
     .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( texture->state ),
     .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-    .image = image,
+    .image = texture->vk_image,
     .subresourceRange = {
       .aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ),
       .baseMipLevel = base_mip_level,
@@ -628,14 +629,15 @@ crude_gfx_cmd_add_image_barrier
   VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
   
   vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  texture->state = new_state;
 }
 
 VkImageLayout
 crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             image,
-  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_texture                                  *texture,
   _In_ crude_gfx_resource_state                            new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
@@ -646,17 +648,18 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ crude_gfx_queue_type                                destination_queue_type
 )
 {
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, texture->vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
 
   VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
+    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( texture->state ),
     .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( texture->state ),
     .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
     .srcQueueFamilyIndex = source_queue_family,
     .dstQueueFamilyIndex = destination_family,
-    .image = image,
+    .image = texture->vk_image,
     .subresourceRange = {
       .aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ),
       .baseMipLevel = base_mip_level,
@@ -670,7 +673,48 @@ crude_gfx_cmd_add_image_barrier_ext
   VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, destination_queue_type );
   
   vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  texture->state = new_state;
+
   return barrier.newLayout;
+}
+
+void
+crude_gfx_cmd_add_image_barrier_ext2
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ VkImage                                             vk_image,
+  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_resource_state                            new_state,
+  _In_ uint32                                              base_mip_level,
+  _In_ uint32                                              mip_count,
+  _In_ bool                                                is_depth
+)
+{
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+
+  VkImageMemoryBarrier barrier = {
+    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
+    .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+    .image = vk_image,
+    .subresourceRange = {
+      .aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ),
+      .baseMipLevel = base_mip_level,
+      .levelCount = mip_count,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+    },
+  };
+  
+  VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  
+  vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
 }
 
 void
@@ -704,9 +748,9 @@ crude_gfx_cmd_upload_texture_data
     .imageExtent = { texture->width, texture->height, texture->depth },
   };
 
-  crude_gfx_cmd_add_image_barrier( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
   vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer->vk_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
-  crude_gfx_cmd_add_image_barrier_ext( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
 
   texture->vk_image_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 }
