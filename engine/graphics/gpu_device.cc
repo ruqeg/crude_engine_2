@@ -22,20 +22,18 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 };
 
-static char const *const vk_instance_required_extensions[] =
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+static char const *const vk_instance_required_debug_extensions[] =
 {
-  VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+  VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+  VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 };
 
-static char const *const vk_required_layers[] =
+static char const *const vk_required_debug_layers[] =
 {
   "VK_LAYER_KHRONOS_validation"
 };
-
-static char const *instance_enabled_layers[] =
-{
-  "VK_LAYER_KHRONOS_validation"
-};
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 /************************************************
  *
@@ -551,7 +549,7 @@ crude_gfx_present
       .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
       .waitSemaphoreCount = 1,
       .pWaitSemaphores    = wait_semaphores,
-      .swapchainCount     = ARRAY_SIZE( swap_chains ),
+      .swapchainCount     = CRUDE_COUNTOF( swap_chains ),
       .pSwapchains        = swap_chains,
       .pImageIndices      = &gpu->vk_swapchain_image_index,
     };
@@ -1319,6 +1317,7 @@ crude_gfx_create_render_pass
     render_pass->output.color_final_layouts[ i ] = creation->color_final_layouts[ i ];
     render_pass->output.color_formats[ i ] = creation->color_formats[ i ];
     render_pass->output.color_operations[ i ] = creation->color_operations[ i ];
+    ++render_pass->output.num_color_formats;
   }
   if ( creation->depth_stencil_format != VK_FORMAT_UNDEFINED )
   {
@@ -1414,7 +1413,7 @@ crude_gfx_create_pipeline
   
   VkVertexInputAttributeDescription vk_vertex_attributes[ 8 ];
   crude_gfx_vertex_attribute *vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
-  CRUDE_ASSERT( ARRAY_SIZE( vk_vertex_attributes ) >= CRUDE_ARRAY_LENGTH( vertex_attributes ) );
+  CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_attributes ) >= CRUDE_ARRAY_LENGTH( vertex_attributes ) );
 
   if ( CRUDE_ARRAY_LENGTH( vertex_attributes ) )
   {
@@ -1438,7 +1437,7 @@ crude_gfx_create_pipeline
 
   VkVertexInputBindingDescription vk_vertex_bindings[ 8 ];
   crude_gfx_vertex_stream *vertex_streams = shader_state_data->reflect.input.vertex_streams;
-  CRUDE_ASSERT( ARRAY_SIZE( vk_vertex_bindings ) >= CRUDE_ARRAY_LENGTH( vertex_streams ) );
+  CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_bindings ) >= CRUDE_ARRAY_LENGTH( vertex_streams ) );
   if ( CRUDE_ARRAY_LENGTH( vertex_streams ) )
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_streams ); ++i )
@@ -1571,7 +1570,7 @@ crude_gfx_create_pipeline
   VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
   VkPipelineDynamicStateCreateInfo dynamic_state = { 
     .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    .dynamicStateCount = ARRAY_SIZE( dynamic_states ),
+    .dynamicStateCount = CRUDE_COUNTOF( dynamic_states ),
     .pDynamicStates = dynamic_states,
   };
   
@@ -2215,10 +2214,10 @@ vk_create_instance_
   
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   {
-    uint32 debug_extensions_count = ARRAY_SIZE( vk_instance_required_extensions );
+    uint32 debug_extensions_count = CRUDE_COUNTOF( vk_instance_required_debug_extensions );
     for ( uint32 i = 0; i < debug_extensions_count; ++i )
     {
-      CRUDE_ARRAY_PUSH( instance_enabled_extensions, vk_instance_required_extensions[ i ] );
+      CRUDE_ARRAY_PUSH( instance_enabled_extensions, vk_instance_required_debug_extensions[ i ] );
     }
   }
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -2240,8 +2239,8 @@ vk_create_instance_
   instance_create_info.ppEnabledExtensionNames  = instance_enabled_extensions;
   instance_create_info.enabledExtensionCount    = CRUDE_ARRAY_LENGTH( instance_enabled_extensions );
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  instance_create_info.ppEnabledLayerNames     = instance_enabled_layers;
-  instance_create_info.enabledLayerCount       = ARRAY_SIZE( instance_enabled_layers );
+  instance_create_info.ppEnabledLayerNames     = vk_required_debug_layers;
+  instance_create_info.enabledLayerCount       = CRUDE_COUNTOF( vk_required_debug_layers );
 #ifdef VK_EXT_debug_utils
   debug_create_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsMessengerCreateInfoEXT );
   memset( &debug_create_info, 0u, sizeof( debug_create_info ) );
@@ -2472,10 +2471,10 @@ vk_create_device_
   device_create_info.queueCreateInfoCount     = CRUDE_STATIC_CAST( uint32, transfer_queue_index < queue_family_count ? 2 : 1 );
   device_create_info.pQueueCreateInfos        = queue_create_infos;
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  device_create_info.enabledLayerCount        = ARRAY_SIZE( vk_required_layers );
-  device_create_info.ppEnabledLayerNames      = vk_required_layers;
+  device_create_info.enabledLayerCount        = CRUDE_COUNTOF( vk_required_debug_layers );
+  device_create_info.ppEnabledLayerNames      = vk_required_debug_layers;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
-  device_create_info.enabledExtensionCount    = ARRAY_SIZE( vk_device_required_extensions );
+  device_create_info.enabledExtensionCount    = CRUDE_COUNTOF( vk_device_required_extensions );
   device_create_info.ppEnabledExtensionNames  = vk_device_required_extensions;
   device_create_info.pEnabledFeatures         = NULL;
 
@@ -2582,8 +2581,8 @@ vk_create_swapchain_
     .imageExtent            = swapchain_extent,
     .imageArrayLayers       = 1,
     .imageUsage             = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-    .imageSharingMode       = ARRAY_SIZE( queue_family_indices ) > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-    .queueFamilyIndexCount  = ARRAY_SIZE( queue_family_indices ),
+    .imageSharingMode       = CRUDE_COUNTOF( queue_family_indices ) > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+    .queueFamilyIndexCount  = CRUDE_COUNTOF( queue_family_indices ),
     .pQueueFamilyIndices    = queue_family_indices,
     .preTransform           = surface_capabilities.currentTransform,
     .compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -2656,13 +2655,13 @@ vk_create_descriptor_pool_
   pool_info = CRUDE_COMPOUNT( VkDescriptorPoolCreateInfo, {
     .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,
-    .maxSets       = CRUDE_GFX_MAX_BINDLESS_RESOURCES * ARRAY_SIZE( pool_sizes_bindless ),
-    .poolSizeCount = ARRAY_SIZE( pool_sizes_bindless ),
+    .maxSets       = CRUDE_GFX_MAX_BINDLESS_RESOURCES * CRUDE_COUNTOF( pool_sizes_bindless ),
+    .poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless ),
     .pPoolSizes    = pool_sizes_bindless,
   } );
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
 
-  pool_count = ARRAY_SIZE( pool_sizes_bindless );
+  pool_count = CRUDE_COUNTOF( pool_sizes_bindless );
   vk_binding[ 0 ] = CRUDE_COMPOUNT( VkDescriptorSetLayoutBinding, {
     .binding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING,
     .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -2784,7 +2783,7 @@ vk_check_support_required_extensions_
   vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
 
   support_required_extensions = true;
-  for ( uint32 i = 0; i < ARRAY_SIZE( vk_device_required_extensions ); ++i )
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( vk_device_required_extensions ); ++i )
   {
     bool extension_found = false;
     for ( uint32 k = 0; k < available_extensions_count; ++k )

@@ -93,4 +93,4 @@ typedef size_t        sizet;
  * Utils Macros
  * 
  ***********************************************/
-#define ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[ 0 ] ) )
+#define CRUDE_COUNTOF( a ) ( sizeof( a ) / sizeof( a[ 0 ] ) )
