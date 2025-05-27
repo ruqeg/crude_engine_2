@@ -80,7 +80,7 @@ crude_log_common
 {
   va_list args;
   va_start( args, format );
-  crude_snprintf( g_format_buffer, CRUDE_COUNTOF( g_message_buffer ), "[c: %s][v: %s][f: %s][l: %i] =>\n\t%s\n", get_channel_string_( channel ), get_verbosity_string_( verbosity ), filename, line, format );
+  crude_snprintf( g_format_buffer, CRUDE_COUNTOF( g_message_buffer ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
   crude_vsnprintf( g_message_buffer, CRUDE_COUNTOF( g_message_buffer ), g_format_buffer, args );
 #ifdef _WIN32
   OutputDebugStringA( ( LPCSTR )g_message_buffer );

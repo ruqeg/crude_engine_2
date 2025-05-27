@@ -24,7 +24,7 @@ source_group(ui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/ui/*")
 source_group(engine FILES engine.cc engine.h)
 
 add_definitions(
-  # -DCRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  -DCRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
 )
 
 if(MSVC)

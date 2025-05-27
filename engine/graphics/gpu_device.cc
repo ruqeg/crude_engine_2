@@ -25,8 +25,7 @@ static char const *const vk_device_required_extensions[] =
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
 static char const *const vk_instance_required_debug_extensions[] =
 {
-  VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-  VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+  VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 };
 
 static char const *const vk_required_debug_layers[] =
@@ -482,13 +481,10 @@ crude_gfx_present
   }
   
   {
-    VkSemaphore wait_semaphores[] = { gpu->vk_image_avalivable_semaphores[ gpu->current_frame ]};
-    VkSemaphore signal_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ]};
+    VkSemaphore signal_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ] };
     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSubmitInfo submit_info = { 
       .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      .waitSemaphoreCount   = 1,
-      .pWaitSemaphores      = wait_semaphores,
       .pWaitDstStageMask    = wait_stages,
       .commandBufferCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
       .pCommandBuffers      = enqueued_command_buffers,
@@ -497,7 +493,7 @@ crude_gfx_present
     };
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkQueueSubmit( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
   }
-  
+ 
   {
     VkImageCopy region = {
       .srcSubresource = { 
@@ -517,19 +513,20 @@ crude_gfx_present
       .extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 },
     };
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, true );
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 1, true );
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
     crude_gfx_cmd_end( cmd );
   
-    VkSemaphore wait_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ]};
-    VkSemaphore signal_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ]};
-    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore wait_semaphores[] = { gpu->vk_rendering_finished_semaphore[ gpu->current_frame ], gpu->vk_image_avalivable_semaphores[ gpu->current_frame ] };
+    VkSemaphore signal_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ] };
+    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+    CRUDE_ASSERT( CRUDE_COUNTOF( wait_semaphores ) == CRUDE_COUNTOF( wait_stages ) );
     VkSubmitInfo submit_info = { 
       .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      .waitSemaphoreCount   = 1u,
+      .waitSemaphoreCount   = 2u,
       .pWaitSemaphores      = wait_semaphores,
       .pWaitDstStageMask    = wait_stages,
       .commandBufferCount   = 1u,
@@ -543,7 +540,7 @@ crude_gfx_present
   }
   
   {
-    VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ]};
+    VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ] };
     VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
     VkPresentInfoKHR present_info = {
       .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -2196,6 +2193,7 @@ vk_create_instance_
 {
   VkDebugUtilsMessengerCreateInfoEXT                       debug_create_info;
   VkInstanceCreateInfo                                     instance_create_info;
+  VkValidationFeaturesEXT                                  validation_features;
   VkApplicationInfo                                        application;
   char const                                       *const *surface_extensions_array;
   char const                                             **instance_enabled_extensions;
@@ -2258,7 +2256,15 @@ vk_create_instance_
     VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  instance_create_info.pNext = &debug_create_info;
+
+  VkValidationFeatureEnableEXT const features_requested[] = { VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT, VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT, VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT };
+  validation_features = CRUDE_COMPOUNT_EMPTY( VkValidationFeaturesEXT );
+  validation_features.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+  validation_features.pNext = &debug_create_info; 
+  validation_features.enabledValidationFeatureCount = CRUDE_COUNTOF( features_requested );
+  validation_features.pEnabledValidationFeatures = features_requested;
+
+  instance_create_info.pNext = &validation_features;
 #endif /* VK_EXT_debug_utils */
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
   

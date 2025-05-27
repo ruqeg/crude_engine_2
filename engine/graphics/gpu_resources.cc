@@ -216,7 +216,7 @@ crude_gfx_resource_state_to_vk_access_flags
   }
   if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )
   {
-    ret |= VK_ACCESS_MEMORY_READ_BIT;
+    ret |= /*VK_ACCESS_MEMORY_READ_BIT*/ 0;
   }
   return ret;
 }
