@@ -57,7 +57,7 @@ CRUDE_API void
 crude_log_initialize
 ()
 {
-  g_log_file = fopen( "log.txt", "w" );
+  g_log_file = fopen( "crude_log.txt", "w" );
 }
 
 CRUDE_API void

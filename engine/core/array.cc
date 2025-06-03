@@ -34,13 +34,19 @@ crude_array_growf
     min_cap = 4;
   }
 
-  b = CRUDE_REALLOCATE( allocator, ( a ) ? CRUDE_ARRAY_HEADER( a ) : NULL, elemsize * min_cap + sizeof( crude_array_header ) );
+  b = CRUDE_ALLOCATE( allocator, elemsize * min_cap + sizeof( crude_array_header ) );
   b = ( char* ) b + sizeof( crude_array_header );
 
-  if ( a == NULL )
+  if ( a )
+  {
+    crude_memory_copy( ( char* )b - sizeof( crude_array_header ), ( char* )a - sizeof( crude_array_header ), sizeof( crude_array_header ) + CRUDE_ARRAY_LENGTH( a ) * elemsize );
+    CRUDE_DEALLOCATE( CRUDE_ARRAY_HEADER( a )->allocator, ( char* )a - sizeof( crude_array_header ) );
+  }
+  else
   {
     CRUDE_ARRAY_HEADER( b )->length = 0;
   }
+
   CRUDE_ARRAY_HEADER( b )->capacity = min_cap;
   CRUDE_ARRAY_HEADER( b )->allocator = allocator;
 

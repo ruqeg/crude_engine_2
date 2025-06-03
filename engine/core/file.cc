@@ -116,7 +116,7 @@ crude_read_file
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 ) );
+  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_ALLOCATE( allocator_container, filesize + 1 ) );
   *buffer_size = fread( *buffer, 1, filesize, file );
   (*buffer)[ *buffer_size ] = 0;
   fclose( file );
@@ -141,7 +141,7 @@ crude_read_file_binary
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_REALLOCATE( allocator_container, *buffer, filesize + 1 ) );
+  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_ALLOCATE( allocator_container, filesize + 1 ) );
   *buffer_size = fread( *buffer, 1, filesize, file );
   (*buffer)[ *buffer_size ] = 0;
   fclose( file );

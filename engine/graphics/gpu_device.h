@@ -7,6 +7,9 @@
 #include <core/assert.h>
 #include <graphics/command_buffer.h>
 
+typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
+typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
+
 /************************************************
  *
  * GPU Device Structs
@@ -24,7 +27,15 @@ typedef struct crude_gfx_device_creation
   uint16                                                   num_threads;
 } crude_gfx_device_creation;
 
-typedef struct crude_gfx_device                    
+typedef struct crude_gfx_gpu_thread_frame_pools
+{
+  VkCommandPool                   vk_command_pool;
+  VkQueryPool                     vk_timestamp_query_pool;
+  VkQueryPool                     vk_pipeline_stats_query_pool;
+  crude_gfx_gpu_time_query_tree  *time_queries;
+} crude_gfx_gpu_thread_frame_pools;
+
+typedef struct crude_gfx_device
 {
   SDL_Window                                              *sdl_window;
   uint32                                                   previous_frame;
@@ -127,12 +138,20 @@ typedef struct crude_gfx_device
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
   crude_gfx_buffer_handle                                  frame_buffer;
 
+  uint32                                                   num_threads;
+  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;
+
+  bool                                                     mesh_shaders_extension_present;
+
+  crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
   PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
   PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
   PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
+  PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
+  PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
 } crude_gfx_device;                                
 
 /************************************************

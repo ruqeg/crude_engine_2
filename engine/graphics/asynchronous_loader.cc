@@ -70,19 +70,11 @@ crude_gfx_asynchronous_loader_initialize
   }
 
   {
-    VkSemaphoreCreateInfo                                  semaphore_info;
-    VkFenceCreateInfo                                      fence_info;
-    
-    semaphore_info = CRUDE_COMPOUNT( VkSemaphoreCreateInfo, {
-      .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
-    });
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSemaphore( renderer->gpu->vk_device, &semaphore_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_complete_semaphore ), "Failed to create semaphore" );
-    
-    fence_info = CRUDE_COMPOUNT( VkFenceCreateInfo, {
+    VkFenceCreateInfo fence_info = {
       .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-      .flags = VK_FENCE_CREATE_SIGNALED_BIT
-    });
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_fence ), "Failed to create fence" );
+      .flags = 0
+    };
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_completed_fence ), "Failed to create fence" );
   }
 }
 
@@ -92,8 +84,7 @@ crude_gfx_asynchronous_loader_deinitialize
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
-  vkDestroyFence( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence, asynloader->renderer->gpu->vk_allocation_callbacks );
-  vkDestroySemaphore( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_complete_semaphore, asynloader->renderer->gpu->vk_allocation_callbacks );
+  vkDestroyFence( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence, asynloader->renderer->gpu->vk_allocation_callbacks );
   
   crude_gfx_destroy_buffer( asynloader->renderer->gpu, asynloader->staging_buffer->handle );
   
@@ -167,13 +158,6 @@ crude_gfx_asynchronous_loader_update
   {
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
-
-    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_fence ) != VK_SUCCESS )
-    {
-      return;
-    }
-    
-    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_fence );
     
     request = CRUDE_ARRAY_POP( asynloader->upload_requests );
 
@@ -205,19 +189,28 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_cmd_end( cmd );
 
     {
-      VkPipelineStageFlags wait_flag[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
-      VkSemaphore wait_semaphore[] = { asynloader->vk_transfer_complete_semaphore };
-      VkSubmitInfo submitInfo = { 
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pWaitSemaphores = wait_semaphore,
-        .pWaitDstStageMask = wait_flag,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmd->vk_cmd_buffer,
+      VkCommandBufferSubmitInfo command_buffers[] = {
+        { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
       };
 
+      VkSubmitInfo2 submit_info = {
+        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
+        .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
+        .pCommandBufferInfos      = command_buffers,
+      };
+    
+
       VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
-      vkQueueSubmit( used_queue, 1, &submitInfo, asynloader->vk_transfer_fence );
+      CRUDE_GFX_HANDLE_VULKAN_RESULT( asynloader->renderer->gpu->vkQueueSubmit2KHR( used_queue, 1, &submit_info, asynloader->vk_transfer_completed_fence ), "Failed to sumbit queue" );
     }
+    
+
+    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
+    {
+      vkWaitForFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
+    }
+    
+    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
     {

@@ -5,6 +5,7 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/renderer_resources_loader.h>
+#include <gui/gui.h>
 
 #include <paprika.h>
 
@@ -74,6 +75,8 @@ crude_paprika_initialize
       { .id = ecs_id( crude_free_camera ) },
     } );
   }
+
+  crude_gui_create( &paprika->graphics.gpu );
 }
 
 void
@@ -266,6 +269,8 @@ paprika_graphics_system_
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
+  crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 0 );
+
   {
     crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "geometry_pass" );
     crude_gfx_framebuffer *final_render_framebuffer = crude_gfx_access_framebuffer( &paprika->graphics.gpu, final_render_graph_node->framebuffer );

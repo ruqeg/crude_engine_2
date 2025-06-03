@@ -606,13 +606,17 @@ crude_gfx_cmd_add_image_barrier
 {
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, texture->vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
-
-  VkImageMemoryBarrier barrier = {
-    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( texture->state ),
-    .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( texture->state ),
-    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+  
+  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_vk_access_flags2( texture->state );
+  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
+  VkImageMemoryBarrier2 barrier = {
+    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,
+    .srcStageMask = crude_gfx_determine_pipeline_stage_flags2( src_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS ),
+    .srcAccessMask = src_access_mask,
+    .dstStageMask = crude_gfx_determine_pipeline_stage_flags2( dst_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS ),
+    .dstAccessMask = dst_access_mask,
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout2( texture->state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout2( new_state ),
     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
     .image = texture->vk_image,
@@ -624,11 +628,14 @@ crude_gfx_cmd_add_image_barrier
       .layerCount = 1,
     },
   };
-  
-  VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  
-  vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  VkDependencyInfo dependency_info = {
+    .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,
+    .imageMemoryBarrierCount = 1,
+    .pImageMemoryBarriers = &barrier
+  };
+
+  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
 
   texture->state = new_state;
 }
@@ -650,13 +657,17 @@ crude_gfx_cmd_add_image_barrier_ext
 {
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, texture->vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
-
-  VkImageMemoryBarrier barrier = {
-    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( texture->state ),
-    .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( texture->state ),
-    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+  
+  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_vk_access_flags2( texture->state );
+  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
+  VkImageMemoryBarrier2 barrier = {
+    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,
+    .srcStageMask = crude_gfx_determine_pipeline_stage_flags2( src_access_mask, source_queue_type ),
+    .srcAccessMask = src_access_mask,
+    .dstStageMask = crude_gfx_determine_pipeline_stage_flags2( dst_access_mask, destination_queue_type ),
+    .dstAccessMask = dst_access_mask,
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout2( texture->state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout2( new_state ),
     .srcQueueFamilyIndex = source_queue_family,
     .dstQueueFamilyIndex = destination_family,
     .image = texture->vk_image,
@@ -668,11 +679,14 @@ crude_gfx_cmd_add_image_barrier_ext
       .layerCount = 1,
     },
   };
-  
-  VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, source_queue_type );
-  VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, destination_queue_type );
-  
-  vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  VkDependencyInfo dependency_info = {
+    .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,
+    .imageMemoryBarrierCount = 1,
+    .pImageMemoryBarriers = &barrier
+  };
+
+  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
 
   texture->state = new_state;
 
@@ -693,12 +707,16 @@ crude_gfx_cmd_add_image_barrier_ext2
 {
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
 
-  VkImageMemoryBarrier barrier = {
-    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    .srcAccessMask = crude_gfx_resource_state_to_vk_access_flags( old_state ),
-    .dstAccessMask = crude_gfx_resource_state_to_vk_access_flags( new_state ),
-    .oldLayout = crude_gfx_resource_state_to_vk_image_layout( old_state ),
-    .newLayout = crude_gfx_resource_state_to_vk_image_layout( new_state ),
+  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_vk_access_flags2( old_state );
+  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
+  VkImageMemoryBarrier2 barrier = {
+    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,
+    .srcStageMask = crude_gfx_determine_pipeline_stage_flags2( src_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS ),
+    .srcAccessMask = src_access_mask,
+    .dstStageMask = crude_gfx_determine_pipeline_stage_flags2( dst_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS ),
+    .dstAccessMask = dst_access_mask,
+    .oldLayout = crude_gfx_resource_state_to_vk_image_layout2( old_state ),
+    .newLayout = crude_gfx_resource_state_to_vk_image_layout2( new_state ),
     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
     .image = vk_image,
@@ -710,11 +728,14 @@ crude_gfx_cmd_add_image_barrier_ext2
       .layerCount = 1,
     },
   };
-  
-  VkPipelineStageFlags source_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  VkPipelineStageFlags destination_stage_mask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  
-  vkCmdPipelineBarrier( cmd->vk_cmd_buffer, source_stage_mask, destination_stage_mask, 0, 0, NULL, 0, NULL, 1, &barrier );
+
+  VkDependencyInfo dependency_info = {
+    .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,
+    .imageMemoryBarrierCount = 1,
+    .pImageMemoryBarriers = &barrier
+  };
+
+  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
 }
 
 void
@@ -802,19 +823,6 @@ crude_gfx_cmd_manager_initialize
 
   uint32 total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->vk_cmd_pools, total_pools, gpu->allocator_container );
-
-  for ( uint32 i = 0; i < total_pools; ++i )
-  {
-    VkCommandPoolCreateInfo cmd_pool_info = {
-      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-      .queueFamilyIndex = gpu->vk_main_queue_family,
-    };
-    
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &cmd_manager->vk_cmd_pools[ i ] ), "Failed to create command pool" );
-  }
-  
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
   for ( uint32 i = 0; i < total_pools; ++i )
@@ -834,7 +842,7 @@ crude_gfx_cmd_manager_initialize
 
     VkCommandBufferAllocateInfo cmd = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool = cmd_manager->vk_cmd_pools[ pool_index ],
+      .commandPool = cmd_manager->gpu->thread_frame_pools[ pool_index ].vk_command_pool,
       .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 1,
     };
@@ -852,7 +860,7 @@ crude_gfx_cmd_manager_initialize
   {
     VkCommandBufferAllocateInfo cmd = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, 
-      .commandPool = cmd_manager->vk_cmd_pools[ pool_index ], 
+      .commandPool = cmd_manager->gpu->thread_frame_pools[ pool_index ].vk_command_pool, 
       .level = VK_COMMAND_BUFFER_LEVEL_SECONDARY,
       .commandBufferCount = cmd_manager->num_secondary_cmd_buffer_per_pool
     };
@@ -887,11 +895,6 @@ crude_gfx_cmd_manager_deinitialize
   {
     crude_gfx_cmd_deinitialize( &cmd_manager->secondary_cmd_buffers[ i ] );
   }
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( cmd_manager->vk_cmd_pools ) ; ++i )
-  {
-    vkDestroyCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ i ], cmd_manager->gpu->vk_allocation_callbacks );
-  }
-  CRUDE_ARRAY_DEINITIALIZE( cmd_manager->vk_cmd_pools  );
   CRUDE_ARRAY_DEINITIALIZE( cmd_manager->primary_cmd_buffers );
   CRUDE_ARRAY_DEINITIALIZE( cmd_manager->secondary_cmd_buffers );
   CRUDE_ARRAY_DEINITIALIZE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
@@ -908,7 +911,7 @@ crude_gfx_cmd_manager_reset
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
-    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->vk_cmd_pools[ pool_index ], 0 );
+    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->gpu->thread_frame_pools[ pool_index ].vk_command_pool, 0 );
   }
 
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )

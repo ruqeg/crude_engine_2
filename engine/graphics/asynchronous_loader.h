@@ -43,8 +43,7 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_buffer                                        *staging_buffer;
   uint32                                                   staging_buffer_offset;
 
-  VkSemaphore                                              vk_transfer_complete_semaphore;
-  VkFence                                                  vk_transfer_fence;
+  VkFence                                                  vk_transfer_completed_fence;
 
   crude_gfx_texture_handle                                 texture_ready;
   crude_gfx_buffer_handle                                  cpu_buffer_ready;

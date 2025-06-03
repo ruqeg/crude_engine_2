@@ -186,13 +186,11 @@ crude_memory_set
  ******************************************/
 typedef void* (*crude_allocate_fun)( void *ctx, sizet size );
 typedef void* (*crude_allocate_align_fun)( void *ctx, sizet size, sizet alignment );
-typedef void* (*crude_reallocate_fun)( void *ctx, void *pointer, sizet size );
 typedef void  (*crude_deallocate_fun)(  void *ctx, void *pointer );
 
 typedef struct crude_allocator_container
 {
   crude_allocate_fun                                       allocate;
-  crude_reallocate_fun                                     reallocate;
   crude_deallocate_fun                                     deallocate;
   crude_allocate_align_fun                                 allocate_align;
   void                                                    *ctx;
@@ -218,5 +216,4 @@ crude_linear_allocator_pack
 
 #define CRUDE_ALLOCATE( allocator_container, size ) ( ( allocator_container ).allocate( ( allocator_container ).ctx, size ) )
 #define CRUDE_DEALLOCATE( allocator_container, ptr ) ( ( allocator_container ).deallocate( ( allocator_container ).ctx, ptr ) )
-#define CRUDE_REALLOCATE( allocator_container, ptr, size ) ( ( allocator_container ).reallocate( ( allocator_container ).ctx, ptr, size ) )
 #define CRUDE_ALLOCATE_ALIGN( allocator_container, size, alignment ) ( ( allocator_container ).allocate_align( ( allocator_container ).ctx, size, alignment ) )

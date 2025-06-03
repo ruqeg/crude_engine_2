@@ -188,18 +188,6 @@ crude_window_destrotion_observer_
 }
 
 static void
-shutdown_
-(
-  ecs_world_t *world,
-  void        *ctx
-)
-{
-  SDL_Vulkan_UnloadLibrary();
-  SDL_Quit();
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_PLATFORM, "SDL successfully shutdown" );
-}
-
-static void
 crude_process_events_system_
 (
   ecs_iter_t *it
@@ -416,18 +404,4 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
     { .id = ecs_id( crude_window ) },
     { .id = ecs_id( crude_window_handle ) },
   } );
-
-  if ( !SDL_Init( SDL_INIT_VIDEO ) )
-  {
-    CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to initialize SDL: %s", SDL_GetError() );
-    return;
-  }
-
-  if ( !SDL_Vulkan_LoadLibrary( NULL ) )
-  {
-    CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to load SDL Vulkan: %s", SDL_GetError() );
-    return;
-  }
-
-  ecs_atfini( world, shutdown_, NULL );
 }

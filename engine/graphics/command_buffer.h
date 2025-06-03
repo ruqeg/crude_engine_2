@@ -31,7 +31,6 @@ typedef struct crude_gfx_cmd_buffer_manager
 {
   crude_gfx_device                                        *gpu;
 
-  VkCommandPool                                           *vk_cmd_pools;
   crude_gfx_cmd_buffer                                    *primary_cmd_buffers;
   crude_gfx_cmd_buffer                                    *secondary_cmd_buffers;
 

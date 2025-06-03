@@ -629,11 +629,11 @@ crude_gfx_render_graph_render
     {
       continue;
     }
-    
+
     // TODO add clear to json
     crude_gfx_cmd_set_clear_color( gpu_commands, 0, CRUDE_COMPOUNT( VkClearValue, { .color = { 0.3f, 0.3f, 0.3f, 1.f } } ) );
     crude_gfx_cmd_set_clear_color( gpu_commands, 1, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
-    
+
     width = height = 0;
 
     for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )

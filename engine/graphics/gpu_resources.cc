@@ -221,6 +221,60 @@ crude_gfx_resource_state_to_vk_access_flags
   return ret;
 }
 
+CRUDE_API VkAccessFlags2
+crude_gfx_resource_state_to_vk_access_flags2
+(
+  _In_ crude_gfx_resource_state                            state
+)
+{
+  VkAccessFlags2 ret = 0;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )
+  {
+    ret |= VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )
+  {
+    ret |= VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER )
+  {
+    ret |= VK_ACCESS_2_UNIFORM_READ_BIT_KHR | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_INDEX_BUFFER )
+  {
+    ret |= VK_ACCESS_2_INDEX_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS )
+  {
+    ret |= VK_ACCESS_2_SHADER_READ_BIT_KHR | VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT )
+  {
+    ret |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET )
+  {
+    ret |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE )
+  {
+    ret |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE )
+  {
+    ret |= VK_ACCESS_2_SHADER_READ_BIT_KHR;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )
+  {
+    ret |= 0;
+  }
+  if ( state & CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE )
+  {
+    ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV;
+  }
+  return ret;
+}
+
 VkImageLayout
 crude_gfx_resource_state_to_vk_image_layout
 (
@@ -239,7 +293,25 @@ crude_gfx_resource_state_to_vk_image_layout
   return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-CRUDE_API VkPipelineStageFlags
+VkImageLayout
+crude_gfx_resource_state_to_vk_image_layout2
+(
+  _In_ crude_gfx_resource_state                            state
+)
+{
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )           return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET )       return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE )         return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_READ )          return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS )    return VK_IMAGE_LAYOUT_GENERAL;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE )     return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR;
+  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  if ( state == CRUDE_GFX_RESOURCE_STATE_COMMON )             return VK_IMAGE_LAYOUT_GENERAL;
+  return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+VkPipelineStageFlags
 crude_gfx_determine_pipeline_stage_flags
 (
   _In_ VkAccessFlags                                       access_flags,
@@ -331,6 +403,88 @@ crude_gfx_determine_pipeline_stage_flags
     flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
   }
 
+  return flags;
+}
+
+VkPipelineStageFlags2
+crude_gfx_determine_pipeline_stage_flags2
+(
+  _In_ VkAccessFlags2                                      access_flags,
+  _In_ crude_gfx_queue_type                                queue_type
+)
+{
+  VkPipelineStageFlags2KHR flags = 0;
+  
+  switch ( queue_type )
+  {
+    case CRUDE_GFX_QUEUE_TYPE_GRAPHICS:
+    {
+      if ( access_flags & ( VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT ) )
+      {
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR;
+      }
+      if ( access_flags & ( VK_ACCESS_2_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT ) )
+      {
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR;
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
+        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+        //    flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT;
+      }
+      if ( access_flags & VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT )
+      {
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
+      }
+      if ( access_flags & ( VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT ) )
+      {
+        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
+      }
+      if ( access_flags & ( VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT ) )
+      {
+        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR;
+      }
+      break;
+    }
+    case CRUDE_GFX_QUEUE_TYPE_COMPUTE:
+    {
+      if ( ( access_flags & ( VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT ) ) ||
+           ( access_flags & VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT ) ||
+           ( access_flags & ( VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT ) ) ||
+           ( access_flags & ( VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT ) ) )
+      {
+        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+      }
+
+      if ( access_flags & ( VK_ACCESS_2_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT ) )
+      {
+        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+      }
+    
+      break;
+    }
+    case CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER:
+    {
+      return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+    }
+    default:
+      break;
+  }
+  
+  if ( access_flags & VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT )
+  {
+    flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR;
+  }
+  if ( access_flags & ( VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT ) )
+  {
+    flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+  }
+  if ( access_flags & ( VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT ) )
+  {
+    flags |= VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
+  }
+  if ( flags == 0 )
+  {
+    flags = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
+  }
   return flags;
 }
 
