@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <core/hash_map.h>
 
 #define FNV_OFFSET 14695981039346656037UL
@@ -24,6 +26,26 @@ crude_hash_bytes
   }
   return hash;
 }
+
+uint64
+crude_hash_string
+(
+  _In_ char const                                         *str,
+  _In_ size_t                                              seed
+)
+{
+  return crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, str ), strlen( str ), 0 );
+}
+
+
+CRUDE_API uint64
+crude_hash_bytes
+(
+  _In_ uint8 const                                        *p,
+  _In_ size_t                                              len,
+  _In_ size_t                                              seed
+);
+
 
 void*
 crude_hashmap_growf

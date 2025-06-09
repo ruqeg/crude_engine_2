@@ -25,3 +25,9 @@ crude_gui_destroy
 (
   _In_ crude_gfx_device                                   *gpu 
 );
+
+CRUDE_API void
+crude_gui_process_event
+(
+  _In_ void const                                         *event
+);

@@ -765,7 +765,7 @@ crude_gfx_render_graph_builder_register_render_pass
   _In_ crude_gfx_render_graph_pass_container               render_pass
 )
 {
-  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
+  uint64 key = crude_hash_string( name, 0 );
   int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->render_pass_cache.render_pass_map, key );
   if ( handle_index >= 0 )
   {
@@ -812,7 +812,7 @@ crude_gfx_render_graph_builder_create_node
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   
   {
-    uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, node->name ), strlen( node->name ), 0 );
+    uint64 key = crude_hash_string( node->name, 0 );
     CRUDE_HASHMAP_SET( builder->node_cache.node_map, key, node_handle );
   }
 
@@ -853,7 +853,7 @@ crude_gfx_render_graph_builder_create_node_output
     resource->producer = producer;
     resource->ref_count = 0;
     
-    uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, resource->name ), strlen( creation->name ), 0 );
+    uint64 key = crude_hash_string( resource->name, 0 );
     CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
   }
 
@@ -901,7 +901,7 @@ crude_gfx_render_graph_builder_access_node_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
+  uint64 key = crude_hash_string( name, 0 );
   int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->node_cache.node_map, key );
   if ( handle_index < 0 )
   {
@@ -947,7 +947,7 @@ crude_gfx_render_graph_builder_access_resource_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, name ), strlen( name ), 0 );
+  uint64 key = crude_hash_string( name, 0 );
   uint32 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
   if ( handle_index < 0 )
   {

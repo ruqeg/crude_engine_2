@@ -119,10 +119,6 @@ typedef struct crude_gfx_device
   VkDescriptorSetLayout                                    vk_bindless_descriptor_set_layout;
   VkDescriptorSet                                          vk_bindless_descriptor_set;
   /**
-   * //!TODO
-   */
-  VkQueryPool                                              vk_timestamp_query_pool;
-  /**
    * Allocators and callbacks
    */
   VkAllocationCallbacks                                   *vk_allocation_callbacks;                               

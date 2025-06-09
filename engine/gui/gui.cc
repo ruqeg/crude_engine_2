@@ -44,6 +44,7 @@ crude_gui_create
   _In_ crude_gfx_device                                   *gpu 
 )
 {
+  return;
   VkPipelineRenderingCreateInfo                         pipeline_rendering_create_info;
   VkFormat                                              color_attachment_format;
   VkFormat                                              depth_attachment_format;
@@ -86,8 +87,18 @@ crude_gui_destroy
   _In_ crude_gfx_device                                   *gpu 
 )
 {
+  return;
   vkDeviceWaitIdle( gpu->vk_device );
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL3_Shutdown();
+}
+
+void
+crude_gui_process_event
+(
+  _In_ void const                                         *event
+)
+{
+  ImGui_ImplSDL3_ProcessEvent( CRUDE_REINTERPRET_CAST( SDL_Event const*, event ) );
 }
 #endif

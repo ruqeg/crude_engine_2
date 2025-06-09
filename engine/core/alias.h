@@ -65,7 +65,7 @@
 #ifndef __cplusplus
 #define CRUDE_TYPE( v ) typeof( v )
 #else
-#define CRUDE_TYPE( v ) decltype( v )
+#define CRUDE_TYPE( v ) std::remove_reference_t<decltype( v )>
 #endif
 
 /************************************************

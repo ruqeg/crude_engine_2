@@ -20,6 +20,13 @@ crude_hash_bytes
   _In_ size_t                                              seed
 );
 
+CRUDE_API uint64
+crude_hash_string
+(
+  _In_ char const                                          str[],
+  _In_ size_t                                              seed
+);
+
 CRUDE_API void*
 crude_hashmap_growf
 (

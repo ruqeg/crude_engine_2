@@ -8,6 +8,29 @@
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet
+{
+  crude_float3                                             center;
+  float32                                                  radius;
+  int8                                                     cone_axis[ 3 ];
+  int8                                                     cone_cutoff;
+  uint32                                                   mesh_index;
+  uint8                                                    vertices_count;
+  uint32                                                   vertices_offset;
+  uint8                                                    primitives_count;
+  uint32                                                   primitives_offset;
+} crude_gfx_meshlet;
+
+typedef struct crude_gfx_meshlet_vertex
+{
+  crude_float3                                             position;
+  uint8                                                    normal[ 4 ];
+  uint8                                                    tangent[ 4 ];
+  uint16                                                   texcoords[ 2 ];
+  float32                                                  padding;
+} crude_gfx_meshlet_vertex;
+
 typedef struct crude_gfx_mesh
 {
   crude_gfx_renderer_material                             *material;
@@ -48,6 +71,7 @@ typedef struct crude_gfx_scene_renderer_geometry_pass
 {
   crude_gfx_scene_renderer                                *scene;
   crude_gfx_mesh_instance                                 *mesh_instances;
+  uint32                                                   meshlet_technique_index;
 } crude_gfx_scene_renderer_geometry_pass;
 
 typedef struct crude_gfx_scene_renderer_creation
@@ -71,10 +95,17 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
   crude_gfx_mesh                                          *meshes;
+  
+  crude_gfx_meshlet                                       *meshlets;
+  crude_gfx_meshlet_vertex                                *meshlets_vertices;
+  uint32                                                  *meshlets_vertices_indices;
+  uint8                                                   *meshlets_primitives_indices;
 
   crude_allocator_container                                allocator_container;
 
   crude_gfx_scene_renderer_geometry_pass                   geometry_pass;
+
+  bool                                                     use_meshlets;
 } crude_gfx_scene_renderer;
 
 /**

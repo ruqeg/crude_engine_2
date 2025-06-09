@@ -1,12 +1,11 @@
 #include <TaskScheduler_c.h>
-#include <cgltf.h>
-#include <stb_image.h>
 
 #include <core/profiler.h>
 #include <core/array.h>
 #include <core/file.h>
 #include <core/hash_map.h>
 #include <scene/scene_components.h>
+#include <graphics/scene_renderer_uploader.h>
 
 #include <graphics/scene_renderer.h>
 
@@ -16,32 +15,6 @@
  * 
  */
 #define _PARALLEL_RECORDINGS                               ( 4 )
-
-/************************************************
- *
- * GLTF Utils Functinos Declaration
- * 
- ***********************************************/
-static bool
-create_gltf_mesh_material_
-(
-  _In_ cgltf_data                                         *gltf,
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ cgltf_material                                     *material,
-  _In_ crude_gfx_mesh                                     *mesh_draw,
-  _In_ size_t                                             scene_renderer_images_offset,
-  _In_ size_t                                             scene_renderer_samplers_offset
-);
-
-static void
-upload_gltf_to_scene_renderer_
-(
-  _In_ crude_gfx_scene_renderer                          *scene_renderer,
-  _In_ char const                                        *gltf_path,
-  _In_ crude_entity                                       parent_node,
-  _In_ crude_stack_allocator                             *temporary_allocator
-);
 
 /**
  *
@@ -211,7 +184,7 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
   crude_gfx_renderer_technique                            *main_technique;
   uint64                                                   main_technique_name_hashed, main_technique_index;
 
-  main_technique_name_hashed = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, "main" ), strlen( "main" ), 0 );
+  main_technique_name_hashed = crude_hash_string( "main", 0 );
   main_technique_index = CRUDE_HASHMAP_GET_INDEX( pass->scene->renderer->resource_cache.techniques, main_technique_name_hashed );
   if ( main_technique_index < 0)
   {
@@ -250,6 +223,13 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
     mesh_instance.mesh = mesh;
     mesh_instance.material_pass_index = 0;
     CRUDE_ARRAY_PUSH( pass->mesh_instances, mesh_instance );
+  }
+
+  if ( pass->scene->renderer->gpu->mesh_shaders_extension_present )
+  {
+    //uint64 meshlet_hashed = crude_hash_bytes( "meshlet", crude_string_length( "meshlet" ), 0 );
+    //crude_gfx_renderer_technique *main_technique = CRUDE_HASHMAP_GET( pass->scene->renderer->resource_cache.techniques, meshlet_hashed )->value;
+    //pass->meshlet_technique_index = main_technique->get_pass_index( "gbuffer_culling" );
   }
 }
 
@@ -297,10 +277,14 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->task_scheduler = creation->task_scheduler;
 
   scene_renderer->geometry_pass.scene = scene_renderer;
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->images, 4, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->samplers, 4, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 4, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes, 4, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->images, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->samplers, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_primitives_indices, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices_indices, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets, 0u, scene_renderer->allocator_container );
 }
 
 void
@@ -334,6 +318,10 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->geometry_pass.mesh_instances );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_primitives_indices );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices_indices );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets );
 }
 
 void
@@ -452,462 +440,35 @@ draw_scene_
   _In_ crude_gfx_scene_renderer_geometry_pass             *pass
 )
 {
-  crude_gfx_renderer_material *last_material = NULL;
-  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
+  if ( false )
   {
-    crude_gfx_mesh_instance                               *mesh_instance;
-    crude_gfx_mesh                                        *mesh;
-  
-    mesh_instance = &pass->mesh_instances[ mesh_index ];
-    mesh = mesh_instance->mesh;
-    if ( mesh->material != last_material )
-    {
-      crude_gfx_cmd_bind_pipeline( cmd, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
-      last_material = mesh->material;
-    }
-    draw_mesh_( cmd, mesh );
+    crude_gfx_renderer *renderer = pass->scene->renderer;
+    //uint64 const meshlet_hashed_name = crude_hash_bytes( "meshlet", crude_string_length( "meshlet" ), 0 );
+    //crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
+    //crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
+    //crude_gfx_cmd_bind_pipeline( cmd, pipeline );
+    //uint32 buffer_frame_index = renderer->gpu->current_frame;
+    //gpu_commands->bind_descriptor_set( &render_scene->mesh_shader_early_descriptor_set[ buffer_frame_index ], 1, nullptr, 0);
+    //gpu_commands->draw_mesh_task_indirect( render_scene->mesh_task_indirect_early_commands_sb[ buffer_frame_index ], offsetof( GpuMeshDrawCommand, indirectMS ), render_scene->mesh_task_indirect_count_early_sb[ buffer_frame_index ], 0, render_scene->mesh_instances.size, sizeof( GpuMeshDrawCommand ) );
   }
-}
-
-/************************************************
- *
- * GLTF Utils Functinos Declaration
- * 
- ***********************************************/
-void
-upload_gltf_to_scene_renderer_
-(
-  _In_ crude_gfx_scene_renderer                          *scene_renderer,
-  _In_ char const                                        *gltf_path,
-  _In_ crude_entity                                       parent_node,
-  _In_ crude_stack_allocator                             *temporary_allocator
-)
-{
-  crude_gfx_renderer_material_creation                     material_creatoin;
-  crude_allocator_container                                temporary_allocator_container;
-  crude_string_buffer                                      temporary_string_buffer;
-  cgltf_data                                              *gltf;
-  cgltf_scene                                             *root_scene;
-  uint32                                                   temporary_allocator_mark;
-  char                                                     gltf_directory[ 512 ];
-  size_t                                                   scene_renderer_images_offset;
-  size_t                                                   scene_renderer_samplers_offset;
-  size_t                                                   scene_renderer_buffers_offset;
-
-  temporary_allocator_container = crude_stack_allocator_pack( temporary_allocator );
-  temporary_allocator_mark = crude_stack_allocator_get_marker( temporary_allocator );
-
-  crude_string_buffer_initialize( &temporary_string_buffer, 1024, temporary_allocator_container );
-  
-  /* Parse gltf */
+  else
   {
-    cgltf_result                                           result;
-    cgltf_options                                          gltf_options;
-
-    gltf_options = CRUDE_COMPOUNT( cgltf_options, { 
-      .memory = {
-        .alloc_func = temporary_allocator_container.allocate,
-        .free_func  = temporary_allocator_container.deallocate,
-        .user_data = temporary_allocator_container.ctx
-      },
-    } );
+    crude_gfx_renderer_material *last_material = NULL;
+    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
+    {
+      crude_gfx_mesh_instance                               *mesh_instance;
+      crude_gfx_mesh                                        *mesh;
     
-    gltf = NULL;
-    result = cgltf_parse_file( &gltf_options, gltf_path, &gltf );
-    if ( result != cgltf_result_success )
-    {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", gltf_path );
-    }
-    
-    result = cgltf_load_buffers( &gltf_options, gltf, gltf_path );
-    if ( result != cgltf_result_success )
-    {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", gltf_path );
-    }
-    
-    result = cgltf_validate( gltf );
-    if ( result != cgltf_result_success )
-    {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", gltf_path );
-    }
-  }
-
-  /* Get gltf directory */
-  crude_memory_copy( gltf_directory, gltf_path, sizeof( gltf_directory ) );
-  crude_file_directory_from_path( gltf_directory );
-
-  scene_renderer_images_offset = CRUDE_ARRAY_LENGTH( scene_renderer->images );
-  scene_renderer_samplers_offset = CRUDE_ARRAY_LENGTH( scene_renderer->samplers );
-  scene_renderer_buffers_offset = CRUDE_ARRAY_LENGTH( scene_renderer->buffers );
-
-  for ( uint32 image_index = 0; image_index < gltf->images_count; ++image_index )
-  {
-    crude_gfx_renderer_texture                            *texture_resource;
-    crude_gfx_texture_creation                             texture_creation;
-    cgltf_image const                                     *image;
-    char                                                  *image_full_filename;
-    int                                                    comp, width, height;
-    
-    image = &gltf->images[ image_index ];
-    image_full_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s", gltf_directory, image->uri );
-    stbi_info( image_full_filename, &width, &height, &comp );
-
-    texture_creation = crude_gfx_texture_creation_empty();
-    texture_creation.initial_data = NULL;
-    texture_creation.width = width;
-    texture_creation.height = height;
-    texture_creation.depth = 1u;
-    texture_creation.mipmaps = 1u;
-    texture_creation.flags = 0u;
-    texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
-    texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-    texture_creation.name = image_full_filename;
-
-    texture_resource = crude_gfx_renderer_create_texture( scene_renderer->renderer, &texture_creation );
-    CRUDE_ARRAY_PUSH( scene_renderer->images, *texture_resource );
-    crude_gfx_asynchronous_loader_request_texture_data( scene_renderer->async_loader, image_full_filename, texture_resource->handle );
-  }
-  
-  for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
-  {
-    crude_gfx_renderer_sampler                            *sampler_resource;
-    crude_gfx_sampler_creation                             creation;
-    cgltf_sampler                                         *sampler;
-
-    sampler = &gltf->samplers[ sampler_index ];
-
-    creation = crude_gfx_sampler_creation_empty();
-    switch ( sampler->min_filter )
-    {
-    case cgltf_filter_type_nearest:
-      creation.min_filter = VK_FILTER_NEAREST;
-      break;
-    case cgltf_filter_type_linear:
-      creation.min_filter = VK_FILTER_LINEAR;
-      break;
-    case cgltf_filter_type_linear_mipmap_nearest:
-      creation.min_filter = VK_FILTER_LINEAR;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-      break;
-    case cgltf_filter_type_linear_mipmap_linear:
-      creation.min_filter = VK_FILTER_LINEAR;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-      break;
-    case cgltf_filter_type_nearest_mipmap_nearest:
-      creation.min_filter = VK_FILTER_NEAREST;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-      break;
-    case cgltf_filter_type_nearest_mipmap_linear:
-      creation.min_filter = VK_FILTER_NEAREST;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-      break;
-    }
-    
-    creation.mag_filter = sampler->mag_filter == cgltf_filter_type_linear ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-    
-    switch ( sampler->wrap_s )
-    {
-      case cgltf_wrap_mode_clamp_to_edge:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        break;
-      case cgltf_wrap_mode_mirrored_repeat:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-        break;
-      case cgltf_wrap_mode_repeat:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        break;
-    }
-    
-    switch ( sampler->wrap_t )
-    {
-    case cgltf_wrap_mode_clamp_to_edge:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-      break;
-    case cgltf_wrap_mode_mirrored_repeat:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-      break;
-    case cgltf_wrap_mode_repeat:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-      break;
-    }
-
-    creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    
-    creation.name = "";
-    
-    sampler_resource = crude_gfx_renderer_create_sampler( scene_renderer->renderer, &creation );
-    CRUDE_ARRAY_PUSH( scene_renderer->samplers, *sampler_resource );
-  }
-  
-  for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
-  {
-    cgltf_buffer_view const                               *buffer_view;
-    cgltf_buffer const                                    *buffer;
-    crude_gfx_buffer_creation                              cpu_buffer_creation;
-    crude_gfx_buffer_creation                              gpu_buffer_creation;
-    crude_gfx_buffer_handle                                cpu_buffer;
-    crude_gfx_renderer_buffer                             *gpu_buffer_resource;
-    uint8                                                 *buffer_data;
-    char const                                            *buffer_name;
-
-    buffer_view = &gltf->buffer_views[ buffer_view_index ];
-    buffer = buffer_view->buffer;
-  
-    buffer_data = ( uint8* )buffer->data + buffer_view->offset;
-  
-    if ( buffer_view->name == NULL )
-    {
-      buffer_name = crude_string_buffer_append_use_f( &temporary_string_buffer, "scene_renderer_buffer%i", buffer_view_index );
-    }
-    else
-    {
-      buffer_name = buffer_view->name;
-    }
-    
-    cpu_buffer_creation = crude_gfx_buffer_creation_empty();
-    cpu_buffer_creation.initial_data = buffer_data;
-    cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    cpu_buffer_creation.size = buffer_view->size;
-    cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    cpu_buffer_creation.name = buffer_name;
-    cpu_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &cpu_buffer_creation );
-
-    gpu_buffer_creation = crude_gfx_buffer_creation_empty();
-    gpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    gpu_buffer_creation.size = buffer_view->size;
-    gpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    gpu_buffer_creation.name = buffer_name;
-    gpu_buffer_creation.device_only = true;
-    gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene_renderer->renderer, &gpu_buffer_creation );
-    CRUDE_ARRAY_PUSH( scene_renderer->buffers, *gpu_buffer_resource );
-
-    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, cpu_buffer, gpu_buffer_resource->handle );
-
-    crude_string_buffer_clear( &temporary_string_buffer );
-  }
-  
-  root_scene = gltf->scene;
-  for ( uint32 node_index = 0; node_index < root_scene->nodes_count; ++node_index )
-  {
-    cgltf_node *node = root_scene->nodes[ node_index ];
-  
-    if ( !node->mesh )
-    {
-      continue;
-    }
-  
-    crude_float3 node_scale = { 1.0f, 1.0f, 1.0f };
-    if ( node->has_scale )
-    {
-      node_scale = CRUDE_COMPOUNT( crude_float3, { node->scale[0], node->scale[1], node->scale[2] } );
-    }
-    crude_float3 node_translation = { 1.0f, 1.0f, 1.0f };
-    if ( node->has_translation )
-    {
-      node_translation = CRUDE_COMPOUNT( crude_float3, { node->translation[0], node->translation[1], node->translation[2] } );
-    }
-    crude_float4 node_rotation = { 1.0f, 1.0f, 1.0f };
-    if ( node->has_rotation )
-    {
-      node_rotation = CRUDE_COMPOUNT( crude_float4, { node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[4] } );
-    }
-  
-    for ( uint32 primitive_index = 0; primitive_index < node->mesh->primitives_count; ++primitive_index )
-    {
-      crude_gfx_mesh                                       mesh_draw;
-      cgltf_primitive                                     *mesh_primitive;
-      cgltf_accessor                                      *indices_accessor;
-      cgltf_buffer_view                                   *indices_buffer_view;
-      crude_gfx_renderer_buffer                           *indices_buffer_gpu;
-      bool                                                 material_transparent;
-      
-      mesh_primitive = &node->mesh->primitives[ primitive_index ];
-
-      mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh );
-      for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
+      mesh_instance = &pass->mesh_instances[ mesh_index ];
+      mesh = mesh_instance->mesh;
+      if ( mesh->material != last_material )
       {
-        crude_gfx_renderer_buffer *buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
-        switch ( mesh_primitive->attributes[ i ].type )
-        {
-        case cgltf_attribute_type_position:
-        {
-          mesh_draw.position_buffer = buffer_gpu->handle;
-          mesh_draw.position_offset = mesh_primitive->attributes[ i ].data->offset;
-          break;
-        }
-        case cgltf_attribute_type_tangent:
-        {
-          mesh_draw.tangent_buffer = buffer_gpu->handle;
-          mesh_draw.tangent_offset = mesh_primitive->attributes[ i ].data->offset;
-          break;
-        }
-        case cgltf_attribute_type_normal:
-        {
-          mesh_draw.normal_buffer = buffer_gpu->handle;
-          mesh_draw.normal_offset = mesh_primitive->attributes[ i ].data->offset;
-          break;
-        }
-        case cgltf_attribute_type_texcoord:
-        {
-          mesh_draw.texcoord_buffer = buffer_gpu->handle;
-          mesh_draw.texcoord_offset = mesh_primitive->attributes[ i ].data->offset;
-          break;
-        }
-        }
+        crude_gfx_cmd_bind_pipeline( cmd, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
+        last_material = mesh->material;
       }
-      
-      indices_accessor = mesh_primitive->indices;
-      indices_buffer_view = indices_accessor->buffer_view;
-      
-      indices_buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
-
-      material_transparent = create_gltf_mesh_material_( gltf, scene_renderer->renderer, scene_renderer, mesh_primitive->material, &mesh_draw, scene_renderer_images_offset, scene_renderer_samplers_offset );
-      
-      //!TODO
-      //if ( transparent)
-      //{
-      //  if ( mesh_primitive->material->double_sided )
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_no_cull_transparent;
-      //  }
-      //  else
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_cull_transparent;
-      //  }
-      //}
-      //else
-      //{
-      //  if ( mesh_primitive->material->double_sided )
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_no_cull_opaque;
-      //  }
-      //  else
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_cull_opaque;
-      //  }
-      //}
-      mesh_draw.scale = node_scale;
-      mesh_draw.translation = node_translation;
-      mesh_draw.rotation = node_rotation;
-      mesh_draw.index_buffer = indices_buffer_gpu->handle;
-      mesh_draw.index_offset = indices_accessor->offset;
-      mesh_draw.primitive_count = indices_accessor->count;
-      CRUDE_ARRAY_PUSH( scene_renderer->meshes, mesh_draw );
+      draw_mesh_( cmd, mesh );
     }
   }
-  cgltf_free( gltf );
-  crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
-}
-
-
-/************************************************
- *
- * GLTF Utils Functinos Implementation
- * 
- ***********************************************/
-bool
-create_gltf_mesh_material_
-(
-  _In_ cgltf_data                                         *gltf,
-  _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ cgltf_material                                     *material,
-  _In_ crude_gfx_mesh                                     *mesh_draw,
-  _In_ size_t                                             scene_renderer_images_offset,
-  _In_ size_t                                             scene_renderer_samplers_offset
-)
-{
-  bool transparent = false;
-  
-  mesh_draw->flags = 0;
-
-  mesh_draw->base_color_factor = CRUDE_COMPOUNT( crude_float4, {
-    material->pbr_metallic_roughness.base_color_factor[ 0 ],
-    material->pbr_metallic_roughness.base_color_factor[ 1 ],
-    material->pbr_metallic_roughness.base_color_factor[ 2 ],
-    material->pbr_metallic_roughness.base_color_factor[ 3 ],
-  } );
-  
-  mesh_draw->metallic_roughness_occlusion_factor.x = material->pbr_metallic_roughness.roughness_factor;
-  mesh_draw->metallic_roughness_occlusion_factor.y = material->pbr_metallic_roughness.metallic_factor;
-  mesh_draw->alpha_cutoff = material->alpha_cutoff;
-  
-  if (material->alpha_mode == cgltf_alpha_mode_mask )
-  {
-    mesh_draw->flags |= CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK;
-    transparent = true;
-  }
-
-  if ( material->pbr_metallic_roughness.base_color_texture.texture )
-  {
-    cgltf_texture *albedo_texture = material->pbr_metallic_roughness.base_color_texture.texture;
-    crude_gfx_renderer_texture *albedo_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, albedo_texture->image ) ];
-    crude_gfx_renderer_sampler *albedo_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, albedo_texture->sampler ) ];
-  
-    mesh_draw->albedo_texture_index = albedo_texture_gpu->handle.index;
-    crude_gfx_link_texture_sampler( renderer->gpu, albedo_texture_gpu->handle, albedo_sampler_gpu->handle );
-  }
-  else
-  {
-    mesh_draw->albedo_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
-  }
-  
-  if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
-  {
-    cgltf_texture *roughness_texture = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
-    crude_gfx_renderer_texture *roughness_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, roughness_texture->image ) ];
-    crude_gfx_renderer_sampler *roughness_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
-    
-    mesh_draw->roughness_texture_index = roughness_texture_gpu->handle.index;
-    crude_gfx_link_texture_sampler( renderer->gpu, roughness_texture_gpu->handle, roughness_sampler_gpu->handle );
-  }
-  else
-  {
-    mesh_draw->roughness_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
-  }
-
-  if ( material->occlusion_texture.texture )
-  {
-    cgltf_texture *occlusion_texture = material->occlusion_texture.texture;
-    crude_gfx_renderer_texture *occlusion_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, occlusion_texture->image ) ];
-    crude_gfx_renderer_sampler *occlusion_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, occlusion_texture->sampler ) ];
-    
-    mesh_draw->occlusion_texture_index = occlusion_texture_gpu->handle.index;
-    mesh_draw->metallic_roughness_occlusion_factor.z = material->occlusion_texture.scale;
-    
-    crude_gfx_link_texture_sampler( renderer->gpu, occlusion_texture_gpu->handle, occlusion_sampler_gpu->handle );
-  }
-  else
-  {
-    mesh_draw->occlusion_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
-  }
-  
-  if ( material->normal_texture.texture )
-  {
-    cgltf_texture *normal_texture = material->normal_texture.texture;
-    crude_gfx_renderer_texture *normal_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, normal_texture->image ) ];
-    crude_gfx_renderer_sampler *normal_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, normal_texture->sampler ) ];
-    
-    mesh_draw->normal_texture_index = normal_texture_gpu->handle.index;
-    crude_gfx_link_texture_sampler( renderer->gpu, normal_texture_gpu->handle, normal_sampler_gpu->handle );
-  }
-  else
-  {
-    mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
-  }
-  
-  crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty();
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  buffer_creation.size = sizeof ( crude_gfx_shader_mesh_constants );
-  buffer_creation.name = "mesh_data";
-  mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
-  
-  return transparent;
 }
 
 /**
@@ -932,7 +493,7 @@ scene_renderer_prepare_node_draws_
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
       {
         crude_gltf const* child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
-        upload_gltf_to_scene_renderer_( scene_renderer, child_gltf->path, child, temporary_allocator );
+        crude_scene_renderer_upload_gltf( scene_renderer, child_gltf->path, child, temporary_allocator );
       }
 
       scene_renderer_prepare_node_draws_( scene_renderer, child, temporary_allocator );

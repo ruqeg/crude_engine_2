@@ -20,11 +20,6 @@ crude_array_growf
     min_cap = min_len;
   }
 
-  if ( min_cap <= CRUDE_ARRAY_CAPACITY( a ) )
-  {
-    return a;
-  }
-
   if ( min_cap < 2 * CRUDE_ARRAY_CAPACITY( a ) )
   {
     min_cap = 2 * CRUDE_ARRAY_CAPACITY( a );
@@ -32,6 +27,11 @@ crude_array_growf
   else if ( min_cap < 4 )
   {
     min_cap = 4;
+  }
+
+  if ( min_cap <= CRUDE_ARRAY_CAPACITY( a ) )
+  {
+    return a;
   }
 
   b = CRUDE_ALLOCATE( allocator, elemsize * min_cap + sizeof( crude_array_header ) );

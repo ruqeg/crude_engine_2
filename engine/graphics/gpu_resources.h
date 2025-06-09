@@ -727,20 +727,8 @@ crude_gfx_to_vk_vertex_format
   _In_ crude_gfx_vertex_component_format                   value
 );
 
-CRUDE_API VkAccessFlags
-crude_gfx_resource_state_to_vk_access_flags
-(
-  _In_ crude_gfx_resource_state                            state
-);
-
 CRUDE_API VkAccessFlags2
 crude_gfx_resource_state_to_vk_access_flags2
-(
-  _In_ crude_gfx_resource_state                            state
-);
-
-CRUDE_API VkImageLayout
-crude_gfx_resource_state_to_vk_image_layout
 (
   _In_ crude_gfx_resource_state                            state
 );
@@ -749,13 +737,6 @@ CRUDE_API VkImageLayout
 crude_gfx_resource_state_to_vk_image_layout2
 (
   _In_ crude_gfx_resource_state                            state
-);
-
-CRUDE_API VkPipelineStageFlags
-crude_gfx_determine_pipeline_stage_flags
-(
-  _In_ VkAccessFlags                                       access_flags,
-  _In_ crude_gfx_queue_type                                queue_type
 );
 
 CRUDE_API VkPipelineStageFlags2

@@ -255,7 +255,7 @@ crude_gfx_renderer_create_material
 
   if ( material->name )
   {
-    uint64 key = crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, material->name ), strlen( material->name ), 0 );
+    uint64 key = crude_hash_string( material->name, 0 );
     CRUDE_HASHMAP_SET( renderer->resource_cache.materials, key, material );
   }
 
@@ -288,7 +288,8 @@ crude_gfx_renderer_create_technique
   crude_gfx_renderer_technique *technique = crude_gfx_renderer_access_technique( renderer, technique_handle );
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
-  
+  CRUDE_HASHMAP_INITIALIZE( technique->name_hash_to_index, renderer->gpu->allocator_container );
+
   for ( size_t i = 0; i < creation->num_creations; ++i )
   {
     crude_gfx_renderer_technique_pass *pass = &technique->passes[ i ];
@@ -296,6 +297,9 @@ crude_gfx_renderer_create_technique
     crude_gfx_pipeline_creation const *pass_creation = &creation->creations[ i ];
     crude_gfx_renderer_technique_pass technique_pass = CRUDE_COMPOUNT( crude_gfx_renderer_technique_pass, { .pipeline =  crude_gfx_create_pipeline( renderer->gpu, pass_creation ) } );
     CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
+    
+    uint64 pass_name_hashed = crude_hash_string( pass_creation->name, 0 );
+    CRUDE_HASHMAP_SET( technique->name_hash_to_index, pass_name_hashed, i );
   }
   
   if ( creation->name )
@@ -326,7 +330,7 @@ crude_gfx_renderer_destroy_technique
   }
   
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
-  
+  CRUDE_HASHMAP_DEINITIALIZE( technique->name_hash_to_index );
   crude_gfx_renderer_release_technique( renderer, CRUDE_COMPOUNT( crude_gfx_renderer_technique_handle, { technique->pool_index } ) );
 }
 

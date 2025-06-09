@@ -376,7 +376,6 @@ crude_gfx_device_deinitialize
     vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
   }
   
-  vkDestroyQueryPool( gpu->vk_device, gpu->vk_timestamp_query_pool, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorSetLayout( gpu->vk_device, gpu->vk_bindless_descriptor_set_layout, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
   vk_destroy_swapchain_( gpu );
@@ -413,6 +412,7 @@ crude_gfx_device_deinitialize
       vkDestroyQueryPool( gpu->vk_device, pool->vk_pipeline_stats_query_pool, gpu->vk_allocation_callbacks );
     }
   }
+  CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
   CRUDE_DEALLOCATE( gpu->allocator_container, gpu->gpu_time_queries_manager );
 
   vmaDestroyAllocator( gpu->vma_allocator );

@@ -261,6 +261,12 @@ parse_gpu_pipeline_
       pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
     }
   }
+  
+  cJSON const *name_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "name" );
+  if ( name_json != NULL )
+  {
+    pipeline_creation->name = cJSON_GetStringValue( name_json );
+  }
 }
 
 VkBlendFactor

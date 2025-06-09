@@ -12,6 +12,7 @@ add_subdirectory(miniaudio)
 add_subdirectory(enkiTS)
 add_subdirectory(cjson_cmake)
 add_subdirectory(imgui_cmake)
+add_subdirectory(meshoptimizer)
 
 FetchContent_Declare(
 	tracy
