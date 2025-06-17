@@ -94,12 +94,19 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
+  
   crude_gfx_mesh                                          *meshes;
   
   crude_gfx_meshlet                                       *meshlets;
   crude_gfx_meshlet_vertex                                *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_primitives_indices;
+
+  crude_gfx_buffer_handle                                  meshlets_sb;
+  crude_gfx_buffer_handle                                  meshlets_vertices_sb;
+  crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
+  crude_gfx_buffer_handle                                  meshlets_primitives_indices_sb;
+  crude_gfx_descriptor_set_handle                          mesh_shader_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
   crude_allocator_container                                allocator_container;
 

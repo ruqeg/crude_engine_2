@@ -1,0 +1,97 @@
+#version 450
+#extension GL_EXT_mesh_shader : require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_GOOGLE_include_directive: require
+
+layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
+layout(triangles) out;
+layout(max_vertices=128, max_primitives=124) out;
+
+struct Meshlet
+{
+  uint8_t                                                  vertices_count;
+  uint8_t                                                  triangles_count;
+  uint                                                     vertices_offset;
+  uint                                                     triangles_offset;
+};
+
+struct Vertex
+{
+  vec3                                                     position;
+  vec3                                                     normal;
+  vec2                                                     texcoord;
+  vec4                                                     color;
+};
+
+struct Camera
+{
+  vec3                                                     position;
+  mat4                                                     world_to_view;
+  mat4                                                     view_to_clip;
+  mat4                                                     clip_to_view;
+  mat4                                                     view_to_world;
+};
+
+layout(binding=0, row_major) uniform PerFrame
+{
+  Camera                                                   camera;
+};
+
+layout(binding=1) readonly buffer Meshlets
+{
+  Meshlet                                                  meshlets[];
+};
+
+layout(binding=2) readonly buffer Vertices
+{
+  Vertex                                                   vertices[];
+};
+
+layout(binding=3) readonly buffer TrianglesIndices
+{
+  uint8_t                                                  triangles_indices[];
+};
+
+layout(binding=5) readonly buffer VerticesIndices
+{
+  uint                                                     vertices_indices[];
+};
+
+layout(location=0) out PerVertexData 
+{
+  vec2                                                     texcoord;
+} vertices_out[];
+
+void main()
+{
+  uint task_index = gl_LocalInvocationID.x;
+  uint local_meshlet_index = gl_WorkGroupID.x;
+  uint global_meshlet_index = /*meshlet_indices[*/ local_meshlet_index /*]*/;
+
+  uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
+  uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
+
+  uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
+  uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
+
+  SetMeshOutputsEXT( vertices_count, triangles_count );
+  
+  if ( task_index < vertices_count )
+  {
+    uint vertex_index = vertices_indices[ task_index + vertices_offset ];
+    
+    vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    vec4 view_position = world_position * camera.world_to_view;
+    vec4 clip_position = view_position * camera.view_to_clip;
+
+    gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
+    vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
+  }
+
+  if ( task_index < triangles_count )
+  {
+    uint triangle_index = uint( 3 * task_index + triangles_offset );
+    gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
+  }
+}

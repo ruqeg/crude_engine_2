@@ -7,7 +7,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 find_package(Vulkan REQUIRED)
 
 set(CRUDE_SHADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-file(GLOB_RECURSE CRUDE_SHADER_SOURCES *.frag *.vert)
+file(GLOB_RECURSE CRUDE_SHADER_SOURCES *.frag *.vert *.mesh *.task)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/compile_spirv_shader.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/compile_shader.cmake)

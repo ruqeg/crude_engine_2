@@ -167,7 +167,7 @@ paprika_graphics_initialize_
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
   
-    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
+    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json", "\\..\\..\\resources\\render_graph.json" );
     crude_gfx_render_graph_parse_from_file( &paprika->graphics.render_graph, render_graph_file_path, &paprika->temporary_allocator );
     crude_gfx_render_graph_compile( &paprika->graphics.render_graph );
   }
@@ -184,7 +184,8 @@ paprika_graphics_initialize_
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\render_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\main_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_scene_renderer_register_render_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
   crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scene.main_node, &paprika->temporary_allocator );
   

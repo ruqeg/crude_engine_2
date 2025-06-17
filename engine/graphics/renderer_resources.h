@@ -91,7 +91,7 @@ typedef struct crude_gfx_renderer_technique
 {
   crude_gfx_renderer_technique_pass                       *passes;
   uint32                                                   pool_index;
-  struct { uint64 value; uint16 key; }                    *name_hash_to_index;
+  struct { uint64 key; uint16 value; }                    *hashed_name_to_pass_index;
 } crude_gfx_renderer_technique;
 
 typedef struct crude_gfx_renderer_material_creation
@@ -108,3 +108,10 @@ typedef struct crude_gfx_renderer_material
   uint32                                                   pool_index;
   char const                                              *name;
 } crude_gfx_renderer_material;
+
+CRUDE_API uint32
+crude_gfx_renderer_technique_get_pass_index
+(
+  _In_ crude_gfx_renderer_technique                       *technique,
+  _In_ char const                                         *name
+);

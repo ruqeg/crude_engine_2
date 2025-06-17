@@ -1,0 +1,28 @@
+{
+	"name" : "meshlet",
+	"pipelines" : [
+		{
+			"name" : "main",
+			"render_pass" : "mesh_pass",
+			"depth" : {
+				"write" : true,
+				"test" : "less_or_equal"
+			},
+			"cull" : "back",
+			"shaders" : [
+				{
+					"stage" : "mesh",
+					"shader" : "meshlet.mesh"
+				},
+				{
+					"stage" : "task",
+					"shader" : "meshlet.task"
+				},
+				{
+					"stage" : "fragment",
+					"shader" : "meshlet.frag"
+				}
+			]
+		}
+	]
+}

@@ -15,6 +15,7 @@
  * 
  */
 #define _PARALLEL_RECORDINGS                               ( 4 )
+uint32 material_descriptor_set_index = 1;
 
 /**
  *
@@ -332,6 +333,66 @@ crude_gfx_scene_renderer_prepare_draws
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
+  crude_gfx_buffer_creation                                buffer_creation;
+  
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets );
+  buffer_creation.initial_data = scene_renderer->meshlets;
+  buffer_creation.name = "meshlet_sb";
+  scene_renderer->meshlets_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices );
+  buffer_creation.initial_data = scene_renderer->meshlets_vertices;
+  buffer_creation.name = "meshlets_vertices_sb";
+  scene_renderer->meshlets_vertices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices );
+  buffer_creation.initial_data = scene_renderer->meshlets_vertices_indices;
+  buffer_creation.name = "meshlets_vertices_indices_sb";
+  scene_renderer->meshlets_vertices_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_primitives_indices );
+  buffer_creation.initial_data = scene_renderer->meshlets_primitives_indices;
+  buffer_creation.name = "meshlets_primitives_indices_sb";
+  scene_renderer->meshlets_primitives_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  /* Meshlets descriptors */
+  if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
+  {
+    uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
+    crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
+
+    uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
+    crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
+    crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
+    
+    /*for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+    {
+      crude_gfx_descriptor_set_creation                    ds_creation;
+      
+      ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
+      add_scene_descriptors( ds_creation, meshlet_pass );
+      add_mesh_descriptors( ds_creation, meshlet_pass );
+      add_debug_descriptors( ds_creation, meshlet_pass );
+      add_meshlet_descriptors( ds_creation, meshlet_pass );
+      
+      ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
+      
+      scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( &ds_creation );
+    }*/
+  }
+
   scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
 }
