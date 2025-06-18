@@ -22,7 +22,8 @@ static char const *const vk_device_required_extensions[] =
   VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-  VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
+  VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+  VK_EXT_MESH_SHADER_EXTENSION_NAME
 };
 
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -2476,7 +2477,7 @@ vk_pick_physical_device_
 
     for ( size_t i = 0; i < available_extensions_count; ++i )
     {
-      if ( !strcmp( available_extensions[ i ].extensionName, VK_NV_MESH_SHADER_EXTENSION_NAME ) )
+      if ( !strcmp( available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) )
       {
         gpu->mesh_shaders_extension_present = true;
         continue;
@@ -2624,6 +2625,8 @@ vk_create_device_
     vkGetDeviceQueue( gpu->vk_device, transfer_queue_index, 0, &gpu->vk_transfer_queue );
   }
   
+  gpu->vkCmdDrawMeshTasksIndirectCountEXT = ( PFN_vkCmdDrawMeshTasksIndirectCountEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksIndirectCountEXT" );
+  gpu->vkCmdDrawMeshTasksEXT = ( PFN_vkCmdDrawMeshTasksEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksEXT" );
   gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
   gpu->vkCmdEndRenderingKHR = ( PFN_vkCmdEndRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
   gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );

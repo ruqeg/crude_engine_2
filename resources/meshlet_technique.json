@@ -3,9 +3,9 @@
 	"pipelines" : [
 		{
 			"name" : "main",
-			"render_pass" : "mesh_pass",
+			"render_pass": "geometry_pass",
 			"depth" : {
-				"write" : true,
+				"write" : 1,
 				"test" : "less_or_equal"
 			},
 			"cull" : "back",

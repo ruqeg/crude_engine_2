@@ -162,6 +162,14 @@ parse_gpu_pipeline_
       {
         crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_COMPUTE_BIT );
       }
+      else if ( strcmp( name, "mesh" ) == 0 )
+      {
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
+      }
+      else if ( strcmp( name, "task" ) == 0 )
+      {
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
+      }
     }
   }
   

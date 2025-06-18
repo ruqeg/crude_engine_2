@@ -8,6 +8,7 @@
         "write": 1,
         "test": "less_or_equal"
       },
+      "cull" : "back",
       "shaders": [
         {
           "stage": "vertex",

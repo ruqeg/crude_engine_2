@@ -120,7 +120,48 @@ crude_gfx_scene_renderer_geometry_pass_render
 )
 {
   bool use_secondary = false;
-  if ( use_secondary )
+  if ( pass->scene->use_meshlets )
+  {
+    {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene->mesh_task_indirect_commands_sb[ pass->scene->renderer->gpu->current_frame ];
+    cb_map.offset = 0;
+    cb_map.size = sizeof( crude_gfx_mesh_draw_command );
+    crude_gfx_mesh_draw_command *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_command*, crude_gfx_map_buffer( pass->scene->renderer->gpu, &cb_map ) );
+    if ( draw_data )
+    {
+      draw_data->indirect_meshlet.groupCountX = 1;
+      draw_data->indirect_meshlet.groupCountY = 1;
+      draw_data->indirect_meshlet.groupCountZ = 1;
+      crude_gfx_unmap_buffer( pass->scene->renderer->gpu, cb_map.buffer );
+    }
+    }
+    
+    {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene->mesh_task_indirect_count_sb[ pass->scene->renderer->gpu->current_frame ];
+    cb_map.offset = 0;
+    cb_map.size = sizeof( crude_gfx_mesh_draw_counts );
+    crude_gfx_mesh_draw_counts *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_counts*, crude_gfx_map_buffer( pass->scene->renderer->gpu, &cb_map ) );
+    if ( draw_data )
+    {
+      draw_data->opaque_mesh_visible_count = 1;
+      crude_gfx_unmap_buffer( pass->scene->renderer->gpu, cb_map.buffer );
+    }
+    }
+
+    crude_gfx_renderer *renderer = pass->scene->renderer;
+    uint64 current_frame_index = renderer->gpu->current_frame;
+    uint64 meshlet_hashed_name = crude_hash_string( "meshlet", 0 );
+    crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
+    crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
+    crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
+    //uint32 buffer_frame_index = renderer->gpu->current_frame;
+    //gpu_commands->bind_descriptor_set( &render_scene->mesh_shader_early_descriptor_set[ buffer_frame_index ], 1, nullptr, 0);
+    //gpu_commands->draw_mesh_task_indirect( render_scene->mesh_task_indirect_early_commands_sb[ buffer_frame_index ], offsetof( GpuMeshDrawCommand, indirectMS ), render_scene->mesh_task_indirect_count_early_sb[ buffer_frame_index ], 0, render_scene->mesh_instances.size, sizeof( GpuMeshDrawCommand ) );
+    crude_gfx_cmd_draw_mesh_task_indirect_count( primary_cmd, pass->scene->mesh_task_indirect_commands_sb[ current_frame_index ], CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ), pass->scene->mesh_task_indirect_count_sb[ current_frame_index ], 0, 1u/*render_scene->mesh_instances.size*/, sizeof( crude_gfx_mesh_draw_command ) );
+  }
+  else if ( use_secondary )
   {
     enkiTaskSet                                           *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
     secondary_draw_task_container                          secondary_draw_tasks_data[ _PARALLEL_RECORDINGS ];
@@ -228,9 +269,9 @@ crude_gfx_scene_renderer_geometry_pass_prepare_draws
 
   if ( pass->scene->renderer->gpu->mesh_shaders_extension_present )
   {
-    //uint64 meshlet_hashed = crude_hash_bytes( "meshlet", crude_string_length( "meshlet" ), 0 );
-    //crude_gfx_renderer_technique *main_technique = CRUDE_HASHMAP_GET( pass->scene->renderer->resource_cache.techniques, meshlet_hashed )->value;
-    //pass->meshlet_technique_index = main_technique->get_pass_index( "gbuffer_culling" );
+    uint64 meshlet_hashed = crude_hash_string( "meshlet", 0 );
+    crude_gfx_renderer_technique *main_technique = CRUDE_HASHMAP_GET( pass->scene->renderer->resource_cache.techniques, meshlet_hashed )->value;
+    pass->meshlet_technique_index = crude_gfx_renderer_technique_get_pass_index( main_technique, "main" );
   }
 }
 
@@ -367,31 +408,47 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation.name = "meshlets_primitives_indices_sb";
   scene_renderer->meshlets_primitives_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
-  /* Meshlets descriptors */
-  if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
+  /* Create indirect buffers */
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
-    crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
-
-    uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
-    crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
-    crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = /*mesh_instances.size*/ 1 * sizeof( crude_gfx_mesh_draw_command );
+    buffer_creation.name = "draw_commands_sb";
+    scene_renderer->mesh_task_indirect_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
     
-    /*for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-    {
-      crude_gfx_descriptor_set_creation                    ds_creation;
-      
-      ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
-      add_scene_descriptors( ds_creation, meshlet_pass );
-      add_mesh_descriptors( ds_creation, meshlet_pass );
-      add_debug_descriptors( ds_creation, meshlet_pass );
-      add_meshlet_descriptors( ds_creation, meshlet_pass );
-      
-      ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
-      
-      scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( &ds_creation );
-    }*/
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts );
+    buffer_creation.name = "mesh_count_sb";
+    scene_renderer->mesh_task_indirect_count_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   }
+
+  scene_renderer->use_meshlets = scene_renderer->renderer->gpu->mesh_shaders_extension_present;
+
+  /* Meshlets descriptors */
+  //if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
+  //{
+  //  uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
+  //  crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
+
+  //  uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
+  //  crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
+  //  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
+  //  
+  //  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  //  {
+  //    crude_gfx_descriptor_set_creation                    ds_creation;
+  //    
+  //    ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
+  //    
+  //    //ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
+  //    
+  //    //scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( &ds_creation );
+  //  }
+  //}
 
   scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
@@ -501,34 +558,20 @@ draw_scene_
   _In_ crude_gfx_scene_renderer_geometry_pass             *pass
 )
 {
-  if ( false )
+  crude_gfx_renderer_material *last_material = NULL;
+  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
   {
-    crude_gfx_renderer *renderer = pass->scene->renderer;
-    //uint64 const meshlet_hashed_name = crude_hash_bytes( "meshlet", crude_string_length( "meshlet" ), 0 );
-    //crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
-    //crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
-    //crude_gfx_cmd_bind_pipeline( cmd, pipeline );
-    //uint32 buffer_frame_index = renderer->gpu->current_frame;
-    //gpu_commands->bind_descriptor_set( &render_scene->mesh_shader_early_descriptor_set[ buffer_frame_index ], 1, nullptr, 0);
-    //gpu_commands->draw_mesh_task_indirect( render_scene->mesh_task_indirect_early_commands_sb[ buffer_frame_index ], offsetof( GpuMeshDrawCommand, indirectMS ), render_scene->mesh_task_indirect_count_early_sb[ buffer_frame_index ], 0, render_scene->mesh_instances.size, sizeof( GpuMeshDrawCommand ) );
-  }
-  else
-  {
-    crude_gfx_renderer_material *last_material = NULL;
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->mesh_instances ); ++mesh_index )
+    crude_gfx_mesh_instance                               *mesh_instance;
+    crude_gfx_mesh                                        *mesh;
+  
+    mesh_instance = &pass->mesh_instances[ mesh_index ];
+    mesh = mesh_instance->mesh;
+    if ( mesh->material != last_material )
     {
-      crude_gfx_mesh_instance                               *mesh_instance;
-      crude_gfx_mesh                                        *mesh;
-    
-      mesh_instance = &pass->mesh_instances[ mesh_index ];
-      mesh = mesh_instance->mesh;
-      if ( mesh->material != last_material )
-      {
-        crude_gfx_cmd_bind_pipeline( cmd, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
-        last_material = mesh->material;
-      }
-      draw_mesh_( cmd, mesh );
+      crude_gfx_cmd_bind_pipeline( cmd, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
+      last_material = mesh->material;
     }
+    draw_mesh_( cmd, mesh );
   }
 }
 

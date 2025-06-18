@@ -8,6 +8,30 @@
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command
+{
+  uint32                                                   drawId;
+  VkDrawIndexedIndirectCommand                             indirect;
+  VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
+} crude_gfx_mesh_draw_command;
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts
+{
+  uint32                                                   opaque_mesh_visible_count;
+  uint32                                                   opaque_mesh_culled_count;
+  uint32                                                   transparent_mesh_visible_count;
+  uint32                                                   transparent_mesh_culled_count;
+
+  uint32                                                   total_count;
+  uint32                                                   depth_pyramid_texture_index;
+  uint32                                                   late_flag;
+  uint32                                                   meshlet_index_count;
+
+  uint32                                                   dispatch_task_x;
+  uint32                                                   dispatch_task_y;
+  uint32                                                   dispatch_task_z;
+  uint32                                                   pad001;
+} crude_gfx_mesh_draw_counts;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet
 {
@@ -107,6 +131,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
   crude_gfx_buffer_handle                                  meshlets_primitives_indices_sb;
   crude_gfx_descriptor_set_handle                          mesh_shader_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
   crude_allocator_container                                allocator_container;
 

@@ -68,6 +68,13 @@
 #define CRUDE_TYPE( v ) std::remove_reference_t<decltype( v )>
 #endif
 
+
+#ifdef __cplusplus
+#define CRUDE_OFFSETOF( s, m ) ( (::size_t )&reinterpret_cast< char const volatile& >( ( ( ( s* )0 )->m ) ) )
+#else
+#define CRUDE_OFFSETOF( s, m ) ( ( size_t ) &( ( ( s* )0 )->m ) )
+#endif
+
 /************************************************
  *
  * Types

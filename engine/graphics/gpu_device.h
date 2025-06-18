@@ -140,7 +140,9 @@ typedef struct crude_gfx_device
   bool                                                     mesh_shaders_extension_present;
 
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
-
+  
+  PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
+  PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
   PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
   PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
