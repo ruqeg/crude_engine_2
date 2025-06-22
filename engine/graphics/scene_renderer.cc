@@ -15,7 +15,7 @@
  * 
  */
 #define _PARALLEL_RECORDINGS                               ( 4 )
-uint32 material_descriptor_set_index = 1;
+uint32 material_descriptor_set_index = 0;
 
 /**
  *
@@ -122,6 +122,26 @@ crude_gfx_scene_renderer_geometry_pass_render
   bool use_secondary = false;
   if ( pass->scene->use_meshlets )
   {
+    
+  ///* Update frame buffer */
+  //{
+  //  crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.gpu.frame_buffer, 0, 0 };
+  //  crude_gfx_frame_buffer_data *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_frame_buffer_data*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
+  //  if ( frame_buffer_data )
+  //  {
+  //    crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
+  //    crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
+  //  
+  //    crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scene.main_camera, transform ) );
+  //    crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+  //    
+  //    crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
+  //    crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
+  //    crude_gfx_unmap_buffer( &paprika->graphics.gpu, paprika->graphics.gpu.frame_buffer );
+  //  }
+  //}
+  
+
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     cb_map.buffer = pass->scene->mesh_task_indirect_commands_sb[ pass->scene->renderer->gpu->current_frame ];
@@ -322,7 +342,7 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_primitives_indices, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_triangles_indices, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices_indices, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets, 0u, scene_renderer->allocator_container );
 }
@@ -359,7 +379,7 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->geometry_pass.mesh_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_primitives_indices );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_triangles_indices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices_indices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets );
 }
@@ -373,11 +393,20 @@ crude_gfx_scene_renderer_prepare_draws
 )
 {
   crude_gfx_buffer_creation                                buffer_creation;
+
+  scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.size = sizeof( crude_gfx_per_frame );
+  buffer_creation.name = "frame_buffer";
+  scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets );
+  buffer_creation.size = sizeof*( scene_renderer->meshlets ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets );
   buffer_creation.initial_data = scene_renderer->meshlets;
   buffer_creation.name = "meshlet_sb";
   scene_renderer->meshlets_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
@@ -385,7 +414,7 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices );
+  buffer_creation.size = sizeof*( scene_renderer->meshlets_vertices ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices );
   buffer_creation.initial_data = scene_renderer->meshlets_vertices;
   buffer_creation.name = "meshlets_vertices_sb";
   scene_renderer->meshlets_vertices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
@@ -393,7 +422,7 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices );
+  buffer_creation.size = sizeof*( scene_renderer->meshlets_vertices_indices ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices );
   buffer_creation.initial_data = scene_renderer->meshlets_vertices_indices;
   buffer_creation.name = "meshlets_vertices_indices_sb";
   scene_renderer->meshlets_vertices_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
@@ -401,10 +430,10 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-  buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_primitives_indices );
-  buffer_creation.initial_data = scene_renderer->meshlets_primitives_indices;
+  buffer_creation.size = sizeof*( scene_renderer->meshlets_triangles_indices ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices );
+  buffer_creation.initial_data = scene_renderer->meshlets_triangles_indices;
   buffer_creation.name = "meshlets_primitives_indices_sb";
-  scene_renderer->meshlets_primitives_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  scene_renderer->meshlets_triangles_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
   /* Create indirect buffers */
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -446,15 +475,17 @@ layout(binding=5) readonly buffer VerticesIndices                  uint vertices
     crude_gfx_descriptor_set_creation                    ds_creation;
     
     ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
-    //const u16 binding = pass.get_binding_index( "SceneConstants" );
-    //descriptor_set_creation.buffer( scene_cb, binding );
-    
-    //ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
+    ds_creation.layout = layout;
+
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->scene_cb, 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_sb, 1u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_sb, 2u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 3u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 4u );
     
     scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 
-  scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
 }
 
@@ -517,45 +548,6 @@ secondary_draw_task_
  * 
  */
 void
-draw_mesh_
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_mesh                                     *mesh
-)
-{
-  bool mesh_buffers_ready = crude_gfx_buffer_ready( cmd->gpu, mesh->position_buffer )
-    && crude_gfx_buffer_ready( cmd->gpu, mesh->tangent_buffer )
-    && crude_gfx_buffer_ready( cmd->gpu, mesh->normal_buffer )
-    && crude_gfx_buffer_ready( cmd->gpu, mesh->texcoord_buffer )
-    && crude_gfx_buffer_ready( cmd->gpu, mesh->index_buffer );
-
-  if ( !mesh_buffers_ready )
-  {
-    return;
-  }
-
-  crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
-  ds_creation.samplers[ 0 ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
-  ds_creation.samplers[ 1 ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
-  ds_creation.bindings[ 0 ] = 0;
-  ds_creation.bindings[ 1 ] = 1;
-  ds_creation.resources[ 0 ] = cmd->gpu->frame_buffer.index;
-  ds_creation.resources[ 1 ] = mesh->material_buffer.index;
-  ds_creation.num_resources = 2;
-  ds_creation.layout = crude_gfx_access_pipeline( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline )->descriptor_set_layout_handle[ 0 ];
-
-  crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
-
-  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->position_buffer, 0, mesh->position_offset );
-  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->tangent_buffer, 1, mesh->tangent_offset );
-  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->normal_buffer, 2, mesh->normal_offset );
-  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->texcoord_buffer, 3, mesh->texcoord_offset );
-  crude_gfx_cmd_bind_index_buffer( cmd, mesh->index_buffer, mesh->index_offset );
-  crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
-  crude_gfx_cmd_draw_indexed( cmd, mesh->primitive_count, 1, 0, 0, 0 );
-}
-
-void
 draw_scene_
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -575,7 +567,31 @@ draw_scene_
       crude_gfx_cmd_bind_pipeline( cmd, mesh->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
       last_material = mesh->material;
     }
-    draw_mesh_( cmd, mesh );
+    
+    bool mesh_buffers_ready = crude_gfx_buffer_ready( cmd->gpu, mesh->position_buffer )
+      && crude_gfx_buffer_ready( cmd->gpu, mesh->tangent_buffer )
+      && crude_gfx_buffer_ready( cmd->gpu, mesh->normal_buffer )
+      && crude_gfx_buffer_ready( cmd->gpu, mesh->texcoord_buffer )
+      && crude_gfx_buffer_ready( cmd->gpu, mesh->index_buffer );
+
+    if ( !mesh_buffers_ready )
+    {
+      continue;
+    }
+
+    crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene->scene_cb, 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh->material_buffer, 1u );
+    ds_creation.layout = crude_gfx_access_pipeline( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline )->descriptor_set_layout_handle[ 0 ];
+
+    crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
+    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->position_buffer, 0, mesh->position_offset );
+    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->tangent_buffer, 1, mesh->tangent_offset );
+    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->normal_buffer, 2, mesh->normal_offset );
+    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->texcoord_buffer, 3, mesh->texcoord_offset );
+    crude_gfx_cmd_bind_index_buffer( cmd, mesh->index_buffer, mesh->index_offset );
+    crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
+    crude_gfx_cmd_draw_indexed( cmd, mesh->primitive_count, 1, 0, 0, 0 );
   }
 }
 

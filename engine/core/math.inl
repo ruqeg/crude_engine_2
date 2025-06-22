@@ -905,6 +905,18 @@ crude_store_float3
 }
 
 void
+crude_store_float3a
+(
+  _Out_ crude_float3a                           *f,
+  _In_ crude_vector                              v
+)
+{
+  *( int* )( &f->x ) = _mm_extract_ps( v, 0 );
+  *( int* )( &f->y ) = _mm_extract_ps( v, 1 );
+  *( int* )( &f->z ) = _mm_extract_ps( v, 2 );
+}
+
+void
 crude_store_float4
 (
   _Out_ crude_float4                            *f,

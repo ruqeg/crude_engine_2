@@ -670,7 +670,13 @@ crude_store_float3
 (
   _Out_ crude_float3                            *f,
   _In_ crude_vector                              v
-);                                              
+);
+CRUDE_INLINE void
+crude_store_float3a
+(
+  _Out_ crude_float3a                           *f,
+  _In_ crude_vector                              v
+);
 CRUDE_INLINE void                               
 crude_store_float4                              
 (                                               

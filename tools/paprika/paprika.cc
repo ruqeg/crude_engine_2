@@ -189,17 +189,6 @@ paprika_graphics_initialize_
   crude_gfx_scene_renderer_register_render_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
   crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scene.main_node, &paprika->temporary_allocator );
   
-  /* Create Frame Buffer */
-  {
-    crude_gfx_buffer_creation frame_buffer_creation = {
-      .type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      .usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ,
-      .size = sizeof( crude_gfx_frame_buffer_data ),
-      .name = "frame_buffer",
-    };
-    paprika->graphics.gpu.frame_buffer = crude_gfx_create_buffer( &paprika->graphics.gpu, &frame_buffer_creation );
-  }
-  
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
 }
 
@@ -220,19 +209,24 @@ paprika_graphics_system_
   
   /* Update frame buffer */
   {
-    crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.gpu.frame_buffer, 0, 0 };
-    crude_gfx_frame_buffer_data *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_frame_buffer_data*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
+    crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.scene_renderer.scene_cb, 0, 0 };
+    crude_gfx_per_frame *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_per_frame*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
     if ( frame_buffer_data )
     {
       crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
     
-      crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scene.main_camera, transform ) );
+      crude_matrix view_to_world = crude_transform_node_to_world( paprika->scene.main_camera, transform );
+      crude_matrix world_to_view = crude_mat_inverse( NULL, view_to_world );
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
+      crude_matrix clip_to_view = crude_mat_inverse( NULL, view_to_clip );
       
-      crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
-      crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
-      crude_gfx_unmap_buffer( &paprika->graphics.gpu, paprika->graphics.gpu.frame_buffer );
+      crude_store_float4x4a( &frame_buffer_data->camera.clip_to_view, clip_to_view ); 
+      crude_store_float3a( &frame_buffer_data->camera.position, crude_load_float3( &transform->translation ) ); 
+      crude_store_float4x4a( &frame_buffer_data->camera.view_to_clip, view_to_clip ); 
+      crude_store_float4x4a( &frame_buffer_data->camera.view_to_world, view_to_world ); 
+      crude_store_float4x4a( &frame_buffer_data->camera.world_to_view, world_to_view ); 
+      crude_gfx_unmap_buffer( &paprika->graphics.gpu, frame_buffer_map.buffer );
     }
   }
   
@@ -288,7 +282,6 @@ paprika_graphics_deinitialize_
 {
   crude_gfx_asynchronous_loader_manager_remove_loader( paprika->graphics.asynchronous_loader_manager, &paprika->graphics.async_loader );
   vkDeviceWaitIdle( paprika->graphics.gpu.vk_device );
-  crude_gfx_destroy_buffer( &paprika->graphics.gpu, paprika->graphics.gpu.frame_buffer );
   crude_gfx_scene_renderer_deinitialize( &paprika->graphics.scene_renderer );
   crude_gfx_asynchronous_loader_deinitialize( &paprika->graphics.async_loader );
   crude_gfx_render_graph_deinitialize( &paprika->graphics.render_graph );

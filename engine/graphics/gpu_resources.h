@@ -623,12 +623,6 @@ typedef struct crude_gfx_resource_update
   uint32                                                   current_frame;
 } crude_gfx_resource_update;
 
-typedef struct crude_gfx_frame_buffer_data
-{
-  crude_float4x4a                                          world_to_view;
-  crude_float4x4a                                          view_to_clip;
-} crude_gfx_frame_buffer_data;
-
 typedef struct crude_gfx_shader_mesh_constants
 {
   crude_float4x4a                                          modelToWorld;
@@ -691,6 +685,14 @@ crude_shader_state_creation_add_state
   _In_ char const                                         *code,
   _In_ size_t                                              code_size,
   _In_ VkShaderStageFlagBits                               type
+);
+
+CRUDE_API void
+crude_gfx_descriptor_set_creation_add_buffer
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_buffer_handle                             buffer,
+  _In_ uint16                                              binding
 );
 
 /************************************************

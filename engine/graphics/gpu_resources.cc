@@ -112,6 +112,19 @@ crude_shader_state_creation_add_state
   ++shader_state_creation->stages_count;
 }
 
+void
+crude_gfx_descriptor_set_creation_add_buffer
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_buffer_handle                             buffer,
+  _In_ uint16                                              binding
+)
+{
+  creation->samplers[ creation->num_resources ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
+  creation->bindings[ creation->num_resources ] = binding;
+  creation->resources[ creation->num_resources++ ] = buffer.index;
+}
+
 /************************************************
  *
  * GPU Resoruces Functions

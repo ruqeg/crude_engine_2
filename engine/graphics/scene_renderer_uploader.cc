@@ -622,7 +622,7 @@ load_meshlets_
 
       load_meshlet_vertices_( mesh_primitive, &scene_renderer->meshlets_vertices );
       load_meshlet_vertices_indices_( mesh_primitive, &submesh_vertices_indices );
-      build_meshlets_( scene_renderer->meshlets_vertices, meshlets_vertices_offset, submesh_vertices_indices, &scene_renderer->meshlets_vertices_indices, &scene_renderer->meshlets_primitives_indices, &scene_renderer->meshlets, temporary_allocator );
+      build_meshlets_( scene_renderer->meshlets_vertices, meshlets_vertices_offset, submesh_vertices_indices, &scene_renderer->meshlets_vertices_indices, &scene_renderer->meshlets_triangles_indices, &scene_renderer->meshlets, temporary_allocator );
     }
   }
 

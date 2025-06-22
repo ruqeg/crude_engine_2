@@ -95,6 +95,7 @@ typedef struct crude_gfx_device
   VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkFence                                                  vk_command_buffer_executed_fences[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkDescriptorPool                                         vk_descriptor_pool;
   /**
    * Vulkan queues
    */
@@ -117,7 +118,6 @@ typedef struct crude_gfx_device
    * based on the reflection of the pipeline shaders.
    */
   VkDescriptorPool                                         vk_bindless_descriptor_pool;
-  VkDescriptorPool                                         vk_descriptor_pool;
   VkDescriptorSetLayout                                    vk_bindless_descriptor_set_layout;
   VkDescriptorSet                                          vk_bindless_descriptor_set;
   /**
@@ -134,7 +134,6 @@ typedef struct crude_gfx_device
    * //!TODO
    */
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
-  crude_gfx_buffer_handle                                  frame_buffer;
 
   uint32                                                   num_threads;
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;

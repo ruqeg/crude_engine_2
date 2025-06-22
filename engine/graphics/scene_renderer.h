@@ -8,6 +8,20 @@
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
+typedef struct crude_gfx_camera
+{
+  crude_float3a                                            position;
+  crude_float4x4a                                          world_to_view;
+  crude_float4x4a                                          view_to_clip;
+  crude_float4x4a                                          clip_to_view;
+  crude_float4x4a                                          view_to_world;
+} crude_gfx_camera;
+
+typedef struct crude_gfx_per_frame
+{
+  crude_gfx_camera                                         camera;
+} crude_gfx_per_frame;
+
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command
 {
   uint32                                                   draw_id;
@@ -124,12 +138,14 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_meshlet                                       *meshlets;
   crude_gfx_meshlet_vertex                                *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
-  uint8                                                   *meshlets_primitives_indices;
+  uint8                                                   *meshlets_triangles_indices;
+  
+  crude_gfx_buffer_handle                                  scene_cb;
 
   crude_gfx_buffer_handle                                  meshlets_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
-  crude_gfx_buffer_handle                                  meshlets_primitives_indices_sb;
+  crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
   crude_gfx_descriptor_set_handle                          mesh_shader_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];

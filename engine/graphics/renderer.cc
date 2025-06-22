@@ -288,7 +288,7 @@ crude_gfx_renderer_create_technique
   crude_gfx_renderer_technique *technique = crude_gfx_renderer_access_technique( renderer, technique_handle );
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
-  CRUDE_HASHMAP_INITIALIZE( technique->hashed_name_to_pass_index, renderer->gpu->allocator_container );
+  CRUDE_HASHMAP_INITIALIZE( technique->name_hashed_to_pass_index, renderer->gpu->allocator_container );
 
   for ( size_t i = 0; i < creation->num_creations; ++i )
   {
@@ -299,7 +299,27 @@ crude_gfx_renderer_create_technique
     CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
     
     uint64 pass_name_hashed = crude_hash_string( pass_creation->name, 0 );
-    CRUDE_HASHMAP_SET( technique->hashed_name_to_pass_index, pass_name_hashed, i );
+    CRUDE_HASHMAP_SET( technique->name_hashed_to_pass_index, pass_name_hashed, i );
+    
+    crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( renderer->gpu, pass->pipeline );
+    for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
+    {
+      crude_gfx_descriptor_set_layout const *descriptor_set_layout = pipeline->descriptor_set_layout[ i ];
+      if ( descriptor_set_layout == NULL )
+      {
+        continue;
+      }
+      
+      for ( uint32 b = 0; b < descriptor_set_layout->num_bindings; ++b )
+      {
+        // !TODO
+        //crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ b ];
+        //
+        //uint64 binding_name_hashed = crude_hash_string( binding->name, 0 );
+        //CRUDE_HASHMAP_SET( pass->name_hashed_to_descriptor_index, binding_name_hashed, binding->start );
+      }
+    }
+
   }
   
   if ( creation->name )
@@ -330,7 +350,7 @@ crude_gfx_renderer_destroy_technique
   }
   
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
-  CRUDE_HASHMAP_DEINITIALIZE( technique->hashed_name_to_pass_index );
+  CRUDE_HASHMAP_DEINITIALIZE( technique->name_hashed_to_pass_index );
   crude_gfx_renderer_release_technique( renderer, CRUDE_COMPOUNT( crude_gfx_renderer_technique_handle, { technique->pool_index } ) );
 }
 
