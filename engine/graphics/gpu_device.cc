@@ -1928,6 +1928,143 @@ crude_gfx_destroy_descriptor_set_layout_instant
   crude_gfx_release_descriptor_set_layout( gpu, handle );
 }
 
+
+crude_gfx_descriptor_set_handle
+crude_gfx_create_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_creation const            *creation
+)
+{
+  crude_gfx_descriptor_set_handle handle = crude_gfx_obtain_descriptor_set( gpu );
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
+  {
+    return handle;
+  }
+  
+  crude_gfx_descriptor_set *descriptor_set = crude_gfx_access_descriptor_set( gpu, handle );
+  crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, creation->layout );
+  
+  VkDescriptorSetAllocateInfo vk_descriptor_info = {
+    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+    .descriptorPool = descriptor_set_layout->bindless ? gpu->vk_bindless_descriptor_pool : gpu->vk_descriptor_pool,
+    .descriptorSetCount = 1u,
+    .pSetLayouts = &descriptor_set_layout->vk_descriptor_set_layout
+  };
+
+  if ( descriptor_set_layout->bindless )
+  {
+    uint32 max_binding = CRUDE_GFX_MAX_BINDLESS_RESOURCES - 1;
+    VkDescriptorSetVariableDescriptorCountAllocateInfoEXT count_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetVariableDescriptorCountAllocateInfoEXT );
+    count_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
+    count_info.descriptorSetCount = 1;
+    count_info.pDescriptorCounts = &max_binding;
+    vk_descriptor_info.pNext = &count_info;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ) );
+  }
+  else
+  {
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
+  }
+
+  VkWriteDescriptorSet descriptor_write[ 8 ];
+  VkDescriptorBufferInfo buffer_info[ 8 ];
+  VkDescriptorImageInfo image_info[ 8 ];
+
+  uint32 num_resources = 0u;
+  for ( uint32 i = 0; i < creation->num_resources; i++ )
+  {
+    crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ creation->bindings[ i ] ];
+    
+    if ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE )
+    {
+      continue;
+    }
+
+    descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write[ i ].pNext = NULL;
+    descriptor_write[ i ].dstSet = descriptor_set->vk_descriptor_set;
+    descriptor_write[ i ].dstBinding = binding->start;
+    descriptor_write[ i ].dstArrayElement = 0u;
+    descriptor_write[ i ].descriptorCount = 1u;
+    descriptor_write[ i ].descriptorType = binding->type;
+    descriptor_write[ i ].pImageInfo = NULL;
+    descriptor_write[ i ].pBufferInfo = NULL;
+    descriptor_write[ i ].pTexelBufferView = NULL;
+
+    switch ( binding->type )
+    {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    {
+      crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
+      CRUDE_ASSERT( buffer );
+      
+      descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
+      {
+        crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( gpu, buffer->parent_buffer );
+        buffer_info[ i ].buffer = parent_buffer->vk_buffer;
+      }
+      else
+      {
+        buffer_info[ i ].buffer = buffer->vk_buffer;
+      }
+
+      buffer_info[ i ].offset = 0;
+      buffer_info[ i ].range = buffer->size;
+
+      descriptor_write[ i ].pBufferInfo = &buffer_info[ i ];
+      break;
+    }
+    }
+
+    ++num_resources;
+  }
+
+  for ( uint32 i = 0; i < num_resources; i++ )
+  {
+    descriptor_set->resources[ i ] = creation->resources[ i ];
+    descriptor_set->samplers[ i ] = creation->samplers[ i ];
+    descriptor_set->bindings[ i ] = creation->bindings[ i ];
+  }
+
+  descriptor_set->layout = descriptor_set_layout;
+
+  vkUpdateDescriptorSets( gpu->vk_device, num_resources, descriptor_write, 0, NULL );
+  return handle;
+}
+
+void                                      
+crude_gfx_destroy_descriptor_set
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  if ( handle.index >= gpu->descriptor_sets.pool_size )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid descriptor set %u", handle.index );
+    return;
+  }
+  crude_gfx_resource_update descriptor_set_update_event = { 
+    .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET,
+    .handle        = handle.index,
+    .current_frame = gpu->current_frame };
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, descriptor_set_update_event );
+}
+
+void
+crude_gfx_destroy_descriptor_set_instant
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  crude_gfx_descriptor_set *descriptor_set_layout = crude_gfx_access_descriptor_set( gpu, handle );
+  crude_gfx_release_descriptor_set( gpu, handle );
+}
+
 crude_gfx_framebuffer_handle
 crude_gfx_create_framebuffer
 (
@@ -2207,6 +2344,35 @@ crude_gfx_release_descriptor_set_layout
 )
 {
   crude_resource_pool_release_resource( &gpu->descriptor_set_layouts, handle.index );
+}
+
+crude_gfx_descriptor_set_handle
+crude_gfx_obtain_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  return CRUDE_COMPOUNT( crude_gfx_descriptor_set_handle, { crude_resource_pool_obtain_resource( &gpu->descriptor_sets ) } );
+}
+
+crude_gfx_descriptor_set*
+crude_gfx_access_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  return CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &gpu->descriptor_sets, handle.index ) );
+}
+
+void
+crude_gfx_release_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  crude_resource_pool_release_resource( &gpu->descriptor_sets, handle.index );
 }
 
 crude_gfx_framebuffer_handle
@@ -2496,6 +2662,7 @@ vk_create_device_
 )
 {
   
+  VkPhysicalDevice8BitStorageFeatures                      bit_storage_features;
   VkPhysicalDeviceSynchronization2Features                 synchronization_features;
   VkPhysicalDeviceDynamicRenderingFeaturesKHR              dynamic_rendering_features;
   VkPhysicalDeviceDescriptorIndexingFeatures               indexing_features;
@@ -2560,8 +2727,14 @@ vk_create_device_
     } );
   }
 
+  bit_storage_features = CRUDE_COMPOUNT( VkPhysicalDevice8BitStorageFeatures, {
+    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES,
+    .storageBuffer8BitAccess = VK_TRUE
+  } );
+
   synchronization_features = CRUDE_COMPOUNT( VkPhysicalDeviceSynchronization2Features, {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+    .pNext = &bit_storage_features,
     .synchronization2 = VK_TRUE
   } );
 
@@ -3225,6 +3398,13 @@ vk_reflect_shader_
           ++set_layout->num_bindings;
           break;
         }
+        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        {
+          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          binding->type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          ++set_layout->num_bindings;
+          break;
+        }
       }
     }
   }
@@ -3275,6 +3455,11 @@ vk_destroy_resources_instant_
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT:
     {
       crude_gfx_destroy_descriptor_set_layout_instant( gpu, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_handle, { handle } ) );
+      break;
+    }
+    case CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET:
+    {
+      crude_gfx_destroy_descriptor_set_instant( gpu, CRUDE_COMPOUNT( crude_gfx_descriptor_set_handle, { handle } ) );
       break;
     }
     case CRUDE_GFX_RESOURCE_DELETION_TYPE_FRAMEBUFFER:

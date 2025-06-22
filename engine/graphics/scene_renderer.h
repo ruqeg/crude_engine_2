@@ -10,7 +10,7 @@
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command
 {
-  uint32                                                   drawId;
+  uint32                                                   draw_id;
   VkDrawIndexedIndirectCommand                             indirect;
   VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
 } crude_gfx_mesh_draw_command;

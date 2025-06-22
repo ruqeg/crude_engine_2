@@ -156,9 +156,7 @@ crude_gfx_scene_renderer_geometry_pass_render
     crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
     crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
-    //uint32 buffer_frame_index = renderer->gpu->current_frame;
     //gpu_commands->bind_descriptor_set( &render_scene->mesh_shader_early_descriptor_set[ buffer_frame_index ], 1, nullptr, 0);
-    //gpu_commands->draw_mesh_task_indirect( render_scene->mesh_task_indirect_early_commands_sb[ buffer_frame_index ], offsetof( GpuMeshDrawCommand, indirectMS ), render_scene->mesh_task_indirect_count_early_sb[ buffer_frame_index ], 0, render_scene->mesh_instances.size, sizeof( GpuMeshDrawCommand ) );
     crude_gfx_cmd_draw_mesh_task_indirect_count( primary_cmd, pass->scene->mesh_task_indirect_commands_sb[ current_frame_index ], CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ), pass->scene->mesh_task_indirect_count_sb[ current_frame_index ], 0, 1u/*render_scene->mesh_instances.size*/, sizeof( crude_gfx_mesh_draw_command ) );
   }
   else if ( use_secondary )
@@ -429,26 +427,32 @@ crude_gfx_scene_renderer_prepare_draws
   scene_renderer->use_meshlets = scene_renderer->renderer->gpu->mesh_shaders_extension_present;
 
   /* Meshlets descriptors */
-  //if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
-  //{
-  //  uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
-  //  crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
-
-  //  uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
-  //  crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
-  //  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
-  //  
-  //  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  //  {
-  //    crude_gfx_descriptor_set_creation                    ds_creation;
-  //    
-  //    ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
-  //    
-  //    //ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
-  //    
-  //    //scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( &ds_creation );
-  //  }
-  //}
+  uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
+  crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
+  
+  uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
+  crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
+  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
+  
+  /*
+layout(binding=0, row_major) uniform PerFrame                      Camera camera;
+layout(binding=1) readonly buffer Meshlets                         Meshlet meshlets[];
+layout(binding=2) readonly buffer Vertices                         Vertex vertices[];
+layout(binding=3) readonly buffer TrianglesIndices                 uint8_t triangles_indices[];
+layout(binding=5) readonly buffer VerticesIndices                  uint vertices_indices[];
+  */
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_descriptor_set_creation                    ds_creation;
+    
+    ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
+    //const u16 binding = pass.get_binding_index( "SceneConstants" );
+    //descriptor_set_creation.buffer( scene_cb, binding );
+    
+    //ds_creation.buffer( mesh_task_indirect_early_commands_sb[ i ], 6 ).buffer( mesh_task_indirect_count_early_sb[ i ], 7 ).set_layout( layout );
+    
+    scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+  }
 
   scene_renderer_prepare_node_draws_( scene_renderer, node, temporary_allocator );
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );

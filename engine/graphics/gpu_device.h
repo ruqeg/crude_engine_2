@@ -66,6 +66,7 @@ typedef struct crude_gfx_device
   crude_resource_pool                                      pipelines;
   crude_resource_pool                                      samplers;
   crude_resource_pool                                      descriptor_set_layouts;
+  crude_resource_pool                                      descriptor_sets;
   crude_resource_pool                                      render_passes;
   crude_resource_pool                                      command_buffers;
   crude_resource_pool                                      shaders;
@@ -116,6 +117,7 @@ typedef struct crude_gfx_device
    * based on the reflection of the pipeline shaders.
    */
   VkDescriptorPool                                         vk_bindless_descriptor_pool;
+  VkDescriptorPool                                         vk_descriptor_pool;
   VkDescriptorSetLayout                                    vk_bindless_descriptor_set_layout;
   VkDescriptorSet                                          vk_bindless_descriptor_set;
   /**
@@ -450,6 +452,27 @@ crude_gfx_destroy_descriptor_set_layout_instant
   _In_ crude_gfx_descriptor_set_layout_handle              handle
 );
 
+CRUDE_API crude_gfx_descriptor_set_handle
+crude_gfx_create_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_creation const            *creation
+);
+
+CRUDE_API void                                      
+crude_gfx_destroy_descriptor_set
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
+CRUDE_API void
+crude_gfx_destroy_descriptor_set_instant
+(                                                   
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
 CRUDE_API crude_gfx_framebuffer_handle
 crude_gfx_create_framebuffer
 (
@@ -614,6 +637,26 @@ crude_gfx_release_descriptor_set_layout
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_descriptor_set_layout_handle              handle
+);
+
+CRUDE_API crude_gfx_descriptor_set_handle
+crude_gfx_obtain_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_descriptor_set*
+crude_gfx_access_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
+CRUDE_API void
+crude_gfx_release_descriptor_set
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_descriptor_set_handle                     handle
 );
 
 CRUDE_API crude_gfx_framebuffer_handle

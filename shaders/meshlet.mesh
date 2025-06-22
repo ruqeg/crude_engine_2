@@ -7,7 +7,7 @@
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
-/*
+
 struct Meshlet
 {
   uint8_t                                                  vertices_count;
@@ -62,42 +62,41 @@ layout(location=0) out PerVertexData
 {
   vec2                                                     texcoord;
 } vertices_out[];
-*/
+
+taskPayloadSharedEXT struct
+{
+  uint                                                     meshlet_indices[ 128 ];
+} shared_data;
 
 void main()
 {
-  //uint task_index = gl_LocalInvocationID.x;
-  //uint local_meshlet_index = gl_WorkGroupID.x;
-  //uint global_meshlet_index = /*meshlet_indices[*/ local_meshlet_index /*]*/;
-  //
-  //uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
-  //uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
-  //
-  //uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
-  //uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
-
-  SetMeshOutputsEXT( /*vertices_count*/1, 1/*triangles_count*/ );
+  uint task_index = gl_LocalInvocationID.x;
+  uint local_meshlet_index = gl_WorkGroupID.x;
+  uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
   
-  gl_MeshVerticesEXT[ 0 ].gl_Position = vec4( 0.0, -0.5, 0.0, 1.0 );
-  gl_MeshVerticesEXT[ 1 ].gl_Position = vec4( 0.5, 0.5, 0.0, 1.0 );
-  gl_MeshVerticesEXT[ 2 ].gl_Position = vec4( -0.5, 0.5, 0.0, 1.0 );
-  gl_PrimitiveTriangleIndicesEXT[ 0 ] = uvec3( 0, 1, 2 );
-
-  //if ( task_index < vertices_count )
-  //{
-  //  uint vertex_index = vertices_indices[ task_index + vertices_offset ];
-  //  
-  //  vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
-  //  vec4 view_position = world_position * camera.world_to_view;
-  //  vec4 clip_position = view_position * camera.view_to_clip;
-  //
-  //  gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
-  //  vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
-  //}
-  //
-  //if ( task_index < triangles_count )
-  //{
-  //  uint triangle_index = uint( 3 * task_index + triangles_offset );
-  //  gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
-  //}
+  uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
+  uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
+  
+  uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
+  uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
+  
+  SetMeshOutputsEXT( vertices_count, triangles_count );
+  
+  if ( task_index < vertices_count )
+  {
+    uint vertex_index = vertices_indices[ task_index + vertices_offset ];
+    
+    vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    vec4 view_position = world_position * camera.world_to_view;
+    vec4 clip_position = view_position * camera.view_to_clip;
+  
+    gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
+    vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
+  }
+  
+  if ( task_index < triangles_count )
+  {
+    uint triangle_index = uint( 3 * task_index + triangles_offset );
+    gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
+  }
 }

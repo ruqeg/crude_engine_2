@@ -540,6 +540,7 @@ typedef struct crude_gfx_descriptor_set_layout
   uint16                                                   num_bindings;
   uint16                                                   set_index;
   crude_gfx_descriptor_set_layout_handle                   handle;
+  bool                                                     bindless;
 } crude_gfx_descriptor_set_layout;
 
 typedef struct crude_gfx_descriptor_set

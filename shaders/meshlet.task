@@ -2,7 +2,33 @@
 #extension GL_EXT_mesh_shader : require
 #extension GL_ARB_shader_draw_parameters : require
 
-layout(local_size_x = 128) in;
+#define CRUDE_GLOBAL_SET 0
+#define CRUDE_MATERIAL_SET 1
+
+layout( local_size_x = 128 ) in;
+
+///* crude_gfx_mesh_draw_command in *.h */
+//struct crude_mesh_draw_command
+//{
+//  uint32_t                                                 draw_id;
+//
+//  /* VkDrawIndexedIndirectCommand */
+//  uint32_t                                                 indices_count;
+//  uint32_t                                                 instances_count;
+//  uint32_t                                                 first_index;
+//  int32_t                                                  vertices_offset;
+//  uint32_t                                                 first_instance;
+//
+//  /* VkDrawMeshTasksIndirectCommandEXT */
+//  uint32_t                                                 group_count_x;
+//  uint32_t                                                 group_count_y;
+//  uint32_t                                                 group_count_z;
+//};
+//
+//layout( set = CRUDE_MATERIAL_SET, binding = 6 ) readonly buffer VisibleMeshInstances
+//{
+//  crude_mesh_draw_command                                  draw_commands[];
+//};
 
 /*
 bool cone_cull( vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_position )
@@ -11,14 +37,19 @@ bool cone_cull( vec3 center, float radius, vec3 cone_axis, float cone_cutoff, ve
 }
 */
 
+taskPayloadSharedEXT struct
+{
+  uint                                                     meshlet_indices[ 128 ];
+} shared_data;
+
 void main()
 {
   uint thread_index = gl_LocalInvocationID.x;
   uint group_index = gl_WorkGroupID.x;
   uint meshlet_index = group_index * 128 + thread_index;
-
-  //uint mesh_instance_index = draw_commands[ gl_DrawIDARB ].drawID;
-  EmitMeshTasksEXT( 1/*128*/, 1, 1 );
+  
+  shared_data.meshlet_indices[ thread_index ] = meshlet_index;
+  EmitMeshTasksEXT( 128, 1, 1 );
   
 /*
   vec4 center = model * vec4(meshlets[mi].center, 1);
