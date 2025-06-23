@@ -30,6 +30,9 @@
 #define CRUDE_MATH_MASK_Z          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 ) ) )
 #define CRUDE_MATH_MASK_W          ( _mm_castsi128_ps( _mm_set_epi32( 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 ) ) )
 #define CRUDE_MATH_MASK_3          ( _mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF) ) )
+#define CRUDE_MATH_IDENTITY_R0     ( _mm_set_ps( 0.0f, 0.0f, 0.0f, 1.0f ) )
+#define CRUDE_MATH_IDENTITY_R1     ( _mm_set_ps( 0.0f, 0.0f, 1.0f, 0.0f ) )
+#define CRUDE_MATH_IDENTITY_R2     ( _mm_set_ps( 0.0f, 1.0f, 0.0f, 0.0f ) )
 #define CRUDE_MATH_IDENTITY_R3     ( _mm_set_ps( 1.0f, 0.0f, 0.0f, 0.0f ) )
 #define CRUDE_MATH_ONE_HALF        ( _mm_set_ps( 0.5f, 0.5f, 0.5f, 0.5f ) )
 
@@ -133,7 +136,7 @@ typedef struct crude_float4x4
   };
 } crude_float4x4;
 
-typedef CRUDE_ALIGNED_STRUCT( 64 ) crude_float4x4a
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_float4x4a
 {
   union
   {
@@ -607,7 +610,10 @@ crude_mat_inverse
   _In_ crude_matrix const                        m
 );
 CRUDE_INLINE crude_vector              crude_mat_determinant( _In_ crude_matrix m );
-CRUDE_INLINE crude_matrix              crude_mat_identity();
+CRUDE_INLINE crude_matrix
+crude_mat_identity
+(
+);
 CRUDE_INLINE crude_matrix              crude_mat_set( _In_ float32 m00, _In_ float32 m01, _In_ float32 m02, _In_ float32 m03, _In_ float32 m10, _In_ float32 m11, _In_ float32 m12, _In_ float32 m13, _In_ float32 m20, _In_ float32 m21, _In_ float32 m22, _In_ float32 m23, _In_ float32 m30, _In_ float32 m31, _In_ float32 m32, _In_ float32 m33 );
 CRUDE_INLINE crude_matrix              crude_mat_translation( _In_ float32 offsetx, _In_ float32 offsety, _In_ float32 offsetz );
 CRUDE_INLINE crude_matrix              crude_mat_translation_from_vector( _In_ crude_vector offset );

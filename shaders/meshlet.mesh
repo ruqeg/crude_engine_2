@@ -10,18 +10,24 @@ layout(max_vertices=128, max_primitives=124) out;
 
 struct Meshlet
 {
-  uint8_t                                                  vertices_count;
-  uint8_t                                                  triangles_count;
+  vec3                                                     center;
+  float                                                    radius;
+  int8_t                                                   cone_axis[ 3 ];
+  int8_t                                                   cone_cutoff;
   uint                                                     vertices_offset;
   uint                                                     triangles_offset;
+  uint8_t                                                  vertices_count;
+  uint8_t                                                  triangles_count;
 };
 
 struct Vertex
 {
   vec3                                                     position;
-  vec3                                                     normal;
-  vec2                                                     texcoord;
-  vec4                                                     color;
+  float                                                    padding1;
+  uint8_t                                                  nx, ny, nz, nw;
+  uint8_t                                                  tx, ty, tz, tw;
+  float16_t                                                tu, tv;
+  float                                                    padding2;
 };
 
 struct Camera
@@ -33,27 +39,27 @@ struct Camera
   mat4                                                     view_to_world;
 };
 
-layout(binding=0, row_major) uniform PerFrame
+layout(std140, set=0, binding=0, row_major) uniform PerFrame
 {
   Camera                                                   camera;
 };
 
-layout(binding=1) readonly buffer Meshlets
+layout(set=0, binding=1) readonly buffer Meshlets
 {
   Meshlet                                                  meshlets[];
 };
 
-layout(binding=2) readonly buffer Vertices
+layout(set=0, binding=2) readonly buffer Vertices
 {
   Vertex                                                   vertices[];
 };
 
-layout(binding=3) readonly buffer TrianglesIndices
+layout(set=0, binding=3) readonly buffer TrianglesIndices
 {
   uint8_t                                                  triangles_indices[];
 };
 
-layout(binding=5) readonly buffer VerticesIndices
+layout(set=0, binding=5) readonly buffer VerticesIndices
 {
   uint                                                     vertices_indices[];
 };
@@ -91,7 +97,7 @@ void main()
     vec4 clip_position = view_position * camera.view_to_clip;
   
     gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
-    vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
+    //vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
   }
   
   if ( task_index < triangles_count )

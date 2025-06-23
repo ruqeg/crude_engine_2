@@ -681,7 +681,9 @@ load_meshlet_vertices_
     CRUDE_ASSERT( primitive_texcoords );
     
     crude_gfx_meshlet_vertex new_meshlet_vertex;
-    new_meshlet_vertex.position = primitive_positions[ i ];
+    new_meshlet_vertex.position.x = primitive_positions[ i ].x;
+    new_meshlet_vertex.position.y = primitive_positions[ i ].y;
+    new_meshlet_vertex.position.z = primitive_positions[ i ].z;
     new_meshlet_vertex.normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
     new_meshlet_vertex.normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
     new_meshlet_vertex.normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
@@ -775,10 +777,10 @@ build_meshlets_
     );
 
     new_meshlet = {
-      .vertices_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->vertex_count ),
       .vertices_offset = CRUDE_STATIC_CAST( uint32, mesh_vertices_indices_offset + current_zeux_meshlet->vertex_offset ),
-      .primitives_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->triangle_count ),
-      .primitives_offset = CRUDE_STATIC_CAST( uint32, mesh_primitives_indices_offset + current_zeux_meshlet->triangle_offset ),
+      .triangles_offset = CRUDE_STATIC_CAST( uint32, mesh_primitives_indices_offset + current_zeux_meshlet->triangle_offset ),
+      .vertices_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->vertex_count ),
+      .triangles_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->triangle_count ),
     };
     CRUDE_ARRAY_PUSH( *mesh_meshlets, new_meshlet );
   }

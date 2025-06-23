@@ -15,7 +15,6 @@
  * 
  */
 #define _PARALLEL_RECORDINGS                               ( 4 )
-uint32 material_descriptor_set_index = 0;
 
 /**
  *
@@ -122,26 +121,6 @@ crude_gfx_scene_renderer_geometry_pass_render
   bool use_secondary = false;
   if ( pass->scene->use_meshlets )
   {
-    
-  ///* Update frame buffer */
-  //{
-  //  crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.gpu.frame_buffer, 0, 0 };
-  //  crude_gfx_frame_buffer_data *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_frame_buffer_data*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
-  //  if ( frame_buffer_data )
-  //  {
-  //    crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
-  //    crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
-  //  
-  //    crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scene.main_camera, transform ) );
-  //    crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
-  //    
-  //    crude_store_float4x4a( &frame_buffer_data->world_to_view, world_to_view ); 
-  //    crude_store_float4x4a( &frame_buffer_data->view_to_clip, view_to_clip ); 
-  //    crude_gfx_unmap_buffer( &paprika->graphics.gpu, paprika->graphics.gpu.frame_buffer );
-  //  }
-  //}
-  
-
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     cb_map.buffer = pass->scene->mesh_task_indirect_commands_sb[ pass->scene->renderer->gpu->current_frame ];
@@ -176,7 +155,7 @@ crude_gfx_scene_renderer_geometry_pass_render
     crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
     crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
-    //gpu_commands->bind_descriptor_set( &render_scene->mesh_shader_early_descriptor_set[ buffer_frame_index ], 1, nullptr, 0);
+    crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->scene->mesh_shader_ds[ renderer->gpu->current_frame ] );
     crude_gfx_cmd_draw_mesh_task_indirect_count( primary_cmd, pass->scene->mesh_task_indirect_commands_sb[ current_frame_index ], CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ), pass->scene->mesh_task_indirect_count_sb[ current_frame_index ], 0, 1u/*render_scene->mesh_instances.size*/, sizeof( crude_gfx_mesh_draw_command ) );
   }
   else if ( use_secondary )
@@ -461,15 +440,8 @@ crude_gfx_scene_renderer_prepare_draws
   
   uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
   crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
-  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, material_descriptor_set_index );
+  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, 0u );
   
-  /*
-layout(binding=0, row_major) uniform PerFrame                      Camera camera;
-layout(binding=1) readonly buffer Meshlets                         Meshlet meshlets[];
-layout(binding=2) readonly buffer Vertices                         Vertex vertices[];
-layout(binding=3) readonly buffer TrianglesIndices                 uint8_t triangles_indices[];
-layout(binding=5) readonly buffer VerticesIndices                  uint vertices_indices[];
-  */
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -483,7 +455,7 @@ layout(binding=5) readonly buffer VerticesIndices                  uint vertices
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 3u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 4u );
     
-    scene_renderer->mesh_shader_early_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+    scene_renderer->mesh_shader_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 
   crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );

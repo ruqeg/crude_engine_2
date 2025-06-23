@@ -826,6 +826,19 @@ crude_mat_inverse
 }
 
 crude_matrix
+crude_mat_identity
+(
+)
+{
+  crude_matrix m;
+  m.r[ 0 ] = CRUDE_MATH_IDENTITY_R0;
+  m.r[ 1 ] = CRUDE_MATH_IDENTITY_R1;
+  m.r[ 2 ] = CRUDE_MATH_IDENTITY_R2;
+  m.r[ 3 ] = CRUDE_MATH_IDENTITY_R3; 
+  return m;
+}
+
+crude_matrix
 crude_mat_scaling_from_vector
 (
   _In_ crude_vector const                        scale

@@ -612,6 +612,32 @@ crude_gfx_cmd_create_local_descriptor_set
 }
 
 void
+crude_gfx_cmd_bind_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  crude_gfx_descriptor_set *descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, handle );
+  
+  uint32 num_offsets = 0u;
+  uint32 offsets_cache[ 8 ];
+  for ( uint32 i = 0; i < descriptor_set->layout->num_bindings; ++i )
+  {
+    if ( descriptor_set->layout->bindings[ i ].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER )
+    {
+        CRUDE_ASSERT( num_offsets < CRUDE_COUNTOF( offsets_cache ) );
+        const uint32 resource_index = descriptor_set->bindings[ i ];
+        crude_gfx_buffer_handle buffer_handle = { descriptor_set->resources[ resource_index ] };
+        crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
+        offsets_cache[ num_offsets++ ] = buffer->global_offset;
+    }
+  }
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 0u, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, 1u, 1u, &cmd->gpu->vk_bindless_descriptor_set, 0u, NULL );
+}
+
+void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

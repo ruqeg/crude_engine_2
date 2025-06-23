@@ -195,6 +195,13 @@ crude_gfx_cmd_create_local_descriptor_set
 );
 
 CRUDE_API void
+crude_gfx_cmd_bind_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
+CRUDE_API void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
