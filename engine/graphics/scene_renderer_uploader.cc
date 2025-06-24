@@ -647,27 +647,29 @@ load_meshlet_vertices_
   {
     cgltf_attribute *attribute = &primitive->attributes[ i ];
     CRUDE_ASSERT( meshlet_vertices_count == attribute->data->count );
+
+    uint8 *attribute_data = CRUDE_STATIC_CAST( uint8*, attribute->data->buffer_view->buffer->data ) + attribute->data->buffer_view->offset;
     switch ( attribute->type )
     {
     case cgltf_attribute_type_position:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
       CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float3 ) );
-      primitive_positions = CRUDE_CAST( crude_float3*, attribute->data->buffer_view->buffer->data );
+      primitive_positions = CRUDE_CAST( crude_float3*, attribute_data );
       break;
     }
     case cgltf_attribute_type_normal:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
       CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float3 ) );
-      primitive_normals = CRUDE_CAST( crude_float3*, attribute->data->buffer_view->buffer->data );
+      primitive_normals = CRUDE_CAST( crude_float3*, attribute_data );
       break;
     }
     case cgltf_attribute_type_texcoord:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec2 );
       CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float2 ) );
-      primitive_texcoords = CRUDE_CAST( crude_float2*, attribute->data->buffer_view->buffer->data );
+      primitive_texcoords = CRUDE_CAST( crude_float2*, attribute_data );
       break;
     }
     }
@@ -702,13 +704,16 @@ load_meshlet_vertices_indices_
 {
   uint16                                                  *primitive_indices;
   uint32                                                   meshlet_vertices_indices_count;
-  
+  uint8                                                   *buffer_data;
+
   meshlet_vertices_indices_count = primitive->indices->count;
   CRUDE_ARRAY_SET_LENGTH( *submesh_vertices_indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
   CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u );
-  primitive_indices = CRUDE_CAST( uint16*, primitive->indices->buffer_view->buffer->data );
+
+  buffer_data = CRUDE_CAST( uint8*, primitive->indices->buffer_view->buffer->data ) + primitive->indices->buffer_view->offset;
+  primitive_indices = CRUDE_CAST( uint16*, buffer_data );
 
   for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
   {
