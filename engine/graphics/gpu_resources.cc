@@ -125,6 +125,16 @@ crude_gfx_descriptor_set_creation_add_buffer
   creation->resources[ creation->num_resources++ ] = buffer.index;
 }
 
+CRUDE_API void
+crude_gfx_descriptor_set_layout_creation_add_binding
+(
+  _In_ crude_gfx_descriptor_set_layout_creation           *creation,
+  _In_ crude_gfx_descriptor_set_layout_binding             binding
+)
+{
+  creation->bindings[ creation->num_bindings++ ] = binding;
+}
+
 /************************************************
  *
  * GPU Resoruces Functions

@@ -14,12 +14,12 @@ struct Camera
   mat4                                                     view_to_world;
 };
 
-layout(set=0, binding=0, row_major, std140) uniform SceneConstant
+layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
   Camera                                                   camera;
 };
 
-layout(set=0, binding=1, row_major) uniform MeshConstants
+layout(set=1, binding=1, row_major) uniform MeshConstants
 {
   mat4                                                     model_to_world;
   uvec4                                                    textures;

@@ -10,12 +10,12 @@ struct Camera
   mat4                                                     view_to_world;
 };
 
-layout(std140, set=0, binding=0, row_major) uniform SceneConstant
+layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
   Camera                                                   camera;
 };
 
-layout(binding=1, row_major) uniform MeshConstants
+layout(set=1, binding=1, row_major) uniform MeshConstants
 {
   mat4                                                     model_to_world;
   uvec4                                                    textures;
@@ -25,7 +25,7 @@ layout(binding=1, row_major) uniform MeshConstants
   uint                                                     flags;
 };
 
-layout( set = 1, binding = 10 ) uniform sampler2D global_textures[];
+layout(set=0, binding=10) uniform sampler2D global_textures[];
 //layout( set = 1, binding = 10 ) uniform sampler3D global_textures_3d[];
 
 layout(location = 0) in vec2 in_texcoord0;

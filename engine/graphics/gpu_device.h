@@ -117,8 +117,8 @@ typedef struct crude_gfx_device
    * based on the reflection of the pipeline shaders.
    */
   VkDescriptorPool                                         vk_bindless_descriptor_pool;
-  VkDescriptorSetLayout                                    vk_bindless_descriptor_set_layout;
-  VkDescriptorSet                                          vk_bindless_descriptor_set;
+  crude_gfx_descriptor_set_layout_handle                   bindless_descriptor_set_layout_handle;
+  crude_gfx_descriptor_set_handle                          bindless_descriptor_set_handle;
   /**
    * Allocators and callbacks
    */

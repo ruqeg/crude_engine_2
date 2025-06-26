@@ -46,13 +46,6 @@ secondary_draw_task_
  * 
  */
 static void
-draw_mesh_
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_mesh                                     *mesh
-);
-
-static void
 draw_scene_
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -119,7 +112,7 @@ crude_gfx_scene_renderer_geometry_pass_render
 )
 {
   bool use_secondary = false;
-  if ( true )
+  if ( false )
   {
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -440,7 +433,7 @@ crude_gfx_scene_renderer_prepare_draws
   
   uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
   crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
-  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, 0u );
+  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -554,7 +547,7 @@ draw_scene_
     crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene->scene_cb, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh->material_buffer, 1u );
-    ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline, 0u );
+    ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
     crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
     crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->position_buffer, 0, mesh->position_offset );

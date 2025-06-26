@@ -21,6 +21,8 @@
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
 #define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024
+#define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX        0u
+#define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX        1u
 #define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
 
 /************************************************
@@ -87,6 +89,7 @@ typedef struct crude_gfx_framebuffer_handle
 #define CRUDE_GFX_SHADER_STATE_HANDLE_INVALID              ( CRUDE_COMPOUNT( crude_gfx_shader_state_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_GFX_RENDER_PASS_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_render_pass_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_DESCRIPTOR_SET_LAYOUT_HANDLE_INVALID     ( CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 
 /************************************************
  *
@@ -434,6 +437,7 @@ typedef struct crude_gfx_descriptor_set_layout_creation
   uint32                                                   num_bindings;
   uint32                                                   set_index;
   char const                                              *name;
+  bool                                                     bindless;
 } crude_gfx_descriptor_set_layout_creation;
 
 typedef struct crude_gfx_pipeline_creation
@@ -693,6 +697,13 @@ crude_gfx_descriptor_set_creation_add_buffer
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_buffer_handle                             buffer,
   _In_ uint16                                              binding
+);
+
+CRUDE_API void
+crude_gfx_descriptor_set_layout_creation_add_binding
+(
+  _In_ crude_gfx_descriptor_set_layout_creation           *creation,
+  _In_ crude_gfx_descriptor_set_layout_binding             binding
 );
 
 /************************************************
