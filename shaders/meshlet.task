@@ -5,7 +5,7 @@
 #define CRUDE_GLOBAL_SET 0
 #define CRUDE_MATERIAL_SET 1
 
-layout( local_size_x = 128 ) in;
+layout(local_size_x=128) in;
 
 taskPayloadSharedEXT struct
 {

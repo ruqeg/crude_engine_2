@@ -179,7 +179,7 @@ create_mesh_material_
   
   mesh_draw->flags = 0;
 
-  mesh_draw->base_color_factor = CRUDE_COMPOUNT( crude_float4, {
+  mesh_draw->albedo_color_factor = CRUDE_COMPOUNT( crude_float4, {
     material->pbr_metallic_roughness.base_color_factor[ 0 ],
     material->pbr_metallic_roughness.base_color_factor[ 1 ],
     material->pbr_metallic_roughness.base_color_factor[ 2 ],
@@ -590,6 +590,7 @@ load_meshes_
       mesh_draw.index_buffer = indices_buffer_gpu->handle;
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
+      mesh_draw.gpu_mesh_index = CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
       CRUDE_ARRAY_PUSH( scene_renderer->meshes, mesh_draw );
     }
   }

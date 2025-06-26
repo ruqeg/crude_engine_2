@@ -60,7 +60,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet
   uint32                                                   mesh_index;
 } crude_gfx_meshlet;
 
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
 {
   crude_uint4                                              textures;
   crude_float4                                             emissive;
@@ -76,7 +76,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw
   uint32                                                   meshletes_count;
   uint32                                                   meshletes_index_count;
   uint32                                                   padding1;
-} crude_gfx_mesh_draw;
+} crude_gfx_mesh_material_gpu;
 
 typedef struct crude_gfx_meshlet_vertex
 {
@@ -105,7 +105,7 @@ typedef struct crude_gfx_mesh
   uint32                                                   normal_offset;
   uint32                                                   texcoord_offset;
   uint32                                                   primitive_count;
-  crude_float4                                             base_color_factor;
+  crude_float4                                             albedo_color_factor;
   crude_float3                                             metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;
   uint32                                                   flags;
@@ -113,6 +113,7 @@ typedef struct crude_gfx_mesh
   uint16                                                   roughness_texture_index;
   uint16                                                   normal_texture_index;
   uint16                                                   occlusion_texture_index;
+  uint32                                                   gpu_mesh_index;
 } crude_gfx_mesh;
 
 typedef struct crude_gfx_mesh_instance
@@ -159,7 +160,8 @@ typedef struct crude_gfx_scene_renderer
   uint8                                                   *meshlets_triangles_indices;
   
   crude_gfx_buffer_handle                                  scene_cb;
-
+  
+  crude_gfx_buffer_handle                                  meshes_materials_sb;
   crude_gfx_buffer_handle                                  meshlets_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;

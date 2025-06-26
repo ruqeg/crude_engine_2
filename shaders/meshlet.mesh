@@ -40,7 +40,25 @@ struct Camera
   mat4                                                     view_to_world;
 };
 
-layout(std140, set=1, binding=0, row_major) uniform PerFrame
+struct crude_mesh_draw
+{
+  uvec4                                                    textures;
+  vec4                                                     emissive;
+  vec4                                                     albedo_color_factor;
+  vec4                                                     metallic_roughness_occlusion_factor;
+
+  uint                                                     flags;
+  float                                                    alpha_cutoff;
+  uint                                                     vertices_offset;
+  uint                                                     mesh_index;
+
+  uint                                                     meshletes_offset;
+  uint                                                     meshletes_count;
+  uint                                                     meshletes_index_count;
+  uint                                                     padding1;
+};
+
+layout(set=1, binding=0, row_major, std140) uniform PerFrame
 {
   Camera                                                   camera;
 };
@@ -60,13 +78,18 @@ layout(set=1, binding=3) readonly buffer TrianglesIndices
   uint8_t                                                  triangles_indices[];
 };
 
-layout(set=1, binding=5) readonly buffer VerticesIndices
+layout(set=1, binding=4) readonly buffer VerticesIndices
 {
   uint                                                     vertices_indices[];
 };
 
-layout (location = 0) out vec2 out_texcoord[];
-layout (location = 1) out flat uint out_mesh_draw_index[];
+layout(set=1, binding=5, std430) readonly buffer MeshDraws
+{
+  crude_mesh_draw                                          mesh_draws[];
+};
+
+layout(location=0) out vec2 out_texcoord[];
+layout(location=1) out flat uint out_mesh_draw_index[];
 
 taskPayloadSharedEXT struct
 {

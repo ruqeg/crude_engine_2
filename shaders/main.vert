@@ -29,7 +29,7 @@ layout(set=1, binding=1, row_major) uniform MeshConstants
   uint                                                     flags;
 };
 
-layout(location = 0) out vec2 out_texcoord0;
+layout(location=0) out vec2 out_texcoord0;
 
 void main()
 {

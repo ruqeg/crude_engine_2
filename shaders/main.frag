@@ -28,9 +28,9 @@ layout(set=1, binding=1, row_major) uniform MeshConstants
 layout(set=0, binding=10) uniform sampler2D global_textures[];
 //layout( set = 1, binding = 10 ) uniform sampler3D global_textures_3d[];
 
-layout(location = 0) in vec2 in_texcoord0;
+layout(location=0) in vec2 in_texcoord0;
 
-layout(location = 0) out vec4 out_color;
+layout(location=0) out vec4 out_color;
 
 void main()
 {

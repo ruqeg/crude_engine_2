@@ -16,6 +16,23 @@
  */
 #define _PARALLEL_RECORDINGS                               ( 4 )
 
+
+static void
+copy_mesh_material_gpu_
+(
+  _In_ crude_gfx_mesh const                               *mesh,
+  _Out_ crude_gfx_mesh_material_gpu                       *gpu_mesh_material
+)
+{
+  gpu_mesh_material->textures.x = mesh->albedo_texture_index;
+  gpu_mesh_material->textures.y = mesh->roughness_texture_index;
+  gpu_mesh_material->textures.z = mesh->normal_texture_index;
+  gpu_mesh_material->textures.w = mesh->occlusion_texture_index;
+  gpu_mesh_material->albedo_color_factor = mesh->albedo_color_factor;
+  gpu_mesh_material->flags = mesh->flags;
+  gpu_mesh_material->mesh_index = mesh->gpu_mesh_index;
+}
+
 /**
  *
  * Renderer Scene Draw Task Declaration
@@ -112,7 +129,7 @@ crude_gfx_scene_renderer_geometry_pass_render
 )
 {
   bool use_secondary = false;
-  if ( false )
+  if ( true )
   {
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -138,6 +155,22 @@ crude_gfx_scene_renderer_geometry_pass_render
     if ( draw_data )
     {
       draw_data->opaque_mesh_visible_count = 1;
+      crude_gfx_unmap_buffer( pass->scene->renderer->gpu, cb_map.buffer );
+    }
+    }
+    
+    {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene->meshes_materials_sb;
+    cb_map.offset = 0;
+    cb_map.size = 0;
+    crude_gfx_mesh_material_gpu *meshes_materials = CRUDE_CAST( crude_gfx_mesh_material_gpu*, crude_gfx_map_buffer( pass->scene->renderer->gpu, &cb_map ) );
+    if ( meshes_materials )
+    {
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene->meshes ); ++i )
+      {
+        copy_mesh_material_gpu_( &pass->scene->meshes[i ], &meshes_materials[ i ] );
+      }
       crude_gfx_unmap_buffer( pass->scene->renderer->gpu, cb_map.buffer );
     }
     }
@@ -353,6 +386,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_indices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_triangles_indices_sb );
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_materials_sb );
 
   /* Destroy indirect buffers */
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -425,6 +459,15 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation.initial_data = scene_renderer->meshlets_triangles_indices;
   buffer_creation.name = "meshlets_primitives_indices_sb";
   scene_renderer->meshlets_triangles_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  
+  crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
+
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.size = sizeof*( scene_renderer->meshes ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
+  buffer_creation.name = "meshes_materials_sb";
+  scene_renderer->meshes_materials_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
   /* Create indirect buffers */
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -466,11 +509,10 @@ crude_gfx_scene_renderer_prepare_draws
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_sb, 2u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 3u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 4u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshes_materials_sb, 5u );
     
     scene_renderer->mesh_shader_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
-
-  crude_gfx_scene_renderer_geometry_pass_prepare_draws( &scene_renderer->geometry_pass, scene_renderer->render_graph, temporary_allocator );
 }
 
 void
