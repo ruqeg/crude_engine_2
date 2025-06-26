@@ -353,6 +353,7 @@ crude_gfx_device_deinitialize
   crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
   crude_gfx_destroy_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
+  crude_gfx_destroy_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
