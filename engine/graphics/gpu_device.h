@@ -57,7 +57,6 @@ typedef struct crude_gfx_device
    * rendering behavior even with missing assets.
    */
   crude_gfx_sampler_handle                                 default_sampler;
-  crude_gfx_texture_handle                                 depth_texture;
   /**
    * GPU Device resources memory pools.
    */

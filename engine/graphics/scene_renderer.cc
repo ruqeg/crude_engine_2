@@ -119,7 +119,7 @@ crude_gfx_scene_renderer_geometry_pass_render
 )
 {
   bool use_secondary = false;
-  if ( pass->scene->use_meshlets )
+  if ( true )
   {
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -554,7 +554,7 @@ draw_scene_
     crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene->scene_cb, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh->material_buffer, 1u );
-    ds_creation.layout = crude_gfx_access_pipeline( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline )->descriptor_set_layout_handle[ 0 ];
+    ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline, 0u );
 
     crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
     crude_gfx_cmd_bind_vertex_buffer( cmd, mesh->position_buffer, 0, mesh->position_offset );

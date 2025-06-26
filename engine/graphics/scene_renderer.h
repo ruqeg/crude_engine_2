@@ -57,7 +57,26 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet
   uint32                                                   triangles_offset;
   uint8                                                    vertices_count;
   uint8                                                    triangles_count;
+  uint32                                                   mesh_index;
 } crude_gfx_meshlet;
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw
+{
+  crude_uint4                                              textures;
+  crude_float4                                             emissive;
+  crude_float4                                             albedo_color_factor;
+  crude_float4                                             metallic_roughness_occlusion_factor;
+
+  uint32                                                   flags;
+  float32                                                  alpha_cutoff;
+  uint32                                                   vertices_offset;
+  uint32                                                   mesh_index;
+
+  uint32                                                   meshletes_offset;
+  uint32                                                   meshletes_count;
+  uint32                                                   meshletes_index_count;
+  uint32                                                   padding1;
+} crude_gfx_mesh_draw;
 
 typedef struct crude_gfx_meshlet_vertex
 {

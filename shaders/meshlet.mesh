@@ -18,6 +18,7 @@ struct Meshlet
   uint                                                     triangles_offset;
   uint8_t                                                  vertices_count;
   uint8_t                                                  triangles_count;
+  uint                                                     mesh_index;
 };
 
 struct Vertex
@@ -64,10 +65,8 @@ layout(set=0, binding=5) readonly buffer VerticesIndices
   uint                                                     vertices_indices[];
 };
 
-layout(location=0) out PerVertexData 
-{
-  vec2                                                     texcoord;
-} vertices_out[];
+layout (location = 0) out vec2 out_texcoord[];
+layout (location = 1) out flat uint out_mesh_draw_index[];
 
 taskPayloadSharedEXT struct
 {
@@ -97,7 +96,8 @@ void main()
     vec4 clip_position = view_position * camera.view_to_clip;
   
     gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
-    //vertices_out[ task_index ].texcoord = vertices[ vertex_index ].texcoord;
+    out_texcoord[ task_index ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
+    out_mesh_draw_index[ task_index ] = meshlets[ global_meshlet_index ].mesh_index;
   }
   
   if ( task_index < triangles_count )

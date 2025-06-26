@@ -244,7 +244,7 @@ paprika_graphics_system_
         mesh_data->textures.y = mesh_draw->roughness_texture_index;
         mesh_data->textures.z = mesh_draw->normal_texture_index;
         mesh_data->textures.w = mesh_draw->occlusion_texture_index;
-        mesh_data->base_color_factor = CRUDE_COMPOUNT( crude_float4a, { mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } );
+        mesh_data->albedo_color_factor = CRUDE_COMPOUNT( crude_float4a, { mesh_draw->base_color_factor.x, mesh_draw->base_color_factor.y, mesh_draw->base_color_factor.z, mesh_draw->base_color_factor.w } );
         mesh_data->metallic_roughness_occlusion_factor = CRUDE_COMPOUNT( crude_float3a, { mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z } );
         mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
         mesh_data->flags.x = mesh_draw->flags;
@@ -255,7 +255,7 @@ paprika_graphics_system_
           .scale = { 0.3, 0.3, 0.3 },
         };
         crude_matrix model_to_world = crude_transform_node_to_world( paprika->scene.main_camera, &model_transform );
-        crude_store_float4x4a( &mesh_data->modelToWorld, model_to_world ); 
+        crude_store_float4x4a( &mesh_data->model_to_world, model_to_world ); 
       
         crude_gfx_unmap_buffer( &paprika->graphics.gpu, mesh_draw->material_buffer );
       }

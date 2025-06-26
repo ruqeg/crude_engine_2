@@ -296,18 +296,6 @@ crude_gfx_device_initialize
   crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
   
   {
-    crude_gfx_texture_creation depth_texture_creation = crude_gfx_texture_creation_empty();
-    depth_texture_creation.width    = gpu->vk_swapchain_width;
-    depth_texture_creation.height   = gpu->vk_swapchain_height; 
-    depth_texture_creation.depth    = 1;
-    depth_texture_creation.mipmaps  = 1; 
-    depth_texture_creation.format   = VK_FORMAT_D32_SFLOAT;
-    depth_texture_creation.type     = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-    depth_texture_creation.name     = "depth_image_texture";
-    gpu->depth_texture = crude_gfx_create_texture( gpu, &depth_texture_creation );
-  }
-  
-  {
     crude_gfx_sampler_creation default_sampler_creation = crude_gfx_sampler_creation_empty();
     default_sampler_creation .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     default_sampler_creation .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -363,7 +351,6 @@ crude_gfx_device_deinitialize
   
   crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
   crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
-  crude_gfx_destroy_texture( gpu, gpu->depth_texture );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )

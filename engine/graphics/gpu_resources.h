@@ -625,9 +625,9 @@ typedef struct crude_gfx_resource_update
 
 typedef struct crude_gfx_shader_mesh_constants
 {
-  crude_float4x4a                                          modelToWorld;
+  crude_float4x4a                                          model_to_world;
   crude_uint4a                                             textures;
-  crude_float4a                                            base_color_factor;
+  crude_float4a                                            albedo_color_factor;
   crude_float3a                                            metallic_roughness_occlusion_factor;
   crude_float1a                                            alpha_cutoff;
   crude_uint1a                                             flags;

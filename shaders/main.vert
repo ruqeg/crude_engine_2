@@ -1,30 +1,38 @@
 #version 450
 
-layout( location = 0 ) in vec3 inPosition;
-layout( location = 1 ) in vec4 tangent;
-layout( location = 2 ) in vec3 normal;
-layout( location = 3 ) in vec2 inTexcoord0;
+layout(location=0) in vec3 in_position;
+layout(location=1) in vec4 in_tangent;
+layout(location=2) in vec3 in_normal;
+layout(location=3) in vec2 in_texcoord0;
 
-layout( binding = 0, row_major ) uniform FrameConstants
+struct Camera
 {
-  mat4 worldToView;
-  mat4 viewToClip;
+  vec3                                                     position;
+  mat4                                                     world_to_view;
+  mat4                                                     view_to_clip;
+  mat4                                                     clip_to_view;
+  mat4                                                     view_to_world;
 };
 
-layout( binding = 1, row_major ) uniform MeshConstants
+layout(set=0, binding=0, row_major, std140) uniform SceneConstant
 {
-  mat4  modelToWorld;
-  uvec4 textures;
-  vec4  base_color_factor;
-  vec4  metallic_roughness_occlusion_factor;
-  float alpha_cutoff;
-  uint  flags;
+  Camera                                                   camera;
 };
 
-layout(location = 0) out vec2 outTexcoord0;
+layout(set=0, binding=1, row_major) uniform MeshConstants
+{
+  mat4                                                     model_to_world;
+  uvec4                                                    textures;
+  vec4                                                     albedo_color_factor;
+  vec4                                                     metallic_roughness_occlusion_factor;
+  float                                                    alpha_cutoff;
+  uint                                                     flags;
+};
+
+layout(location = 0) out vec2 out_texcoord0;
 
 void main()
 {
-  outTexcoord0 = inTexcoord0;
-  gl_Position = vec4( inPosition, 1.0 ) * modelToWorld * worldToView * viewToClip;
+  out_texcoord0 = in_texcoord0;
+  gl_Position = vec4( in_position, 1.0 ) * model_to_world * camera.world_to_view * camera.view_to_clip;
 }

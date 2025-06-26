@@ -7,36 +7,6 @@
 
 layout( local_size_x = 128 ) in;
 
-///* crude_gfx_mesh_draw_command in *.h */
-//struct crude_mesh_draw_command
-//{
-//  uint32_t                                                 draw_id;
-//
-//  /* VkDrawIndexedIndirectCommand */
-//  uint32_t                                                 indices_count;
-//  uint32_t                                                 instances_count;
-//  uint32_t                                                 first_index;
-//  int32_t                                                  vertices_offset;
-//  uint32_t                                                 first_instance;
-//
-//  /* VkDrawMeshTasksIndirectCommandEXT */
-//  uint32_t                                                 group_count_x;
-//  uint32_t                                                 group_count_y;
-//  uint32_t                                                 group_count_z;
-//};
-//
-//layout( set = CRUDE_MATERIAL_SET, binding = 6 ) readonly buffer VisibleMeshInstances
-//{
-//  crude_mesh_draw_command                                  draw_commands[];
-//};
-
-/*
-bool cone_cull( vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_position )
-{
-  return dot(cetner - camera_position, cone_axis) >= cone_cutoff * length(center - camera_position) + radius;
-}
-*/
-
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
@@ -47,44 +17,7 @@ void main()
   uint thread_index = gl_LocalInvocationID.x;
   uint group_index = gl_WorkGroupID.x;
   uint meshlet_index = group_index * 128 + thread_index;
-  
+
   shared_data.meshlet_indices[ thread_index ] = meshlet_index;
   EmitMeshTasksEXT( 128, 1, 1 );
-  
-/*
-  vec4 center = model * vec4(meshlets[mi].center, 1);
-  float scale = length(model[0]);
-  float radius = meshlets[mi].radius * scale;
-
-  vec3 cone_axis = mat3( model ) * vec3(
-    int(meshlets[mi].cone_axis[0]) / 127.0,
-    int(meshlets[mi].cone_axis[1]) / 127.0,
-    int(meshlets[mi].cone_axis[2]) / 127.0);
-  float cone_cutoff = int(meshlets[mi].cone_cutoff) / 127.0;
-  accept = !coneCull(center.xyz, radius, cone_axis, cone_cutoff, eye.xyz);
-
-  center = world_to_camera * center;
-
-  for ( uint i = 0; i < 6; ++i )
-  {
-    frustum_visible = frustum_visible && (dot( furstum_panels[i], center) > -radius);
-  }
-
-  accept = accept && frustum_visible;
-
-  uvec4 ballot = subgroupBallot(accept);
-
-  uint index = subgroupBallotExclusiveBitCount(ballot);
-
-  if (accept)
-  {
-    meshletIndices[index] = meshlet_index;
-  }
-
-  uint count = subgroupBallotBitCount(ballot);
-
-  if (ti)
-  {
-    EmitMeshTasksEXT(count, 1, 1);
-  }*/
 }
