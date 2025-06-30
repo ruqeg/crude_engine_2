@@ -79,7 +79,7 @@
           "components": [
             {
               "type": "crude_gltf",
-              "path": "glTF-Sample-Models\\2.0\\Cube\\glTF\\Cube.gltf"
+              "path": "glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
             }
           ],
           "tags": [],

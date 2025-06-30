@@ -101,6 +101,7 @@ crude_heap_allocator_allocate
   sizet                                                    actual_size;
   
   allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
+  CRUDE_ASSERT( allocated_memory );
   actual_size = tlsf_block_size( allocated_memory );
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
   return allocated_memory;

@@ -1,3 +1,5 @@
+#include <core/assert.h>
+
 #include <core/array.h>
 
 void*
@@ -20,7 +22,7 @@ crude_array_growf
     min_cap = min_len;
   }
 
-  if ( min_cap < 2 * CRUDE_ARRAY_CAPACITY( a ) )
+  if ( min_cap > CRUDE_ARRAY_CAPACITY( a ) && min_cap < 2 * CRUDE_ARRAY_CAPACITY( a ) )
   {
     min_cap = 2 * CRUDE_ARRAY_CAPACITY( a );
   }
@@ -35,6 +37,7 @@ crude_array_growf
   }
 
   b = CRUDE_ALLOCATE( allocator, elemsize * min_cap + sizeof( crude_array_header ) );
+  CRUDE_ASSERT( b );
   b = ( char* ) b + sizeof( crude_array_header );
 
   if ( a )

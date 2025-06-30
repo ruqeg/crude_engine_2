@@ -85,26 +85,14 @@ static void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex                          **meshletes_vertices
+  _In_ crude_gfx_meshlet_vertex                          **vertices
 );
 
 static void
-load_meshlet_vertices_indices_
+load_meshlet_indices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ uint32                                            **submesh_vertices_indices
-);
-
-static void
-build_meshlets_
-(
-  _In_ crude_gfx_meshlet_vertex                           *mesh_vertices,
-  _In_ uint32                                              mesh_vertices_offset,
-  _In_ uint32                                             *submesh_vertices_indices,
-  _In_ uint32                                            **mesh_vertices_indices,
-  _In_ uint8                                             **mesh_primitives_indices,
-  _In_ crude_gfx_meshlet                                 **mesh_meshlets,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ uint32                                            **indices
 );
 
 void
@@ -346,6 +334,7 @@ load_images_
     texture_resource = crude_gfx_renderer_create_texture( scene_renderer->renderer, &texture_creation );
     CRUDE_ARRAY_PUSH( scene_renderer->images, *texture_resource );
     crude_gfx_asynchronous_loader_request_texture_data( scene_renderer->async_loader, image_full_filename, texture_resource->handle );
+    crude_string_buffer_clear( temporary_string_buffer );
   }
 }
 
@@ -604,37 +593,95 @@ load_meshlets_
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  uint32                                              *submesh_vertices_indices;
-  uint64                                               temporary_allocator_marker;
-
-  temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( submesh_vertices_indices, 0u, crude_stack_allocator_pack( temporary_allocator ) );
-
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   {
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
+      uint32                                              *indices;
       cgltf_primitive                                     *mesh_primitive;
-      uint32                                               meshlets_vertices_offset;
+      uint32                                               vertices_offset;
+      uint32                                               temporary_allocator_marker;
+
+      temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
-      meshlets_vertices_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices );
 
-      load_meshlet_vertices_( mesh_primitive, &scene_renderer->meshlets_vertices );
-      load_meshlet_vertices_indices_( mesh_primitive, &submesh_vertices_indices );
-      build_meshlets_( scene_renderer->meshlets_vertices, meshlets_vertices_offset, submesh_vertices_indices, &scene_renderer->meshlets_vertices_indices, &scene_renderer->meshlets_triangles_indices, &scene_renderer->meshlets, temporary_allocator );
+      /* Load meshlets data*/
+      {
+        CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( indices, 0u, crude_stack_allocator_pack( temporary_allocator ) );
+        vertices_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices );
+        load_meshlet_vertices_( mesh_primitive, &scene_renderer->meshlets_vertices );
+        load_meshlet_indices_( mesh_primitive, &indices );
+      }
+      /* Build meshlets*/
+      {
+        // !TODO custom allocator meshopt_setAllocator
+        size_t                                                   max_vertices = 128u;
+        size_t                                                   max_triangles = 124u;
+        float32                                                  cone_weight = 0.0f;
+        
+        meshopt_Meshlet                                         *local_meshlets;
+        uint32                                                  *local_meshlet_vertices;
+        uint8                                                   *local_meshlet_triangles;
+        size_t                                                   max_meshlets, meshletes_count;
+
+        max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( indices ), max_vertices, max_triangles );
+
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlets, max_meshlets, crude_stack_allocator_pack( temporary_allocator ) );
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlet_vertices, max_meshlets * max_vertices, crude_stack_allocator_pack( temporary_allocator ) );
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlet_triangles, max_meshlets * max_triangles, crude_stack_allocator_pack( temporary_allocator ) );
+        
+        meshletes_count = meshopt_buildMeshlets( local_meshlets, local_meshlet_vertices, local_meshlet_triangles, indices, CRUDE_ARRAY_LENGTH( indices ), 
+          &scene_renderer->meshlets_vertices[ vertices_offset ].position.x, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex ), 
+          max_vertices, max_triangles, cone_weight
+        );
+        
+        CRUDE_ARRAY_SET_CAPACITY( scene_renderer->meshlets, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets ) + meshletes_count );
+
+        for ( uint32 meshlet_index = 0; meshlet_index < meshletes_count; ++meshlet_index )
+        {
+          meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+          meshopt_optimizeMeshlet( local_meshlet_vertices + local_meshlet->vertex_offset, local_meshlet_triangles + local_meshlet->triangle_offset, local_meshlet->triangle_count, local_meshlet->vertex_count );
+        }
+        
+        for ( uint32 meshlet_index = 0; meshlet_index < meshletes_count; ++meshlet_index )
+        {
+          meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+          crude_gfx_meshlet new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet );
+          new_meshlet.vertices_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices ) + local_meshlet->vertex_offset;
+          new_meshlet.triangles_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ) + local_meshlet->triangle_offset;
+          new_meshlet.vertices_count = local_meshlet->vertex_count;
+          new_meshlet.triangles_count = local_meshlet->triangle_count;
+          CRUDE_ARRAY_PUSH( scene_renderer->meshlets, new_meshlet );
+        }
+        
+        for ( uint32 meshlet_index = 0; meshlet_index < meshletes_count; ++meshlet_index )
+        {
+          meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+          for ( uint32 i = 0; i < local_meshlet->vertex_count; ++i )
+          {
+            CRUDE_ARRAY_PUSH( scene_renderer->meshlets_vertices_indices, local_meshlet_vertices[ i + local_meshlet->vertex_offset ] );
+          }
+          for ( uint32 i = 0; i < local_meshlet->triangle_count; ++i )
+          {
+            CRUDE_ARRAY_PUSH( scene_renderer->meshlets_vertices_indices, local_meshlet_vertices[ 0 + i + 3 * local_meshlet->triangle_offset ] );
+            CRUDE_ARRAY_PUSH( scene_renderer->meshlets_vertices_indices, local_meshlet_vertices[ 1 + i + 3 * local_meshlet->triangle_offset ] );
+            CRUDE_ARRAY_PUSH( scene_renderer->meshlets_vertices_indices, local_meshlet_vertices[ 2 + i + 3 * local_meshlet->triangle_offset ] );
+          }
+        }
+      }
+
+      crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
     }
   }
-
-  crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
 }
 
 static void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex                          **meshletes_vertices
+  _In_ crude_gfx_meshlet_vertex                          **vertices
 )
 {
   crude_float3                                            *primitive_positions;
@@ -676,7 +723,9 @@ load_meshlet_vertices_
     }
   }
 
-  CRUDE_ARRAY_SET_CAPACITY( *meshletes_vertices, CRUDE_ARRAY_LENGTH( *meshletes_vertices ) + meshlet_vertices_count );
+  uint32 old_length = CRUDE_ARRAY_LENGTH( *vertices );
+  uint32 new_cap = CRUDE_ARRAY_LENGTH( *vertices ) + meshlet_vertices_count;
+  CRUDE_ARRAY_SET_CAPACITY( *vertices, CRUDE_ARRAY_LENGTH( *vertices ) + meshlet_vertices_count );
   for ( uint32 i = 0; i < meshlet_vertices_count; ++i )
   {
     CRUDE_ASSERT( primitive_positions );
@@ -692,15 +741,15 @@ load_meshlet_vertices_
     new_meshlet_vertex.normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
     new_meshlet_vertex.texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
     new_meshlet_vertex.texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
-    CRUDE_ARRAY_PUSH( *meshletes_vertices, new_meshlet_vertex );
+    CRUDE_ARRAY_PUSH( *vertices, new_meshlet_vertex );
   }
 }
 
 static void
-load_meshlet_vertices_indices_
+load_meshlet_indices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ uint32                                            **submesh_vertices_indices
+  _In_ uint32                                            **indices
 )
 {
   uint16                                                  *primitive_indices;
@@ -708,7 +757,7 @@ load_meshlet_vertices_indices_
   uint8                                                   *buffer_data;
 
   meshlet_vertices_indices_count = primitive->indices->count;
-  CRUDE_ARRAY_SET_LENGTH( *submesh_vertices_indices, meshlet_vertices_indices_count );
+  CRUDE_ARRAY_SET_LENGTH( *indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
   CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u );
@@ -718,79 +767,6 @@ load_meshlet_vertices_indices_
 
   for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
   {
-    ( *submesh_vertices_indices )[ i ] = primitive_indices[ i ];
+    ( *indices )[ i ] = primitive_indices[ i ];
   }
-}
-
-void
-build_meshlets_
-(
-  _In_ crude_gfx_meshlet_vertex                           *mesh_vertices,
-  _In_ uint32                                              mesh_vertices_offset,
-  _In_ uint32                                             *submesh_vertices_indices,
-  _In_ uint32                                            **mesh_vertices_indices,
-  _In_ uint8                                             **mesh_primitives_indices,
-  _In_ crude_gfx_meshlet                                 **mesh_meshlets,
-  _In_ crude_stack_allocator                              *temporary_allocator
-)
-{
-  // !TODO custom allocator meshopt_setAllocator
-#if defined(__cplusplus)
-  size_t                                                   max_vertices = 64u;
-  size_t                                                   max_primitives = 124u;
-  float32                                                  cone_weight = 0.0f;
-  
-  meshopt_Meshlet const                                   *zeux_last_meshlet;
-  meshopt_Meshlet                                         *zeux_meshlets;
-  uint32                                                   mesh_vertices_indices_offset, mesh_primitives_indices_offset, mesh_meshletes_offset;
-  size_t                                                   max_meshlets, meshletes_count;
-
-  mesh_vertices_indices_offset = CRUDE_ARRAY_LENGTH( *mesh_vertices_indices );
-  mesh_primitives_indices_offset = CRUDE_ARRAY_LENGTH( *mesh_primitives_indices );
-  mesh_meshletes_offset = CRUDE_ARRAY_LENGTH( *mesh_meshlets );
-  max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( submesh_vertices_indices ), max_vertices, max_primitives );
-
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( zeux_meshlets, max_meshlets, crude_stack_allocator_pack( temporary_allocator ) );
-
-  CRUDE_ARRAY_SET_LENGTH( *mesh_vertices_indices, mesh_vertices_indices_offset + max_meshlets * max_vertices );
-  CRUDE_ARRAY_SET_LENGTH( *mesh_primitives_indices, mesh_primitives_indices_offset + max_meshlets * max_primitives );
-
-  meshletes_count = meshopt_buildMeshlets( zeux_meshlets, 
-    &( *mesh_vertices_indices )[ mesh_vertices_indices_offset ], &( *mesh_primitives_indices )[ mesh_primitives_indices_offset ],
-    submesh_vertices_indices, CRUDE_ARRAY_LENGTH( submesh_vertices_indices ), 
-    &mesh_vertices[ mesh_vertices_offset ].position.x, CRUDE_ARRAY_LENGTH( mesh_vertices ) - mesh_vertices_offset, sizeof( crude_gfx_meshlet_vertex ), 
-    max_vertices, max_primitives, cone_weight
-  );
-
-  zeux_last_meshlet = &zeux_meshlets[ meshletes_count - 1];
-  CRUDE_ARRAY_SET_LENGTH( *mesh_vertices_indices, mesh_vertices_indices_offset + zeux_last_meshlet->vertex_offset + zeux_last_meshlet->vertex_count );
-  CRUDE_ARRAY_SET_LENGTH( *mesh_primitives_indices, mesh_primitives_indices_offset + zeux_last_meshlet->triangle_offset + ( ( zeux_last_meshlet->triangle_count * 3 + 3 ) & ~3 ) );
-  CRUDE_ARRAY_SET_LENGTH( zeux_meshlets, meshletes_count );
-
-  CRUDE_ARRAY_SET_CAPACITY( *mesh_meshlets, mesh_meshletes_offset + meshletes_count );
-
-  for ( uint32 meshlet_index = 0; meshlet_index < meshletes_count; ++meshlet_index )
-  {
-    meshopt_Meshlet const                                 *current_zeux_meshlet;
-    crude_gfx_meshlet                                      new_meshlet;
-
-    current_zeux_meshlet = &zeux_meshlets[ meshlet_index ];
-    meshopt_optimizeMeshlet(
-      &( *mesh_vertices_indices )[ mesh_vertices_indices_offset + current_zeux_meshlet->vertex_offset ],
-      &( *mesh_primitives_indices )[ mesh_primitives_indices_offset + current_zeux_meshlet->triangle_offset ],
-      current_zeux_meshlet->triangle_count,
-      current_zeux_meshlet->vertex_count
-    );
-
-    new_meshlet = {
-      .vertices_offset = CRUDE_STATIC_CAST( uint32, mesh_vertices_indices_offset + current_zeux_meshlet->vertex_offset ),
-      .triangles_offset = CRUDE_STATIC_CAST( uint32, mesh_primitives_indices_offset + current_zeux_meshlet->triangle_offset ),
-      .vertices_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->vertex_count ),
-      .triangles_count = CRUDE_STATIC_CAST( uint8, current_zeux_meshlet->triangle_count ),
-    };
-    CRUDE_ARRAY_PUSH( *mesh_meshlets, new_meshlet );
-  }
-#else
-#error "TODO"
-#endif
 }
