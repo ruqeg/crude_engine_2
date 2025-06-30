@@ -548,6 +548,12 @@ CRUDE_INLINE crude_vector              crude_vec_normalize4( _In_ crude_vector c
 CRUDE_INLINE crude_vector              crude_vec_cos4( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 CRUDE_INLINE crude_vector              crude_vec_project4( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
 CRUDE_INLINE crude_vector              crude_vec_reject4( _In_ crude_vector const *v1, _In_ crude_vector const *v2 );
+CRUDE_INLINE crude_vector
+crude_vec_transform4
+(
+  _In_ crude_vector const                        v,
+  _In_ crude_matrix const                        m
+);
 
 /************************************************
  *

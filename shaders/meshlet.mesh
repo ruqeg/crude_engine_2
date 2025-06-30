@@ -31,13 +31,10 @@ struct Vertex
   float                                                    padding2;
 };
 
-struct Camera
+struct crude_mesh_instance_draw
 {
-  vec3                                                     position;
-  mat4                                                     world_to_view;
-  mat4                                                     view_to_clip;
-  mat4                                                     clip_to_view;
-  mat4                                                     view_to_world;
+  mat4                                                     model_to_world;
+  mat4                                                     world_to_model;
 };
 
 struct crude_mesh_draw
@@ -58,9 +55,12 @@ struct crude_mesh_draw
   uint                                                     padding1;
 };
 
-layout(set=1, binding=0, row_major, std140) uniform PerFrame
+layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
-  Camera                                                   camera;
+  mat4                                                     world_to_view;
+  mat4                                                     view_to_clip;
+  mat4                                                     clip_to_view;
+  mat4                                                     view_to_world;
 };
 
 layout(set=1, binding=1) readonly buffer Meshlets
@@ -88,6 +88,11 @@ layout(set=1, binding=5, std430) readonly buffer MeshDraws
   crude_mesh_draw                                          mesh_draws[];
 };
 
+//layout(set=1, binding=6, std430) readonly buffer MeshInstanceDraws
+//{
+//  crude_mesh_instance_draw                                 mesh_instance_draws[];
+//};
+
 layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out flat uint out_mesh_draw_index[];
 
@@ -102,6 +107,9 @@ void main()
   uint local_meshlet_index = gl_WorkGroupID.x;
   uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
   
+  uint mesh_index = meshlets[ global_meshlet_index ].mesh_index;
+  if ( mesh_index != 7)
+    return;
   uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
   uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
   
@@ -112,20 +120,17 @@ void main()
   
   if ( task_index < vertices_count )
   {
-    uint vertex_index = vertices_indices[ task_index + vertices_offset ];
+    uint global_vertex_index = vertices_indices[ task_index + vertices_offset ];
     
-    vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
-    vec4 view_position = world_position * camera.world_to_view;
-    vec4 clip_position = view_position * camera.view_to_clip;
-  
-    gl_MeshVerticesEXT[ task_index ].gl_Position = clip_position;
-    out_texcoord[ task_index ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
-    out_mesh_draw_index[ task_index ] = meshlets[ global_meshlet_index ].mesh_index;
+    vec4 world_position = vec4( vertices[ global_vertex_index ].position, 1.0 );
+    gl_MeshVerticesEXT[ task_index ].gl_Position = world_position * world_to_view * view_to_clip;
+    out_texcoord[ task_index ] = vec2( vertices[ global_vertex_index ].tu, vertices[ global_vertex_index ].tv );
+    out_mesh_draw_index[ task_index ] = mesh_index;
   }
   
   if ( task_index < triangles_count )
   {
-    uint triangle_index = uint( 3 * task_index + triangles_offset );
-    gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
+    uint global_triangle_index = uint( 3 * task_index + triangles_offset );
+    gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ global_triangle_index ], triangles_indices[ global_triangle_index + 1 ], triangles_indices[ global_triangle_index + 2 ] );
   }
 }

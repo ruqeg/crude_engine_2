@@ -209,9 +209,9 @@ paprika_graphics_system_
   
   /* Update frame buffer */
   {
-    crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.scene_renderer.scene_cb, 0, 0 };
-    crude_gfx_per_frame *frame_buffer_data = CRUDE_REINTERPRET_CAST( crude_gfx_per_frame*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
-    if ( frame_buffer_data )
+    crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.scene_renderer.scene_cb, 0 };
+    crude_gfx_scene_constant *scene_data = CRUDE_REINTERPRET_CAST( crude_gfx_scene_constant*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
+    if ( scene_data )
     {
       crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
       crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
@@ -221,11 +221,10 @@ paprika_graphics_system_
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
       crude_matrix clip_to_view = crude_mat_inverse( NULL, view_to_clip );
       
-      crude_store_float4x4a( &frame_buffer_data->camera.clip_to_view, clip_to_view ); 
-      crude_store_float3a( &frame_buffer_data->camera.position, crude_load_float3( &transform->translation ) ); 
-      crude_store_float4x4a( &frame_buffer_data->camera.view_to_clip, view_to_clip ); 
-      crude_store_float4x4a( &frame_buffer_data->camera.view_to_world, view_to_world ); 
-      crude_store_float4x4a( &frame_buffer_data->camera.world_to_view, world_to_view ); 
+      crude_store_float4x4a( &scene_data->clip_to_view, clip_to_view ); 
+      crude_store_float4x4a( &scene_data->view_to_clip, view_to_clip ); 
+      crude_store_float4x4a( &scene_data->view_to_world, view_to_world ); 
+      crude_store_float4x4a( &scene_data->world_to_view, world_to_view ); 
       crude_gfx_unmap_buffer( &paprika->graphics.gpu, frame_buffer_map.buffer );
     }
   }
@@ -249,12 +248,8 @@ paprika_graphics_system_
         mesh_data->alpha_cutoff.x = mesh_draw->alpha_cutoff;
         mesh_data->flags.x = mesh_draw->flags;
         
-        crude_transform model_transform = {
-          .translation = { 0.0, 0.0, -4.0 },
-          .rotation = { 0.0, 0.0, 0.0, 0.0 },
-          .scale = { 0.3, 0.3, 0.3 },
-        };
-        crude_matrix model_to_world = crude_transform_node_to_world( paprika->scene.main_camera, &model_transform );
+        crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_draw->node, crude_transform );
+        crude_matrix model_to_world = crude_transform_node_to_world( paprika->scene.main_camera, transform );
         crude_store_float4x4a( &mesh_data->model_to_world, model_to_world ); 
       
         crude_gfx_unmap_buffer( &paprika->graphics.gpu, mesh_draw->material_buffer );

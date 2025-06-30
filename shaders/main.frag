@@ -1,18 +1,12 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
 
-struct Camera
+layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
-  vec3                                                     position;
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
   mat4                                                     view_to_world;
-};
-
-layout(set=1, binding=0, row_major, std140) uniform SceneConstant
-{
-  Camera                                                   camera;
 };
 
 layout(set=1, binding=1, row_major) uniform MeshConstants

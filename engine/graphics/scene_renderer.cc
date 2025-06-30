@@ -129,7 +129,7 @@ crude_gfx_scene_renderer_geometry_pass_render
 )
 {
   bool use_secondary = false;
-  if ( false )
+  if ( true )
   {
     {
     crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -139,7 +139,7 @@ crude_gfx_scene_renderer_geometry_pass_render
     crude_gfx_mesh_draw_command *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_command*, crude_gfx_map_buffer( pass->scene->renderer->gpu, &cb_map ) );
     if ( draw_data )
     {
-      draw_data->indirect_meshlet.groupCountX = 1;
+      draw_data->indirect_meshlet.groupCountX = ceil( CRUDE_ARRAY_LENGTH( pass->scene->meshlets ) / 128.0 );
       draw_data->indirect_meshlet.groupCountY = 1;
       draw_data->indirect_meshlet.groupCountZ = 1;
       crude_gfx_unmap_buffer( pass->scene->renderer->gpu, cb_map.buffer );
@@ -424,7 +424,7 @@ crude_gfx_scene_renderer_prepare_draws
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_per_frame );
+  buffer_creation.size = sizeof( crude_gfx_scene_constant );
   buffer_creation.name = "frame_buffer";
   scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 

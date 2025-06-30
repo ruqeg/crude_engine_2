@@ -238,11 +238,17 @@ parse_gpu_pipeline_
     {
       pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_BACK_BIT;
     }
+    else if ( strcmp( cull_mode, "front" ) == 0 )
+    {
+      pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_FRONT_BIT;
+    }
     else
     {
       CRUDE_ASSERT( false );
     }
   }
+
+  pipeline_creation->rasterization.front = VK_FRONT_FACE_CLOCKWISE;
   
   cJSON const *render_pass_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "render_pass" );
   if ( render_pass_json != NULL )

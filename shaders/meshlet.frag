@@ -29,15 +29,6 @@ struct Vertex
   float                                                    padding2;
 };
 
-struct Camera
-{
-  vec3                                                     position;
-  mat4                                                     world_to_view;
-  mat4                                                     view_to_clip;
-  mat4                                                     clip_to_view;
-  mat4                                                     view_to_world;
-};
-
 struct crude_mesh_draw
 {
   uvec4                                                    textures;
@@ -56,9 +47,12 @@ struct crude_mesh_draw
   uint                                                     padding1;
 };
 
-layout(set=1, binding=0, row_major, std140) uniform PerFrame
+layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
-  Camera                                                   camera;
+  mat4                                                     world_to_view;
+  mat4                                                     view_to_clip;
+  mat4                                                     clip_to_view;
+  mat4                                                     view_to_world;
 };
 
 layout(set=1, binding=1) readonly buffer Meshlets

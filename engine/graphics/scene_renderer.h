@@ -8,19 +8,13 @@
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant
 {
-  crude_float3a                                            position;
   crude_float4x4a                                          world_to_view;
   crude_float4x4a                                          view_to_clip;
   crude_float4x4a                                          clip_to_view;
   crude_float4x4a                                          view_to_world;
-} crude_gfx_camera;
-
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_per_frame
-{
-  crude_gfx_camera                                         camera;
-} crude_gfx_per_frame;
+} crude_gfx_scene_constant;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command
 {
@@ -89,6 +83,7 @@ typedef struct crude_gfx_meshlet_vertex
 
 typedef struct crude_gfx_mesh
 {
+  crude_entity                                             node;
   crude_gfx_renderer_material                             *material;
   crude_float3                                             scale;
   crude_float3                                             translation;

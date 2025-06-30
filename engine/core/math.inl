@@ -438,6 +438,24 @@ crude_vec_dot4
   return result;
 }
 
+crude_vector
+crude_vec_transform4
+(
+  _In_ crude_vector const                        v,
+  _In_ crude_matrix const                        m
+)
+{
+  crude_vector vResult = _mm_permute_ps(v, _MM_SHUFFLE(3, 3, 3, 3));
+  vResult = _mm_mul_ps(vResult, m.r[3]);
+  crude_vector vTemp = _mm_permute_ps(v, _MM_SHUFFLE(2, 2, 2, 2));
+  vResult = _mm_fmadd_ps(vTemp, m.r[2], vResult);
+  vTemp = _mm_permute_ps(v, _MM_SHUFFLE(1, 1, 1, 1));
+  vResult = _mm_fmadd_ps(vTemp, m.r[1], vResult);
+  vTemp = _mm_permute_ps(v, _MM_SHUFFLE(0, 0, 0, 0));
+  vResult = _mm_fmadd_ps(vTemp, m.r[0], vResult);
+  return vResult;
+}
+
 /************************************************
  *
  * Quaternion functions
