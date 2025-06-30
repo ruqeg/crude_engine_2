@@ -1,12 +1,6 @@
 [submodule "extlibs/tlsf_cmake/tlsf"]
 	path = extlibs/tlsf_cmake/tlsf
 	url = https://github.com/mattconte/tlsf.git
-[submodule "extlibs/SDL"]
-	path = extlibs/SDL
-	url = https://github.com/libsdl-org/SDL.git
-[submodule "extlibs/flecs"]
-	path = extlibs/flecs
-	url = https://github.com/SanderMertens/flecs.git
 [submodule "extlibs/stb_cmake/stb"]
 	path = extlibs/stb_cmake/stb
 	url = https://github.com/nothings/stb.git
@@ -25,9 +19,6 @@
 [submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
 	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
-[submodule "extlibs/miniaudio"]
-	path = extlibs/miniaudio
-	url = https://github.com/mackron/miniaudio.git
 [submodule "extlibs/enkiTS"]
 	path = extlibs/enkiTS
 	url = https://github.com/dougbinks/enkiTS.git
@@ -37,6 +28,3 @@
 [submodule "extlibs/imgui_cmake/imgui"]
 	path = extlibs/imgui_cmake/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "extlibs/meshoptimizer"]
-	path = extlibs/meshoptimizer
-	url = https://github.com/zeux/meshoptimizer.git

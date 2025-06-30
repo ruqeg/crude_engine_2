@@ -601,7 +601,7 @@ load_meshlets_
 )
 {
   size_t                                                   max_vertices = 128u;
-  size_t                                                   max_triangles = 124u;
+  size_t                                                   max_triangles = 124;
   float32                                                  cone_weight = 0.0f;
 
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
@@ -632,7 +632,7 @@ load_meshlets_
       
       /* Build meshlets*/
       local_max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( local_indices ), max_vertices, max_triangles );
-
+      
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlets, local_max_meshlets, crude_stack_allocator_pack( temporary_allocator ) );
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlet_vertices, local_max_meshlets * max_vertices, crude_stack_allocator_pack( temporary_allocator ) );
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlet_triangles, local_max_meshlets * max_triangles, crude_stack_allocator_pack( temporary_allocator ) );
@@ -644,15 +644,19 @@ load_meshlets_
       
       CRUDE_ARRAY_SET_CAPACITY( scene_renderer->meshlets, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets ) + local_meshletes_count );
 
-      for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
-      {
-        meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
-        meshopt_optimizeMeshlet( local_meshlet_vertices + local_meshlet->vertex_offset, local_meshlet_triangles + local_meshlet->triangle_offset, local_meshlet->triangle_count, local_meshlet->vertex_count );
-      }
+      //for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
+      //{
+      //  meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+      //  meshopt_optimizeMeshlet( local_meshlet_vertices + local_meshlet->vertex_offset, local_meshlet_triangles + local_meshlet->triangle_offset, local_meshlet->triangle_count, local_meshlet->vertex_count );
+      //}
       
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
         meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+        
+        CRUDE_ASSERT( local_meshlet->vertex_count <= max_vertices );
+        CRUDE_ASSERT( local_meshlet->triangle_count <= max_triangles );
+
         crude_gfx_meshlet new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet );
         new_meshlet.vertices_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices ) + local_meshlet->vertex_offset;
         new_meshlet.triangles_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ) + local_meshlet->triangle_offset;
