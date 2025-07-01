@@ -706,6 +706,15 @@ crude_gfx_descriptor_set_layout_creation_add_binding
   _In_ crude_gfx_descriptor_set_layout_binding             binding
 );
 
+CRUDE_API void
+crude_gfx_shader_state_creation_add_stage
+(
+  _In_ crude_gfx_shader_state_creation                    *creation,
+  _In_ char const                                         *code,
+  _In_ uint64                                              code_size,
+  _In_ VkShaderStageFlagBits                               type
+);
+
 /************************************************
  *
  * GPU Resoruces Functions

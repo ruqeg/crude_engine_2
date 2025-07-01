@@ -152,23 +152,23 @@ parse_gpu_pipeline_
       
       if ( strcmp( name, "vertex" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_VERTEX_BIT );
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_VERTEX_BIT );
       }
       else if ( strcmp( name, "fragment" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_FRAGMENT_BIT );
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_FRAGMENT_BIT );
       }
       else if ( strcmp( name, "compute" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_COMPUTE_BIT );
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_COMPUTE_BIT );
       }
       else if ( strcmp( name, "mesh" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
       }
       else if ( strcmp( name, "task" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, strlen( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
+        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
       }
     }
   }

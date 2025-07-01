@@ -5,7 +5,6 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/renderer_resources_loader.h>
-#include <gui/gui.h>
 
 #include <paprika.h>
 
@@ -75,8 +74,11 @@ crude_paprika_initialize
       { .id = ecs_id( crude_free_camera ) },
     } );
   }
-
-  crude_gui_create( &paprika->graphics.gpu );
+  
+  {
+    crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->platform_node, crude_window_handle );
+    crude_imgui_initialize( &paprika->imgui, &paprika->graphics.gpu, window_handle->value );
+  }
 }
 
 void

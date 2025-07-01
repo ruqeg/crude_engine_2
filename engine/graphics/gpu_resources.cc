@@ -125,7 +125,7 @@ crude_gfx_descriptor_set_creation_add_buffer
   creation->resources[ creation->num_resources++ ] = buffer.index;
 }
 
-CRUDE_API void
+void
 crude_gfx_descriptor_set_layout_creation_add_binding
 (
   _In_ crude_gfx_descriptor_set_layout_creation           *creation,
@@ -133,6 +133,21 @@ crude_gfx_descriptor_set_layout_creation_add_binding
 )
 {
   creation->bindings[ creation->num_bindings++ ] = binding;
+}
+
+void
+crude_gfx_shader_state_creation_add_stage
+(
+  _In_ crude_gfx_shader_state_creation                    *creation,
+  _In_ char const                                         *code,
+  _In_ uint64                                              code_size,
+  _In_ VkShaderStageFlagBits                               type
+)
+{
+  creation->stages[ creation->stages_count ].code = code;
+  creation->stages[ creation->stages_count ].code_size = code_size;
+  creation->stages[ creation->stages_count ].type = type;
+  ++creation->stages_count;
 }
 
 /************************************************

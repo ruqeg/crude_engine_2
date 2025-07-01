@@ -31,12 +31,6 @@ struct Vertex
   float                                                    padding2;
 };
 
-struct crude_mesh_instance_draw
-{
-  mat4                                                     model_to_world;
-  mat4                                                     world_to_model;
-};
-
 struct crude_mesh_draw
 {
   uvec4                                                    textures;
@@ -88,11 +82,6 @@ layout(set=1, binding=5, std430) readonly buffer MeshDraws
   crude_mesh_draw                                          mesh_draws[];
 };
 
-//layout(set=1, binding=6, std430) readonly buffer MeshInstanceDraws
-//{
-//  crude_mesh_instance_draw                                 mesh_instance_draws[];
-//};
-
 layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out flat uint out_mesh_draw_index[];
 
@@ -116,19 +105,19 @@ void main()
   
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
-  if ( task_index < vertices_count )
+  for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {
-    uint global_vertex_index = vertices_indices[ task_index + vertices_offset ];
+    uint vertex_index = vertices_indices[ i + vertices_offset ];
     
-    vec4 world_position = vec4( vertices[ global_vertex_index ].position, 1.0 );
-    gl_MeshVerticesEXT[ task_index ].gl_Position = world_position * world_to_view * view_to_clip;
-    out_texcoord[ task_index ] = vec2( vertices[ global_vertex_index ].tu, vertices[ global_vertex_index ].tv );
-    out_mesh_draw_index[ task_index ] = mesh_index;
+    vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * world_to_view * view_to_clip;
+    out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
+    out_mesh_draw_index[ i ] = mesh_index;
   }
   
-  if ( task_index < triangles_count )
+  for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
   {
-    uint global_triangle_index = uint( 3 * task_index + triangles_offset );
-    gl_PrimitiveTriangleIndicesEXT[ task_index ] = uvec3( triangles_indices[ global_triangle_index ], triangles_indices[ global_triangle_index + 1 ], triangles_indices[ global_triangle_index + 2 ] );
+    uint triangle_index = uint( 3 * i + triangles_offset );
+    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
   }
 }

@@ -4,7 +4,6 @@
 #include <core/log.h>
 #include <core/ecs.h>
 #include <platform/platform.h>
-#include <gui/gui.h>
 
 #include <engine.h>
 
@@ -37,7 +36,6 @@ crude_engine_initialize
   crude_log_initialize();
   crude_time_service_initialize();
   crude_platform_initialize();
-  crude_gui_initialize();
  
   ECS_TAG_DEFINE( engine->world, crude_entity_tag );
   
@@ -75,7 +73,6 @@ crude_engine_deinitialize
   enkiWaitforAllAndShutdown( engine->task_sheduler );
   enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
   enkiDeleteTaskScheduler( engine->task_sheduler );
-  crude_gui_deinitialize();
   crude_platform_deinitialize();
   crude_log_deinitialize();
 }

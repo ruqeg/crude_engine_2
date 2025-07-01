@@ -8,6 +8,8 @@
 
 #include <platform/platform_system.h>
 
+#include <imgui/backends/imgui_impl_sdl3.h>
+
 CRUDE_ECS_SYSTEM_DECLARE( crude_process_events_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_destrotion_observer_ );
@@ -219,6 +221,7 @@ crude_process_events_system_
   SDL_Event sdl_event;
   while (SDL_PollEvent( &sdl_event ))
   {
+    ImGui_ImplSDL3_ProcessEvent( &sdl_event );
     /* Handle Global event */
     if ( sdl_event.type == SDL_EVENT_QUIT )
     {

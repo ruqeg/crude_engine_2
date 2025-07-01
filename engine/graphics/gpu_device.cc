@@ -3389,6 +3389,7 @@ reflect_format_to_vk_format_
     case SPV_REFLECT_FORMAT_R16G16_SINT         : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_SHORT2;
     case SPV_REFLECT_FORMAT_R16G16B16A16_SINT   : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_SHORT4;
     case SPV_REFLECT_FORMAT_R32_UINT            : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT;
+    case SPV_REFLECT_FORMAT_R32_SINT            : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT;
     case SPV_REFLECT_FORMAT_R32_SFLOAT          : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
     case SPV_REFLECT_FORMAT_R32G32_UINT         : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT2;
     case SPV_REFLECT_FORMAT_R32G32_SFLOAT       : return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2;
@@ -3416,8 +3417,8 @@ vk_reflect_shader_
   
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator_container );
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator_container );
 
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {
@@ -3425,19 +3426,25 @@ vk_reflect_shader_
       uint32                                               stride;
 
       spv_input = spv_reflect.input_variables[ input_index ];
-      reflect->input.vertex_attributes[ input_index ] = CRUDE_COMPOUNT( crude_gfx_vertex_attribute, {
+      
+      if ( spv_input->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN )
+      {
+        continue;
+      }
+
+      CRUDE_ARRAY_PUSH( reflect->input.vertex_attributes, CRUDE_COMPOUNT( crude_gfx_vertex_attribute, {
         .location = spv_input->location,
         .binding = spv_input->location,
         .offset = 0,
         .format = reflect_format_to_vk_format_( spv_input->format )
-      } );
+      } ) );
       
       stride = ( spv_input->numeric.vector.component_count * spv_input->numeric.scalar.width ) / 8;
-      reflect->input.vertex_streams[ input_index ] = CRUDE_COMPOUNT( crude_gfx_vertex_stream, {
+      CRUDE_ARRAY_PUSH( reflect->input.vertex_streams, CRUDE_COMPOUNT( crude_gfx_vertex_stream, {
         .binding = spv_input->location,
         .stride = stride,
         .input_rate = CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX
-      } );
+      } ) );
     }
   }
 
