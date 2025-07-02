@@ -316,58 +316,7 @@ crude_gfx_scene_renderer_geometry_pass_pack
 )
 {
   crude_gfx_render_graph_pass_container container = {
-    .pre_render = crude_gfx_render_graph_pass_container_pre_render_empry,
     .render     = crude_gfx_scene_renderer_geometry_pass_render_raw,
-    .on_resize  = crude_gfx_render_graph_pass_container_on_resize_empty,
-    .ctx        = pass,
-  };
-  return container;
-}
-
-/**
- *
- * Renderer Scene Imgui Pass
- * 
- */
-void
-crude_gfx_scene_renderer_imgui_pass_render
-(
-  _In_ crude_gfx_scene_renderer_imgui_pass                *pass,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-)
-{
-  crude_imgui_render( &pass->imgui, primary_cmd, false );
-}
-
-void
-crude_gfx_scene_renderer_imgui_pass_prepare_draws
-(
-  _In_ crude_gfx_scene_renderer_imgui_pass                *pass,
-  _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_stack_allocator                              *temporary_allocator
-)
-{
-
-}
-void
-crude_gfx_scene_renderer_imgui_pass_render_raw
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-)
-{
-  crude_gfx_scene_renderer_imgui_pass_render( CRUDE_REINTERPRET_CAST( crude_gfx_scene_renderer_imgui_pass*, ctx ), primary_cmd );
-}
-
-crude_gfx_render_graph_pass_container
-crude_gfx_scene_renderer_imgui_pass_pack
-(
-  _In_ crude_gfx_scene_renderer_imgui_pass                *pass
-)
-{
-  crude_gfx_render_graph_pass_container container = {
-    .pre_render = crude_gfx_render_graph_pass_container_pre_render_empry,
-    .render     = crude_gfx_scene_renderer_imgui_pass_render_raw,
     .on_resize  = crude_gfx_render_graph_pass_container_on_resize_empty,
     .ctx        = pass,
   };
@@ -564,7 +513,7 @@ crude_gfx_scene_renderer_prepare_draws
     scene_renderer->mesh_shader_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 
-  crude_imgui_initialize( &scene_renderer->imgui_pass.imgui, scene_renderer->renderer->gpu, scene_renderer->renderer->gpu->sdl_window );
+  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer->gpu );
 }
 
 void
@@ -589,7 +538,7 @@ crude_gfx_scene_renderer_register_render_passes
   scene_renderer->render_graph = render_graph;
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "geometry_pass", crude_gfx_scene_renderer_geometry_pass_pack( &scene_renderer->geometry_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_scene_renderer_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
 }
 
 /**

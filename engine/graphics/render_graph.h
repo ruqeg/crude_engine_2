@@ -102,13 +102,11 @@ typedef struct crude_gfx_render_graph_resource_output_creation
  * Render Graph Nodes
  * 
  ***********************************************/
-typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
 
 typedef struct crude_gfx_render_graph_pass_container
 {
-  crude_gfx_render_graph_render_pass_pre_render            pre_render;
   crude_gfx_render_graph_render_pass_render                render;
   crude_gfx_render_graph_render_pass_on_resize             on_resize;
   void                                                    *ctx;
@@ -356,13 +354,6 @@ crude_gfx_render_graph_builder_render_pass_cache_deinitialize
  * Render Graph Pass Container Utils
  * 
  ***********************************************/
-CRUDE_API void
-crude_gfx_render_graph_render_pass_container_pre_render
-(
-  _In_ crude_gfx_render_graph_pass_container               container,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-);
-
 CRUDE_API void
 crude_gfx_render_graph_render_pass_container_render
 (

@@ -698,7 +698,6 @@ crude_gfx_render_graph_render
       crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
     }
     
-    crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
     crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
     crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
     crude_gfx_cmd_end_render_pass( gpu_commands );
@@ -1046,16 +1045,6 @@ crude_gfx_render_graph_builder_render_pass_cache_deinitialize
  * Render Graph Pass Container Utils
  * 
  ***********************************************/
-void
-crude_gfx_render_graph_render_pass_container_pre_render
-(
-  _In_ crude_gfx_render_graph_pass_container               container,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-)
-{
-  container.pre_render( container.ctx, primary_cmd );
-}
-
 void
 crude_gfx_render_graph_render_pass_container_render
 (

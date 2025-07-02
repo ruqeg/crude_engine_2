@@ -3,7 +3,6 @@
 #include <engine.h>
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>
-#include <gui/imgui.h>
 #include <core/ecs.h>
 
 typedef struct crude_paprika_graphics
