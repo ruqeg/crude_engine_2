@@ -172,22 +172,22 @@ paprika_graphics_initialize_
     crude_gfx_render_graph_compile( &paprika->graphics.render_graph );
   }
   
-  /* Create Scene Renderer */
-  {
-    crude_gfx_scene_renderer_creation rendere_scene_creation = {
-      .renderer = &paprika->graphics.renderer,
-      .async_loader = &paprika->graphics.async_loader,
-      .allocator_container = paprika->graphics.allocator_container,
-      .task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler,
-    };
-    crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &rendere_scene_creation );
-  }
-  
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\main_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-  crude_gfx_scene_renderer_register_render_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
-  crude_gfx_scene_renderer_prepare_draws( &paprika->graphics.scene_renderer, paprika->scene.main_node, &paprika->temporary_allocator );
+
+  /* Create Scene Renderer */
+  {
+    crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
+    creation.node = paprika->scene.main_node;
+    creation.renderer = &paprika->graphics.renderer;
+    creation.async_loader = &paprika->graphics.async_loader;
+    creation.allocator_container = paprika->graphics.allocator_container;
+    creation.temporary_allocator = &paprika->temporary_allocator;
+    creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
+    crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &creation );
+    crude_gfx_scene_renderer_register_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
+  }
   
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
 }
@@ -236,7 +236,7 @@ paprika_graphics_system_
   {
     for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( paprika->graphics.scene_renderer.meshes ); ++mesh_index )
     {
-      crude_gfx_mesh *mesh_draw = &paprika->graphics.scene_renderer.meshes[ mesh_index ];
+      crude_gfx_mesh_cpu *mesh_draw = &paprika->graphics.scene_renderer.meshes[ mesh_index ];
   
       crude_gfx_map_buffer_parameters mesh_buffer_map = { mesh_draw->material_buffer, 0, 0 };
       crude_gfx_shader_mesh_constants *mesh_data = CRUDE_REINTERPRET_CAST( crude_gfx_shader_mesh_constants*, crude_gfx_map_buffer( &paprika->graphics.gpu, &mesh_buffer_map ) );

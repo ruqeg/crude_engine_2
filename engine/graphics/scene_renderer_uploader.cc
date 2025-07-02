@@ -23,7 +23,7 @@ create_mesh_material_
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ cgltf_material                                     *material,
-  _In_ crude_gfx_mesh                                     *mesh_draw,
+  _In_ crude_gfx_mesh_cpu                                 *mesh_draw,
   _In_ size_t                                             scene_renderer_images_offset,
   _In_ size_t                                             scene_renderer_samplers_offset
 );
@@ -87,7 +87,7 @@ static void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex                          **vertices
+  _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
 );
 
 static void
@@ -162,7 +162,7 @@ create_mesh_material_
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ cgltf_material                                     *material,
-  _In_ crude_gfx_mesh                                     *mesh_draw,
+  _In_ crude_gfx_mesh_cpu                                 *mesh_draw,
   _In_ size_t                                             scene_renderer_images_offset,
   _In_ size_t                                             scene_renderer_samplers_offset
 )
@@ -503,7 +503,7 @@ load_meshes_
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
-      crude_gfx_mesh                                       mesh_draw;
+      crude_gfx_mesh_cpu                                       mesh_draw;
       cgltf_primitive                                     *mesh_primitive;
       cgltf_accessor                                      *indices_accessor;
       cgltf_buffer_view                                   *indices_buffer_view;
@@ -512,7 +512,7 @@ load_meshes_
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
 
-      mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh );
+      mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_cpu );
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
         crude_gfx_renderer_buffer *buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
@@ -640,7 +640,7 @@ load_meshlets_
         scene_renderer->meshlets_vertices_indices + CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices ),
         scene_renderer->meshlets_triangles_indices + CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ),
         local_indices, CRUDE_ARRAY_LENGTH( local_indices ), 
-        &scene_renderer->meshlets_vertices[ 0 ].position.x, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex ), 
+        &scene_renderer->meshlets_vertices[ 0 ].position.x, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex_gpu ), 
         max_vertices, max_triangles, cone_weight
       );
       
@@ -686,7 +686,7 @@ static void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex                          **vertices
+  _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
 )
 {
   crude_float3                                            *primitive_positions;
@@ -737,7 +737,7 @@ load_meshlet_vertices_
     CRUDE_ASSERT( primitive_normals );
     CRUDE_ASSERT( primitive_texcoords );
     
-    crude_gfx_meshlet_vertex new_meshlet_vertex;
+    crude_gfx_meshlet_vertex_gpu new_meshlet_vertex;
     new_meshlet_vertex.position.x = primitive_positions[ i ].x;
     new_meshlet_vertex.position.y = primitive_positions[ i ].y;
     new_meshlet_vertex.position.z = primitive_positions[ i ].z;
