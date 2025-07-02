@@ -5,6 +5,7 @@
 #include <graphics/renderer.h>
 #include <graphics/asynchronous_loader.h>
 #include <graphics/render_graph.h>
+#include <gui/imgui.h>
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN             ( 512 )
 
@@ -126,6 +127,11 @@ typedef struct crude_gfx_scene_renderer_geometry_pass
   uint32                                                   meshlet_technique_index;
 } crude_gfx_scene_renderer_geometry_pass;
 
+typedef struct crude_gfx_scene_renderer_imgui_pass
+{
+  crude_imgui                                              imgui;
+} crude_gfx_scene_renderer_imgui_pass;
+
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_gfx_renderer                                      *renderer;
@@ -169,6 +175,7 @@ typedef struct crude_gfx_scene_renderer
   crude_allocator_container                                allocator_container;
 
   crude_gfx_scene_renderer_geometry_pass                   geometry_pass;
+  crude_gfx_scene_renderer_imgui_pass                      imgui_pass;
 
   bool                                                     use_meshlets;
 } crude_gfx_scene_renderer;
@@ -208,6 +215,32 @@ CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_scene_renderer_geometry_pass_pack
 (
   _In_ crude_gfx_scene_renderer_geometry_pass             *pass
+);
+
+/**
+ *
+ * Renderer Scene Imgui Pass
+ * 
+ */
+CRUDE_API void
+crude_gfx_scene_renderer_imgui_pass_render
+(
+  _In_ crude_gfx_scene_renderer_imgui_pass                *pass,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_imgui_pass_prepare_draws
+(
+  _In_ crude_gfx_scene_renderer_imgui_pass                *pass,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API crude_gfx_render_graph_pass_container
+crude_gfx_scene_renderer_imgui_pass_pack
+(
+  _In_ crude_gfx_scene_renderer_imgui_pass                *pass
 );
 
 /**

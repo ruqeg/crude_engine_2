@@ -90,21 +90,23 @@ crude_imgui_initialize
   crude_gfx_shader_state_creation_add_stage( &shader_creation, vertex_shader_code_bindless_, crude_string_length( vertex_shader_code_bindless_ ), VK_SHADER_STAGE_VERTEX_BIT );
   crude_gfx_shader_state_creation_add_stage( &shader_creation, fragment_shader_code_bindless_, crude_string_length( fragment_shader_code_bindless_ ), VK_SHADER_STAGE_FRAGMENT_BIT );
     
+  /* Create pipeline */
   crude_gfx_pipeline_creation pipeline_creation = crude_gfx_pipeline_creation_empty();
   pipeline_creation.name = "pipeline_imgui";
   pipeline_creation.shaders = shader_creation;
-  
-  crude_gfx_blend_state blend_state = CRUDE_COMPOUNT_EMPTY( crude_gfx_blend_state );
-  blend_state.source_color = VK_BLEND_FACTOR_SRC_ALPHA;
-  blend_state.destination_color = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-  blend_state.color_operation = VK_BLEND_OP_ADD;
-  blend_state.blend_enabled = true;
-  pipeline_creation.blend_state.blend_states[ pipeline_creation.blend_state.active_states++ ] = blend_state;
-  
   pipeline_creation.rasterization.front = VK_FRONT_FACE_CLOCKWISE;
   pipeline_creation.rasterization.cull_mode = VK_CULL_MODE_BACK_BIT;
   pipeline_creation.render_pass_output = gpu->swapchain_output;
-  
+  crude_gfx_pipeline_creation_add_blend_state( &pipeline_creation, CRUDE_COMPOUNT( crude_gfx_blend_state, {
+    .source_color = VK_BLEND_FACTOR_SRC_ALPHA,
+    .destination_color = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    .color_operation = VK_BLEND_OP_ADD,
+    .blend_enabled = true,
+  } ) );
+  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 0u, 0u, 0u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2 );
+  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 1u, 0u, 8u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2 );
+  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 2u, 0u, 16u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE4N );
+  crude_gfx_pipeline_creation_add_vertex_stream( &pipeline_creation, 0u, 20u, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX );
   imgui->pipeline = crude_gfx_create_pipeline( gpu, &pipeline_creation );
 
   /* Create constant buffer */
@@ -114,6 +116,13 @@ crude_imgui_initialize
   cb_creation.size = 64;
   cb_creation.name = "cb_imgui";
   imgui->ui_cb = crude_gfx_create_buffer( gpu, &cb_creation );
+  
+  /* Create descriptor set */
+  crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
+  ds_creation.layout = crude_gfx_get_descriptor_set_layout( gpu, imgui->pipeline, 1u );
+  ds_creation.name = "rl_imgui";
+  crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, imgui->ui_cb, 0u );
+  imgui->descriptor_set = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   
   /* Create vertex and index buffers */
   crude_gfx_buffer_creation vertex_buffer_creation = crude_gfx_buffer_creation_empty();
@@ -154,8 +163,6 @@ crude_imgui_new_frame
   _In_ crude_imgui                                        *imgui
 )
 {
-  ImGui_ImplSDL3_NewFrame();
-  ImGui::NewFrame();
 }
 
 void
@@ -163,8 +170,6 @@ crude_imgui_render
 (
   _In_ crude_imgui                                        *imgui,
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_render_pass_handle                        render_pass,
-  _In_ crude_gfx_framebuffer_handle                        framebuffer,
   _In_ bool                                                use_secondary
 )
 {
@@ -231,13 +236,11 @@ crude_imgui_render
   }
   
   // TODO: Add the sorting.
-  crude_gfx_cmd_bind_render_pass( cmd, render_pass, framebuffer, use_secondary );
   crude_gfx_cmd_bind_pipeline( cmd, imgui->pipeline );
   crude_gfx_cmd_bind_vertex_buffer( cmd, imgui->vertex_buffer, 0u, 0u );
   crude_gfx_cmd_bind_index_buffer( cmd, imgui->index_buffer, 0u );
   
   crude_gfx_viewport const viewport = { 0, 0, ( uint16 )framebuffer_width, ( uint16 )framebuffer_height, 0.0f, 1.0f };
-  crude_gfx_cmd_bind_index_buffer( cmd, imgui->index_buffer, 0u );
   crude_gfx_cmd_set_viewport( cmd, &viewport ); 
   
   /* Setup viewport, orthographic projection matrix */
@@ -268,9 +271,8 @@ crude_imgui_render
   
   /* Render command lists */
   int counts = draw_data->CmdListsCount;
-  crude_gfx_texture_handle last_texture = imgui->font_texture;
-  crude_gfx_descriptor_set_handle last_descriptor_set = CRUDE_HASHMAP_GET( imgui->texture_to_descriptor_set, last_texture.index )->value;
-  crude_gfx_cmd_bind_descriptor_set( cmd, last_descriptor_set );
+
+  crude_gfx_cmd_bind_descriptor_set( cmd, imgui->descriptor_set );
   
   uint32_t vtx_buffer_offset = 0, index_buffer_offset = 0;
   for ( int n = 0; n < counts; n++ )

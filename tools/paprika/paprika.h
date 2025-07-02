@@ -25,7 +25,6 @@ typedef struct crude_paprika
   crude_stack_allocator                                    temporary_allocator;
   crude_scene                                              scene;
   crude_paprika_graphics                                   graphics;
-  crude_imgui                                              imgui;
   crude_entity                                             platform_node;
   bool                                                     working;
 } crude_paprika;

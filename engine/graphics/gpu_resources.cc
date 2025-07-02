@@ -30,7 +30,10 @@ crude_gfx_framebuffer_creation_empty
 (
 )
 {
-  return CRUDE_COMPOUNT( crude_gfx_framebuffer_creation, { .resize = true } );
+  crude_gfx_framebuffer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_framebuffer_creation );
+  creation.depth_stencil_texture = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  creation .resize = true;
+  return creation;
 }
 
 crude_gfx_pipeline_creation
@@ -38,7 +41,53 @@ crude_gfx_pipeline_creation_empty
 (
 )
 {
-  return CRUDE_COMPOUNT_EMPTY( crude_gfx_pipeline_creation );
+  crude_gfx_pipeline_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_pipeline_creation );
+  creation.relfect_vertex_input = true;
+  return creation;
+}
+
+void
+crude_gfx_pipeline_creation_add_blend_state
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ crude_gfx_blend_state                               blend_state
+)
+{
+  creation->blend_state.blend_states[ creation->blend_state.active_states++ ] = blend_state;
+}
+
+void
+crude_gfx_pipeline_creation_add_vertex_stream
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ uint32                                              binding,
+  _In_ uint32                                              stride,
+  _In_ crude_gfx_vertex_input_rate                         input_rate
+)
+{
+  creation->relfect_vertex_input = false;
+  creation->vertex_streams[ creation->vertex_streams_num ].binding = binding;
+  creation->vertex_streams[ creation->vertex_streams_num ].stride = stride;
+  creation->vertex_streams[ creation->vertex_streams_num ].input_rate = input_rate;
+  ++creation->vertex_streams_num;
+}
+
+void
+crude_gfx_pipeline_creation_add_vertex_attribute
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ uint32                                              location,
+  _In_ uint32                                              binding,
+  _In_ uint32                                              offset,
+  _In_ crude_gfx_vertex_component_format                   format
+)
+{
+  creation->relfect_vertex_input = false;
+  creation->vertex_attributes[ creation->vertex_attributes_num ].location = location;
+  creation->vertex_attributes[ creation->vertex_attributes_num ].binding = binding;
+  creation->vertex_attributes[ creation->vertex_attributes_num ].offset = offset;
+  creation->vertex_attributes[ creation->vertex_attributes_num ].format = format;
+  ++creation->vertex_attributes_num;
 }
 
 crude_gfx_descriptor_set_creation
@@ -369,6 +418,7 @@ crude_gfx_string_to_vk_format
   _In_ char const                                         *format
 )
 {
+  if ( strcmp( format, "VK_FORMAT_B8G8R8A8_SRGB" ) == 0 ) return VK_FORMAT_B8G8R8A8_SRGB;
   if ( strcmp( format, "VK_FORMAT_B8G8R8A8_UNORM" ) == 0 ) return VK_FORMAT_B8G8R8A8_UNORM;
   if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return VK_FORMAT_R16G16B16A16_SFLOAT;
   if ( strcmp( format, "VK_FORMAT_D32_SFLOAT" ) == 0 ) return VK_FORMAT_D32_SFLOAT;

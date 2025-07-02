@@ -1438,6 +1438,10 @@ crude_gfx_create_pipeline
   _In_ crude_gfx_pipeline_creation const                  *creation
 )
 {
+  VkPipelineVertexInputStateCreateInfo                     vk_vertex_input_info;
+  VkVertexInputAttributeDescription                        vk_vertex_attributes[ 8 ];
+  VkVertexInputBindingDescription                          vk_vertex_bindings[ 8 ];
+
   crude_gfx_pipeline_handle handle = crude_gfx_obtain_pipeline( gpu );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
   {
@@ -1487,53 +1491,67 @@ crude_gfx_create_pipeline
   pipeline->vk_pipeline_layout = pipeline_layout;
   pipeline->num_active_layouts = shader_state_data->reflect.descriptor.sets_count;
 
-  VkPipelineVertexInputStateCreateInfo vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-  
-  VkVertexInputAttributeDescription vk_vertex_attributes[ 8 ];
-  crude_gfx_vertex_attribute *vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
-  CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_attributes ) >= CRUDE_ARRAY_LENGTH( vertex_attributes ) );
 
-  if ( CRUDE_ARRAY_LENGTH( vertex_attributes ) )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_attributes ); ++i )
+    crude_gfx_vertex_stream const                         *vertex_streams;
+    crude_gfx_vertex_attribute const                      *vertex_attributes;
+    uint32                                                 vertex_attributes_num, vertex_streams_num;
+    
+    vk_vertex_input_info = CRUDE_COMPOUNT( VkPipelineVertexInputStateCreateInfo, { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO } );
+    
+    if ( creation->relfect_vertex_input )
     {
-      vk_vertex_attributes[ i ] = CRUDE_COMPOUNT( VkVertexInputAttributeDescription, {
-        .location = vertex_attributes[ i ].location,
-        .binding = vertex_attributes[ i ].binding,
-        .format = crude_gfx_to_vk_vertex_format( vertex_attributes[ i ].format ),
-        .offset = vertex_attributes[ i ].offset
-      } );
+      vertex_attributes = shader_state_data->reflect.input.vertex_attributes;
+      vertex_streams = shader_state_data->reflect.input.vertex_streams;
+      vertex_attributes_num = CRUDE_ARRAY_LENGTH( vertex_attributes );
+      vertex_streams_num = CRUDE_ARRAY_LENGTH( vertex_streams );
+      CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_attributes ) >= vertex_attributes_num );
+      CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_bindings ) >= vertex_streams_num );
     }
-    vertex_input_info.vertexAttributeDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_attributes );
-    vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
-  }
-  else
-  {
-    vertex_input_info.vertexAttributeDescriptionCount = 0;
-    vertex_input_info.pVertexAttributeDescriptions = NULL;
-  }
+    else
+    {
+      vertex_attributes = creation->vertex_attributes;
+      vertex_streams = creation->vertex_streams;
+      vertex_attributes_num = creation->vertex_attributes_num;
+      vertex_streams_num = creation->vertex_streams_num;
+    }
 
-  VkVertexInputBindingDescription vk_vertex_bindings[ 8 ];
-  crude_gfx_vertex_stream *vertex_streams = shader_state_data->reflect.input.vertex_streams;
-  CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_bindings ) >= CRUDE_ARRAY_LENGTH( vertex_streams ) );
-  if ( CRUDE_ARRAY_LENGTH( vertex_streams ) )
-  {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( vertex_streams ); ++i )
+    if ( vertex_attributes_num )
     {
-      VkVertexInputRate vertex_rate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-      vk_vertex_bindings[ i ] = CRUDE_COMPOUNT( VkVertexInputBindingDescription, {
-        .binding = vertex_streams[ i ].binding,
-        .stride = vertex_streams[ i ].stride,
-        .inputRate = vertex_rate
-      } );
+      for ( uint32 i = 0; i < vertex_attributes_num; ++i )
+      {
+        vk_vertex_attributes[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputAttributeDescription );
+        vk_vertex_attributes[ i ].location = vertex_attributes[ i ].location;
+        vk_vertex_attributes[ i ].binding = vertex_attributes[ i ].binding;
+        vk_vertex_attributes[ i ].format = crude_gfx_to_vk_vertex_format( vertex_attributes[ i ].format );
+        vk_vertex_attributes[ i ].offset = vertex_attributes[ i ].offset;
+      }
+      vk_vertex_input_info.vertexAttributeDescriptionCount = vertex_attributes_num;
+      vk_vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
     }
-    vertex_input_info.vertexBindingDescriptionCount = CRUDE_ARRAY_LENGTH( vertex_streams );
-    vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
-  }
-  else
-  {
-    vertex_input_info.vertexBindingDescriptionCount = 0;
-    vertex_input_info.pVertexBindingDescriptions = NULL;
+    else
+    {
+      vk_vertex_input_info.vertexAttributeDescriptionCount = 0;
+      vk_vertex_input_info.pVertexAttributeDescriptions = NULL;
+    }
+
+    if ( vertex_streams_num )
+    {
+      for ( uint32 i = 0; i < vertex_streams_num; ++i )
+      {
+        vk_vertex_bindings[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputBindingDescription );
+        vk_vertex_bindings[ i ].binding = vertex_streams[ i ].binding;
+        vk_vertex_bindings[ i ].stride = vertex_streams[ i ].stride;
+        vk_vertex_bindings[ i ].inputRate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+      }
+      vk_vertex_input_info.vertexBindingDescriptionCount = vertex_streams_num;
+      vk_vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
+    }
+    else
+    {
+      vk_vertex_input_info.vertexBindingDescriptionCount = 0;
+      vk_vertex_input_info.pVertexBindingDescriptions = NULL;
+    }
   }
   
   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
@@ -1666,7 +1684,7 @@ crude_gfx_create_pipeline
     .pNext = &pipeline_rendering_create_info,
     .stageCount = shader_state_data->active_shaders,
     .pStages = shader_state_data->shader_stage_info,
-    .pVertexInputState = &vertex_input_info,
+    .pVertexInputState = &vk_vertex_input_info,
     .pInputAssemblyState = &input_assembly,
     .pViewportState = &viewport_state,
     .pRasterizationState = &rasterizer,

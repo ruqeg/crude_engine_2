@@ -29,10 +29,10 @@ typedef struct crude_gfx_device_creation
 
 typedef struct crude_gfx_gpu_thread_frame_pools
 {
-  VkCommandPool                   vk_command_pool;
-  VkQueryPool                     vk_timestamp_query_pool;
-  VkQueryPool                     vk_pipeline_stats_query_pool;
-  crude_gfx_gpu_time_query_tree  *time_queries;
+  VkCommandPool                                            vk_command_pool;
+  VkQueryPool                                              vk_timestamp_query_pool;
+  VkQueryPool                                              vk_pipeline_stats_query_pool;
+  crude_gfx_gpu_time_query_tree                           *time_queries;
 } crude_gfx_gpu_thread_frame_pools;
 
 typedef struct crude_gfx_device

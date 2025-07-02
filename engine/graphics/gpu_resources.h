@@ -447,6 +447,11 @@ typedef struct crude_gfx_pipeline_creation
   crude_gfx_blend_state_creation                           blend_state;
   crude_gfx_shader_state_creation                          shaders;
   crude_gfx_render_pass_output                             render_pass_output;
+  bool                                                     relfect_vertex_input;
+  crude_gfx_vertex_stream                                  vertex_streams[ 8 ];
+  crude_gfx_vertex_attribute                               vertex_attributes[ 8 ];
+  uint32                                                   vertex_streams_num;
+  uint32                                                   vertex_attributes_num;
   crude_gfx_viewport_state const                          *viewport;
   char const                                              *name;
 } crude_gfx_pipeline_creation;
@@ -660,6 +665,32 @@ crude_gfx_framebuffer_creation_empty
 CRUDE_API crude_gfx_pipeline_creation
 crude_gfx_pipeline_creation_empty
 (
+);
+
+CRUDE_API void
+crude_gfx_pipeline_creation_add_blend_state
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ crude_gfx_blend_state                               blend_state
+);
+
+CRUDE_API void
+crude_gfx_pipeline_creation_add_vertex_stream
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ uint32                                              binding,
+  _In_ uint32                                              stride,
+  _In_ crude_gfx_vertex_input_rate                         input_rate
+);
+
+CRUDE_API void
+crude_gfx_pipeline_creation_add_vertex_attribute
+(
+  _In_ crude_gfx_pipeline_creation                        *creation,
+  _In_ uint32                                              location,
+  _In_ uint32                                              binding,
+  _In_ uint32                                              offset,
+  _In_ crude_gfx_vertex_component_format                   format
 );
 
 CRUDE_API crude_gfx_descriptor_set_creation

@@ -8,21 +8,39 @@
         {
           "type": "attachment",
           "name": "albedo",
-          "format": "VK_FORMAT_B8G8R8A8_UNORM",
+          "format": "VK_FORMAT_B8G8R8A8_SRGB",
           "resolution": [
             800,
             600
           ],
-          "op": "VK_ATTACHMENT_LOAD_OP_CLEAR"
+          "op": "clear"
         },
         {
-		  "type": "attachment",
-		  "name": "depth",
-		  "format": "VK_FORMAT_D32_SFLOAT",
-		  "resolution": [ 800, 600 ],
-		  "op": "VK_ATTACHMENT_LOAD_OP_CLEAR"
+          "type": "attachment",
+          "name": "depth",
+          "format": "VK_FORMAT_D32_SFLOAT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
         }
       ]
+    },
+    {
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "albedo"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "reference",
+          "name": "albedo"
+        }
+      ],
+      "name": "imgui_pass"
     }
   ]
 }

@@ -1119,7 +1119,7 @@ string_to_render_pass_operation_
   _In_ char const                                         *op
 )
 {
-  if ( strcmp( op, "VK_ATTACHMENT_LOAD_OP_CLEAR" ) == 0 )
+  if ( strcmp( op, "clear" ) == 0 )
   {
     return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   }

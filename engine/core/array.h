@@ -20,12 +20,13 @@ crude_array_growf
 );
 
 #define CRUDE_ARRAY_HEADER( a )  ( CRUDE_REINTERPRET_CAST( crude_array_header*, a ) - 1 )
+#define CRUDE_ARRAY_HEADER_CONST( a )  ( CRUDE_REINTERPRET_CAST( crude_array_header const*, a ) - 1 )
 #define CRUDE_ARRAY_ARRAY_GROW( a, b, c, d ) ( ( a ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( a ), crude_array_growf( ( a ), sizeof *( a ), ( b ), ( c ), ( d ) ) ) )
 #define CRUDE_ARRAY_MAYBE_GROW( a, n ) ( ( CRUDE_ARRAY_HEADER( a )->length + ( n ) > CRUDE_ARRAY_HEADER( a )->capacity ) ? ( CRUDE_ARRAY_ARRAY_GROW( a, n, 0, CRUDE_ARRAY_HEADER( a )->allocator ), 0 ) : 0 )
 
-#define CRUDE_ARRAY_ALLOCATOR( a ) ( ( a ) ? CRUDE_ARRAY_HEADER( a )->allocator : CRUDE_COMPOUNT_EMPTY( crude_allocator_container ) )
-#define CRUDE_ARRAY_CAPACITY( a ) ( ( a ) ? CRUDE_ARRAY_HEADER( a )->capacity : 0 )
-#define CRUDE_ARRAY_LENGTH( a ) ( ( a ) ? CRUDE_ARRAY_HEADER( a )->length : 0 )
+#define CRUDE_ARRAY_ALLOCATOR( a ) ( ( a ) ? CRUDE_ARRAY_HEADER_CONST( a )->allocator : CRUDE_COMPOUNT_EMPTY( crude_allocator_container ) )
+#define CRUDE_ARRAY_CAPACITY( a ) ( ( a ) ? CRUDE_ARRAY_HEADER_CONST( a )->capacity : 0 )
+#define CRUDE_ARRAY_LENGTH( a ) ( ( a ) ? CRUDE_ARRAY_HEADER_CONST( a )->length : 0 )
 #define CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( a, c, l )( ( a ) = NULL, CRUDE_ARRAY_ARRAY_GROW( a, 0, c, l ) )
 #define CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( a, s, l )( ( a ) = NULL, CRUDE_ARRAY_ARRAY_GROW( a, 0, s, l ), ( a ) ? CRUDE_ARRAY_HEADER( a )->length = ( size_t )( s ) : 0 )
 #define CRUDE_ARRAY_DEINITIALIZE( a ) ( ( void ) ( ( a ) ? CRUDE_DEALLOCATE( CRUDE_ARRAY_ALLOCATOR( a ), CRUDE_ARRAY_HEADER( a ) ) : ( void )0 ), ( a ) = NULL )

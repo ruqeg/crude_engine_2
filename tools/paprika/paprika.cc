@@ -1,3 +1,6 @@
+#include <imgui.h>
+#include <imgui/backends/imgui_impl_sdl3.h>
+
 #include <core/file.h>
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>
@@ -73,11 +76,6 @@ crude_paprika_initialize
       { .id = ecs_id( crude_transform ) },
       { .id = ecs_id( crude_free_camera ) },
     } );
-  }
-  
-  {
-    crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->platform_node, crude_window_handle );
-    crude_imgui_initialize( &paprika->imgui, &paprika->graphics.gpu, window_handle->value );
   }
 }
 
@@ -203,7 +201,10 @@ paprika_graphics_system_
   crude_paprika *paprika = ( crude_paprika* )it->ctx;
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
-  
+
+  ImGui_ImplSDL3_NewFrame();
+  ImGui::NewFrame();
+
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
   {
     crude_gfx_render_graph_on_resize( &paprika->graphics.render_graph, paprika->graphics.gpu.vk_swapchain_width, paprika->graphics.gpu.vk_swapchain_height );
@@ -258,6 +259,9 @@ paprika_graphics_system_
       }
     }
   }
+
+  ImGui::Begin("sdfsdf");
+  ImGui::End();
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
