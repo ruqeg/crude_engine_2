@@ -12,18 +12,25 @@
 #include <paprika.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( paprika_graphics_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( paprika_update_system_ );
+
+static void
+paprika_graphics_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
+paprika_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
 
 static void
 paprika_graphics_initialize_
 (
   _In_ crude_paprika                                      *paprika,
   _In_ crude_window_handle                                 window_handle
-);
-
-static void
-paprika_graphics_system_
-(
-  _In_ ecs_iter_t                                         *it
 );
 
 static void
@@ -52,7 +59,8 @@ crude_paprika_initialize
   CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_window, { 
     .width     = 800,
     .height    = 600,
-    .maximized = false });
+    .maximized = false
+  });
   CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_input, { 0 } );
   
   /* Create scene */
@@ -80,6 +88,11 @@ crude_paprika_initialize
       { .id = ecs_id( crude_free_camera ) },
     } );
   }
+  
+  CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_update_system_, EcsOnUpdate, NULL, {
+    { .id = ecs_id( crude_input ) },
+    { .id = ecs_id( crude_window_handle ) },
+  } );
 }
 
 void
@@ -296,4 +309,37 @@ paprika_graphics_deinitialize_
   crude_gfx_render_graph_builder_deinitialize( &paprika->graphics.render_graph_builder );
   crude_gfx_renderer_deinitialize( &paprika->graphics.renderer );
   crude_gfx_device_deinitialize( &paprika->graphics.gpu );
+}
+
+void
+paprika_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
+  crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input *input = &input_per_entity[ i ];
+    crude_window_handle *window_handle = &window_handle_per_entity[ i ];
+    
+    if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
+    {
+      SDL_HideCursor();
+    }
+    if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
+    {
+      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle ), input->mouse.wnd.x, input->mouse.wnd.y );
+      SDL_ShowCursor();
+    }
+    else if ( input->mouse.wnd.x || input->mouse.wnd.y )
+    {
+      if ( !SDL_CursorVisible() )
+      {
+        SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle ), input->mouse.wnd.x, input->mouse.wnd.y );
+      }
+    }
+  }
 }

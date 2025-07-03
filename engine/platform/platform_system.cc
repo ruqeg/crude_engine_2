@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include <core/array.h>
 #include <core/profiler.h>
 #include <core/memory.h>
 #include <core/assert.h>
@@ -205,6 +206,18 @@ crude_process_events_system_
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input *input = &inputs_per_entity[ i ];
+    
+    input->prev_mouse = input->mouse;
+    input->prev_wrapwnd = input->wrapwnd;
+    for ( uint32 k = 0; k < 128; k++ )
+    {
+      input->prev_keys[ k ] = input->keys[ k ];
+    }
+  }
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input *input = &inputs_per_entity[ i ];
 
     for ( uint32 k = 0; k < 128; k++ )
     {
@@ -221,7 +234,7 @@ crude_process_events_system_
   SDL_Event sdl_event;
   while (SDL_PollEvent( &sdl_event ))
   {
-    ImGui_ImplSDL3_ProcessEvent( &sdl_event );
+    //ImGui_ImplSDL3_ProcessEvent( &sdl_event );
     /* Handle Global event */
     if ( sdl_event.type == SDL_EVENT_QUIT )
     {
@@ -308,7 +321,6 @@ crude_process_events_system_
             {
               focused_input->wrapwnd.x = sdl_event.motion.x;
               focused_input->wrapwnd.y = sdl_event.motion.y;
-              SDL_HideCursor();
               key_down_( &focused_input->mouse.right );
             }
           }
@@ -320,8 +332,6 @@ crude_process_events_system_
             }
             else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
             {
-              SDL_WarpMouseInWindow( CRUDE_REINTERPRET_CAST( SDL_Window*, focused_window_handle->value ), focused_input->wrapwnd.x, focused_input->wrapwnd.y );
-              SDL_ShowCursor();
               key_up_( &focused_input->mouse.right );
             }
           }
@@ -331,11 +341,6 @@ crude_process_events_system_
             focused_input->mouse.wnd.y = sdl_event.motion.y;
             focused_input->mouse.rel.x = sdl_event.motion.xrel;
             focused_input->mouse.rel.y = sdl_event.motion.yrel;
-  
-            if ( !SDL_CursorVisible() )
-            {
-              SDL_WarpMouseInWindow( CRUDE_REINTERPRET_CAST( SDL_Window*, focused_window_handle->value ), focused_input->wrapwnd.x, focused_input->wrapwnd.y );
-            }
           }
           else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
           {

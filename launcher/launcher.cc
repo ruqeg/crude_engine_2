@@ -25,6 +25,7 @@ get_executable_path_
   wchar_t path[ MAX_PATH ] = { 0 };
   GetModuleFileNameW( NULL, path, MAX_PATH );
   return std::filesystem::path( path ).remove_filename();
+
 #else
   return std::filesystem::canonical("/proc/self/exe");
 #endif
@@ -123,14 +124,17 @@ main
     SDL_Event                                              sdl_event;
     while ( SDL_PollEvent( &sdl_event ) )
     {
-      ImGui_ImplSDL3_ProcessEvent( &sdl_event );
-      if ( sdl_event.type == SDL_EVENT_QUIT )
+      if ( SDL_GetMouseFocus() == sdl_window || SDL_GetKeyboardFocus() == sdl_window || sdl_event.window.windowID == SDL_GetWindowID( sdl_window ) )
       {
-        should_close_window = true;
+        ImGui_ImplSDL3_ProcessEvent( &sdl_event );
       }
-      if ( sdl_event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && sdl_event.window.windowID == SDL_GetWindowID( sdl_window ) )
+
+      if ( sdl_event.window.windowID == SDL_GetWindowID( sdl_window ) )
       {
-        should_close_window = true;
+        if ( sdl_event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED )
+        {
+          should_close_window = true;
+        }
       }
     }
     
