@@ -25,6 +25,3 @@
 [submodule "extlibs/cjson_cmake/cJSON"]
 	path = extlibs/cjson_cmake/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
-[submodule "extlibs/imgui_cmake/imgui"]
-	path = extlibs/imgui_cmake/imgui
-	url = https://github.com/ocornut/imgui.git

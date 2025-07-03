@@ -32,7 +32,9 @@ target_sources(${PROJECT_NAME} PRIVATE
   ${IMGUI_SOURCE_DIR}/imstb_rectpack.h 
   ${IMGUI_SOURCE_DIR}/imstb_textedit.h 
   ${IMGUI_SOURCE_DIR}/imstb_truetype.h 
+  ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_sdlrenderer3.cpp
+  ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_sdlrenderer3.h
   ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_sdl3.cpp
-  ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_vulkan.cpp
   ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_sdl3.h
+  ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_vulkan.cpp
   ${IMGUI_BACKENDS_SOURCE_DIR}/imgui_impl_vulkan.h)
