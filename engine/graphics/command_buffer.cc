@@ -536,6 +536,9 @@ crude_gfx_cmd_create_local_descriptor_set
   crude_gfx_descriptor_set *descriptor_set = CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index ) );
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( cmd->gpu, creation->layout );
   
+  CRUDE_ASSERT( creation->name );
+  descriptor_set->name = creation->name;
+
   VkDescriptorSetAllocateInfo vk_descriptor_info = {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     .descriptorPool = cmd->vk_descriptor_pool,

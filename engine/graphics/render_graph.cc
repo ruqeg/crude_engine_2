@@ -518,7 +518,7 @@ crude_gfx_render_graph_compile
 
       framebuffer_creation = crude_gfx_framebuffer_creation_empty();
       framebuffer_creation.render_pass = node->render_pass;
-      framebuffer_creation.name = node->name;
+      framebuffer_creation.name = crude_string_buffer_append_use_f( &render_graph->builder->gpu->objects_names_string_buffer, "%s", node->name );
 
       for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
       {
@@ -547,7 +547,7 @@ crude_gfx_render_graph_compile
         {
           CRUDE_ASSERT( height == output_resource_info->texture.height );
         }
-        
+
         if ( output_resource_info->texture.format == VK_FORMAT_D32_SFLOAT )
         {
           framebuffer_creation.depth_stencil_texture = output_resource_info->texture.texture;
@@ -607,6 +607,8 @@ crude_gfx_render_graph_compile
       
       framebuffer_creation.width = width;
       framebuffer_creation.height = height;
+
+      framebuffer_creation.manual_resources_free = true;
       node->framebuffer = crude_gfx_create_framebuffer( render_graph->builder->gpu, &framebuffer_creation );
     }
   }
@@ -1006,7 +1008,7 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
     if ( is_texture_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.texture.texture ) )
     {
       crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.texture );
-      //crude_gfx_destroy_texture( builder->gpu, texture->handle );
+      crude_gfx_destroy_texture( builder->gpu, texture->handle );
     }
     else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.buffer ) )
     {

@@ -10,7 +10,7 @@
 
 typedef struct secondary_draw_task_container
 {
-  _In_ crude_gfx_geometry_pass                            *pass;
+  crude_gfx_geometry_pass                                 *pass;
   crude_gfx_cmd_buffer                                    *primary_cmd;
   crude_gfx_cmd_buffer                                    *secondary_cmd;
   uint32                                                   start_mesh_draw_index;
@@ -26,7 +26,7 @@ copy_mesh_material_gpu_
 );
 
 static void
-secondary_draw_task_
+draw_scene_secondary_task_
 (
   _In_ uint32_t                                            start,
   _In_ uint32_t                                            end,
@@ -35,7 +35,28 @@ secondary_draw_task_
 );
 
 static void
-draw_scene_
+draw_scene_primary_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+);
+
+static void
+geometry_pass_render_classic_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+);
+
+static void
+geometry_pass_render_secondary_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+);
+
+static void
+geometry_pass_render_meshlets_
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_geometry_pass                            *pass
@@ -75,12 +96,8 @@ crude_gfx_geometry_pass_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( pass->mesh_instances, 16, scene_renderer->renderer->allocator_container );
   for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes ); ++i )
   {
-    if ( crude_gfx_mesh_is_transparent( &scene_renderer->meshes[ i ] ) )
-    {
-      continue;
-    }
     scene_renderer->meshes[ i ].material = main_material;
- 
+
     crude_gfx_mesh_instance_cpu mesh_instance;
     mesh_instance.mesh = &scene_renderer->meshes[ i ];
     mesh_instance.material_pass_index = 0;
@@ -98,10 +115,10 @@ crude_gfx_geometry_pass_initialize
 void
 crude_gfx_geometry_pass_deinitialize
 (
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+  _In_ crude_gfx_geometry_pass                            *pass
 )
 {
+  CRUDE_ARRAY_DEINITIALIZE( pass->mesh_instances );
 }
 
 void
@@ -115,108 +132,15 @@ crude_gfx_geometry_pass_render
 
   if ( pass->flags & CRUDE_GFX_GEOMETRY_PASS_MESHLETS_BIT )
   {
-    {
-      crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      cb_map.buffer = pass->scene_renderer->mesh_task_indirect_commands_sb[ pass->scene_renderer->renderer->gpu->current_frame ];
-      cb_map.offset = 0;
-      cb_map.size = sizeof( crude_gfx_mesh_draw_command );
-      crude_gfx_mesh_draw_command *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_command*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
-      if ( draw_data )
-      {
-        draw_data->indirect_meshlet.groupCountX = ceil( CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshlets ) / 128.0 );
-        draw_data->indirect_meshlet.groupCountY = 1;
-        draw_data->indirect_meshlet.groupCountZ = 1;
-        crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
-      }
-    }
-    
-    {
-      crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      cb_map.buffer = pass->scene_renderer->mesh_task_indirect_count_sb[ pass->scene_renderer->renderer->gpu->current_frame ];
-      cb_map.offset = 0;
-      cb_map.size = sizeof( crude_gfx_mesh_draw_counts );
-      crude_gfx_mesh_draw_counts *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_counts*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
-      if ( draw_data )
-      {
-        draw_data->opaque_mesh_visible_count = 1;
-        crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
-      }
-    }
-    
-    {
-      crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      cb_map.buffer = pass->scene_renderer->meshes_materials_sb;
-      cb_map.offset = 0;
-      cb_map.size = 0;
-      crude_gfx_mesh_material_gpu *meshes_materials = CRUDE_CAST( crude_gfx_mesh_material_gpu*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
-      if ( meshes_materials )
-      {
-        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes ); ++i )
-        {
-          copy_mesh_material_gpu_( &pass->scene_renderer->meshes[i ], &meshes_materials[ i ] );
-        }
-        crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
-      }
-    }
-
-    crude_gfx_renderer *renderer = pass->scene_renderer->renderer;
-    uint64 current_frame_index = renderer->gpu->current_frame;
-    uint64 meshlet_hashed_name = crude_hash_string( "meshlet", 0 );
-    crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
-    crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
-    crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
-    crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->scene_renderer->mesh_shader_ds[ renderer->gpu->current_frame ] );
-    crude_gfx_cmd_draw_mesh_task_indirect_count( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_sb[ current_frame_index ], CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ), pass->scene_renderer->mesh_task_indirect_count_sb[ current_frame_index ], 0, 1u/*render_scene->mesh_instances.size*/, sizeof( crude_gfx_mesh_draw_command ) );
+    geometry_pass_render_meshlets_( primary_cmd, pass );
   }
   else if ( pass->flags & CRUDE_GFX_GEOMETRY_PASS_SECONDARY_BIT )
   {
-    enkiTaskSet                                           *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
-    secondary_draw_task_container                          secondary_draw_tasks_data[ _PARALLEL_RECORDINGS ];
-    secondary_draw_task_container                          offset_secondary_draw_tasks_data;
-    uint32                                                 draws_per_secondary, offset;
-
-    draws_per_secondary = CRUDE_ARRAY_LENGTH( pass->mesh_instances ) / _PARALLEL_RECORDINGS;
-    offset = draws_per_secondary * _PARALLEL_RECORDINGS;
-
-    for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
-    {
-      secondary_draw_tasks_data[ i ] = CRUDE_COMPOUNT( secondary_draw_task_container, {
-        .pass                   = pass,
-        .primary_cmd            = primary_cmd,
-        .start_mesh_draw_index  = draws_per_secondary * i,
-        .end_mesh_draw_index    = draws_per_secondary * i + draws_per_secondary
-      } );
-      
-      secondary_draw_tasks[ i ] = enkiCreateTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_task_ );
-      enkiSetArgsTaskSet( secondary_draw_tasks[ i ], &secondary_draw_tasks_data[ i ] );
-      enkiAddTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_tasks[ i ] );
-    }
-    
-    if ( offset < CRUDE_ARRAY_LENGTH( pass->mesh_instances ) )
-    {
-      offset_secondary_draw_tasks_data = CRUDE_COMPOUNT( secondary_draw_task_container, {
-        .pass                   = pass,
-        .primary_cmd            = primary_cmd,
-        .start_mesh_draw_index  = offset,
-        .end_mesh_draw_index    = CRUDE_ARRAY_LENGTH( pass->mesh_instances )
-      } );
-      secondary_draw_task_( NULL, NULL, 0, &offset_secondary_draw_tasks_data );
-    }
-    
-    for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
-    {
-      enkiWaitForTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_tasks[ i ] );
-      vkCmdExecuteCommands( primary_cmd->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
-    }
-    
-    if ( offset < CRUDE_ARRAY_LENGTH( pass->mesh_instances ) )
-    {
-      vkCmdExecuteCommands( primary_cmd->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
-    }
+    geometry_pass_render_secondary_( primary_cmd, pass );
   }
   else
   {
-    draw_scene_( primary_cmd, pass );
+    geometry_pass_render_classic_( primary_cmd, pass );
   }
 }
 
@@ -245,13 +169,128 @@ crude_gfx_geometry_pass_pack
 }
 
 
-/**
- *
- * Renderer Scene Draw Task Implementation
- * 
- */
+static void
+geometry_pass_render_classic_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+)
+{
+  draw_scene_primary_( cmd, pass );
+}
+
+static void
+geometry_pass_render_secondary_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+)
+{
+  enkiTaskSet                                           *secondary_draw_tasks[ _PARALLEL_RECORDINGS ];
+  secondary_draw_task_container                          secondary_draw_tasks_data[ _PARALLEL_RECORDINGS ];
+  secondary_draw_task_container                          offset_secondary_draw_tasks_data;
+  uint32                                                 draws_per_secondary, offset;
+  
+  draws_per_secondary = CRUDE_ARRAY_LENGTH( pass->mesh_instances ) / _PARALLEL_RECORDINGS;
+  offset = draws_per_secondary * _PARALLEL_RECORDINGS;
+  
+  for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
+  {
+    secondary_draw_tasks_data[ i ] = CRUDE_COMPOUNT_EMPTY( secondary_draw_task_container );
+    secondary_draw_tasks_data[ i ].pass                   = pass;
+    secondary_draw_tasks_data[ i ].primary_cmd            = cmd;
+    secondary_draw_tasks_data[ i ].start_mesh_draw_index  = draws_per_secondary * i;
+    secondary_draw_tasks_data[ i ].end_mesh_draw_index    = draws_per_secondary * i + draws_per_secondary;
+    
+    secondary_draw_tasks[ i ] = enkiCreateTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), draw_scene_secondary_task_ );
+    enkiSetArgsTaskSet( secondary_draw_tasks[ i ], &secondary_draw_tasks_data[ i ] );
+    enkiAddTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_tasks[ i ] );
+  }
+  
+  if ( offset < CRUDE_ARRAY_LENGTH( pass->mesh_instances ) )
+  {
+    offset_secondary_draw_tasks_data = CRUDE_COMPOUNT_EMPTY( secondary_draw_task_container );
+    offset_secondary_draw_tasks_data.pass                   = pass;
+    offset_secondary_draw_tasks_data.primary_cmd            = cmd;
+    offset_secondary_draw_tasks_data.start_mesh_draw_index  = offset;
+    offset_secondary_draw_tasks_data.end_mesh_draw_index    = CRUDE_ARRAY_LENGTH( pass->mesh_instances );
+    draw_scene_secondary_task_( NULL, NULL, 0, &offset_secondary_draw_tasks_data );
+  }
+  
+  for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
+  {
+    enkiWaitForTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_tasks[ i ] );
+    vkCmdExecuteCommands( cmd->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
+  }
+  
+  if ( offset < CRUDE_ARRAY_LENGTH( pass->mesh_instances ) )
+  {
+    vkCmdExecuteCommands( cmd->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
+  }
+}
+
+static void
+geometry_pass_render_meshlets_
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_geometry_pass                            *pass
+)
+{
+  {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene_renderer->mesh_task_indirect_commands_sb[ pass->scene_renderer->renderer->gpu->current_frame ];
+    cb_map.offset = 0;
+    cb_map.size = sizeof( crude_gfx_mesh_draw_command );
+    crude_gfx_mesh_draw_command *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_command*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
+    if ( draw_data )
+    {
+      draw_data->indirect_meshlet.groupCountX = ceil( CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshlets ) / 128.0 );
+      draw_data->indirect_meshlet.groupCountY = 1;
+      draw_data->indirect_meshlet.groupCountZ = 1;
+      crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
+    }
+  }
+  
+  {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene_renderer->mesh_task_indirect_count_sb[ pass->scene_renderer->renderer->gpu->current_frame ];
+    cb_map.offset = 0;
+    cb_map.size = sizeof( crude_gfx_mesh_draw_counts );
+    crude_gfx_mesh_draw_counts *draw_data = CRUDE_CAST( crude_gfx_mesh_draw_counts*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
+    if ( draw_data )
+    {
+      draw_data->opaque_mesh_visible_count = 1;
+      crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
+    }
+  }
+  
+  {
+    crude_gfx_map_buffer_parameters cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    cb_map.buffer = pass->scene_renderer->meshes_materials_sb;
+    cb_map.offset = 0;
+    cb_map.size = 0;
+    crude_gfx_mesh_material_gpu *meshes_materials = CRUDE_CAST( crude_gfx_mesh_material_gpu*, crude_gfx_map_buffer( pass->scene_renderer->renderer->gpu, &cb_map ) );
+    if ( meshes_materials )
+    {
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes ); ++i )
+      {
+        copy_mesh_material_gpu_( &pass->scene_renderer->meshes[i ], &meshes_materials[ i ] );
+      }
+      crude_gfx_unmap_buffer( pass->scene_renderer->renderer->gpu, cb_map.buffer );
+    }
+  }
+  
+  uint64 current_frame_index = pass->scene_renderer->renderer->gpu->current_frame;
+  uint64 meshlet_hashed_name = crude_hash_string( "meshlet", 0 );
+  crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( pass->scene_renderer->renderer->resource_cache.techniques, meshlet_hashed_name )->value;
+  crude_gfx_pipeline_handle pipeline = meshlet_technique->passes[ pass->meshlet_technique_index ].pipeline;
+  crude_gfx_cmd_bind_pipeline( cmd, pipeline );
+  crude_gfx_cmd_bind_descriptor_set( cmd, pass->scene_renderer->mesh_shader_ds[ pass->scene_renderer->renderer->gpu->current_frame ] );
+  crude_gfx_cmd_draw_mesh_task_indirect_count( cmd, pass->scene_renderer->mesh_task_indirect_commands_sb[ current_frame_index ], CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ), pass->scene_renderer->mesh_task_indirect_count_sb[ current_frame_index ], 0, 1u/*render_scene->mesh_instances.size*/, sizeof( crude_gfx_mesh_draw_command ) );
+}
+
 void
-secondary_draw_task_
+draw_scene_secondary_task_
 (
   _In_ uint32_t                                            start,
   _In_ uint32_t                                            end,
@@ -268,19 +307,14 @@ secondary_draw_task_
   
   crude_gfx_cmd_set_viewport( secondary_cmd, NULL );
   crude_gfx_cmd_set_scissor( secondary_cmd, NULL );
-  draw_scene_( secondary_cmd, secondary_draw_task->pass );
+  draw_scene_primary_( secondary_cmd, secondary_draw_task->pass );
 
   crude_gfx_cmd_end( secondary_cmd );
   secondary_draw_task->secondary_cmd = secondary_cmd;
 }
 
-/**
- *
- * Renderer Scene Draw Implementation
- * 
- */
 void
-draw_scene_
+draw_scene_primary_
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_geometry_pass                            *pass
@@ -312,6 +346,7 @@ draw_scene_
     }
 
     crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation.name = "mesh_material_descriptor_set";
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh->material_buffer, 1u );
     ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh->material->technique->passes[ 0 ].pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );

@@ -326,7 +326,7 @@ typedef struct crude_gfx_framebuffer_creation
   crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
   crude_gfx_texture_handle                                 depth_stencil_texture;
   uint32                                                   num_render_targets;
-
+  bool                                                     manual_resources_free;
   uint16                                                   width;
   uint16                                                   height;
   uint8                                                    resize;
@@ -543,6 +543,7 @@ typedef struct crude_gfx_descriptor_binding
 
 typedef struct crude_gfx_descriptor_set_layout
 {
+  VkDescriptorPool                                         vk_descriptor_pool;
   VkDescriptorSetLayout                                    vk_descriptor_set_layout;
   VkDescriptorSetLayoutBinding                            *vk_binding;
   crude_gfx_descriptor_binding                            *bindings;
@@ -560,6 +561,7 @@ typedef struct crude_gfx_descriptor_set
   uint16                                                   bindings[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
+  char const                                              *name;
 } crude_gfx_descriptor_set;
 
 typedef struct crude_gfx_pipeline
@@ -576,6 +578,7 @@ typedef struct crude_gfx_pipeline
   crude_gfx_rasterization_creation                         rasterization;
   crude_gfx_pipeline_handle                                handle;
   bool                                                     graphics_pipeline;
+  char const                                               *name;
 } crude_gfx_pipeline;
 
 typedef struct crude_gfx_render_pass
@@ -596,6 +599,7 @@ typedef struct crude_gfx_framebuffer
   crude_gfx_texture_handle                                 depth_stencil_attachment;
   uint32                                                   num_color_attachments;
   uint8                                                    resize;
+  bool                                                     manual_resources_free;
   char const                                              *name;
 } crude_gfx_framebuffer;
 

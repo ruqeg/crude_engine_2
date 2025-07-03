@@ -23,8 +23,7 @@ crude_gfx_imgui_pass_initialize
 CRUDE_API void
 crude_gfx_imgui_pass_deinitialize
 (
-  _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+  _In_ crude_gfx_imgui_pass                               *pass
 );
 
 CRUDE_API void

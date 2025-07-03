@@ -214,18 +214,17 @@ parse_gpu_pipeline_
     {
       cJSON const *blend_json = cJSON_GetArrayItem( blend_states_json, blend_index );
       
-      char const *enabled = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "enable" ) );
+      uint32 enabled = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( blend_json, "enable" ) );
       char const *src_colour = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "src_colour" ) );
       char const *dst_colour = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "dst_colour" ) );
       char const *blend_op = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "op" ) );
       
-      crude_gfx_blend_state blend_state = {
-        .source_color = get_blend_factor_( src_colour ),
-        .destination_color = get_blend_factor_( dst_colour ),
-        .color_operation = get_blend_op_( blend_op ),
-        .blend_enabled = ( strcmp( enabled, "true" ) == 0 ),
-      };
-      pipeline_creation->blend_state.blend_states[ pipeline_creation->blend_state.active_states++ ] = blend_state;
+      crude_gfx_blend_state blend_state = CRUDE_COMPOUNT_EMPTY( crude_gfx_blend_state );
+      blend_state.source_color = get_blend_factor_( src_colour );
+      blend_state.destination_color = get_blend_factor_( dst_colour );
+      blend_state.color_operation = get_blend_op_( blend_op );
+      blend_state.blend_enabled = enabled;
+      crude_gfx_pipeline_creation_add_blend_state( pipeline_creation, blend_state );
     }
   }
   

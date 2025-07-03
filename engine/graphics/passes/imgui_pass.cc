@@ -140,10 +140,11 @@ crude_gfx_imgui_pass_initialize
 void
 crude_gfx_imgui_pass_deinitialize
 (
-  _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+  _In_ crude_gfx_imgui_pass                               *pass
 )
 {
+  crude_gfx_destroy_descriptor_set( pass->gpu, pass->descriptor_set );
+
   crude_gfx_destroy_buffer( pass->gpu, pass->vertex_buffer );
   crude_gfx_destroy_buffer( pass->gpu, pass->index_buffer );
   crude_gfx_destroy_buffer( pass->gpu, pass->ui_cb );

@@ -367,6 +367,7 @@ crude_gfx_device_deinitialize
     vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
   }
   
+  vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_descriptor_pool, gpu->vk_allocation_callbacks );
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
   vk_destroy_swapchain_( gpu );
 
@@ -1456,8 +1457,10 @@ crude_gfx_create_pipeline
   }
 
   crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, handle );
-  crude_gfx_shader_state *shader_state_data = crude_gfx_access_shader_state( gpu, shader_state );
   
+  pipeline->name = creation->name;
+
+  crude_gfx_shader_state *shader_state_data = crude_gfx_access_shader_state( gpu, shader_state );
   pipeline->shader_state = shader_state;
   
   VkDescriptorSetLayout vk_layouts[ CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS ];
@@ -1737,7 +1740,10 @@ crude_gfx_destroy_pipeline_instant
   {
     for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
     {
-      crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
+      if ( i != CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX )
+      {
+        crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
+      }
     }
     vkDestroyPipeline( gpu->vk_device, pipeline->vk_pipeline, gpu->vk_allocation_callbacks );
     vkDestroyPipelineLayout( gpu->vk_device, pipeline->vk_pipeline_layout, gpu->vk_allocation_callbacks );
@@ -1951,6 +1957,7 @@ crude_gfx_create_descriptor_set_layout
     vk_layout_info.pBindings    = descriptor_set_layout->vk_binding;
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( gpu->vk_device, &vk_layout_info, gpu->vk_allocation_callbacks, &descriptor_set_layout->vk_descriptor_set_layout ), "Failed to create descriptor set layout" );
   }
+
   crude_stack_allocator_free_marker( gpu->temporary_allocator, tempory_allocator_marker );
 
   return descriptor_set_layout_handle;
@@ -2004,6 +2011,9 @@ crude_gfx_create_descriptor_set
   
   crude_gfx_descriptor_set *descriptor_set = crude_gfx_access_descriptor_set( gpu, handle );
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, creation->layout );
+
+  CRUDE_ASSERT( creation->name );
+  descriptor_set->name = creation->name;
   
   VkDescriptorSetAllocateInfo vk_descriptor_info = {
     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -2114,6 +2124,8 @@ crude_gfx_create_descriptor_set
 
   descriptor_set->layout = descriptor_set_layout;
 
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_DESCRIPTOR_SET, CRUDE_CAST( uint64, descriptor_set->vk_descriptor_set ), creation->name );
+
   vkUpdateDescriptorSets( gpu->vk_device, num_resources, descriptor_write, 0, NULL );
   return handle;
 }
@@ -2144,7 +2156,17 @@ crude_gfx_destroy_descriptor_set_instant
   _In_ crude_gfx_descriptor_set_handle                     handle
 )
 {
-  crude_gfx_descriptor_set *descriptor_set_layout = crude_gfx_access_descriptor_set( gpu, handle );
+  crude_gfx_descriptor_set *descriptor_set = crude_gfx_access_descriptor_set( gpu, handle );
+
+  //if ( descriptor_set->layout->bindless )
+  //{
+  //  vkFreeDescriptorSets( gpu->vk_device, gpu->vk_bindless_descriptor_pool, 1u, &descriptor_set->vk_descriptor_set );
+  //}
+  //else
+  //{
+  //  vkFreeDescriptorSets( gpu->vk_device, gpu->vk_descriptor_pool, 1u, &descriptor_set->vk_descriptor_set );
+  //}
+
   crude_gfx_release_descriptor_set( gpu, handle );
 }
 
@@ -2175,6 +2197,7 @@ crude_gfx_create_framebuffer
   framebuffer->render_pass = creation->render_pass;
   framebuffer->scale_x = 1.0;
   framebuffer->scale_y = 1.0;
+  framebuffer->manual_resources_free = creation->manual_resources_free;
   
   return handle;
 }
@@ -2206,7 +2229,7 @@ crude_gfx_destroy_framebuffer_instant
 )
 {
   crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, handle );
-  if ( framebuffer )
+  if ( framebuffer && !framebuffer->manual_resources_free )
   {
     for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
     {
@@ -3088,7 +3111,7 @@ vk_create_descriptor_pool_
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-      pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
+      pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
       pool_info.maxSets       = CRUDE_GFX_MAX_BINDLESS_RESOURCES * CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.pPoolSizes    = pool_sizes_bindless;

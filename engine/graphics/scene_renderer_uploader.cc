@@ -552,34 +552,6 @@ load_meshes_
 
       material_transparent = create_mesh_material_( gltf, node, scene_renderer->renderer, scene_renderer, mesh_primitive->material, &mesh_draw, scene_renderer_images_offset, scene_renderer_samplers_offset );
       
-      //!TODO
-      //if ( transparent)
-      //{
-      //  if ( mesh_primitive->material->double_sided )
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_no_cull_transparent;
-      //  }
-      //  else
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_cull_transparent;
-      //  }
-      //}
-      //else
-      //{
-      //  if ( mesh_primitive->material->double_sided )
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_no_cull_opaque;
-      //  }
-      //  else
-      //  {
-      //    //CRUDE_ABORT( CRUDE_CHANNEL_FILEIO, "Can't handle such type of material!" );
-      //    //mesh_draw.material = material_cull_opaque;
-      //  }
-      //}
-
       mesh_draw.scale = node_scale;
       mesh_draw.translation = node_translation;
       mesh_draw.rotation = node_rotation;

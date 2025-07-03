@@ -32,8 +32,7 @@ crude_gfx_geometry_pass_initialize
 CRUDE_API void
 crude_gfx_geometry_pass_deinitialize
 (
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+  _In_ crude_gfx_geometry_pass                            *pass
 );
 
 CRUDE_API void

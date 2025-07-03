@@ -138,6 +138,7 @@ crude_gfx_scene_renderer_initialize
       
       ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
       ds_creation.layout = layout;
+      ds_creation.name = "meshlet_descriptor_set";
 
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->scene_cb, 0u );
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_sb, 1u );
@@ -160,6 +161,9 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  crude_gfx_geometry_pass_deinitialize( &scene_renderer->geometry_pass );
+  crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->images ); ++i )
   {
     crude_gfx_renderer_destroy_texture( scene_renderer->renderer, &scene_renderer->images[ i ] );
@@ -196,10 +200,13 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_count_sb[ i ] );
   }
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  
+  if ( scene_renderer->use_meshlets )
   {
-    crude_gfx_destroy_descriptor_set( scene_renderer->renderer->gpu, scene_renderer->mesh_shader_ds[ i ] );
+    for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+    {
+      crude_gfx_destroy_descriptor_set( scene_renderer->renderer->gpu, scene_renderer->mesh_shader_ds[ i ] );
+    }
   }
 
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes );
