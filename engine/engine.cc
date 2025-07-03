@@ -60,6 +60,8 @@ crude_engine_initialize
     };
     crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
   }
+  
+  engine->resources_path = "\\..\\..\\resources\\";
 }
 
 void

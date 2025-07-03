@@ -151,7 +151,7 @@ crude_gfx_scene_renderer_initialize
     }
   }
 
-  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer->gpu );
+  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer->gpu, creation->imgui_context );
   crude_gfx_geometry_pass_initialize( &scene_renderer->geometry_pass, scene_renderer, CRUDE_GFX_GEOMETRY_PASS_MESHLETS_BIT );
 }
 

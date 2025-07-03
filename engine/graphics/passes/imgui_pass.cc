@@ -47,13 +47,14 @@ void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_device                                   *gpu
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *imgui_context
 )
 {
   pass->gpu = gpu;
-  
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+  pass->imgui_context = imgui_context;
+
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   ImGui::StyleColorsDark();
   
   /* Setup Platform/Renderer bindings */
@@ -151,9 +152,6 @@ crude_gfx_imgui_pass_deinitialize
   
   crude_gfx_destroy_pipeline( pass->gpu, pass->pipeline );
   crude_gfx_destroy_texture( pass->gpu, pass->font_texture );
-  
-  ImGui_ImplSDL3_Shutdown();
-  ImGui::DestroyContext();
 }
 
 void
@@ -164,6 +162,8 @@ crude_gfx_imgui_pass_render
 )
 {
   crude_gfx_imgui_pass *pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
+  
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
 
   ImGui::Render();
   
@@ -303,7 +303,7 @@ crude_gfx_imgui_pass_render
           }
           
           /* Retrieve */
-          crude_gfx_texture_handle new_texture = *( crude_gfx_texture_handle* )( pcmd->TextureId );
+          crude_gfx_texture_handle new_texture = *( crude_gfx_texture_handle* )( pcmd->TexRef.GetTexID() );
           crude_gfx_cmd_draw_indexed( primary_cmd, pcmd->ElemCount, 1, index_buffer_offset + pcmd->IdxOffset, vtx_buffer_offset + pcmd->VtxOffset, new_texture.index );
         }
       }

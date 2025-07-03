@@ -8,6 +8,7 @@
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_entity                                             node;
+  void                                                    *imgui_context;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;

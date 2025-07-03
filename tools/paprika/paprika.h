@@ -1,5 +1,7 @@
 #pragma once
 
+#include <imgui/imgui.h>
+
 #include <engine.h>
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>
@@ -25,6 +27,7 @@ typedef struct crude_paprika
   crude_scene                                              scene;
   crude_paprika_graphics                                   graphics;
   crude_entity                                             platform_node;
+  void                                                    *imgui_context;
   bool                                                     working;
 } crude_paprika;
 

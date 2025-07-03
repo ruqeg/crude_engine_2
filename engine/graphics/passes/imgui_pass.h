@@ -5,6 +5,7 @@
 typedef struct crude_gfx_imgui_pass
 {
   crude_gfx_device                                        *gpu;
+  void                                                    *imgui_context;
   crude_gfx_pipeline_handle                                pipeline;
   crude_gfx_descriptor_set_handle                          descriptor_set;
   crude_gfx_buffer_handle                                  vertex_buffer;
@@ -17,7 +18,8 @@ CRUDE_API void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_device                                   *gpu
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *imgui_context
 );
 
 CRUDE_API void

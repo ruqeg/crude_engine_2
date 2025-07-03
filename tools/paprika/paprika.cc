@@ -68,6 +68,9 @@ crude_paprika_initialize
   }
   crude_scene_load( &paprika->scene, "scene.json" );
   
+  IMGUI_CHECKVERSION();
+  paprika->imgui_context = ImGui::CreateContext();
+
   /* Create Graphics */
   {
     crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->platform_node, crude_window_handle );
@@ -96,6 +99,8 @@ crude_paprika_deinitialize
   paprika_graphics_deinitialize_( paprika );
   crude_heap_allocator_deinitialize( &paprika->graphics_allocator );
   crude_stack_allocator_deinitialize( &paprika->temporary_allocator );
+
+  ImGui::DestroyContext( ( ImGuiContext* )paprika->imgui_context );
 }
 
 void
@@ -185,6 +190,7 @@ paprika_graphics_initialize_
     creation.allocator_container = paprika->graphics.allocator_container;
     creation.temporary_allocator = &paprika->temporary_allocator;
     creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
+    creation.imgui_context = paprika->imgui_context;
     crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &creation );
     crude_gfx_scene_renderer_register_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
   }
@@ -201,7 +207,8 @@ paprika_graphics_system_
   crude_paprika *paprika = ( crude_paprika* )it->ctx;
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
-
+  
+  ImGui::SetCurrentContext( ( ImGuiContext* ) paprika->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 

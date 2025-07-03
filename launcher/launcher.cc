@@ -10,6 +10,8 @@
 #include <SDL3/SDL.h>
 
 #include <engine.h>
+#include <core/string.h>
+#include <core/file.h>
 #include <core/profiler.h>
 #include <sandbox.h>
 #include <paprika.h>
@@ -41,18 +43,20 @@ main
   crude_sandbox                                            sandbox;
   crude_paprika                                            paprika;
   cr_plugin                                                crude_sandbox_cr, crude_paprika_cr, crude_engine_simulation_cr;
+  SDL_Renderer                                            *sdl_renderer;
+  SDL_Window                                              *sdl_window;
+  SDL_Texture                                             *paprika_texture;
   ImGuiContext                                            *imgui_context;
   ImGuiIO                                                 *imgui_io;
   ImGuiStyle                                              *imgui_style;
-  SDL_Renderer                                            *sdl_renderer;
-  SDL_Window                                              *sdl_window;
   float32                                                  display_content_scale;
   bool                                                     should_close_window;
   
+  paprika.working = false;
+  sandbox.working = false;
+
   crude_engine_initialize( &engine, 1u );
-  crude_sandbox_initialize( &sandbox, &engine );
-  crude_paprika_initialize( &paprika, &engine );
-  
+
   crude_sandbox_cr.userdata           = &sandbox;
   crude_paprika_cr.userdata           = &paprika;
   crude_engine_simulation_cr.userdata = &engine;
@@ -97,10 +101,24 @@ main
   // Setup Platform/Renderer backends
   ImGui_ImplSDL3_InitForSDLRenderer( sdl_window, sdl_renderer );
   ImGui_ImplSDLRenderer3_Init( sdl_renderer );
+ 
+  {
+    char paprika_texture_path[ 1024 ] = {};
+    crude_get_current_working_directory( paprika_texture_path, sizeof( paprika_texture_path ) );
+    strcat( paprika_texture_path, engine.resources_path );
+    strcat( paprika_texture_path, "textures\\paprika_button_texture.bmp" );
+    SDL_Surface* loaded_surface = SDL_LoadBMP( paprika_texture_path );
+    if( !loaded_surface )
+    {
+      goto cleanup;
+    }
+    paprika_texture = SDL_CreateTextureFromSurface( sdl_renderer, loaded_surface );
+    SDL_DestroySurface( loaded_surface );
+  }
 
   // Main loop
   should_close_window = false;
-  while ( !should_close_window )
+  while ( !should_close_window && engine.running )
   {
     SDL_Event                                              sdl_event;
     while ( SDL_PollEvent( &sdl_event ) )
@@ -122,30 +140,27 @@ main
       continue;
     }
     
-    ImGui::DockSpaceOverViewport(0u, ImGui::GetMainViewport());
+    ImGui::SetCurrentContext( imgui_context );
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
     
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+    ImGui::DockSpaceOverViewport(0u, ImGui::GetMainViewport());
     {
-        static float f = 0.0f;
-        static int counter = 0;
-    
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-    
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-    
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-    
-        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
-    
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / imgui_io->Framerate, imgui_io->Framerate);
-        ImGui::End();
+      ImVec2 paprika_texture_size;
+      paprika_texture_size.x = ImGui::GetMainViewport()->WorkSize.x / 3.0;
+      paprika_texture_size.y = paprika_texture_size.x * ( ( float32 )paprika_texture->h / paprika_texture->w );
+      ImGui::Begin( "main", NULL );
+      if ( ImGui::ImageButton( "crude_paprika", (ImTextureRef)paprika_texture, paprika_texture_size ) )
+      {
+        if ( !paprika.working )
+        {
+          crude_paprika_deinitialize( &paprika );
+          crude_paprika_initialize( &paprika, &engine );
+          ImGui::SetCurrentContext( imgui_context );
+        }
+      }
+      ImGui::End();
     }
     
     ImGui::Render();
@@ -154,12 +169,23 @@ main
     SDL_RenderClear( sdl_renderer );
     ImGui_ImplSDLRenderer3_RenderDrawData( ImGui::GetDrawData(), sdl_renderer );
     SDL_RenderPresent( sdl_renderer );
+    
+    if ( paprika.working )
+    {
+      cr_plugin_update( crude_paprika_cr );
+    }
+    cr_plugin_update( crude_engine_simulation_cr );
+
+    CRUDE_PROFILER_MARK_FRAME;
   }
 
 cleanup:
   ImGui_ImplSDLRenderer3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
-  ImGui::DestroyContext();
+  if ( imgui_context )
+  {
+    ImGui::DestroyContext( imgui_context );
+  }
 
   if ( sdl_renderer )
   {
@@ -178,20 +204,6 @@ cleanup:
   crude_paprika_deinitialize( &paprika );
   crude_sandbox_deinitialize( &sandbox );
   crude_engine_deinitialize( &engine );
-
-  //while ( engine.running )
-  //{
-  //  if ( sandbox.working )
-  //  {
-  //    cr_plugin_update( crude_sandbox_cr );
-  //  }
-  //  if ( paprika.working )
-  //  {
-  //    cr_plugin_update( crude_paprika_cr );
-  //  }
-  //  cr_plugin_update( crude_engine_simulation_cr );
-  //  CRUDE_PROFILER_MARK_FRAME;
-  //}
 
   return 0;
 }
