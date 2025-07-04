@@ -158,3 +158,14 @@ crude_string_cmp
 {
   return strcmp( s1, s2 );
 }
+
+void
+crude_string_cat
+(
+  _In_ char                                               *dst,
+  _In_ char const                                         *src,
+  _In_ size_t                                              n
+)
+{
+  strcat_s( dst, n, src );
+}

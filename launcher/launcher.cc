@@ -16,22 +16,20 @@
 #include <sandbox.h>
 #include <paprika.h>
 
-std::filesystem::path
-get_executable_path_
+static char*
+get_plugin_dll_path
 (
+  _In_ char                                               *buffer,
+  _In_ uint32                                              buffer_size,
+  _In_ char const                                         *plugin_dll
 )
 {
-#ifdef _WIN32
-  wchar_t path[ MAX_PATH ] = { 0 };
-  GetModuleFileNameW( NULL, path, MAX_PATH );
-  return std::filesystem::path( path ).remove_filename();
-
-#else
-  return std::filesystem::canonical("/proc/self/exe");
-#endif
+  buffer[ 0 ] = 0u;
+  crude_get_executable_directory( buffer, buffer_size );
+  crude_string_cat( buffer, plugin_dll, buffer_size );
+  return buffer;
 }
-
-#define PLUGIN_PATH_STR( name ) get_executable_path_().concat( CR_PLUGIN( name ) ).string()
+#define PLUGIN_PATH_STR( name )\ get_executable_path_().concat( CR_PLUGIN( name ) ).string()
 
 int
 main
@@ -61,10 +59,14 @@ main
   crude_sandbox_cr.userdata           = &sandbox;
   crude_paprika_cr.userdata           = &paprika;
   crude_engine_simulation_cr.userdata = &engine;
+  
+  {
+    char buffer[ 1024 ];
 
-  cr_plugin_open( crude_engine_simulation_cr, PLUGIN_PATH_STR( "crude_engine_simulation" ).c_str() );
-  cr_plugin_open( crude_sandbox_cr, PLUGIN_PATH_STR( "crude_sandbox" ).c_str() );
-  cr_plugin_open( crude_paprika_cr, PLUGIN_PATH_STR( "crude_paprika" ).c_str() );
+    cr_plugin_open( crude_engine_simulation_cr, get_plugin_dll_path( buffer, sizeof( buffer ), CR_PLUGIN( "crude_engine_simulation" ) ) );
+    cr_plugin_open( crude_sandbox_cr, get_plugin_dll_path( buffer, sizeof( buffer ), CR_PLUGIN( "crude_sandbox" ) ) );
+    cr_plugin_open( crude_paprika_cr, get_plugin_dll_path( buffer, sizeof( buffer ), CR_PLUGIN( "crude_paprika" ) ) );
+  }
 
   if ( !SDL_Init( SDL_INIT_VIDEO) )
   {

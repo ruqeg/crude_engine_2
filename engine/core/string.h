@@ -98,3 +98,11 @@ crude_string_cmp
   _In_ char const                                         *s1,
   _In_ char const                                         *s2
 );
+
+CRUDE_API void
+crude_string_cat
+(
+  _In_ char                                               *dst,
+  _In_ char const                                         *src,
+  _In_ size_t                                              n
+);

@@ -12,7 +12,6 @@
 
 #include <core/file.h>
 
-
 static long _get_file_size
 (
   _In_ FILE                                               *f
@@ -22,6 +21,22 @@ static long _get_file_size
   long file_size_signed = ftell( f );
   fseek( f, 0, SEEK_SET );
   return file_size_signed;
+}
+
+void
+crude_get_executable_directory
+(
+  _Out_ char                                              *buffer,
+  _In_ uint32                                              buffer_size
+)
+{
+  GetModuleFileName( NULL, buffer, buffer_size );
+
+  char *last_back_slash = strrchr( buffer, '\\');
+  if ( last_back_slash )
+  {
+    buffer[ last_back_slash - buffer + 1 ] = 0u;
+  }
 }
 
 void
