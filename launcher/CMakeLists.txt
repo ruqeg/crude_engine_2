@@ -13,6 +13,6 @@ if(MSVC)
  target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
 endif()
 
-source_group(launcher FILES launcher.cc)
+source_group(launcher FILES launcher.cc launcher.h main.cc)
 
-target_sources(${PROJECT_NAME} PUBLIC launcher.cc)
+target_sources(${PROJECT_NAME} PUBLIC launcher.cc launcher.h main.cc)

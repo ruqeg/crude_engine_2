@@ -2,6 +2,12 @@
 
 #include <core/ecs.h>
 
+typedef void ( *crude_input_callback_function )
+(
+  _In_ void                                               *ctx,
+  _In_ void                                               *sdl_event
+);
+
 /************************************************
  *
  * Structs
@@ -35,6 +41,7 @@ typedef struct crude_window
   int32                                                    width;
   int32                                                    height;
   bool                                                     maximized;
+  uint64                                                   flags;
 } crude_window;
 
 typedef struct crude_window_handle
@@ -46,11 +53,11 @@ typedef struct crude_input
 {
   crude_key_state                                          keys[ 128 ];
   crude_mouse_state                                        mouse;
-  crude_mouse_input                                        wrapwnd;
   crude_key_state                                          prev_keys[ 128 ];
   crude_mouse_state                                        prev_mouse;
-  crude_mouse_input                                        prev_wrapwnd;
   bool                                                     should_close_window;
+  crude_input_callback_function                            callback;
+  void                                                    *ctx;
 } crude_input;
 
 /************************************************

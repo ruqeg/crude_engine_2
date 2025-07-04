@@ -6,6 +6,7 @@
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>
 #include <core/ecs.h>
+#include <platform/platform_components.h>
 
 typedef struct crude_paprika_graphics
 {
@@ -29,6 +30,7 @@ typedef struct crude_paprika
   crude_entity                                             platform_node;
   void                                                    *imgui_context;
   bool                                                     working;
+  crude_mouse_input                                        wrapwnd;
 } crude_paprika;
 
 CRUDE_API void

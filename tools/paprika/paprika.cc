@@ -39,6 +39,13 @@ paprika_graphics_deinitialize_
   _In_ crude_paprika                                      *paprika
 );
 
+static void
+paprika_input_callback_
+(
+  _In_ void                                               *ctx,
+  _In_ void                                               *sdl_event
+);
+
 void
 crude_paprika_initialize
 (
@@ -55,13 +62,24 @@ crude_paprika_initialize
   ECS_IMPORT( paprika->engine->world, crude_platform_system );
   ECS_IMPORT( paprika->engine->world, crude_free_camera_system );
   
+  {
+    IMGUI_CHECKVERSION();
+    paprika->imgui_context = ImGui::CreateContext();
+    ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, paprika->imgui_context ) );
+    ImGui::StyleColorsDark();
+  }
+
   paprika->platform_node = crude_entity_create_empty( paprika->engine->world, "paprika" );
   CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_window, { 
     .width     = 800,
     .height    = 600,
-    .maximized = false
+    .maximized = false,
+    .flags     = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
   });
-  CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_input, { 0 } );
+  CRUDE_ENTITY_SET_COMPONENT( paprika->platform_node, crude_input, {
+    .callback = paprika_input_callback_,
+    .ctx = paprika->imgui_context
+  } );
   
   /* Create scene */
   {
@@ -75,9 +93,6 @@ crude_paprika_initialize
     crude_scene_initialize( &paprika->scene, &creation );
   }
   crude_scene_load( &paprika->scene, "scene.json" );
-  
-  IMGUI_CHECKVERSION();
-  paprika->imgui_context = ImGui::CreateContext();
 
   /* Create Graphics */
   {
@@ -89,7 +104,7 @@ crude_paprika_initialize
     } );
   }
   
-  CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_update_system_, EcsOnUpdate, NULL, {
+  CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_update_system_, EcsOnUpdate, paprika, {
     { .id = ecs_id( crude_input ) },
     { .id = ecs_id( crude_window_handle ) },
   } );
@@ -317,9 +332,11 @@ paprika_update_system_
   _In_ ecs_iter_t                                         *it
 )
 {
+  crude_paprika *paprika = ( crude_paprika* )it->ctx;
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
-  
+
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, paprika->imgui_context ) );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input *input = &input_per_entity[ i ];
@@ -327,19 +344,38 @@ paprika_update_system_
     
     if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
+      ImGuiIO *imgui_io = &ImGui::GetIO();
+      imgui_io->ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+      paprika->wrapwnd.x = input->mouse.wnd.x;
+      paprika->wrapwnd.y = input->mouse.wnd.y;
       SDL_HideCursor();
     }
+    
     if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
-      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle ), input->mouse.wnd.x, input->mouse.wnd.y );
+      ImGuiIO *imgui_io = &ImGui::GetIO();
+      imgui_io->ConfigFlags ^= ImGuiConfigFlags_NoMouseCursorChange;
+      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), paprika->wrapwnd.x, paprika->wrapwnd.y );
       SDL_ShowCursor();
     }
-    else if ( input->mouse.wnd.x || input->mouse.wnd.y )
+    
+    if ( input->mouse.wnd.x || input->mouse.wnd.y )
     {
       if ( !SDL_CursorVisible() )
       {
-        SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle ), input->mouse.wnd.x, input->mouse.wnd.y );
+        SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), paprika->wrapwnd.x, paprika->wrapwnd.y );
       }
     }
   }
+}
+
+void
+paprika_input_callback_
+(
+  _In_ void                                               *ctx,
+  _In_ void                                               *sdl_event
+)
+{
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
+  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }

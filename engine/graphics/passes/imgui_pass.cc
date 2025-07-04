@@ -55,7 +55,6 @@ crude_gfx_imgui_pass_initialize
   pass->imgui_context = imgui_context;
 
   ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
-  ImGui::StyleColorsDark();
   
   /* Setup Platform/Renderer bindings */
   ImGui_ImplSDL3_InitForVulkan( gpu->sdl_window );
@@ -144,6 +143,9 @@ crude_gfx_imgui_pass_deinitialize
   _In_ crude_gfx_imgui_pass                               *pass
 )
 {
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
+  ImGui_ImplSDL3_Shutdown( );
+
   crude_gfx_destroy_descriptor_set( pass->gpu, pass->descriptor_set );
 
   crude_gfx_destroy_buffer( pass->gpu, pass->vertex_buffer );

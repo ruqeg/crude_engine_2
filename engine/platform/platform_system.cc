@@ -101,9 +101,6 @@ mouse_reset_
   
   state->view.x = 0;
   state->view.y = 0;
-  
-  state->wnd.x = 0;
-  state->wnd.y = 0;
 }
 
 static void
@@ -128,13 +125,12 @@ crude_window_creation_observer_
       title = "SDL2 window";
     }
 
-    SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if ( window->maximized )
     {
-      flags |= SDL_WINDOW_MAXIMIZED;
+      window->flags |= SDL_WINDOW_MAXIMIZED;
     }
 
-    SDL_Window *created_window = SDL_CreateWindow( title, window->width, window->height, flags );
+    SDL_Window *created_window = SDL_CreateWindow( title, window->width, window->height, window->flags );
     if ( !created_window )
     {
       CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "SDL2 window creation failed: %s", SDL_GetError() );
@@ -208,7 +204,6 @@ crude_process_events_system_
     crude_input *input = &inputs_per_entity[ i ];
     
     input->prev_mouse = input->mouse;
-    input->prev_wrapwnd = input->wrapwnd;
     for ( uint32 k = 0; k < 128; k++ )
     {
       input->prev_keys[ k ] = input->keys[ k ];
@@ -232,9 +227,8 @@ crude_process_events_system_
 
   /* Handle new input for each window*/
   SDL_Event sdl_event;
-  while (SDL_PollEvent( &sdl_event ))
+  while ( SDL_PollEvent( &sdl_event ) )
   {
-    //ImGui_ImplSDL3_ProcessEvent( &sdl_event );
     /* Handle Global event */
     if ( sdl_event.type == SDL_EVENT_QUIT )
     {
@@ -281,6 +275,7 @@ crude_process_events_system_
           {
             focused_input->should_close_window = true;
           }
+          focused_input->callback( focused_input->ctx, &sdl_event );
         }
       }
     }
@@ -319,8 +314,6 @@ crude_process_events_system_
             }
             else if ( sdl_event.button.button == SDL_BUTTON_RIGHT )
             {
-              focused_input->wrapwnd.x = sdl_event.motion.x;
-              focused_input->wrapwnd.y = sdl_event.motion.y;
               key_down_( &focused_input->mouse.right );
             }
           }
@@ -347,6 +340,7 @@ crude_process_events_system_
             focused_input->mouse.scroll.x = sdl_event.wheel.x;
             focused_input->mouse.scroll.y = sdl_event.wheel.y;
           }
+          focused_input->callback( focused_input->ctx, &sdl_event );
         }
       }
     }
@@ -386,6 +380,7 @@ crude_process_events_system_
             uint32 sym = key_sym_( sdl_event.key.key );
             key_up_( &focused_input->keys[ sym ] );
           }
+          focused_input->callback( focused_input->ctx, &sdl_event );
         }
       }
     }
