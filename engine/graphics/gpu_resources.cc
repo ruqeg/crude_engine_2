@@ -147,21 +147,6 @@ crude_gfx_render_pass_output_empty
 }
 
 void
-crude_shader_state_creation_add_state
-(
-  _In_ crude_gfx_shader_state_creation                    *shader_state_creation,
-  _In_ char const                                         *code,
-  _In_ size_t                                              code_size,
-  _In_ VkShaderStageFlagBits                               type
-)
-{
-  shader_state_creation->stages[ shader_state_creation->stages_count ].code = code;
-  shader_state_creation->stages[ shader_state_creation->stages_count ].code_size = ( uint32 )code_size;
-  shader_state_creation->stages[ shader_state_creation->stages_count ].type = type;
-  ++shader_state_creation->stages_count;
-}
-
-void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,

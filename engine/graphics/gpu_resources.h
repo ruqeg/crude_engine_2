@@ -718,15 +718,6 @@ crude_gfx_render_pass_output_empty
 );
 
 CRUDE_API void
-crude_shader_state_creation_add_state
-(
-  _In_ crude_gfx_shader_state_creation                    *shader_state_creation,
-  _In_ char const                                         *code,
-  _In_ size_t                                              code_size,
-  _In_ VkShaderStageFlagBits                               type
-);
-
-CRUDE_API void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,

@@ -1,7 +1,9 @@
 #include <imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 
+#include <core/hash_map.h>
 #include <core/file.h>
+#include <core/process.h>
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>
 #include <scene/free_camera_system.h>
@@ -295,8 +297,39 @@ paprika_graphics_system_
     }
   }
 
-  ImGui::Begin("Shaders");
-  ImGui::End();
+  {
+    crude_string_buffer                                    temporary_string_buffer;
+    uint32                                                 temporary_allocator_mark;
+
+    temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
+    crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
+    
+    ImGui::Begin( "debug" );
+    if ( ImGui::CollapsingHeader( "techniques" ) )
+    {
+      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
+      {
+        if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
+        {
+          continue;
+        }
+
+        crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
+        if ( ImGui::TreeNode( technique->name ) )
+        {
+          if ( ImGui::Button( "reload" ) )
+          {
+            char const *json_name = technique->json_name;
+            crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
+            crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+          }
+          ImGui::TreePop();
+        }
+      }
+    }
+    ImGui::End();
+    crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
+  }
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   

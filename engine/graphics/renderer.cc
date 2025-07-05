@@ -287,6 +287,9 @@ crude_gfx_renderer_create_technique
 
   crude_gfx_renderer_technique *technique = crude_gfx_renderer_access_technique( renderer, technique_handle );
   
+  technique->json_name = creation->json_name;
+  technique->name = creation->name;
+
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
   CRUDE_HASHMAP_INITIALIZE( technique->name_hashed_to_pass_index, renderer->gpu->allocator_container );
 
@@ -296,6 +299,10 @@ crude_gfx_renderer_create_technique
     
     crude_gfx_pipeline_creation const *pass_creation = &creation->creations[ i ];
     crude_gfx_renderer_technique_pass technique_pass = CRUDE_COMPOUNT( crude_gfx_renderer_technique_pass, { .pipeline =  crude_gfx_create_pipeline( renderer->gpu, pass_creation ) } );
+    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( technique_pass.pipeline ) )
+    {
+      return NULL;
+    }
     CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
     
     uint64 pass_name_hashed = crude_hash_string( pass_creation->name, 0 );

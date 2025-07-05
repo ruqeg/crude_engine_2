@@ -131,3 +131,19 @@ crude_process_expand_environment_strings
 {
   ExpandEnvironmentStringsA( environment, buffer, buffer_size );
 }
+
+bool
+crude_shell_execute
+(
+  _In_ char const                                         *filepath
+)
+{
+  HINSTANCE result = ShellExecute( NULL, "open", CRUDE_CAST( const TCHAR*, filepath ), NULL, NULL, SW_SHOWNORMAL );
+
+  switch ( ( intptr_t )result )
+  {
+    case SE_ERR_FNF:     return false;
+    case SE_ERR_NOASSOC: return false;
+  }
+  return true;
+}

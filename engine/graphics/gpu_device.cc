@@ -23,7 +23,8 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
-  VK_EXT_MESH_SHADER_EXTENSION_NAME
+  VK_EXT_MESH_SHADER_EXTENSION_NAME,
+  VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
 };
 
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -846,6 +847,9 @@ crude_gfx_compile_shader
   uint8                                                   *spirv_code;
   uint32                                                   spirv_codesize;
   
+  spirv_code = NULL;
+  spirv_codesize = 0u;
+
   temp_filename = "temp.shader";
   crude_write_file( temp_filename, code, code_size );
   
@@ -1262,7 +1266,7 @@ crude_gfx_create_shader_state
   crude_gfx_shader_state *shader_state = crude_gfx_access_shader_state( gpu, handle );
   shader_state->graphics_pipeline = true;
   shader_state->active_shaders = 0;
-
+  
   for ( compiled_shaders = 0; compiled_shaders < creation->stages_count; ++compiled_shaders )
   {
     size_t temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
@@ -1284,7 +1288,12 @@ crude_gfx_create_shader_state
       shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
     }
   
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode, "Shader code is empty!" );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode && shader_create_info.codeSize, "Shader code contains an error or empty!" );
+
+    if ( !shader_create_info.pCode || !shader_create_info.codeSize )
+    {
+      return CRUDE_GFX_SHADER_STATE_HANDLE_INVALID;
+    }
 
     VkPipelineShaderStageCreateInfo *shader_stage_info = &shader_state->shader_stage_info[ compiled_shaders ];
     memset( shader_stage_info, 0, sizeof( VkPipelineShaderStageCreateInfo ) );

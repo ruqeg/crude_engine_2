@@ -13,11 +13,12 @@
 static void
 parse_gpu_pipeline_
 (
-  cJSON const                                             *pipeline_json,
-  crude_gfx_pipeline_creation                             *pipeline_creation,
-  crude_string_buffer                                     *path_buffer,
-  crude_gfx_render_graph                                  *render_graph,
-  crude_stack_allocator                                   *temporary_allocator
+  _In_ cJSON const                                        *pipeline_json,
+  _In_ crude_gfx_pipeline_creation                        *pipeline_creation,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_string_buffer                                *path_buffer,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 static VkBlendFactor
@@ -63,7 +64,7 @@ crude_gfx_renderer_technique_load_from_file
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  json_path = crude_string_buffer_append_use_f( &path_buffer, "%s%s", working_directory, json_name );;
+  json_path = crude_string_buffer_append_use_f( &renderer->gpu->objects_names_string_buffer, "%s%s", working_directory, json_name );;
   if ( !crude_file_exist( json_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
@@ -80,17 +81,16 @@ crude_gfx_renderer_technique_load_from_file
   }
   
   technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_technique_creation );
-
+  
+  technique_creation.json_name = json_name;
   {
     cJSON const                                           *technique_name_json;
     char const                                            *technique_name;
     
     technique_name_json = cJSON_GetObjectItemCaseSensitive( technique_json, "name" );
     technique_name = cJSON_GetStringValue( technique_name_json );
-    // !TODO unsafe
-    technique_creation.name = technique_name;
+    technique_creation.name = crude_string_buffer_append_use_f( &renderer->gpu->objects_names_string_buffer, "%s", technique_name );
   }
-
   {
     cJSON const                                           *pipelines_json;
 
@@ -102,7 +102,7 @@ crude_gfx_renderer_technique_load_from_file
 
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline_( pipeline, &pipeline_creation, &path_buffer, render_graph, temporary_allocator );
+      parse_gpu_pipeline_( pipeline, &pipeline_creation, renderer->gpu, &path_buffer, render_graph, temporary_allocator );
       technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
     }
   }
@@ -123,11 +123,12 @@ crude_gfx_renderer_technique_load_from_file
 void
 parse_gpu_pipeline_
 (
-  cJSON const                                             *pipeline_json,
-  crude_gfx_pipeline_creation                             *pipeline_creation,
-  crude_string_buffer                                     *path_buffer,
-  crude_gfx_render_graph                                  *render_graph,
-  crude_stack_allocator                                   *temporary_allocator
+  _In_ cJSON const                                        *pipeline_json,
+  _In_ crude_gfx_pipeline_creation                        *pipeline_creation,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_string_buffer                                *path_buffer,
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
   char working_directory[ 512 ];
@@ -152,23 +153,23 @@ parse_gpu_pipeline_
       
       if ( strcmp( name, "vertex" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_VERTEX_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_VERTEX_BIT );
       }
       else if ( strcmp( name, "fragment" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_FRAGMENT_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_FRAGMENT_BIT );
       }
       else if ( strcmp( name, "compute" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_COMPUTE_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_COMPUTE_BIT );
       }
       else if ( strcmp( name, "mesh" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
       }
       else if ( strcmp( name, "task" ) == 0 )
       {
-        crude_shader_state_creation_add_state( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
       }
     }
   }

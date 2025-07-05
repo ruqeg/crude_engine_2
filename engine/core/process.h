@@ -18,3 +18,9 @@ crude_process_expand_environment_strings
   _In_ char                                               *buffer,
   _In_ uint32                                              buffer_size
 );
+
+CRUDE_API bool
+crude_shell_execute
+(
+  _In_ char const                                         *filepath
+);

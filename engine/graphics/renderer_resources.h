@@ -77,6 +77,7 @@ typedef struct crude_gfx_renderer_program_pass
 
 typedef struct crude_gfx_renderer_technique_creation
 {
+  char const                                              *json_name;
   crude_gfx_pipeline_creation                              creations[ 8 ];
   uint32                                                   num_creations;
   char const                                              *name;
@@ -90,6 +91,8 @@ typedef struct crude_gfx_renderer_technique_pass
 
 typedef struct crude_gfx_renderer_technique
 {
+  char const                                              *json_name;
+  char const                                              *name;
   crude_gfx_renderer_technique_pass                       *passes;
   uint32                                                   pool_index;
   struct { uint64 key; uint16 value; }                    *name_hashed_to_pass_index;
