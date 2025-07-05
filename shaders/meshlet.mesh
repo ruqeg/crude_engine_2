@@ -3,6 +3,7 @@
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_GOOGLE_include_directive: require
+#extension GL_ARB_shader_draw_parameters : require
 
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
@@ -33,6 +34,8 @@ struct Vertex
 
 struct crude_mesh_draw
 {
+  mat4                                                     model_to_world;
+
   uvec4                                                    textures;
   vec4                                                     emissive;
   vec4                                                     albedo_color_factor;
@@ -102,15 +105,17 @@ void main()
   
   uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
   uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
-  
+
+  mat4 model_to_world = mesh_draws[ gl_DrawIDARB ].model_to_world;
+
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
   for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {
     uint vertex_index = vertices_indices[ i + vertices_offset ];
+    vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
     
-    vec4 world_position = vec4( vertices[ vertex_index ].position, 1.0 );
-    gl_MeshVerticesEXT[ i ].gl_Position = world_position * world_to_view * view_to_clip;
+    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * world_to_view * view_to_clip;
     out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
     out_mesh_draw_index[ i ] = mesh_index;
   }

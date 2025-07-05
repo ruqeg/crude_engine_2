@@ -205,7 +205,11 @@ crude_max
 CRUDE_INLINE float32                   crude_min( _In_ float32 s1, _In_ float32 s2 );
 CRUDE_INLINE float32                   crude_round( _In_ float32 s );
 CRUDE_INLINE float32                   crude_floor( _In_ float32 s );
-CRUDE_INLINE float32                   crude_ceil( _In_ float32 s );
+CRUDE_INLINE float32
+crude_ceil
+(
+  _In_ float32                                             s
+);
 CRUDE_INLINE float32                   crude_trunc( _In_ float32 s );
 CRUDE_INLINE float32
 crude_clamp

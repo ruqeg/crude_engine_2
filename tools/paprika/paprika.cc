@@ -295,7 +295,7 @@ paprika_graphics_system_
     }
   }
 
-  ImGui::Begin("sdfsdf");
+  ImGui::Begin("Shaders");
   ImGui::End();
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
@@ -359,7 +359,7 @@ paprika_update_system_
       SDL_ShowCursor();
     }
     
-    if ( input->mouse.wnd.x || input->mouse.wnd.y )
+    if ( input->mouse.rel.x || input->mouse.rel.y )
     {
       if ( !SDL_CursorVisible() )
       {

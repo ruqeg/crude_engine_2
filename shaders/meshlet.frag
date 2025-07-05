@@ -31,6 +31,8 @@ struct Vertex
 
 struct crude_mesh_draw
 {
+  mat4                                                     model_to_world;
+
   uvec4                                                    textures;
   vec4                                                     emissive;
   vec4                                                     albedo_color_factor;

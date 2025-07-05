@@ -35,6 +35,8 @@ crude_gfx_scene_renderer_initialize
   _In_ crude_gfx_scene_renderer_creation                  *creation
 )
 {
+  crude_gfx_renderer_material                             *main_material;
+
   {
     scene_renderer->allocator_container = creation->allocator_container;
     scene_renderer->renderer = creation->renderer;
@@ -52,6 +54,51 @@ crude_gfx_scene_renderer_initialize
   }
 
   scene_renderer_prepare_node_draws_( scene_renderer, creation->node, creation->temporary_allocator );
+
+  {
+    crude_gfx_renderer_material_creation                   material_creation;
+    crude_gfx_renderer_technique                          *main_technique;
+    uint64                                                 main_technique_name_hashed;
+    uint64                                                 main_technique_index;
+
+
+    main_technique_name_hashed = crude_hash_string( "main", 0 );
+    main_technique_index = CRUDE_HASHMAP_GET_INDEX( scene_renderer->renderer->resource_cache.techniques, main_technique_name_hashed );
+    if ( main_technique_index < 0)
+    {
+      CRUDE_ASSERT( false );
+      return;
+    }
+
+    main_technique = scene_renderer->renderer->resource_cache.techniques[ main_technique_index ].value;
+
+    material_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_material_creation );
+    material_creation.technique = main_technique;
+    material_creation.name = "material_no_cull";
+    material_creation.render_index = 0;
+    main_material = crude_gfx_renderer_create_material( scene_renderer->renderer, &material_creation );
+  }
+
+  if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
+  {
+    crude_gfx_renderer_technique                          *main_meshlet_technique;
+    uint64                                                 meshlet_hashed;
+
+    meshlet_hashed = crude_hash_string( "meshlet", 0 );
+    main_meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
+    scene_renderer->meshlet_technique_index = crude_gfx_renderer_technique_get_pass_index( main_meshlet_technique, "main" );
+  }
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->mesh_instances, 0u, scene_renderer->renderer->allocator_container );
+  for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes ); ++i )
+  {
+    scene_renderer->meshes[ i ].material = main_material;
+
+    crude_gfx_mesh_instance_cpu mesh_instance;
+    mesh_instance.mesh = &scene_renderer->meshes[ i ];
+    mesh_instance.material_pass_index = 0;
+    CRUDE_ARRAY_PUSH( scene_renderer->mesh_instances, mesh_instance );
+  }
 
   {
     crude_gfx_buffer_creation                                buffer_creation;
@@ -108,7 +155,7 @@ crude_gfx_scene_renderer_initialize
       buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
       buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-      buffer_creation.size = /*mesh_instances.size*/ 1 * sizeof( crude_gfx_mesh_draw_command );
+      buffer_creation.size = CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ) * sizeof( crude_gfx_mesh_draw_command );
       buffer_creation.name = "draw_commands_sb";
       scene_renderer->mesh_task_indirect_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
       
@@ -163,6 +210,8 @@ crude_gfx_scene_renderer_deinitialize
 {
   crude_gfx_geometry_pass_deinitialize( &scene_renderer->geometry_pass );
   crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->mesh_instances );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->images ); ++i )
   {
@@ -211,7 +260,7 @@ crude_gfx_scene_renderer_deinitialize
 
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->geometry_pass.mesh_instances );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->mesh_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_triangles_indices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices_indices );

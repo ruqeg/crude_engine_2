@@ -16,8 +16,6 @@ typedef enum crude_gfx_geometry_pass_flag_bits
 typedef struct crude_gfx_geometry_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_mesh_instance_cpu                             *mesh_instances;
-  uint32                                                   meshlet_technique_index;
   uint32                                                   flags;
 } crude_gfx_geometry_pass;
 

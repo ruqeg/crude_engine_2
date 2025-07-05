@@ -53,6 +53,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
 {
+  crude_float4x4a                                          model_to_world;
+
   crude_uint4                                              textures;
   crude_float4                                             emissive;
   crude_float4                                             albedo_color_factor;
@@ -106,6 +108,8 @@ typedef struct crude_gfx_mesh_cpu
   uint16                                                   normal_texture_index;
   uint16                                                   occlusion_texture_index;
   uint32                                                   gpu_mesh_index;
+  uint32                                                   meshlets_offset;
+  uint32                                                   meshlets_count;
 } crude_gfx_mesh_cpu;
 
 typedef struct crude_gfx_mesh_instance_cpu

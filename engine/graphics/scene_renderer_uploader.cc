@@ -559,6 +559,7 @@ load_meshes_
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
       mesh_draw.gpu_mesh_index = CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
+
       CRUDE_ARRAY_PUSH( scene_renderer->meshes, mesh_draw );
     }
   }
@@ -575,10 +576,12 @@ load_meshlets_
   size_t                                                   max_vertices = 128u;
   size_t                                                   max_triangles = 124u;
   float32                                                  cone_weight = 0.0f;
+  uint32                                                   mesh_index;
 
-  for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
+  mesh_index = 0u;
+  for ( uint32 i = 0; i < gltf->meshes_count; ++i )
   {
-    cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
+    cgltf_mesh *mesh = &gltf->meshes[ i ];
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
       cgltf_primitive                                     *mesh_primitive;
@@ -586,7 +589,7 @@ load_meshlets_
       meshopt_Meshlet                                     *local_meshlets;
       size_t                                               local_max_meshlets, local_meshletes_count;
       uint32                                               temporary_allocator_marker;
-      uint32                                               vertices_offset;
+      uint32                                               vertices_offset, meshlets_offset;
 
       temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
       
@@ -616,7 +619,8 @@ load_meshlets_
         max_vertices, max_triangles, cone_weight
       );
       
-      CRUDE_ARRAY_SET_CAPACITY( scene_renderer->meshlets, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets ) + local_meshletes_count );
+      meshlets_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets );
+      CRUDE_ARRAY_SET_CAPACITY( scene_renderer->meshlets, meshlets_offset + local_meshletes_count );
 
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
@@ -650,6 +654,10 @@ load_meshlets_
       CRUDE_ARRAY_SET_LENGTH( scene_renderer->meshlets_triangles_indices, last_meshlet->triangles_offset + 3u * last_meshlet->triangles_count );
 
       crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
+      
+      scene_renderer->meshes[ mesh_index ].meshlets_count = local_meshletes_count;
+      scene_renderer->meshes[ mesh_index ].meshlets_offset = meshlets_offset;
+      ++mesh_index;
     }
   }
 }

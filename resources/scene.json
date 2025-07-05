@@ -39,9 +39,9 @@
             {
               "type": "crude_free_camera",
               "moving_speed_multiplier": [
-                700.0,
-                700.0,
-                700.0
+                7.0,
+                7.0,
+                7.0
               ],
               "rotating_speed_multiplier": [
                 -0.25,

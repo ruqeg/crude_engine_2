@@ -14,6 +14,20 @@ crude_max
 }
 
 float32
+crude_ceil
+(
+  _In_ float32                                             s
+)
+{
+  int32 i = ( int32 )s;
+  if ( s == ( float32 )i )
+  {
+    return i;
+  }
+  return i + 1;
+}
+
+float32
 crude_clamp
 (
   _In_ float32                                   s,
