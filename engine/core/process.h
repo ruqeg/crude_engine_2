@@ -24,3 +24,9 @@ crude_shell_execute
 (
   _In_ char const                                         *filepath
 );
+
+CRUDE_API void
+crude_system
+(
+  _In_ char const                                         *filepath
+);

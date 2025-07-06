@@ -33,7 +33,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_mesh_instance_cpu                             *mesh_instances;
   uint32                                                   meshlet_technique_index;
   
-  crude_gfx_meshlet                                       *meshlets;
+  crude_gfx_meshlet_gpu                                   *meshlets;
   crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;

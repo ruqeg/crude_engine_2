@@ -16,6 +16,7 @@ typedef struct crude_engine
   crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
   crude_heap_allocator                                     allocator;
   char const                                              *resources_path;
+  char const                                              *shaders_path;
 } crude_engine;
 
 CRUDE_API void

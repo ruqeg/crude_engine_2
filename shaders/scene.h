@@ -1,10 +1,6 @@
-#version 460
-#extension GL_EXT_shader_16bit_storage: require
-#extension GL_EXT_shader_8bit_storage: require
-#extension GL_GOOGLE_include_directive: require
-#extension GL_EXT_nonuniform_qualifier : require
+#define CRUDE_GLOBAL_SET 0
+#define CRUDE_MATERIAL_SET 1
 
-layout(location = 0) out vec4 out_color;
 struct crude_meshlet
 {
   vec3                                                     center;
@@ -47,51 +43,3 @@ struct crude_mesh_draw
   uint                                                     meshletes_index_count;
   uint                                                     padding1;
 };
-
-layout(set=1, binding=0, row_major, std140) uniform SceneConstant
-{
-  vec3                                                     camera_position;
-  float                                                    padding1;
-  mat4                                                     world_to_view;
-  mat4                                                     view_to_clip;
-  mat4                                                     clip_to_view;
-  mat4                                                     view_to_world;
-};
-
-layout(set=1, binding=1) readonly buffer Meshlets
-{
-  crude_meshlet                                            meshlets[];
-};
-
-layout(set=1, binding=2) readonly buffer Vertices
-{
-  crude_vertex                                             vertices[];
-};
-
-layout(set=1, binding=3) readonly buffer TrianglesIndices
-{
-  uint8_t                                                  triangles_indices[];
-};
-
-layout(set=1, binding=4) readonly buffer VerticesIndices
-{
-  uint                                                     vertices_indices[];
-};
-
-layout(set=1, binding=5, std430) readonly buffer MeshDraws
-{
-  crude_mesh_draw                                          mesh_draws[];
-};
-
-layout(set=0, binding=10) uniform sampler2D global_textures[];
-//layout(set=1, binding=10) uniform sampler3D global_textures_3d[];
-
-layout(location=0) in vec2 in_texcoord0;
-layout(location=1) in flat uint mesh_draw_index;
-
-void main()
-{
-  crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
-  vec4 albedo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
-  out_color = vec4( albedo );
-}

@@ -1,17 +1,14 @@
-#version 450
+#version 460
 #extension GL_EXT_mesh_shader : require
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_GOOGLE_include_directive: require
+#extension GL_KHR_shader_subgroup_ballot: require
 
-#define CRUDE_GLOBAL_SET 0
-#define CRUDE_MATERIAL_SET 1
+layout(local_size_x=32) in;
 
-layout(local_size_x=128) in;
-
-
-struct Meshlet
+struct crude_meshlet
 {
   vec3                                                     center;
   float                                                    radius;
@@ -24,7 +21,7 @@ struct Meshlet
   uint                                                     mesh_index;
 };
 
-struct Vertex
+struct crude_vertex
 {
   vec3                                                     position;
   float                                                    padding1;
@@ -56,6 +53,8 @@ struct crude_mesh_draw
 
 layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
+  vec3                                                     camera_position;
+  float                                                    padding1;
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
@@ -64,12 +63,12 @@ layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 
 layout(set=1, binding=1) readonly buffer Meshlets
 {
-  Meshlet                                                  meshlets[];
+  crude_meshlet                                            meshlets[];
 };
 
 layout(set=1, binding=2) readonly buffer Vertices
 {
-  Vertex                                                   vertices[];
+  crude_vertex                                             vertices[];
 };
 
 layout(set=1, binding=3) readonly buffer TrianglesIndices
@@ -89,16 +88,60 @@ layout(set=1, binding=5, std430) readonly buffer MeshDraws
 
 taskPayloadSharedEXT struct
 {
-  uint                                                     meshlet_indices[ 128 ];
+  uint                                                     meshlet_indices[ gl_WorkGroupSize.x ];
 } shared_data;
+
+bool cone_cull(vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_pos )
+{
+  return dot( center - camera_pos, cone_axis ) >= cone_cutoff * length( center - camera_pos ) + radius;
+}
 
 void main()
 {
   uint thread_index = gl_LocalInvocationID.x;
   uint group_index = gl_WorkGroupID.x;
-  uint meshlet_index = mesh_draws[ gl_DrawIDARB ].meshletes_offset + group_index * 128 + thread_index;
-  shared_data.meshlet_indices[ thread_index ] = meshlet_index;
+  uint meshlet_index = mesh_draws[ gl_DrawIDARB ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
 
-  uint local_meslets_count = min( mesh_draws[ gl_DrawIDARB ].meshletes_count - group_index * 128, 128 );
-  EmitMeshTasksEXT( local_meslets_count, 1, 1 );
+  mat4 model_to_world = mesh_draws[ gl_DrawIDARB ].model_to_world;
+  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
+  float scale = length( model_to_world[ 0 ] );
+  float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+  vec3 cone_axis = vec3(
+    int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
+    int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
+    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( model_to_world );
+  float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
+  
+  bool accept = false;
+
+  vec4 view_center = vec4(0);
+  
+  accept = !cone_cull( world_center.xyz, radius, cone_axis, cone_cutoff, camera_position );
+ // view_center = world_to_camera_debug * world_center;
+ // 
+ // bool frustum_visible = true;
+ // for ( uint i = 0; i < 6; ++i )
+ // {
+ //   frustum_visible = frustum_visible && ( dot( frustum_planes[ i ], view_center ) > -radius );
+ // }
+ // 
+ // frustum_visible = frustum_visible || ( frustum_cull_meshlets == 0 );
+ //
+ // occlusion_visible = occlusion_visible || (occlusion_cull_meshlets == 0);
+ // 
+ // accept = accept && frustum_visible && occlusion_visible;
+  
+  uvec4 ballot = subgroupBallot( accept );
+  
+  uint previous_visible_meshlet_index = subgroupBallotExclusiveBitCount( ballot );
+  if ( accept )
+  {
+    shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
+  }
+  
+  uint visible_meslets_count = subgroupBallotBitCount( ballot );
+  if ( thread_index == 0 )
+  {
+    EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
+  }
 }

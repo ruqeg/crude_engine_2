@@ -1,5 +1,0 @@
-#pragma once
-
-#include <stdint.h>
-
-uint32_t crude_compiled_shader_@SHADER_NAME@_@SHADER_TYPE@[ @SHADER_TOKENS@ ] = { @SHADER_CODE@ };  

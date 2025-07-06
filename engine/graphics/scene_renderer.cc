@@ -106,7 +106,7 @@ crude_gfx_scene_renderer_initialize
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_scene_constant );
+    buffer_creation.size = sizeof( crude_gfx_scene_constant_gpu );
     buffer_creation.name = "frame_buffer";
     scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
@@ -155,14 +155,14 @@ crude_gfx_scene_renderer_initialize
       buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
       buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-      buffer_creation.size = CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ) * sizeof( crude_gfx_mesh_draw_command );
+      buffer_creation.size = CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ) * sizeof( crude_gfx_mesh_draw_command_gpu );
       buffer_creation.name = "draw_commands_sb";
       scene_renderer->mesh_task_indirect_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
       
       buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
       buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-      buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts );
+      buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
       buffer_creation.name = "mesh_count_sb";
       scene_renderer->mesh_task_indirect_count_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
     }

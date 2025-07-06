@@ -250,7 +250,7 @@ paprika_graphics_system_
   /* Update frame buffer */
   {
     crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.scene_renderer.scene_cb, 0 };
-    crude_gfx_scene_constant *scene_data = CRUDE_REINTERPRET_CAST( crude_gfx_scene_constant*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
+    crude_gfx_scene_constant_gpu *scene_data = CRUDE_REINTERPRET_CAST( crude_gfx_scene_constant_gpu*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
     if ( scene_data )
     {
       crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
@@ -261,6 +261,9 @@ paprika_graphics_system_
       crude_matrix view_to_clip = crude_camera_view_to_clip( camera );
       crude_matrix clip_to_view = crude_mat_inverse( NULL, view_to_clip );
       
+      scene_data->camera_position.x = transform->translation.x;
+      scene_data->camera_position.y = transform->translation.y;
+      scene_data->camera_position.z = transform->translation.z;
       crude_store_float4x4a( &scene_data->clip_to_view, clip_to_view ); 
       crude_store_float4x4a( &scene_data->view_to_clip, view_to_clip ); 
       crude_store_float4x4a( &scene_data->view_to_world, view_to_world ); 

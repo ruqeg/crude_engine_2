@@ -1,15 +1,15 @@
-#version 450
+#version 460
 #extension GL_EXT_mesh_shader : require
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_GOOGLE_include_directive: require
 #extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
 
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
-
-struct Meshlet
+struct crude_meshlet
 {
   vec3                                                     center;
   float                                                    radius;
@@ -22,7 +22,7 @@ struct Meshlet
   uint                                                     mesh_index;
 };
 
-struct Vertex
+struct crude_vertex
 {
   vec3                                                     position;
   float                                                    padding1;
@@ -54,6 +54,8 @@ struct crude_mesh_draw
 
 layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
+  vec3                                                     camera_position;
+  float                                                    padding1;
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
@@ -62,12 +64,12 @@ layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 
 layout(set=1, binding=1) readonly buffer Meshlets
 {
-  Meshlet                                                  meshlets[];
+  crude_meshlet                                            meshlets[];
 };
 
 layout(set=1, binding=2) readonly buffer Vertices
 {
-  Vertex                                                   vertices[];
+  crude_vertex                                             vertices[];
 };
 
 layout(set=1, binding=3) readonly buffer TrianglesIndices

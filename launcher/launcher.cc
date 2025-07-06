@@ -11,6 +11,7 @@
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>
 #include <core/string.h>
+#include <core/process.h>
 #include <core/file.h>
 #include <core/profiler.h>
 
@@ -29,6 +30,14 @@ launcher_input_callback_
 (
   _In_ void                                               *ctx,
   _In_ void                                               *sdl_event
+);
+
+static void
+load_texture_
+(
+  _In_ crude_launcher                                     *launcher,
+  _In_ char const                                         *filename,
+  _Out_ SDL_Texture                                      **texture
 );
 
 void
@@ -98,18 +107,10 @@ crude_launcher_initialize
 
   ImGui_ImplSDL3_InitForSDLRenderer( sdl_window, launcher->sdl_renderer );
   ImGui_ImplSDLRenderer3_Init( launcher->sdl_renderer );
- 
-  temporary_buffer[ 0 ] = 0u;
-  crude_get_current_working_directory( temporary_buffer, sizeof( temporary_buffer ) );
-  strcat( temporary_buffer, launcher->engine.resources_path );
-  strcat( temporary_buffer, "textures\\paprika_button_texture.bmp" );
-  SDL_Surface* loaded_surface = SDL_LoadBMP( temporary_buffer );
-  if( !loaded_surface )
-  {
-    return;
-  }
-  launcher->paprika_texture = SDL_CreateTextureFromSurface( launcher->sdl_renderer, loaded_surface );
-  SDL_DestroySurface( loaded_surface );
+  load_texture_( launcher, "textures\\paprika_button_texture.bmp", &launcher->paprika_texture );
+  load_texture_( launcher, "textures\\vscode_button_texture.bmp", &launcher->shaders_button_texture );
+
+  crude_stack_allocator_initialize( &launcher->temporary_allocator, CRUDE_RMEGA( 32 ), "temprorary_allocator" );
 }
 
 void
@@ -146,6 +147,12 @@ crude_launcher_update
   _In_ crude_launcher                                     *launcher
 )
 {
+  crude_string_buffer                                      temporary_string_buffer;
+  uint32                                                   temporary_allocator_mark;
+
+  temporary_allocator_mark = crude_stack_allocator_get_marker( &launcher->temporary_allocator );
+  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &launcher->temporary_allocator ) );
+
   ImVec4 clear_color = ImVec4( 14 / 255.f, 6 / 255.f, 19 / 255.f, 1.00f );
 
   crude_input *input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( launcher->platform_node, crude_input );
@@ -160,11 +167,11 @@ crude_launcher_update
 
   ImGui::DockSpaceOverViewport(0u, ImGui::GetMainViewport());
   {
-    ImVec2 paprika_texture_size;
-    paprika_texture_size.x = ImGui::GetMainViewport()->WorkSize.x / 3.0;
-    paprika_texture_size.y = paprika_texture_size.x * ( ( float32 )launcher->paprika_texture->h / launcher->paprika_texture->w );
+    ImVec2 button_size;
+    button_size.x = ImGui::GetMainViewport()->WorkSize.x / 3.0;
+    button_size.y = button_size.x * ( ( float32 )launcher->paprika_texture->h / launcher->paprika_texture->w );
     ImGui::Begin( "main", NULL );
-    if ( ImGui::ImageButton( "crude_paprika", (ImTextureRef)launcher->paprika_texture, paprika_texture_size ) )
+    if ( ImGui::ImageButton( "crude_paprika", (ImTextureRef)launcher->paprika_texture, button_size ) )
     {
       if ( !launcher->paprika.working )
       {
@@ -173,6 +180,15 @@ crude_launcher_update
         ImGui::SetCurrentContext( launcher->imgui_context );
       }
     }
+    ImGui::SameLine();
+    if ( ImGui::ImageButton( "crude_shaders", (ImTextureRef)launcher->shaders_button_texture, button_size ) )
+    {
+      char working_directory[ 1024 ];
+      crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+      const char *open_vs_shall = crude_string_buffer_append_use_f( &temporary_string_buffer, "code %s%s", working_directory, launcher->engine.shaders_path );
+      crude_system( open_vs_shall );
+    }
+
     ImGui::End();
   }
 
@@ -189,6 +205,8 @@ crude_launcher_update
   }
 
   cr_plugin_update( launcher->crude_engine_simulation_cr );
+
+  crude_stack_allocator_free_marker( &launcher->temporary_allocator, temporary_allocator_mark );
 
   CRUDE_PROFILER_MARK_FRAME;
 }
@@ -216,4 +234,28 @@ launcher_input_callback_
 {
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+}
+
+void
+load_texture_
+(
+  _In_ crude_launcher                                     *launcher,
+  _In_ char const                                         *filename,
+  _Out_ SDL_Texture                                      **texture
+)
+{
+  char                                                     temporary_buffer[ 1024 ];
+  SDL_Surface                                             *surface;
+
+  temporary_buffer[ 0 ] = 0u;
+  crude_get_current_working_directory( temporary_buffer, sizeof( temporary_buffer ) );
+  strcat( temporary_buffer, launcher->engine.resources_path );
+  strcat( temporary_buffer, filename );
+  surface = SDL_LoadBMP( temporary_buffer );
+  if( !surface )
+  {
+    return;
+  }
+  *texture = SDL_CreateTextureFromSurface( launcher->sdl_renderer, surface );
+  SDL_DestroySurface( surface );
 }

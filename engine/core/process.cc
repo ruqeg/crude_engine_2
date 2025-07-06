@@ -145,5 +145,18 @@ crude_shell_execute
     case SE_ERR_FNF:     return false;
     case SE_ERR_NOASSOC: return false;
   }
+  if ( ( int32 )result <= 32 )
+  {
+    return false;
+  }
   return true;
+}
+
+void
+crude_system
+(
+  _In_ char const                                         *command
+)
+{
+  system( command );
 }

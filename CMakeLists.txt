@@ -12,7 +12,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_subdirectory(extlibs)
-add_subdirectory(shaders)
 add_subdirectory(engine)
 add_subdirectory(engine_simulation)
 add_subdirectory(tools)

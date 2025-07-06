@@ -640,16 +640,32 @@ load_meshlets_
       {
         meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
 
-        crude_gfx_meshlet new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet );
+        meshopt_Bounds meshlet_bounds = meshopt_computeMeshletBounds(
+          scene_renderer->meshlets_vertices_indices + CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices ) + local_meshlet->vertex_offset,
+          scene_renderer->meshlets_triangles_indices + CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ) + local_meshlet->triangle_offset,
+          local_meshlet->triangle_count, &scene_renderer->meshlets_vertices[ 0 ].position.x, CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex_gpu )
+        );;
+
+        crude_gfx_meshlet_gpu new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet_gpu );
         new_meshlet.vertices_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_vertices_indices ) + local_meshlet->vertex_offset;
         new_meshlet.triangles_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ) + local_meshlet->triangle_offset;
         new_meshlet.vertices_count = local_meshlet->vertex_count;
         new_meshlet.triangles_count = local_meshlet->triangle_count;
         new_meshlet.mesh_index = primitive_index;
+
+        new_meshlet.center = CRUDE_COMPOUNT( crude_float3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
+        new_meshlet.radius = meshlet_bounds.radius;
+        
+        new_meshlet.cone_axis[ 0 ] = meshlet_bounds.cone_axis_s8[ 0 ];
+        new_meshlet.cone_axis[ 1 ] = meshlet_bounds.cone_axis_s8[ 1 ];
+        new_meshlet.cone_axis[ 2 ] = meshlet_bounds.cone_axis_s8[ 2 ];
+
+        new_meshlet.cone_cutoff = meshlet_bounds.cone_cutoff_s8;
+
         CRUDE_ARRAY_PUSH( scene_renderer->meshlets, new_meshlet );
       }
       
-      crude_gfx_meshlet const *last_meshlet = &CRUDE_ARRAY_BACK( scene_renderer->meshlets );
+      crude_gfx_meshlet_gpu const *last_meshlet = &CRUDE_ARRAY_BACK( scene_renderer->meshlets );
       CRUDE_ARRAY_SET_LENGTH( scene_renderer->meshlets_vertices_indices, last_meshlet->vertices_offset + last_meshlet->vertices_count );
       CRUDE_ARRAY_SET_LENGTH( scene_renderer->meshlets_triangles_indices, last_meshlet->triangles_offset + 3u * last_meshlet->triangles_count );
 

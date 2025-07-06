@@ -7,18 +7,19 @@
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
+  crude_float3a                                            camera_position;
   crude_float4x4a                                          world_to_view;
   crude_float4x4a                                          view_to_clip;
   crude_float4x4a                                          clip_to_view;
   crude_float4x4a                                          view_to_world;
-} crude_gfx_scene_constant;
+} crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
 {
   uint32                                                   draw_id;
   VkDrawIndexedIndirectCommand                             indirect;
   VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
-} crude_gfx_mesh_draw_command;
+} crude_gfx_mesh_draw_command_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 {
@@ -36,7 +37,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
   uint32                                                   dispatch_task_y;
   uint32                                                   dispatch_task_z;
   uint32                                                   pad001;
-} crude_gfx_mesh_draw_counts;
+} crude_gfx_mesh_draw_counts_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
 {
@@ -49,7 +50,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
   uint8                                                    vertices_count;
   uint8                                                    triangles_count;
   uint32                                                   mesh_index;
-} crude_gfx_meshlet;
+} crude_gfx_meshlet_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
 {

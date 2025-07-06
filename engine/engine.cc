@@ -62,6 +62,7 @@ crude_engine_initialize
   }
   
   engine->resources_path = "\\..\\..\\resources\\";
+  engine->shaders_path = "\\..\\..\\shaders\\";
 }
 
 void

@@ -200,8 +200,8 @@ geometry_pass_render_meshlets_
 {
   crude_gfx_renderer                                      *renderer;
   crude_gfx_mesh_material_gpu                             *mesh_materials;
-  crude_gfx_mesh_draw_counts                              *mesh_draw_counts;
-  crude_gfx_mesh_draw_command                             *mesh_draw_commands;
+  crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts;
+  crude_gfx_mesh_draw_command_gpu                         *mesh_draw_commands;
   crude_gfx_map_buffer_parameters                          buffer_map;
   
   renderer = pass->scene_renderer->renderer;
@@ -209,14 +209,14 @@ geometry_pass_render_meshlets_
   buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   buffer_map.buffer = pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ];
   buffer_map.offset = 0;
-  buffer_map.size = sizeof( crude_gfx_mesh_draw_command ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
+  buffer_map.size = sizeof( crude_gfx_mesh_draw_command_gpu ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
 
-  mesh_draw_commands = CRUDE_CAST( crude_gfx_mesh_draw_command*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
+  mesh_draw_commands = CRUDE_CAST( crude_gfx_mesh_draw_command_gpu*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
   if ( mesh_draw_commands )
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ); ++i )
     {
-      mesh_draw_commands[ i ].indirect_meshlet.groupCountX = crude_ceil( pass->scene_renderer->mesh_instances[ i ].mesh->meshlets_count / 128.0 );
+      mesh_draw_commands[ i ].indirect_meshlet.groupCountX = crude_ceil( pass->scene_renderer->mesh_instances[ i ].mesh->meshlets_count / 32.0 );
       mesh_draw_commands[ i ].indirect_meshlet.groupCountY = 1;
       mesh_draw_commands[ i ].indirect_meshlet.groupCountZ = 1;
     }
@@ -226,8 +226,8 @@ geometry_pass_render_meshlets_
   buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   buffer_map.buffer = pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ];
   buffer_map.offset = 0;
-  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts );
-  mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
+  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
+  mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
   if ( mesh_draw_counts )
   {
     mesh_draw_counts->opaque_mesh_visible_count = CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
@@ -261,11 +261,11 @@ geometry_pass_render_meshlets_
     crude_gfx_cmd_draw_mesh_task_indirect_count(
       cmd,
       pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ],
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ),
+      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
       pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ],
       0,
       CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ),
-      sizeof( crude_gfx_mesh_draw_command )
+      sizeof( crude_gfx_mesh_draw_command_gpu )
     );
   }
 }

@@ -17,8 +17,12 @@ typedef struct crude_launcher
   crude_entity                                             platform_node;
 
   SDL_Texture                                             *paprika_texture;
+  SDL_Texture                                             *shaders_button_texture;
+
   ImGuiContext                                            *imgui_context;
   SDL_Renderer                                            *sdl_renderer;
+
+  crude_stack_allocator                                    temporary_allocator;
 } crude_launcher;
 
 void
