@@ -699,6 +699,12 @@ crude_store_float4
   _Out_ crude_float4                            *f,
   _In_ crude_vector                              v
 );
+CRUDE_INLINE void                               
+crude_store_float4a                              
+(                                               
+  _Out_ crude_float4a                           *f,
+  _In_ crude_vector                              v
+);
 CRUDE_INLINE void
 crude_store_float4x4
 (

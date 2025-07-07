@@ -31,6 +31,9 @@ typedef struct crude_paprika
   void                                                    *imgui_context;
   bool                                                     working;
   crude_mouse_input                                        wrapwnd;
+  
+  uint32                                                   selected_node_index;
+  crude_entity                                             selected_node;
 } crude_paprika;
 
 CRUDE_API void

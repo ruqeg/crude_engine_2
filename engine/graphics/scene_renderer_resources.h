@@ -8,6 +8,7 @@
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
   crude_float3a                                            camera_position;
+  crude_float4a                                            camera_frustum_planes[ 6 ];
   crude_float4x4a                                          world_to_view;
   crude_float4x4a                                          view_to_clip;
   crude_float4x4a                                          clip_to_view;

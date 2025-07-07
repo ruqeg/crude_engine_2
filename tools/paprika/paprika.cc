@@ -48,6 +48,28 @@ paprika_input_callback_
   _In_ void                                               *sdl_event
 );
 
+static void
+paprika_draw_imgui_
+(
+  _In_ crude_paprika                                      *paprika
+);
+
+static void
+paprika_draw_imgui_scene_nodes_
+(
+  _In_ crude_paprika                                      *paprika,
+  _In_ crude_entity                                        node,
+  _In_ crude_string_buffer                                *temporary_string_buffer,
+  _In_ uint32                                             *current_node_index
+);
+
+static void
+paprika_draw_imgui_inspector_node_
+(
+  _In_ crude_paprika                                      *paprika,
+  _In_ crude_string_buffer                                *temporary_string_buffer
+);
+
 void
 crude_paprika_initialize
 (
@@ -226,6 +248,13 @@ paprika_graphics_initialize_
   }
   
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
+
+  paprika->selected_node = paprika->scene.main_node;
+}
+
+crude_vector normalize_plane( crude_vector plane ) {
+    float32 len = crude_vec_get_x( crude_vec_length3( plane ) );
+    return crude_vec_scale( plane, 1.0f / len );
 }
 
 void
@@ -264,6 +293,14 @@ paprika_graphics_system_
       scene_data->camera_position.x = transform->translation.x;
       scene_data->camera_position.y = transform->translation.y;
       scene_data->camera_position.z = transform->translation.z;
+      
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 0 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 0 ] ) ) );
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 1 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 0 ] ) ) );
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 2 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 1 ] ) ) );
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 3 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 1 ] ) ) );
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 4 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 2 ] ) ) );
+      crude_store_float4a( &scene_data->camera_frustum_planes[ 5 ], normalize_plane( crude_vec_add( view_to_clip.r[ 3 ], view_to_clip.r[ 2 ] ) ) );
+
       crude_store_float4x4a( &scene_data->clip_to_view, clip_to_view ); 
       crude_store_float4x4a( &scene_data->view_to_clip, view_to_clip ); 
       crude_store_float4x4a( &scene_data->view_to_world, view_to_world ); 
@@ -300,39 +337,7 @@ paprika_graphics_system_
     }
   }
 
-  {
-    crude_string_buffer                                    temporary_string_buffer;
-    uint32                                                 temporary_allocator_mark;
-
-    temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
-    crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
-    
-    ImGui::Begin( "debug" );
-    if ( ImGui::CollapsingHeader( "techniques" ) )
-    {
-      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
-      {
-        if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
-        {
-          continue;
-        }
-
-        crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
-        if ( ImGui::TreeNode( technique->name ) )
-        {
-          if ( ImGui::Button( "reload" ) )
-          {
-            char const *json_name = technique->json_name;
-            crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
-            crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-          }
-          ImGui::TreePop();
-        }
-      }
-    }
-    ImGui::End();
-    crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
-  }
+  paprika_draw_imgui_( paprika );
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
@@ -414,4 +419,165 @@ paprika_input_callback_
 {
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+}
+
+void
+paprika_draw_imgui_
+(
+  _In_ crude_paprika                                      *paprika
+)
+{
+  crude_string_buffer                                      temporary_string_buffer;
+  uint32                                                   temporary_allocator_mark;
+  
+  temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
+  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
+  
+  ImGui::Begin( "menu" );
+  if ( ImGui::CollapsingHeader( "techniques" ) )
+  {
+    for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
+    {
+      if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
+      {
+        continue;
+      }
+  
+      crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
+      if ( ImGui::TreeNode( technique->name ) )
+      {
+        if ( ImGui::Button( "reload" ) )
+        {
+          char const *json_name = technique->json_name;
+          crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
+          crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+        }
+        ImGui::TreePop();
+      }
+    }
+  }
+  if ( ImGui::CollapsingHeader( "scene" ) )
+  {
+    uint32 current_node_index = 0u;
+    paprika_draw_imgui_scene_nodes_( paprika, paprika->scene.main_node, &temporary_string_buffer, &current_node_index );
+  }
+  if ( ImGui::CollapsingHeader( "inspector" ) )
+  {
+    paprika_draw_imgui_inspector_node_( paprika, &temporary_string_buffer );
+  }
+  ImGui::End();
+  crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
+}
+
+void
+paprika_draw_imgui_scene_nodes_
+(
+  _In_ crude_paprika                                      *paprika,
+  _In_ crude_entity                                        node,
+  _In_ crude_string_buffer                                *temporary_string_buffer,
+  _In_ uint32                                             *current_node_index
+)
+{
+  ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+  
+  if ( paprika->selected_node_index == *current_node_index )
+  {
+    tree_node_flags |= ImGuiTreeNodeFlags_Selected;
+  }
+
+  bool tree_node_open = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( node ) );
+  if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
+  {
+    paprika->selected_node = node;
+    paprika->selected_node_index = *current_node_index;
+  }
+
+  char const *popup_id = crude_string_buffer_append_use_f( temporary_string_buffer, "node_pop_up %s", crude_entity_get_name( node ) );
+
+  if (ImGui::IsItemClicked( ImGuiMouseButton_Right ) && !ImGui::IsItemToggledOpen())
+  {
+    ImGui::OpenPopup( popup_id );
+  }
+
+  if ( ImGui::BeginPopup( popup_id ) )
+  {
+    if ( ImGui::BeginMenu( "add_component" ) )
+    {
+      //for (Component_Type componentType : cComponentsTypes)
+      //{
+      //  if (ImGui::MenuItem(componentTypeToStr(componentType)))
+      //  {
+      //    addComponentToNode(node, componentType);
+      //  }
+      //}
+      //ImGui::EndMenu();
+    }
+
+    if ( ImGui::MenuItem( "add_node" ) )
+    {
+    }
+    ImGui::EndPopup();
+  }
+
+  if (ImGui::BeginDragDropSource( ) )
+  {
+    ImGui::SetDragDropPayload( crude_entity_get_name( node ), NULL, 0 );
+    ImGui::Text( crude_entity_get_name( node ) );
+    ImGui::EndDragDropSource( );
+  }
+
+  ++( *current_node_index );
+  if ( tree_node_open )
+  {
+    ecs_iter_t it = ecs_children( node.world, node.handle );
+    while ( ecs_children_next( &it ) )
+    {
+      for (int i = 0; i < it.count; i ++)
+      {
+        crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
+        child.world = it.world;
+        child.handle = it.entities[ i ];
+        paprika_draw_imgui_scene_nodes_( paprika, child, temporary_string_buffer, current_node_index );
+      }
+    }
+    ImGui::TreePop( );
+  }
+}
+
+void
+paprika_draw_imgui_inspector_node_
+(
+  _In_ crude_paprika                                      *paprika,
+  _In_ crude_string_buffer                                *temporary_string_buffer
+)
+{
+  if ( !crude_entity_valid( paprika->selected_node ) )
+  {
+    return;
+  }
+
+  ImGui::Text( crude_entity_get_name( paprika->selected_node ) );
+  
+  crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_transform );
+  if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
+  {
+    ImGui::DragFloat3( "translation", &transform->translation.x, .1f );
+    ImGui::DragFloat3( "scale", &transform->scale.x, .1f );
+  }
+  
+  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_free_camera );
+  if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
+  {
+    ImGui::DragFloat3( "moving_speed", &free_camera->moving_speed_multiplier.x, .1f );
+    ImGui::DragFloat2( "rotating_speed", &free_camera->rotating_speed_multiplier.x, .1f );
+  }
+  
+  crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_camera );
+  if ( camera && ImGui::CollapsingHeader( "crude_camera" ) )
+  {
+    ImGui::InputFloat( "far_z", &camera->far_z );
+    ImGui::InputFloat( "near_z", &camera->near_z );
+    ImGui::SliderAngle( "fov_radians", &camera->fov_radians );
+    ImGui::InputFloat( "aspect_ratio", &camera->aspect_ratio );
+  }
 }

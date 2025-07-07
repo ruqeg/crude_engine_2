@@ -55,6 +55,7 @@ layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
   vec3                                                     camera_position;
   float                                                    padding1;
+  vec4                                                     camera_frustum_planes[ 6 ];
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
@@ -102,6 +103,11 @@ void main()
   uint group_index = gl_WorkGroupID.x;
   uint meshlet_index = mesh_draws[ gl_DrawIDARB ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
 
+  if ( meshlet_index >= mesh_draws[ gl_DrawIDARB ].meshletes_offset + mesh_draws[ gl_DrawIDARB ].meshletes_count )
+  {
+    return;
+  }
+
   mat4 model_to_world = mesh_draws[ gl_DrawIDARB ].model_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
   float scale = length( model_to_world[ 0 ] );
@@ -114,22 +120,16 @@ void main()
   
   bool accept = false;
 
-  vec4 view_center = vec4(0);
-  
   accept = !cone_cull( world_center.xyz, radius, cone_axis, cone_cutoff, camera_position );
- // view_center = world_to_camera_debug * world_center;
- // 
- // bool frustum_visible = true;
- // for ( uint i = 0; i < 6; ++i )
- // {
- //   frustum_visible = frustum_visible && ( dot( frustum_planes[ i ], view_center ) > -radius );
- // }
- // 
- // frustum_visible = frustum_visible || ( frustum_cull_meshlets == 0 );
- //
- // occlusion_visible = occlusion_visible || (occlusion_cull_meshlets == 0);
- // 
- // accept = accept && frustum_visible && occlusion_visible;
+  
+  vec4 view_center = world_center * world_to_view;
+
+  bool frustum_visible = true;
+  for ( uint i = 0; i < 6; ++i )
+  {
+    frustum_visible = frustum_visible && ( dot( camera_frustum_planes[ i ], view_center ) > -radius );
+  }
+  accept = accept && frustum_visible;
   
   uvec4 ballot = subgroupBallot( accept );
   

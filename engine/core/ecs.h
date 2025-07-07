@@ -85,6 +85,12 @@ crude_entity_get_parent
   _In_ crude_entity                                        entity
 );
 
+CRUDE_API char const*
+crude_entity_get_name
+(
+  _In_ crude_entity                                        entity
+);
+
 /************************************************
  *
  * ECS Macros

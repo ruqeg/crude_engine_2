@@ -52,6 +52,7 @@ layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
   vec3                                                     camera_position;
   float                                                    padding1;
+  vec4                                                     camera_frustum_planes[ 6 ];
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;

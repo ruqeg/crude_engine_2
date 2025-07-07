@@ -98,3 +98,12 @@ crude_entity_get_parent
   ecs_entity_t parent = ecs_get_parent( entity.world, entity.handle );
   return CRUDE_COMPOUNT( crude_entity, { .handle = parent, .world = entity.world } );
 }
+
+char const*
+crude_entity_get_name
+(
+  _In_ crude_entity                                        entity
+)
+{
+  return ecs_doc_get_name( entity.world, entity.handle );
+}

@@ -971,6 +971,16 @@ crude_store_float4
   _mm_storeu_ps( &f->x, v );
 }
 
+void                               
+crude_store_float4a                              
+(                                               
+  _Out_ crude_float4a                           *f,
+  _In_ crude_vector                              v
+)
+{
+  _mm_storeu_ps( &f->x, v );
+}
+
 void
 crude_store_float4x4
 (
