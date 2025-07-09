@@ -36,8 +36,14 @@
       ],
       "outputs": [
         {
-          "type": "reference",
-          "name": "albedo"
+          "type": "attachment",
+          "name": "imgui",
+          "format": "VK_FORMAT_B8G8R8A8_SRGB",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
         }
       ],
       "name": "imgui_pass"

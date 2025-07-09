@@ -29,3 +29,6 @@
 	path = extlibs/imgui_cmake/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule "extlibs/imguizmo_cmake/ImGuizmo"]
+	path = extlibs/imguizmo_cmake/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

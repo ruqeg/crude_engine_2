@@ -1,5 +1,6 @@
 #include <imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
 
 #include <core/hash_map.h>
 #include <core/file.h>
@@ -70,6 +71,12 @@ paprika_draw_imgui_inspector_node_
   _In_ crude_string_buffer                                *temporary_string_buffer
 );
 
+static void
+paprika_imgui_draw_viewport_
+(  
+  _In_ crude_paprika                                      *paprika
+);
+
 void
 crude_paprika_initialize
 (
@@ -91,6 +98,10 @@ crude_paprika_initialize
     paprika->imgui_context = ImGui::CreateContext();
     ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, paprika->imgui_context ) );
     ImGui::StyleColorsDark();
+    ImGuiIO *imgui_io = &ImGui::GetIO();
+    imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NoMouseCursorChange;
+    imgui_io->ConfigWindowsResizeFromEdges = true;
+    imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
   }
 
   paprika->platform_node = crude_entity_create_empty( paprika->engine->world, "paprika" );
@@ -250,6 +261,8 @@ paprika_graphics_initialize_
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
 
   paprika->selected_node = paprika->scene.main_node;
+  paprika->gizmo_operation = ImGuizmo::TRANSLATE;
+  paprika->gizmo_mode = ImGuizmo::WORLD;
 }
 
 crude_vector normalize_plane( crude_vector plane ) {
@@ -270,6 +283,9 @@ paprika_graphics_system_
   ImGui::SetCurrentContext( ( ImGuiContext* ) paprika->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::SetOrthographic( false );
+  ImGuizmo::BeginFrame();
+  ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
 
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
   {
@@ -344,7 +360,7 @@ paprika_graphics_system_
   crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 0 );
 
   {
-    crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "geometry_pass" );
+    crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "imgui_pass" );
     crude_gfx_framebuffer *final_render_framebuffer = crude_gfx_access_framebuffer( &paprika->graphics.gpu, final_render_graph_node->framebuffer );
     crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &paprika->graphics.gpu, final_render_framebuffer->color_attachments[ 0 ] );
     crude_gfx_present( &paprika->graphics.gpu, final_render_texture );
@@ -433,38 +449,36 @@ paprika_draw_imgui_
   temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
   crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
   
-  ImGui::Begin( "menu" );
-  if ( ImGui::CollapsingHeader( "techniques" ) )
+  ImGui::Begin( "techniques" );
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
   {
-    for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
+    if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
     {
-      if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
-      {
-        continue;
-      }
+      continue;
+    }
   
-      crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
-      if ( ImGui::TreeNode( technique->name ) )
+    crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
+    if ( ImGui::TreeNode( technique->name ) )
+    {
+      if ( ImGui::Button( "reload" ) )
       {
-        if ( ImGui::Button( "reload" ) )
-        {
-          char const *json_name = technique->json_name;
-          crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
-          crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-        }
-        ImGui::TreePop();
+        char const *json_name = technique->json_name;
+        crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
+        crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
       }
+      ImGui::TreePop();
     }
   }
-  if ( ImGui::CollapsingHeader( "scene" ) )
-  {
-    uint32 current_node_index = 0u;
-    paprika_draw_imgui_scene_nodes_( paprika, paprika->scene.main_node, &temporary_string_buffer, &current_node_index );
-  }
-  if ( ImGui::CollapsingHeader( "inspector" ) )
-  {
-    paprika_draw_imgui_inspector_node_( paprika, &temporary_string_buffer );
-  }
+  ImGui::End();
+  ImGui::Begin("scene");
+  uint32 current_node_index = 0u;
+  paprika_draw_imgui_scene_nodes_( paprika, paprika->scene.main_node, &temporary_string_buffer, &current_node_index );
+  ImGui::End();
+  ImGui::Begin("inspector");
+  paprika_draw_imgui_inspector_node_( paprika, &temporary_string_buffer );
+  ImGui::End();
+  ImGui::Begin("viewport");
+  paprika_imgui_draw_viewport_( paprika );
   ImGui::End();
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
 }
@@ -556,7 +570,7 @@ paprika_draw_imgui_inspector_node_
     return;
   }
 
-  ImGui::Text( crude_entity_get_name( paprika->selected_node ) );
+  ImGui::Text( "node: \"%s\"", crude_entity_get_name( paprika->selected_node ) );
   
   crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_transform );
   if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
@@ -580,4 +594,108 @@ paprika_draw_imgui_inspector_node_
     ImGui::SliderAngle( "fov_radians", &camera->fov_radians );
     ImGui::InputFloat( "aspect_ratio", &camera->aspect_ratio );
   }
+}
+#include <DirectXMath.h>
+void
+paprika_imgui_draw_viewport_
+(  
+  _In_ crude_paprika                                      *paprika
+)
+{
+  ImGuizmo::SetDrawlist( );
+  ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
+
+  ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+  
+  static uint32 viewport_texture = 0u;
+  for ( uint32 i = 0; i < paprika->graphics.gpu.textures.pool_size; ++i )
+  {
+    crude_gfx_texture *texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_texture_handle{ i } );
+    if ( texture->name && crude_string_cmp( texture->name, "albedo" ) == 0 )
+    {
+      viewport_texture = i;
+    }
+  }
+  crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "geometry_pass" );
+  crude_gfx_framebuffer *final_render_framebuffer = crude_gfx_access_framebuffer( &paprika->graphics.gpu, final_render_graph_node->framebuffer );
+  crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &paprika->graphics.gpu, final_render_framebuffer->color_attachments[ 0 ] );
+
+  ImGui::Image( CRUDE_CAST( ImTextureRef, &viewport_texture ), viewport_size );
+
+  crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
+  crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
+  crude_transform *selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_transform );
+
+  if ( !camera || !camera_transform || !selected_node_transform )
+  {
+    return;
+  }
+
+  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
+  if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
+  {
+    paprika->gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+  if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
+  {
+    paprika->gizmo_operation = ImGuizmo::ROTATE;
+  }
+  if (ImGui::IsKeyPressed(ImGuiKey_C))
+  {
+    paprika->gizmo_operation = ImGuizmo::SCALE;
+  }
+  if ( ImGui::RadioButton( "translate", paprika->gizmo_operation == ImGuizmo::TRANSLATE ) )
+  {
+    paprika->gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+  ImGui::SameLine();
+  if ( ImGui::RadioButton( "rotate", paprika->gizmo_operation == ImGuizmo::ROTATE ) )
+  {
+    paprika->gizmo_operation = ImGuizmo::ROTATE;
+  }
+  ImGui::SameLine();
+  if ( ImGui::RadioButton( "scale", paprika->gizmo_operation == ImGuizmo::SCALE ) )
+  {
+    paprika->gizmo_operation = ImGuizmo::SCALE;
+  }
+  if ( paprika->gizmo_operation != ImGuizmo::SCALE )
+  {
+    if ( ImGui::RadioButton( "local", paprika->gizmo_mode == ImGuizmo::LOCAL ) )
+    {
+      paprika->gizmo_mode = ImGuizmo::LOCAL;
+    }
+    ImGui::SameLine();
+    if ( ImGui::RadioButton( "world", paprika->gizmo_mode == ImGuizmo::WORLD ) )
+    {
+      paprika->gizmo_mode = ImGuizmo::WORLD;
+    }
+  }
+
+  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
+  crude_float4x4 selected_node_to_parent, selected_parent_to_view, view_to_clip;
+  crude_store_float4x4( &view_to_clip, crude_camera_view_to_clip( camera ) );
+  crude_store_float4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
+  
+  crude_matrix world_to_view = crude_mat_inverse( NULL, crude_transform_node_to_world( paprika->scene.main_camera, camera_transform ) );
+
+  crude_entity selected_node_parent = crude_entity_get_parent( paprika->selected_node );
+  if ( crude_entity_valid( selected_node_parent ) )
+  {
+    crude_matrix seleted_node_parent_to_world = crude_transform_node_to_world( selected_node_parent, NULL );
+    crude_store_float4x4( &selected_parent_to_view, crude_mat_multiply( seleted_node_parent_to_world, seleted_node_parent_to_world ) );
+  }
+  else
+  {
+    crude_store_float4x4( &selected_parent_to_view, world_to_view );
+  }
+
+  ImGuizmo::SetID( 0 );
+  ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
+  ImGuizmo::Manipulate( &selected_parent_to_view._00, &view_to_clip._00, paprika->gizmo_operation, paprika->gizmo_mode, &selected_node_to_parent._00, NULL, NULL );
+  
+  
+  //if (selectedNodeToWorldNotEqual)
+  //{
+  //  selectedNodeTransform->setNodeToParent(selectedNodeToParent);
+  //}
 }

@@ -260,6 +260,15 @@ crude_sin_cos
  * Vector Common Int Functinos
  * 
  ***********************************************/
+CRUDE_INLINE crude_vector
+crude_vec_get_x_ptr
+(
+  _Out_ float                                             *x,
+  _In_ crude_vector const                                  v
+)
+{
+  _mm_store_ss( x, v );
+}
 CRUDE_INLINE crude_vector              crude_vec_set_int( _In_ uint32 x, _In_ uint32 y, _In_ uint32 z, _In_ uint32 w);
 CRUDE_INLINE crude_vector              crude_vec_fill_int( _In_ uint32 value );
 CRUDE_INLINE crude_vector              crude_vec_true_int( );
@@ -675,6 +684,99 @@ crude_mat_affine_transformation
   _In_ crude_vector                              rotation_quaternion,
   _In_ crude_vector                              translation
 );
+CRUDE_INLINE bool
+crude_mat_decompose
+(
+  _Out_ crude_vector                            *scale,
+  _Out_ crude_vector                            *rotation,
+  _Out_ crude_vector                            *transistion,
+  _In_ crude_matrix const                        m
+)
+{
+  static const crude_vector *pvCanonicalBasis[3] = {
+      &CRUDE_MATH_IDENTITY_R0,
+      &CRUDE_MATH_IDENTITY_R1,
+      &CRUDE_MATH_IDENTITY_R2
+  };
+  
+  transistion[ 0 ] = m.r[ 3 ];
+  
+  crude_vector* ppvBasis[3];
+  crude_matrix matTemp;
+  ppvBasis[0] = &matTemp.r[0];
+  ppvBasis[1] = &matTemp.r[1];
+  ppvBasis[2] = &matTemp.r[2];
+  
+  matTemp.r[0] = m.r[0];
+  matTemp.r[1] = m.r[1];
+  matTemp.r[2] = m.r[2];
+  matTemp.r[3] = CRUDE_MATH_IDENTITY_R3;
+  
+  float *pfScales = CRUDE_CAST( float*, scale );
+  
+  size_t a, b, c;
+  
+  crude_vec_get_x_ptr(&pfScales[0], crude_vec_length3(ppvBasis[0][0]));
+  crude_vec_get_x_ptr(&pfScales[1], crude_vec_length3(ppvBasis[1][0]));
+  crude_vec_get_x_ptr(&pfScales[2], crude_vec_length3(ppvBasis[2][0]));
+  pfScales[3] = 0.f;
+  
+  XM3RANKDECOMPOSE(a, b, c, pfScales[0], pfScales[1], pfScales[2])
+  
+      if (pfScales[a] < XM3_DECOMP_EPSILON)
+      {
+          ppvBasis[a][0] = pvCanonicalBasis[a][0];
+      }
+  ppvBasis[a][0] = XMVector3Normalize(ppvBasis[a][0]);
+  
+  if (pfScales[b] < XM3_DECOMP_EPSILON)
+  {
+      size_t aa, bb, cc;
+      float fAbsX, fAbsY, fAbsZ;
+  
+      fAbsX = fabsf(XMVectorGetX(ppvBasis[a][0]));
+      fAbsY = fabsf(XMVectorGetY(ppvBasis[a][0]));
+      fAbsZ = fabsf(XMVectorGetZ(ppvBasis[a][0]));
+  
+      XM3RANKDECOMPOSE(aa, bb, cc, fAbsX, fAbsY, fAbsZ)
+  
+          ppvBasis[b][0] = XMVector3Cross(ppvBasis[a][0], pvCanonicalBasis[cc][0]);
+  }
+  
+  ppvBasis[b][0] = XMVector3Normalize(ppvBasis[b][0]);
+  
+  if (pfScales[c] < XM3_DECOMP_EPSILON)
+  {
+      ppvBasis[c][0] = XMVector3Cross(ppvBasis[a][0], ppvBasis[b][0]);
+  }
+  
+  ppvBasis[c][0] = XMVector3Normalize(ppvBasis[c][0]);
+  
+  float fDet = XMVectorGetX(XMMatrixDeterminant(matTemp));
+  
+  // use Kramer's rule to check for handedness of coordinate system
+  if (fDet < 0.0f)
+  {
+      // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
+      pfScales[a] = -pfScales[a];
+      ppvBasis[a][0] = XMVectorNegate(ppvBasis[a][0]);
+  
+      fDet = -fDet;
+  }
+  
+  fDet -= 1.0f;
+  fDet *= fDet;
+  
+  if (XM3_DECOMP_EPSILON < fDet)
+  {
+      // Non-SRT matrix encountered
+      return false;
+  }
+  
+  // generate the quaternion from the matrix
+  rotation[0] = XMQuaternionRotationMatrix(matTemp);
+  return true;
+}
 
 /************************************************
  *

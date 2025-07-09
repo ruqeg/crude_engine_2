@@ -587,7 +587,7 @@ crude_gfx_render_graph_compile
         }
         else
         {
-          CRUDE_ASSERT( width == info->texture.height );
+          CRUDE_ASSERT( height == info->texture.height );
         }
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )

@@ -47,6 +47,12 @@ CRUDE_API crude_matrix
 crude_transform_node_to_world
 (
   _In_ crude_entity                                        node,
+  _In_opt_ crude_transform const                          *transform
+);
+
+CRUDE_API crude_matrix
+crude_transform_node_to_parent
+(
   _In_ crude_transform const                              *transform
 );
 

@@ -7,15 +7,6 @@ ECS_COMPONENT_DECLARE( crude_scene_creation );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 
-static crude_matrix
-get_node_to_parent_matrix
-(
-  _In_ crude_transform const                              *transform
-)
-{
-  return crude_mat_affine_transformation( crude_load_float3( &transform->scale ), crude_vec_zero(), crude_load_float4( &transform->rotation ), crude_load_float3( &transform->translation ) );
-}
-
 crude_matrix
 crude_camera_view_to_clip
 (
@@ -29,17 +20,31 @@ crude_matrix
 crude_transform_node_to_world
 (
   _In_ crude_entity                                        node,
-  _In_ crude_transform const                              *transform
+  _In_opt_ crude_transform const                          *transform
 )
 {
+  if ( transform == NULL )
+  {
+    transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform );
+  }
+
   crude_entity parent = crude_entity_get_parent( node );
   
   if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
   {
     crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
-    return crude_mat_multiply( get_node_to_parent_matrix( transform ), crude_transform_node_to_world( parent, parent_transform ) );
+    return crude_mat_multiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( parent, parent_transform ) );
   }
-  return get_node_to_parent_matrix( transform );
+  return crude_transform_node_to_parent( transform );
+}
+
+CRUDE_API crude_matrix
+crude_transform_node_to_parent
+(
+  _In_ crude_transform const                              *transform
+)
+{ 
+  return crude_mat_affine_transformation( crude_load_float3( &transform->scale ), crude_vec_zero(), crude_load_float4( &transform->rotation ), crude_load_float3( &transform->translation ) );
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )

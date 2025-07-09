@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui/imgui.h>
+#include <ImGuizmo.h>
 
 #include <engine.h>
 #include <scene/scene.h>
@@ -34,6 +35,8 @@ typedef struct crude_paprika
   
   uint32                                                   selected_node_index;
   crude_entity                                             selected_node;
+  ImGuizmo::OPERATION                                      gizmo_operation;
+  ImGuizmo::MODE                                           gizmo_mode;
 } crude_paprika;
 
 CRUDE_API void
