@@ -89,7 +89,7 @@ layout(set=1, binding=5, row_major, std430) readonly buffer MeshDraws
 
 taskPayloadSharedEXT struct
 {
-  uint                                                     meshlet_indices[ gl_WorkGroupSize.x ];
+  uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
 } shared_data;
 

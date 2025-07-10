@@ -94,6 +94,7 @@ crude_gfx_imgui_pass_initialize
   pipeline_creation.rasterization.front = VK_FRONT_FACE_CLOCKWISE;
   pipeline_creation.rasterization.cull_mode = VK_CULL_MODE_BACK_BIT;
   pipeline_creation.render_pass_output = gpu->swapchain_output;
+  
   crude_gfx_pipeline_creation_add_blend_state( &pipeline_creation, CRUDE_COMPOUNT( crude_gfx_blend_state, {
     .source_color = VK_BLEND_FACTOR_SRC_ALPHA,
     .destination_color = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,

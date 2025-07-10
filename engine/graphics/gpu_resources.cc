@@ -147,6 +147,21 @@ crude_gfx_render_pass_output_empty
 }
 
 void
+crude_gfx_render_pass_output_add_color
+(
+  _In_ crude_gfx_render_pass_output                       *output,
+  _In_ VkFormat                                            color_format,
+  _In_ VkImageLayout                                       color_final_layout,
+  _In_ crude_gfx_render_pass_operation                     color_operation
+)
+{
+  output->color_formats[ output->num_color_formats ] = VK_FORMAT_UNDEFINED;
+  output->color_final_layouts[ output->num_color_formats ] = VK_IMAGE_LAYOUT_UNDEFINED;
+  output->color_operations[ output->num_color_formats ] = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
+  ++output->num_color_formats;
+}
+
+void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,

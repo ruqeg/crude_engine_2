@@ -720,6 +720,15 @@ crude_gfx_render_pass_output_empty
 );
 
 CRUDE_API void
+crude_gfx_render_pass_output_add_color
+(
+  _In_ crude_gfx_render_pass_output                       *output,
+  _In_ VkFormat                                            color_format,
+  _In_ VkImageLayout                                       color_final_layout,
+  _In_ crude_gfx_render_pass_operation                     color_operation
+);
+
+CRUDE_API void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,

@@ -28,12 +28,7 @@
       ]
     },
     {
-      "inputs": [
-        {
-          "type": "attachment",
-          "name": "albedo"
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "type": "attachment",
