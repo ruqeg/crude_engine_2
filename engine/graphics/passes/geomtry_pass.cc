@@ -351,8 +351,8 @@ copy_mesh_material_gpu_
 )
 {
   crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh->node, crude_transform );
-  crude_matrix model_to_world = crude_transform_node_to_world( mesh->node, transform );
-  crude_store_float4x4a( &gpu_mesh_material->model_to_world, model_to_world ); 
+  XMMATRIX model_to_world = crude_transform_node_to_world( mesh->node, transform );
+  XMStoreFloat4x4( &gpu_mesh_material->model_to_world, model_to_world ); 
   gpu_mesh_material->textures.x = mesh->albedo_texture_index;
   gpu_mesh_material->textures.y = mesh->roughness_texture_index;
   gpu_mesh_material->textures.z = mesh->normal_texture_index;

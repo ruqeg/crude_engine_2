@@ -4,8 +4,9 @@
 #include <vma_usage.h>
 #include <spirv_reflect.h>
 
-#include <core/array.h>
 #include <core/math.h>
+#include <core/alias.h>
+#include <core/array.h>
 #include <core/resource_pool.h>
 
 /************************************************
@@ -635,15 +636,16 @@ typedef struct crude_gfx_resource_update
   crude_gfx_resource_index                                 handle;
   uint32                                                   current_frame;
 } crude_gfx_resource_update;
-
+\
 typedef struct crude_gfx_shader_mesh_constants
 {
-  crude_float4x4a                                          model_to_world;
-  crude_uint4a                                             textures;
-  crude_float4a                                            albedo_color_factor;
-  crude_float3a                                            metallic_roughness_occlusion_factor;
-  crude_float1a                                            alpha_cutoff;
-  crude_uint1a                                             flags;
+  XMFLOAT4X4A                                     model_to_world;
+  XMUINT4                                         textures;
+  XMFLOAT4A                                       albedo_color_factor;
+  XMFLOAT3A                                       metallic_roughness_occlusion_factor;
+  float32                                                  alpha_cutoff;
+  uint32                                                   flags;
+  XMFLOAT2                                        padding;
 } crude_gfx_shader_mesh_constants;
 
 /************************************************

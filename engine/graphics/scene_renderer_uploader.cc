@@ -171,7 +171,7 @@ create_mesh_material_
   
   mesh_draw->flags = 0;
 
-  mesh_draw->albedo_color_factor = CRUDE_COMPOUNT( crude_float4, {
+  mesh_draw->albedo_color_factor = CRUDE_COMPOUNT( XMFLOAT4, {
     material->pbr_metallic_roughness.base_color_factor[ 0 ],
     material->pbr_metallic_roughness.base_color_factor[ 1 ],
     material->pbr_metallic_roughness.base_color_factor[ 2 ],
@@ -495,9 +495,9 @@ load_meshes_
   _In_ uint32                                              scene_renderer_samplers_offset
 )
 {
-  crude_float3 const node_scale = { 1.0f, 1.0f, 1.0f };
-  crude_float3 const node_translation = { 1.0f, 1.0f, 1.0f };
-  crude_float4 const node_rotation = { 1.0f, 1.0f, 1.0f };
+  XMFLOAT3 const node_scale = CRUDE_COMPOUNT( XMFLOAT3, { 1.0f, 1.0f, 1.0f } );
+  XMFLOAT3 const node_translation = CRUDE_COMPOUNT( XMFLOAT3, { 1.0f, 1.0f, 1.0f } );
+  XMFLOAT4 const node_rotation = CRUDE_COMPOUNT( XMFLOAT4, { 1.0f, 1.0f, 1.0f, 0.0 } );
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   {
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
@@ -653,7 +653,7 @@ load_meshlets_
         new_meshlet.triangles_count = local_meshlet->triangle_count;
         new_meshlet.mesh_index = primitive_index;
 
-        new_meshlet.center = CRUDE_COMPOUNT( crude_float3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
+        new_meshlet.center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
         new_meshlet.radius = meshlet_bounds.radius;
         
         new_meshlet.cone_axis[ 0 ] = meshlet_bounds.cone_axis_s8[ 0 ];
@@ -685,9 +685,9 @@ load_meshlet_vertices_
   _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
 )
 {
-  crude_float3                                            *primitive_positions;
-  crude_float3                                            *primitive_normals;
-  crude_float2                                            *primitive_texcoords;
+  XMFLOAT3                                            *primitive_positions;
+  XMFLOAT3                                            *primitive_normals;
+  XMFLOAT2                                            *primitive_texcoords;
   uint32                                                   meshlet_vertices_count;
 
   meshlet_vertices_count = primitive->attributes[ 0 ].data->count;
@@ -703,22 +703,22 @@ load_meshlet_vertices_
     case cgltf_attribute_type_position:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float3 ) );
-      primitive_positions = CRUDE_CAST( crude_float3*, attribute_data );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT3 ) );
+      primitive_positions = CRUDE_CAST( XMFLOAT3*, attribute_data );
       break;
     }
     case cgltf_attribute_type_normal:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float3 ) );
-      primitive_normals = CRUDE_CAST( crude_float3*, attribute_data );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT3 ) );
+      primitive_normals = CRUDE_CAST( XMFLOAT3*, attribute_data );
       break;
     }
     case cgltf_attribute_type_texcoord:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec2 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( crude_float2 ) );
-      primitive_texcoords = CRUDE_CAST( crude_float2*, attribute_data );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT2 ) );
+      primitive_texcoords = CRUDE_CAST( XMFLOAT2*, attribute_data );
       break;
     }
     }

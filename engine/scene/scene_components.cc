@@ -7,16 +7,16 @@ ECS_COMPONENT_DECLARE( crude_scene_creation );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 
-crude_matrix
+XMMATRIX
 crude_camera_view_to_clip
 (
   _In_ crude_camera const                                 *camera
 )
 {
-  return crude_mat_perspective_fov_lh( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
+  return XMMatrixPerspectiveFovLH( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
 }
 
-crude_matrix
+XMMATRIX
 crude_transform_node_to_world
 (
   _In_ crude_entity                                        node,
@@ -33,18 +33,18 @@ crude_transform_node_to_world
   if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
   {
     crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
-    return crude_mat_multiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( parent, parent_transform ) );
+    return XMMatrixMultiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( parent, parent_transform ) );
   }
   return crude_transform_node_to_parent( transform );
 }
 
-CRUDE_API crude_matrix
+CRUDE_API XMMATRIX
 crude_transform_node_to_parent
 (
   _In_ crude_transform const                              *transform
 )
 { 
-  return crude_mat_affine_transformation( crude_load_float3( &transform->scale ), crude_vec_zero(), crude_load_float4( &transform->rotation ), crude_load_float3( &transform->translation ) );
+  return XMMatrixAffineTransformation( XMLoadFloat3( &transform->scale ), XMVectorZero( ), XMLoadFloat4( &transform->rotation ), XMLoadFloat3( &transform->translation ) );
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )

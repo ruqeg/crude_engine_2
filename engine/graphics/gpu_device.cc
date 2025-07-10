@@ -1,12 +1,12 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
 #include <core/profiler.h>
 #include <core/string.h>
 #include <core/file.h>
 #include <core/process.h>
 #include <graphics/gpu_profiler.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
 
 #include <graphics/gpu_device.h>
 

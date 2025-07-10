@@ -83,7 +83,7 @@ layout(set=1, binding=4) readonly buffer VerticesIndices
   uint                                                     vertices_indices[];
 };
 
-layout(set=1, binding=5, std430) readonly buffer MeshDraws
+layout(set=1, binding=5, row_major, std430) readonly buffer MeshDraws
 {
   crude_mesh_draw                                          mesh_draws[];
 };

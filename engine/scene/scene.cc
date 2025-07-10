@@ -9,7 +9,7 @@
 
 #include <scene/scene.h>
 
-static crude_float2
+static XMFLOAT2
 json_object_to_float2_
 (
   cJSON                                                 *json
@@ -17,42 +17,39 @@ json_object_to_float2_
 {
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 2 );
 
-  crude_float2 result = {
-    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
-    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
-  };
+  XMFLOAT2 result;
+  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
+  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
   return result;
 }
 
-static crude_float3
+static XMFLOAT3
 json_object_to_float3_
 (
   cJSON                                                 *json
 )
 {
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 3 );
-
-  crude_float3 result = {
-    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
-    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
-    .z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) ),
-  };
+  
+  XMFLOAT3 result;
+  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
+  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
+  result.z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) );
   return result;
 }
 
-static crude_float4
+static XMFLOAT4
 json_object_to_float4_
 (
   cJSON                                                 *json
 )
 {
   CRUDE_ASSERT( cJSON_GetArraySize( json ) == 4 );
-  crude_float4 result = {
-    .x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) ),
-    .y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) ),
-    .z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) ),
-    .w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 3 ) ) ),
-  };
+  XMFLOAT4 result;
+  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
+  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
+  result.z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) );
+  result.w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 3 ) ) );
   return result;
 }
 

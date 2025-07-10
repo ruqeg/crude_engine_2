@@ -354,7 +354,7 @@ crude_process_events_system_
       focused_input = NULL;
       focused_window = NULL;
       focused_window_handle = NULL;
-      keyboard_event = ( sdl_event.type == SDL_EVENT_KEY_DOWN ) || ( sdl_event.type == SDL_EVENT_KEY_UP );
+      keyboard_event = true;
 
       if ( keyboard_event )
       {

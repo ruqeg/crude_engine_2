@@ -7,12 +7,12 @@
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
-  crude_float3a                                            camera_position;
-  crude_float4a                                            camera_frustum_planes[ 6 ];
-  crude_float4x4a                                          world_to_view;
-  crude_float4x4a                                          view_to_clip;
-  crude_float4x4a                                          clip_to_view;
-  crude_float4x4a                                          view_to_world;
+  XMFLOAT3A                                       camera_position;
+  XMFLOAT4A                                       camera_frustum_planes[ 6 ];
+  XMFLOAT4X4A                                     world_to_view;
+  XMFLOAT4X4A                                     view_to_clip;
+  XMFLOAT4X4A                                     clip_to_view;
+  XMFLOAT4X4A                                     view_to_world;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
@@ -42,7 +42,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
 {
-  crude_float3                                             center;
+  XMFLOAT3                                             center;
   float32                                                  radius;
   int8                                                     cone_axis[ 3 ];
   int8                                                     cone_cutoff;
@@ -55,12 +55,12 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
 {
-  crude_float4x4a                                          model_to_world;
+  XMFLOAT4X4A                                     model_to_world;
 
-  crude_uint4                                              textures;
-  crude_float4                                             emissive;
-  crude_float4                                             albedo_color_factor;
-  crude_float4                                             metallic_roughness_occlusion_factor;
+  XMUINT4                                         textures;
+  XMFLOAT4                                        emissive;
+  XMFLOAT4                                        albedo_color_factor;
+  XMFLOAT4                                        metallic_roughness_occlusion_factor;
 
   uint32                                                   flags;
   float32                                                  alpha_cutoff;
@@ -75,7 +75,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
 
 typedef struct crude_gfx_meshlet_vertex_gpu
 {
-  crude_float3a                                            position;
+  XMFLOAT3A                                       position;
   uint8                                                    normal[ 4 ];
   uint8                                                    tangent[ 4 ];
   uint16                                                   texcoords[ 2 ];
@@ -86,9 +86,9 @@ typedef struct crude_gfx_mesh_cpu
 {
   crude_entity                                             node;
   crude_gfx_renderer_material                             *material;
-  crude_float3                                             scale;
-  crude_float3                                             translation;
-  crude_float4                                             rotation;
+  XMFLOAT3                                             scale;
+  XMFLOAT3                                             translation;
+  XMFLOAT4                                             rotation;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  position_buffer;
   crude_gfx_buffer_handle                                  tangent_buffer;
@@ -101,8 +101,8 @@ typedef struct crude_gfx_mesh_cpu
   uint32                                                   normal_offset;
   uint32                                                   texcoord_offset;
   uint32                                                   primitive_count;
-  crude_float4                                             albedo_color_factor;
-  crude_float3                                             metallic_roughness_occlusion_factor;
+  XMFLOAT4                                             albedo_color_factor;
+  XMFLOAT3                                             metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;
   uint32                                                   flags;
   uint16                                                   albedo_texture_index;

@@ -6,9 +6,9 @@
 
 typedef struct crude_transform
 {
-  crude_float3                                             translation;
-  crude_float4                                             rotation;
-  crude_float3                                             scale;
+  XMFLOAT3                                             translation;
+  XMFLOAT4                                             rotation;
+  XMFLOAT3                                             scale;
 } crude_transform;
 
 typedef struct crude_camera
@@ -37,20 +37,20 @@ CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_creation );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 
-CRUDE_API crude_matrix
+CRUDE_API XMMATRIX
 crude_camera_view_to_clip
 (
   _In_ crude_camera const                                 *camera
 );
 
-CRUDE_API crude_matrix
+CRUDE_API XMMATRIX
 crude_transform_node_to_world
 (
   _In_ crude_entity                                        node,
   _In_opt_ crude_transform const                          *transform
 );
 
-CRUDE_API crude_matrix
+CRUDE_API XMMATRIX
 crude_transform_node_to_parent
 (
   _In_ crude_transform const                              *transform

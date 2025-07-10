@@ -75,7 +75,7 @@
       },
       {
         "node": {
-          "name": "particles_instances",
+          "name": "model",
           "components": [
             {
               "type": "crude_gltf",

@@ -26,35 +26,35 @@ crude_free_camera_update_system
     int32 moving_up = input->keys[ 'e' ].current - input->keys[ 'q' ].current;
     int32 moving_right = input->keys[ 'd' ].current - input->keys[ 'a' ].current;
 
-    crude_vector translation = crude_load_float3( &transforms[ i ].translation );
-    crude_matrix node_to_world = crude_transform_node_to_world( CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } ), &transforms[ i ] );
+    XMVECTOR translation = XMLoadFloat3( &transforms[ i ].translation );
+    XMMATRIX node_to_world = crude_transform_node_to_world( CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } ), &transforms[ i ] );
 
-    crude_vector basis_right = crude_vec_normalize3( node_to_world.r[ 0 ] );
-    crude_vector basis_up = crude_vec_normalize3( node_to_world.r[ 1 ] );
-    crude_vector basis_forward = crude_vec_normalize3( node_to_world.r[ 2 ] );
+    XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
+    XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
+    XMVECTOR basis_forward = XMVector3Normalize( node_to_world.r[ 2 ] );
 
     if ( moving_right )
     {
-      translation = crude_vec_add( translation, crude_vec_scale( basis_right, free_cameras[i].moving_speed_multiplier.x * moving_right * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_right, free_cameras[i].moving_speed_multiplier.x * moving_right * it->delta_time ) );
     }
     if ( moving_forward )
     {
-      translation = crude_vec_add( translation, crude_vec_scale( basis_forward, free_cameras[i].moving_speed_multiplier.z * moving_forward * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, free_cameras[i].moving_speed_multiplier.z * moving_forward * it->delta_time ) );
     }
     if ( moving_up )
     {
-      translation = crude_vec_add( translation, crude_vec_scale( basis_up, free_cameras[i].moving_speed_multiplier.y * moving_up * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_up, free_cameras[i].moving_speed_multiplier.y * moving_up * it->delta_time ) );
     }
-    crude_store_float3( &transforms[ i ].translation, translation );
+    XMStoreFloat3( &transforms[ i ].translation, translation );
 
     if ( input->mouse.right.current )
     {
-      crude_vector rotation = crude_load_float4( &transforms[ i ].rotation );
-      crude_vector camera_up = crude_vec_get_y( basis_up ) > 0.0f ? crude_vec_default_basis_up() : crude_vec_negate( crude_vec_default_basis_up() );
+      XMVECTOR rotation = XMLoadFloat4( &transforms[ i ].rotation );
+      XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
 
-      rotation = crude_quat_multiply( rotation, crude_quat_rotation_axis( basis_right, -free_cameras[ i ].rotating_speed_multiplier.y * input->mouse.rel.y * it->delta_time ) );
-      rotation = crude_quat_multiply( rotation, crude_quat_rotation_axis( camera_up, -free_cameras[ i ].rotating_speed_multiplier.x * input->mouse.rel.x * it->delta_time ) );
-      crude_store_float4( &transforms[ i ].rotation, rotation );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier.y * input->mouse.rel.y * it->delta_time ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier.x * input->mouse.rel.x * it->delta_time ) );
+      XMStoreFloat4( &transforms[ i ].rotation, rotation );
     }
   }
   CRUDE_PROFILER_END;
