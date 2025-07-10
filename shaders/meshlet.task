@@ -90,6 +90,7 @@ layout(set=1, binding=5, row_major, std430) readonly buffer MeshDraws
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ gl_WorkGroupSize.x ];
+  uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
 } shared_data;
 
 bool cone_cull(vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_pos )
@@ -137,6 +138,7 @@ void main()
   if ( accept )
   {
     shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
+    shared_data.mesh_draw_indices[ previous_visible_meshlet_index ] = gl_DrawIDARB;
   }
   
   uint visible_meslets_count = subgroupBallotBitCount( ballot );

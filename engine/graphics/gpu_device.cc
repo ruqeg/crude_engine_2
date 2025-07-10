@@ -24,7 +24,8 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
   VK_EXT_MESH_SHADER_EXTENSION_NAME,
-  VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
+  VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
+  VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME
 };
 
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -964,7 +965,7 @@ crude_gfx_resize_texture
   
   crude_gfx_texture_handle texture_to_delete_handle = crude_gfx_obtain_texture( gpu );
   crude_gfx_texture *texture_to_delete = crude_gfx_access_texture( gpu, texture_to_delete_handle );
-  
+
   memcpy( texture_to_delete, texture, sizeof( crude_gfx_texture ) );
   texture_to_delete->handle = texture_to_delete_handle;
   
@@ -2783,6 +2784,8 @@ vk_create_device_
   VkPhysicalDeviceDescriptorIndexingFeatures               indexing_features;
   VkPhysicalDeviceFeatures2                                physical_features2;
   VkPhysicalDeviceTimelineSemaphoreFeatures                timeline_semaphore_features;
+  VkPhysicalDeviceMultiviewFeaturesKHR                     device_features_multivew;
+  VkPhysicalDeviceFragmentShadingRateFeaturesKHR           device_features_fragment_shading_rate;
   VkPhysicalDeviceMeshShaderFeaturesEXT                    device_features_mesh;
   VkDeviceCreateInfo                                       device_create_info;
   VkDeviceQueueCreateInfo                                  queue_create_infos[ 2 ];
@@ -2825,66 +2828,68 @@ vk_create_device_
 
   float const queue_priority[] = { 1.0f };
 
-  queue_create_infos[ 0 ] = CRUDE_COMPOUNT( VkDeviceQueueCreateInfo, {
-    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    .queueFamilyIndex = main_queue_index,
-    .queueCount = 1,
-    .pQueuePriorities = queue_priority,
-  } );
+  queue_create_infos[ 0 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
+  queue_create_infos[ 0 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queue_create_infos[ 0 ].queueFamilyIndex = main_queue_index;
+  queue_create_infos[ 0 ].queueCount = 1;
+  queue_create_infos[ 0 ].pQueuePriorities = queue_priority;
   
   if ( transfer_queue_index < queue_family_count )
   {
-    queue_create_infos[ 1 ] = CRUDE_COMPOUNT( VkDeviceQueueCreateInfo, {
-    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    .queueFamilyIndex = transfer_queue_index,
-    .queueCount = 1,
-    .pQueuePriorities = queue_priority,
-    } );
+    queue_create_infos[ 1 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
+    queue_create_infos[ 1 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_infos[ 1 ].queueFamilyIndex = transfer_queue_index;
+    queue_create_infos[ 1 ].queueCount = 1;
+    queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
   }
 
-  bit16_storage_features = CRUDE_COMPOUNT( VkPhysicalDevice16BitStorageFeatures, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
-    .storageBuffer16BitAccess = VK_TRUE
-  } );
+  bit16_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice16BitStorageFeatures );
+  bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+  bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
 
-  bit_storage_features = CRUDE_COMPOUNT( VkPhysicalDevice8BitStorageFeatures, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES,
-    .pNext = &bit16_storage_features,
-    .storageBuffer8BitAccess = VK_TRUE
-  } );
+  bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );
+  bit_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+  bit_storage_features.pNext = &bit16_storage_features;
+  bit_storage_features.storageBuffer8BitAccess = VK_TRUE;
 
-  synchronization_features = CRUDE_COMPOUNT( VkPhysicalDeviceSynchronization2Features, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-    .pNext = &bit_storage_features,
-    .synchronization2 = VK_TRUE
-  } );
-
-  device_features_mesh = CRUDE_COMPOUNT( VkPhysicalDeviceMeshShaderFeaturesEXT, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
-    .pNext = &synchronization_features,
-    .taskShader = VK_TRUE,
-    .meshShader = VK_TRUE,
-  } );
-
-  timeline_semaphore_features = CRUDE_COMPOUNT( VkPhysicalDeviceTimelineSemaphoreFeatures, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-    .pNext = &device_features_mesh
-  } );
+  synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );
+  synchronization_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+  synchronization_features.pNext = &bit_storage_features;
+  synchronization_features.synchronization2 = VK_TRUE;
   
-  dynamic_rendering_features = CRUDE_COMPOUNT( VkPhysicalDeviceDynamicRenderingFeaturesKHR, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-    .pNext = &timeline_semaphore_features
-  } );
+  device_features_multivew = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMultiviewFeaturesKHR );
+  device_features_multivew.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR;
+  device_features_multivew.pNext = &synchronization_features;
+  device_features_multivew.multiview = VK_TRUE;
 
-  indexing_features = CRUDE_COMPOUNT( VkPhysicalDeviceDescriptorIndexingFeatures, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-    .pNext = &dynamic_rendering_features
-  } );
+  device_features_fragment_shading_rate = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFragmentShadingRateFeaturesKHR );
+  device_features_fragment_shading_rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+  device_features_fragment_shading_rate.pNext = &device_features_multivew;
+  device_features_fragment_shading_rate.primitiveFragmentShadingRate = VK_TRUE;
 
-  physical_features2 = CRUDE_COMPOUNT( VkPhysicalDeviceFeatures2, {
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-    .pNext = &indexing_features,
-  } );
+  device_features_mesh = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMeshShaderFeaturesEXT );
+  device_features_mesh.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+  device_features_mesh.pNext = &device_features_fragment_shading_rate;
+  device_features_mesh.taskShader = VK_TRUE;
+  device_features_mesh.meshShader = VK_TRUE;
+  device_features_mesh.multiviewMeshShader = VK_TRUE;
+  device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
+
+  timeline_semaphore_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceTimelineSemaphoreFeatures );
+  timeline_semaphore_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+  timeline_semaphore_features.pNext = &device_features_mesh;
+  
+  dynamic_rendering_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDynamicRenderingFeaturesKHR );
+  dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+  dynamic_rendering_features.pNext = &timeline_semaphore_features;
+
+  indexing_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDescriptorIndexingFeatures );
+  indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+  indexing_features.pNext = &dynamic_rendering_features;
+
+  physical_features2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFeatures2 );
+  physical_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  physical_features2.pNext = &indexing_features;
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
 
