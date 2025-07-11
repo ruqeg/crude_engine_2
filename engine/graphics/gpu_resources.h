@@ -519,7 +519,6 @@ typedef struct crude_gfx_texture
   VkImage                                                  vk_image;
   VkImageView                                              vk_image_view;
   VkFormat                                                 vk_format;
-  VkImageLayout                                            vk_image_layout;
   VmaAllocation                                            vma_allocation;
   uint16                                                   width;
   uint16                                                   height;

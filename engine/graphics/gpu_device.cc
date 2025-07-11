@@ -1206,8 +1206,6 @@ crude_gfx_create_texture
     vmaDestroyBuffer( gpu->vma_allocator, staging_buffer, staging_allocation );
 
     vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
-    
-    texture->vk_image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   }
 
   texture->ready = true;
@@ -3408,7 +3406,6 @@ vk_create_texture_
       .handle        = handle.index,
       .current_frame = gpu->current_frame
     };
-    texture->vk_image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
   }
 }

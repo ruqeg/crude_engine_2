@@ -28,7 +28,12 @@
       ]
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "albedo"
+        }
+      ],
       "outputs": [
         {
           "type": "attachment",

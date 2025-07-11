@@ -105,10 +105,10 @@ typedef struct crude_gfx_mesh_cpu
   XMFLOAT3                                             metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;
   uint32                                                   flags;
-  uint16                                                   albedo_texture_index;
-  uint16                                                   roughness_texture_index;
-  uint16                                                   normal_texture_index;
-  uint16                                                   occlusion_texture_index;
+  uint32                                                   albedo_texture_index;
+  uint32                                                   roughness_texture_index;
+  uint32                                                   normal_texture_index;
+  uint32                                                   occlusion_texture_index;
   uint32                                                   gpu_mesh_index;
   uint32                                                   meshlets_offset;
   uint32                                                   meshlets_count;

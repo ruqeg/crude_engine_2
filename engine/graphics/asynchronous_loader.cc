@@ -143,9 +143,6 @@ crude_gfx_asynchronous_loader_update
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready ) )
   {
     crude_gfx_renderer_add_texture_to_update( asynloader->renderer, asynloader->texture_ready );
-  
-    crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->renderer->gpu, asynloader->texture_ready );
-    texture->ready = true;
 
     asynloader->texture_ready = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
