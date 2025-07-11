@@ -355,7 +355,7 @@ paprika_graphics_system_
 
   paprika_draw_imgui_( paprika );
   
-  crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
+  //crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
   crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 0 );
 

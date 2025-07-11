@@ -531,6 +531,7 @@ typedef struct crude_gfx_texture
   crude_gfx_sampler                                       *sampler;
   char const                                              *name;
   crude_gfx_resource_state                                 state;
+  bool                                                     ready;
 } crude_gfx_texture;
 
 typedef struct crude_gfx_descriptor_binding

@@ -102,14 +102,17 @@ crude_gfx_asynchronous_loader_request_texture_data
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
   _In_ char const                                         *filename,
-  _In_ crude_gfx_texture_handle                            texture
+  _In_ crude_gfx_texture_handle                            texture_handle
 )
 {
   crude_gfx_file_load_request request;
   strcpy( request.path, filename );
-  request.texture = texture;
+  request.texture = texture_handle;
   request.buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   CRUDE_ARRAY_PUSH( asynloader->file_load_requests, request );
+  
+  crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->renderer->gpu, texture_handle );
+  texture->ready = false;
 }
 
 void
@@ -140,6 +143,10 @@ crude_gfx_asynchronous_loader_update
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready ) )
   {
     crude_gfx_renderer_add_texture_to_update( asynloader->renderer, asynloader->texture_ready );
+  
+    crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->renderer->gpu, asynloader->texture_ready );
+    texture->ready = true;
+
     asynloader->texture_ready = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
   
@@ -204,12 +211,10 @@ crude_gfx_asynchronous_loader_update
       CRUDE_GFX_HANDLE_VULKAN_RESULT( asynloader->renderer->gpu->vkQueueSubmit2KHR( used_queue, 1, &submit_info, asynloader->vk_transfer_completed_fence ), "Failed to sumbit queue" );
     }
     
-
     if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
     {
       vkWaitForFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
     }
-    
     vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )

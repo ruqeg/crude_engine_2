@@ -26,6 +26,13 @@ copy_mesh_material_gpu_
   _Out_ crude_gfx_mesh_material_gpu                       *gpu_mesh_material
 );
 
+static bool
+mesh_cpu_valid_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_mesh_cpu const                           *mesh
+);
+
 static void
 draw_scene_secondary_task_
 (
@@ -210,42 +217,52 @@ geometry_pass_render_meshlets_
   buffer_map.buffer = pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ];
   buffer_map.offset = 0;
   buffer_map.size = sizeof( crude_gfx_mesh_draw_command_gpu ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
-
   mesh_draw_commands = CRUDE_CAST( crude_gfx_mesh_draw_command_gpu*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
-  if ( mesh_draw_commands )
-  {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ); ++i )
-    {
-      mesh_draw_commands[ i ].indirect_meshlet.groupCountX = crude_ceil( pass->scene_renderer->mesh_instances[ i ].mesh->meshlets_count / 32.0 );
-      mesh_draw_commands[ i ].indirect_meshlet.groupCountY = 1;
-      mesh_draw_commands[ i ].indirect_meshlet.groupCountZ = 1;
-    }
-    crude_gfx_unmap_buffer( renderer->gpu, buffer_map.buffer );
-  }
   
   buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   buffer_map.buffer = pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ];
   buffer_map.offset = 0;
   buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
   mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
-  if ( mesh_draw_counts )
-  {
-    mesh_draw_counts->opaque_mesh_visible_count = CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
-    crude_gfx_unmap_buffer( renderer->gpu, buffer_map.buffer );
-  }
   
   buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   buffer_map.buffer = pass->scene_renderer->meshes_materials_sb;
   buffer_map.offset = 0;
   buffer_map.size = 0;
   mesh_materials = CRUDE_CAST( crude_gfx_mesh_material_gpu*, crude_gfx_map_buffer( renderer->gpu, &buffer_map ) );
-  if ( mesh_materials )
+  
+  if ( mesh_materials && mesh_draw_counts && mesh_draw_commands )
   {
+    uint32 visible_meshlet_index = 0u;
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ); ++i )
     {
-      copy_mesh_material_gpu_( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ i ] );
+      if ( !mesh_cpu_valid_( pass->scene_renderer->renderer->gpu, pass->scene_renderer->mesh_instances[ i ].mesh ) )
+      {
+        continue;
+      }
+      
+      mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountX = crude_ceil( pass->scene_renderer->mesh_instances[ i ].mesh->meshlets_count / 32.0 );
+      mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountY = 1;
+      mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountZ = 1;
+
+      copy_mesh_material_gpu_( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ visible_meshlet_index ] );
+
+      ++visible_meshlet_index;
     }
-    crude_gfx_unmap_buffer( renderer->gpu, buffer_map.buffer );
+    mesh_draw_counts->opaque_mesh_visible_count = visible_meshlet_index;
+  }
+
+  if ( mesh_draw_commands )
+  {
+    crude_gfx_unmap_buffer( renderer->gpu, pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ] );
+  }
+  if ( mesh_draw_counts )
+  {
+    crude_gfx_unmap_buffer( renderer->gpu, pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ] );
+  }
+  if ( mesh_materials )
+  {
+    crude_gfx_unmap_buffer( renderer->gpu, pass->scene_renderer->meshes_materials_sb );
   }
   
   {
@@ -341,6 +358,34 @@ draw_scene_primary_
     crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
     crude_gfx_cmd_draw_indexed( cmd, mesh->primitive_count, 1, 0, 0, 0 );
   }
+}
+
+bool
+mesh_cpu_texture_valid_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              texture_index
+)
+{
+  if ( texture_index == CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID )
+  {
+    return true;
+  }
+  crude_gfx_texture_handle texture_handle = { texture_index };
+  return crude_gfx_texture_ready( gpu, texture_handle );
+}
+
+bool
+mesh_cpu_valid_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_mesh_cpu const                           *mesh
+)
+{
+  return mesh_cpu_texture_valid_( gpu, mesh->albedo_texture_index ) 
+    && mesh_cpu_texture_valid_( gpu, mesh->roughness_texture_index ) 
+    && mesh_cpu_texture_valid_( gpu, mesh->normal_texture_index ) 
+    && mesh_cpu_texture_valid_( gpu, mesh->occlusion_texture_index );
 }
 
 void

@@ -496,6 +496,7 @@ crude_gfx_present
       bindless_descriptor_set = crude_gfx_access_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
       texture_to_update = &gpu->texture_to_update_bindless[ i ];
       texture = crude_gfx_access_texture( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { texture_to_update->handle } ) );
+
       descriptor_write = &bindless_descriptor_writes[ current_write_index ];
       memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
       descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -829,6 +830,17 @@ crude_gfx_buffer_ready
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, buffer_handle );
   return buffer->ready;
+}
+
+bool
+crude_gfx_texture_ready
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            texture_handle
+)
+{
+  crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
+  return texture->ready;
 }
 
 VkShaderModuleCreateInfo
@@ -1197,6 +1209,8 @@ crude_gfx_create_texture
     
     texture->vk_image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   }
+
+  texture->ready = true;
 
   return handle;
 }

@@ -270,6 +270,13 @@ crude_gfx_buffer_ready
   _In_ crude_gfx_buffer_handle                             buffer_handle
 );
 
+CRUDE_API bool
+crude_gfx_texture_ready
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            texture_handle
+);
+
 CRUDE_API VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
