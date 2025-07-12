@@ -245,7 +245,7 @@ geometry_pass_render_meshlets_
       mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountY = 1;
       mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountZ = 1;
 
-      copy_mesh_material_gpu_( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ visible_meshlet_index ] );
+      copy_mesh_material_gpu_( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ i ] );
 
       ++visible_meshlet_index;
     }

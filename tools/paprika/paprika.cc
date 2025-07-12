@@ -56,6 +56,12 @@ paprika_draw_imgui_
 );
 
 static void
+paprika_draw_imgui_debug_
+(
+  _In_ crude_paprika                                      *paprika
+);
+
+static void
 paprika_draw_imgui_scene_nodes_
 (
   _In_ crude_paprika                                      *paprika,
@@ -265,11 +271,6 @@ paprika_graphics_initialize_
   paprika->gizmo_mode = ImGuizmo::WORLD;
 }
 
-XMVECTOR normalize_plane( XMVECTOR plane ) {
-    float32 len = XMVectorGetX( XMVector3Length( plane ) );
-    return XMVectorScale( plane, 1.0f / len );
-}
-
 void
 paprika_graphics_system_
 (
@@ -298,29 +299,42 @@ paprika_graphics_system_
     crude_gfx_scene_constant_gpu *scene_data = CRUDE_REINTERPRET_CAST( crude_gfx_scene_constant_gpu*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
     if ( scene_data )
     {
-      crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_camera );
-      crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.main_camera, crude_transform );
+      crude_entity camera_node_main = paprika->debug_camera ? paprika->scene.debug_camera : paprika->scene.main_camera;
+
+      crude_camera const *camera_main = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( camera_node_main, crude_camera );
+      crude_transform const *transform_main = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( camera_node_main, crude_transform );
     
-      XMMATRIX view_to_world = crude_transform_node_to_world( paprika->scene.main_camera, transform );
+      XMMATRIX view_to_world = crude_transform_node_to_world( camera_node_main, transform_main );
       XMMATRIX world_to_view = XMMatrixInverse( NULL, view_to_world );
-      XMMATRIX view_to_clip = crude_camera_view_to_clip( camera );
+      XMMATRIX view_to_clip = crude_camera_view_to_clip( camera_main );
       XMMATRIX clip_to_view = XMMatrixInverse( NULL, view_to_clip );
       
-      scene_data->camera_position.x = transform->translation.x;
-      scene_data->camera_position.y = transform->translation.y;
-      scene_data->camera_position.z = transform->translation.z;
-      
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 0 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 0 ] ) ) );
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 1 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 0 ] ) ) );
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 2 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 1 ] ) ) );
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 3 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 1 ] ) ) );
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 4 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 2 ] ) ) );
-      XMStoreFloat4A( &scene_data->camera_frustum_planes[ 5 ], normalize_plane( XMVectorAdd( view_to_clip.r[ 3 ], view_to_clip.r[ 2 ] ) ) );
+      scene_data->camera_position.x = transform_main->translation.x;
+      scene_data->camera_position.y = transform_main->translation.y;
+      scene_data->camera_position.z = transform_main->translation.z;
 
       XMStoreFloat4x4A( &scene_data->clip_to_view, clip_to_view ); 
       XMStoreFloat4x4A( &scene_data->view_to_clip, view_to_clip ); 
       XMStoreFloat4x4A( &scene_data->view_to_world, view_to_world ); 
       XMStoreFloat4x4A( &scene_data->world_to_view, world_to_view ); 
+      
+      crude_camera const *camera_debug = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.debug_camera, crude_camera );
+      crude_transform const *transform_debug = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->scene.debug_camera, crude_transform );
+      XMMATRIX view_to_world_debug = crude_transform_node_to_world( paprika->scene.debug_camera, transform_debug );
+      XMMATRIX world_to_view_debug = XMMatrixInverse( NULL, view_to_world_debug );
+      XMMATRIX view_to_clip_debug = XMMatrixTranspose( crude_camera_view_to_clip( camera_debug ) );
+      scene_data->camera_position_culling.x = transform_debug->translation.x;
+      scene_data->camera_position_culling.y = transform_debug->translation.y;
+      scene_data->camera_position_culling.z = transform_debug->translation.z;
+      XMStoreFloat4x4A( &scene_data->world_to_view_culling, world_to_view_debug ); 
+      
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 0 ], XMPlaneNormalize( XMVectorAdd( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 0 ] ) ) );
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 1 ], XMPlaneNormalize( XMVectorSubtract( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 0 ] ) ) );
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 2 ], XMPlaneNormalize( XMVectorAdd( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 1 ] ) ) );
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 3 ], XMPlaneNormalize( XMVectorSubtract( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 1 ] ) ) );
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 4 ], XMPlaneNormalize( XMVectorAdd( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 2 ] ) ) );
+      XMStoreFloat4A( &scene_data->camera_frustum_planes_culling[ 5 ], XMPlaneNormalize( XMVectorSubtract( view_to_clip_debug.r[ 3 ], view_to_clip_debug.r[ 2 ] ) ) );
+
       crude_gfx_unmap_buffer( &paprika->graphics.gpu, frame_buffer_map.buffer );
     }
   }
@@ -480,7 +494,19 @@ paprika_draw_imgui_
   ImGui::Begin("viewport");
   paprika_imgui_draw_viewport_( paprika );
   ImGui::End();
+  ImGui::Begin( "debug" );
+  paprika_draw_imgui_debug_( paprika );
+  ImGui::End( );
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
+}
+
+void
+paprika_draw_imgui_debug_
+(
+  _In_ crude_paprika                                      *paprika
+)
+{
+  ImGui::Checkbox( "camera_debug_view", &paprika->debug_camera );
 }
 
 void

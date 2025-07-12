@@ -75,6 +75,42 @@
       },
       {
         "node": {
+          "name": "debug_camera",
+          "components": [
+            {
+              "type": "crude_camera",
+              "fov_radians": 1.0,
+              "near_z": 0.01,
+              "far_z": 1000,
+              "aspect_ratio": 1.3
+            }
+          ],
+          "tags": [
+            "crude_debug_camera"
+          ],
+          "transform": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "children": []
+      },
+      {
+        "node": {
           "name": "model",
           "components": [
             {

@@ -9,11 +9,14 @@ layout(set=1, binding=0, row_major, std140) uniform SceneConstant
 {
   vec3                                                     camera_position;
   float                                                    padding1;
-  vec4                                                     camera_frustum_planes[ 6 ];
   mat4                                                     world_to_view;
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
   mat4                                                     view_to_world;
+  vec4                                                     camera_frustum_planes_culling[ 6 ];
+  vec3                                                     camera_position_culling;
+  float                                                    padding2;
+  mat4                                                     world_to_view_culling;
 };
 
 layout(set=1, binding=1, row_major) uniform MeshConstants

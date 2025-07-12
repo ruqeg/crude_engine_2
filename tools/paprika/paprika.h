@@ -37,6 +37,8 @@ typedef struct crude_paprika
   crude_entity                                             selected_node;
   ImGuizmo::OPERATION                                      gizmo_operation;
   ImGuizmo::MODE                                           gizmo_mode;
+
+  bool                                                     debug_camera;
 } crude_paprika;
 
 CRUDE_API void

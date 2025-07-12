@@ -7,12 +7,14 @@
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
-  XMFLOAT3A                                       camera_position;
-  XMFLOAT4A                                       camera_frustum_planes[ 6 ];
-  XMFLOAT4X4A                                     world_to_view;
-  XMFLOAT4X4A                                     view_to_clip;
-  XMFLOAT4X4A                                     clip_to_view;
-  XMFLOAT4X4A                                     view_to_world;
+  XMFLOAT3A                                                camera_position;
+  XMFLOAT4X4A                                              world_to_view;
+  XMFLOAT4X4A                                              view_to_clip;
+  XMFLOAT4X4A                                              clip_to_view;
+  XMFLOAT4X4A                                              view_to_world;
+  XMFLOAT4A                                                camera_frustum_planes_culling[ 6 ];
+  XMFLOAT3A                                                camera_position_culling;
+  XMFLOAT4X4A                                              world_to_view_culling;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu

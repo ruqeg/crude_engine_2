@@ -19,6 +19,7 @@ typedef struct crude_scene
   crude_entity                                            *nodes;
   crude_entity                                             main_node;
   crude_entity                                             main_camera;
+  crude_entity                                             debug_camera;
   char                                                    *resources_path;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;

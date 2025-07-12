@@ -130,6 +130,10 @@ scene_load_hierarchy_
       {
         scene->main_camera = node;
       }
+      if ( crude_string_cmp( tag, "crude_debug_camera" ) == 0 )
+      {
+        scene->debug_camera = node;
+      }
     }
   
     CRUDE_ARRAY_PUSH( scene->nodes, node );
