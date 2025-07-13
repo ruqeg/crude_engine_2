@@ -17,6 +17,7 @@ parse_gpu_pipeline_
   _In_ crude_gfx_pipeline_creation                        *pipeline_creation,
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_string_buffer                                *path_buffer,
+  _In_ crude_string_buffer                                *shader_code_buffer,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
@@ -102,7 +103,7 @@ crude_gfx_renderer_technique_load_from_file
 
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline_( pipeline, &pipeline_creation, renderer->gpu, &path_buffer, render_graph, temporary_allocator );
+      parse_gpu_pipeline_( pipeline, &pipeline_creation, renderer->gpu, &path_buffer, &shader_code_buffer, render_graph, temporary_allocator );
       technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
     }
   }
@@ -127,6 +128,7 @@ parse_gpu_pipeline_
   _In_ crude_gfx_pipeline_creation                        *pipeline_creation,
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_string_buffer                                *path_buffer,
+  _In_ crude_string_buffer                                *shader_code_buffer,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
@@ -145,31 +147,51 @@ parse_gpu_pipeline_
 
       uint32 code_size;
       char *code;
-      const char *shader_filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "shader" ) );
-      const char *shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s%s", working_directory, "\\..\\..\\shaders\\", shader_filename );
+      char *current_code = crude_string_buffer_current( shader_code_buffer );
+      const char *shader_filename;
+      const char *shader_path;
+      uint32 total_code_size = 0u;
+
+      cJSON const *includes = cJSON_GetObjectItemCaseSensitive( shader_stage_json, "includes" );
+      if ( cJSON_IsArray( includes ) )
+      {
+        for ( size_t include_index = 0; include_index < cJSON_GetArraySize( includes ); ++include_index )
+        {
+          // !TODO optimize and free code and move to sep fun
+          shader_filename = cJSON_GetStringValue( cJSON_GetArrayItem( includes, include_index ) );
+          shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s%s", working_directory, "\\..\\..\\shaders\\", shader_filename );
+          crude_read_file( shader_path, crude_stack_allocator_pack( temporary_allocator ), CRUDE_REINTERPRET_CAST( uint8**, &code ), &code_size );
+          crude_string_buffer_append_m( shader_code_buffer, code, code_size );
+          total_code_size += code_size;
+        }
+      }
+      
+      shader_filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "shader" ) );
+      shader_path = crude_string_buffer_append_use_f( path_buffer, "%s%s%s", working_directory, "\\..\\..\\shaders\\", shader_filename );
       crude_read_file( shader_path, crude_stack_allocator_pack( temporary_allocator ), CRUDE_REINTERPRET_CAST( uint8**, &code ), &code_size );
-      
-      char const *name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
-      
-      if ( strcmp( name, "vertex" ) == 0 )
+      total_code_size += code_size;
+      crude_string_buffer_append_m( shader_code_buffer, code, code_size );
+
+      char const *stage = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
+      if ( strcmp( stage, "vertex" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_VERTEX_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_VERTEX_BIT );
       }
-      else if ( strcmp( name, "fragment" ) == 0 )
+      else if ( strcmp( stage, "fragment" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_FRAGMENT_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_FRAGMENT_BIT );
       }
-      else if ( strcmp( name, "compute" ) == 0 )
+      else if ( strcmp( stage, "compute" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_COMPUTE_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_COMPUTE_BIT );
       }
-      else if ( strcmp( name, "mesh" ) == 0 )
+      else if ( strcmp( stage, "mesh" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_MESH_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_MESH_BIT_EXT );
       }
-      else if ( strcmp( name, "task" ) == 0 )
+      else if ( strcmp( stage, "task" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, code, crude_string_length( code ), VK_SHADER_STAGE_TASK_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_TASK_BIT_EXT );
       }
     }
   }

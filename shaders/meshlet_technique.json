@@ -20,15 +20,31 @@
 			"shaders" : [
 				{
 					"stage" : "mesh",
-					"shader" : "meshlet.mesh"
+					"shader" : "meshlet.mesh",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/meshlet.glsli",
+						"crude/scene.glsli"
+					]
 				},
 				{
 					"stage" : "task",
-					"shader" : "meshlet.task"
+					"shader" : "meshlet.task",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/culling.glsli",
+						"crude/meshlet.glsli",
+						"crude/scene.glsli"
+					]
 				},
 				{
 					"stage" : "fragment",
-					"shader" : "meshlet.frag"
+					"shader" : "meshlet.frag",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/meshlet.glsli",
+						"crude/scene.glsli"
+					]
 				}
 			]
 		}

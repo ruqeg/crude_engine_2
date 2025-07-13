@@ -1,0 +1,16 @@
+/*
+ * Header file
+ */
+#define CRUDE_GLOBAL_SET 0
+#define CRUDE_MATERIAL_SET 1
+
+#define CRUDE_BINDLESS_BINDING 10
+#define CRUDE_BINDLESS_IMAGES 11
+
+#define PI 3.1415926538
+
+#extension GL_EXT_nonuniform_qualifier : enable
+
+/* Read only */
+layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];
+layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler3D global_textures_3d[];

@@ -98,10 +98,11 @@ crude_process_execute
   
   /* Consume all outputs.
    * Terminate current read and initialize the next. */
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_SYSTEM, "proc called: %s%s", process_fullpath, (char*)arguments );
   while ( ok == TRUE )
   {
     k_process_output_buffer[bytes_read] = 0;
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", k_process_output_buffer );
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "proc output: %s", k_process_output_buffer );
     
     ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
   }

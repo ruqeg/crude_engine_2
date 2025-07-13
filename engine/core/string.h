@@ -38,6 +38,14 @@ crude_string_buffer_append_use_f
 );
 
 CRUDE_API void
+crude_string_buffer_append_m
+(
+  _In_ crude_string_buffer                                *string_buffer,
+  _In_ void const                                         *memory,
+  _In_ uint32                                              size
+);
+
+CRUDE_API void
 crude_string_buffer_clear
 (
   _In_ crude_string_buffer                                *string_buffer

@@ -1,93 +1,35 @@
-#version 460
-#extension GL_EXT_mesh_shader : require
-#extension GL_ARB_shader_draw_parameters : require
-#extension GL_EXT_shader_16bit_storage: require
-#extension GL_EXT_shader_8bit_storage: require
+
+#ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive: require
+#include "crude/platform.glsli"
+#include "crude/scene.glsli"
+#include "crude/meshlet.glsli"
+#include "crude/culling.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+#extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
 
 layout(local_size_x=32) in;
 
-struct crude_meshlet
+layout(set=0, binding=10) uniform sampler2D global_textures[];
+
+layout(set=1, binding=7) readonly buffer VisibleMeshCount
 {
-  vec3                                                     center;
-  float                                                    radius;
-  int8_t                                                   cone_axis[ 3 ];
-  int8_t                                                   cone_cutoff;
-  uint                                                     vertices_offset;
-  uint                                                     triangles_offset;
-  uint8_t                                                  vertices_count;
-  uint8_t                                                  triangles_count;
-  uint                                                     mesh_index;
-};
+  uint opaque_mesh_visible_count;
+  uint opaque_mesh_culled_count;
+  uint transparent_mesh_visible_count;
+  uint transparent_mesh_culled_count;
 
-struct crude_vertex
-{
-  vec3                                                     position;
-  float                                                    padding1;
-  uint8_t                                                  nx, ny, nz, nw;
-  uint8_t                                                  tx, ty, tz, tw;
-  float16_t                                                tu, tv;
-  float                                                    padding2;
-};
+  uint total_count;
+  uint depth_pyramid_texture_index;
+  uint occlusion_culling_late_flag;
+  uint meshlet_index_count;
 
-struct crude_mesh_draw
-{
-  mat4                                                     model_to_world;
-
-  uvec4                                                    textures;
-  vec4                                                     emissive;
-  vec4                                                     albedo_color_factor;
-  vec4                                                     metallic_roughness_occlusion_factor;
-
-  uint                                                     flags;
-  float                                                    alpha_cutoff;
-  uint                                                     vertices_offset;
-  uint                                                     mesh_index;
-
-  uint                                                     meshletes_offset;
-  uint                                                     meshletes_count;
-  uint                                                     meshletes_index_count;
-  uint                                                     padding1;
-};
-
-layout(set=1, binding=0, row_major, std140) uniform SceneConstant
-{
-  vec3                                                     camera_position;
-  float                                                    padding1;
-  mat4                                                     world_to_view;
-  mat4                                                     view_to_clip;
-  mat4                                                     clip_to_view;
-  mat4                                                     view_to_world;
-  vec4                                                     camera_frustum_planes_culling[ 6 ];
-  vec3                                                     camera_position_culling;
-  float                                                    padding2;
-  mat4                                                     world_to_view_culling;
-};
-
-layout(set=1, binding=1) readonly buffer Meshlets
-{
-  crude_meshlet                                            meshlets[];
-};
-
-layout(set=1, binding=2) readonly buffer Vertices
-{
-  crude_vertex                                             vertices[];
-};
-
-layout(set=1, binding=3) readonly buffer TrianglesIndices
-{
-  uint8_t                                                  triangles_indices[];
-};
-
-layout(set=1, binding=4) readonly buffer VerticesIndices
-{
-  uint                                                     vertices_indices[];
-};
-
-layout(set=1, binding=5, row_major, std430) readonly buffer MeshDraws
-{
-  crude_mesh_draw                                          mesh_draws[];
+  uint dispatch_task_x;
+  uint dispatch_task_y;
+  uint dispatch_task_z;
+  uint meshlet_instances_count;
 };
 
 taskPayloadSharedEXT struct
@@ -95,11 +37,6 @@ taskPayloadSharedEXT struct
   uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
 } shared_data;
-
-bool cone_cull(vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_pos )
-{
-  return dot( center - camera_pos, cone_axis ) >= cone_cutoff * length( center - camera_pos ) + radius;
-}
 
 void main()
 {
@@ -114,7 +51,7 @@ void main()
 
   mat4 model_to_world = mesh_draws[ gl_DrawIDARB ].model_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
-  float scale = 0.01;//length( model_to_world[ 0 ] );
+  float scale = length( model_to_world[ 0 ] );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
   vec3 cone_axis = vec3(
     int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
@@ -124,17 +61,32 @@ void main()
   
   bool accept = false;
 
-  accept = !cone_cull( world_center.xyz, radius, cone_axis, cone_cutoff, camera_position_culling );
+  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, crude_camera_debug_culling() ? camera_debug.position : camera.position );
   
-  vec4 view_center = world_center * world_to_view_culling;
+  vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
 
   bool frustum_visible = true;
   for ( uint i = 0; i < 6; ++i )
   {
-    frustum_visible = frustum_visible && ( dot( camera_frustum_planes_culling[ i ], view_center ) > -radius );
+    frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
   }
   accept = accept && frustum_visible;
   
+  bool occlusion_visible = false;
+  if ( frustum_visible )
+  {
+    mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+    occlusion_visible = crude_occlusion_culling(
+      view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index, world_center.xyz,
+      crude_camera_debug_culling() ? camera_debug.position : camera.position,
+      world_to_clip_culling
+    );
+  }
+  accept = accept && occlusion_visible;
+
   uvec4 ballot = subgroupBallot( accept );
   
   uint previous_visible_meshlet_index = subgroupBallotExclusiveBitCount( ballot );

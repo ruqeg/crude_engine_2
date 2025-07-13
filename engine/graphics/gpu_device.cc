@@ -162,14 +162,6 @@ vk_destroy_resources_instant_
   _In_ crude_gfx_resource_index                            handle
 );
 
-void dump_shader_code_
-(
-  _In_ char const                                         *code,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name,
-  _In_ crude_string_buffer                                *temporary_string_buffer
-);
-
 VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
@@ -505,7 +497,7 @@ crude_gfx_present
       descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       descriptor_write->dstSet = bindless_descriptor_set->vk_descriptor_set;
       descriptor_write->dstBinding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING;
-
+      
       descriptor_image_info = &bindless_image_info[ current_write_index ];    
       if ( texture->sampler )
       {
@@ -517,6 +509,9 @@ crude_gfx_present
         descriptor_image_info->sampler = default_sampler->vk_sampler;
       }
       
+      if ( texture_to_update->type == CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE )
+      {
+      }
       CRUDE_ASSERT( texture->vk_format != VK_FORMAT_UNDEFINED );
       descriptor_image_info->imageView = texture->vk_image_view;
       descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -856,7 +851,7 @@ crude_gfx_compile_shader
   VkShaderModuleCreateInfo                                 shader_create_info;
   crude_string_buffer                                      temporary_string_buffer;
   char const                                              *temp_filename;
-  char                                                    *stage_define, *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
+  char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
   uint8                                                   *spirv_code;
   uint32                                                   spirv_codesize;
   
@@ -868,15 +863,6 @@ crude_gfx_compile_shader
   
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
   
-  stage_define = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s_%s", crude_gfx_vk_shader_stage_to_defines( stage ), name );
-  {
-    sizet stage_define_length = strlen( stage_define );
-    for ( size_t i = 0; i < stage_define_length; ++i )
-    {
-      stage_define[ i ] = toupper( stage_define[ i ] );
-    }
-  }
-
   {
     char vulkan_env[ 512 ];
     crude_process_expand_environment_strings( "%VULKAN_SDK%", vulkan_env, 512 );
@@ -886,7 +872,7 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), stage_define, crude_gfx_vk_shader_stage_to_defines( stage ) );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ) );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
   
@@ -908,7 +894,7 @@ crude_gfx_compile_shader
 
   if ( !spirv_code )
   {
-    dump_shader_code_( code, stage, name, &temporary_string_buffer );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_vk_shader_stage_to_defines( stage ) );
   }
   
   crude_file_delete( temp_filename );
@@ -3614,46 +3600,5 @@ vk_destroy_resources_instant_
       crude_gfx_destroy_framebuffer_instant( gpu, CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { handle } ) );
       break;
     }
-  }
-}
-
-void dump_shader_code_
-(
-  _In_ char const                                         *code,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name,
-  _In_ crude_string_buffer                                *temporary_string_buffer
-)
-{
-  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_vk_shader_stage_to_defines( stage ) );
-  
-  char const * current_code = code;
-  uint32 line_index = 1;
-  while ( current_code )
-  {
-    char const *end_of_line = current_code;
-    if ( !end_of_line || *end_of_line == 0 )
-    {
-      break;
-    }
-    while ( ( *end_of_line != '\n' ) && ( *end_of_line != '\r' ) )
-    {
-      ++end_of_line;
-    }
-    if ( *end_of_line == '\r' )
-    {
-      ++end_of_line;
-    }
-    if ( *end_of_line == '\n' )
-    {
-        ++end_of_line;
-    }
-    
-    crude_string_buffer_clear( temporary_string_buffer );
-    
-    char *line = crude_string_buffer_append_use_f( temporary_string_buffer, current_code, 0, ( end_of_line - current_code ) );
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u: %s", line_index++, line );
-    
-    current_code = end_of_line;
   }
 }

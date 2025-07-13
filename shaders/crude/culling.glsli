@@ -1,0 +1,77 @@
+
+#ifndef CRUDE_CULLING_GLSL
+#define CRUDE_CULLING_GLSL
+
+bool crude_clustered_backface_culling( vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_pos )
+{
+  return dot( center - camera_pos, cone_axis ) >= cone_cutoff * length( center - camera_pos ) + radius;
+}
+
+/* 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013 */
+bool crude_bounding_sphere_to_clipped_aabb( vec3 c, float r, float znear, float p00, float p11, out vec4 aabb )
+{
+  if ( c.z - r < znear )
+  {
+    return false;
+  }
+
+  vec2 cx = vec2( c.x, c.z );
+  vec2 vx = vec2( sqrt( dot( cx, cx ) - r * r ), r );
+  vec2 minx = mat2( vx.x, vx.y, -vx.y, vx.x ) * cx;
+  vec2 maxx = mat2( vx.x, -vx.y, vx.y, vx.x ) * cx;
+
+  vec2 cy = vec2( -c.y, c.z );
+  vec2 vy = vec2( sqrt( dot( cy, cy ) - r * r ), r );
+  vec2 miny = mat2( vy.x, vy.y, -vy.y, vy.x ) * cy;
+  vec2 maxy = mat2( vy.x, -vy.y, vy.y, vy.x ) * cy;
+
+  aabb = vec4( minx.x / minx.y * p00, miny.x / miny.y * p11, maxx.x / maxx.y * p00, maxy.x / maxy.y * p11 );
+
+  return true;
+}
+
+vec4 crude_clip_to_uv_space( vec4 v )
+{
+  return v.xwzy * vec4( 0.5f, -0.5f, 0.5f, -0.5f ) + vec4( 0.5f );
+}
+
+/*
+ * Occlusion Culling
+ * TODO:
+ *  Continue testing using using a finer mip level if result are ambiguous
+ */
+bool crude_occlusion_culling( vec3 view_bounding_center, float radius, float znear, float projection_00, float projection_11, uint depth_pyramid_texture_index, vec3 world_bounding_center, vec3 camera_world_position, mat4 culling_view_projection )
+{
+  vec4 aabb;
+  bool occlusion_visible = true;
+  if ( crude_bounding_sphere_to_clipped_aabb( view_bounding_center, radius, znear, projection_00, projection_11, aabb ) )
+  {
+    aabb = crude_clip_to_uv_space( aabb );
+
+    ivec2 depth_pyramid_size = textureSize( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], 0 );
+    float width = ( aabb.z - aabb.x ) * depth_pyramid_size.x;
+    float height = ( aabb.w - aabb.y ) * depth_pyramid_size.y;
+
+    float level = floor( log2( max( width, height ) ) );
+
+    vec2 uv = ( aabb.xy + aabb.zw ) * 0.5;
+    uv.y = 1 - uv.y;
+
+    float depth = textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], uv, level ).r;
+    depth = max( depth, textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.x, 1.0f - aabb.y ), level ).r );
+    depth = max( depth, textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.z, 1.0f - aabb.w ), level ).r );
+    depth = max( depth, textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.x, 1.0f - aabb.w ), level ).r );
+    depth = max( depth, textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.z, 1.0f - aabb.y ), level ).r );
+
+    vec3 dir = normalize( camera_world_position - world_bounding_center );
+    vec4 sceen_space_center_last = vec4( world_bounding_center + dir * radius, 1.0 ) * culling_view_projection;
+
+    float depth_sphere = sceen_space_center_last.z / sceen_space_center_last.w;
+
+    occlusion_visible = ( depth_sphere <= depth );
+  }
+
+  return occlusion_visible;
+}
+
+#endif /* CRUDE_CULLING_GLSL */

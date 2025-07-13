@@ -247,8 +247,8 @@ paprika_graphics_initialize_
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\main_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\resources\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\main_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
 
   /* Create Scene Renderer */
   {
@@ -436,6 +436,18 @@ paprika_update_system_
       {
         SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), paprika->wrapwnd.x, paprika->wrapwnd.y );
       }
+    }
+    if ( input->keys[ 'z' ].pressed )
+    {
+      paprika->gizmo_operation = ImGuizmo::TRANSLATE;
+    }
+    if ( input->keys[ 'x' ].pressed )
+    {
+      paprika->gizmo_operation = ImGuizmo::ROTATE;
+    }
+    if ( input->keys[ 'c' ].pressed )
+    {
+      paprika->gizmo_operation = ImGuizmo::SCALE;
     }
   }
 }
@@ -657,18 +669,6 @@ paprika_imgui_draw_viewport_
   }
 
   ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
-  {
-    paprika->gizmo_operation = ImGuizmo::TRANSLATE;
-  }
-  if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
-  {
-    paprika->gizmo_operation = ImGuizmo::ROTATE;
-  }
-  if (ImGui::IsKeyPressed(ImGuiKey_C))
-  {
-    paprika->gizmo_operation = ImGuizmo::SCALE;
-  }
   if ( ImGui::RadioButton( "translate", paprika->gizmo_operation == ImGuizmo::TRANSLATE ) )
   {
     paprika->gizmo_operation = ImGuizmo::TRANSLATE;

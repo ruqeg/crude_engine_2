@@ -20,11 +20,18 @@
       "shaders": [
         {
           "stage": "vertex",
-          "shader": "main.vert"
+          "shader": "mesh.vert",
+					"includes": [
+						"crude/platform.glsli"
+					]
         },
         {
           "stage": "fragment",
-          "shader": "main.frag"
+          "shader": "mesh.frag",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/scene.glsli"
+					]
         }
       ]
     }
