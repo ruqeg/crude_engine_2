@@ -22,7 +22,8 @@
           "stage": "vertex",
           "shader": "mesh.vert",
 					"includes": [
-						"crude/platform.glsli"
+						"crude/platform.glsli",
+						"crude/scene.glsli"
 					]
         },
         {

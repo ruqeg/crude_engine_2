@@ -114,6 +114,7 @@ scene_load_hierarchy_
           .moving_speed_multiplier   = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) ),
           .rotating_speed_multiplier = json_object_to_float2_( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) ),
           .entity_input              = scene->input_entity,
+          .enabled                   = false
         } );
       }
     }

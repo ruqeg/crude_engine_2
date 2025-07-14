@@ -20,6 +20,11 @@ crude_free_camera_update_system
   CRUDE_PROFILER_ZONE_NAME( "UpdateFreeCameras" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    if ( !free_cameras[ i ].enabled )
+    {
+      continue;
+    }
+
     crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].entity_input, crude_input );
 
     int32 moving_forward = input->keys[ 'w' ].current - input->keys[ 's' ].current;

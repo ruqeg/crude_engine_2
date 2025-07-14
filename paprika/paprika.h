@@ -38,7 +38,8 @@ typedef struct crude_paprika
   ImGuizmo::OPERATION                                      gizmo_operation;
   ImGuizmo::MODE                                           gizmo_mode;
 
-  bool                                                     debug_camera;
+  bool                                                     debug_camera_culling;
+  bool                                                     debug_camera_view;
 } crude_paprika;
 
 CRUDE_API void

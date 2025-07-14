@@ -31,24 +31,22 @@ struct crude_vertex
   float                                                    padding2;
 };
 
-layout(set=0, binding=10) uniform sampler2D global_textures[];
-
-layout(set=1, binding=1) readonly buffer Meshlets
+layout(set=CRUDE_MATERIAL_SET, binding=1) readonly buffer Meshlets
 {
   crude_meshlet                                            meshlets[];
 };
 
-layout(set=1, binding=2) readonly buffer Vertices
+layout(set=CRUDE_MATERIAL_SET, binding=2) readonly buffer Vertices
 {
   crude_vertex                                             vertices[];
 };
 
-layout(set=1, binding=3) readonly buffer TrianglesIndices
+layout(set=CRUDE_MATERIAL_SET, binding=3) readonly buffer TrianglesIndices
 {
   uint8_t                                                  triangles_indices[];
 };
 
-layout(set=1, binding=4) readonly buffer VerticesIndices
+layout(set=CRUDE_MATERIAL_SET, binding=4) readonly buffer VerticesIndices
 {
   uint                                                     vertices_indices[];
 };

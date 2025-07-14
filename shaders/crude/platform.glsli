@@ -1,6 +1,7 @@
-/*
- * Header file
- */
+
+#ifndef CRUDE_PLATFORM_GLSL
+#define CRUDE_PLATFORM_GLSL
+
 #define CRUDE_GLOBAL_SET 0
 #define CRUDE_MATERIAL_SET 1
 
@@ -14,3 +15,5 @@
 /* Read only */
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler3D global_textures_3d[];
+
+#endif /* CRUDE_PLATFORM_GLSL */

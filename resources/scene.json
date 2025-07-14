@@ -83,6 +83,18 @@
               "near_z": 0.01,
               "far_z": 1000,
               "aspect_ratio": 1.3
+            },
+            {
+              "type": "crude_free_camera",
+              "moving_speed_multiplier": [
+                7.0,
+                7.0,
+                7.0
+              ],
+              "rotating_speed_multiplier": [
+                -0.25,
+                -0.25
+              ]
             }
           ],
           "tags": [

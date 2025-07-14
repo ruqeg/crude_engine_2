@@ -37,23 +37,28 @@ struct crude_camera
   vec2                                                     padding2;
 };
 
-layout(set=1, binding=0, row_major, std140) uniform CrudeSceneConstant
+layout(set=CRUDE_MATERIAL_SET, binding=0, row_major, std140) uniform CrudeSceneConstant
 {
   crude_camera                                             camera;
   crude_camera                                             camera_debug;
   crude_camera                                             camera_previous;
   crude_camera                                             camera_debug_previous;
-  uint                                                     culling_options;
+  uint                                                     scene_flags;
 };
 
-layout(set=1, binding=5, row_major, std430) readonly buffer CrudeMeshDraws
+layout(set=CRUDE_MATERIAL_SET, binding=5, row_major, std430) readonly buffer CrudeMeshDraws
 {
   crude_mesh_draw                                          mesh_draws[];
 };
 
 bool crude_camera_debug_culling()
 {
-  return ( culling_options & 1 ) == 1;
+  return ( scene_flags & 1 ) == 1;
+}
+
+bool crude_camera_debug_view()
+{
+  return ( scene_flags & 2 ) == 2;
 }
 
 #endif /* CRUDE_SCENE_GLSL */

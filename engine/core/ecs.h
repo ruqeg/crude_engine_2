@@ -121,7 +121,7 @@ crude_entity_get_name
 
 #define CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, component )\
 (\
-  ( component* )( ecs_get_mut( entity.world, entity.handle, component ) )\
+  ( component* )( ecs_get_mut( ( entity ).world, ( entity ).handle, component ) )\
 )
 
 #define CRUDE_ENTITY_HAS_COMPONENT( entity, component )\

@@ -1,20 +1,32 @@
 #pragma once
 
 #include <core/ecs.h>
+#include <scene/scene_components.h>
 #include <graphics/renderer_resources.h>
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu
+{
+  XMFLOAT4X4A                                                     world_to_clip;
+  XMFLOAT4X4A                                                     world_to_view;
+  XMFLOAT4X4A                                                     view_to_clip;
+  XMFLOAT4X4A                                                     clip_to_view;
+  XMFLOAT4X4A                                                     view_to_world;
+  XMFLOAT4A                                                       frustum_planes_culling[ 6 ];
+  XMFLOAT3A                                                       position;
+  float32                                                         znear;
+  float32                                                         zfar;
+  XMFLOAT2                                                        padding;
+} crude_gfx_camera_gpu;
+
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
-  XMFLOAT3A                                                camera_position;
-  XMFLOAT4X4A                                              world_to_view;
-  XMFLOAT4X4A                                              view_to_clip;
-  XMFLOAT4X4A                                              clip_to_view;
-  XMFLOAT4X4A                                              view_to_world;
-  XMFLOAT4A                                                camera_frustum_planes_culling[ 6 ];
-  XMFLOAT3A                                                camera_position_culling;
-  XMFLOAT4X4A                                              world_to_view_culling;
+  crude_gfx_camera_gpu                                     camera;
+  crude_gfx_camera_gpu                                     camera_debug;
+  crude_gfx_camera_gpu                                     camera_previous;
+  crude_gfx_camera_gpu                                     camera_debug_previous;
+  uint32                                                   flags;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
@@ -126,4 +138,18 @@ CRUDE_API bool
 crude_gfx_mesh_is_transparent
 (
   _In_ crude_gfx_mesh_cpu                                 *mesh
+);
+
+CRUDE_API void
+crude_gfx_camera_to_camera_gpu
+(
+  _In_ crude_entity                                        camera_node,
+  _Out_ crude_gfx_camera_gpu                              *camera_gpu
+);
+
+CRUDE_API void
+crude_gfx_mesh_cpu_to_mesh_material_gpu
+(
+  _In_ crude_gfx_mesh_cpu const                           *mesh,
+  _Out_ crude_gfx_mesh_material_gpu                       *mesh_material_gpu
 );

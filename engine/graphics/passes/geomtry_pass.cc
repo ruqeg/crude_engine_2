@@ -19,13 +19,6 @@ typedef struct secondary_draw_task_container
   uint32                                                   thread_id;
 } secondary_draw_task_container;
 
-static void
-copy_mesh_material_gpu_
-(
-  _In_ crude_gfx_mesh_cpu const                           *mesh,
-  _Out_ crude_gfx_mesh_material_gpu                       *gpu_mesh_material
-);
-
 static bool
 mesh_cpu_valid_
 (
@@ -245,7 +238,7 @@ geometry_pass_render_meshlets_
       mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountY = 1;
       mesh_draw_commands[ visible_meshlet_index ].indirect_meshlet.groupCountZ = 1;
 
-      copy_mesh_material_gpu_( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ i ] );
+      crude_gfx_mesh_cpu_to_mesh_material_gpu( pass->scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ i ] );
 
       ++visible_meshlet_index;
     }
@@ -386,25 +379,4 @@ mesh_cpu_valid_
     && mesh_cpu_texture_valid_( gpu, mesh->roughness_texture_index ) 
     && mesh_cpu_texture_valid_( gpu, mesh->normal_texture_index ) 
     && mesh_cpu_texture_valid_( gpu, mesh->occlusion_texture_index );
-}
-
-void
-copy_mesh_material_gpu_
-(
-  _In_ crude_gfx_mesh_cpu const                           *mesh,
-  _Out_ crude_gfx_mesh_material_gpu                       *gpu_mesh_material
-)
-{
-  crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh->node, crude_transform );
-  XMMATRIX model_to_world = crude_transform_node_to_world( mesh->node, transform );
-  XMStoreFloat4x4( &gpu_mesh_material->model_to_world, model_to_world ); 
-  gpu_mesh_material->textures.x = mesh->albedo_texture_index;
-  gpu_mesh_material->textures.y = mesh->roughness_texture_index;
-  gpu_mesh_material->textures.z = mesh->normal_texture_index;
-  gpu_mesh_material->textures.w = mesh->occlusion_texture_index;
-  gpu_mesh_material->albedo_color_factor = mesh->albedo_color_factor;
-  gpu_mesh_material->flags = mesh->flags;
-  gpu_mesh_material->mesh_index = mesh->gpu_mesh_index;
-  gpu_mesh_material->meshletes_count = mesh->meshlets_count;
-  gpu_mesh_material->meshletes_offset = mesh->meshlets_offset;
 }
