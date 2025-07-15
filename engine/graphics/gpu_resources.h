@@ -235,6 +235,13 @@ typedef enum crude_gfx_draw_flags
   CRUDE_GFX_DRAW_FLAGS_TRANSPARENT_MASK = 2 << 0,
 } crude_gfx_draw_flags;
 
+typedef enum crude_gfx_pipeline_type
+{
+  CRUDE_GFX_PIPELINE_TYPE_GRAPHICS,
+  CRUDE_GFX_PIPELINE_TYPE_COMPUTE,
+  CRUDE_GFX_PIPELINE_TYPE_COUNT
+} crude_gfx_pipeline_type;
+
 /************************************************
  *
  * GPU Resoruces Structs
@@ -609,7 +616,7 @@ typedef struct crude_gfx_shader_state
   VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GFX_MAX_SHADER_STAGES ];
   const char                                              *name;
   uint32                                                   active_shaders;
-  bool                                                     graphics_pipeline;
+  crude_gfx_pipeline_type                                  pipeline_type;
   crude_gfx_shader_reflect                                 reflect;
 } crude_gfx_shader_state;
 

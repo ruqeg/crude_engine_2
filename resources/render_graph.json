@@ -31,6 +31,23 @@
       "inputs": [
         {
           "type": "texture",
+          "name": "depth"
+        }
+      ],
+      "type": "compute",
+      "outputs": [
+        {
+          "type": "texture",
+          "name": "depth_pyramid",
+          "external": true
+        }
+      ],
+      "name": "depth_pyramid_pass"
+    },
+    {
+      "inputs": [
+        {
+          "type": "texture",
           "name": "albedo"
         }
       ],

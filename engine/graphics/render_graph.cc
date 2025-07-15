@@ -158,8 +158,11 @@ crude_gfx_render_graph_parse_from_file
 
       switch ( output_creation.type )
       {
-        case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT:
         case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE:
+        {
+          break;
+        }
+        case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT:
         {
           cJSON const                                     *output_format;
           cJSON const                                     *output_load_op;

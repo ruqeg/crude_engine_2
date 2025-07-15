@@ -193,6 +193,10 @@ parse_gpu_pipeline_
       {
         crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_TASK_BIT_EXT );
       }
+      else if ( strcmp( stage, "compute" ) == 0 )
+      {
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_COMPUTE_BIT );
+      }
     }
   }
   
