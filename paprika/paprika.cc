@@ -255,7 +255,7 @@ paprika_graphics_initialize_
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\mesh_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\compute_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
 
   /* Create Scene Renderer */
   {
@@ -640,24 +640,24 @@ paprika_imgui_draw_viewport_
   crude_entity                                             selected_node_parent;
   XMVECTOR                                                 new_translation, new_rotation, new_scale;
   ImVec2                                                   viewport_size;
-  uint32                                                   viewport_bindless_texture;
 
   ImGuizmo::SetDrawlist( );
   ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
 
   viewport_size = ImGui::GetContentRegionAvail();
   
-  viewport_bindless_texture = 0u;
+  paprika->viewport_bindless_texture = 0u;
   for ( uint32 i = 0; i < paprika->graphics.gpu.textures.pool_size; ++i )
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_texture_handle{ i } );
     if ( texture->name && crude_string_cmp( texture->name, "albedo" ) == 0 )
     {
-      viewport_bindless_texture = i;
+      paprika->viewport_bindless_texture = i;
+      break;
     }
   }
 
-  ImGui::Image( CRUDE_CAST( ImTextureRef, &viewport_bindless_texture ), viewport_size );
+  ImGui::Image( CRUDE_CAST( ImTextureRef, &paprika->viewport_bindless_texture ), viewport_size );
 
   camera_node = paprika->debug_camera_view ? paprika->scene.debug_camera : paprika->scene.main_camera;
   camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_camera );

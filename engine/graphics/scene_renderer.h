@@ -4,6 +4,7 @@
 #include <graphics/scene_renderer_resources.h>
 #include <graphics/passes/imgui_pass.h>
 #include <graphics/passes/geometry_pass.h>
+#include <graphics/passes/depth_pyramid_pass.h>
 
 typedef struct crude_gfx_scene_renderer_creation
 {
@@ -54,6 +55,7 @@ typedef struct crude_gfx_scene_renderer
 
   crude_gfx_geometry_pass                                  geometry_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
+  crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
 
   bool                                                     use_meshlets;
 } crude_gfx_scene_renderer;

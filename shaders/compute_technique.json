@@ -1,5 +1,5 @@
 {
-	"name": "fullscreen",
+	"name": "compute",
 	"pipelines": [
 	  {
 		"name": "depth_pyramid",

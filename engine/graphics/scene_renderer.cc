@@ -290,6 +290,7 @@ crude_gfx_scene_renderer_register_passes
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "geometry_pass", crude_gfx_geometry_pass_pack( &scene_renderer->geometry_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
 }
 
 

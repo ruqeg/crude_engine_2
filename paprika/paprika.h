@@ -33,6 +33,8 @@ typedef struct crude_paprika
   bool                                                     working;
   crude_mouse_input                                        wrapwnd;
   
+  uint32                                                   viewport_bindless_texture;
+
   uint32                                                   selected_node_index;
   crude_entity                                             selected_node;
   ImGuizmo::OPERATION                                      gizmo_operation;

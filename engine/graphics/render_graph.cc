@@ -114,6 +114,7 @@ crude_gfx_render_graph_parse_from_file
     cJSON const                                           *pass_output;
     cJSON const                                           *pass_name;
     cJSON const                                           *pass_enabled;
+    cJSON const                                           *pass_pipeline_type;
 
     pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
@@ -191,12 +192,23 @@ crude_gfx_render_graph_parse_from_file
       CRUDE_ARRAY_PUSH( node_creation.outputs, output_creation );
     }
     pass_name = cJSON_GetObjectItemCaseSensitive( pass, "name" );
-    pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
     CRUDE_ASSERT( pass_name );
+
+    pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
+    pass_pipeline_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
 
     node_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( pass_name ) );
     node_creation.enabled = pass_enabled ? cJSON_GetNumberValue( pass_enabled ) : 1;
     
+    node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS;
+    if ( pass_pipeline_type )
+    {
+      if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "compute" ) == 0 )
+      {
+        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE;
+      }
+    }
+
     crude_gfx_render_graph_node_handle node_handle = crude_gfx_render_graph_builder_create_node( render_graph->builder, &node_creation );
     CRUDE_ARRAY_PUSH( render_graph->nodes, node_handle );
   }
@@ -407,9 +419,9 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.mipmaps = 1;
             output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
-            output_resource_info->texture.texture = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
+            output_resource_info->texture.handle = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
           }
-          
+
           CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s allocated on node %d\n", output_resource->name, render_graph->nodes[ node_index ].index  );
         }
       }
@@ -434,7 +446,7 @@ crude_gfx_render_graph_compile
           
           if ( input_resource_output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT || input_resource_output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
           {
-            CRUDE_ARRAY_PUSH( free_list, input_resource_output_resource->resource_info.texture.texture );
+            CRUDE_ARRAY_PUSH( free_list, input_resource_output_resource->resource_info.texture.handle );
           }
           
           CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Output %s deallocated on node\n", input_resource_output_resource->name, render_graph->nodes[ node_index ].index );
@@ -553,11 +565,11 @@ crude_gfx_render_graph_compile
 
         if ( output_resource_info->texture.format == VK_FORMAT_D32_SFLOAT )
         {
-          framebuffer_creation.depth_stencil_texture = output_resource_info->texture.texture;
+          framebuffer_creation.depth_stencil_texture = output_resource_info->texture.handle;
         }
         else
         {
-          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = output_resource_info->texture.texture;
+          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = output_resource_info->texture.handle;
         }
       }
 
@@ -573,7 +585,7 @@ crude_gfx_render_graph_compile
         crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, input_resource->name );
         crude_gfx_render_graph_resource_info *info = &resource->resource_info;
 
-        input_resource->resource_info.texture.texture = info->texture.texture;
+        input_resource->resource_info.texture.handle = info->texture.handle;
 
         if ( width == 0 )
         {
@@ -600,11 +612,11 @@ crude_gfx_render_graph_compile
 
         if ( info->texture.format == VK_FORMAT_D32_SFLOAT )
         {
-          framebuffer_creation.depth_stencil_texture = info->texture.texture;
+          framebuffer_creation.depth_stencil_texture = info->texture.handle;
         }
         else
         {
-          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = info->texture.texture;
+          framebuffer_creation.output_textures[ framebuffer_creation.num_render_targets++ ] = info->texture.handle;
         }
       }
       
@@ -627,85 +639,122 @@ crude_gfx_render_graph_render
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
     crude_gfx_render_graph_node                           *node;
-    uint32                                                 width, height;
 
     node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
+    
     if ( !node->enabled )
     {
       continue;
     }
-
-    // TODO add clear to json
-    crude_gfx_cmd_set_clear_color( gpu_commands, 0, CRUDE_COMPOUNT( VkClearValue, { .color = { 0.3f, 0.3f, 0.3f, 1.f } } ) );
-    crude_gfx_cmd_set_clear_color( gpu_commands, 1, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
-
-    width = height = 0;
-
-    for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
-    {
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
-      
-      if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
-      {
-        crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
-      }
-      else if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
-      {
-        crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        width = texture->width;
-        height = texture->height;
-      }
-    }
     
-    for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
+    if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS )
     {
-      crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
-      
-      if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+      uint32                                               width, height;
+      crude_gfx_rect2d_int                                 scissor;
+      crude_gfx_viewport                                   viewport;
+
+      // TODO add clear to json
+      crude_gfx_cmd_set_clear_color( gpu_commands, 0, CRUDE_COMPOUNT( VkClearValue, { .color = { 0.3f, 0.3f, 0.3f, 1.f } } ) );
+      crude_gfx_cmd_set_clear_color( gpu_commands, 1, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
+
+      width = height = 0;
+
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
       {
-        crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.texture );
-        width = texture->width;
-        height = texture->height;
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+
+        if ( !resource || resource->resource_info.external )
+        {
+          continue;
+        }
+
+        if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+        {
+          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+        }
+        else if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
+          width = texture->width;
+          height = texture->height;
+        }
+      }
+      
+      for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
+      {
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
         
-        if ( texture->vk_format == VK_FORMAT_D32_SFLOAT )
+        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
-        }
-        else
-        {
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
+          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
+          width = texture->width;
+          height = texture->height;
+          
+          if ( texture->vk_format == VK_FORMAT_D32_SFLOAT )
+          {
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
+          }
+          else
+          {
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
+          }
         }
       }
-    }
-    
-    {
-      crude_gfx_rect2d_int scissor = {
-        .x = 0, 
-        .y = 0,
-        .width = CRUDE_STATIC_CAST( uint16, width ),
-        .height = CRUDE_STATIC_CAST( uint16, height )
-      };
+      
+      scissor = CRUDE_COMPOUNT_EMPTY( crude_gfx_rect2d_int );
+      scissor.x = 0; 
+      scissor.y = 0;
+      scissor.width = CRUDE_STATIC_CAST( uint16, width );
+      scissor.height = CRUDE_STATIC_CAST( uint16, height );
       crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
-    }
 
-    {
-      crude_gfx_viewport viewport = { 
-        .rect = { 
-          .x = 0, 
-          .y = 0,
-          .width = CRUDE_STATIC_CAST( uint16, width ),
-          .height = CRUDE_STATIC_CAST( uint16, height )
-        },
-        .min_depth = 0.0f,
-        .max_depth = 1.0f,
-      };
+      viewport = CRUDE_COMPOUNT_EMPTY( crude_gfx_viewport );
+      viewport.rect.x = 0;
+      viewport.rect.y = 0;
+      viewport.rect.width = CRUDE_STATIC_CAST( uint16, width );
+      viewport.rect.height = CRUDE_STATIC_CAST( uint16, height );
+      viewport.min_depth = 0.0f;
+      viewport.max_depth = 1.0f;
       crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
+      
+      crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
+      crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
+      crude_gfx_cmd_end_render_pass( gpu_commands );
     }
-    
-    crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
-    crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
-    crude_gfx_cmd_end_render_pass( gpu_commands );
+    else if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE )
+    {
+      for ( uint32 input_index = 0; input_index < CRUDE_ARRAY_LENGTH( node->inputs ); ++input_index )
+      {
+        crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, input_resource->output_handle );
+        
+        if ( !resource || resource->resource_info.external )
+        {
+          continue;
+        }
+
+        if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
+        {
+          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+        }
+      }
+      
+      for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
+      {
+        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->outputs[ output_index ] );
+        
+        if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
+        {
+          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+        }
+      }
+      
+      crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
+    }
   }
 }
 
@@ -809,6 +858,7 @@ crude_gfx_render_graph_builder_create_node
   node = crude_gfx_render_graph_builder_access_node( builder, node_handle );
   node->name = creation->name;
   node->enabled = creation->enabled;
+  node->type = creation->type;
   node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
   node->render_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, CRUDE_ARRAY_LENGTH( creation->inputs ), builder->allocator_container );
@@ -967,7 +1017,8 @@ crude_gfx_render_graph_builder_resource_cache_initialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_resource ) );
+  builder->resource_cache.resource_map = NULL;
   CRUDE_HASHMAP_INITIALIZE( builder->resource_cache.resource_map, builder->allocator_container );
 }
 
@@ -1008,14 +1059,14 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
 
     bool is_texture_type = ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE || resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT );
     bool is_buffer_type = ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER );
-    if ( is_texture_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.texture.texture ) )
+    if ( is_texture_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.texture.handle ) )
     {
-      crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.texture );
+      crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.handle );
       crude_gfx_destroy_texture( builder->gpu, texture->handle );
     }
-    else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.buffer ) )
+    else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.handle ) )
     {
-      crude_gfx_buffer *buffer = crude_gfx_access_buffer( builder->gpu, resource->resource_info.buffer.buffer );
+      crude_gfx_buffer *buffer = crude_gfx_access_buffer( builder->gpu, resource->resource_info.buffer.handle );
       crude_gfx_destroy_buffer( builder->gpu, buffer->handle );
     }
   }

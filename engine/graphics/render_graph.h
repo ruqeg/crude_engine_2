@@ -48,6 +48,13 @@ typedef enum crude_gfx_render_graph_resource_type
   CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE  = 3
 } crude_gfx_render_graph_resource_type;
 
+typedef enum crude_gfx_render_graph_node_type
+{
+  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS    = 0,
+  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE     = 1,
+  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COUNT       = 2,
+} crude_gfx_render_graph_node_type;
+
 typedef struct crude_gfx_render_graph_resource_info
 {
   bool                                                     external;
@@ -58,7 +65,7 @@ typedef struct crude_gfx_render_graph_resource_info
     {
       sizet                                                size;
       VkBufferUsageFlags                                   flags;
-      crude_gfx_buffer_handle                              buffer;
+      crude_gfx_buffer_handle                              handle;
     } buffer;
     struct
     {
@@ -68,7 +75,7 @@ typedef struct crude_gfx_render_graph_resource_info
       VkFormat                                             format;
       VkImageUsageFlags                                    flags;
       crude_gfx_render_pass_operation                      load_op;
-      crude_gfx_texture_handle                             texture;
+      crude_gfx_texture_handle                             handle;
     } texture;
   };
 } crude_gfx_render_graph_resource_info;
@@ -118,6 +125,7 @@ typedef struct crude_gfx_render_graph_node_creation
   crude_gfx_render_graph_resource_output_creation         *outputs;
   bool                                                     enabled;
   char const                                              *name;
+  crude_gfx_render_graph_node_type                         type;
 } crude_gfx_render_graph_node_creation;
 
 typedef struct crude_gfx_render_graph_node
@@ -131,6 +139,7 @@ typedef struct crude_gfx_render_graph_node
   crude_gfx_render_graph_node_handle                      *edges;
   bool                                                     enabled;
   char const                                              *name;
+  crude_gfx_render_graph_node_type                         type;
 } crude_gfx_render_graph_node;
 
 /************************************************
