@@ -171,6 +171,15 @@ crude_gfx_cmd_draw_mesh_task_indirect_count
 );
 
 CRUDE_API void
+crude_gfx_cmd_dispatch
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ uint32                                              group_count_x,
+  _In_ uint32                                              group_count_y,
+  _In_ uint32                                              group_count_z
+);
+
+CRUDE_API void
 crude_gfx_cmd_bind_vertex_buffer
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

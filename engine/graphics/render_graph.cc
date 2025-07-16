@@ -416,7 +416,6 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.height = output_resource_info->texture.height;
             output_resource_texture_creation.depth = output_resource_info->texture.depth;
             output_resource_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
-            output_resource_texture_creation.mipmaps = 1;
             output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
             output_resource_info->texture.handle = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
@@ -463,7 +462,7 @@ crude_gfx_render_graph_compile
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
     crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
-    if ( !node->enabled )
+    if ( !node->enabled || node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE )
     {
       continue;
     }
@@ -738,7 +737,7 @@ crude_gfx_render_graph_render
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
         {
           crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, resource->resource_info.texture.format == VK_FORMAT_D32_SFLOAT );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_has_depth( resource->resource_info.texture.format ) );
         }
       }
       

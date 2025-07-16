@@ -331,7 +331,6 @@ load_images_
     texture_creation.width = width;
     texture_creation.height = height;
     texture_creation.depth = 1u;
-    texture_creation.mipmaps = 1u;
     texture_creation.flags = 0u;
     texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
     texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;

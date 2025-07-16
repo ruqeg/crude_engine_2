@@ -1,16 +1,14 @@
 {
-	"name": "compute",
+	"name": "culling",
 	"pipelines": [
 	  {
 		"name": "depth_pyramid",
-		"render_pass": "depth_pyramid_pass",
 		"shaders": [
 		  {
 			"stage": "compute",
 			"shader": "depth_pyramid.comp",
 			"includes": [
-			  "crude/platform.glsli",
-			  "crude/scene.glsli"
+			  "crude/platform.glsli"
 			]
 		  }
 		]

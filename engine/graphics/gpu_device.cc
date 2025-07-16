@@ -137,6 +137,13 @@ vk_create_texture_
   _In_ crude_gfx_texture                                  *texture
 );
 static void
+vk_create_texture_view_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_view_creation const              *creation,
+  _In_ crude_gfx_texture                                  *texture
+);
+static void
 vk_resize_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
@@ -969,7 +976,7 @@ crude_gfx_resize_texture
   
   crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
   texture_creation.flags = texture->flags;
-  texture_creation.mipmaps = texture->mipmaps;
+  texture_creation.subresource = texture->subresource;
   texture_creation.format = texture->vk_format;
   texture_creation.type = texture->type;
   texture_creation.name = texture->name;
@@ -1126,7 +1133,7 @@ crude_gfx_create_texture
     
     vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
     
-    if ( creation->mipmaps > 1 )
+    if ( creation->subresource.mip_level_count > 1 )
     {
       crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     }
@@ -1134,7 +1141,7 @@ crude_gfx_create_texture
     int32 w = creation->width;
     int32 h = creation->height;
     
-    for ( int32 mip_index = 1; mip_index < creation->mipmaps; ++mip_index )
+    for ( int32 mip_index = 1; mip_index < creation->subresource.mip_level_count; ++mip_index )
     {
       crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
     
@@ -1170,7 +1177,7 @@ crude_gfx_create_texture
       crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
     }
     
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->mipmaps, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->subresource.mip_level_count, false );
     
     crude_gfx_cmd_end( cmd );
     
@@ -1236,9 +1243,40 @@ crude_gfx_destroy_texture_instant
   if ( texture )
   {
     vkDestroyImageView( gpu->vk_device, texture->vk_image_view, gpu->vk_allocation_callbacks );
-    vmaDestroyImage( gpu->vma_allocator, texture->vk_image, texture->vma_allocation );
+    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture->parent_texture_handle ) )
+    {
+      vmaDestroyImage( gpu->vma_allocator, texture->vk_image, texture->vma_allocation );
+    }
   }
   crude_gfx_release_texture( gpu, handle );
+}
+
+crude_gfx_texture_handle                     
+crude_gfx_create_texture_view
+(                                                  
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_view_creation const              *creation
+)
+{
+  crude_gfx_texture_handle texture_handle = crude_gfx_obtain_texture( gpu );
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_handle ) )
+  {
+    return texture_handle;
+  }
+  
+  crude_gfx_texture *parent_texture = crude_gfx_access_texture( gpu, creation->parent_texture_handle );
+  crude_gfx_texture *texture_view = crude_gfx_access_texture( gpu, texture_handle );
+  
+  crude_memory_copy( texture_view, parent_texture, sizeof( crude_gfx_texture ) );
+
+  texture_view->parent_texture_handle = creation->parent_texture_handle;
+  texture_view->handle = texture_handle;
+  texture_view->subresource.array_base_layer = creation->subresource.array_base_layer;
+  texture_view->subresource.mip_base_level = creation->subresource.mip_base_level;
+  
+  vk_create_texture_view_( gpu, creation, texture_view );
+  
+  return texture_handle;
 }
 
 crude_gfx_shader_state_handle
@@ -2073,7 +2111,7 @@ crude_gfx_create_descriptor_set
   {
     crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ creation->bindings[ i ] ];
     
-    if ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE )
+    if ( binding->set == CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
     {
       continue;
     }
@@ -2095,8 +2133,6 @@ crude_gfx_create_descriptor_set
     {
       crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
       CRUDE_ASSERT( buffer );
-      
-      descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
       if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
       {
@@ -2111,6 +2147,7 @@ crude_gfx_create_descriptor_set
       buffer_info[ i ].offset = 0;
       buffer_info[ i ].range = buffer->size;
 
+      descriptor_write[ i ].descriptorType = ( buffer->usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC ) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       descriptor_write[ i ].pBufferInfo = &buffer_info[ i ];
       break;
     }
@@ -2118,8 +2155,6 @@ crude_gfx_create_descriptor_set
     {
       crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
       CRUDE_ASSERT( buffer );
-      
-      descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
       if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
       {
@@ -2133,8 +2168,42 @@ crude_gfx_create_descriptor_set
 
       buffer_info[ i ].offset = 0;
       buffer_info[ i ].range = buffer->size;
-
+      
+      descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       descriptor_write[ i ].pBufferInfo = &buffer_info[ i ];
+      break;
+    }
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    {
+      crude_gfx_texture_handle texture_handle = CRUDE_COMPOUNT( crude_gfx_texture_handle, { creation->resources[ i ] } );
+      crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
+      
+      if ( texture->sampler )
+      {
+        image_info[ i ].sampler = texture->sampler->vk_sampler;
+      }
+      else
+      {
+        crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
+        image_info[ i ].sampler = default_sampler->vk_sampler;
+      }
+      image_info[ i ].imageView = texture->vk_image_view;
+      image_info[ i ].imageLayout = crude_gfx_has_depth( texture->vk_format ) ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      descriptor_write[ i ].pImageInfo = &image_info[ i ];
+      break;
+    }
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    {
+      crude_gfx_texture_handle texture_handle = CRUDE_COMPOUNT( crude_gfx_texture_handle, { creation->resources[ i ] } );
+      crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
+      image_info[ i ].sampler = NULL;
+      image_info[ i ].imageView = texture->vk_image_view;
+      image_info[ i ].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+      descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      descriptor_write[ i ].pImageInfo = &image_info[ i ];
       break;
     }
     }
@@ -3312,7 +3381,7 @@ vk_create_texture_
   texture->width          = creation->width;
   texture->height         = creation->height;
   texture->depth          = creation->depth;
-  texture->mipmaps        = creation->mipmaps;
+  texture->subresource    = creation->subresource;
   texture->type           = creation->type;
   texture->name           = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", creation->name );
   texture->vk_format      = creation->format;
@@ -3325,22 +3394,19 @@ vk_create_texture_
     VkImageCreateInfo                                      image_info;
     bool                                                   is_render_target, is_compute_used;
 
-    image_info = CRUDE_COMPOUNT( VkImageCreateInfo, {
-      .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-      .imageType = crude_gfx_to_vk_image_type( creation->type ),
-      .format = texture->vk_format,
-      .extent = {
-        .width = creation->width,
-        .height = creation->height,
-        .depth = creation->depth,
-      },
-      .mipLevels = creation->mipmaps,
-      .arrayLayers = 1,
-      .samples = VK_SAMPLE_COUNT_1_BIT,
-      .tiling = VK_IMAGE_TILING_OPTIMAL,
-      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
-    } );
+    image_info = CRUDE_COMPOUNT_EMPTY( VkImageCreateInfo );
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = crude_gfx_to_vk_image_type( creation->type );
+    image_info.format = texture->vk_format;
+    image_info.extent.width = creation->width;
+    image_info.extent.height = creation->height;
+    image_info.extent.depth = creation->depth;
+    image_info.mipLevels = creation->subresource.mip_level_count;
+    image_info.arrayLayers = creation->subresource.array_layer_count;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
     is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;
@@ -3381,29 +3447,12 @@ vk_create_texture_
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, CRUDE_CAST( uint64, texture->vk_image ), creation->name );
   }
 
-  
-  {
-    VkImageViewCreateInfo info = {
-      .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-      .image    = texture->vk_image,
-      .viewType = crude_gfx_to_vk_image_view_type( creation->type ),
-      .format   = texture->vk_format,
-    };
-    
-    if ( crude_gfx_has_depth_or_stencil( creation->format ) )
-    {
-      info.subresourceRange.aspectMask = crude_gfx_has_depth( creation->format ) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
-    }
-    else
-    {
-      info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-    info.subresourceRange.levelCount = 1;
-    info.subresourceRange.layerCount = 1;
-
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view" );
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, CRUDE_CAST( uint64, texture->vk_image_view ), creation->name );
-  }
+  crude_gfx_texture_view_creation view_creation = crude_gfx_texture_view_creation_empty();
+  view_creation.parent_texture_handle = texture->handle;
+  view_creation.view_type = crude_gfx_to_vk_image_view_type( creation->type );
+  view_creation.subresource = texture->subresource;
+  view_creation.name = texture->name;
+  vk_create_texture_view_( gpu, &view_creation, texture );
 
   {
     crude_gfx_resource_update texture_update_event = { 
@@ -3413,6 +3462,38 @@ vk_create_texture_
     };
     CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
   }
+}
+
+void
+vk_create_texture_view_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_view_creation const              *creation,
+  _In_ crude_gfx_texture                                  *texture
+)
+{
+  VkImageViewCreateInfo image_view_info = CRUDE_COMPOUNT_EMPTY( VkImageViewCreateInfo );
+  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  image_view_info.image = texture->vk_image;
+  image_view_info.format = texture->vk_format;
+  
+  if ( crude_gfx_has_depth_or_stencil( texture->vk_format ))
+  {
+    image_view_info.subresourceRange.aspectMask = crude_gfx_has_depth( texture->vk_format ) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+  }
+  else
+  {
+    image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  }
+  
+  image_view_info.viewType = creation->view_type;
+  image_view_info.subresourceRange.baseMipLevel = creation->subresource.mip_base_level;
+  image_view_info.subresourceRange.levelCount = creation->subresource.mip_level_count;
+  image_view_info.subresourceRange.baseArrayLayer = creation->subresource.array_base_layer;
+  image_view_info.subresourceRange.layerCount = creation->subresource.array_layer_count;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateImageView( gpu->vk_device, &image_view_info, gpu->vk_allocation_callbacks, &texture->vk_image_view ), "Failed to create image view!" );
+  
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE_VIEW, CRUDE_CAST( uint64, texture->vk_image_view ), creation->name );
 }
 
 void
@@ -3554,6 +3635,20 @@ vk_reflect_shader_
         {
           reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          ++set_layout->num_bindings;
+          break;
+        }
+        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        {
+          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          binding->type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+          ++set_layout->num_bindings;
+          break;
+        }
+        case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        {
+          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          binding->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
           ++set_layout->num_bindings;
           break;
         }

@@ -115,18 +115,34 @@ crude_gfx_texture_creation_empty
 (
 )
 {
-  return CRUDE_COMPOUNT( crude_gfx_texture_creation, {
-    .width   = 1,
-    .height  = 1,
-    .depth   = 1,
-    .mipmaps = 1,
-    .format  = VK_FORMAT_UNDEFINED,
-    .type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D,
-    .alias   = CRUDE_GFX_TEXTURE_HANDLE_INVALID
-  } );
+  crude_gfx_texture_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_texture_creation );
+  creation.width   = 1;
+  creation.height  = 1;
+  creation.depth   = 1;
+  creation.format  = VK_FORMAT_UNDEFINED;
+  creation.type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+  creation.alias   = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  creation.subresource.array_base_layer = 0u;
+  creation.subresource.array_layer_count = 1;
+  creation.subresource.mip_base_level = 0;
+  creation.subresource.mip_level_count = 1;
+  return creation;
 }
 
-CRUDE_API crude_gfx_render_pass_output
+crude_gfx_texture_view_creation
+crude_gfx_texture_view_creation_empty
+(
+)
+{
+  crude_gfx_texture_view_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_texture_view_creation );
+  creation.subresource.array_base_layer = 0u;
+  creation.subresource.array_layer_count = 1;
+  creation.subresource.mip_base_level = 0;
+  creation.subresource.mip_level_count = 1;
+  return creation;
+}
+
+crude_gfx_render_pass_output
 crude_gfx_render_pass_output_empty
 (
 )
@@ -172,6 +188,19 @@ crude_gfx_descriptor_set_creation_add_buffer
   creation->samplers[ creation->num_resources ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
   creation->bindings[ creation->num_resources ] = binding;
   creation->resources[ creation->num_resources++ ] = buffer.index;
+}
+
+void
+crude_gfx_descriptor_set_creation_add_texture
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_texture_handle                            texture,
+  _In_ uint16                                              binding
+)
+{
+  creation->samplers[ creation->num_resources ] = CRUDE_GFX_SAMPLER_HANDLE_INVALID;
+  creation->bindings[ creation->num_resources ] = binding;
+  creation->resources[ creation->num_resources++ ] = texture.index;
 }
 
 void

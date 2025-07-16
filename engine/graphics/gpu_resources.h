@@ -364,19 +364,35 @@ typedef struct crude_gfx_rasterization_creation
   crude_gfx_fill_mode                                      fill;
 } crude_gfx_rasterization_creation;
 
+typedef struct crude_gfx_texture_subresource
+{
+  uint16                                                   mip_base_level;
+  uint16                                                   mip_level_count;
+  uint16                                                   array_base_layer;
+  uint16                                                   array_layer_count;
+} crude_gfx_texture_subresource;
+
 typedef struct crude_gfx_texture_creation
 {
   void                                                    *initial_data;
   uint16                                                   width;
   uint16                                                   height;
   uint16                                                   depth;
-  uint8                                                    mipmaps;
+  crude_gfx_texture_subresource                            subresource;
   uint8                                                    flags;
   VkFormat                                                 format;
   crude_gfx_texture_type                                   type;
   char const                                              *name;
   crude_gfx_texture_handle                                 alias;
 } crude_gfx_texture_creation;
+
+typedef struct crude_gfx_texture_view_creation
+{
+  crude_gfx_texture_handle                                 parent_texture_handle;
+  VkImageViewType                                          view_type;
+  crude_gfx_texture_subresource                            subresource;
+  char const                                              *name;
+} crude_gfx_texture_view_creation;
 
 typedef struct crude_gfx_render_pass_output
 {
@@ -530,7 +546,7 @@ typedef struct crude_gfx_texture
   uint16                                                   width;
   uint16                                                   height;
   uint16                                                   depth;
-  uint8                                                    mipmaps;
+  crude_gfx_texture_subresource                            subresource;
   uint8                                                    flags;
   crude_gfx_texture_handle                                 handle;
   crude_gfx_texture_type                                   type;
@@ -538,6 +554,7 @@ typedef struct crude_gfx_texture
   char const                                              *name;
   crude_gfx_resource_state                                 state;
   bool                                                     ready;
+  crude_gfx_texture_handle                                 parent_texture_handle;
 } crude_gfx_texture;
 
 typedef struct crude_gfx_descriptor_binding
@@ -721,6 +738,11 @@ crude_gfx_texture_creation_empty
 (
 );
 
+CRUDE_API crude_gfx_texture_view_creation
+crude_gfx_texture_view_creation_empty
+(
+);
+
 CRUDE_API crude_gfx_render_pass_output
 crude_gfx_render_pass_output_empty
 (
@@ -740,6 +762,14 @@ crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_buffer_handle                             buffer,
+  _In_ uint16                                              binding
+);
+
+CRUDE_API void
+crude_gfx_descriptor_set_creation_add_texture
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_texture_handle                            texture,
   _In_ uint16                                              binding
 );
 

@@ -329,7 +329,7 @@ crude_gfx_destroy_sampler_instant
 (                                                  
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_sampler_handle                            handle
-);                                                 
+);
 
 CRUDE_API crude_gfx_texture_handle                     
 crude_gfx_create_texture                           
@@ -350,8 +350,15 @@ crude_gfx_destroy_texture_instant
 (                                                   
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_texture_handle                            handle
-);    
-                                                    
+);
+
+CRUDE_API crude_gfx_texture_handle                     
+crude_gfx_create_texture_view
+(                                                  
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_view_creation const              *creation
+);
+
 CRUDE_API crude_gfx_shader_state_handle                 
 crude_gfx_create_shader_state                       
 (                                                   
