@@ -203,6 +203,7 @@ geometry_pass_render_meshlets_
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts;
   crude_gfx_mesh_draw_command_gpu                         *mesh_draw_commands;
   crude_gfx_map_buffer_parameters                          buffer_map;
+  crude_gfx_pipeline_handle                                pipeline;
   
   renderer = pass->scene_renderer->renderer;
 
@@ -258,26 +259,18 @@ geometry_pass_render_meshlets_
     crude_gfx_unmap_buffer( renderer->gpu, pass->scene_renderer->meshes_materials_sb );
   }
   
-  {
-    crude_gfx_renderer_technique                          *meshlet_technique;
-    crude_gfx_pipeline_handle                              pipeline;
-    uint64                                                 meshlet_hashed_name;
-
-    meshlet_hashed_name = crude_hash_string( "meshlet", 0 );
-    meshlet_technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, meshlet_hashed_name )->value;
-    pipeline = meshlet_technique->passes[ pass->scene_renderer->meshlet_technique_index ].pipeline;
-    crude_gfx_cmd_bind_pipeline( cmd, pipeline );
-    crude_gfx_cmd_bind_descriptor_set( cmd, pass->scene_renderer->mesh_shader_ds[ renderer->gpu->current_frame ] );
-    crude_gfx_cmd_draw_mesh_task_indirect_count(
-      cmd,
-      pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ],
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
-      pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ],
-      0,
-      CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ),
-      sizeof( crude_gfx_mesh_draw_command_gpu )
-    );
-  }
+  pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "meshlet", "main" )->pipeline;
+  crude_gfx_cmd_bind_pipeline( cmd, pipeline );
+  crude_gfx_cmd_bind_descriptor_set( cmd, pass->scene_renderer->mesh_shader_ds[ renderer->gpu->current_frame ] );
+  crude_gfx_cmd_draw_mesh_task_indirect_count(
+    cmd,
+    pass->scene_renderer->mesh_task_indirect_commands_sb[ renderer->gpu->current_frame ],
+    CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
+    pass->scene_renderer->mesh_task_indirect_count_sb[ renderer->gpu->current_frame ],
+    0,
+    CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ),
+    sizeof( crude_gfx_mesh_draw_command_gpu )
+  );
 }
 
 void

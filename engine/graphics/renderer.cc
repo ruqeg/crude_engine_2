@@ -115,6 +115,31 @@ crude_gfx_renderer_add_texture_update_commands
   mtx_unlock( &renderer->texture_update_mutex );
 }
 
+crude_gfx_renderer_technique*
+crude_gfx_renderer_access_technique_by_name
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ char const                                         *technique_name
+)
+{
+  uint64 technique_name_hashed = crude_hash_string( technique_name, 0 );
+  crude_gfx_renderer_technique *technique = CRUDE_HASHMAP_GET( renderer->resource_cache.techniques, technique_name_hashed )->value;
+  return technique;
+}
+
+crude_gfx_renderer_technique_pass*
+crude_gfx_renderer_access_technique_pass_by_name
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ char const                                         *technique_name,
+  _In_ char const                                         *pass_name
+)
+{
+  crude_gfx_renderer_technique *technique = crude_gfx_renderer_access_technique_by_name( renderer, technique_name );
+  uint64 pass_index = crude_gfx_renderer_technique_get_pass_index( technique, pass_name );
+  return &technique->passes[ pass_index ];
+}
+
 /************************************************
  *
  * Renderer Resoruces Functions

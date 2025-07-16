@@ -74,6 +74,21 @@ crude_gfx_renderer_add_texture_update_commands
   _In_ uint32                                              thread_id
 );
 
+CRUDE_API crude_gfx_renderer_technique*
+crude_gfx_renderer_access_technique_by_name
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ char const                                         *technique_name
+);
+
+CRUDE_API crude_gfx_renderer_technique_pass*
+crude_gfx_renderer_access_technique_pass_by_name
+(
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ char const                                         *technique_name,
+  _In_ char const                                         *pass_name
+);
+
 /************************************************
  *
  * Renderer Resoruces Functions

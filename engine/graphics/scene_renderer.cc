@@ -57,36 +57,12 @@ crude_gfx_scene_renderer_initialize
 
   {
     crude_gfx_renderer_material_creation                   material_creation;
-    crude_gfx_renderer_technique                          *main_technique;
-    uint64                                                 main_technique_name_hashed;
-    uint64                                                 main_technique_index;
-
-
-    main_technique_name_hashed = crude_hash_string( "main", 0 );
-    main_technique_index = CRUDE_HASHMAP_GET_INDEX( scene_renderer->renderer->resource_cache.techniques, main_technique_name_hashed );
-    if ( main_technique_index < 0)
-    {
-      CRUDE_ASSERT( false );
-      return;
-    }
-
-    main_technique = scene_renderer->renderer->resource_cache.techniques[ main_technique_index ].value;
 
     material_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_material_creation );
-    material_creation.technique = main_technique;
+    material_creation.technique = crude_gfx_renderer_access_technique_by_name( scene_renderer->renderer, "main" );
     material_creation.name = "material_no_cull";
     material_creation.render_index = 0;
     main_material = crude_gfx_renderer_create_material( scene_renderer->renderer, &material_creation );
-  }
-
-  if ( scene_renderer->renderer->gpu->mesh_shaders_extension_present )
-  {
-    crude_gfx_renderer_technique                          *main_meshlet_technique;
-    uint64                                                 meshlet_hashed;
-
-    meshlet_hashed = crude_hash_string( "meshlet", 0 );
-    main_meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
-    scene_renderer->meshlet_technique_index = crude_gfx_renderer_technique_get_pass_index( main_meshlet_technique, "main" );
   }
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->mesh_instances, 0u, scene_renderer->renderer->allocator_container );
@@ -172,11 +148,7 @@ crude_gfx_scene_renderer_initialize
 
   if ( scene_renderer->use_meshlets )
   {
-    uint64 meshlet_hashed = crude_hash_string( "meshlet", 0u );
-    crude_gfx_renderer_technique *meshlet_technique = CRUDE_HASHMAP_GET( scene_renderer->renderer->resource_cache.techniques, meshlet_hashed )->value;
-    
-    uint32 meshlet_index = crude_gfx_renderer_technique_get_pass_index( meshlet_technique, "main" );
-    crude_gfx_renderer_technique_pass *meshlet_pass = &meshlet_technique->passes[ meshlet_index ];
+    crude_gfx_renderer_technique_pass *meshlet_pass = crude_gfx_renderer_access_technique_pass_by_name( scene_renderer->renderer, "meshlet", "main" );
     crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
     
     for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -200,6 +172,7 @@ crude_gfx_scene_renderer_initialize
 
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer->gpu, creation->imgui_context );
   crude_gfx_geometry_pass_initialize( &scene_renderer->geometry_pass, scene_renderer, CRUDE_GFX_GEOMETRY_PASS_MESHLETS_BIT );
+  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
 }
 
 void
