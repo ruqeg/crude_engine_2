@@ -3,34 +3,36 @@
 #include <scene/scene_components.h>
 #include <graphics/scene_renderer.h>
 
-#include <graphics/passes/meshlet_early_pass.h>
+#include <graphics/passes/meshlet_pass.h>
 
 void
-crude_gfx_meshlet_early_pass_initialize
+crude_gfx_meshlet_pass_initialize
 (
-  _In_ crude_gfx_meshlet_early_pass                       *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  _In_ crude_gfx_meshlet_pass                             *pass,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  bool                                                     early_pass
 )
 { 
   pass->scene_renderer = scene_renderer;
+  pass->early_pass = early_pass;
 }
 
 void
-crude_gfx_meshlet_early_pass_deinitialize
+crude_gfx_meshlet_pass_deinitialize
 (
-  _In_ crude_gfx_meshlet_early_pass                       *pass
+  _In_ crude_gfx_meshlet_pass                             *pass
 )
 {
 }
 
 void
-crude_gfx_meshlet_early_pass_render
+crude_gfx_meshlet_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  crude_gfx_meshlet_early_pass                            *pass;
+  crude_gfx_meshlet_pass                                  *pass;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_mesh_material_gpu                             *mesh_materials;
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts;
@@ -38,7 +40,7 @@ crude_gfx_meshlet_early_pass_render
   crude_gfx_map_buffer_parameters                          buffer_map;
   crude_gfx_pipeline_handle                                pipeline;
  
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_meshlet_early_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_meshlet_pass*, ctx );
 
   renderer = pass->scene_renderer->renderer;
 
@@ -86,10 +88,10 @@ crude_gfx_meshlet_early_pass_render
 
       ++visible_meshlet_index;
     }
-  
+
     mesh_draw_counts->opaque_mesh_visible_count = visible_meshlet_index;
-    mesh_draw_counts->depth_pyramid_texture_index = pass->scene_renderer->depth_pyramid_late_pass.depth_pyramid_texture_handle.index;
-    mesh_draw_counts->occlusion_culling_late_flag = pass->scene_renderer->occlusion_culling_late_flag =  0;
+    mesh_draw_counts->depth_pyramid_texture_index = pass->early_pass ? pass->scene_renderer->depth_pyramid_late_pass.depth_pyramid_texture_handle.index : pass->scene_renderer->depth_pyramid_early_pass.depth_pyramid_texture_handle.index;
+    mesh_draw_counts->occlusion_culling_late_flag = pass->scene_renderer->occlusion_culling_late_flag = !pass->early_pass;
   }
 
   if ( mesh_draw_commands )
@@ -105,7 +107,7 @@ crude_gfx_meshlet_early_pass_render
     crude_gfx_unmap_buffer( renderer->gpu, pass->scene_renderer->meshes_materials_sb );
   }
   
-  pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "meshlet", "meshlet_early" )->pipeline;
+  pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "meshlet", "meshlet" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->scene_renderer->mesh_shader_ds[ renderer->gpu->current_frame ] );
   crude_gfx_cmd_draw_mesh_task_indirect_count(
@@ -120,7 +122,7 @@ crude_gfx_meshlet_early_pass_render
 }
 
 static void
-crude_gfx_meshlet_early_pass_on_resize
+crude_gfx_meshlet_pass_on_resize
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_device                                   *gpu,
@@ -131,14 +133,14 @@ crude_gfx_meshlet_early_pass_on_resize
 }
 
 crude_gfx_render_graph_pass_container
-crude_gfx_meshlet_early_pass_pack
+crude_gfx_meshlet_pass_pack
 (
-  _In_ crude_gfx_meshlet_early_pass                       *pass
+  _In_ crude_gfx_meshlet_pass                             *pass
 )
 {
   crude_gfx_render_graph_pass_container container;
   container.ctx = pass;
-  container.on_resize = crude_gfx_meshlet_early_pass_on_resize;
-  container.render = crude_gfx_meshlet_early_pass_render;
+  container.on_resize = crude_gfx_meshlet_pass_on_resize;
+  container.render = crude_gfx_meshlet_pass_render;
   return container;
 }

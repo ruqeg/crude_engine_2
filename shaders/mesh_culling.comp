@@ -1,0 +1,108 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#include "crude/platform.glsli"
+#include "crude/mesh.glsli"
+#include "crude/scene.glsli"
+#include "crude/culling.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+/*
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
+
+layout(set=CRUDE_MATERIAL_SET, binding=10, row_major, std430) buffer MeshDrawCommandsEarly
+{
+  crude_mesh_draw_command                                  early_mesh_draw_commands[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommandsLate
+{
+  crude_mesh_draw_command                                  late_mesh_draw_commands[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=12) buffer MeshDrawCountsEarly
+{
+  uint                                                     early_opaque_mesh_visible_count;
+  uint                                                     early_opaque_mesh_culled_count;
+  uint                                                     early_transparent_mesh_visible_count;
+  uint                                                     early_transparent_mesh_culled_count;
+
+  uint                                                     early_total_mesh_count;
+  uint                                                     early_depth_pyramid_texture_index;
+  uint                                                     early_occlusion_culling_late_flag;
+  uint                                                     early_meshlet_index_count;
+
+  uint                                                     early_dispatch_task_x;
+  uint                                                     early_dispatch_task_y;
+  uint                                                     early_dispatch_task_z;
+  uint                                                     early_meshlet_instances_count;
+};
+
+
+layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCountsLate
+{
+  uint                                                     late_opaque_mesh_visible_count;
+  uint                                                     late_opaque_mesh_culled_count;
+  uint                                                     late_transparent_mesh_visible_count;
+  uint                                                     late_transparent_mesh_culled_count;
+
+  uint                                                     late_total_mesh_count;
+  uint                                                     late_depth_pyramid_texture_index;
+  uint                                                     late_occlusion_culling_late_flag;
+  uint                                                     late_meshlet_index_count;
+
+  uint                                                     late_dispatch_task_x;
+  uint                                                     late_dispatch_task_y;
+  uint                                                     late_dispatch_task_z;
+  uint                                                     late_meshlet_instances_count;
+};
+
+void main()
+{
+  uint mesh_draw_index = gl_GlobalInvocationID.x;
+  uint count = late_occlusion_culling_late_flag == 1 ? late_total_mesh_count : early_opaque_mesh_culled_count;
+
+  uint thread_index = gl_LocalInvocationID.x;
+
+  if ( mesh_draw_index < count )
+  {
+    mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
+    vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
+    vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
+    float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+    float radius = bounding_sphere.w * scale * 1.1;
+
+    vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
+
+    bool frustum_visible = true;
+    for ( uint i = 0; i < 6; ++i )
+    {
+      frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+    }
+
+    bool occlusion_visible = false;
+    if ( frustum_visible )
+    {
+      mat4 world_to_clip_culling = ( early_occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+      occlusion_visible = crude_occlusion_culling(
+        view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+        crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+        crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+        late_depth_pyramid_texture_index, world_center.xyz,
+        crude_camera_debug_culling() ? camera_debug.position : camera.position,
+        world_to_clip_culling
+      );
+    }
+    
+    if ( frustum_visible && occlusion_visible )
+    {
+      uint draw_index = atomicAdd( late_opaque_mesh_visible_count, 1 );
+      early_mesh_draw_commands[ draw_index ].draw_index = mesh_draw_index;
+    }
+    else if ( late_occlusion_culling_late_flag == 0 )
+    {
+
+    }
+  }
+
+  groupMemoryBarrier();
+  barrier();
+}*/

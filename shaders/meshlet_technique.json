@@ -2,8 +2,8 @@
 	"name" : "meshlet",
 	"pipelines" : [
 		{
-			"name" : "meshlet_early",
-			"render_pass": "meshlet_early_pass",
+			"name" : "meshlet",
+			"render_pass": "meshlet_pass",
 			"depth" : {
 				"write" : 1,
 				"test" : "less_or_equal"
@@ -20,7 +20,7 @@
 			"shaders" : [
 				{
 					"stage" : "mesh",
-					"shader" : "meshlet_early.mesh",
+					"shader" : "meshlet.mesh",
 					"includes": [
 						"crude/platform.glsli",
 						"crude/meshlet.glsli",
@@ -29,7 +29,7 @@
 				},
 				{
 					"stage" : "task",
-					"shader" : "meshlet_early.task",
+					"shader" : "meshlet.task",
 					"includes": [
 						"crude/platform.glsli",
 						"crude/culling.glsli",
@@ -39,54 +39,7 @@
 				},
 				{
 					"stage" : "fragment",
-					"shader" : "meshlet_early.frag",
-					"includes": [
-						"crude/platform.glsli",
-						"crude/meshlet.glsli",
-						"crude/scene.glsli"
-					]
-				}
-			]
-		},
-		{
-			"name" : "meshlet_late",
-			"render_pass": "meshlet_late_pass",
-			"depth" : {
-				"write" : 1,
-				"test" : "less_or_equal"
-			},
-	    "blend": [
-	      {
-		    "enable": 1,
-		    "src_colour": "SRC_ALPHA",
-		    "dst_colour": "ONE_MINUS_SRC_ALPHA",
-		    "op": "ADD"
-	      }
-	    ],
-			"cull" : "back",
-			"shaders" : [
-				{
-					"stage" : "mesh",
-					"shader" : "meshlet_late.mesh",
-					"includes": [
-						"crude/platform.glsli",
-						"crude/meshlet.glsli",
-						"crude/scene.glsli"
-					]
-				},
-				{
-					"stage" : "task",
-					"shader" : "meshlet_late.task",
-					"includes": [
-						"crude/platform.glsli",
-						"crude/culling.glsli",
-						"crude/meshlet.glsli",
-						"crude/scene.glsli"
-					]
-				},
-				{
-					"stage" : "fragment",
-					"shader" : "meshlet_late.frag",
+					"shader" : "meshlet.frag",
 					"includes": [
 						"crude/platform.glsli",
 						"crude/meshlet.glsli",

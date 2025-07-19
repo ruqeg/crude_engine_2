@@ -1,0 +1,18 @@
+
+#ifndef CRUDE_MESH_GLSLI
+#define CRUDE_MESH_GLSLI
+
+struct crude_mesh_draw_command
+{
+  uint                                                     draw_id;
+  uint                                                     indirect_mesh_index_count;
+  uint                                                     indirect_mesh_instance_count;
+  uint                                                     indirect_mesh_first_index;
+  int                                                      indirect_mesh_vertex_offset;
+  uint                                                     indirect_mesh_firstInstance;
+  uint                                                     indirect_meshlet_group_count_x;
+  uint                                                     indirect_meshlet_group_count_y;
+  uint                                                     indirect_meshlet_group_count_z;
+};
+
+#endif /* CRUDE_MESH_GLSLI */
