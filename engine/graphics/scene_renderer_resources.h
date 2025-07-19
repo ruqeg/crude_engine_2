@@ -45,7 +45,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 
   uint32                                                   total_count;
   uint32                                                   depth_pyramid_texture_index;
-  uint32                                                   late_flag;
+  uint32                                                   occlusion_culling_late_flag;
   uint32                                                   meshlet_index_count;
 
   uint32                                                   dispatch_task_x;
@@ -100,9 +100,9 @@ typedef struct crude_gfx_mesh_cpu
 {
   crude_entity                                             node;
   crude_gfx_renderer_material                             *material;
-  XMFLOAT3                                             scale;
-  XMFLOAT3                                             translation;
-  XMFLOAT4                                             rotation;
+  XMFLOAT3                                                 scale;
+  XMFLOAT3                                                 translation;
+  XMFLOAT4                                                 rotation;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  position_buffer;
   crude_gfx_buffer_handle                                  tangent_buffer;
@@ -115,14 +115,14 @@ typedef struct crude_gfx_mesh_cpu
   uint32                                                   normal_offset;
   uint32                                                   texcoord_offset;
   uint32                                                   primitive_count;
-  XMFLOAT4                                             albedo_color_factor;
-  XMFLOAT3                                             metallic_roughness_occlusion_factor;
+  XMFLOAT4                                                 albedo_color_factor;
+  XMFLOAT3                                                 metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;
   uint32                                                   flags;
-  uint32                                                   albedo_texture_index;
-  uint32                                                   roughness_texture_index;
-  uint32                                                   normal_texture_index;
-  uint32                                                   occlusion_texture_index;
+  crude_gfx_texture_handle                                 albedo_texture_handle;
+  crude_gfx_texture_handle                                 roughness_texture_handle;
+  crude_gfx_texture_handle                                 normal_texture_handle;
+  crude_gfx_texture_handle                                 occlusion_texture_handle;
   uint32                                                   gpu_mesh_index;
   uint32                                                   meshlets_offset;
   uint32                                                   meshlets_count;

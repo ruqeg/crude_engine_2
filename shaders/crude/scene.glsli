@@ -46,7 +46,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=0, row_major, std140) uniform CrudeSceneC
   uint                                                     scene_flags;
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=5, row_major, std430) readonly buffer CrudeMeshDraws
+layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer CrudeMeshDraws
 {
   crude_mesh_draw                                          mesh_draws[];
 };

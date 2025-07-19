@@ -1,0 +1,55 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#include "crude/platform.glsli"
+#include "crude/scene.glsli"
+#include "crude/meshlet.glsli"
+#include "crude/culling.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
+layout(triangles) out;
+layout(max_vertices=128, max_primitives=124) out;
+
+layout(location=0) out vec2 out_texcoord[];
+layout(location=1) out flat uint out_mesh_draw_index[];
+
+taskPayloadSharedEXT struct
+{
+  uint                                                     meshlet_indices[ 128 ];
+  uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
+} shared_data;
+
+void main()
+{
+  uint task_index = gl_LocalInvocationID.x;
+  uint local_meshlet_index = gl_WorkGroupID.x;
+  uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
+  uint mesh_draw_index = shared_data.mesh_draw_indices[ local_meshlet_index ];
+  
+  uint mesh_index = meshlets[ global_meshlet_index ].mesh_index;
+  uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
+  uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
+  
+  uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
+  uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
+
+  mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
+
+  SetMeshOutputsEXT( vertices_count, triangles_count );
+  
+  for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
+  {
+    uint vertex_index = vertices_indices[ i + vertices_offset ];
+    vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    
+    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * ( crude_camera_debug_view() ? camera_debug.world_to_clip : camera.world_to_clip );
+    out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
+    out_mesh_draw_index[ i ] = mesh_index;
+  }
+  
+  for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
+  {
+    uint triangle_index = uint( 3 * i + triangles_offset );
+    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
+  }
+}

@@ -11,24 +11,6 @@
 
 layout(local_size_x=32) in;
 
-//layout(set=CRUDE_MATERIAL_SET, binding=7) readonly buffer VisibleMeshCount
-//{
-//  uint opaque_mesh_visible_count;
-//  uint opaque_mesh_culled_count;
-//  uint transparent_mesh_visible_count;
-//  uint transparent_mesh_culled_count;
-//
-//  uint total_count;
-//  uint depth_pyramid_texture_index;
-//  uint occlusion_culling_late_flag;
-//  uint meshlet_index_count;
-//
-//  uint dispatch_task_x;
-//  uint dispatch_task_y;
-//  uint dispatch_task_z;
-//  uint meshlet_instances_count;
-//};
-
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
@@ -69,20 +51,20 @@ void main()
   }
   accept = accept && frustum_visible;
   
-  //bool occlusion_visible = false;
-  //if ( frustum_visible )
-  //{
-  //  mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
-  //  occlusion_visible = crude_occlusion_culling(
-  //    view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
-  //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
-  //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
-  //    depth_pyramid_texture_index, world_center.xyz,
-  //    crude_camera_debug_culling() ? camera_debug.position : camera.position,
-  //    world_to_clip_culling
-  //  );
-  //}
-  //accept = accept && occlusion_visible;
+  bool occlusion_visible = false;
+  if ( frustum_visible )
+  {
+    mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+    occlusion_visible = crude_occlusion_culling(
+      view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index, world_center.xyz,
+      crude_camera_debug_culling() ? camera_debug.position : camera.position,
+      world_to_clip_culling
+    );
+  }
+  accept = accept && occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );
   

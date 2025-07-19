@@ -72,13 +72,14 @@ crude_hashmap_growf
       hash_backet *backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + i * elemsize );
       if ( backet->key )
       {
-        crude_hashmap_set_index( nh, backet->key, elemsize );
+         /* Hashmap shouldn't be resizes here since it's already resized based on the previous hashmap */
+        CRUDE_ASSERT( nh == crude_hashmap_set_index( nh, backet->key, elemsize ) );
         crude_memory_copy( nh + CRUDE_HASHMAP_TEMP( nh ) * elemsize, backet, elemsize );
       }
     }
-    CRUDE_DEALLOCATE( CRUDE_HASHMAP_ALLOCATOR( h ), h );
+    CRUDE_DEALLOCATE( CRUDE_HASHMAP_ALLOCATOR( h ), h - sizeof( crude_hashmap_header ) );
   }
-
+  
   return nh;
 }
 
@@ -92,7 +93,7 @@ crude_hashmap_get_index
 {
   hash_backet                                             *backet;
   int64                                                    index;
-    
+
   index = ( size_t )( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( h ) - 1 ) );
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + elemsize * index );
   while ( backet->key )
@@ -115,7 +116,7 @@ crude_hashmap_get_index
   return -1;
 }
 
-int64
+void*
 crude_hashmap_set_index
 (
   _In_ uint8                                              *h,
@@ -145,7 +146,7 @@ crude_hashmap_set_index
     if ( key == backet->key )
     {
       CRUDE_HASHMAP_HEADER( nh )->temp = index;
-      return index;
+      return nh;
     }
 
     ++index;
@@ -158,5 +159,5 @@ crude_hashmap_set_index
   
   backet->key = key;
   CRUDE_HASHMAP_HEADER( nh )->temp = index;
-  return index;
+  return nh;
 }

@@ -8,10 +8,12 @@ void
 crude_gfx_depth_pyramid_pass_initialize
 (
   _In_ crude_gfx_depth_pyramid_pass                       *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ char const                                         *depth_resource_name
 )
 {
   pass->scene_renderer = scene_renderer;
+  pass->depth_resource_name = depth_resource_name;
 }
 
 void
@@ -30,7 +32,7 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
 {
   crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
 
-  crude_gfx_render_graph_resource *depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
+  crude_gfx_render_graph_resource *depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->depth_resource_name );
   crude_gfx_texture_handle depth_texture_handle = depth_resource->resource_info.texture.handle;
   crude_gfx_texture *depth_texture = crude_gfx_access_texture( gpu, depth_texture_handle );
 
@@ -62,16 +64,16 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   depth_pyramid_view_creation.view_type = VK_IMAGE_VIEW_TYPE_2D;
   depth_pyramid_view_creation.parent_texture_handle = pass->depth_pyramid_texture_handle;
   depth_pyramid_view_creation.name = "depth_pyramid_view";
-  
+
   crude_gfx_pipeline_handle depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "depth_pyramid" )->pipeline;
   pass->depth_pyramid_layout_handle = crude_gfx_get_descriptor_set_layout( gpu, depth_pyramid_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-  
+
   for ( uint32 i = 0; i < depth_pyramid_levels; ++i )
   {
     depth_pyramid_view_creation.subresource.mip_base_level = i;
-    
+
     pass->depth_pyramid_views_handles[ i ] = crude_gfx_create_texture_view( gpu, &depth_pyramid_view_creation );
-    
+
     crude_gfx_descriptor_set_creation descriptor_set_creation = crude_gfx_descriptor_set_creation_empty();
     if ( i == 0 )
     {

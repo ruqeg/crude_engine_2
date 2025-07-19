@@ -184,7 +184,6 @@ crude_gfx_render_graph_parse_from_file
         }
         case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER:
         {
-          CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO" );
           break;
         }
       }
@@ -243,7 +242,6 @@ crude_gfx_render_graph_compile
       crude_gfx_render_graph_resource                     *resource;
       crude_gfx_render_graph_resource                     *output_resource;
       crude_gfx_render_graph_node                         *parent_node;
-
       
       resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
       output_resource = crude_gfx_render_graph_builder_access_resource_by_name( render_graph->builder, resource->name );
@@ -576,7 +574,7 @@ crude_gfx_render_graph_compile
       {
         crude_gfx_render_graph_resource *input_resource = crude_gfx_render_graph_builder_access_resource( render_graph->builder, node->inputs[ input_index ] );
 
-        if ( input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT && input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
+        if ( input_resource->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
           continue;
         }
@@ -899,16 +897,14 @@ crude_gfx_render_graph_builder_create_node_output
   crude_gfx_render_graph_resource* resource = crude_gfx_render_graph_builder_access_resource( builder, resource_handle );
   resource->name = creation->name;
   resource->type = creation->type;
-  if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
-  {
-    resource->resource_info = creation->resource_info;
-    resource->output_handle = resource_handle;
-    resource->producer = producer;
-    resource->ref_count = 0;
-    
-    uint64 key = crude_hash_string( resource->name, 0 );
-    CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
-  }
+  
+  resource->resource_info = creation->resource_info;
+  resource->output_handle = resource_handle;
+  resource->producer = producer;
+  resource->ref_count = 0;
+
+  uint64 key = crude_hash_string( resource->name, 0 );
+  CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
 
   return resource_handle;
 }
@@ -1146,11 +1142,6 @@ string_to_resource_type_
   if ( strcmp( input_type, "buffer" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER;
-  }
-  
-  if ( strcmp( input_type, "reference" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE;
   }
   
   CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );

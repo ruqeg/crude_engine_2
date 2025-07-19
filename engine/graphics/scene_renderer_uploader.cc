@@ -194,12 +194,12 @@ create_mesh_material_
     crude_gfx_renderer_texture *albedo_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, albedo_texture->image ) ];
     crude_gfx_renderer_sampler *albedo_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, albedo_texture->sampler ) ];
   
-    mesh_draw->albedo_texture_index = albedo_texture_gpu->handle.index;
+    mesh_draw->albedo_texture_handle = albedo_texture_gpu->handle;
     crude_gfx_link_texture_sampler( renderer->gpu, albedo_texture_gpu->handle, albedo_sampler_gpu->handle );
   }
   else
   {
-    mesh_draw->albedo_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
+    mesh_draw->albedo_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
   
   if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
@@ -208,12 +208,12 @@ create_mesh_material_
     crude_gfx_renderer_texture *roughness_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, roughness_texture->image ) ];
     crude_gfx_renderer_sampler *roughness_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
     
-    mesh_draw->roughness_texture_index = roughness_texture_gpu->handle.index;
+    mesh_draw->roughness_texture_handle = roughness_texture_gpu->handle;
     crude_gfx_link_texture_sampler( renderer->gpu, roughness_texture_gpu->handle, roughness_sampler_gpu->handle );
   }
   else
   {
-    mesh_draw->roughness_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
+    mesh_draw->roughness_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
 
   if ( material->occlusion_texture.texture )
@@ -222,14 +222,14 @@ create_mesh_material_
     crude_gfx_renderer_texture *occlusion_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, occlusion_texture->image ) ];
     crude_gfx_renderer_sampler *occlusion_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, occlusion_texture->sampler ) ];
     
-    mesh_draw->occlusion_texture_index = occlusion_texture_gpu->handle.index;
+    mesh_draw->occlusion_texture_handle = occlusion_texture_gpu->handle;
     mesh_draw->metallic_roughness_occlusion_factor.z = material->occlusion_texture.scale;
     
     crude_gfx_link_texture_sampler( renderer->gpu, occlusion_texture_gpu->handle, occlusion_sampler_gpu->handle );
   }
   else
   {
-    mesh_draw->occlusion_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
+    mesh_draw->occlusion_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
   
   if ( material->normal_texture.texture )
@@ -238,12 +238,12 @@ create_mesh_material_
     crude_gfx_renderer_texture *normal_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, normal_texture->image ) ];
     crude_gfx_renderer_sampler *normal_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, normal_texture->sampler ) ];
     
-    mesh_draw->normal_texture_index = normal_texture_gpu->handle.index;
+    mesh_draw->normal_texture_handle = normal_texture_gpu->handle;
     crude_gfx_link_texture_sampler( renderer->gpu, normal_texture_gpu->handle, normal_sampler_gpu->handle );
   }
   else
   {
-    mesh_draw->normal_texture_index = CRUDE_GFX_RENDERER_TEXTURE_INDEX_INVALID;
+    mesh_draw->normal_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
 
   mesh_draw->node = node;

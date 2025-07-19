@@ -3,7 +3,9 @@
 #include <graphics/asynchronous_loader.h>
 #include <graphics/scene_renderer_resources.h>
 #include <graphics/passes/imgui_pass.h>
-#include <graphics/passes/geometry_pass.h>
+#include <graphics/passes/meshlet_early_pass.h>
+#include <graphics/passes/meshlet_late_pass.h>
+#include <graphics/passes/mesh_pass.h>
 #include <graphics/passes/depth_pyramid_pass.h>
 
 typedef struct crude_gfx_scene_renderer_creation
@@ -52,10 +54,14 @@ typedef struct crude_gfx_scene_renderer
 
   crude_allocator_container                                allocator_container;
 
-  crude_gfx_geometry_pass                                  geometry_pass;
+  crude_gfx_meshlet_early_pass                             meshlet_early_pass;
+  crude_gfx_meshlet_late_pass                              meshlet_late_pass;
+  crude_gfx_mesh_pass                                      mesh_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
-  crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
+  crude_gfx_depth_pyramid_pass                             depth_pyramid_early_pass;
+  crude_gfx_depth_pyramid_pass                             depth_pyramid_late_pass;
 
+  bool                                                     occlusion_culling_late_flag;
   bool                                                     use_meshlets;
 } crude_gfx_scene_renderer;
 

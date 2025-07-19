@@ -1,0 +1,83 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#include "crude/platform.glsli"
+#include "crude/scene.glsli"
+#include "crude/meshlet.glsli"
+#include "crude/culling.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
+
+layout(local_size_x=32) in;
+
+taskPayloadSharedEXT struct
+{
+  uint                                                     meshlet_indices[ 128 ];
+  uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
+} shared_data;
+
+void main()
+{
+  uint thread_index = gl_LocalInvocationID.x;
+  uint group_index = gl_WorkGroupID.x;
+  uint meshlet_index = mesh_draws[ gl_DrawIDARB ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
+
+  if ( meshlet_index >= mesh_draws[ gl_DrawIDARB ].meshletes_offset + mesh_draws[ gl_DrawIDARB ].meshletes_count )
+  {
+    return;
+  }
+
+  mat4 model_to_world = mesh_draws[ gl_DrawIDARB ].model_to_world;
+  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
+  float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+  float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+  vec3 cone_axis = vec3(
+    int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
+    int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
+    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( model_to_world );
+  float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
+  
+  bool accept = true;
+
+  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, crude_camera_debug_culling() ? camera_debug.position : camera.position );
+  
+  vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
+
+  bool frustum_visible = true;
+  for ( uint i = 0; i < 6; ++i )
+  {
+    frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+  }
+  accept = accept && frustum_visible;
+  
+  bool occlusion_visible = false;
+  if ( frustum_visible )
+  {
+    mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+    occlusion_visible = crude_occlusion_culling(
+      view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index, world_center.xyz,
+      crude_camera_debug_culling() ? camera_debug.position : camera.position,
+      world_to_clip_culling
+    );
+  }
+  accept = accept && occlusion_visible;
+
+  uvec4 ballot = subgroupBallot( accept );
+  
+  uint previous_visible_meshlet_index = subgroupBallotExclusiveBitCount( ballot );
+  if ( accept )
+  {
+    shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
+    shared_data.mesh_draw_indices[ previous_visible_meshlet_index ] = gl_DrawIDARB;
+  }
+  
+  uint visible_meslets_count = subgroupBallotBitCount( ballot );
+  if ( thread_index == 0 )
+  {
+    EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
+  }
+}

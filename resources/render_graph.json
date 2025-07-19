@@ -2,12 +2,12 @@
   "name": "main_graph",
   "passes": [
     {
+      "name": "meshlet_early_pass",
       "inputs": [],
-      "name": "geometry_pass",
       "outputs": [
         {
           "type": "attachment",
-          "name": "albedo",
+          "name": "albedo_early",
           "format": "VK_FORMAT_B8G8R8A8_SRGB",
           "resolution": [
             800,
@@ -17,7 +17,63 @@
         },
         {
           "type": "attachment",
-          "name": "depth",
+          "name": "depth_early",
+          "format": "VK_FORMAT_D32_SFLOAT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
+        },
+        {
+          "type": "buffer",
+          "name": "early_meshley_indirect_draw_list"
+        },
+        {
+          "type": "buffer",
+          "name": "early_task_indirect_draw_list"
+        }
+      ]
+    },
+    {
+      "name": "depth_pyramid_early_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "depth_early"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "texture",
+          "name": "depth_pyramid_early",
+          "external": true
+        }
+      ]
+    },
+    {
+      "name": "meshlet_late_pass",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "depth_pyramid_early"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "albedo_late",
+          "format": "VK_FORMAT_B8G8R8A8_SRGB",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
+        },
+        {
+          "type": "attachment",
+          "name": "depth_late",
           "format": "VK_FORMAT_D32_SFLOAT",
           "resolution": [
             800,
@@ -28,27 +84,28 @@
       ]
     },
     {
+      "name": "depth_pyramid_late_pass",
+      "type": "compute",
       "inputs": [
         {
           "type": "texture",
-          "name": "depth"
+          "name": "depth_late"
         }
       ],
-      "type": "compute",
       "outputs": [
         {
           "type": "texture",
-          "name": "depth_pyramid",
+          "name": "depth_pyramid_late",
           "external": true
         }
-      ],
-      "name": "depth_pyramid_pass"
+      ]
     },
     {
+      "name": "imgui_pass",
       "inputs": [
         {
           "type": "texture",
-          "name": "albedo"
+          "name": "albedo_late"
         }
       ],
       "outputs": [
@@ -62,8 +119,7 @@
           ],
           "op": "clear"
         }
-      ],
-      "name": "imgui_pass"
+      ]
     }
   ]
 }
