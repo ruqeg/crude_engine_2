@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_sandbox)
+project(crude_dragoninn)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
@@ -12,7 +12,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine cr)
 
-source_group(sandbox FILES ${CRUDE_SOURCES})
+source_group(dragoninn FILES ${CRUDE_SOURCES})
 
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE "/MP")

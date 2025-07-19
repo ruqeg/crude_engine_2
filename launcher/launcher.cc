@@ -53,18 +53,18 @@ crude_launcher_initialize
   float32                                                  display_content_scale;
 
   launcher->paprika.working = false;
-  launcher->sandbox.working = false;
+  launcher->dragoninn.working = false;
 
   crude_engine_initialize( &launcher->engine, 1u );
   
   ECS_IMPORT( launcher->engine.world, crude_platform_system );
 
-  launcher->crude_sandbox_cr.userdata           = &launcher->sandbox;
+  launcher->crude_dragoninn_cr.userdata         = &launcher->dragoninn;
   launcher->crude_paprika_cr.userdata           = &launcher->paprika;
   launcher->crude_engine_simulation_cr.userdata = &launcher->engine;
   
   cr_plugin_open( launcher->crude_engine_simulation_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_engine_simulation" ) ) );
-  cr_plugin_open( launcher->crude_sandbox_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_sandbox" ) ) );
+  cr_plugin_open( launcher->crude_dragoninn_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_dragoninn" ) ) );
   cr_plugin_open( launcher->crude_paprika_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_paprika" ) ) );
 
   if ( !SDL_Init( SDL_INIT_VIDEO) )
@@ -109,6 +109,7 @@ crude_launcher_initialize
   ImGui_ImplSDLRenderer3_Init( launcher->sdl_renderer );
   load_texture_( launcher, "textures\\paprika_button_texture.bmp", &launcher->paprika_texture );
   load_texture_( launcher, "textures\\vscode_button_texture.bmp", &launcher->shaders_button_texture );
+  load_texture_( launcher, "textures\\dragoninn_button_texture.bmp", &launcher->dragoninn_texture );
 
   crude_stack_allocator_initialize( &launcher->temporary_allocator, CRUDE_RMEGA( 32 ), "temprorary_allocator" );
 }
@@ -133,11 +134,11 @@ crude_launcher_deinitialize
   SDL_Quit();
   
   cr_plugin_close( launcher->crude_paprika_cr );
-  cr_plugin_close( launcher->crude_sandbox_cr );
+  cr_plugin_close( launcher->crude_dragoninn_cr );
   cr_plugin_close( launcher->crude_engine_simulation_cr );
   
   crude_paprika_deinitialize( &launcher->paprika );
-  crude_sandbox_deinitialize( &launcher->sandbox );
+  crude_dragoninn_deinitialize( &launcher->dragoninn );
   crude_engine_deinitialize( &launcher->engine );
 }
 
@@ -168,7 +169,7 @@ crude_launcher_update
   ImGui::DockSpaceOverViewport(0u, ImGui::GetMainViewport());
   {
     ImVec2 button_size;
-    button_size.x = ImGui::GetMainViewport()->WorkSize.x / 3.0;
+    button_size.x = ( ImGui::GetMainViewport()->WorkSize.x - 55 ) / 3;
     button_size.y = button_size.x * ( ( float32 )launcher->paprika_texture->h / launcher->paprika_texture->w );
     ImGui::Begin( "main", NULL );
     if ( ImGui::ImageButton( "crude_paprika", (ImTextureRef)launcher->paprika_texture, button_size ) )
@@ -188,6 +189,16 @@ crude_launcher_update
       const char *open_vs_shall = crude_string_buffer_append_use_f( &temporary_string_buffer, "code %s%s", working_directory, launcher->engine.shaders_path );
       crude_system( open_vs_shall );
     }
+    ImGui::SameLine();
+    if ( ImGui::ImageButton( "crude_dragoninn", (ImTextureRef)launcher->dragoninn_texture, button_size ) )
+    {
+      if ( !launcher->dragoninn.working )
+      {
+        crude_dragoninn_deinitialize( &launcher->dragoninn );
+        crude_dragoninn_initialize( &launcher->dragoninn, &launcher->engine );
+        ImGui::SetCurrentContext( launcher->imgui_context );
+      }
+    }
 
     ImGui::End();
   }
@@ -202,6 +213,10 @@ crude_launcher_update
   if ( launcher->paprika.working )
   {
     cr_plugin_update( launcher->crude_paprika_cr );
+  }
+  if ( launcher->dragoninn.working )
+  {
+    cr_plugin_update( launcher->crude_dragoninn_cr );
   }
 
   cr_plugin_update( launcher->crude_engine_simulation_cr );

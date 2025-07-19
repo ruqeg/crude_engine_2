@@ -1,9 +1,9 @@
 #include <cr/cr.h>
 
 #include <core/assert.h>
-#include <sandbox.h>
+#include <dragoninn.h>
 
-crude_sandbox sandbox_;
+crude_dragoninn instance_;
 
 CR_EXPORT int
 cr_main
@@ -19,8 +19,8 @@ cr_main
     return 0;
   }
 
-  crude_sandbox *sandbox = CRUDE_REINTERPRET_CAST( crude_sandbox*, ctx->userdata );
-  crude_sandbox_update( sandbox );
+  crude_dragoninn *instance_ = CRUDE_REINTERPRET_CAST( crude_dragoninn*, ctx->userdata );
+  crude_dragoninn_update( instance_ );
  
   return 0;
 }

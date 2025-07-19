@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(${PROJECT_NAME})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine_simulation crude_sandbox crude_paprika)
+target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine_simulation crude_dragoninn crude_paprika)
 
 if(MSVC)
  target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
