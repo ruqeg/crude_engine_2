@@ -1,34 +1,32 @@
-[submodule "extlibs/tlsf_cmake/tlsf"]
-	path = extlibs/tlsf_cmake/tlsf
-	url = https://github.com/mattconte/tlsf.git
-[submodule "extlibs/stb_cmake/stb"]
-	path = extlibs/stb_cmake/stb
-	url = https://github.com/nothings/stb.git
-[submodule "extlibs/cr_cmake/cr"]
-	path = extlibs/cr_cmake/cr
-	url = https://github.com/fungos/cr.git
-[submodule "extlibs/vma_cmake/VulkanMemoryAllocator"]
-	path = extlibs/vma_cmake/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "extlibs/cgltf_cmake/cgltf"]
 	path = extlibs/cgltf_cmake/cgltf
-	url = https://github.com/jkuhlmann/cgltf.git
-[submodule "resources/glTF-Sample-Models"]
-	path = resources/glTF-Sample-Models
-	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
-[submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
-	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
-	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
-[submodule "extlibs/enkiTS"]
-	path = extlibs/enkiTS
-	url = https://github.com/dougbinks/enkiTS.git
+	url = https://github.com/ruqeg/cgltf.git
 [submodule "extlibs/cjson_cmake/cJSON"]
 	path = extlibs/cjson_cmake/cJSON
-	url = https://github.com/DaveGamble/cJSON.git
-[submodule "extlibs/imgui_cmake/imgui"]
-	path = extlibs/imgui_cmake/imgui
-	url = https://github.com/ocornut/imgui.git
-	branch = docking
+	url = https://github.com/ruqeg/cJSON.git
+[submodule "extlibs/cr_cmake/cr"]
+	path = extlibs/cr_cmake/cr
+	url = https://github.com/ruqeg/cr.git
 [submodule "extlibs/imguizmo_cmake/ImGuizmo"]
 	path = extlibs/imguizmo_cmake/ImGuizmo
-	url = https://github.com/CedricGuillemet/ImGuizmo.git
+	url = https://github.com/ruqeg/ImGuizmo.git
+[submodule "extlibs/imgui_cmake/imgui"]
+	path = extlibs/imgui_cmake/imgui
+	url = https://github.com/ruqeg/imgui.git
+	branch = docking
+[submodule "extlibs/imgui_node_editor_cmake/imgui-node-editor"]
+	path = extlibs/imgui_node_editor_cmake/imgui-node-editor
+  url = https://github.com/ruqeg/imgui-node-editor.git
+	branch = ruqeg/crude_engine_2
+[submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
+	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
+	url = https://github.com/ruqeg/SPIRV-Reflect.git
+[submodule "extlibs/stb_cmake/stb"]
+	path = extlibs/stb_cmake/stb
+	url = https://github.com/ruqeg/stb.git
+[submodule "extlibs/tlsf_cmake/tlsf"]
+	path = extlibs/tlsf_cmake/tlsf
+	url = https://github.com/ruqeg/tlsf.git
+[submodule "extlibs/vma_cmake/VulkanMemoryAllocator"]
+	path = extlibs/vma_cmake/VulkanMemoryAllocator
+	url = https://github.com/ruqeg/VulkanMemoryAllocator.git

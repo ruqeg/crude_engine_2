@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui/imgui.h>
+#include <imgui_node_editor.h>
 #include <ImGuizmo.h>
 
 #include <engine.h>
@@ -9,6 +10,7 @@
 #include <core/ecs.h>
 #include <platform/platform_components.h>
 
+namespace axn = ax::NodeEditor;
 
 typedef struct crude_dragoninn
 {
@@ -17,6 +19,7 @@ typedef struct crude_dragoninn
   crude_entity                                             platform_node;
   ImGuiContext                                            *imgui_context;
   SDL_Renderer                                            *sdl_renderer;
+  axn::EditorContext                                      *node_editor_context;
 } crude_dragoninn;
 
 CRUDE_API void

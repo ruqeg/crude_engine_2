@@ -1,4 +1,3 @@
-#include <imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_sdlrenderer3.h>
 #include <SDL3/SDL.h>
@@ -81,6 +80,10 @@ crude_dragoninn_initialize
 
   ImGui_ImplSDL3_InitForSDLRenderer( sdl_window, dragoninn->sdl_renderer );
   ImGui_ImplSDLRenderer3_Init( dragoninn->sdl_renderer );
+  
+  ax::NodeEditor::Config config;
+  config.SettingsFile = "Simple.json";
+  dragoninn->node_editor_context = ax::NodeEditor::CreateEditor( &config );
 
   CRUDE_ECS_SYSTEM_DEFINE( dragoninn->engine->world, dragoninn_update_system_, EcsOnUpdate, dragoninn, {
     { .id = ecs_id( crude_input ) },
@@ -98,6 +101,8 @@ crude_dragoninn_deinitialize
   {
     return;
   }
+  
+  axn::DestroyEditor( dragoninn->node_editor_context );
 
   dragoninn->working = false;
 }
@@ -140,6 +145,26 @@ dragoninn_update_system_
     ImGui::Begin( "main", NULL );
     ImGui::End();
   }
+
+  
+  auto& io = ImGui::GetIO();
+  
+  axn::SetCurrentEditor( dragoninn->node_editor_context );
+  axn::Begin("My Editor", ImVec2(0.0, 0.0f));
+  int uniqueId = 1;
+  // Start drawing nodes.
+  axn::BeginNode(uniqueId++);
+      ImGui::Text("Node A");
+      axn::BeginPin(uniqueId++, axn::PinKind::Input);
+          ImGui::Text("-> In");
+      axn::EndPin();
+      ImGui::SameLine();
+      axn::BeginPin(uniqueId++, axn::PinKind::Output);
+          ImGui::Text("Out ->");
+      axn::EndPin();
+  axn::EndNode();
+  axn::End();
+  axn::SetCurrentEditor(nullptr);
 
   ImGui::Render();
   SDL_SetRenderScale( dragoninn->sdl_renderer, imgui_io->DisplayFramebufferScale.x, imgui_io->DisplayFramebufferScale.y );
