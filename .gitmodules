@@ -30,3 +30,6 @@
 [submodule "extlibs/vma_cmake/VulkanMemoryAllocator"]
 	path = extlibs/vma_cmake/VulkanMemoryAllocator
 	url = https://github.com/ruqeg/VulkanMemoryAllocator.git
+[submodule "resources/glTF-Sample-Models"]
+	path = resources/glTF-Sample-Models
+	url = https://github.com/ruqeg/glTF-Sample-Models.git
