@@ -282,6 +282,19 @@ crude_gfx_cmd_upload_buffer_data
   _In_ crude_gfx_buffer_handle                             dst_buffer
 );
 
+CRUDE_API void
+crude_gfx_cmd_push_marker
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_cmd_pop_marker
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+);
+
 /************************************************
  *
  * Command Buffer Manager Functions

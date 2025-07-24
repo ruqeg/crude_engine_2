@@ -177,6 +177,8 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_meshlet_pass_initialize( &scene_renderer->meshlet_late_pass, scene_renderer, false );
   crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_early_pass, scene_renderer, "depth_early" );
   crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_late_pass, scene_renderer, "depth_late" );
+  crude_gfx_mesh_culling_pass_initialize( &scene_renderer->mesh_culling_early_pass, scene_renderer );
+  crude_gfx_mesh_culling_pass_initialize( &scene_renderer->mesh_culling_late_pass, scene_renderer );
 }
 
 void
@@ -272,7 +274,9 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_early_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_late_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_late_pass ) );
-  
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "mesh_culling_early_pass", crude_gfx_mesh_culling_pass_pack( &scene_renderer->mesh_culling_early_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "mesh_culling_late_pass", crude_gfx_mesh_culling_pass_pack( &scene_renderer->mesh_culling_late_pass ) );
+
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_early_pass );
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_late_pass );
 }

@@ -12,6 +12,18 @@
 			]
 		  }
 		]
+	  },
+	  {
+		"name": "mesh_culling",
+		"shaders": [
+		  {
+			"stage": "compute",
+			"shader": "mesh_culling.comp",
+			"includes": [
+			  "crude/platform.glsli"
+			]
+		  }
+		]
 	  }
 	]
   }

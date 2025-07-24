@@ -836,6 +836,32 @@ crude_gfx_cmd_upload_buffer_data
   vkCmdCopyBuffer( cmd->vk_cmd_buffer, src->vk_buffer, dst->vk_buffer, 1, &region );
 }
 
+void
+crude_gfx_cmd_push_marker
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ char const                                         *name
+)
+{
+  VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
+  vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  vk_label.pLabelName = name;
+  vk_label.color[ 0 ] = 1.0f;
+  vk_label.color[ 1 ] = 1.0f;
+  vk_label.color[ 2 ] = 1.0f;
+  vk_label.color[ 3 ] = 1.0f;
+  cmd->gpu->vkCmdBeginDebugUtilsLabelEXT( cmd->vk_cmd_buffer, &vk_label );
+}
+
+void
+crude_gfx_cmd_pop_marker
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+)
+{
+  cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
+}
+
 /************************************************
  *
  * Command Buffer Manager Functions

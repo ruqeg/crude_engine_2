@@ -150,6 +150,8 @@ typedef struct crude_gfx_device
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
   PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
+  PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
+  PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
 } crude_gfx_device;                                
 
 /************************************************

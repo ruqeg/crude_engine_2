@@ -6,6 +6,7 @@
 #include <graphics/passes/meshlet_pass.h>
 #include <graphics/passes/mesh_pass.h>
 #include <graphics/passes/depth_pyramid_pass.h>
+#include <graphics/passes/mesh_culling_pass.h>
 
 typedef struct crude_gfx_scene_renderer_creation
 {
@@ -59,6 +60,8 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_early_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_late_pass;
+  crude_gfx_mesh_culling_pass                              mesh_culling_early_pass;
+  crude_gfx_mesh_culling_pass                              mesh_culling_late_pass;
 
   bool                                                     occlusion_culling_late_flag;
   bool                                                     use_meshlets;

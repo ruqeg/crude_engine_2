@@ -3017,6 +3017,8 @@ vk_create_device_
   gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
   gpu->vkCmdPipelineBarrier2KHR = ( PFN_vkCmdPipelineBarrier2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdPipelineBarrier2KHR" );
   gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
+  gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
+  gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
 }
 
 void

@@ -643,6 +643,8 @@ crude_gfx_render_graph_render
     {
       continue;
     }
+
+    crude_gfx_cmd_push_marker( gpu_commands, node->name );
     
     if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS )
     {
@@ -752,6 +754,8 @@ crude_gfx_render_graph_render
       
       crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
     }
+
+    crude_gfx_cmd_pop_marker( gpu_commands );
   }
 }
 
