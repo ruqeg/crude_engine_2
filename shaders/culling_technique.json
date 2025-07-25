@@ -20,10 +20,13 @@
 			"stage": "compute",
 			"shader": "mesh_culling.comp",
 			"includes": [
-			  "crude/platform.glsli"
+			  "crude/platform.glsli",
+			  "crude/mesh.glsli",
+			  "crude/scene.glsli",
+			  "crude/culling.glsli"
 			]
 		  }
 		]
 	  }
 	]
-  }
+}

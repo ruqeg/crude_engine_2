@@ -1957,12 +1957,12 @@ crude_gfx_create_descriptor_set_layout
   
   memory = CRUDE_CAST( uint8*, CRUDE_ALLOCATE( gpu->allocator_container, ( sizeof( VkDescriptorSetLayoutBinding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings ) );
   descriptor_set_layout->num_bindings = creation->num_bindings;
-  descriptor_set_layout->bindings     = ( crude_gfx_descriptor_binding* )memory;
-  descriptor_set_layout->vk_binding   = ( VkDescriptorSetLayoutBinding* )( memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
+  descriptor_set_layout->bindings     = CRUDE_CAST( crude_gfx_descriptor_binding*, memory );
+  descriptor_set_layout->vk_binding   = CRUDE_CAST( VkDescriptorSetLayoutBinding*, memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
   descriptor_set_layout->handle       = descriptor_set_layout_handle;
   descriptor_set_layout->set_index    = creation->set_index;
   descriptor_set_layout->bindless = creation->bindless;
-  
+
   used_bindings = 0;
   for ( uint32 i = 0; i < creation->num_bindings; ++i )
   {
@@ -1987,6 +1987,9 @@ crude_gfx_create_descriptor_set_layout
     vk_binding->descriptorCount = input_binding->count;
     vk_binding->stageFlags = VK_SHADER_STAGE_ALL;
     vk_binding->pImmutableSamplers = NULL;
+
+    CRUDE_ASSERT( binding->start >= 0 && binding->start < CRUDE_COUNTOF( descriptor_set_layout->binding_to_index ) );
+    descriptor_set_layout->binding_to_index[ binding->start ] = i;
   }
 
   if ( creation->bindless )
@@ -2109,7 +2112,7 @@ crude_gfx_create_descriptor_set
   uint32 num_resources = 0u;
   for ( uint32 i = 0; i < creation->num_resources; i++ )
   {
-    crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ creation->bindings[ i ] ];
+    crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ descriptor_set_layout->binding_to_index[ creation->bindings[ i ] ] ];
     
     if ( binding->set == CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
     {

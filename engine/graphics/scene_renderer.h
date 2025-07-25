@@ -40,6 +40,8 @@ typedef struct crude_gfx_scene_renderer
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
   
+  uint32                                                   total_meshes_count;
+
   crude_gfx_buffer_handle                                  scene_cb;
   
   crude_gfx_buffer_handle                                  meshes_materials_sb;
@@ -47,10 +49,11 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
   crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
-  crude_gfx_descriptor_set_handle                          mesh_shader_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
   crude_allocator_container                                allocator_container;
 
@@ -62,9 +65,6 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_depth_pyramid_pass                             depth_pyramid_late_pass;
   crude_gfx_mesh_culling_pass                              mesh_culling_early_pass;
   crude_gfx_mesh_culling_pass                              mesh_culling_late_pass;
-
-  bool                                                     occlusion_culling_late_flag;
-  bool                                                     use_meshlets;
 } crude_gfx_scene_renderer;
 
 

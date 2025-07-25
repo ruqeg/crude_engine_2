@@ -9,6 +9,7 @@ typedef struct crude_gfx_meshlet_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
   bool                                                     early_pass;
+  crude_gfx_descriptor_set_handle                          meshlet_shader_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_meshlet_pass;
 
 CRUDE_API void

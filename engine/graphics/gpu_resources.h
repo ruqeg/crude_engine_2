@@ -572,6 +572,7 @@ typedef struct crude_gfx_descriptor_set_layout
   VkDescriptorSetLayout                                    vk_descriptor_set_layout;
   VkDescriptorSetLayoutBinding                            *vk_binding;
   crude_gfx_descriptor_binding                            *bindings;
+  uint8                                                    binding_to_index[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
   uint16                                                   num_bindings;
   uint16                                                   set_index;
   crude_gfx_descriptor_set_layout_handle                   handle;
