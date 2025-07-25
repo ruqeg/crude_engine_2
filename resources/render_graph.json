@@ -2,8 +2,32 @@
   "name": "main_graph",
   "passes": [
     {
-      "name": "meshlet_early_pass",
+      "name": "mesh_culling_early_pass",
+      "type": "compute",
       "inputs": [],
+      "outputs": [
+        {
+          "type": "buffer",
+          "name": "meshlet_indirect_draw_list_early"
+        },
+        {
+          "type": "buffer",
+          "name": "task_indirect_draw_list_early"
+        }
+      ]
+    },
+    {
+      "name": "meshlet_early_pass",
+      "inputs": [
+        {
+          "type": "buffer",
+          "name": "meshlet_indirect_draw_list_early"
+        },
+        {
+          "type": "buffer",
+          "name": "task_indirect_draw_list_early"
+        }
+      ],
       "outputs": [
         {
           "type": "attachment",
@@ -28,40 +52,12 @@
       ]
     },
     {
-      "name": "mesh_culling_early_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "texture",
-          "name": "depth_early"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "buffer",
-          "name": "meshlet_indirect_draw_list_early"
-        },
-        {
-          "type": "buffer",
-          "name": "task_indirect_draw_list_early"
-        }
-      ]
-    },
-    {
       "name": "depth_pyramid_early_pass",
       "type": "compute",
       "inputs": [
         {
           "type": "texture",
           "name": "depth_early"
-        },
-        {
-          "type": "buffer",
-          "name": "meshlet_indirect_draw_list_early"
-        },
-        {
-          "type": "buffer",
-          "name": "task_indirect_draw_list_early"
         }
       ],
       "outputs": [
@@ -73,11 +69,39 @@
       ]
     },
     {
+      "name": "mesh_culling_late_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "depth_pyramid_early"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "buffer",
+          "name": "meshlet_indirect_draw_list_late"
+        },
+        {
+          "type": "buffer",
+          "name": "task_indirect_draw_list_late"
+        }
+      ]
+    },
+    {
       "name": "meshlet_late_pass",
       "inputs": [
         {
           "type": "texture",
           "name": "depth_pyramid_early"
+        },
+        {
+          "type": "buffer",
+          "name": "meshlet_indirect_draw_list_late"
+        },
+        {
+          "type": "buffer",
+          "name": "task_indirect_draw_list_late"
         }
       ],
       "outputs": [
@@ -104,40 +128,12 @@
       ]
     },
     {
-      "name": "mesh_culling_late_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "texture",
-          "name": "depth_late"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "buffer",
-          "name": "meshlet_indirect_draw_list_late"
-        },
-        {
-          "type": "buffer",
-          "name": "task_indirect_draw_list_late"
-        }
-      ]
-    },
-    {
       "name": "depth_pyramid_late_pass",
       "type": "compute",
       "inputs": [
         {
           "type": "texture",
           "name": "depth_late"
-        },
-        {
-          "type": "buffer",
-          "name": "meshlet_indirect_draw_list_late"
-        },
-        {
-          "type": "buffer",
-          "name": "task_indirect_draw_list_late"
         }
       ],
       "outputs": [

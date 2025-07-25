@@ -29,18 +29,18 @@ crude_gfx_meshlet_pass_initialize
   
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->scene_cb, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshes_materials_sb, 1u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_sb, 2u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_sb, 3u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 4u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 5u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_sb, 5u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_sb, 6u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 7u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 8u );
 
     if ( pass->early_pass )
     {
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 6u );
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 10u );
     }
     else
     {
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 6u );
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 10u );
     }
     
     pass->meshlet_shader_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );

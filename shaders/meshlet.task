@@ -11,6 +11,24 @@
 
 layout(local_size_x=32) in;
 
+layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
+{
+  uint                                                     opaque_mesh_visible_count;
+  uint                                                     opaque_mesh_culled_count;
+  uint                                                     transparent_mesh_visible_count;
+  uint                                                     transparent_mesh_culled_count;
+
+  uint                                                     total_count;
+  uint                                                     depth_pyramid_texture_index;
+  uint                                                     occlusion_culling_late_flag;
+  uint                                                     meshlet_index_count;
+
+  uint                                                     dispatch_task_x;
+  uint                                                     dispatch_task_y;
+  uint                                                     dispatch_task_z;
+  uint                                                     meshlet_instances_count;
+};
+
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];

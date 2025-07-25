@@ -30,17 +30,17 @@ crude_gfx_mesh_culling_pass_initialize
 
     if ( pass->early_pass )
     {
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 10u );
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_late_sb[ i ], 11u );
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 12u );
-      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 13u );
-    }
-    else
-    {
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_late_sb[ i ], 10u );
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 11u );
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 12u );
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 13u );
+    }
+    else
+    {
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 10u );
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_commands_late_sb[ i ], 11u );
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 12u );
+      crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 13u );
     }
     
     pass->mesh_culling_descriptor_sets_handles[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
@@ -77,6 +77,11 @@ crude_gfx_mesh_culling_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_mesh_culling_pass*, ctx );
 
   mesh_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "mesh_culling" )->pipeline;
+
+  if ( !pass->scene_renderer->total_meshes_count )
+  {
+    return;
+  }
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, mesh_culling_pipeline );
   

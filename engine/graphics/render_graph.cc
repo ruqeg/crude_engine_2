@@ -1137,15 +1137,17 @@ string_to_resource_type_
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE;
   }
-  
   if ( strcmp( input_type, "attachment" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT;
   }
-  
   if ( strcmp( input_type, "buffer" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER;
+  }
+  if ( strcmp( input_type, "reference" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE;
   }
   
   CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );

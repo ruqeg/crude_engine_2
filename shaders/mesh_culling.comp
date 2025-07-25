@@ -13,7 +13,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=10, row_major, std430) buffer MeshDrawCom
   crude_mesh_draw_command                                  early_mesh_draw_commands[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommandsLate
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommands
 {
   crude_mesh_draw_command                                  mesh_draw_commands[];
 };
@@ -58,7 +58,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCounts
 void main()
 {
   uint mesh_draw_index = gl_GlobalInvocationID.x;
-  uint count = occlusion_culling_late_flag == 1 ? total_mesh_count : early_opaque_mesh_culled_count;
+  uint count = total_mesh_count; //occlusion_culling_late_flag == 1 ? total_mesh_count : early_opaque_mesh_culled_count;
 
   uint thread_index = gl_LocalInvocationID.x;
 
