@@ -32,7 +32,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
 {
   uint32                                                   draw_id;
-  VkDrawIndexedIndirectCommand                             indirect;
   VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
 } crude_gfx_mesh_draw_command_gpu;
 
@@ -103,6 +102,7 @@ typedef struct crude_gfx_mesh_cpu
   XMFLOAT3                                                 scale;
   XMFLOAT3                                                 translation;
   XMFLOAT4                                                 rotation;
+  XMFLOAT4                                                 bounding_sphere;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  position_buffer;
   crude_gfx_buffer_handle                                  tangent_buffer;

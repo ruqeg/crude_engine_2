@@ -502,11 +502,13 @@ load_meshes_
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
-      crude_gfx_mesh_cpu                                       mesh_draw;
+      crude_gfx_mesh_cpu                                   mesh_draw;
       cgltf_primitive                                     *mesh_primitive;
       cgltf_accessor                                      *indices_accessor;
       cgltf_buffer_view                                   *indices_buffer_view;
       crude_gfx_renderer_buffer                           *indices_buffer_gpu;
+      XMVECTOR                                             bounding_center;
+      float32                                              bounding_radius;
       bool                                                 material_transparent;
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
@@ -519,8 +521,21 @@ load_meshes_
         {
         case cgltf_attribute_type_position:
         {
+          XMVECTOR                                         position_max;
+          XMVECTOR                                         position_min;
+
           mesh_draw.position_buffer = buffer_gpu->handle;
           mesh_draw.position_offset = mesh_primitive->attributes[ i ].data->offset;
+
+          CRUDE_ASSERT( sizeof( cgltf_float[4] ) == sizeof( XMFLOAT4 ) );
+          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->has_max && mesh_primitive->attributes[ i ].data->has_min );
+          
+          position_max = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, mesh_primitive->attributes[ i ].data->min ) );
+          position_min = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, mesh_primitive->attributes[ i ].data->max ) );
+
+          bounding_center = XMVectorAdd( position_min, position_min );
+          bounding_center = XMVectorScale( bounding_center, 0.5f );
+          bounding_radius = XMVectorGetX( XMVectorMax( XMVector3Length( position_max - bounding_center ), XMVector3Length( position_min - bounding_center ) ) );
           break;
         }
         case cgltf_attribute_type_tangent:
@@ -558,6 +573,11 @@ load_meshes_
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
       mesh_draw.gpu_mesh_index = CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
+
+      mesh_draw.bounding_sphere.x = XMVectorGetX( bounding_center );
+      mesh_draw.bounding_sphere.y = XMVectorGetY( bounding_center );
+      mesh_draw.bounding_sphere.z = XMVectorGetZ( bounding_center );
+      mesh_draw.bounding_sphere.w = bounding_radius;
 
       CRUDE_ARRAY_PUSH( scene_renderer->meshes, mesh_draw );
     }
@@ -634,7 +654,7 @@ load_meshlets_
           local_meshlet->triangle_count, local_meshlet->vertex_count
         );
       }
-      
+
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
         meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];

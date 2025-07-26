@@ -211,6 +211,15 @@ crude_gfx_cmd_bind_descriptor_set
 );
 
 CRUDE_API void
+crude_gfx_cmd_add_buffer_barrier
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer                                   *buffer,
+  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_resource_state                            new_state
+);
+
+CRUDE_API void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

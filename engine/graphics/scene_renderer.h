@@ -45,6 +45,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  scene_cb;
   
   crude_gfx_buffer_handle                                  meshes_materials_sb;
+  crude_gfx_buffer_handle                                  meshes_bounds_sb;
   crude_gfx_buffer_handle                                  meshlets_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;

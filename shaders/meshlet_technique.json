@@ -24,6 +24,7 @@
 					"includes": [
 						"crude/platform.glsli",
 						"crude/meshlet.glsli",
+						"crude/mesh.glsli",
 						"crude/scene.glsli"
 					]
 				},
@@ -34,6 +35,7 @@
 						"crude/platform.glsli",
 						"crude/culling.glsli",
 						"crude/meshlet.glsli",
+						"crude/mesh.glsli",
 						"crude/scene.glsli"
 					]
 				},
@@ -43,6 +45,7 @@
 					"includes": [
 						"crude/platform.glsli",
 						"crude/meshlet.glsli",
+						"crude/mesh.glsli",
 						"crude/scene.glsli"
 					]
 				}

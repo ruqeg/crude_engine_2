@@ -125,6 +125,13 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.name = "meshes_materials_sb";
     scene_renderer->meshes_materials_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( XMFLOAT4 ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
+    buffer_creation.name = "meshes_bounds_sb";
+    scene_renderer->meshes_bounds_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
     /* Create indirect buffers */
     for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
     {
@@ -210,6 +217,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_indices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_triangles_indices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_materials_sb );
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_bounds_sb );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -238,6 +246,7 @@ crude_gfx_scene_renderer_submit_draw_task
   crude_gfx_device                                        *gpu;
   crude_gfx_cmd_buffer                                    *primary_cmd;
   crude_gfx_mesh_material_gpu                             *mesh_materials;
+  XMFLOAT4                                                *mesh_bounds;
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts_early;
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts_late;
   crude_gfx_map_buffer_parameters                          buffer_map;
@@ -264,7 +273,15 @@ crude_gfx_scene_renderer_submit_draw_task
   buffer_map.size = 0;
   mesh_materials = CRUDE_CAST( crude_gfx_mesh_material_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
   
-  if ( mesh_materials && mesh_draw_counts_early && mesh_draw_counts_late )
+  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+  buffer_map.buffer = scene_renderer->meshes_bounds_sb;
+  buffer_map.offset = 0;
+  buffer_map.size = 0;
+  mesh_bounds = CRUDE_CAST( XMFLOAT4*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+  
+  CRUDE_ASSERT( mesh_materials && mesh_draw_counts_early && mesh_draw_counts_late && mesh_bounds );
+
+  if ( mesh_materials && mesh_draw_counts_early && mesh_draw_counts_late && mesh_bounds )
   {
     scene_renderer->total_meshes_count = 0u;
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ); ++i )
@@ -278,14 +295,16 @@ crude_gfx_scene_renderer_submit_draw_task
 
       if ( mesh_textures_ready )
       {
-        crude_gfx_mesh_cpu_to_mesh_material_gpu( scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ i ] );
+        crude_gfx_mesh_cpu_to_mesh_material_gpu( scene_renderer->mesh_instances[ i ].mesh, &mesh_materials[ scene_renderer->total_meshes_count ] );
+        mesh_bounds[ scene_renderer->total_meshes_count ] = scene_renderer->mesh_instances[ i ].mesh->bounding_sphere;
+
         ++scene_renderer->total_meshes_count;
       }
     }
 
     mesh_draw_counts_early->total_count = scene_renderer->total_meshes_count;
-    mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_late_pass.depth_pyramid_texture_handle.index;
     mesh_draw_counts_early->opaque_mesh_visible_count = 0u;
+    mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_late_pass.depth_pyramid_texture_handle.index;
     mesh_draw_counts_early->occlusion_culling_late_flag = false;
 
     mesh_draw_counts_late->total_count = scene_renderer->total_meshes_count;
@@ -293,7 +312,7 @@ crude_gfx_scene_renderer_submit_draw_task
     mesh_draw_counts_late->depth_pyramid_texture_index = scene_renderer->depth_pyramid_early_pass.depth_pyramid_texture_handle.index;
     mesh_draw_counts_late->occlusion_culling_late_flag = true;
   }
-
+  
   if ( mesh_draw_counts_early )
   {
     crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ] );
@@ -305,6 +324,10 @@ crude_gfx_scene_renderer_submit_draw_task
   if ( mesh_materials )
   {
     crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_materials_sb );
+  }
+  if ( mesh_bounds )
+  {
+    crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_bounds_sb );
   }
 
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );

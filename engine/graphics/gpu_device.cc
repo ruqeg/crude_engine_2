@@ -2105,9 +2105,9 @@ crude_gfx_create_descriptor_set
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
   }
 
-  VkWriteDescriptorSet descriptor_write[ 8 ];
-  VkDescriptorBufferInfo buffer_info[ 8 ];
-  VkDescriptorImageInfo image_info[ 8 ];
+  VkWriteDescriptorSet descriptor_write[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  VkDescriptorBufferInfo buffer_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  VkDescriptorImageInfo image_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
 
   uint32 num_resources = 0u;
   for ( uint32 i = 0; i < creation->num_resources; i++ )

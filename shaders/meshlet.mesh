@@ -31,10 +31,15 @@ layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
   uint                                                     meshlet_instances_count;
 };
 
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer MeshDrawCommands
+{
+  crude_mesh_draw_command                                  mesh_draw_commands[];
+};
+
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
-  uint                                                     mesh_draw_indices[ 128 ]; /* Validation says that I shouldn't use gl_DrawIDARB in mesh shader, don't know why, but wouldn't argue with him */
+  uint                                                     mesh_draw_indices[ 128 ];
 } shared_data;
 
 void main()

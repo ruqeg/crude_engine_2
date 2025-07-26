@@ -3,6 +3,7 @@
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"
 #include "crude/meshlet.glsli"
+#include "crude/mesh.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 layout(location = 0) out vec4 out_color;
@@ -26,6 +27,11 @@ layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
   uint                                                     dispatch_task_y;
   uint                                                     dispatch_task_z;
   uint                                                     meshlet_instances_count;
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer MeshDrawCommands
+{
+  crude_mesh_draw_command                                  mesh_draw_commands[];
 };
 
 void main()

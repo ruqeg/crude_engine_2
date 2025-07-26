@@ -655,6 +655,33 @@ crude_gfx_cmd_bind_descriptor_set
 }
 
 void
+crude_gfx_cmd_add_buffer_barrier
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer                                   *buffer,
+  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_resource_state                            new_state
+)
+{
+  VkBufferMemoryBarrier2KHR barrier = CRUDE_COMPOUNT_EMPTY( VkBufferMemoryBarrier2KHR );
+  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+  barrier.srcAccessMask = crude_gfx_resource_state_to_vk_access_flags2( old_state );
+  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags2( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  barrier.dstAccessMask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
+  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags2( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  barrier.buffer = buffer->vk_buffer;
+  barrier.offset = 0;
+  barrier.size = buffer->size;
+  
+  VkDependencyInfoKHR dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
+  dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+  dependency_info.bufferMemoryBarrierCount = 1;
+  dependency_info.pBufferMemoryBarriers = &barrier;
+  
+  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
+}
+
+void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
