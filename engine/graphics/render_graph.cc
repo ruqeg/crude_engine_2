@@ -678,6 +678,15 @@ crude_gfx_render_graph_render
           crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
           width = texture->width;
           height = texture->height;
+          
+          if ( texture->vk_format == VK_FORMAT_D32_SFLOAT )
+          {
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
+          }
+          else
+          {
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
+          }
         }
       }
       
@@ -902,13 +911,16 @@ crude_gfx_render_graph_builder_create_node_output
   resource->name = creation->name;
   resource->type = creation->type;
   
-  resource->resource_info = creation->resource_info;
-  resource->output_handle = resource_handle;
-  resource->producer = producer;
-  resource->ref_count = 0;
+  if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
+  {
+    resource->resource_info = creation->resource_info;
+    resource->output_handle = resource_handle;
+    resource->producer = producer;
+    resource->ref_count = 0;
 
-  uint64 key = crude_hash_string( resource->name, 0 );
-  CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
+    uint64 key = crude_hash_string( resource->name, 0 );
+    CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
+  }
 
   return resource_handle;
 }

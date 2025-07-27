@@ -8,11 +8,11 @@
       "outputs": [
         {
           "type": "buffer",
-          "name": "meshlet_indirect_draw_list_early"
+          "name": "mesh_task_indirect_commands_early"
         },
         {
           "type": "buffer",
-          "name": "task_indirect_draw_list_early"
+          "name": "mesh_task_indirect_count_early"
         }
       ]
     },
@@ -21,17 +21,17 @@
       "inputs": [
         {
           "type": "buffer",
-          "name": "meshlet_indirect_draw_list_early"
+          "name": "mesh_task_indirect_commands_early"
         },
         {
           "type": "buffer",
-          "name": "task_indirect_draw_list_early"
+          "name": "mesh_task_indirect_count_early"
         }
       ],
       "outputs": [
         {
           "type": "attachment",
-          "name": "albedo_early",
+          "name": "albedo",
           "format": "VK_FORMAT_B8G8R8A8_SRGB",
           "resolution": [
             800,
@@ -41,7 +41,7 @@
         },
         {
           "type": "attachment",
-          "name": "depth_early",
+          "name": "depth",
           "format": "VK_FORMAT_D32_SFLOAT",
           "resolution": [
             800,
@@ -52,18 +52,26 @@
       ]
     },
     {
-      "name": "depth_pyramid_early_pass",
+      "name": "depth_pyramid_pass",
       "type": "compute",
       "inputs": [
         {
           "type": "texture",
-          "name": "depth_early"
+          "name": "depth"
+        },
+        {
+          "type": "buffer",
+          "name": "mesh_task_indirect_commands_early"
+        },
+        {
+          "type": "buffer",
+          "name": "mesh_task_indirect_count_early"
         }
       ],
       "outputs": [
         {
           "type": "texture",
-          "name": "depth_pyramid_early",
+          "name": "depth_pyramid",
           "external": true
         }
       ]
@@ -74,17 +82,17 @@
       "inputs": [
         {
           "type": "reference",
-          "name": "depth_pyramid_early"
+          "name": "depth_pyramid"
         }
       ],
       "outputs": [
         {
           "type": "buffer",
-          "name": "meshlet_indirect_draw_list_late"
+          "name": "mesh_task_indirect_commands_late"
         },
         {
           "type": "buffer",
-          "name": "task_indirect_draw_list_late"
+          "name": "mesh_task_indirect_count_late"
         }
       ]
     },
@@ -93,54 +101,37 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "depth_pyramid_early"
+          "name": "depth_pyramid"
         },
         {
           "type": "buffer",
-          "name": "meshlet_indirect_draw_list_late"
+          "name": "mesh_task_indirect_commands_late"
         },
         {
           "type": "buffer",
-          "name": "task_indirect_draw_list_late"
+          "name": "mesh_task_indirect_count_late"
+        },
+        {
+          "type": "attachment",
+          "name": "albedo"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
         }
       ],
       "outputs": [
         {
-          "type": "attachment",
-          "name": "albedo_late",
-          "format": "VK_FORMAT_B8G8R8A8_SRGB",
-          "resolution": [
-            800,
-            600
-          ],
-          "op": "clear"
+          "type": "reference",
+          "name": "albedo"
         },
         {
-          "type": "attachment",
-          "name": "depth_late",
-          "format": "VK_FORMAT_D32_SFLOAT",
-          "resolution": [
-            800,
-            600
-          ],
-          "op": "clear"
-        }
-      ]
-    },
-    {
-      "name": "depth_pyramid_late_pass",
-      "type": "compute",
-      "inputs": [
+          "type": "reference",
+          "name": "depth"
+        },
         {
-          "type": "texture",
-          "name": "depth_late"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "texture",
-          "name": "depth_pyramid_late",
-          "external": true
+          "type": "buffer",
+          "name": "MARKER"
         }
       ]
     },
@@ -149,7 +140,11 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "albedo_late"
+          "name": "albedo"
+        },
+        {
+          "type": "buffer",
+          "name": "MARKER"
         }
       ],
       "outputs": [
