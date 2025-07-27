@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #include "crude/platform.glsli"
+#include "crude/debug.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 layout(set=CRUDE_MATERIAL_SET, binding=0) uniform sampler2D src;

@@ -78,7 +78,6 @@ crude_gfx_mesh_culling_pass_render
   crude_gfx_buffer                                        *commands_write_sb;
   crude_gfx_mesh_culling_pass                             *pass;
   crude_gfx_pipeline_handle                                mesh_culling_pipeline;
-  uint32                                                   meshes_count;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_mesh_culling_pass*, ctx );
 
@@ -102,39 +101,12 @@ crude_gfx_mesh_culling_pass_render
     count_write_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
     commands_write_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ gpu->current_frame ] );
   }
-
+  
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_write_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_write_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
 
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->mesh_culling_descriptor_sets_handles[ primary_cmd->gpu->current_frame ] );
-  
-  if ( pass->early_pass )
-  {
-    meshes_count = pass->scene_renderer->total_meshes_count;
-  }
-  else
-  {
-    crude_gfx_mesh_draw_counts_gpu                        *mesh_draw_counts_early;
-    crude_gfx_map_buffer_parameters                        buffer_map;
- 
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = pass->scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ];
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-    mesh_draw_counts_early = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-
-    if ( mesh_draw_counts_early )
-    {
-      meshes_count = mesh_draw_counts_early->opaque_mesh_culled_count;
-      crude_gfx_unmap_buffer( gpu, pass->scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ] );
-    }
-    else
-    {
-      CRUDE_ASSERT( false && "damn" );
-    }
-  }
-  
-  crude_gfx_cmd_dispatch( primary_cmd, ( meshes_count + 63u ) / 64u, 1u, 1u );
+  crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_count + 63u ) / 64u, 1u, 1u );
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_write_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_write_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );

@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #include "crude/platform.glsli"
+#include "crude/debug.glsli"
 #include "crude/scene.glsli"
 #include "crude/meshlet.glsli"
 #include "crude/mesh.glsli"
@@ -76,17 +77,13 @@ void main()
   }
   accept = accept && frustum_visible;
   
-  bool occlusion_visible = true;
+  bool occlusion_visible = false;
   if ( frustum_visible )
   {
-    mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
-    occlusion_visible = crude_occlusion_culling(
-      view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
-      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
-      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
-      depth_pyramid_texture_index, world_center.xyz,
-      crude_camera_debug_culling() ? camera_debug.position : camera.position,
-      world_to_clip_culling
+    occlusion_visible = crude_occlusion_culling( view_center.xyz, radius, camera.znear,
+      camera.view_to_clip[ 0 ][ 0 ], camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index,
+      world_center.xyz, camera.position, camera.world_to_clip
     );
   }
   accept = accept && occlusion_visible;

@@ -60,6 +60,20 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   
   pass->depth_pyramid_texture_handle = crude_gfx_create_texture( gpu, &depth_hierarchy_creation );
   
+  crude_gfx_sampler_creation sampler_creation = crude_gfx_sampler_creation_empty();
+  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = VK_FILTER_LINEAR;
+  sampler_creation.min_filter = VK_FILTER_LINEAR;
+  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_creation.reduction_mode = VK_SAMPLER_REDUCTION_MODE_MAX;
+  sampler_creation.name = "depth_pyramid_sampler";
+
+  pass->depth_pyramid_sampler = crude_gfx_create_sampler( gpu, &sampler_creation );
+
+  crude_gfx_link_texture_sampler( gpu, pass->depth_pyramid_texture_handle, pass->depth_pyramid_sampler );
+
   crude_gfx_texture_view_creation depth_pyramid_view_creation = crude_gfx_texture_view_creation_empty( );
   depth_pyramid_view_creation.view_type = VK_IMAGE_VIEW_TYPE_2D;
   depth_pyramid_view_creation.parent_texture_handle = pass->depth_pyramid_texture_handle;

@@ -2,6 +2,9 @@
 #ifndef CRUDE_DEBUG_GLSLI
 #define CRUDE_DEBUG_GLSLI
 
+#define CRUDE_DEBUG_LINE_2D_OFFSET 1000
+#define CRUDE_DEBUG_MAX_LINES 640000
+
 struct crude_debug_line_vertex
 {
   vec3                                                     position;
@@ -16,12 +19,12 @@ struct crude_debug_draw_command
   uint                                                     first_instance;
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=20) readonly buffer CrudeDebugLines
+layout(set=CRUDE_MATERIAL_SET, binding=20) buffer CrudeDebugLines
 {
   crude_debug_line_vertex                                  debug_line_vertices[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=21) readonly buffer CrudeDebugLinesCount
+layout(set=CRUDE_MATERIAL_SET, binding=21) buffer CrudeDebugLinesCount
 {
   uint                                                     debug_lines_3d_count;
   uint                                                     debug_lines_2d_count;
@@ -29,7 +32,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=21) readonly buffer CrudeDebugLinesCount
   uint                                                     padding1;
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=22) readonly buffer CrudeDebugLineCommands
+layout(set=CRUDE_MATERIAL_SET, binding=22) buffer CrudeDebugLineCommands
 {
   crude_debug_draw_command                                 debug_draw_commands;
   crude_debug_draw_command                                 debug_draw_commands_2d;
@@ -41,18 +44,14 @@ uint crude_vec4_to_rgba( vec4 color )
   return ( uint( color.r * 255.f ) | ( uint( color.g * 255.f ) << 8 ) | ( uint( color.b * 255.f ) << 16 ) | ( ( uint( color.a * 255.f ) << 24 ) ) );
 }
 
-vec4 unpack_color_rgba( uint color ) {
-    return vec4( ( color & 0xffu ) / 255.f,
-                 ( ( color >> 8u ) & 0xffu ) / 255.f,
-                 ( ( color >> 16u ) & 0xffu ) / 255.f,
-                 ( ( color >> 24u ) & 0xffu ) / 255.f );
+vec4 unpack_color_rgba( uint color )
+{
+  return vec4( ( color & 0xffu ) / 255.f, ( ( color >> 8u ) & 0xffu ) / 255.f, ( ( color >> 16u ) & 0xffu ) / 255.f, ( ( color >> 24u ) & 0xffu ) / 255.f );
 }
 
-vec4 unpack_color_abgr( uint color ) {
-    return vec4( ( ( color >> 24u ) & 0xffu ) / 255.f,
-                 ( ( color >> 16u ) & 0xffu ) / 255.f,
-                 ( ( color >> 8u ) & 0xffu ) / 255.f,
-                 ( color & 0xffu ) / 255.f );
+vec4 unpack_color_abgr( uint color )
+{
+  return vec4( ( ( color >> 24u ) & 0xffu ) / 255.f, ( ( color >> 16u ) & 0xffu ) / 255.f, ( ( color >> 8u ) & 0xffu ) / 255.f, ( color & 0xffu ) / 255.f );
 }
 
 void crude_debug_draw_line_coloru( vec3 start, vec3 end, uint start_color, uint end_color )
@@ -69,6 +68,63 @@ void crude_debug_draw_line_coloru( vec3 start, vec3 end, uint start_color, uint 
 void crude_debug_draw_line( vec3 start, vec3 end, vec4 start_color, vec4 end_color )
 {
   crude_debug_draw_line_coloru( start, end, crude_vec4_to_rgba( start_color ), crude_vec4_to_rgba( end_color ) );
+}
+
+void crude_debug_draw_box( vec3 mn, vec3 mx, vec4 color )
+{
+  const float x0 = mn.x;
+  const float y0 = mn.y;
+  const float z0 = mn.z;
+  const float x1 = mx.x;
+  const float y1 = mx.y;
+  const float z1 = mx.z;
+
+  uint color_uint = crude_vec4_to_rgba( color );
+
+  crude_debug_draw_line_coloru( vec3( x0, y0, z0 ), vec3( x0, y1, z0 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x0, y1, z0 ), vec3( x1, y1, z0 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y1, z0 ), vec3( x1, y0, z0 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y0, z0 ), vec3( x0, y0, z0 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x0, y0, z0 ), vec3( x0, y0, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x0, y1, z0 ), vec3( x0, y1, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y1, z0 ), vec3( x1, y1, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y0, z0 ), vec3( x1, y0, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x0, y0, z1 ), vec3( x0, y1, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x0, y1, z1 ), vec3( x1, y1, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y1, z1 ), vec3( x1, y0, z1 ), color_uint, color_uint );
+  crude_debug_draw_line_coloru( vec3( x1, y0, z1 ), vec3( x0, y0, z1 ), color_uint, color_uint );
+}
+
+void crude_debug_draw_line_2d_coloru( vec2 start, vec2 end, uint start_color, uint end_color )
+{
+  if ( debug_lines_2d_count >= CRUDE_DEBUG_MAX_LINES )
+  {
+    return;
+  }
+
+  uint frame_offset = CRUDE_DEBUG_LINE_2D_OFFSET;
+  uint line_offset = atomicAdd( debug_lines_2d_count, 2 ) + frame_offset;
+
+  debug_line_vertices[ line_offset ].position = vec3( start.xy, 0 );
+  debug_line_vertices[ line_offset ].color = start_color;
+
+  debug_line_vertices[ line_offset + 1 ].position = vec3( end.xy, 0 );
+  debug_line_vertices[ line_offset + 1 ].color = end_color;
+}
+
+void crude_debug_draw_2d_line( vec2 start, vec2 end, vec4 start_color, vec4 end_color )
+{
+  crude_debug_draw_line_2d_coloru( start, end, crude_vec4_to_rgba( start_color ), crude_vec4_to_rgba( end_color ) );
+}
+
+void crude_debug_draw_2d_box( vec2 min, vec2 max, vec4 color )
+{
+  uint color_uint = crude_vec4_to_rgba(color);
+
+  crude_debug_draw_line_2d_coloru( vec2(min.x, min.y), vec2(max.x, min.y), color_uint, color_uint );
+  crude_debug_draw_line_2d_coloru( vec2(max.x, min.y), vec2(max.x, max.y), color_uint, color_uint );
+  crude_debug_draw_line_2d_coloru( vec2(max.x, max.y), vec2(min.x, max.y), color_uint, color_uint );
+  crude_debug_draw_line_2d_coloru( vec2(min.x, max.y), vec2(min.x, min.y), color_uint, color_uint );
 }
 
 #endif /* CRUDE_DEBUG_GLSLI */

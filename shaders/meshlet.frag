@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #include "crude/platform.glsli"
+#include "crude/debug.glsli"
 #include "crude/scene.glsli"
 #include "crude/meshlet.glsli"
 #include "crude/mesh.glsli"

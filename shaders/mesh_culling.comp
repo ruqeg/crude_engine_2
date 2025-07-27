@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #include "crude/platform.glsli"
+#include "crude/debug.glsli"
 #include "crude/mesh.glsli"
 #include "crude/scene.glsli"
 #include "crude/culling.glsli"
@@ -94,7 +95,7 @@ void main()
       );
     }
 
-    if ( frustum_visible && occlusion_visible )
+    if ( true )
     {
       uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
       mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;

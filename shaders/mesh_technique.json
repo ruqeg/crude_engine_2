@@ -23,6 +23,7 @@
           "shader": "mesh.vert",
 					"includes": [
 						"crude/platform.glsli",
+            "crude/debug.glsli",
 						"crude/scene.glsli"
 					]
         },
@@ -31,6 +32,7 @@
           "shader": "mesh.frag",
 					"includes": [
 						"crude/platform.glsli",
+            "crude/debug.glsli",
 						"crude/scene.glsli"
 					]
         }

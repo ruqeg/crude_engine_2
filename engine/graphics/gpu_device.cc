@@ -1016,20 +1016,27 @@ crude_gfx_create_sampler
   sampler->mip_filter     = creation->mip_filter;
   sampler->name           = creation->name;
   
-  VkSamplerCreateInfo create_info = { 
-    .sType                    = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-    .magFilter                = creation->mag_filter,
-    .minFilter                = creation->min_filter,
-    .mipmapMode               = creation->mip_filter,
-    .addressModeU             = creation->address_mode_u,
-    .addressModeV             = creation->address_mode_v,
-    .addressModeW             = creation->address_mode_w,
-    .anisotropyEnable         = 0,
-    .compareEnable            = 0,
-    .borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE,
-    .unnormalizedCoordinates  = 0,
-  };
+  VkSamplerCreateInfo create_info = CRUDE_COMPOUNT_EMPTY( VkSamplerCreateInfo );
+  create_info.sType                    = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+  create_info.magFilter                = creation->mag_filter;
+  create_info.minFilter                = creation->min_filter;
+  create_info.mipmapMode               = creation->mip_filter;
+  create_info.addressModeU             = creation->address_mode_u;
+  create_info.addressModeV             = creation->address_mode_v;
+  create_info.addressModeW             = creation->address_mode_w;
+  create_info.anisotropyEnable         = 0;
+  create_info.compareEnable            = 0;
+  create_info.borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+  create_info.unnormalizedCoordinates  = 0;
   
+  VkSamplerReductionModeCreateInfoEXT create_info_reduction = CRUDE_COMPOUNT_EMPTY( VkSamplerReductionModeCreateInfoEXT );
+  create_info_reduction.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT;
+  if ( creation->reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT )
+  {
+    create_info_reduction.reductionMode = creation->reduction_mode;
+    create_info.pNext = &create_info_reduction;
+  }
+
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
   crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, CRUDE_CAST( uint64, sampler->vk_sampler ), creation->name );
   return handle;

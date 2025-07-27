@@ -18,7 +18,7 @@
 #define CRUDE_GFX_MAX_IMAGE_OUTPUTS                        8
 #define CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS               8
 #define CRUDE_GFX_MAX_SHADER_STAGES                        5      
-#define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  16
+#define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  32
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
 #define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024
@@ -296,6 +296,7 @@ typedef struct crude_gfx_sampler_creation
   VkSamplerAddressMode                                     address_mode_u;
   VkSamplerAddressMode                                     address_mode_v;
   VkSamplerAddressMode                                     address_mode_w;
+  VkSamplerReductionMode                                   reduction_mode;
   const char*                                              name;
 } crude_gfx_sampler_creation;
 

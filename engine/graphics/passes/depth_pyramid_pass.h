@@ -15,6 +15,7 @@ typedef struct crude_gfx_depth_pyramid_pass
   crude_gfx_descriptor_set_handle                          depth_hierarchy_descriptor_sets_handles[ CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ];
   crude_gfx_descriptor_set_layout_handle                   depth_pyramid_layout_handle;
   char const                                              *depth_resource_name;
+  crude_gfx_sampler_handle                                 depth_pyramid_sampler;
 } crude_gfx_depth_pyramid_pass;
 
 CRUDE_API void
