@@ -57,27 +57,25 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCounts
 
 void main()
 {
-  uint thread_index = gl_LocalInvocationID.x;
-  uint group_index = gl_WorkGroupID.x;
-  uint mesh_draw_index = group_index * gl_WorkGroupSize.x + thread_index;//gl_GlobalInvocationID.x;
+  uint mesh_draw_index = gl_GlobalInvocationID.x;
   uint count = total_mesh_count;// occlusion_culling_late_flag == 1 ? total_mesh_count : early_opaque_mesh_culled_count;
 
   if ( mesh_draw_index < count )
   {
-    //mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
-    //vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
-    //vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
-    //float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
-    //float radius = bounding_sphere.w * scale * 1.1;
+    mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
+    vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
+    vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
+    float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+    float radius = bounding_sphere.w * scale * 1.1;
 
-    //vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
+    vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
 
-    //bool frustum_visible = true;
-    //for ( uint i = 0; i < 6; ++i )
-    //{
-    //  frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
-    //}
-    /*
+    bool frustum_visible = true;
+    for ( uint i = 0; i < 6; ++i )
+    {
+      frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+    }
+
     bool occlusion_visible = false;
     if ( frustum_visible )
     {
@@ -86,26 +84,23 @@ void main()
         view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
         crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
         crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
-        late_depth_pyramid_texture_index, world_center.xyz,
+        depth_pyramid_texture_index, world_center.xyz,
         crude_camera_debug_culling() ? camera_debug.position : camera.position,
         world_to_clip_culling
       );
     }
-    
+
     if ( frustum_visible && occlusion_visible )
     {
-      uint draw_index = atomicAdd( late_opaque_mesh_visible_count, 1 );
-      early_mesh_draw_commands[ draw_index ].draw_index = mesh_draw_index;
+      uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
+      mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;
+      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
+      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
+      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
     }
-    else if ( late_occlusion_culling_late_flag == 0 )
+    else if ( occlusion_culling_late_flag == 0 )
     {
 
-    }*/
-      
-    uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
-    mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;
-    mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
-    mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
-    mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
+    }
   }
 }

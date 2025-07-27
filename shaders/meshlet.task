@@ -65,30 +65,30 @@ void main()
   
   bool accept = true;
 
-  //accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, crude_camera_debug_culling() ? camera_debug.position : camera.position );
+  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, crude_camera_debug_culling() ? camera_debug.position : camera.position );
   
   vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
 
   bool frustum_visible = true;
-  //for ( uint i = 0; i < 6; ++i )
-  //{
-  //  frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
-  //}
+  for ( uint i = 0; i < 6; ++i )
+  {
+    frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+  }
   accept = accept && frustum_visible;
   
   bool occlusion_visible = true;
-  //if ( frustum_visible )
-  //{
-  //  mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
-  //  occlusion_visible = crude_occlusion_culling(
-  //    view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
-  //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
-  //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
-  //    depth_pyramid_texture_index, world_center.xyz,
-  //    crude_camera_debug_culling() ? camera_debug.position : camera.position,
-  //    world_to_clip_culling
-  //  );
-  //}
+  if ( frustum_visible )
+  {
+    mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+    occlusion_visible = crude_occlusion_culling(
+      view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+      crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index, world_center.xyz,
+      crude_camera_debug_culling() ? camera_debug.position : camera.position,
+      world_to_clip_culling
+    );
+  }
   accept = accept && occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );
