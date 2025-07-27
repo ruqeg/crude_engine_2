@@ -8,14 +8,14 @@
 
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 
-layout(set=CRUDE_MATERIAL_SET, binding=10, row_major, std430) buffer MeshDrawCommandsEarly
-{
-  crude_mesh_draw_command                                  early_mesh_draw_commands[];
-};
-
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommands
+layout(set=CRUDE_MATERIAL_SET, binding=10, row_major, std430) buffer MeshDrawCommands
 {
   crude_mesh_draw_command                                  mesh_draw_commands[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommandsLate
+{
+  crude_mesh_draw_command                                  late_mesh_draw_commands[];
 };
 
 layout(set=CRUDE_MATERIAL_SET, binding=12) buffer MeshDrawCountsEarly
@@ -58,10 +58,14 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCounts
 void main()
 {
   uint mesh_draw_index = gl_GlobalInvocationID.x;
-  uint count = total_mesh_count;// occlusion_culling_late_flag == 1 ? total_mesh_count : early_opaque_mesh_culled_count;
+  uint count = occlusion_culling_late_flag == 1 ? early_opaque_mesh_culled_count : total_mesh_count;
 
   if ( mesh_draw_index < count )
   {
+    if ( occlusion_culling_late_flag == 1 )
+    {
+      mesh_draw_index = late_mesh_draw_commands[ mesh_draw_index ].draw_id;
+    }
     mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
     vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
     vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
@@ -79,7 +83,7 @@ void main()
     bool occlusion_visible = false;
     if ( frustum_visible )
     {
-      mat4 world_to_clip_culling = ( early_occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
+      mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
       occlusion_visible = crude_occlusion_culling(
         view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
         crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
@@ -100,7 +104,11 @@ void main()
     }
     else if ( occlusion_culling_late_flag == 0 )
     {
-
+      uint draw_index = atomicAdd( opaque_mesh_culled_count, 1 );
+      late_mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;
+      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
+      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
+      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
     }
   }
 }

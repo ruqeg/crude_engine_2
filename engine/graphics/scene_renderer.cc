@@ -301,13 +301,13 @@ crude_gfx_scene_renderer_submit_draw_task
       }
     }
 
+    *mesh_draw_counts_early = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
     mesh_draw_counts_early->total_count = scene_renderer->total_meshes_count;
-    mesh_draw_counts_early->opaque_mesh_visible_count = 0u;
     mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
     mesh_draw_counts_early->occlusion_culling_late_flag = false;
-
+    
+    *mesh_draw_counts_late = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
     mesh_draw_counts_late->total_count = scene_renderer->total_meshes_count;
-    mesh_draw_counts_late->opaque_mesh_visible_count = 0u;
     mesh_draw_counts_late->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
     mesh_draw_counts_late->occlusion_culling_late_flag = true;
   }

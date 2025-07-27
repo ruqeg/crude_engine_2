@@ -131,7 +131,7 @@
         },
         {
           "type": "buffer",
-          "name": "MARKER"
+          "name": "TMP_MARKER"
         }
       ]
     },
@@ -144,7 +144,7 @@
         },
         {
           "type": "buffer",
-          "name": "MARKER"
+          "name": "TMP_MARKER"
         }
       ],
       "outputs": [
