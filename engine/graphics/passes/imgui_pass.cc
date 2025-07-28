@@ -316,26 +316,14 @@ crude_gfx_imgui_pass_render
   }
 }
 
-static void
-crude_gfx_imgui_pass_on_resize
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              new_width,
-  _In_ uint32                                              new_height
-)
-{
-}
-
 crude_gfx_render_graph_pass_container
 crude_gfx_imgui_pass_pack
 (
   _In_ crude_gfx_imgui_pass                               *pass
 )
 {
-  crude_gfx_render_graph_pass_container container;
+  crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.on_resize = crude_gfx_imgui_pass_on_resize;
   container.render = crude_gfx_imgui_pass_render;
   return container;
 }

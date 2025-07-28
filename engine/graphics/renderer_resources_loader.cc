@@ -273,6 +273,13 @@ parse_gpu_pipeline_
       CRUDE_ASSERT( false );
     }
   }
+  
+  cJSON const *topology_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "topology" );
+  if ( topology_json != NULL )
+  {
+    char const *topology_str = cJSON_GetStringValue( topology_json );
+    pipeline_creation->topology = crude_gfx_string_to_vk_primitive_topology( topology_str );
+  }
 
   pipeline_creation->rasterization.front = VK_FRONT_FACE_CLOCKWISE;
   
@@ -299,6 +306,31 @@ parse_gpu_pipeline_
     {
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find render pass %s. Defaulting to swapchain", render_pass_name );
       pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
+    }
+  }
+
+  cJSON const *vertex_input_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "vertex_input" );
+  if ( vertex_input_json != NULL )
+  {
+    cJSON const *vertex_attributes_json = cJSON_GetObjectItemCaseSensitive( vertex_input_json, "attributes" );
+    for ( size_t i = 0; i < cJSON_GetArraySize( vertex_attributes_json ); ++i )
+    {
+      cJSON const *vertex_attribute_json = cJSON_GetArrayItem( vertex_attributes_json, i );
+      uint32 location = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( vertex_attribute_json, "location" ) );
+      uint32 binding = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( vertex_attribute_json, "binding" ) );
+      uint32 offset = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( vertex_attribute_json, "offset" ) );
+      crude_gfx_vertex_component_format format = crude_gfx_to_vertex_component_format( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( vertex_attribute_json, "format" ) ) );
+      crude_gfx_pipeline_creation_add_vertex_attribute( pipeline_creation, location, binding, offset, format );
+    }
+
+    cJSON const *vertex_streams_json = cJSON_GetObjectItemCaseSensitive( vertex_input_json, "streams" );
+    for ( size_t i = 0; i < cJSON_GetArraySize( vertex_streams_json ); ++i )
+    {
+      cJSON const *vertex_stream_json = cJSON_GetArrayItem( vertex_streams_json, i );
+      uint32 binding = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( vertex_stream_json, "binding" ) );
+      uint32 stride = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( vertex_stream_json, "stride" ) );
+      char const *input_rate = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( vertex_stream_json, "input_rate" ) );
+      crude_gfx_pipeline_creation_add_vertex_stream( pipeline_creation, binding, stride, crude_string_cmp( input_rate, "instance" ) ?  CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX : CRUDE_GFX_VERTEX_INPUT_RATE_PER_INSTANCE );
     }
   }
   

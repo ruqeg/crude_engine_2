@@ -148,6 +148,16 @@ crude_gfx_cmd_draw
 );
 
 CRUDE_API void
+crude_gfx_cmd_draw_inderect
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             buffer_handle,
+  _In_ uint32                                              offset,
+  _In_ uint32                                              draw_count,
+  _In_ uint32                                              stride
+);
+
+CRUDE_API void
 crude_gfx_cmd_draw_indexed
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

@@ -93,8 +93,8 @@ crude_paprika_initialize
   paprika->engine = engine;
   paprika->working = true;
 
-  crude_heap_allocator_initialize( &paprika->graphics_allocator, CRUDE_RMEGA( 32 ), "renderer_allocator" );
-  crude_stack_allocator_initialize( &paprika->temporary_allocator, CRUDE_RMEGA( 32 ), "temprorary_allocator" );
+  crude_heap_allocator_initialize( &paprika->graphics_allocator, CRUDE_RMEGA( 64 ), "renderer_allocator" );
+  crude_stack_allocator_initialize( &paprika->temporary_allocator, CRUDE_RMEGA( 64 ), "temprorary_allocator" );
   
   ECS_IMPORT( paprika->engine->world, crude_platform_system );
   ECS_IMPORT( paprika->engine->world, crude_free_camera_system );
@@ -256,6 +256,7 @@ paprika_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\mesh_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
 
   /* Create Scene Renderer */
   {

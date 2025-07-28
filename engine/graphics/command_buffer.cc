@@ -443,6 +443,20 @@ crude_gfx_cmd_draw
 }
 
 void
+crude_gfx_cmd_draw_inderect
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             buffer_handle,
+  _In_ uint32                                              offset,
+  _In_ uint32                                              draw_count,
+  _In_ uint32                                              stride
+)
+{
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
+  vkCmdDrawIndirect( cmd->vk_cmd_buffer, buffer->vk_buffer, offset, draw_count, stride );
+}
+
+void
 crude_gfx_cmd_draw_indexed
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

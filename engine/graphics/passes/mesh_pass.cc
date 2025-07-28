@@ -205,6 +205,7 @@ draw_scene_primary_
     ds_creation.name = "mesh_material_descriptor_set";
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh_cpu->material_buffer, 1u );
+    crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, gpu->current_frame );
     ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh_cpu->material->technique->passes[ 0 ].pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
     crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );

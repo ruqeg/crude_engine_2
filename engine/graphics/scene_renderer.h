@@ -7,6 +7,7 @@
 #include <graphics/passes/mesh_pass.h>
 #include <graphics/passes/depth_pyramid_pass.h>
 #include <graphics/passes/mesh_culling_pass.h>
+#include <graphics/passes/debug_pass.h>
 
 typedef struct crude_gfx_scene_renderer_creation
 {
@@ -56,6 +57,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
+  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  
   crude_allocator_container                                allocator_container;
 
   crude_gfx_meshlet_pass                                   meshlet_early_pass;
@@ -65,6 +69,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   crude_gfx_mesh_culling_pass                              mesh_culling_early_pass;
   crude_gfx_mesh_culling_pass                              mesh_culling_late_pass;
+  crude_gfx_debug_pass                                     debug_pass;
 } crude_gfx_scene_renderer;
 
 
@@ -98,4 +103,41 @@ crude_gfx_scene_renderer_register_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_render_graph                             *render_graph
+);
+
+/**
+ *
+ * Renderer Scene Utils
+ * 
+ */
+CRUDE_API void
+crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
 );

@@ -25,7 +25,8 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
   VK_EXT_MESH_SHADER_EXTENSION_NAME,
   VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-  VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME
+  VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
+  VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME
 };
 
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -1627,7 +1628,7 @@ crude_gfx_create_pipeline
     
     vk_input_assembly = CRUDE_COMPOUNT_EMPTY( VkPipelineInputAssemblyStateCreateInfo );
     vk_input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    vk_input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    vk_input_assembly.topology = creation->topology;
     vk_input_assembly.primitiveRestartEnable = VK_FALSE;
 
     if ( creation->blend_state.active_states )

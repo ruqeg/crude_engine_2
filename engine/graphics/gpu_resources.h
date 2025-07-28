@@ -477,6 +477,7 @@ typedef struct crude_gfx_pipeline_creation
   crude_gfx_vertex_attribute                               vertex_attributes[ 8 ];
   uint32                                                   vertex_streams_num;
   uint32                                                   vertex_attributes_num;
+  VkPrimitiveTopology                                      topology;
   crude_gfx_viewport_state const                          *viewport;
   char const                                              *name;
 } crude_gfx_pipeline_creation;
@@ -848,6 +849,18 @@ crude_gfx_determine_pipeline_stage_flags2
 CRUDE_API VkFormat
 crude_gfx_string_to_vk_format
 (
+  _In_ char const                                         *format
+);
+
+CRUDE_API crude_gfx_vertex_component_format
+crude_gfx_to_vertex_component_format
+( 
+  _In_ char const                                         *format
+);
+
+CRUDE_API VkPrimitiveTopology
+crude_gfx_string_to_vk_primitive_topology
+( 
   _In_ char const                                         *format
 );
 

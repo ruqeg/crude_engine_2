@@ -1134,6 +1134,58 @@ crude_gfx_render_graph_render_pass_container_on_resize
   container.on_resize( container.ctx, gpu, new_width, new_height );
 }
 
+static void
+empty_pass_on_resize_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+}
+
+static void
+empty_pass_render_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+)
+{
+}
+
+static void
+empty_pass_pre_render_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+)
+{
+}
+
+static void
+empty_pass_post_render_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *gpu_commands
+)
+{
+}
+
+crude_gfx_render_graph_pass_container
+crude_gfx_render_graph_pass_container_empty
+(
+)
+{
+  crude_gfx_render_graph_pass_container container = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_pass_container );
+  container.pre_render = empty_pass_pre_render_;
+  container.render = empty_pass_render_;
+  container.post_render = empty_pass_post_render_;
+  container.on_resize = empty_pass_on_resize_;
+  container.ctx = NULL;
+  return container;
+}
+
 /************************************************
  *
  * Render Graph Utils Static Functions Implementation

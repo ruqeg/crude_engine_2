@@ -162,6 +162,20 @@ crude_gfx_scene_renderer_initialize
       buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
       buffer_creation.name = "mesh_count_late_sb";
       scene_renderer->mesh_task_indirect_count_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+      
+      buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+      buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+      buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+      buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
+      buffer_creation.name = "debug_line_vertices";
+      scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+      buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+      buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+      buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+      buffer_creation.size = sizeof( crude_gfx_debug_draw_command_gpu );
+      buffer_creation.name = "debug_line_commands";
+      scene_renderer->debug_line_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
     }
   }
 
@@ -172,6 +186,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer, "depth" );
   crude_gfx_mesh_culling_pass_initialize( &scene_renderer->mesh_culling_early_pass, scene_renderer, true );
   crude_gfx_mesh_culling_pass_initialize( &scene_renderer->mesh_culling_late_pass, scene_renderer, false );
+  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
 }
 
 void
@@ -248,23 +263,12 @@ crude_gfx_scene_renderer_submit_draw_task
   XMFLOAT4                                                *mesh_bounds;
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts_early;
   crude_gfx_mesh_draw_counts_gpu                          *mesh_draw_counts_late;
+  crude_gfx_debug_draw_command_gpu                        *debug_draw_command;
   crude_gfx_map_buffer_parameters                          buffer_map;
  
   gpu = scene_renderer->renderer->gpu;
 
   primary_cmd = crude_gfx_get_primary_cmd( gpu, 0, true );
-
-  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-  buffer_map.buffer = scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ];
-  buffer_map.offset = 0;
-  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-  mesh_draw_counts_early = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-
-  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-  buffer_map.buffer = scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ];
-  buffer_map.offset = 0;
-  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-  mesh_draw_counts_late = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
   
   buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   buffer_map.buffer = scene_renderer->meshes_materials_sb;
@@ -278,9 +282,7 @@ crude_gfx_scene_renderer_submit_draw_task
   buffer_map.size = 0;
   mesh_bounds = CRUDE_CAST( XMFLOAT4*, crude_gfx_map_buffer( gpu, &buffer_map ) );
   
-  CRUDE_ASSERT( mesh_materials && mesh_draw_counts_early && mesh_draw_counts_late && mesh_bounds );
-
-  if ( mesh_materials && mesh_draw_counts_early && mesh_draw_counts_late && mesh_bounds )
+  if ( mesh_materials && mesh_bounds )
   {
     scene_renderer->total_meshes_count = 0u;
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ); ++i )
@@ -300,26 +302,8 @@ crude_gfx_scene_renderer_submit_draw_task
         ++scene_renderer->total_meshes_count;
       }
     }
+  }
 
-    *mesh_draw_counts_early = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
-    mesh_draw_counts_early->total_count = scene_renderer->total_meshes_count;
-    mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
-    mesh_draw_counts_early->occlusion_culling_late_flag = false;
-    
-    *mesh_draw_counts_late = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
-    mesh_draw_counts_late->total_count = scene_renderer->total_meshes_count;
-    mesh_draw_counts_late->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
-    mesh_draw_counts_late->occlusion_culling_late_flag = true;
-  }
-  
-  if ( mesh_draw_counts_early )
-  {
-    crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ] );
-  }
-  if ( mesh_draw_counts_late )
-  {
-    crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
-  }
   if ( mesh_materials )
   {
     crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_materials_sb );
@@ -327,6 +311,46 @@ crude_gfx_scene_renderer_submit_draw_task
   if ( mesh_bounds )
   {
     crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_bounds_sb );
+  }
+  
+  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+  buffer_map.buffer = scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ];
+  buffer_map.offset = 0;
+  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
+  mesh_draw_counts_early = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+  if ( mesh_draw_counts_early )
+  {
+    *mesh_draw_counts_early = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
+    mesh_draw_counts_early->total_count = scene_renderer->total_meshes_count;
+    mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
+    mesh_draw_counts_early->occlusion_culling_late_flag = false;
+    crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ] );
+  }
+  
+  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+  buffer_map.buffer = scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ];
+  buffer_map.offset = 0;
+  buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
+  mesh_draw_counts_late = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+  if ( mesh_draw_counts_late )
+  {
+    *mesh_draw_counts_late = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
+    mesh_draw_counts_late->total_count = scene_renderer->total_meshes_count;
+    mesh_draw_counts_late->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
+    mesh_draw_counts_late->occlusion_culling_late_flag = true;
+    crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
+  }
+  
+  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+  buffer_map.buffer = scene_renderer->debug_line_commands_sb[ gpu->current_frame ];
+  buffer_map.offset = 0;
+  buffer_map.size = sizeof( crude_gfx_debug_draw_command_gpu );
+  debug_draw_command = CRUDE_CAST( crude_gfx_debug_draw_command_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+  if ( debug_draw_command )
+  {
+    *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
+    debug_draw_command->instances_count = 1u;
+    crude_gfx_unmap_buffer( gpu, scene_renderer->debug_line_commands_sb[ gpu->current_frame ] );
   }
 
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
@@ -348,10 +372,64 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "mesh_culling_early_pass", crude_gfx_mesh_culling_pass_pack( &scene_renderer->mesh_culling_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "mesh_culling_late_pass", crude_gfx_mesh_culling_pass_pack( &scene_renderer->mesh_culling_late_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
 }
 
+/**
+ *
+ * Renderer Scene Utils
+ * 
+ */
+void
+crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+)
+{
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_vertices_sb[ frame ], 20u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_commands_sb[ frame ], 21u );
+}
+
+void
+crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+)
+{
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshlets_sb, 5u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshlets_vertices_sb, 6u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshlets_triangles_indices_sb, 7u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshlets_vertices_indices_sb, 8u );
+}
+
+void
+crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+)
+{
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->scene_cb, 0u );
+}
+
+void
+crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+)
+{
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshes_materials_sb, 1u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshes_bounds_sb, 2u );
+}
 
 /**
  *

@@ -23,18 +23,14 @@ crude_gfx_meshlet_pass_initialize
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
     
-    ds_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_creation );
+    ds_creation = crude_gfx_descriptor_set_creation_empty();
     ds_creation.layout = layout;
     ds_creation.name = "meshlet_descriptor_set";
   
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshes_materials_sb, 1u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshes_bounds_sb, 2u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_sb, 5u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_sb, 6u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_triangles_indices_sb, 7u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->meshlets_vertices_indices_sb, 8u );
-    
+    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     if ( pass->early_pass )
     {
       crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 10u );
@@ -91,26 +87,14 @@ crude_gfx_meshlet_pass_render
   );
 }
 
-static void
-crude_gfx_meshlet_pass_on_resize
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              new_width,
-  _In_ uint32                                              new_height
-)
-{
-}
-
 crude_gfx_render_graph_pass_container
 crude_gfx_meshlet_pass_pack
 (
   _In_ crude_gfx_meshlet_pass                             *pass
 )
 {
-  crude_gfx_render_graph_pass_container container;
+  crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.on_resize = crude_gfx_meshlet_pass_on_resize;
   container.render = crude_gfx_meshlet_pass_render;
   return container;
 }

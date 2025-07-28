@@ -43,6 +43,7 @@ crude_gfx_pipeline_creation_empty
 {
   crude_gfx_pipeline_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_pipeline_creation );
   creation.relfect_vertex_input = true;
+  creation.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   return creation;
 }
 
@@ -455,6 +456,36 @@ crude_gfx_string_to_vk_format
   // !TODO HASH STRING
   CRUDE_ASSERT( false );
   return VK_FORMAT_UNDEFINED;
+}
+
+crude_gfx_vertex_component_format
+crude_gfx_to_vertex_component_format
+( 
+  _In_ char const                                         *format
+)
+{
+  if ( strcmp( format, "FLOAT" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+  if ( strcmp( format, "FLOAT2" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+  if ( strcmp( format, "FLOAT3" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+  if ( strcmp( format, "FLOAT4" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+  if ( strcmp( format, "BYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_BYTE;
+  if ( strcmp( format, "UBYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE;
+  // !TODO HASH STRING
+  CRUDE_ASSERT( false );
+  return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT;
+}
+
+VkPrimitiveTopology
+crude_gfx_string_to_vk_primitive_topology
+( 
+  _In_ char const                                         *format
+)
+{
+  if ( strcmp( format, "TRIANGLE_LIST" ) == 0 ) return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  if ( strcmp( format, "LINE_LIST" ) == 0 ) return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+  // !TODO HASH STRING
+  CRUDE_ASSERT( false );
+  return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
 char const*

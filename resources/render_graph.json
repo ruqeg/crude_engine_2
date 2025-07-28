@@ -136,6 +136,37 @@
       ]
     },
     {
+      "name": "debug_pass",
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "albedo"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        },
+        {
+          "type": "buffer",
+          "name": "TMP_MARKER"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "reference",
+          "name": "albedo"
+        },
+        {
+          "type": "reference",
+          "name": "depth"
+        },
+        {
+          "type": "buffer",
+          "name": "TMP_MARKER2"
+        }
+      ]
+    },
+    {
       "name": "imgui_pass",
       "inputs": [
         {
@@ -144,7 +175,7 @@
         },
         {
           "type": "buffer",
-          "name": "TMP_MARKER"
+          "name": "TMP_MARKER2"
         }
       ],
       "outputs": [

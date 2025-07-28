@@ -8,8 +8,7 @@
 			"stage": "compute",
 			"shader": "depth_pyramid.comp",
 			"includes": [
-			  "crude/platform.glsli",
-			  "crude/debug.glsli"
+			  "crude/platform.glsli"
 			]
 		  }
 		]

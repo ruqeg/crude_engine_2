@@ -84,26 +84,28 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
 
   for ( uint32 i = 0; i < depth_pyramid_levels; ++i )
   {
+    crude_gfx_descriptor_set_creation                      ds_creation;
+
     depth_pyramid_view_creation.subresource.mip_base_level = i;
 
     pass->depth_pyramid_views_handles[ i ] = crude_gfx_create_texture_view( gpu, &depth_pyramid_view_creation );
 
-    crude_gfx_descriptor_set_creation descriptor_set_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation.name = "depth_hierarchy_descriptor_set";
+    ds_creation.layout = pass->depth_pyramid_layout_handle;
+
     if ( i == 0 )
     {
-      crude_gfx_descriptor_set_creation_add_texture( &descriptor_set_creation, depth_texture_handle, 0u );
-      crude_gfx_descriptor_set_creation_add_texture( &descriptor_set_creation, pass->depth_pyramid_views_handles[ i ], 1u );
-      descriptor_set_creation.layout = pass->depth_pyramid_layout_handle;
+      crude_gfx_descriptor_set_creation_add_texture( &ds_creation, depth_texture_handle, 0u );
+      crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->depth_pyramid_views_handles[ i ], 1u );
     }
     else
     {
-      crude_gfx_descriptor_set_creation_add_texture( &descriptor_set_creation, pass->depth_pyramid_views_handles[ i - 1 ], 0u );
-      crude_gfx_descriptor_set_creation_add_texture( &descriptor_set_creation, pass->depth_pyramid_views_handles[ i ], 1u );
-      descriptor_set_creation.layout = pass->depth_pyramid_layout_handle;
+      crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->depth_pyramid_views_handles[ i - 1 ], 0u );
+      crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->depth_pyramid_views_handles[ i ], 1u );
     }
-    descriptor_set_creation.name = "depth_hierarchy_descriptor_set";
     
-    pass->depth_hierarchy_descriptor_sets_handles[ i ] = crude_gfx_create_descriptor_set( gpu, &descriptor_set_creation );
+    pass->depth_hierarchy_descriptor_sets_handles[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
 }
 
@@ -159,26 +161,14 @@ crude_gfx_depth_pyramid_pass_register
 {
 }
 
-static void
-crude_gfx_depth_pyramid_pass_on_resize
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              new_width,
-  _In_ uint32                                              new_height
-)
-{
-}
-
 crude_gfx_render_graph_pass_container
 crude_gfx_depth_pyramid_pass_pack
 (
   _In_ crude_gfx_depth_pyramid_pass                       *pass
 )
 {
-  crude_gfx_render_graph_pass_container container;
+  crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.on_resize = crude_gfx_depth_pyramid_pass_on_resize;
   container.render = crude_gfx_depth_pyramid_pass_render;
   return container;
 }
