@@ -70,7 +70,7 @@ bool crude_occlusion_culling( vec3 view_bounding_center, float radius, float zne
 
     occlusion_visible = ( depth_sphere <= depth );
 
-    crude_debug_draw_2d_line( vec2( 0, 0 ), vec2( 1, 1 ), vec4(1.f), vec4(1.f) );
+    crude_debug_draw_2d_line( vec2( 1, 1 ),  vec2( 0, 0 ), vec4(1.f), vec4(1.f) );
   }
 
   return occlusion_visible;

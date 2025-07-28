@@ -465,9 +465,9 @@ crude_gfx_to_vertex_component_format
 )
 {
   if ( strcmp( format, "FLOAT" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
-  if ( strcmp( format, "FLOAT2" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
-  if ( strcmp( format, "FLOAT3" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
-  if ( strcmp( format, "FLOAT4" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT;
+  if ( strcmp( format, "FLOAT2" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2;
+  if ( strcmp( format, "FLOAT3" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT3;
+  if ( strcmp( format, "FLOAT4" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT4;
   if ( strcmp( format, "BYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_BYTE;
   if ( strcmp( format, "UBYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE;
   // !TODO HASH STRING

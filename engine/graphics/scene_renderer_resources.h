@@ -16,10 +16,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_line_vertex_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_draw_command_gpu
 {
-  uint32                                                   vertices_count;
-  uint32                                                   instances_count;
-  uint32                                                   first_vertex;
-  uint32                                                   first_instance;
+  VkDrawIndirectCommand                                    draw_indirect_3dline;
+  VkDrawIndirectCommand                                    draw_indirect_2dline;
 } crude_gfx_debug_draw_command_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu

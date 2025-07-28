@@ -2,6 +2,8 @@
 #ifndef CRUDE_DEBUG_GLSLI
 #define CRUDE_DEBUG_GLSLI
 
+#define CRUDE_DEBUG_2D_LINES_OFFSET ( 1000 )
+
 struct crude_debug_line_vertex
 {
   vec3                                                     position;
@@ -15,15 +17,19 @@ layout(set=CRUDE_MATERIAL_SET, binding=20) buffer CrudeDebugLines
 
 layout(set=CRUDE_MATERIAL_SET, binding=21) buffer CrudeDebugLinesCount
 {
-  uint                                                     vertices_count;
-  uint                                                     instances_count;
-  uint                                                     first_vertex;
-  uint                                                     first_instance;
+  uint                                                     debug_lines_3d_vertices_count;
+  uint                                                     debug_lines_3d_instances_count;
+  uint                                                     debug_lines_3d_first_vertex;
+  uint                                                     debug_lines_3d_first_instance;
+  uint                                                     debug_lines_2d_vertices_count;
+  uint                                                     debug_lines_2d_instances_count;
+  uint                                                     debug_lines_2d_first_vertex;
+  uint                                                     debug_lines_2d_first_instance;
 };
 
 void crude_debug_draw_line_coloru( vec3 start, vec3 end, uint start_color, uint end_color )
 {
-  uint offset = atomicAdd( vertices_count, 2 );
+  uint offset = atomicAdd( debug_lines_3d_vertices_count, 2 );
 
   debug_line_vertices[ offset ].position = start;
   debug_line_vertices[ offset ].color = start_color;
@@ -64,7 +70,7 @@ void crude_debug_draw_box( vec3 mn, vec3 mx, vec4 color )
 
 void crude_debug_draw_line_2d_coloru( vec2 start, vec2 end, uint start_color, uint end_color )
 {
-  uint offset = atomicAdd( vertices_count, 2 );
+  uint offset = CRUDE_DEBUG_2D_LINES_OFFSET + atomicAdd( debug_lines_2d_vertices_count, 2 );
 
   debug_line_vertices[ offset ].position = vec3( start.xy, 0 );
   debug_line_vertices[ offset ].color = start_color;

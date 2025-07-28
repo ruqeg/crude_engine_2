@@ -349,7 +349,8 @@ crude_gfx_scene_renderer_submit_draw_task
   if ( debug_draw_command )
   {
     *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
-    debug_draw_command->instances_count = 1u;
+    debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
+    debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
     crude_gfx_unmap_buffer( gpu, scene_renderer->debug_line_commands_sb[ gpu->current_frame ] );
   }
 
