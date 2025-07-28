@@ -28,7 +28,7 @@
           "location": 1,
           "binding": 0,
           "offset": 12,
-          "format": "UBYTE"
+          "format": "UINT"
         }
       ],
       "streams": [
@@ -86,7 +86,7 @@
           "location": 1,
           "binding": 0,
           "offset": 12,
-          "format": "UBYTE"
+          "format": "UINT"
         }
       ],
       "streams": [
