@@ -288,7 +288,7 @@ crude_gfx_scene_renderer_submit_draw_task
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->mesh_instances ); ++i )
     {
       crude_gfx_mesh_cpu *mesh_cpu = scene_renderer->mesh_instances[ i ].mesh;
-    
+      
       bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
         && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
         && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )

@@ -80,7 +80,7 @@ void main()
   bool occlusion_visible = false;
   if ( frustum_visible )
   {
-    occlusion_visible = crude_occlusion_culling( view_center.xyz, radius, camera.znear,
+    occlusion_visible = crude_occlusion_culling( darw_id, view_center.xyz, radius, camera.znear,
       camera.view_to_clip[ 0 ][ 0 ], camera.view_to_clip[ 1 ][ 1 ],
       depth_pyramid_texture_index,
       world_center.xyz, camera.position, camera.world_to_clip

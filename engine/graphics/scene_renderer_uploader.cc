@@ -565,7 +565,6 @@ load_meshes_
       indices_buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
 
       material_transparent = create_mesh_material_( gltf, node, scene_renderer->renderer, scene_renderer, mesh_primitive->material, &mesh_draw, scene_renderer_images_offset, scene_renderer_samplers_offset );
-      
       mesh_draw.scale = node_scale;
       mesh_draw.translation = node_translation;
       mesh_draw.rotation = node_rotation;

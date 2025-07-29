@@ -9,12 +9,11 @@
 
 #include <core/log.h>
 
-char g_message_buffer[ 1024 * 8 ];
-char g_format_buffer[ 1024 * 8 ];
+char                                                       message_buffer_[ CRUDE_RKILO( 8 ) ];
+char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];
+FILE                                                      *log_file_ = NULL;
 
-FILE *g_log_file = NULL;
-
-static CRUDE_INLINE char const*
+static char const*
 get_verbosity_string_
 (
   _In_ crude_verbosity v
@@ -57,14 +56,14 @@ CRUDE_API void
 crude_log_initialize
 ()
 {
-  g_log_file = fopen( "crude_log.txt", "w" );
+  log_file_ = fopen( "crude_log.txt", "w" );
 }
 
 CRUDE_API void
 crude_log_deinitialize
 ()
 {
-  fclose( g_log_file );
+  fclose( log_file_ );
 }
 
 void
@@ -80,12 +79,12 @@ crude_log_common
 {
   va_list args;
   va_start( args, format );
-  crude_snprintf( g_format_buffer, CRUDE_COUNTOF( g_message_buffer ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
-  crude_vsnprintf( g_message_buffer, CRUDE_COUNTOF( g_message_buffer ), g_format_buffer, args );
+  crude_snprintf( format_buffer_, CRUDE_COUNTOF( message_buffer_ ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
+  crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
 #ifdef _WIN32
-  OutputDebugStringA( ( LPCSTR )g_message_buffer );
+  OutputDebugStringA( ( LPCSTR )message_buffer_ );
 #endif
-  fprintf( g_log_file, g_message_buffer );
-  printf( "%s", g_message_buffer );
+  fprintf( log_file_, message_buffer_ );
+  printf( "%s", message_buffer_ );
   va_end( args );
 }
