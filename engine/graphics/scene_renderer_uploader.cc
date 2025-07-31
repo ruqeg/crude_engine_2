@@ -68,6 +68,7 @@ load_meshes_
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        node,
   _In_ cgltf_data                                         *gltf,
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory,
   _In_ uint32                                              scene_renderer_buffers_offset,
@@ -91,6 +92,7 @@ load_nodes_
   _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
@@ -119,6 +121,7 @@ crude_scene_renderer_upload_gltf
 )
 {
   cgltf_data                                              *gltf;
+  uint32                                                  *gltf_mesh_index_to_mesh_primitive_index;
   crude_string_buffer                                      temporary_string_buffer;
   char                                                     gltf_directory[ 512 ];
   uint32                                                   temporary_allocator_mark;
@@ -132,9 +135,10 @@ crude_scene_renderer_upload_gltf
   gltf = parse_gltf_( temporary_allocator, gltf_path );
   if ( !gltf )
   {
-    crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
-    return;
+    goto cleanup;
   }
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gltf_mesh_index_to_mesh_primitive_index, 0, crude_stack_allocator_pack( temporary_allocator ) );
   
   /* Initialize tmp */
   crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
@@ -152,14 +156,15 @@ crude_scene_renderer_upload_gltf
   load_images_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
   load_samplers_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
   load_buffers_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
-  load_meshes_( scene_renderer, node, gltf, &temporary_string_buffer, gltf_directory, scene_renderer_buffers_offset, scene_renderer_images_offset, scene_renderer_samplers_offset );
+  load_meshes_( scene_renderer, node, gltf, gltf_mesh_index_to_mesh_primitive_index, &temporary_string_buffer, gltf_directory, scene_renderer_buffers_offset, scene_renderer_images_offset, scene_renderer_samplers_offset );
   load_meshlets_( scene_renderer, gltf, temporary_allocator );
 
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {
-    load_nodes_( gltf, scene_renderer, node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, temporary_allocator );
+    load_nodes_( gltf, scene_renderer, node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, temporary_allocator );
   }
-
+  
+cleanup:
   cgltf_free( gltf );
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
 }
@@ -501,6 +506,7 @@ load_meshes_
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        node,
   _In_ cgltf_data                                         *gltf,
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory,
   _In_ uint32                                              scene_renderer_buffers_offset,
@@ -508,9 +514,13 @@ load_meshes_
   _In_ uint32                                              scene_renderer_samplers_offset
 )
 {
+  CRUDE_ARRAY_SET_LENGTH( gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count );
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   {
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
+    
+    gltf_mesh_index_to_mesh_primitive_index[ mesh_index ] = CRUDE_ARRAY_LENGTH( scene_renderer->meshes );
+
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
       crude_gfx_mesh_cpu                                   mesh_draw;
@@ -713,20 +723,21 @@ load_nodes_
   _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 { 
   for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
   {
-    crude_gfx_mesh_instance_cpu                            mesh_instance;
+    crude_entity                                           node;
     crude_transform                                        transform;
     
-    mesh_instance.node = crude_entity_create_empty( parent_node.world, gltf_nodes[ i ]->name );
-    crude_entity_set_parent( mesh_instance.node, parent_node );
+    node = crude_entity_create_empty( parent_node.world, gltf_nodes[ i ]->name );
+    crude_entity_set_parent( node, parent_node );
     
     if ( gltf_nodes[ i ]->has_translation )
     {
-      XMStoreFloat3( &transform.translation, XMVectorSet( gltf_nodes[ i ]->translation[ 0 ],gltf_nodes[ i ]->translation[ 1 ], gltf_nodes[ i ]->translation[ 2 ], 1 ));
+      XMStoreFloat3( &transform.translation, XMVectorSet( gltf_nodes[ i ]->translation[ 0 ], gltf_nodes[ i ]->translation[ 1 ], gltf_nodes[ i ]->translation[ 2 ], 1 ));
     }
     else
     {
@@ -735,17 +746,24 @@ load_nodes_
     XMStoreFloat3( &transform.scale, XMVectorReplicate( 1.f ) );
     XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
 
-    CRUDE_ENTITY_SET_COMPONENT( mesh_instance.node, crude_transform, {
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
       transform.translation, transform.rotation, transform.scale
     } );
     
-    mesh_instance.mesh = &scene_renderer->meshes[ cgltf_mesh_index( gltf, gltf_nodes[ i ]->mesh ) ];
-    
-    mesh_instance.material_pass_index = 0;
-    
-    CRUDE_ARRAY_PUSH( scene_renderer->meshes_instances, mesh_instance );
+    if ( gltf_nodes[ i ]->mesh )
+    {
+      uint32 mesh_index_offset = gltf_mesh_index_to_mesh_primitive_index[ cgltf_mesh_index( gltf, gltf_nodes[ i ]->mesh ) ];
+      for ( uint32 pi = 0; pi < gltf_nodes[ i ]->mesh->primitives_count; ++pi )
+      {
+        crude_gfx_mesh_instance_cpu mesh_instance;
+        mesh_instance.node = node;
+        mesh_instance.mesh = &scene_renderer->meshes[ mesh_index_offset + pi ];
+        mesh_instance.material_pass_index = 0;
+        CRUDE_ARRAY_PUSH( scene_renderer->meshes_instances, mesh_instance );
+      }
+    }
 
-    load_nodes_( gltf, scene_renderer, mesh_instance.node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, temporary_allocator );
+    load_nodes_( gltf, scene_renderer, node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index, temporary_allocator );
   }
 }
 
@@ -756,10 +774,13 @@ load_meshlet_vertices_
   _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
 )
 {
-  XMFLOAT3                                            *primitive_positions;
-  XMFLOAT3                                            *primitive_normals;
-  XMFLOAT2                                            *primitive_texcoords;
+  XMFLOAT3                                                *primitive_positions;
+  XMFLOAT3                                                *primitive_normals;
+  XMFLOAT2                                                *primitive_texcoords;
   uint32                                                   meshlet_vertices_count;
+  
+  primitive_positions = primitive_normals = NULL;
+  primitive_texcoords = NULL;
 
   meshlet_vertices_count = primitive->attributes[ 0 ].data->count;
   

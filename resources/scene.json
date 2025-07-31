@@ -127,7 +127,7 @@
           "components": [
             {
               "type": "crude_gltf",
-              "path": "glTF-Sample-Models\\2.0\\ABeautifulGame\\glTF\\ABeautifulGame.gltf"
+              "path": "glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
             }
           ],
           "tags": [],
@@ -144,9 +144,9 @@
               1
             ],
             "scale": [
-              7.0,
-              7.0,
-              7.0
+              0.01,
+              0.01,
+              0.01
             ]
           }
         },

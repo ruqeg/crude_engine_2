@@ -169,52 +169,52 @@ draw_scene_primary_
   _In_ crude_gfx_mesh_pass                                *pass
 )
 {
-  crude_gfx_renderer_material *last_material = NULL;
-  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ); ++mesh_index )
-  {
-    crude_gfx_device                                      *gpu;
-    crude_gfx_mesh_instance_cpu                           *mesh_instance;
-    crude_gfx_mesh_cpu                                    *mesh_cpu;
-  
-    gpu = pass->scene_renderer->renderer->gpu;
-    mesh_instance = &pass->scene_renderer->meshes_instances[ mesh_index ];
-    mesh_cpu = mesh_instance->mesh;
-    if ( mesh_cpu->material != last_material )
-    {
-      crude_gfx_cmd_bind_pipeline( cmd, mesh_cpu->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
-      last_material = mesh_cpu->material;
-    }
-    
-    bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
-      && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
-      && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )
-      && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->roughness_texture_handle ) );
+  //crude_gfx_renderer_material *last_material = NULL;
+  //for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ); ++mesh_index )
+  //{
+  //  crude_gfx_device                                      *gpu;
+  //  crude_gfx_mesh_instance_cpu                           *mesh_instance;
+  //  crude_gfx_mesh_cpu                                    *mesh_cpu;
+  //
+  //  gpu = pass->scene_renderer->renderer->gpu;
+  //  mesh_instance = &pass->scene_renderer->meshes_instances[ mesh_index ];
+  //  mesh_cpu = mesh_instance->mesh;
+  //  if ( mesh_cpu->material != last_material )
+  //  {
+  //    crude_gfx_cmd_bind_pipeline( cmd, mesh_cpu->material->technique->passes[ mesh_instance->material_pass_index ].pipeline );
+  //    last_material = mesh_cpu->material;
+  //  }
+  //  
+  //  bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
+  //    && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
+  //    && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )
+  //    && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->roughness_texture_handle ) );
 
-    bool mesh_buffers_ready = crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->position_buffer )
-      && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->tangent_buffer )
-      && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->normal_buffer )
-      && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->texcoord_buffer )
-      && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->index_buffer );
+  //  bool mesh_buffers_ready = crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->position_buffer )
+  //    && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->tangent_buffer )
+  //    && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->normal_buffer )
+  //    && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->texcoord_buffer )
+  //    && crude_gfx_buffer_ready( cmd->gpu, mesh_cpu->index_buffer );
 
-    if ( !mesh_buffers_ready || !mesh_textures_ready )
-    {
-      continue;
-    }
+  //  if ( !mesh_buffers_ready || !mesh_textures_ready )
+  //  {
+  //    continue;
+  //  }
 
-    crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.name = "mesh_material_descriptor_set";
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh_cpu->material_buffer, 1u );
-    crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, gpu->current_frame );
-    ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh_cpu->material->technique->passes[ 0 ].pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  //  crude_gfx_descriptor_set_creation ds_creation = crude_gfx_descriptor_set_creation_empty();
+  //  ds_creation.name = "mesh_material_descriptor_set";
+  //  crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
+  //  crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, mesh_cpu->material_buffer, 1u );
+  //  crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, gpu->current_frame );
+  //  ds_creation.layout = crude_gfx_get_descriptor_set_layout( cmd->gpu, mesh_cpu->material->technique->passes[ 0 ].pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
-    crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
-    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->position_buffer, 0, mesh_cpu->position_offset );
-    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->tangent_buffer, 1, mesh_cpu->tangent_offset );
-    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->normal_buffer, 2, mesh_cpu->normal_offset );
-    crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->texcoord_buffer, 3, mesh_cpu->texcoord_offset );
-    crude_gfx_cmd_bind_index_buffer( cmd, mesh_cpu->index_buffer, mesh_cpu->index_offset );
-    crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
-    crude_gfx_cmd_draw_indexed( cmd, mesh_cpu->primitive_count, 1, 0, 0, 0 );
-  }
+  //  crude_gfx_descriptor_set_handle descriptor_set = crude_gfx_cmd_create_local_descriptor_set( cmd, &ds_creation );
+  //  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->position_buffer, 0, mesh_cpu->position_offset );
+  //  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->tangent_buffer, 1, mesh_cpu->tangent_offset );
+  //  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->normal_buffer, 2, mesh_cpu->normal_offset );
+  //  crude_gfx_cmd_bind_vertex_buffer( cmd, mesh_cpu->texcoord_buffer, 3, mesh_cpu->texcoord_offset );
+  //  crude_gfx_cmd_bind_index_buffer( cmd, mesh_cpu->index_buffer, mesh_cpu->index_offset );
+  //  crude_gfx_cmd_bind_local_descriptor_set( cmd, descriptor_set );
+  //  crude_gfx_cmd_draw_indexed( cmd, mesh_cpu->primitive_count, 1, 0, 0, 0 );
+  //}
 }

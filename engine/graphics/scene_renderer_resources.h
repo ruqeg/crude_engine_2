@@ -116,7 +116,6 @@ typedef struct crude_gfx_meshlet_vertex_gpu
 
 typedef struct crude_gfx_mesh_cpu
 {
-  crude_gfx_renderer_material                             *material;
   XMFLOAT4                                                 bounding_sphere;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  position_buffer;
