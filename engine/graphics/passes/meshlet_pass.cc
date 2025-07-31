@@ -12,12 +12,15 @@ crude_gfx_meshlet_pass_initialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   bool                                                     early_pass
 )
-{ 
+{
+  crude_gfx_renderer_technique_pass                       *meshlet_pass;
+  crude_gfx_descriptor_set_layout_handle                   layout;
+
   pass->scene_renderer = scene_renderer;
   pass->early_pass = early_pass;
 
-  crude_gfx_renderer_technique_pass *meshlet_pass = crude_gfx_renderer_access_technique_pass_by_name( scene_renderer->renderer, "meshlet", "meshlet" );
-  crude_gfx_descriptor_set_layout_handle layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  meshlet_pass = crude_gfx_renderer_access_technique_pass_by_name( scene_renderer->renderer, "meshlet", "meshlet" );
+  layout = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {

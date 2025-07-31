@@ -2,6 +2,8 @@
 
 #include <graphics/gpu_resources.h>
 
+#define CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT ( 1024u )
+
 /************************************************
  *
  * Command Buffer & Command Buffer Manager Structs
