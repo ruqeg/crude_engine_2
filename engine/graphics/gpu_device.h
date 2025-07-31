@@ -245,8 +245,8 @@ CRUDE_API void
 crude_gfx_link_texture_sampler
 (
   _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_texture_handle                            texture,
-  _In_ crude_gfx_sampler_handle                            sampler
+  _In_ crude_gfx_texture_handle                            texture_handle,
+  _In_ crude_gfx_sampler_handle                            sampler_handle
 );
 
 CRUDE_API crude_gfx_descriptor_set_layout_handle

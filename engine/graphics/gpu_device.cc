@@ -761,14 +761,14 @@ void
 crude_gfx_link_texture_sampler
 (
   _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_texture_handle                            texture,
-  _In_ crude_gfx_sampler_handle                            sampler
+  _In_ crude_gfx_texture_handle                            texture_handle,
+  _In_ crude_gfx_sampler_handle                            sampler_handle
 )
 {
-  crude_gfx_texture* texture_vk = crude_gfx_access_texture( gpu, texture );
-  crude_gfx_sampler* sampler_vk = crude_gfx_access_sampler( gpu, sampler );
+  crude_gfx_texture* texture = crude_gfx_access_texture( gpu, texture_handle );
+  crude_gfx_sampler* sampler = crude_gfx_access_sampler( gpu, sampler_handle );
   
-  texture_vk->sampler = sampler_vk;
+  texture->sampler = sampler;
 }
 
 crude_gfx_descriptor_set_layout_handle
@@ -1030,7 +1030,9 @@ crude_gfx_create_sampler
   create_info.compareEnable            = 0;
   create_info.borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
   create_info.unnormalizedCoordinates  = 0;
-  
+  create_info.minLod                   = 0.f;
+  create_info.maxLod                   = VK_LOD_CLAMP_NONE;
+
   VkSamplerReductionModeCreateInfoEXT create_info_reduction = CRUDE_COMPOUNT_EMPTY( VkSamplerReductionModeCreateInfoEXT );
   create_info_reduction.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT;
   if ( creation->reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT )
@@ -1277,7 +1279,7 @@ crude_gfx_create_texture_view
   crude_gfx_texture *texture_view = crude_gfx_access_texture( gpu, texture_handle );
   
   crude_memory_copy( texture_view, parent_texture, sizeof( crude_gfx_texture ) );
-
+  
   texture_view->parent_texture_handle = creation->parent_texture_handle;
   texture_view->handle = texture_handle;
   texture_view->subresource.array_base_layer = creation->subresource.array_base_layer;
@@ -2189,16 +2191,22 @@ crude_gfx_create_descriptor_set
     {
       crude_gfx_texture_handle texture_handle = CRUDE_COMPOUNT( crude_gfx_texture_handle, { creation->resources[ i ] } );
       crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-      
+      crude_gfx_texture *parent_texture = CRUDE_RESOURCE_HANDLE_IS_VALID( texture->parent_texture_handle ) ? crude_gfx_access_texture( gpu, texture->parent_texture_handle ) : NULL;
+
       if ( texture->sampler )
       {
         image_info[ i ].sampler = texture->sampler->vk_sampler;
+      }
+      else if ( parent_texture && parent_texture->sampler )
+      {
+        image_info[ i ].sampler = parent_texture->sampler->vk_sampler;
       }
       else
       {
         crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
         image_info[ i ].sampler = default_sampler->vk_sampler;
       }
+
       image_info[ i ].imageView = texture->vk_image_view;
       image_info[ i ].imageLayout = crude_gfx_has_depth( texture->vk_format ) ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 

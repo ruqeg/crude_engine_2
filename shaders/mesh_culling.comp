@@ -83,19 +83,19 @@ void main()
     }
 
     bool occlusion_visible = true;
-    //if ( frustum_visible )
-    //{
-    //  mat4 world_to_clip_culling = ( occlusion_culling_late_flag == 0 ) ? ( crude_camera_debug_culling() ? camera_debug_previous.world_to_clip : camera_previous.world_to_clip ) : ( crude_camera_debug_culling() ? camera_debug.world_to_clip : camera.world_to_clip );
-    //  occlusion_visible = crude_occlusion_culling(
-    //    mesh_draw_index,
-    //    view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
-    //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
-    //    crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
-    //    depth_pyramid_texture_index, world_center.xyz,
-    //    crude_camera_debug_culling() ? camera_debug.position : camera.position,
-    //    world_to_clip_culling
-    //  );
-    //}
+    if ( frustum_visible )
+    {
+	    mat4 culling_world_to_clip = occlusion_culling_late_flag == 0 ? camera_previous.world_to_clip : camera.world_to_clip;
+      occlusion_visible = crude_occlusion_culling(
+        mesh_draw_index,
+        view_center.xyz, radius, crude_camera_debug_culling() ? camera_debug.znear : camera.znear, 
+        crude_camera_debug_culling() ? camera_debug.view_to_clip[ 0 ][ 0 ] : camera.view_to_clip[ 0 ][ 0 ],
+        crude_camera_debug_culling() ? camera_debug.view_to_clip[ 1 ][ 1 ] : camera.view_to_clip[ 1 ][ 1 ],
+        depth_pyramid_texture_index, world_center.xyz,
+        camera.position,
+        culling_world_to_clip
+      );
+    }
 
     if ( frustum_visible && occlusion_visible )
     {

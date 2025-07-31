@@ -40,8 +40,7 @@ vec4 crude_clip_to_uv_space( vec4 v )
  * TODO:
  *  Continue testing using using a finer mip level if result are ambiguous
  */
-bool crude_occlusion_culling( uint mesh_draw_index,
- vec3 view_bounding_center, float radius, float znear, float projection_00, float projection_11, uint depth_pyramid_texture_index, vec3 world_bounding_center, vec3 camera_world_position, mat4 culling_view_projection )
+bool crude_occlusion_culling( uint mesh_instance_draw_index, vec3 view_bounding_center, float radius, float znear, float projection_00, float projection_11, uint depth_pyramid_texture_index, vec3 world_bounding_center, vec3 camera_world_position, mat4 culling_view_projection )
 {
   vec4 aabb_clip;
   bool occlusion_visible = true;
@@ -53,7 +52,7 @@ bool crude_occlusion_culling( uint mesh_draw_index,
     float width = ( aabb.z - aabb.x ) * depth_pyramid_size.x;
     float height = ( aabb.w - aabb.y ) * depth_pyramid_size.y;
 
-    float level = floor( log2( max( width, height ) ) );
+    float level = 7;
 
     vec2 uv = ( aabb.xy + aabb.zw ) * 0.5;
     uv.y = 1 - uv.y;
@@ -74,23 +73,7 @@ bool crude_occlusion_culling( uint mesh_draw_index,
     sceen_space_center_last.y = sceen_space_center_last.y / sceen_space_center_last.w;
     occlusion_visible = ( depth_sphere <= depth );
 
-    //crude_debug_draw_box( world_bounding_center, dir_position, vec4( 0, 0, 1, 1 ) );
     //crude_debug_draw_2d_box( vec2( aabb_clip.x, -aabb_clip.y ), vec2( aabb_clip.z, -aabb_clip.w ), occlusion_visible ? vec4(0,1,0,1) : vec4(1,0,0,1) );
-    //crude_debug_draw_2d_box( vec2( sceen_space_center_last.x - 0.02, sceen_space_center_last.y - 0.02 ), vec2( sceen_space_center_last.x + 0.02, sceen_space_center_last.y + 0.02 ), vec4(1, 1, 1, 1 ) );
-    if ( mesh_draw_index == 40 )
-    {
-      debugPrintfEXT("level %f", level );
-      debugPrintfEXT("uv %f %f", uv.x, uv.y );
-      debugPrintfEXT("uv2 %f %f", aabb.x, 1.0f - aabb.y );
-      debugPrintfEXT("uv4 %f %f", aabb.z, 1.0f - aabb.w );
-      debugPrintfEXT("uv3 %f %f", aabb.x, 1.0f - aabb.w );
-      debugPrintfEXT("uv5 %f %f", aabb.z, 1.0f - aabb.y );
-      debugPrintfEXT("uv_value1 %f", textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], uv, level ).r );
-      debugPrintfEXT("uv_value2 %f", textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.x, 1.0f - aabb.y ), level ).r );
-      debugPrintfEXT("uv_value4 %f", textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.z, 1.0f - aabb.w ), level ).r );
-      debugPrintfEXT("uv_value3 %f", textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.x, 1.0f - aabb.w ), level ).r );
-      debugPrintfEXT("uv_value5 %f", textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.z, 1.0f - aabb.y ), level ).r );
-    }
   }
 
   return occlusion_visible;
