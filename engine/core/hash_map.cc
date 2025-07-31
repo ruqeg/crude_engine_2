@@ -74,6 +74,7 @@ crude_hashmap_growf
       {
          /* Hashmap shouldn't be resizes here since it's already resized based on the previous hashmap */
         CRUDE_ASSERT( nh == crude_hashmap_set_index( nh, backet->key, elemsize ) );
+        uint32 temp = CRUDE_HASHMAP_TEMP( nh );
         crude_memory_copy( nh + CRUDE_HASHMAP_TEMP( nh ) * elemsize, backet, elemsize );
       }
     }

@@ -259,18 +259,18 @@ paprika_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
 
   /* Create Scene Renderer */
-  {
-    crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.node = paprika->scene.main_node;
-    creation.renderer = &paprika->graphics.renderer;
-    creation.async_loader = &paprika->graphics.async_loader;
-    creation.allocator_container = paprika->graphics.allocator_container;
-    creation.temporary_allocator = &paprika->temporary_allocator;
-    creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
-    creation.imgui_context = paprika->imgui_context;
-    crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &creation );
-    crude_gfx_scene_renderer_register_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
-  }
+  //{
+  //  crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
+  //  creation.node = paprika->scene.main_node;
+  //  creation.renderer = &paprika->graphics.renderer;
+  //  creation.async_loader = &paprika->graphics.async_loader;
+  //  creation.allocator_container = paprika->graphics.allocator_container;
+  //  creation.temporary_allocator = &paprika->temporary_allocator;
+  //  creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
+  //  creation.imgui_context = paprika->imgui_context;
+  //  crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &creation );
+  //  crude_gfx_scene_renderer_register_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
+  //}
   
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
 
@@ -285,6 +285,7 @@ paprika_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
+  return;
   crude_paprika *paprika = ( crude_paprika* )it->ctx;
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
@@ -346,10 +347,10 @@ paprika_graphics_deinitialize_
 {
   crude_gfx_asynchronous_loader_manager_remove_loader( paprika->graphics.asynchronous_loader_manager, &paprika->graphics.async_loader );
   vkDeviceWaitIdle( paprika->graphics.gpu.vk_device );
-  crude_gfx_scene_renderer_deinitialize( &paprika->graphics.scene_renderer );
+  //crude_gfx_scene_renderer_deinitialize( &paprika->graphics.scene_renderer );
   crude_gfx_asynchronous_loader_deinitialize( &paprika->graphics.async_loader );
-  crude_gfx_render_graph_deinitialize( &paprika->graphics.render_graph );
   crude_gfx_render_graph_builder_deinitialize( &paprika->graphics.render_graph_builder );
+  crude_gfx_render_graph_deinitialize( &paprika->graphics.render_graph );
   crude_gfx_renderer_deinitialize( &paprika->graphics.renderer );
   crude_gfx_device_deinitialize( &paprika->graphics.gpu );
 }
@@ -416,8 +417,8 @@ paprika_input_callback_
   _In_ void                                               *sdl_event
 )
 {
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
-  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  //ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
+  //ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }
 
 void

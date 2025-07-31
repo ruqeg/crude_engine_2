@@ -49,12 +49,5 @@ void main()
   {
     albedo = mesh_draw.albedo_color_factor;
   }
-      if ( mesh_draw_index == 40 )
-    {
-  out_color = vec4( 1, 0, 0, 1 );
-    }
-    else
-    {
   out_color = vec4( albedo );
-    }
 }

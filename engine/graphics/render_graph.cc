@@ -156,6 +156,7 @@ crude_gfx_render_graph_parse_from_file
       output_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_output_creation );
       output_creation.type = string_to_resource_type_( cJSON_GetStringValue( output_type ) );
       output_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( output_name ) );
+      output_creation.resource_info.texture.handle.index = output_creation.resource_info.buffer.handle.index = CRUDE_RESOURCE_INDEX_INVALID;
 
       switch ( output_creation.type )
       {
@@ -913,6 +914,15 @@ crude_gfx_render_graph_builder_create_node_output
   
   if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
   {
+    if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER )
+    {
+      resource->resource_info.buffer.handle = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    }
+    else
+    {
+      resource->resource_info.texture.handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+    }
+
     resource->resource_info = creation->resource_info;
     resource->output_handle = resource_handle;
     resource->producer = producer;
@@ -1075,11 +1085,11 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
       crude_gfx_texture *texture = crude_gfx_access_texture( builder->gpu, resource->resource_info.texture.handle );
       crude_gfx_destroy_texture( builder->gpu, texture->handle );
     }
-    else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.handle ) )
-    {
-      crude_gfx_buffer *buffer = crude_gfx_access_buffer( builder->gpu, resource->resource_info.buffer.handle );
-      crude_gfx_destroy_buffer( builder->gpu, buffer->handle );
-    }
+    //else if ( is_buffer_type && CRUDE_RESOURCE_HANDLE_IS_VALID( resource->resource_info.buffer.handle ) )
+    //{
+    //  crude_gfx_buffer *buffer = crude_gfx_access_buffer( builder->gpu, resource->resource_info.buffer.handle );
+    //  crude_gfx_destroy_buffer( builder->gpu, buffer->handle );
+    //}
   }
 
   crude_resource_pool_free_all_resource( &builder->resource_cache.resources );

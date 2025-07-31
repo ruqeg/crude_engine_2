@@ -1234,7 +1234,8 @@ crude_gfx_destroy_texture
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
   CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, texture_update_event );
-
+  
+  crude_gfx_texture* buffer = crude_gfx_access_texture( gpu, handle );
   crude_gfx_resource_update texture_update_bindless_event = { 
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,

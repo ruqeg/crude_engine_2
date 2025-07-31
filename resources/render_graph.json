@@ -81,7 +81,7 @@
       "type": "compute",
       "inputs": [
         {
-          "type": "reference",
+          "type": "texture",
           "name": "depth_pyramid"
         }
       ],
