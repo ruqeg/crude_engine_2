@@ -120,6 +120,7 @@ crude_launcher_deinitialize
   _In_ crude_launcher                                     *launcher
 )
 {
+  ImGui::SetCurrentContext( launcher->imgui_context );
   ImGui_ImplSDLRenderer3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
   if ( launcher->imgui_context )

@@ -81,7 +81,7 @@
       "type": "compute",
       "inputs": [
         {
-          "type": "texture",
+          "type": "reference",
           "name": "depth_pyramid"
         }
       ],
@@ -100,7 +100,7 @@
       "name": "meshlet_late_pass",
       "inputs": [
         {
-          "type": "texture",
+          "type": "reference",
           "name": "depth_pyramid"
         },
         {

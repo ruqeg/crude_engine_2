@@ -285,7 +285,6 @@ paprika_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
-  return;
   crude_paprika *paprika = ( crude_paprika* )it->ctx;
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
@@ -417,8 +416,8 @@ paprika_input_callback_
   _In_ void                                               *sdl_event
 )
 {
-  //ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
-  //ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
+  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }
 
 void

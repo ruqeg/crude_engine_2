@@ -144,6 +144,7 @@ crude_gfx_imgui_pass_deinitialize
   _In_ crude_gfx_imgui_pass                               *pass
 )
 {
+
   ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   ImGui_ImplSDL3_Shutdown( );
 
