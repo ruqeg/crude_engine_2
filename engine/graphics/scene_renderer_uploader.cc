@@ -84,6 +84,17 @@ load_meshlets_
 );
 
 static void
+load_nodes_
+(
+  _In_ cgltf_data                                         *gltf,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        parent_node,
+  _In_ cgltf_node                                        **gltf_nodes,
+  _In_ uint32                                              gltf_nodes_count,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+static void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
@@ -143,6 +154,11 @@ crude_scene_renderer_upload_gltf
   load_buffers_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
   load_meshes_( scene_renderer, node, gltf, &temporary_string_buffer, gltf_directory, scene_renderer_buffers_offset, scene_renderer_images_offset, scene_renderer_samplers_offset );
   load_meshlets_( scene_renderer, gltf, temporary_allocator );
+
+  for ( uint32 i = 0; i < gltf->scenes_count; ++i )
+  {
+    load_nodes_( gltf, scene_renderer, node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, temporary_allocator );
+  }
 
   cgltf_free( gltf );
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
@@ -245,8 +261,6 @@ create_mesh_material_
   {
     mesh_draw->normal_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
-
-  mesh_draw->node = node;
   
   crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty();
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -494,9 +508,6 @@ load_meshes_
   _In_ uint32                                              scene_renderer_samplers_offset
 )
 {
-  XMFLOAT3 const node_scale = CRUDE_COMPOUNT( XMFLOAT3, { 1.0f, 1.0f, 1.0f } );
-  XMFLOAT3 const node_translation = CRUDE_COMPOUNT( XMFLOAT3, { 1.0f, 1.0f, 1.0f } );
-  XMFLOAT4 const node_rotation = CRUDE_COMPOUNT( XMFLOAT4, { 1.0f, 1.0f, 1.0f, 0.0 } );
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   {
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
@@ -565,9 +576,7 @@ load_meshes_
       indices_buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, indices_accessor->buffer_view ) ];
 
       material_transparent = create_mesh_material_( gltf, node, scene_renderer->renderer, scene_renderer, mesh_primitive->material, &mesh_draw, scene_renderer_images_offset, scene_renderer_samplers_offset );
-      mesh_draw.scale = node_scale;
-      mesh_draw.translation = node_translation;
-      mesh_draw.rotation = node_rotation;
+      
       mesh_draw.index_buffer = indices_buffer_gpu->handle;
       mesh_draw.index_offset = indices_accessor->offset;
       mesh_draw.primitive_count = indices_accessor->count;
@@ -669,7 +678,7 @@ load_meshlets_
         new_meshlet.triangles_offset = CRUDE_ARRAY_LENGTH( scene_renderer->meshlets_triangles_indices ) + local_meshlet->triangle_offset;
         new_meshlet.vertices_count = local_meshlet->vertex_count;
         new_meshlet.triangles_count = local_meshlet->triangle_count;
-        new_meshlet.mesh_index = primitive_index;
+        new_meshlet.mesh_index = mesh_index;
 
         new_meshlet.center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
         new_meshlet.radius = meshlet_bounds.radius;
@@ -696,7 +705,51 @@ load_meshlets_
   }
 }
 
-static void
+void
+load_nodes_
+(
+  _In_ cgltf_data                                         *gltf,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        parent_node,
+  _In_ cgltf_node                                        **gltf_nodes,
+  _In_ uint32                                              gltf_nodes_count,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{ 
+  for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
+  {
+    crude_gfx_mesh_instance_cpu                            mesh_instance;
+    crude_transform                                        transform;
+    
+    mesh_instance.node = crude_entity_create_empty( parent_node.world, gltf_nodes[ i ]->name );
+    crude_entity_set_parent( mesh_instance.node, parent_node );
+    
+    if ( gltf_nodes[ i ]->has_translation )
+    {
+      XMStoreFloat3( &transform.translation, XMVectorSet( gltf_nodes[ i ]->translation[ 0 ],gltf_nodes[ i ]->translation[ 1 ], gltf_nodes[ i ]->translation[ 2 ], 1 ));
+    }
+    else
+    {
+      XMStoreFloat3( &transform.translation, XMVectorZero( ) );
+    }
+    XMStoreFloat3( &transform.scale, XMVectorReplicate( 1.f ) );
+    XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
+
+    CRUDE_ENTITY_SET_COMPONENT( mesh_instance.node, crude_transform, {
+      transform.translation, transform.rotation, transform.scale
+    } );
+    
+    mesh_instance.mesh = &scene_renderer->meshes[ cgltf_mesh_index( gltf, gltf_nodes[ i ]->mesh ) ];
+    
+    mesh_instance.material_pass_index = 0;
+    
+    CRUDE_ARRAY_PUSH( scene_renderer->meshes_instances, mesh_instance );
+
+    load_nodes_( gltf, scene_renderer, mesh_instance.node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, temporary_allocator );
+  }
+}
+
+void
 load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
@@ -772,21 +825,33 @@ load_meshlet_indices_
   _In_ uint32                                              vertices_offset
 )
 {
-  uint16                                                  *primitive_indices;
   uint32                                                   meshlet_vertices_indices_count;
   uint8                                                   *buffer_data;
 
   meshlet_vertices_indices_count = primitive->indices->count;
+  buffer_data = CRUDE_CAST( uint8*, primitive->indices->buffer_view->buffer->data ) + primitive->indices->buffer_view->offset + primitive->indices->offset;
   CRUDE_ARRAY_SET_LENGTH( *indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
-  CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u );
 
-  buffer_data = CRUDE_CAST( uint8*, primitive->indices->buffer_view->buffer->data ) + primitive->indices->buffer_view->offset + primitive->indices->offset;
-  primitive_indices = CRUDE_CAST( uint16*, buffer_data );
-
-  for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
+  if ( primitive->indices->component_type == cgltf_component_type_r_16u )
   {
-    ( *indices )[ i ] = primitive_indices[ i ] + vertices_offset;
+    uint16 *primitive_indices = CRUDE_CAST( uint16*, buffer_data );
+    for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
+    {
+      ( *indices )[ i ] = primitive_indices[ i ] + vertices_offset;
+    }
+  }
+  else if ( primitive->indices->component_type == cgltf_component_type_r_32u )
+  {
+    uint32 *primitive_indices = CRUDE_CAST( uint32*, buffer_data );
+    for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
+    {
+      ( *indices )[ i ] = primitive_indices[ i ] + vertices_offset;
+    }
+  }
+  else
+  {
+    CRUDE_ASSERT( false );
   }
 }

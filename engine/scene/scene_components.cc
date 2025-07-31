@@ -38,7 +38,7 @@ crude_transform_node_to_world
   return crude_transform_node_to_parent( transform );
 }
 
-CRUDE_API XMMATRIX
+XMMATRIX
 crude_transform_node_to_parent
 (
   _In_ crude_transform const                              *transform

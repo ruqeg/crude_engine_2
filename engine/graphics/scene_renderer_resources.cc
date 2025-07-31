@@ -47,23 +47,21 @@ crude_gfx_camera_to_camera_gpu
   XMStoreFloat4A( &camera_gpu->frustum_planes_culling[ 5 ], XMPlaneNormalize( XMVectorSubtract( view_to_clip_transposed.r[ 3 ], view_to_clip_transposed.r[ 2 ] ) ) );
 }
 
+
 void
-crude_gfx_mesh_cpu_to_mesh_material_gpu
+crude_gfx_mesh_cpu_to_mesh_draw_gpu
 (
   _In_ crude_gfx_mesh_cpu const                           *mesh,
-  _Out_ crude_gfx_mesh_material_gpu                       *mesh_material_gpu
+  _Out_ crude_gfx_mesh_draw_gpu                           *mesh_draw_gpu
 )
 {
-  crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh->node, crude_transform );
-  XMMATRIX model_to_world = crude_transform_node_to_world( mesh->node, transform );
-  XMStoreFloat4x4( &mesh_material_gpu->model_to_world, model_to_world ); 
-  mesh_material_gpu->textures.x = mesh->albedo_texture_handle.index; /* in case i will be confused in the future, bindless textures bineded by their handles, look at gpu_present... at least at the moment I write this comment */
-  mesh_material_gpu->textures.y = mesh->roughness_texture_handle.index;
-  mesh_material_gpu->textures.z = mesh->normal_texture_handle.index;
-  mesh_material_gpu->textures.w = mesh->occlusion_texture_handle.index;
-  mesh_material_gpu->albedo_color_factor = mesh->albedo_color_factor;
-  mesh_material_gpu->flags = mesh->flags;
-  mesh_material_gpu->mesh_index = mesh->gpu_mesh_index;
-  mesh_material_gpu->meshletes_count = mesh->meshlets_count;
-  mesh_material_gpu->meshletes_offset = mesh->meshlets_offset;
+  mesh_draw_gpu->textures.x = mesh->albedo_texture_handle.index; /* in case i will be confused in the future, bindless textures bineded by their handles, look at gpu_present... at least at the moment I write this comment */
+  mesh_draw_gpu->textures.y = mesh->roughness_texture_handle.index;
+  mesh_draw_gpu->textures.z = mesh->normal_texture_handle.index;
+  mesh_draw_gpu->textures.w = mesh->occlusion_texture_handle.index;
+  mesh_draw_gpu->albedo_color_factor = mesh->albedo_color_factor;
+  mesh_draw_gpu->flags = mesh->flags;
+  mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
+  mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
+  mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
 }

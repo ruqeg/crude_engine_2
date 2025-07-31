@@ -323,34 +323,6 @@ paprika_graphics_system_
       crude_gfx_unmap_buffer( &paprika->graphics.gpu, paprika->graphics.scene_renderer.scene_cb );
     }
   }
-  
-  /* Update mesh buffer */
-  {
-    for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( paprika->graphics.scene_renderer.meshes ); ++mesh_index )
-    {
-      crude_gfx_mesh_cpu *mesh_draw = &paprika->graphics.scene_renderer.meshes[ mesh_index ];
-  
-      crude_gfx_map_buffer_parameters mesh_buffer_map = { mesh_draw->material_buffer, 0, 0 };
-      crude_gfx_shader_mesh_constants *mesh_data = CRUDE_REINTERPRET_CAST( crude_gfx_shader_mesh_constants*, crude_gfx_map_buffer( &paprika->graphics.gpu, &mesh_buffer_map ) );
-      if ( mesh_data )
-      {
-        mesh_data->textures.x = mesh_draw->albedo_texture_handle.index;
-        mesh_data->textures.y = mesh_draw->roughness_texture_handle.index;
-        mesh_data->textures.z = mesh_draw->normal_texture_handle.index;
-        mesh_data->textures.w = mesh_draw->occlusion_texture_handle.index;
-        mesh_data->albedo_color_factor = CRUDE_COMPOUNT( XMFLOAT4A, { mesh_draw->albedo_color_factor.x, mesh_draw->albedo_color_factor.y, mesh_draw->albedo_color_factor.z, mesh_draw->albedo_color_factor.w } );
-        mesh_data->metallic_roughness_occlusion_factor = CRUDE_COMPOUNT( XMFLOAT3A, { mesh_draw->metallic_roughness_occlusion_factor.x, mesh_draw->metallic_roughness_occlusion_factor.y, mesh_draw->metallic_roughness_occlusion_factor.z } );
-        mesh_data->alpha_cutoff = mesh_draw->alpha_cutoff;
-        mesh_data->flags = mesh_draw->flags;
-        
-        crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_draw->node, crude_transform );
-        XMMATRIX model_to_world = crude_transform_node_to_world( paprika->scene.main_camera, transform );
-        XMStoreFloat4x4( &mesh_data->model_to_world, model_to_world ); 
-      
-        crude_gfx_unmap_buffer( &paprika->graphics.gpu, mesh_draw->material_buffer );
-      }
-    }
-  }
 
   paprika_draw_imgui_( paprika );
   
@@ -458,7 +430,7 @@ paprika_draw_imgui_
   uint32                                                   temporary_allocator_mark;
   
   temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
-  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
+  crude_string_buffer_initialize( &temporary_string_buffer, 4096, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
   
   ImGui::Begin( "techniques" );
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )

@@ -22,16 +22,16 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_draw_command_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu
 {
-  XMFLOAT4X4A                                                     world_to_clip;
-  XMFLOAT4X4A                                                     world_to_view;
-  XMFLOAT4X4A                                                     view_to_clip;
-  XMFLOAT4X4A                                                     clip_to_view;
-  XMFLOAT4X4A                                                     view_to_world;
-  XMFLOAT4A                                                       frustum_planes_culling[ 6 ];
-  XMFLOAT3A                                                       position;
-  float32                                                         znear;
-  float32                                                         zfar;
-  XMFLOAT2                                                        padding;
+  XMFLOAT4X4A                                              world_to_clip;
+  XMFLOAT4X4A                                              world_to_view;
+  XMFLOAT4X4A                                              view_to_clip;
+  XMFLOAT4X4A                                              clip_to_view;
+  XMFLOAT4X4A                                              view_to_world;
+  XMFLOAT4A                                                frustum_planes_culling[ 6 ];
+  XMFLOAT3A                                                position;
+  float32                                                  znear;
+  float32                                                  zfar;
+  XMFLOAT2                                                 padding;
 } crude_gfx_camera_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
@@ -69,7 +69,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
 {
-  XMFLOAT3                                             center;
+  XMFLOAT3                                                 center;
   float32                                                  radius;
   int8                                                     cone_axis[ 3 ];
   int8                                                     cone_cutoff;
@@ -80,14 +80,12 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
   uint32                                                   mesh_index;
 } crude_gfx_meshlet_gpu;
 
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_gpu
 {
-  XMFLOAT4X4A                                     model_to_world;
-
-  XMUINT4                                         textures;
-  XMFLOAT4                                        emissive;
-  XMFLOAT4                                        albedo_color_factor;
-  XMFLOAT4                                        metallic_roughness_occlusion_factor;
+  XMUINT4                                                  textures;
+  XMFLOAT4                                                 emissive;
+  XMFLOAT4                                                 albedo_color_factor;
+  XMFLOAT4                                                 metallic_roughness_occlusion_factor;
 
   uint32                                                   flags;
   float32                                                  alpha_cutoff;
@@ -98,11 +96,18 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_material_gpu
   uint32                                                   meshletes_count;
   uint32                                                   meshletes_index_count;
   uint32                                                   padding1;
-} crude_gfx_mesh_material_gpu;
+} crude_gfx_mesh_draw_gpu;
+
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
+{
+  XMFLOAT4X4                                               model_to_world;
+  uint32                                                   mesh_draw_index;
+  XMFLOAT3A                                                padding;
+} crude_gfx_mesh_darw_gpu;
 
 typedef struct crude_gfx_meshlet_vertex_gpu
 {
-  XMFLOAT3A                                       position;
+  XMFLOAT3A                                                position;
   uint8                                                    normal[ 4 ];
   uint8                                                    tangent[ 4 ];
   uint16                                                   texcoords[ 2 ];
@@ -111,11 +116,7 @@ typedef struct crude_gfx_meshlet_vertex_gpu
 
 typedef struct crude_gfx_mesh_cpu
 {
-  crude_entity                                             node;
   crude_gfx_renderer_material                             *material;
-  XMFLOAT3                                                 scale;
-  XMFLOAT3                                                 translation;
-  XMFLOAT4                                                 rotation;
   XMFLOAT4                                                 bounding_sphere;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  position_buffer;
@@ -145,6 +146,7 @@ typedef struct crude_gfx_mesh_cpu
 typedef struct crude_gfx_mesh_instance_cpu
 {
   crude_gfx_mesh_cpu                                      *mesh;
+  crude_entity                                             node;
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance_cpu;
 
@@ -162,8 +164,8 @@ crude_gfx_camera_to_camera_gpu
 );
 
 CRUDE_API void
-crude_gfx_mesh_cpu_to_mesh_material_gpu
+crude_gfx_mesh_cpu_to_mesh_draw_gpu
 (
   _In_ crude_gfx_mesh_cpu const                           *mesh,
-  _Out_ crude_gfx_mesh_material_gpu                       *mesh_material_gpu
+  _Out_ crude_gfx_mesh_draw_gpu                           *mesh_draw_gpu
 );

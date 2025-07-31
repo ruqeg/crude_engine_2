@@ -58,16 +58,17 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCounts
 
 void main()
 {
-  uint mesh_draw_index = gl_GlobalInvocationID.x;
+  uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
   uint count = occlusion_culling_late_flag == 1 ? early_opaque_mesh_culled_count : total_mesh_count;
 
-  if ( mesh_draw_index < count )
+  if ( mesh_instance_draw_index < count )
   {
     if ( occlusion_culling_late_flag == 1 )
     {
-      mesh_draw_index = late_mesh_draw_commands[ mesh_draw_index ].draw_id;
+      mesh_instance_draw_index = late_mesh_draw_commands[ mesh_instance_draw_index ].draw_id;
     }
-    mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
+    uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
+    mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
     vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
     vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
     float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
@@ -99,7 +100,7 @@ void main()
     if ( frustum_visible && occlusion_visible )
     {
       uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
-      mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;
+      mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
       mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
       mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
       mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
@@ -107,7 +108,7 @@ void main()
     else if ( occlusion_culling_late_flag == 0 )
     {
       uint draw_index = atomicAdd( opaque_mesh_culled_count, 1 );
-      late_mesh_draw_commands[ draw_index ].draw_id = mesh_draw_index;
+      late_mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
       late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
       late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
       late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;

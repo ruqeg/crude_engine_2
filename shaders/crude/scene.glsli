@@ -4,8 +4,6 @@
 
 struct crude_mesh_draw
 {
-  mat4                                                     model_to_world;
-
   uvec4                                                    textures;
   vec4                                                     emissive;
   vec4                                                     albedo_color_factor;
@@ -20,6 +18,13 @@ struct crude_mesh_draw
   uint                                                     meshletes_count;
   uint                                                     meshletes_index_count;
   uint                                                     padding1;
+};
+
+struct crude_mesh_instance_draw
+{
+  mat4                                                     model_to_world;
+  uint                                                     mesh_draw_index;
+  vec3                                                     padding1;
 };
 
 struct crude_camera
@@ -51,7 +56,12 @@ layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer Cru
   crude_mesh_draw                                          mesh_draws[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=2, row_major, std430) readonly buffer CrudeMeshBounds
+layout(set=CRUDE_MATERIAL_SET, binding=2, row_major, std430) readonly buffer CrudeMeshInstancesDraws
+{
+  crude_mesh_instance_draw                                 mesh_instance_draws[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=3, row_major, std430) readonly buffer CrudeMeshBounds
 {
   vec4                                                     mesh_bounds[];
 };

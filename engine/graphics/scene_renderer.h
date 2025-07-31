@@ -34,18 +34,19 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_renderer_buffer                               *buffers;
   
   crude_gfx_mesh_cpu                                      *meshes;
-  crude_gfx_mesh_instance_cpu                             *mesh_instances;
+  crude_gfx_mesh_instance_cpu                             *meshes_instances;
   
   crude_gfx_meshlet_gpu                                   *meshlets;
   crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
   
-  uint32                                                   total_meshes_count;
+  uint32                                                   total_meshes_instances_count;
 
   crude_gfx_buffer_handle                                  scene_cb;
   
-  crude_gfx_buffer_handle                                  meshes_materials_sb;
+  crude_gfx_buffer_handle                                  meshes_draws_sb;
+  crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  meshes_bounds_sb;
   crude_gfx_buffer_handle                                  meshlets_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;

@@ -39,22 +39,23 @@ layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer Me
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
-  uint                                                     mesh_draw_indices[ 128 ];
+  uint                                                     mesh_instance_draw_indices[ 128 ];
 } shared_data;
 
 void main()
 {
   uint thread_index = gl_LocalInvocationID.x;
   uint group_index = gl_WorkGroupID.x;
-  uint darw_id = mesh_draw_commands[ gl_DrawIDARB ].draw_id;
-  uint meshlet_index = mesh_draws[ darw_id ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
+  uint draw_id = mesh_draw_commands[ gl_DrawIDARB ].draw_id;
+  uint mesh_draw_index = mesh_instance_draws[ draw_id ].mesh_draw_index;
+  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
 
-  if ( meshlet_index >= mesh_draws[ darw_id ].meshletes_offset + mesh_draws[ darw_id ].meshletes_count )
+  if ( meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
   {
     return;
   }
 
-  mat4 model_to_world = mesh_draws[ darw_id ].model_to_world;
+  mat4 model_to_world = mesh_instance_draws[ mesh_draw_index ].model_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
   float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
@@ -80,13 +81,13 @@ void main()
   bool occlusion_visible = false;
   if ( frustum_visible )
   {
-    occlusion_visible = crude_occlusion_culling( darw_id, view_center.xyz, radius, camera.znear,
+    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, camera.znear,
       camera.view_to_clip[ 0 ][ 0 ], camera.view_to_clip[ 1 ][ 1 ],
       depth_pyramid_texture_index,
       world_center.xyz, camera.position, camera.world_to_clip
     );
   }
-  accept = accept && occlusion_visible;
+  accept = true;
 
   uvec4 ballot = subgroupBallot( accept );
   
@@ -94,7 +95,7 @@ void main()
   if ( accept )
   {
     shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
-    shared_data.mesh_draw_indices[ previous_visible_meshlet_index ] = darw_id;
+    shared_data.mesh_instance_draw_indices[ previous_visible_meshlet_index ] = draw_id;
   }
   
   uint visible_meslets_count = subgroupBallotBitCount( ballot );

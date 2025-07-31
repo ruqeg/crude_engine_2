@@ -39,12 +39,5 @@ void main()
 {
   crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
   vec4 albedo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
-  if ( mesh_draw_index > 39 && mesh_draw_index < 42)
-  {
-    out_color = vec4( albedo * vec4( 1.0, 0.0, 0.0, 1.0 ) );
-  }
-  else
-  {
-    out_color = vec4( albedo );
-  }
+  out_color = vec4( albedo );
 }

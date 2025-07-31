@@ -71,7 +71,7 @@ crude_gfx_mesh_pass_render
     secondary_draw_task_container                          offset_secondary_draw_tasks_data;
     uint32                                                 draws_per_secondary, offset;
     
-    draws_per_secondary = CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ) / _PARALLEL_RECORDINGS;
+    draws_per_secondary = CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ) / _PARALLEL_RECORDINGS;
     offset = draws_per_secondary * _PARALLEL_RECORDINGS;
     
     for ( uint32 i = 0; i < _PARALLEL_RECORDINGS; ++i )
@@ -87,13 +87,13 @@ crude_gfx_mesh_pass_render
       enkiAddTaskSet( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, pass->scene_renderer->task_scheduler ), secondary_draw_tasks[ i ] );
     }
     
-    if ( offset < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ) )
+    if ( offset < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ) )
     {
       offset_secondary_draw_tasks_data = CRUDE_COMPOUNT_EMPTY( secondary_draw_task_container );
       offset_secondary_draw_tasks_data.pass                   = pass;
       offset_secondary_draw_tasks_data.primary_cmd            = primary_cmd;
       offset_secondary_draw_tasks_data.start_mesh_draw_index  = offset;
-      offset_secondary_draw_tasks_data.end_mesh_draw_index    = CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances );
+      offset_secondary_draw_tasks_data.end_mesh_draw_index    = CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances );
       draw_scene_secondary_task_( NULL, NULL, 0, &offset_secondary_draw_tasks_data );
     }
     
@@ -103,7 +103,7 @@ crude_gfx_mesh_pass_render
       vkCmdExecuteCommands( primary_cmd->vk_cmd_buffer, 1, &secondary_draw_tasks_data[ i ].secondary_cmd->vk_cmd_buffer );
     }
     
-    if ( offset < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ) )
+    if ( offset < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ) )
     {
       vkCmdExecuteCommands( primary_cmd->vk_cmd_buffer, 1, &offset_secondary_draw_tasks_data.secondary_cmd->vk_cmd_buffer );
     }
@@ -170,14 +170,14 @@ draw_scene_primary_
 )
 {
   crude_gfx_renderer_material *last_material = NULL;
-  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ); ++mesh_index )
+  for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ); ++mesh_index )
   {
     crude_gfx_device                                      *gpu;
     crude_gfx_mesh_instance_cpu                           *mesh_instance;
     crude_gfx_mesh_cpu                                    *mesh_cpu;
   
     gpu = pass->scene_renderer->renderer->gpu;
-    mesh_instance = &pass->scene_renderer->mesh_instances[ mesh_index ];
+    mesh_instance = &pass->scene_renderer->meshes_instances[ mesh_index ];
     mesh_cpu = mesh_instance->mesh;
     if ( mesh_cpu->material != last_material )
     {

@@ -41,7 +41,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer Me
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
-  uint                                                     mesh_draw_indices[ 128 ];
+  uint                                                     mesh_instance_draw_indices[ 128 ];
 } shared_data;
 
 void main()
@@ -49,7 +49,8 @@ void main()
   uint task_index = gl_LocalInvocationID.x;
   uint local_meshlet_index = gl_WorkGroupID.x;
   uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
-  uint mesh_draw_index = shared_data.mesh_draw_indices[ local_meshlet_index ];
+  uint mesh_instance_draw_index = shared_data.mesh_instance_draw_indices[ local_meshlet_index ];
+  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
   
   uint mesh_index = meshlets[ global_meshlet_index ].mesh_index;
   uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
@@ -58,7 +59,7 @@ void main()
   uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
   uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
 
-  mat4 model_to_world = mesh_draws[ mesh_draw_index ].model_to_world;
+  mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
 
   SetMeshOutputsEXT( vertices_count, triangles_count );
   

@@ -82,7 +82,7 @@ crude_gfx_meshlet_pass_render
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
     pass->early_pass ? pass->scene_renderer->mesh_task_indirect_count_early_sb[ renderer->gpu->current_frame ] : pass->scene_renderer->mesh_task_indirect_count_late_sb[ renderer->gpu->current_frame ],
     0,
-    CRUDE_ARRAY_LENGTH( pass->scene_renderer->mesh_instances ),
+    CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ),
     sizeof( crude_gfx_mesh_draw_command_gpu )
   );
 }
