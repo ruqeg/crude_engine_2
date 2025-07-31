@@ -22,6 +22,15 @@ crude_gfx_depth_pyramid_pass_deinitialize
   _In_ crude_gfx_depth_pyramid_pass                       *pass
 )
 {
+  crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
+  crude_gfx_destroy_texture( gpu, pass->depth_pyramid_texture_handle );
+  crude_gfx_destroy_sampler( gpu, pass->depth_pyramid_sampler );
+
+  for ( uint32 i = 0; i < pass->depth_pyramid_levels; ++i )
+  {
+    crude_gfx_destroy_texture( gpu, pass->depth_pyramid_views_handles[ i ] );
+    crude_gfx_destroy_descriptor_set( gpu, pass->depth_hierarchy_descriptor_sets_handles[ i ] );
+  }
 }
 
 void
@@ -39,10 +48,10 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   uint32 width = depth_texture->width / 2;
   uint32 height = depth_texture->height / 2;
   
-  uint32 depth_pyramid_levels = 0;
+  pass->depth_pyramid_levels = 0;
   while ( width >= 2 && height >= 2 )
   {
-    depth_pyramid_levels++;
+    pass->depth_pyramid_levels++;
     
     width /= 2;
     height /= 2;
@@ -54,7 +63,7 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   depth_hierarchy_creation.width = depth_texture->width / 2;
   depth_hierarchy_creation.height = depth_texture->height / 2;
   depth_hierarchy_creation.depth = 1u;
-  depth_hierarchy_creation.subresource.mip_level_count = depth_pyramid_levels;
+  depth_hierarchy_creation.subresource.mip_level_count = pass->depth_pyramid_levels;
   depth_hierarchy_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   depth_hierarchy_creation.name = "depth_hierarchy";
   
@@ -82,7 +91,7 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   crude_gfx_pipeline_handle depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "depth_pyramid" )->pipeline;
   pass->depth_pyramid_layout_handle = crude_gfx_get_descriptor_set_layout( gpu, depth_pyramid_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
-  for ( uint32 i = 0; i < depth_pyramid_levels; ++i )
+  for ( uint32 i = 0; i < pass->depth_pyramid_levels; ++i )
   {
     crude_gfx_descriptor_set_creation                      ds_creation;
 

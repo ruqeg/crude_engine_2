@@ -36,6 +36,12 @@ crude_gfx_debug_pass_deinitialize
   _In_ crude_gfx_debug_pass                               *pass
 )
 {
+  crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_destroy_descriptor_set( gpu, pass->depth_lines3d_descriptor_sets_handles[ i ] );
+  }
 }
 
 void

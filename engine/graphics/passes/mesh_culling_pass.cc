@@ -55,15 +55,10 @@ crude_gfx_mesh_culling_pass_deinitialize
   _In_ crude_gfx_mesh_culling_pass                        *pass
 )
 {
-}
-
-void
-crude_gfx_mesh_culling_pass_on_render_graph_registered
-(
-  _In_ crude_gfx_mesh_culling_pass                        *pass
-)
-{
-  crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->mesh_culling_descriptor_sets_handles[ i ] );
+  }
 }
 
 void

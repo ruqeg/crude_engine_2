@@ -30,12 +30,6 @@ crude_gfx_mesh_culling_pass_deinitialize
 );
 
 CRUDE_API void
-crude_gfx_mesh_culling_pass_on_render_graph_registered
-(
-  _In_ crude_gfx_mesh_culling_pass                        *pass
-);
-
-CRUDE_API void
 crude_gfx_mesh_culling_pass_render
 (
   _In_ void                                               *ctx,

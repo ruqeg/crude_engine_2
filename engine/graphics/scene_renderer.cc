@@ -35,8 +35,6 @@ crude_gfx_scene_renderer_initialize
   _In_ crude_gfx_scene_renderer_creation                  *creation
 )
 {
-  crude_gfx_renderer_material                             *main_material;
-
   {
     scene_renderer->allocator_container = creation->allocator_container;
     scene_renderer->renderer = creation->renderer;
@@ -55,16 +53,6 @@ crude_gfx_scene_renderer_initialize
   }
 
   scene_renderer_prepare_node_draws_( scene_renderer, creation->node, creation->temporary_allocator );
-
-  {
-    crude_gfx_renderer_material_creation                   material_creation;
-
-    material_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_material_creation );
-    material_creation.technique = crude_gfx_renderer_access_technique_by_name( scene_renderer->renderer, "main" );
-    material_creation.name = "material_no_cull";
-    material_creation.render_index = 0;
-    main_material = crude_gfx_renderer_create_material( scene_renderer->renderer, &material_creation );
-  }
 
   {
     crude_gfx_buffer_creation                                buffer_creation;
@@ -192,10 +180,14 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  crude_gfx_mesh_pass_deinitialize( &scene_renderer->mesh_pass );
   crude_gfx_meshlet_pass_deinitialize( &scene_renderer->meshlet_early_pass );
   crude_gfx_meshlet_pass_deinitialize( &scene_renderer->meshlet_late_pass );
-  crude_gfx_mesh_pass_deinitialize( &scene_renderer->mesh_pass );
-  crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  crude_gfx_depth_pyramid_pass_deinitialize( &scene_renderer->depth_pyramid_pass );
+  crude_gfx_mesh_culling_pass_deinitialize( &scene_renderer->mesh_culling_early_pass );
+  crude_gfx_mesh_culling_pass_deinitialize( &scene_renderer->mesh_culling_late_pass );
+  crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes_instances );
 
@@ -228,11 +220,13 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_indices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_triangles_indices_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_draws_sb );
-  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_instances_draws_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_bounds_sb );
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes_instances_draws_sb );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_commands_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_count_early_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
