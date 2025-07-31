@@ -140,6 +140,7 @@ crude_gfx_texture_view_creation_empty
   creation.subresource.array_layer_count = 1;
   creation.subresource.mip_base_level = 0;
   creation.subresource.mip_level_count = 1;
+  creation.parent_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   return creation;
 }
 

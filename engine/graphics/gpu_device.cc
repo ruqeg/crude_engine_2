@@ -409,7 +409,7 @@ crude_gfx_device_deinitialize
   }
   CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
   CRUDE_DEALLOCATE( gpu->allocator_container, gpu->gpu_time_queries_manager );
-
+  
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
@@ -1469,7 +1469,7 @@ crude_gfx_destroy_render_pass
 {
   if ( handle.index >= gpu->render_passes.pool_size )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid texture %u", handle.index );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid render pass %u", handle.index );
     return;
   }
   crude_gfx_resource_update render_pass_update_event = { 
@@ -3420,6 +3420,7 @@ vk_create_texture_
   texture->sampler        = NULL;
   texture->flags          = creation->flags;
   texture->handle         = handle;
+  texture->parent_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   
   {
     VmaAllocationCreateInfo                                memory_info;
@@ -3478,7 +3479,7 @@ vk_create_texture_
     
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_IMAGE, CRUDE_CAST( uint64, texture->vk_image ), creation->name );
   }
-
+  
   crude_gfx_texture_view_creation view_creation = crude_gfx_texture_view_creation_empty();
   view_creation.parent_texture_handle = texture->handle;
   view_creation.view_type = crude_gfx_to_vk_image_view_type( creation->type );
