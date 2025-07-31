@@ -9,6 +9,7 @@
 #define CRUDE_BINDLESS_IMAGES 11
 
 #define PI 3.1415926538
+#define CRUDE_TEXTURE_INVALID 0xffffffff
 
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require

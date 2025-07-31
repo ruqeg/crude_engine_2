@@ -38,6 +38,16 @@ layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer Me
 void main()
 {
   crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
-  vec4 albedo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
+  
+  // !TODO move to sep when gbuffer will be done or use clamp with default last texture
+  vec4 albedo;
+  if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
+  {
+    albedo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
+  }
+  else
+  {
+    albedo = mesh_draw.albedo_color_factor;
+  }
   out_color = vec4( albedo );
 }
