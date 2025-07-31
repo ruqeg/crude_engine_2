@@ -74,12 +74,9 @@ bool crude_occlusion_culling( uint mesh_draw_index,
     sceen_space_center_last.y = sceen_space_center_last.y / sceen_space_center_last.w;
     occlusion_visible = ( depth_sphere <= depth );
 
-    if ( mesh_draw_index == 40 || mesh_draw_index == 41 )
-    {
-      crude_debug_draw_box( world_bounding_center, dir_position, vec4( 0, 0, 1, 1 ) );
-      crude_debug_draw_2d_box( vec2( aabb_clip.x, -aabb_clip.y ), vec2( aabb_clip.z, -aabb_clip.w ), occlusion_visible ? vec4(0,1,0,1) : vec4(1,0,0,1) );
-      crude_debug_draw_2d_box( vec2( sceen_space_center_last.x - 0.02, sceen_space_center_last.y - 0.02 ), vec2( sceen_space_center_last.x + 0.02, sceen_space_center_last.y + 0.02 ), vec4(1, 1, 1, 1 ) );
-    }
+    //crude_debug_draw_box( world_bounding_center, dir_position, vec4( 0, 0, 1, 1 ) );
+    //crude_debug_draw_2d_box( vec2( aabb_clip.x, -aabb_clip.y ), vec2( aabb_clip.z, -aabb_clip.w ), occlusion_visible ? vec4(0,1,0,1) : vec4(1,0,0,1) );
+    //crude_debug_draw_2d_box( vec2( sceen_space_center_last.x - 0.02, sceen_space_center_last.y - 0.02 ), vec2( sceen_space_center_last.x + 0.02, sceen_space_center_last.y + 0.02 ), vec4(1, 1, 1, 1 ) );
     if ( mesh_draw_index == 40 )
     {
       debugPrintfEXT("level %f", level );

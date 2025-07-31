@@ -55,10 +55,16 @@ void main()
     return;
   }
 
-  mat4 model_to_world = mesh_instance_draws[ mesh_draw_index ].model_to_world;
+  mat4 model_to_world = mesh_instance_draws[ draw_id ].model_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
   float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+
+  //vec3 mesh_bound_center = ( vec4( mesh_bounds[ mesh_draw_index ].xyz, 1 ) * model_to_world ).xyz;
+  //float mesh_bound_radius = mesh_bounds[ mesh_draw_index ].w * scale * 1.1;
+  //crude_debug_draw_box( world_center.xyz - vec3( radius ), world_center.xyz + vec3( radius ), vec4( 1, 1, 1, 1 ) );
+  //crude_debug_draw_box( mesh_bound_center - vec3( mesh_bound_radius ), mesh_bound_center + vec3( mesh_bound_radius ), vec4( 0, 1, 0, 1 ) );
+
   vec3 cone_axis = vec3(
     int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
     int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
@@ -87,7 +93,7 @@ void main()
       world_center.xyz, camera.position, camera.world_to_clip
     );
   }
-  accept = true;
+  accept = occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );
   
