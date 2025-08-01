@@ -90,8 +90,10 @@ crude_paprika_initialize
   _In_ crude_engine                                       *engine
 )
 {
-  paprika->engine = engine;
   paprika->working = true;
+  paprika->engine = engine;
+  paprika->framerate = 30;
+  paprika->last_graphics_update_time = 0.f;
 
   crude_heap_allocator_initialize( &paprika->graphics_allocator, CRUDE_RMEGA( 64 ), "renderer_allocator" );
   crude_stack_allocator_initialize( &paprika->temporary_allocator, CRUDE_RMEGA( 64 ), "temprorary_allocator" );
@@ -167,8 +169,8 @@ crude_paprika_deinitialize
   {
     return;
   }
-
   paprika->working = false;
+  
   crude_entity_destroy( paprika->platform_node );
   crude_scene_deinitialize( &paprika->scene );
   paprika_graphics_deinitialize_( paprika );
@@ -176,19 +178,6 @@ crude_paprika_deinitialize
   crude_stack_allocator_deinitialize( &paprika->temporary_allocator );
 
   ImGui::DestroyContext( ( ImGuiContext* )paprika->imgui_context );
-}
-
-void
-crude_paprika_update
-(
-  _In_ crude_paprika                                      *paprika
-)
-{
-  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->platform_node, crude_input );
-  if ( input && input->should_close_window )
-  {
-    crude_paprika_deinitialize( paprika );
-  }
 }
 
 static void
@@ -286,6 +275,13 @@ paprika_graphics_system_
 )
 {
   crude_paprika *paprika = ( crude_paprika* )it->ctx;
+
+  paprika->last_graphics_update_time += it->delta_time;
+
+  if ( paprika->last_graphics_update_time < 1.f / paprika->framerate )
+  {
+    return;
+  }
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
   

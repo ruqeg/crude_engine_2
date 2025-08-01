@@ -26,21 +26,24 @@ void
 crude_engine_initialize
 (
   _In_ crude_engine                                       *engine,
-  _In_ int32                                               num_threads
+  _In_ crude_engine_creation const                        *creation
 )
 {
-  engine->world   = crude_ecs_init();
-  engine->running = true;
-  engine->time    = 0;
+  crude_log_initialize( );
+  crude_time_service_initialize( );
+  crude_platform_service_initialize( );
 
-  crude_log_initialize();
-  crude_time_service_initialize();
-  crude_platform_initialize();
- 
+  *engine = CRUDE_COMPOUNT_EMPTY( crude_engine );
+  engine->world = crude_ecs_init();
+  engine->running = true;
+  engine->last_update_time = crude_time_now();
+
   ECS_TAG_DEFINE( engine->world, crude_entity_tag );
-  
+
+  if ( creation->asynchronous_loader_manager )
   {
     struct enkiTaskSchedulerConfig                         config;
+    crude_gfx_asynchronous_loader_manager_creation         creation;
 
     engine->task_sheduler = enkiNewTaskScheduler();
     config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
@@ -49,18 +52,15 @@ crude_engine_initialize
 
     engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate - 1 );
     enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
-  }
   
-  crude_heap_allocator_initialize( &engine->allocator, CRUDE_RKILO( 16 ), "main_engine_allocator" );
+    crude_heap_allocator_initialize( &engine->asynchronous_loader_manager_allocator, CRUDE_RKILO( 16 ), "asynchronous_loader_manager_allocator" );
 
-  {
-    crude_gfx_asynchronous_loader_manager_creation creation = {
-      .task_sheduler = engine->task_sheduler,
-      .allocator_container = crude_heap_allocator_pack( &engine->allocator )
-    };
+    creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_asynchronous_loader_manager_creation );
+    creation.task_sheduler = engine->task_sheduler;
+    creation.allocator_container = crude_heap_allocator_pack( &engine->asynchronous_loader_manager_allocator );
     crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
   }
-  
+
   engine->resources_path = "\\..\\..\\resources\\";
   engine->shaders_path = "\\..\\..\\shaders\\";
 }
@@ -71,13 +71,17 @@ crude_engine_deinitialize
   _In_ crude_engine                                       *engine
 )
 {
-  crude_gfx_asynchronous_loader_manager_deintiailize( &engine->asynchronous_loader_manager );
-  crude_heap_allocator_deinitialize( &engine->allocator );
-  enkiWaitforAllAndShutdown( engine->task_sheduler );
-  enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
-  enkiDeleteTaskScheduler( engine->task_sheduler );
-  crude_platform_deinitialize();
-  crude_log_deinitialize();
+  if ( engine->task_sheduler )
+  {
+    crude_gfx_asynchronous_loader_manager_deintiailize( &engine->asynchronous_loader_manager );
+    crude_heap_allocator_deinitialize( &engine->asynchronous_loader_manager_allocator );
+    enkiWaitforAllAndShutdown( engine->task_sheduler );
+    enkiDeletePinnedTask( engine->task_sheduler, engine->pinned_task_loop );
+    enkiDeleteTaskScheduler( engine->task_sheduler );
+  }
+
+  crude_platform_service_deinitialize( );
+  crude_log_deinitialize( );
 }
 
 bool
@@ -86,19 +90,22 @@ crude_engine_update
   _In_ crude_engine                                       *engine
 )
 {
-  ecs_world_t *world = engine->world;
-  
-  int64 const current_tick = crude_time_now();
-  float32 const delta_time = crude_time_delta_seconds( engine->time, current_tick );
-  engine->time = current_tick;
+  ecs_world_t                                             *world;
+  int64                                                    current_time;
+  float32                                                  delta_time;
 
-  if ( !crude_ecs_should_quit( world ) )
+  world = engine->world;
+  if ( crude_ecs_should_quit( world ) )
   {
-    crude_ecs_progress( world, delta_time );
-    return true;
+    crude_ecs_fini( world );
+    engine->running = false;
+    return false;
   }
+  
+  current_time = crude_time_now();
+  delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
+  crude_ecs_progress( world, delta_time );
+  engine->last_update_time = current_time;
 
-  crude_ecs_fini( world );
-  engine->running = false;
-  return false;
+  return true;
 }

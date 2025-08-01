@@ -3,11 +3,11 @@
 #include <core/alias.h>
 
 CRUDE_API void
-crude_platform_initialize
+crude_platform_service_initialize
 (
 );
 
 CRUDE_API void
-crude_platform_deinitialize
+crude_platform_service_deinitialize
 (
 );

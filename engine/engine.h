@@ -6,24 +6,29 @@
 #include <core/ecs.h>
 #include <core/memory.h>
 
+typedef struct crude_engine_creation
+{
+  bool                                                     asynchronous_loader_manager;
+} crude_engine_creation;
+
 typedef struct crude_engine
 {
   ecs_world_t                                             *world;
   bool                                                     running;
-  int64                                                    time;
   enkiTaskScheduler                                       *task_sheduler;
   enkiPinnedTask                                          *pinned_task_loop;
   crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
-  crude_heap_allocator                                     allocator;
+  crude_heap_allocator                                     asynchronous_loader_manager_allocator;
   char const                                              *resources_path;
   char const                                              *shaders_path;
+  int64                                                    last_update_time;
 } crude_engine;
 
 CRUDE_API void
 crude_engine_initialize
 (
   _In_ crude_engine                                       *engine,
-  _In_ int32                                               num_threads
+  _In_ crude_engine_creation const                        *creation
 );
 
 CRUDE_API void

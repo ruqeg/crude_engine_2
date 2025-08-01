@@ -14,8 +14,10 @@
 #include <core/process.h>
 #include <core/file.h>
 #include <core/profiler.h>
+#include <core/time.h>
 
 #include "launcher.h"
+
 
 static char*
 get_plugin_dll_path_
@@ -52,61 +54,73 @@ crude_launcher_initialize
   char                                                     temporary_buffer[ 1024 ];
   float32                                                  display_content_scale;
 
-  launcher->paprika.working = false;
-  launcher->dragoninn.working = false;
-
-  crude_engine_initialize( &launcher->engine, 1u );
-  
-  ECS_IMPORT( launcher->engine.world, crude_platform_system );
-
-  launcher->crude_dragoninn_cr.userdata         = &launcher->dragoninn;
-  launcher->crude_paprika_cr.userdata           = &launcher->paprika;
-  launcher->crude_engine_simulation_cr.userdata = &launcher->engine;
-  
-  cr_plugin_open( launcher->crude_engine_simulation_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_engine_simulation" ) ) );
-  cr_plugin_open( launcher->crude_dragoninn_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_dragoninn" ) ) );
-  cr_plugin_open( launcher->crude_paprika_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_paprika" ) ) );
-
-  if ( !SDL_Init( SDL_INIT_VIDEO) )
+  /* Initialize engine */
   {
-    return;
+    crude_engine_creation creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
+    creation.asynchronous_loader_manager = true;
+    crude_engine_initialize( &launcher->engine, &creation );
   }
   
-  display_content_scale = SDL_GetDisplayContentScale( SDL_GetPrimaryDisplay() );
+  ECS_IMPORT( launcher->engine.world, crude_platform_system );
   
-  IMGUI_CHECKVERSION();
-  launcher->imgui_context = ImGui::CreateContext();
+  /* Initialize Paprika cr */
+  launcher->paprika_cr.userdata = &launcher->paprika;
+  launcher->engine_simulation_cr.userdata = &launcher->engine;
 
-  launcher->platform_node = crude_entity_create_empty( launcher->engine.world, "crude_launcher" );
-  CRUDE_ENTITY_SET_COMPONENT( launcher->platform_node, crude_window, { 
-    .width     = CRUDE_CAST( int32, 1200 * display_content_scale ),
-    .height    = CRUDE_CAST( int32, 600 * display_content_scale ),
-    .maximized = false,
-    .flags     = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY
-  });
-  CRUDE_ENTITY_SET_COMPONENT( launcher->platform_node, crude_input, { 
-    .callback = launcher_input_callback_,
-    .ctx = launcher->imgui_context
-  } );
+  cr_plugin_open( launcher->paprika_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_paprika" ) ) );
+  cr_plugin_open( launcher->engine_simulation_cr, get_plugin_dll_path_( temporary_buffer, sizeof( temporary_buffer ), CR_PLUGIN( "crude_engine_simulation" ) ) );
 
-  sdl_window = ( SDL_Window* ) CRUDE_ENTITY_GET_MUTABLE_COMPONENT( launcher->platform_node, crude_window_handle )->value;
+  launcher->paprika.working = false;
+  
+  /* Initialize Imgui Context */
+  {
+    IMGUI_CHECKVERSION();
+    launcher->imgui_context = ImGui::CreateContext();
+    ImGui::SetCurrentContext( launcher->imgui_context );
+    imgui_io = &ImGui::GetIO();
+    imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NoMouseCursorChange;
+    imgui_io->ConfigWindowsResizeFromEdges = true;
+    imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
+    ImGui::StyleColorsDark();
+  }
 
-  launcher->sdl_renderer = SDL_CreateRenderer( sdl_window, nullptr );
-  SDL_SetRenderVSync( launcher->sdl_renderer, 1 );
-  SDL_ShowWindow( sdl_window );
+  /* Creation platform entity */
+  {
+    crude_window                                           window_comp;
+    crude_input                                            input_comp;
 
-  ImGui::SetCurrentContext( launcher->imgui_context );
-  imgui_io = &ImGui::GetIO();
-  imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NoMouseCursorChange;
-  imgui_io->ConfigWindowsResizeFromEdges = true;
-  imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
-  ImGui::StyleColorsDark();
+    display_content_scale = SDL_GetDisplayContentScale( SDL_GetPrimaryDisplay() );
+    
+    launcher->platform_node = crude_entity_create_empty( launcher->engine.world, "crude_launcher" );
 
+    window_comp = CRUDE_COMPOUNT_EMPTY( crude_window );
+    window_comp.width     = CRUDE_CAST( int32, 1200 * display_content_scale );
+    window_comp.height    = CRUDE_CAST( int32, 600 * display_content_scale );
+    window_comp.maximized = false;
+    window_comp.flags     = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    CRUDE_ENTITY_SET_COMPONENT( launcher->platform_node, crude_window, { window_comp } );
+
+    input_comp = CRUDE_COMPOUNT_EMPTY( crude_input );
+    input_comp.callback = launcher_input_callback_;
+    input_comp.ctx = launcher->imgui_context;
+    CRUDE_ENTITY_SET_COMPONENT( launcher->platform_node, crude_input, { input_comp } );
+
+    sdl_window = ( SDL_Window* ) CRUDE_ENTITY_GET_MUTABLE_COMPONENT( launcher->platform_node, crude_window_handle )->value;
+  }
+ 
   imgui_style = &ImGui::GetStyle();
   imgui_style->ScaleAllSizes( display_content_scale );
 
-  ImGui_ImplSDL3_InitForSDLRenderer( sdl_window, launcher->sdl_renderer );
-  ImGui_ImplSDLRenderer3_Init( launcher->sdl_renderer );
+  /* Initialize SDL Renderer */
+  {
+    launcher->sdl_renderer = SDL_CreateRenderer( sdl_window, nullptr );
+    SDL_SetRenderVSync( launcher->sdl_renderer, 1 );
+    SDL_ShowWindow( sdl_window );
+
+    ImGui_ImplSDL3_InitForSDLRenderer( sdl_window, launcher->sdl_renderer );
+    ImGui_ImplSDLRenderer3_Init( launcher->sdl_renderer );
+  }
+
   load_texture_( launcher, "textures\\paprika_button_texture.bmp", &launcher->paprika_texture );
   load_texture_( launcher, "textures\\vscode_button_texture.bmp", &launcher->shaders_button_texture );
   load_texture_( launcher, "textures\\dragoninn_button_texture.bmp", &launcher->dragoninn_texture );
@@ -132,14 +146,11 @@ crude_launcher_deinitialize
   {
     SDL_DestroyRenderer( launcher->sdl_renderer );
   }
-  SDL_Quit();
   
-  cr_plugin_close( launcher->crude_paprika_cr );
-  cr_plugin_close( launcher->crude_dragoninn_cr );
-  cr_plugin_close( launcher->crude_engine_simulation_cr );
+  cr_plugin_close( launcher->paprika_cr );
+  cr_plugin_close( launcher->engine_simulation_cr );
   
   crude_paprika_deinitialize( &launcher->paprika );
-  crude_dragoninn_deinitialize( &launcher->dragoninn );
   crude_engine_deinitialize( &launcher->engine );
 }
 
@@ -149,19 +160,22 @@ crude_launcher_update
   _In_ crude_launcher                                     *launcher
 )
 {
+  ImGuiIO                                                 *imgui_io;
+  crude_input                                             *input;
+  ImVec4                                                   clear_color;
   crude_string_buffer                                      temporary_string_buffer;
   uint32                                                   temporary_allocator_mark;
 
   temporary_allocator_mark = crude_stack_allocator_get_marker( &launcher->temporary_allocator );
   crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &launcher->temporary_allocator ) );
 
-  ImVec4 clear_color = ImVec4( 14 / 255.f, 6 / 255.f, 19 / 255.f, 1.00f );
+  clear_color = CRUDE_COMPOUNT( ImVec4, { 14 / 255.f, 6 / 255.f, 19 / 255.f, 1.00f } );
 
-  crude_input *input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( launcher->platform_node, crude_input );
+  input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( launcher->platform_node, crude_input );
 
   ImGui::SetCurrentContext( launcher->imgui_context );
 
-  ImGuiIO *imgui_io = &ImGui::GetIO();
+  imgui_io = &ImGui::GetIO();
 
   ImGui_ImplSDLRenderer3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
@@ -190,16 +204,6 @@ crude_launcher_update
       const char *open_vs_shall = crude_string_buffer_append_use_f( &temporary_string_buffer, "code %s%s", working_directory, launcher->engine.shaders_path );
       crude_system( open_vs_shall );
     }
-    ImGui::SameLine();
-    if ( ImGui::ImageButton( "crude_dragoninn", (ImTextureRef)launcher->dragoninn_texture, button_size ) )
-    {
-      if ( !launcher->dragoninn.working )
-      {
-        crude_dragoninn_deinitialize( &launcher->dragoninn );
-        crude_dragoninn_initialize( &launcher->dragoninn, &launcher->engine );
-        ImGui::SetCurrentContext( launcher->imgui_context );
-      }
-    }
 
     ImGui::End();
   }
@@ -211,20 +215,14 @@ crude_launcher_update
   ImGui_ImplSDLRenderer3_RenderDrawData( ImGui::GetDrawData(), launcher->sdl_renderer );
   SDL_RenderPresent( launcher->sdl_renderer );
 
-  if ( launcher->paprika.working )
-  {
-    cr_plugin_update( launcher->crude_paprika_cr );
-  }
-  if ( launcher->dragoninn.working )
-  {
-    cr_plugin_update( launcher->crude_dragoninn_cr );
-  }
-
-  cr_plugin_update( launcher->crude_engine_simulation_cr );
-
   crude_stack_allocator_free_marker( &launcher->temporary_allocator, temporary_allocator_mark );
 
-  CRUDE_PROFILER_MARK_FRAME;
+  if ( launcher->paprika.working )
+  {
+    cr_plugin_update( launcher->paprika_cr );
+  }
+
+  cr_plugin_update( launcher->engine_simulation_cr );
 }
 
 char*

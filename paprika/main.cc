@@ -5,6 +5,19 @@
 
 crude_paprika paprika_;
 
+static void
+paprika_update_
+(
+  _In_ crude_paprika                                      *paprika
+)
+{
+  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( paprika->platform_node, crude_input );
+  if ( input && input->should_close_window )
+  {
+    crude_paprika_deinitialize( paprika );
+  }
+}
+
 CR_EXPORT int
 cr_main
 (
@@ -20,7 +33,7 @@ cr_main
   }
 
   crude_paprika *paprika = CRUDE_REINTERPRET_CAST( crude_paprika*, ctx->userdata );
-  crude_paprika_update( paprika );
+  paprika_update_( paprika );
  
   return 0;
 }

@@ -40,6 +40,9 @@ typedef struct crude_paprika
   ImGuizmo::OPERATION                                      gizmo_operation;
   ImGuizmo::MODE                                           gizmo_mode;
 
+  uint32                                                   framerate;
+  float32                                                  last_graphics_update_time;
+
   bool                                                     debug_camera_culling;
   bool                                                     debug_camera_view;
 } crude_paprika;
@@ -53,12 +56,6 @@ crude_paprika_initialize
 
 CRUDE_API void
 crude_paprika_deinitialize
-(
-  _In_ crude_paprika                                      *paprika
-);
-
-CRUDE_API void
-crude_paprika_update
 (
   _In_ crude_paprika                                      *paprika
 );

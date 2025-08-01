@@ -6,7 +6,7 @@
 #include <platform/platform.h>
 
 void
-crude_platform_initialize
+crude_platform_service_initialize
 (
 )
 {
@@ -24,7 +24,7 @@ crude_platform_initialize
 }
 
 void
-crude_platform_deinitialize
+crude_platform_service_deinitialize
 (
 )
 {
