@@ -209,11 +209,6 @@ crude_gfx_scene_renderer_deinitialize
   }
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes ); ++i )
-  {
-     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshes[ i ].material_buffer );
-  }
-
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->scene_cb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_sb );

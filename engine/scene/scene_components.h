@@ -6,9 +6,9 @@
 
 typedef struct crude_transform
 {
-  XMFLOAT3                                             translation;
-  XMFLOAT4                                             rotation;
-  XMFLOAT3                                             scale;
+  XMFLOAT3                                                 translation;
+  XMFLOAT4                                                 rotation;
+  XMFLOAT3                                                 scale;
 } crude_transform;
 
 typedef struct crude_camera

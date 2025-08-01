@@ -22,8 +22,8 @@
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
 #define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024
-#define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX        0u
-#define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX        1u
+#define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX            0u
+#define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX            1u
 #define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
 
 /************************************************
@@ -663,17 +663,6 @@ typedef struct crude_gfx_resource_update
   crude_gfx_resource_index                                 handle;
   uint32                                                   current_frame;
 } crude_gfx_resource_update;
-\
-typedef struct crude_gfx_shader_mesh_constants
-{
-  XMFLOAT4X4A                                     model_to_world;
-  XMUINT4                                         textures;
-  XMFLOAT4A                                       albedo_color_factor;
-  XMFLOAT3A                                       metallic_roughness_occlusion_factor;
-  float32                                                  alpha_cutoff;
-  uint32                                                   flags;
-  XMFLOAT2                                        padding;
-} crude_gfx_shader_mesh_constants;
 
 /************************************************
  *

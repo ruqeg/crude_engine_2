@@ -122,7 +122,6 @@ typedef struct crude_gfx_mesh_cpu
   crude_gfx_buffer_handle                                  tangent_buffer;
   crude_gfx_buffer_handle                                  normal_buffer;
   crude_gfx_buffer_handle                                  texcoord_buffer;
-  crude_gfx_buffer_handle                                  material_buffer;
   uint32                                                   index_offset;
   uint32                                                   position_offset;
   uint32                                                   tangent_offset;

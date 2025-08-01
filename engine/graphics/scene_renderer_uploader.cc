@@ -267,13 +267,6 @@ create_mesh_material_
     mesh_draw->normal_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
   
-  crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty();
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  buffer_creation.size = sizeof ( crude_gfx_shader_mesh_constants );
-  buffer_creation.name = "mesh_data";
-  mesh_draw->material_buffer = crude_gfx_create_buffer( renderer->gpu, &buffer_creation );
-  
   return transparent;
 }
 
