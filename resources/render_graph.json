@@ -2,7 +2,7 @@
   "name": "main_graph",
   "passes": [
     {
-      "name": "mesh_culling_early_pass",
+      "name": "culling_early_pass",
       "type": "compute",
       "inputs": [],
       "outputs": [
@@ -17,7 +17,7 @@
       ]
     },
     {
-      "name": "meshlet_early_pass",
+      "name": "gbuffer_early_pass",
       "inputs": [
         {
           "type": "buffer",
@@ -31,8 +31,28 @@
       "outputs": [
         {
           "type": "attachment",
-          "name": "albedo",
-          "format": "VK_FORMAT_B8G8R8A8_SRGB",
+          "name": "gbuffer_albedo",
+          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_normal",
+          "format": "VK_FORMAT_R16G16_SNORM",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_roughness_metalness",
+          "format": "VK_FORMAT_R16G16_SNORM",
           "resolution": [
             800,
             600
@@ -77,7 +97,7 @@
       ]
     },
     {
-      "name": "mesh_culling_late_pass",
+      "name": "culling_late_pass",
       "type": "compute",
       "inputs": [
         {
@@ -97,7 +117,7 @@
       ]
     },
     {
-      "name": "meshlet_late_pass",
+      "name": "gbuffer_late_pass",
       "inputs": [
         {
           "type": "reference",
@@ -113,7 +133,15 @@
         },
         {
           "type": "attachment",
-          "name": "albedo"
+          "name": "gbuffer_albedo"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_roughness_metalness"
         },
         {
           "type": "attachment",
@@ -123,7 +151,15 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "albedo"
+          "name": "gbuffer_albedo"
+        },
+        {
+          "type": "reference",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "reference",
+          "name": "gbuffer_roughness_metalness"
         },
         {
           "type": "reference",
@@ -131,7 +167,44 @@
         },
         {
           "type": "buffer",
-          "name": "TMP_MARKER"
+          "name": "MESHLET_LATE_PASS_MARKER"
+        }
+      ]
+    },
+    {
+      "name": "light_pass",
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "gbuffer_albedo"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "attachment",
+          "name": "gbuffer_roughness_metalness"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        },
+        {
+          "type": "buffer",
+          "name": "MESHLET_LATE_PASS_MARKER"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "pbr",
+          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
         }
       ]
     },
@@ -139,30 +212,20 @@
       "name": "debug_pass",
       "inputs": [
         {
-          "type": "attachment",
-          "name": "albedo"
-        },
-        {
-          "type": "attachment",
-          "name": "depth"
-        },
-        {
-          "type": "buffer",
-          "name": "TMP_MARKER"
+          "type": "texture",
+          "name": "pbr"
         }
       ],
       "outputs": [
         {
-          "type": "reference",
-          "name": "albedo"
-        },
-        {
-          "type": "reference",
-          "name": "depth"
-        },
-        {
-          "type": "buffer",
-          "name": "TMP_MARKER2"
+          "type": "attachment",
+          "name": "debug",
+          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear"
         }
       ]
     },
@@ -171,18 +234,14 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "albedo"
-        },
-        {
-          "type": "buffer",
-          "name": "TMP_MARKER2"
+          "name": "debug"
         }
       ],
       "outputs": [
         {
           "type": "attachment",
           "name": "imgui",
-          "format": "VK_FORMAT_B8G8R8A8_SRGB",
+          "format": "VK_FORMAT_R8G8B8A8_SRGB",
           "resolution": [
             800,
             600

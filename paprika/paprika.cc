@@ -92,7 +92,7 @@ crude_paprika_initialize
 {
   paprika->working = true;
   paprika->engine = engine;
-  paprika->framerate = 30;
+  paprika->framerate = 60;
   paprika->last_graphics_update_time = 0.f;
 
   crude_heap_allocator_initialize( &paprika->graphics_allocator, CRUDE_RMEGA( 64 ), "renderer_allocator" );
@@ -242,7 +242,6 @@ paprika_graphics_initialize_
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\mesh_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
@@ -282,14 +281,16 @@ paprika_graphics_system_
   {
     return;
   }
+  paprika->last_graphics_update_time = 0.f;
 
   crude_gfx_new_frame( &paprika->graphics.gpu );
   
   ImGui::SetCurrentContext( ( ImGuiContext* ) paprika->imgui_context );
+  ImGuizmo::SetImGuiContext( ( ImGuiContext* ) paprika->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
-  ImGuizmo::SetOrthographic( false );
   ImGuizmo::BeginFrame();
+  ImGuizmo::SetOrthographic( false );
   ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
 
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
@@ -683,10 +684,8 @@ paprika_imgui_draw_viewport_
     XMStoreFloat4x4( &selected_parent_to_view, world_to_view );
   }
 
-  ImGuizmo::SetID( 0 );
   ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
   ImGuizmo::Manipulate( &selected_parent_to_view._11, &view_to_clip._11, paprika->gizmo_operation, paprika->gizmo_mode, &selected_node_to_parent._11, NULL, NULL );
-  
   XMMatrixDecompose( &new_scale, &new_rotation, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
   XMStoreFloat3( &selected_node_transform->translation, new_translation );
   XMStoreFloat3( &selected_node_transform->scale, new_scale );

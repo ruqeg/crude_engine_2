@@ -2,20 +2,12 @@
 	"name" : "meshlet",
 	"pipelines" : [
 		{
-			"name" : "meshlet",
-			"render_pass": "meshlet_pass",
-			"depth" : {
-				"write" : 1,
-				"test" : "less_or_equal"
-			},
-	    "blend": [
-	      {
-		    "enable": 1,
-		    "src_colour": "SRC_ALPHA",
-		    "dst_colour": "ONE_MINUS_SRC_ALPHA",
-		    "op": "ADD"
-	      }
-	    ],
+		"name" : "meshlet",
+		"render_pass": "gbuffer_early_pass",
+		"depth" : {
+			"write" : 1,
+			"test" : "less_or_equal"
+		},
 			"cull" : "back",
 			"shaders" : [
 				{

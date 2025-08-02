@@ -7,10 +7,13 @@
 #include "crude/mesh.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-layout(location = 0) out vec4 out_color;
+layout(location = 0) out vec4 out_abledo;
+layout(location = 1) out vec2 out_normal;
+layout(location = 2) out vec2 out_roughness_metalness;
 
 layout(location=0) in vec2 in_texcoord0;
-layout(location=1) in flat uint mesh_draw_index;
+layout(location=1) in flat uint in_mesh_draw_index;
+layout(location=2) in vec3 in_normal;
 
 layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
 {
@@ -37,17 +40,15 @@ layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer Me
 
 void main()
 {
-  crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
+  crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
   
-  // !TODO move to sep when gbuffer will be done or use clamp with default last texture
   vec4 albedo;
   if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
   {
-    albedo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
+    out_abledo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
   }
   else
   {
-    albedo = mesh_draw.albedo_color_factor;
+    out_abledo = mesh_draw.albedo_color_factor;
   }
-  out_color = vec4( albedo );
 }

@@ -1663,16 +1663,19 @@ crude_gfx_create_pipeline
     }
     else
     {
-      memset( &vk_color_blend_attachment[ 0 ], 0u, sizeof( vk_color_blend_attachment[ 0 ] ) );
-      vk_color_blend_attachment[ 0 ].blendEnable = VK_FALSE;
-      vk_color_blend_attachment[ 0 ].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      memset( &vk_color_blend_attachment, 0u, creation->render_pass_output.num_color_formats * sizeof( vk_color_blend_attachment[ 0 ] ) );
+      for ( uint32 i = 0; i < creation->render_pass_output.num_color_formats; ++i )
+      {
+        vk_color_blend_attachment[ i ].blendEnable = VK_FALSE;
+        vk_color_blend_attachment[ i ].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      }
     }
     
     vk_color_blending = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendStateCreateInfo );
     vk_color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     vk_color_blending.logicOpEnable = VK_FALSE;
     vk_color_blending.logicOp = VK_LOGIC_OP_COPY;
-    vk_color_blending.attachmentCount = creation->blend_state.active_states ? creation->blend_state.active_states : 1;
+    vk_color_blending.attachmentCount = creation->blend_state.active_states ? creation->blend_state.active_states : creation->render_pass_output.num_color_formats;
     vk_color_blending.pAttachments = vk_color_blend_attachment;
     vk_color_blending.blendConstants[ 0 ] = 0.0f;
     vk_color_blending.blendConstants[ 1 ] = 0.0f;

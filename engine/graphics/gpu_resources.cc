@@ -449,11 +449,12 @@ crude_gfx_string_to_vk_format
   _In_ char const                                         *format
 )
 {
-  if ( strcmp( format, "VK_FORMAT_B8G8R8A8_SRGB" ) == 0 ) return VK_FORMAT_B8G8R8A8_SRGB;
-  if ( strcmp( format, "VK_FORMAT_B8G8R8A8_UNORM" ) == 0 ) return VK_FORMAT_B8G8R8A8_UNORM;
   if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return VK_FORMAT_R16G16B16A16_SFLOAT;
   if ( strcmp( format, "VK_FORMAT_D32_SFLOAT" ) == 0 ) return VK_FORMAT_D32_SFLOAT;
-
+  if ( strcmp( format, "VK_FORMAT_R8G8B8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8_SRGB;
+  if ( strcmp( format, "VK_FORMAT_R8G8B8A8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8A8_SRGB;
+  if ( strcmp( format, "VK_FORMAT_R16G16_SNORM" ) == 0 ) return VK_FORMAT_R16G16_SNORM;
+  
   // !TODO HASH STRING
   CRUDE_ASSERT( false );
   return VK_FORMAT_UNDEFINED;

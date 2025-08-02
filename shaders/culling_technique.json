@@ -14,11 +14,11 @@
 		]
 	  },
 	  {
-		"name": "mesh_culling",
+		"name": "culling",
 		"shaders": [
 		  {
 			"stage": "compute",
-			"shader": "mesh_culling.comp",
+			"shader": "culling.comp",
 			"includes": [
 			  "crude/platform.glsli",
 			  "crude/debug.glsli",

@@ -8,12 +8,10 @@ void
 crude_gfx_depth_pyramid_pass_initialize
 (
   _In_ crude_gfx_depth_pyramid_pass                       *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ char const                                         *depth_resource_name
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
   pass->scene_renderer = scene_renderer;
-  pass->depth_resource_name = depth_resource_name;
 }
 
 void
@@ -52,7 +50,7 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   
   gpu = pass->scene_renderer->renderer->gpu;
 
-  depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->depth_resource_name );
+  depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
   depth_texture_handle = depth_resource->resource_info.texture.handle;
   depth_texture = crude_gfx_access_texture( gpu, depth_texture_handle );
 
