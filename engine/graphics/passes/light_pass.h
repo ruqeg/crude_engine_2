@@ -5,10 +5,16 @@
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_light_constant_gpu
+{
+  XMUINT4                                                  textures;
+} crude_gfx_light_constant_gpu;
+
 typedef struct crude_gfx_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_descriptor_set_handle                          light_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  light_cb;
 } crude_gfx_light_pass;
 
 CRUDE_API void
@@ -20,6 +26,12 @@ crude_gfx_light_pass_initialize
 
 CRUDE_API void
 crude_gfx_light_pass_deinitialize
+(
+  _In_ crude_gfx_light_pass                               *pass
+);
+
+CRUDE_API void
+crude_gfx_light_pass_on_render_graph_registered
 (
   _In_ crude_gfx_light_pass                               *pass
 );

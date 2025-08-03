@@ -1023,9 +1023,10 @@ crude_gfx_render_graph_builder_access_resource_by_name
 )
 {
   uint64 key = crude_hash_string( name, 0 );
-  uint32 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
+  int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
   if ( handle_index < 0 )
   {
+    CRUDE_ASSERT( false );
     return NULL;
   }
   

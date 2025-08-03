@@ -1842,7 +1842,7 @@ crude_gfx_create_buffer
   crude_gfx_buffer_handle handle = crude_gfx_obtain_buffer( gpu );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
   {
-      return handle;
+    return handle;
   }
 
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );

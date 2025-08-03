@@ -16,7 +16,7 @@
 				},
 				{
 					"stage" : "fragment",
-					"shader" : "light.frag",
+					"shader" : "pbr.frag",
 					"includes": [
 						"crude/platform.glsli",
 						"crude/debug.glsli",

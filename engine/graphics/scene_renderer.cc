@@ -165,7 +165,6 @@ crude_gfx_scene_renderer_initialize
     }
   }
 
-
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
   crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
@@ -393,6 +392,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
+  crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
 }
 
 /**

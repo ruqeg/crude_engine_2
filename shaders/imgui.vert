@@ -3,15 +3,15 @@
 #include "crude/platform.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-layout( location = 0 ) in vec2 in_position;
-layout( location = 1 ) in vec2 in_uv;
-layout( location = 2 ) in uvec4 in_color;
+layout(location=0) in vec2 in_position;
+layout(location=1) in vec2 in_uv;
+layout(location=2) in uvec4 in_color;
 
-layout( location = 0 ) out vec2 out_uv;
-layout( location = 1 ) out vec4 out_color;
-layout( location = 2 ) flat out uint out_texture_id;
+layout(location=0) out vec2 out_uv;
+layout(location=1) out vec4 out_color;
+layout(location=2) flat out uint out_texture_id;
 
-layout( std140, set = 1, binding = 0 ) uniform LocalConstants
+layout(std140, set=1, binding=0) uniform LocalConstants
 {
   mat4                                                     projection;
 };
