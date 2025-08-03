@@ -9,6 +9,7 @@
 #include <graphics/passes/culling_early_pass.h>
 #include <graphics/passes/culling_late_pass.h>
 #include <graphics/passes/debug_pass.h>
+#include <graphics/passes/light_pass.h>
 
 typedef struct crude_gfx_scene_renderer_creation
 {
@@ -43,6 +44,8 @@ typedef struct crude_gfx_scene_renderer
   uint8                                                   *meshlets_triangles_indices;
   
   uint32                                                   total_meshes_instances_count;
+  
+  void                                                    *imgui_context;
 
   crude_gfx_buffer_handle                                  scene_cb;
   
@@ -71,6 +74,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   crude_gfx_debug_pass                                     debug_pass;
+  crude_gfx_light_pass                                     light_pass;
 } crude_gfx_scene_renderer;
 
 

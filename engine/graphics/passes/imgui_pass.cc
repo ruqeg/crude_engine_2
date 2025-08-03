@@ -2,6 +2,7 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 
+#include <graphics/scene_renderer.h>
 #include <core/hash_map.h>
 
 #include <graphics/passes/imgui_pass.h>
@@ -9,62 +10,27 @@
 static uint32 vertex_buffer_size_ = 665536;
 static uint32 index_buffer_size_ = 665536;
 
-static char const *vertex_shader_code_bindless_ =
-{
-  "#version 450\n"
-  "layout( location = 0 ) in vec2 Position;\n"
-  "layout( location = 1 ) in vec2 UV;\n"
-  "layout( location = 2 ) in uvec4 Color;\n"
-  "layout( location = 0 ) out vec2 Frag_UV;\n"
-  "layout( location = 1 ) out vec4 Frag_Color;\n"
-  "layout (location = 2) flat out uint texture_id;\n"
-  "layout( std140, set = 1, binding = 0 ) uniform LocalConstants { mat4 ProjMtx; };\n"
-  "void main()\n"
-  "{\n"
-  " Frag_UV = UV;\n"
-  " Frag_Color = Color / 255.0f;\n"
-  " texture_id = gl_InstanceIndex;\n"
-  " gl_Position = ProjMtx * vec4( Position.xy,0,1 );\n"
-  "}\n"
-};
-
-static char const *fragment_shader_code_bindless_ =
-{
-  "#version 450\n"
-  "#extension GL_EXT_nonuniform_qualifier : enable\n"
-  "layout (location = 0) in vec2 Frag_UV;\n"
-  "layout (location = 1) in vec4 Frag_Color;\n"
-  "layout (location = 2) flat in uint texture_id;\n"
-  "layout (location = 0) out vec4 Out_Color;\n"
-  "layout (set = 0, binding = 10) uniform sampler2D textures[];\n"
-  "void main()\n"
-  "{\n"
-  " Out_Color = Frag_Color * texture(textures[nonuniformEXT(texture_id)], Frag_UV.st);\n"
-  "}\n"
-};
-
 void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ void                                               *imgui_context
+  crude_gfx_scene_renderer                                *scene_renderer
 )
 {
-  crude_gfx_shader_state_creation                          shader_creation;
-  crude_gfx_pipeline_creation                              pipeline_creation;
+  crude_gfx_device                                        *gpu;
+  ImGuiIO                                                 *imgui_io;
+  uint8                                                   *font_pixels;
+  crude_gfx_pipeline_handle                                imgui_pipeline;
   crude_gfx_buffer_creation                                cb_creation;
   crude_gfx_descriptor_set_creation                        ds_creation;
   crude_gfx_buffer_creation                                vertex_buffer_creation;
   crude_gfx_buffer_creation                                index_buffer_creation;
-  ImGuiIO                                                 *imgui_io;
-  uint8                                                   *font_pixels;
   int32                                                    font_width, font_height;
 
-  pass->gpu = gpu;
-  pass->imgui_context = imgui_context;
+  pass->scene_renderer = scene_renderer;
+  gpu = scene_renderer->renderer->gpu;
 
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   
   /* Setup Platform/Renderer bindings */
   ImGui_ImplSDL3_InitForVulkan( gpu->sdl_window );
@@ -89,32 +55,6 @@ crude_gfx_imgui_pass_initialize
   /* Store our identifier */
   imgui_io->Fonts->TexID = CRUDE_CAST( ImTextureID, &pass->font_texture );
   
-  /* Used to remove dependency from that. */
-  shader_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_shader_state_creation );
-  shader_creation.name = "imgui";
-  crude_gfx_shader_state_creation_add_stage( &shader_creation, vertex_shader_code_bindless_, crude_string_length( vertex_shader_code_bindless_ ), VK_SHADER_STAGE_VERTEX_BIT );
-  crude_gfx_shader_state_creation_add_stage( &shader_creation, fragment_shader_code_bindless_, crude_string_length( fragment_shader_code_bindless_ ), VK_SHADER_STAGE_FRAGMENT_BIT );
-    
-  /* Create pipeline */
-  pipeline_creation = crude_gfx_pipeline_creation_empty();
-  pipeline_creation.name = "pipeline_imgui";
-  pipeline_creation.shaders = shader_creation;
-  pipeline_creation.rasterization.front = VK_FRONT_FACE_CLOCKWISE;
-  pipeline_creation.rasterization.cull_mode = VK_CULL_MODE_BACK_BIT;
-  pipeline_creation.render_pass_output = gpu->swapchain_output;
-  
-  crude_gfx_pipeline_creation_add_blend_state( &pipeline_creation, CRUDE_COMPOUNT( crude_gfx_blend_state, {
-    .source_color = VK_BLEND_FACTOR_SRC_ALPHA,
-    .destination_color = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-    .color_operation = VK_BLEND_OP_ADD,
-    .blend_enabled = true,
-  } ) );
-  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 0u, 0u, 0u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2 );
-  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 1u, 0u, 8u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_FLOAT2 );
-  crude_gfx_pipeline_creation_add_vertex_attribute( &pipeline_creation, 2u, 0u, 16u, CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE4N );
-  crude_gfx_pipeline_creation_add_vertex_stream( &pipeline_creation, 0u, 20u, CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX );
-  pass->pipeline = crude_gfx_create_pipeline( gpu, &pipeline_creation );
-
   /* Create constant buffer */
   cb_creation;
   cb_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -123,12 +63,14 @@ crude_gfx_imgui_pass_initialize
   cb_creation.name = "cb_imgui";
   pass->ui_cb = crude_gfx_create_buffer( gpu, &cb_creation );
   
+  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
+
   /* Create descriptor set */
   ds_creation = crude_gfx_descriptor_set_creation_empty();
-  ds_creation.layout = crude_gfx_get_descriptor_set_layout( gpu, pass->pipeline, 1u );
+  ds_creation.layout = crude_gfx_get_descriptor_set_layout( gpu, imgui_pipeline, 1u );
   ds_creation.name = "rl_imgui";
   crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ui_cb, 0u );
-  pass->descriptor_set = crude_gfx_create_descriptor_set( gpu, &ds_creation );
+  pass->imgui_ds = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   
   /* Create vertex and index buffers */
   vertex_buffer_creation = crude_gfx_buffer_creation_empty();
@@ -153,17 +95,16 @@ crude_gfx_imgui_pass_deinitialize
 )
 {
 
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   ImGui_ImplSDL3_Shutdown( );
 
-  crude_gfx_destroy_descriptor_set( pass->gpu, pass->descriptor_set );
+  crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->imgui_ds );
 
-  crude_gfx_destroy_buffer( pass->gpu, pass->vertex_buffer );
-  crude_gfx_destroy_buffer( pass->gpu, pass->index_buffer );
-  crude_gfx_destroy_buffer( pass->gpu, pass->ui_cb );
+  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->vertex_buffer );
+  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->index_buffer );
+  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->ui_cb );
   
-  crude_gfx_destroy_pipeline( pass->gpu, pass->pipeline );
-  crude_gfx_destroy_texture( pass->gpu, pass->font_texture );
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->font_texture );
 }
 
 void
@@ -173,13 +114,15 @@ crude_gfx_imgui_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  crude_gfx_viewport                                       viewport;
-  crude_gfx_map_buffer_parameters                          map_parameters;
   ImDrawVert                                              *vtx_dst;
   ImDrawIdx                                               *idx_dst;
   crude_gfx_imgui_pass                                    *pass;
+  crude_gfx_device                                        *gpu;
   ImDrawData                                              *imgui_draw_data;
   float32                                                 *cb_data;
+  crude_gfx_pipeline_handle                                imgui_pipeline;
+  crude_gfx_viewport                                       viewport;
+  crude_gfx_map_buffer_parameters                          map_parameters;
   XMFLOAT4X4                                               ortho_projection;
   ImVec2                                                   clip_off, clip_scale;
   int32                                                    draw_counts, framebuffer_width, framebuffer_height;
@@ -189,7 +132,9 @@ crude_gfx_imgui_pass_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
   
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
+  gpu = pass->scene_renderer->renderer->gpu;
+
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   ImGui::Render();
   
   imgui_draw_data = ImGui::GetDrawData();
@@ -223,7 +168,7 @@ crude_gfx_imgui_pass_render
   idx_dst = NULL;
   
   map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->vertex_buffer, 0, ( uint32 )vertex_size } );
-  vtx_dst = CRUDE_REINTERPRET_CAST( ImDrawVert*, crude_gfx_map_buffer( pass->gpu, &map_parameters ) );
+  vtx_dst = CRUDE_REINTERPRET_CAST( ImDrawVert*, crude_gfx_map_buffer( gpu, &map_parameters ) );
   
   if ( vtx_dst )
   {
@@ -234,11 +179,11 @@ crude_gfx_imgui_pass_render
       vtx_dst += cmd_list->VtxBuffer.Size;
     }
     
-    crude_gfx_unmap_buffer( pass->gpu, map_parameters.buffer );
+    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
   }
   
   map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->index_buffer, 0, ( uint32 )index_size } );
-  idx_dst = CRUDE_REINTERPRET_CAST( ImDrawIdx*, crude_gfx_map_buffer( pass->gpu, &map_parameters ) );
+  idx_dst = CRUDE_REINTERPRET_CAST( ImDrawIdx*, crude_gfx_map_buffer( gpu, &map_parameters ) );
   
   if ( idx_dst )
   {
@@ -249,11 +194,12 @@ crude_gfx_imgui_pass_render
       idx_dst += cmd_list->IdxBuffer.Size;
     }
     
-    crude_gfx_unmap_buffer( pass->gpu, map_parameters.buffer );
+    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
   }
   
   // TODO: Add the sorting.
-  crude_gfx_cmd_bind_pipeline( primary_cmd, pass->pipeline );
+  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
+  crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
   crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->vertex_buffer, 0u, 0u );
   crude_gfx_cmd_bind_index_buffer( primary_cmd, pass->index_buffer, 0u );
   
@@ -275,11 +221,11 @@ crude_gfx_imgui_pass_render
   ) );
   
   map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->ui_cb, 0, 0 } );
-  cb_data = ( float* )crude_gfx_map_buffer( pass->gpu, &map_parameters );
+  cb_data = ( float* )crude_gfx_map_buffer( gpu, &map_parameters );
   if ( cb_data )
   {
     memcpy( cb_data, &ortho_projection._11, sizeof( XMFLOAT4X4 ) );
-    crude_gfx_unmap_buffer( pass->gpu, map_parameters.buffer );
+    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
   }
   
   /* Will project scissor/clipping rectangles into framebuffer space */
@@ -289,7 +235,7 @@ crude_gfx_imgui_pass_render
   /* Render command lists */
   draw_counts = imgui_draw_data->CmdListsCount;
 
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->descriptor_set );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->imgui_ds );
   
   uint32_t vtx_buffer_offset = 0, index_buffer_offset = 0;
   for ( int32 n = 0; n < draw_counts; ++n )

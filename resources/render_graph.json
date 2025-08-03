@@ -175,19 +175,19 @@
       "name": "light_pass",
       "inputs": [
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "gbuffer_albedo"
         },
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "gbuffer_normal"
         },
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "gbuffer_roughness_metalness"
         },
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "depth"
         },
         {
@@ -212,20 +212,18 @@
       "name": "debug_pass",
       "inputs": [
         {
-          "type": "texture",
+          "type": "attachment",
           "name": "pbr"
         }
       ],
       "outputs": [
         {
-          "type": "attachment",
-          "name": "debug",
-          "format": "VK_FORMAT_R8G8B8A8_SRGB",
-          "resolution": [
-            800,
-            600
-          ],
-          "op": "clear"
+          "type": "reference",
+          "name": "pbr"
+        },
+        {
+          "type": "buffer",
+          "name": "DEBUG_PASS_MARKER"
         }
       ]
     },
@@ -234,7 +232,11 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "debug"
+          "name": "pbr"
+        },
+        {
+          "type": "buffer",
+          "name": "DEBUG_PASS_MARKER"
         }
       ],
       "outputs": [

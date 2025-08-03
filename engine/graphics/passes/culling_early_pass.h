@@ -10,7 +10,7 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_culling_early_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          culling_early_descriptor_sets_handles[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          culling_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_culling_early_pass;
 
 CRUDE_API void

@@ -245,6 +245,8 @@ paprika_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
 
   /* Create Scene Renderer */
   {
@@ -620,7 +622,7 @@ paprika_imgui_draw_viewport_
   for ( uint32 i = 0; i < paprika->graphics.gpu.textures.pool_size; ++i )
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_texture_handle{ i } );
-    if ( texture->name && crude_string_cmp( texture->name, "albedo" ) == 0 )
+    if ( texture->name && crude_string_cmp( texture->name, "pbr" ) == 0 )
     {
       paprika->viewport_bindless_texture = i;
       break;

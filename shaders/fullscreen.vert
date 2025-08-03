@@ -1,0 +1,28 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#include "crude/platform.glsli"
+#include "crude/debug.glsli"
+#include "crude/scene.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+layout(location=0) out vec2 out_texcoord;
+
+const vec4 fullscreen_vertices[ 3 ] =
+{
+  vec4( -1.0f, -1.0f, 1.0f, 1.0f ),
+  vec4( -1.0f,  3.0f, 1.0f, 1.0f ),
+  vec4(  3.0f, -1.0f, 1.0f, 1.0f )
+};
+
+const vec2 fullscreen_texcoord[ 3 ] =
+{
+  vec2( 0.0f, 1.0f ),
+  vec2( 0.0f, -1.0f ),
+  vec2( 2.0f, 1.0f )
+};
+
+void main()
+{
+  out_texcoord = fullscreen_texcoord[ gl_VertexIndex ];
+  gl_Position = fullscreen_vertices[ gl_VertexIndex ];
+}

@@ -35,7 +35,7 @@ crude_gfx_culling_late_pass_initialize
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_early_sb[ i ], 12u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->mesh_task_indirect_count_late_sb[ i ], 13u );
     
-    pass->culling_late_descriptor_sets_handles[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+    pass->culling_late_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 }
 
@@ -47,7 +47,7 @@ crude_gfx_culling_late_pass_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->culling_late_descriptor_sets_handles[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->culling_late_ds[ i ] );
   }
 }
 
@@ -82,7 +82,7 @@ crude_gfx_culling_late_pass_render
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
 
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->culling_late_descriptor_sets_handles[ primary_cmd->gpu->current_frame ] );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->culling_late_ds[ primary_cmd->gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count + 63u ) / 64u, 1u, 1u );
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );

@@ -16,7 +16,6 @@
 					"includes": [
 						"crude/platform.glsli",
 						"crude/debug.glsli",
-						"crude/debug_resources.glsli",
 						"crude/meshlet.glsli",
 						"crude/mesh.glsli",
 						"crude/scene.glsli"

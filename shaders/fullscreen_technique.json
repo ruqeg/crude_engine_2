@@ -1,0 +1,29 @@
+{
+	"name" : "fullscreen",
+	"pipelines" : [
+		{
+		"name" : "light",
+		"render_pass": "light_pass",
+			"shaders" : [
+				{
+					"stage" : "vertex",
+					"shader" : "fullscreen.vert",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/debug.glsli",
+						"crude/scene.glsli"
+					]
+				},
+				{
+					"stage" : "fragment",
+					"shader" : "light.frag",
+					"includes": [
+						"crude/platform.glsli",
+						"crude/debug.glsli",
+						"crude/scene.glsli"
+					]
+				}
+			]
+		}
+	]
+}

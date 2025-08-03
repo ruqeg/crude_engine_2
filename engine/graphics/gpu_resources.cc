@@ -474,6 +474,7 @@ crude_gfx_to_vertex_component_format
   if ( strcmp( format, "BYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_BYTE;
   if ( strcmp( format, "UBYTE" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE;
   if ( strcmp( format, "UINT" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UINT;
+  if ( strcmp( format, "UBYTE4N" ) == 0 ) return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_UBYTE4N;
   // !TODO HASH STRING
   CRUDE_ASSERT( false );
   return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT;

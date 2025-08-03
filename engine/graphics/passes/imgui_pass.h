@@ -2,12 +2,12 @@
 
 #include <graphics/render_graph.h>
 
+typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
+
 typedef struct crude_gfx_imgui_pass
 {
-  crude_gfx_device                                        *gpu;
-  void                                                    *imgui_context;
-  crude_gfx_pipeline_handle                                pipeline;
-  crude_gfx_descriptor_set_handle                          descriptor_set;
+  crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_descriptor_set_handle                          imgui_ds;
   crude_gfx_buffer_handle                                  vertex_buffer;
   crude_gfx_buffer_handle                                  index_buffer;
   crude_gfx_buffer_handle                                  ui_cb;
@@ -18,8 +18,7 @@ CRUDE_API void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ void                                               *imgui_context
+  crude_gfx_scene_renderer                                *scene_renderer
 );
 
 CRUDE_API void
