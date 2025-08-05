@@ -154,17 +154,9 @@ typedef struct crude_gfx_mesh_instance_cpu
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance_cpu;
 
-typedef struct crude_gfx_light
-{
-  XMFLOAT3                                                 position;
-  float32                                                  radius;
-  XMFLOAT3                                                 color;
-  float32                                                  intensity;
-} crude_gfx_light;
-
 typedef struct crude_gfx_light_gpu
 {
-  XMFLOAT3                                                 world_position;
+  XMFLOAT3                                                 position;
   float32                                                  radius;
   XMFLOAT3                                                 color;
   float32                                                  intensity;

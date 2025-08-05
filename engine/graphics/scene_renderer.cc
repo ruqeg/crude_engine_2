@@ -260,6 +260,7 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices_indices, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets, 0u, scene_renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes_instances, 0u, scene_renderer->renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, scene_renderer->renderer->allocator_container );
   
   /* Register Nodes */
   register_nodes_( scene_renderer, scene_renderer->scene->main_node, scene_renderer->temporary_allocator );
@@ -693,46 +694,57 @@ update_dynamic_buffers_
     }
   }
   
-  ///* Update lights buffers */
-  //{
-  //  crude_gfx_sorted_light                                *sorted_lights;
-  //  crude_gfx_light_gpu                                   *lights_gpu;
-  //  uint32                                                *bin_range_per_light;
-  //  uint32                                                *lights_indices_gpu;
-  //  uint32                                                *lights_luts_gpu;
-  //  uint32                                                *light_tiles_gpu;
-  //  XMMATRIX                                               world_to_view;
-  //  float32                                                zfar, znear, bin_size;
-  //
-  //  // !TODO tmp allocator
-  //  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), scene_renderer->allocator_container );
-  //
-  //  /* Sort lights based on Z */
-  //  world_to_view = XMLoadFloat4x4( &scene_renderer->scene_constant.camera.world_to_view );
-  //  zfar = scene_renderer->scene_constant.camera.zfar;
-  //  znear = scene_renderer->scene_constant.camera.znear;
-  //  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
-  //  {
-  //    crude_gfx_sorted_light                              *sorted_light;
-  //    crude_gfx_light                                     *light;
-  //    XMVECTOR                                             world_pos, view_pos, view_pos_min, view_pos_max;
-  //
-  //    light = &scene_renderer->lights[ i ];
-  //
-  //    world_pos = XMVectorSet( light->world_position.x, light->world_position.y, light->world_position.z, 1.0f );
-  //
-  //    view_pos = XMVector4Transform( world_pos, world_to_view );
-  //    view_pos_min = XMVectorAdd( view_pos, XMVectorSet( 0, 0, -light->radius, 0 ) );
-  //    view_pos_max = XMVectorAdd( view_pos, XMVectorSet( 0, 0, light->radius, 0 ) );
-  //
-  //    sorted_light = &sorted_lights[ i ];
-  //    sorted_light->light_index = i;
-  //    sorted_light->projected_z = ( ( XMVectorGetZ( view_pos ) - znear ) / ( zfar - znear ) );
-  //    sorted_light->projected_z_min = ( ( XMVectorGetZ( view_pos_min ) - znear ) / ( zfar - znear ) );
-  //    sorted_light->projected_z_max = ( ( XMVectorGetZ( view_pos_max ) - znear ) / ( zfar - znear ) );
-  //  }
-  //
-  //  qsort( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), sizeof( crude_gfx_sorted_light ), sorting_light_ );
+  /* Update lights buffers */
+  {
+    crude_camera const                                    *camera;
+    crude_transform const                                 *camera_transform;
+    crude_gfx_sorted_light                                *sorted_lights;
+    crude_gfx_light_gpu                                   *lights_gpu;
+    uint32                                                *bin_range_per_light;
+    uint32                                                *lights_indices_gpu;
+    uint32                                                *lights_luts_gpu;
+    uint32                                                *light_tiles_gpu;
+    XMMATRIX                                               view_to_world, world_to_view, view_to_clip, clip_to_view, world_to_clip;
+    float32                                                zfar, znear, bin_size;
+    uint32                                                 temporary_allocator_marker;
+
+    temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+    
+    camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_camera );
+    camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_transform );
+    
+    view_to_world = crude_transform_node_to_world( scene_renderer->scene->main_camera, camera_transform );
+    world_to_view = XMMatrixInverse( NULL, view_to_world );
+    view_to_clip = crude_camera_view_to_clip( camera );
+    clip_to_view = XMMatrixInverse( NULL, view_to_clip );
+    world_to_clip = XMMatrixMultiply( world_to_view, view_to_clip );
+
+    /* Sort lights based on Z */
+    zfar = camera->far_z;
+    znear = camera->near_z;
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    {
+      crude_gfx_sorted_light                              *sorted_light;
+      crude_gfx_light_gpu                                 *light_gpu;
+      XMVECTOR                                             world_pos, view_pos, view_pos_min, view_pos_max;
+    
+      light_gpu = &scene_renderer->lights[ i ];
+    
+      world_pos = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
+    
+      view_pos = XMVector4Transform( world_pos, world_to_view );
+      view_pos_min = XMVectorAdd( view_pos, XMVectorSet( 0, 0, -light_gpu->radius, 0 ) );
+      view_pos_max = XMVectorAdd( view_pos, XMVectorSet( 0, 0, light_gpu->radius, 0 ) );
+    
+      sorted_light = &sorted_lights[ i ];
+      sorted_light->light_index = i;
+      sorted_light->projected_z = ( ( XMVectorGetZ( view_pos ) - znear ) / ( zfar - znear ) );
+      sorted_light->projected_z_min = ( ( XMVectorGetZ( view_pos_min ) - znear ) / ( zfar - znear ) );
+      sorted_light->projected_z_max = ( ( XMVectorGetZ( view_pos_max ) - znear ) / ( zfar - znear ) );
+    }
+    
+    qsort( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), sizeof( crude_gfx_sorted_light ), sorting_light_ );
   //  
   //  /* Upload light to gpu */
   //  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -1018,8 +1030,9 @@ update_dynamic_buffers_
   //    memcpy( light_tiles_gpu, light_tiles_bits, CRUDE_ARRAY_LENGTH( light_tiles_bits ) * sizeof( uint32 ) );
   //    crude_gfx_unmap_buffer( gpu, scene_renderer->lights_tiles_sb[ gpu->current_frame ] );
   //  }
-  //}
-  ////
+    crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), scene_renderer->allocator_container );
+  }
 }
 
 /**
@@ -1044,6 +1057,18 @@ register_nodes_
       {
         crude_gltf const* child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
         register_gltf_( scene_renderer, child_gltf->path, child, temporary_allocator );
+      }
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
+      {
+        crude_light const* light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_light );
+        crude_transform const* light_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_transform );
+
+        crude_gfx_light_gpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_gpu );
+        light_gpu.color = light->color;
+        light_gpu.intensity = light->intensity;
+        light_gpu.position = light_transform->translation;
+        light_gpu.radius = light->radius;
+        CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
       }
 
       register_nodes_( scene_renderer, child, temporary_allocator );
