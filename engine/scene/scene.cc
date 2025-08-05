@@ -117,6 +117,14 @@ scene_load_hierarchy_
           .enabled                   = false
         } );
       }
+      else if ( crude_string_cmp( component_type, "crude_light" ) == 0 )
+      {
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_light, {
+          .radius = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) ) ),
+          .color = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "color" ) ),
+          .intensity = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "intensity" ) ) ),
+        } );
+      }
     }
 
     for ( uint32 tag_index = 0; tag_index < cJSON_GetArraySize( node_tags_json ); ++tag_index )

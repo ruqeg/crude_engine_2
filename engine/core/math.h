@@ -4,7 +4,8 @@
 
 using namespace DirectX;
 
-#define crude_ceil( a ) ceil( a )
-#define crude_max( a, b ) fmaxf( a, b )
-#define crude_min( a, b ) fminf( a, b )
-#define crude_clamp( x, u, l ) crude_min( u, crude_max( x, l ) )
+#define CRUDE_FLOOR( a ) floor( a )
+#define CRUDE_CEIL( a ) ceil( a )
+#define CRUDE_MAX( a, b ) fmaxf( a, b )
+#define CRUDE_MIN( a, b ) fminf( a, b )
+#define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )

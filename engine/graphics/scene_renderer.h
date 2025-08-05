@@ -11,6 +11,8 @@
 #include <graphics/passes/debug_pass.h>
 #include <graphics/passes/light_pass.h>
 
+typedef struct crude_scene crude_scene;
+
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_entity                                             node;
@@ -42,6 +44,11 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
+
+  crude_gfx_scene_constant_gpu                             scene_constant;
+
+  crude_gfx_light                                         *lights;
+  uint32                                                  *lights_lut;
   
   uint32                                                   total_meshes_instances_count;
   
@@ -65,6 +72,11 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   
+  crude_gfx_buffer_handle                                  lights_sb;
+  crude_gfx_buffer_handle                                  lights_lut_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+
   crude_allocator_container                                allocator_container;
 
   crude_gfx_culling_early_pass                             culling_early_pass;
@@ -108,6 +120,13 @@ crude_gfx_scene_renderer_register_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_render_graph                             *render_graph
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_register_scene
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_scene                                        *scene
 );
 
 /**

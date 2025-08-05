@@ -1,6 +1,7 @@
 #include <scene/scene_components.h>
 
 ECS_COMPONENT_DECLARE( crude_transform );
+ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_scene );
 ECS_COMPONENT_DECLARE( crude_scene_creation );

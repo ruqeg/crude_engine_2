@@ -151,6 +151,39 @@
           }
         },
         "children": []
+      },
+      {
+        "node": {
+          "name": "light",
+          "components": [
+            {
+              "type": "crude_light",
+              "radius": 1,
+              "color": [ 1, 1, 1 ],
+              "intensity": 1
+            }
+          ],
+          "tags": [],
+          "transform": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "children": []
       }
     ]
   }

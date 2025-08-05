@@ -302,25 +302,22 @@ paprika_graphics_system_
   
   /* Update frame buffer */
   {
-    crude_gfx_map_buffer_parameters frame_buffer_map = { paprika->graphics.scene_renderer.scene_cb, 0 };
-    crude_gfx_scene_constant_gpu *scene_data = CRUDE_REINTERPRET_CAST( crude_gfx_scene_constant_gpu*, crude_gfx_map_buffer( &paprika->graphics.gpu, &frame_buffer_map ) );
-    if ( scene_data )
+    crude_gfx_scene_constant_gpu                          *scene_constant;
+
+    scene_constant = &paprika->graphics.scene_renderer.scene_constant;
+    scene_constant->flags = 0u;
+    if ( paprika->debug_camera_culling )
     {
-      scene_data->flags = 0u;
-      if ( paprika->debug_camera_culling )
-      {
-        scene_data->flags |= 1;
-      }
-      if ( paprika->debug_camera_view )
-      {
-        scene_data->flags |= 2;
-      }
-      scene_data->camera_previous = scene_data->camera;
-      scene_data->camera_debug_previous = scene_data->camera_debug;
-      crude_gfx_camera_to_camera_gpu( paprika->scene.main_camera, &scene_data->camera );
-      crude_gfx_camera_to_camera_gpu( paprika->scene.debug_camera, &scene_data->camera_debug );
-      crude_gfx_unmap_buffer( &paprika->graphics.gpu, paprika->graphics.scene_renderer.scene_cb );
+      scene_constant->flags |= 1;
     }
+    if ( paprika->debug_camera_view )
+    {
+      scene_constant->flags |= 2;
+    }
+    scene_constant->camera_previous = scene_constant->camera;
+    scene_constant->camera_debug_previous = scene_constant->camera_debug;
+    crude_gfx_camera_to_camera_gpu( paprika->scene.main_camera, &scene_constant->camera );
+    crude_gfx_camera_to_camera_gpu( paprika->scene.debug_camera, &scene_constant->camera_debug );
   }
 
   paprika_draw_imgui_( paprika );

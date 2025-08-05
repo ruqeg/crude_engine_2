@@ -33,4 +33,25 @@ vec4 crude_unpack_color_abgr( uint color )
   return vec4( ( ( color >> 24u ) & 0xffu ) / 255.f, ( ( color >> 16u ) & 0xffu ) / 255.f, ( ( color >> 8u ) & 0xffu ) / 255.f, ( color & 0xffu ) / 255.f );
 }
 
+vec2 crude_sign_not_zero( vec2 v )
+{
+  return vec2( ( v.x >= 0.0 ) ? 1.0 : -1.0, ( v.y >= 0.0 ) ? 1.0 : -1.0 );
+}
+
+vec2 crude_octahedral_encode( vec3 n )
+{
+  vec2 p = n.xy * ( 1.0f / ( abs( n.x ) + abs( n.y ) + abs( n.z ) ) );
+  return ( n.z < 0.0f ) ? ( ( 1.0 - abs( p.yx ) ) * crude_sign_not_zero( p ) ) : p;
+}
+
+/* https://twitter.com/Stubbesaurus/status/937994790553227264?s=20&t=U36PKMj7v2BFeQwDX6gEGQ */
+vec3 crude_octahedral_decode( vec2 f )
+{
+  vec3 n = vec3( f.x, f.y, 1.0 - abs( f.x ) - abs( f.y ) );
+  float t = max( -n.z, 0.0 );
+  n.x += n.x >= 0.0 ? -t : t;
+  n.y += n.y >= 0.0 ? -t : t;
+  return normalize( n );
+}
+
 #endif /* CRUDE_PLATFORM_GLSL */

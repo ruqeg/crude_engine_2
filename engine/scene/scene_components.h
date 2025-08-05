@@ -19,6 +19,13 @@ typedef struct crude_camera
   float32                                                  aspect_ratio;
 } crude_camera;
 
+typedef struct crude_light
+{
+  float32                                                  radius;
+  XMFLOAT3                                                 color;
+  float32                                                  intensity;
+} crude_light;
+
 typedef struct crude_gltf
 {
   char                                                    *path;
@@ -31,6 +38,7 @@ typedef struct crude_scene_handle
 } crude_scene_handle;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_creation );

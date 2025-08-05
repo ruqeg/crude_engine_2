@@ -7,6 +7,10 @@
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 #define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )
 #define CRUDE_GFX_MAX_DEBUG_LINES                          ( 640000 )
+#define CRUDE_GFX_LIGHT_Z_BINS                             ( 16 )
+#define CRUDE_GFX_LIGHTS_MAX_COUNT                         ( 256 )
+#define CRUDE_GFX_LIGHT_TILE_SIZE                          ( 8 )
+#define CRUDE_GFX_LIGHT_WORDS_COUNT                        ( ( CRUDE_GFX_LIGHTS_MAX_COUNT + 31 ) / 32 )
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_line_vertex_gpu
 {
@@ -40,7 +44,9 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   crude_gfx_camera_gpu                                     camera_debug;
   crude_gfx_camera_gpu                                     camera_previous;
   crude_gfx_camera_gpu                                     camera_debug_previous;
+  XMFLOAT2                                                 resolution;
   uint32                                                   flags;
+  uint32                                                   padding;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
@@ -147,6 +153,30 @@ typedef struct crude_gfx_mesh_instance_cpu
   crude_entity                                             node;
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance_cpu;
+
+typedef struct crude_gfx_light
+{
+  XMFLOAT3                                                 position;
+  float32                                                  radius;
+  XMFLOAT3                                                 color;
+  float32                                                  intensity;
+} crude_gfx_light;
+
+typedef struct crude_gfx_light_gpu
+{
+  XMFLOAT3                                                 world_position;
+  float32                                                  radius;
+  XMFLOAT3                                                 color;
+  float32                                                  intensity;
+} crude_gfx_light_gpu;
+
+typedef struct crude_gfx_sorted_light
+{
+  uint32                                                   light_index;
+  float32                                                  projected_z;
+  float32                                                  projected_z_min;
+  float32                                                  projected_z_max;
+} crude_gfx_sorted_light;
 
 CRUDE_API bool
 crude_gfx_mesh_is_transparent

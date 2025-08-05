@@ -454,7 +454,7 @@ crude_gfx_new_frame
 
   {
     uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
-    gpu->dynamic_max_per_frame_size = crude_max( used_size, gpu->dynamic_max_per_frame_size );
+    gpu->dynamic_max_per_frame_size = CRUDE_MAX( used_size, gpu->dynamic_max_per_frame_size );
     gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
   }
 }
@@ -3076,8 +3076,8 @@ vk_create_swapchain_
   swapchain_extent = surface_capabilities.currentExtent;
   if ( swapchain_extent.width == UINT32_MAX )
   {
-    swapchain_extent.width = crude_clamp( swapchain_extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width );
-    swapchain_extent.height = crude_clamp( swapchain_extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height );
+    swapchain_extent.width = CRUDE_CLAMP( swapchain_extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width );
+    swapchain_extent.height = CRUDE_CLAMP( swapchain_extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height );
   }
 
   gpu->vk_swapchain_width  = swapchain_extent.width;
@@ -3662,28 +3662,28 @@ vk_reflect_shader_
       {
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         {
-          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
         {
-          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
         {
-          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
         {
-          reflect->descriptor.sets_count = crude_max( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
           ++set_layout->num_bindings;
           break;
