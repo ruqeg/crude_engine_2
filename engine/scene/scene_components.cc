@@ -52,6 +52,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
 {
   ECS_MODULE( world, crude_scene_components );
   ECS_COMPONENT_DEFINE( world, crude_transform );
+  ECS_COMPONENT_DEFINE( world, crude_light );
   ECS_COMPONENT_DEFINE( world, crude_camera );
   ECS_COMPONENT_DEFINE( world, crude_scene );
   ECS_COMPONENT_DEFINE( world, crude_gltf );

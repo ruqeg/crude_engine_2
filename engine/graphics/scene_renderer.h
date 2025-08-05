@@ -15,7 +15,7 @@ typedef struct crude_scene crude_scene;
 
 typedef struct crude_gfx_scene_renderer_creation
 {
-  crude_entity                                             node;
+  crude_scene                                             *scene;
   void                                                    *imgui_context;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
@@ -45,14 +45,15 @@ typedef struct crude_gfx_scene_renderer
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
 
-  crude_gfx_scene_constant_gpu                             scene_constant;
-
   crude_gfx_light                                         *lights;
   uint32                                                  *lights_lut;
   
   uint32                                                   total_meshes_instances_count;
   
   void                                                    *imgui_context;
+
+  crude_scene                                             *scene;
+  crude_stack_allocator                                   *temporary_allocator;
 
   crude_gfx_buffer_handle                                  scene_cb;
   
@@ -120,13 +121,6 @@ crude_gfx_scene_renderer_register_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_render_graph                             *render_graph
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_register_scene
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_scene                                        *scene
 );
 
 /**

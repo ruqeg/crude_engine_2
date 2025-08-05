@@ -251,13 +251,13 @@ paprika_graphics_initialize_
   /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.node = paprika->scene.main_node;
     creation.renderer = &paprika->graphics.renderer;
     creation.async_loader = &paprika->graphics.async_loader;
     creation.allocator_container = paprika->graphics.allocator_container;
     creation.temporary_allocator = &paprika->temporary_allocator;
     creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
     creation.imgui_context = paprika->imgui_context;
+    creation.scene = &paprika->scene;
     crude_gfx_scene_renderer_initialize( &paprika->graphics.scene_renderer, &creation );
     crude_gfx_scene_renderer_register_passes( &paprika->graphics.scene_renderer, &paprika->graphics.render_graph );
   }
@@ -298,26 +298,6 @@ paprika_graphics_system_
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
   {
     crude_gfx_render_graph_on_resize( &paprika->graphics.render_graph, paprika->graphics.gpu.vk_swapchain_width, paprika->graphics.gpu.vk_swapchain_height );
-  }
-  
-  /* Update frame buffer */
-  {
-    crude_gfx_scene_constant_gpu                          *scene_constant;
-
-    scene_constant = &paprika->graphics.scene_renderer.scene_constant;
-    scene_constant->flags = 0u;
-    if ( paprika->debug_camera_culling )
-    {
-      scene_constant->flags |= 1;
-    }
-    if ( paprika->debug_camera_view )
-    {
-      scene_constant->flags |= 2;
-    }
-    scene_constant->camera_previous = scene_constant->camera;
-    scene_constant->camera_debug_previous = scene_constant->camera_debug;
-    crude_gfx_camera_to_camera_gpu( paprika->scene.main_camera, &scene_constant->camera );
-    crude_gfx_camera_to_camera_gpu( paprika->scene.debug_camera, &scene_constant->camera_debug );
   }
 
   paprika_draw_imgui_( paprika );
