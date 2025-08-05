@@ -46,7 +46,6 @@ typedef struct crude_gfx_scene_renderer
   uint8                                                   *meshlets_triangles_indices;
 
   crude_gfx_light_gpu                                     *lights;
-  uint32                                                  *lights_lut;
   
   uint32                                                   total_meshes_instances_count;
   
