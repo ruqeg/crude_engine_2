@@ -220,7 +220,7 @@ crude_stack_allocator_free_marker
   _In_ size_t                                              marker
 )
 {
-  sizet difference = marker - allocator->capacity;
+  sizet difference = marker - allocator->occupied;
   if ( difference > 0u )
   {
     allocator->occupied = marker;

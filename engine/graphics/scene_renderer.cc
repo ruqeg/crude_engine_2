@@ -16,8 +16,6 @@
 #include <scene/scene_components.h>
 #include <scene/scene.h>
 
-#include <graphics/scene_renderer_uploader.h>
-
 #include <graphics/scene_renderer.h>
 
 /**
@@ -250,6 +248,32 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.size = sizeof( crude_gfx_debug_draw_command_gpu );
     buffer_creation.name = "debug_line_commands";
     scene_renderer->debug_line_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+    
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    buffer_creation.name = "lights_indices_sb";
+    scene_renderer->lights_indices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
+    buffer_creation.name = "lights_lut_sb";
+    scene_renderer->lights_lut_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+    
+    {
+      uint32 tile_x_count = scene_renderer->renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
+      uint32 tile_y_count = scene_renderer->renderer->gpu->vk_swapchain_height / CRUDE_GFX_LIGHT_TILE_SIZE;
+      uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
+      buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+      buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+      buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+      buffer_creation.size = sizeof( uint32 ) * tiles_entry_count;
+      buffer_creation.name = "lights_tiles_sb";
+      scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+    }
   }
 
   /* Create Immutable Buffers */
@@ -374,7 +398,8 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_renderer_destroy_buffer( scene_renderer->renderer, &scene_renderer->buffers[ i ] );
   }
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
-
+  
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->scene_cb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->meshlets_vertices_sb );
@@ -386,6 +411,9 @@ crude_gfx_scene_renderer_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_lut_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_commands_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
@@ -393,7 +421,8 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_count_late_sb[ i ] );
   }
-
+  
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes_instances );
@@ -691,6 +720,7 @@ update_dynamic_buffers_
       if ( lights_gpu_mapped )
       {
         memcpy( lights_gpu_mapped, scene_renderer->lights, sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights ) );
+        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_sb );
       }
     }
     
