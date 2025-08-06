@@ -18,7 +18,7 @@
 #define CRUDE_GFX_MAX_IMAGE_OUTPUTS                        8
 #define CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS               8
 #define CRUDE_GFX_MAX_SHADER_STAGES                        5      
-#define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  32
+#define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  64
 #define CRUDE_GFX_UBO_ALIGNMENT                            256
 #define CRUDE_GFX_MAX_SET_COUNT                            32
 #define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024

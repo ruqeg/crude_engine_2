@@ -7,11 +7,12 @@
 			"shaders" : [
 				{
 					"stage" : "vertex",
-					"shader" : "fullscreen.vert",
+					"shader" : "pbr.vert",
 					"includes": [
 						"crude/platform.glsli",
 						"crude/debug.glsli",
-						"crude/scene.glsli"
+						"crude/scene.glsli",
+						"crude/light.glsli"
 					]
 				},
 				{
@@ -20,7 +21,8 @@
 					"includes": [
 						"crude/platform.glsli",
 						"crude/debug.glsli",
-						"crude/scene.glsli"
+						"crude/scene.glsli",
+						"crude/light.glsli"
 					]
 				}
 			]

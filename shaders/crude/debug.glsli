@@ -10,12 +10,12 @@ struct crude_debug_line_vertex
   uint                                                     color;
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=20) buffer CrudeDebugLines
+layout(set=CRUDE_MATERIAL_SET, binding=50) buffer CrudeDebugLines
 {
   crude_debug_line_vertex                                  debug_line_vertices[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=21) buffer CrudeDebugLinesCount
+layout(set=CRUDE_MATERIAL_SET, binding=51) buffer CrudeDebugLinesCount
 {
   uint                                                     debug_lines_3d_vertices_count;
   uint                                                     debug_lines_3d_instances_count;

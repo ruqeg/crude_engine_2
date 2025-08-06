@@ -260,8 +260,8 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
     buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
-    buffer_creation.name = "lights_lut_sb";
-    scene_renderer->lights_lut_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+    buffer_creation.name = "lights_bins_sb";
+    scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
     
     {
       uint32 tile_x_count = scene_renderer->renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
@@ -412,7 +412,7 @@ crude_gfx_scene_renderer_deinitialize
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_lut_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_commands_sb[ i ] );
@@ -483,8 +483,8 @@ crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
   _In_ uint32                                              frame
 )
 {
-  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_vertices_sb[ frame ], 20u );
-  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_commands_sb[ frame ], 21u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_vertices_sb[ frame ], 50u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_commands_sb[ frame ], 51u );
 }
 
 void
@@ -523,6 +523,20 @@ crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshes_draws_sb, 1u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshes_instances_draws_sb, 2u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->meshes_bounds_sb, 3u );
+}
+
+void
+crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ uint32                                              frame
+)
+{
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_bins_sb[ frame ], 20u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_sb, 21u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_tiles_sb[ frame ], 22u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_indices_sb[ frame ], 23u );
 }
 
 /**
@@ -810,14 +824,14 @@ update_dynamic_buffers_
     {
       uint32                                              *lights_luts_mapped;
       buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      buffer_map.buffer = scene_renderer->lights_lut_sb[ gpu->current_frame ];
+      buffer_map.buffer = scene_renderer->lights_bins_sb[ gpu->current_frame ];
       buffer_map.offset = 0;
       buffer_map.size = sizeof( uint32 );
       lights_luts_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
       if ( lights_luts_mapped )
       {
         memcpy( lights_luts_mapped, lights_luts, CRUDE_ARRAY_LENGTH( lights_luts ) * sizeof( uint32 ) );
-        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_lut_sb[ gpu->current_frame ] );
+        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_bins_sb[ gpu->current_frame ] );
       }
     }
   

@@ -1,0 +1,78 @@
+
+#ifndef CRUDE_LIGHT_GLSLI
+#define CRUDE_LIGHT_GLSLI
+
+#define CRUDE_LIGHT_BINS_COUNT                         ( 16 )
+#define CRUDE_LIGHTS_MAX_COUNT                         ( 256 )
+#define CRUDE_LIGHT_TILE_SIZE                          ( 8 )
+#define CRUDE_LIGHT_BIN_WIDTH                          ( 1.f / CRUDE_LIGHT_BINS_COUNT )
+#define CRUDE_LIGHT_WORDS_COUNT                        ( ( CRUDE_LIGHTS_MAX_COUNT + 31 ) / 32 )
+
+struct crude_light
+{
+  vec3                                                     world_position;
+  float                                                    radius;
+  vec3                                                     color;
+  float                                                    intensity;
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=20) readonly buffer ZBins
+{
+  uint                                                     bins[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=21) readonly buffer Lights
+{
+  crude_light                                              lights[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=22) readonly buffer Tiles
+{
+  uint                                                     lights_tiles[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=23) readonly buffer LightIndices
+{
+  uint                                                     lights_indices[];
+};
+
+
+vec4 crude_calculate_lighting( vec4 albedo, vec3 orm, vec3 normal, vec3 world_position, uvec2 position, vec2 screen_uv )
+{
+  vec4 final_color = vec4( 0 );
+
+  vec4 view_position = vec4( world_position, 1.0 ) * camera.world_to_view;
+
+  float z_light_far = camera.zfar;
+  float linear_d = ( view_position.z - camera.znear ) / ( z_light_far - camera.znear );
+  int bin_index = int( linear_d / CRUDE_LIGHT_BIN_WIDTH );
+  uint bin_value = bins[ bin_index ];
+
+  uint min_light_id = bin_value & 0xFFFF;
+  uint max_light_id = ( bin_value >> 16 ) & 0xFFFF;
+
+  uvec2 tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
+
+  uint stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
+  uint address = tile.y * stride + tile.x;
+
+  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
+  {
+    for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
+    {
+      uint word_id = light_id / 32;
+      uint bit_id = light_id % 32;
+
+      if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) == 0 )
+      {
+        uint global_light_index = lights_indices[ light_id ];
+        //final_color.rgb += calculate_point_light_contribution( );
+      }
+    }
+  }
+
+  return vec4( final_color.rgb, 1.f );
+}
+
+
+#endif /* CRUDE_LIGHT_GLSLI */

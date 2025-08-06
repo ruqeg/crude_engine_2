@@ -3,6 +3,7 @@
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
+#include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 layout(location = 0) out vec4 out_color;
