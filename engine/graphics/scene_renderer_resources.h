@@ -31,6 +31,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu
   XMFLOAT4X4A                                              view_to_clip;
   XMFLOAT4X4A                                              clip_to_view;
   XMFLOAT4X4A                                              view_to_world;
+  XMFLOAT4X4A                                              clip_to_world;
   XMFLOAT4A                                                frustum_planes_culling[ 6 ];
   XMFLOAT3A                                                position;
   float32                                                  znear;
@@ -146,6 +147,11 @@ typedef struct crude_gfx_mesh_cpu
   uint32                                                   meshlets_offset;
   uint32                                                   meshlets_count;
 } crude_gfx_mesh_cpu;
+
+typedef struct crude_gfx_light_cpu
+{
+  crude_entity                                             node;
+} crude_gfx_light_cpu;
 
 typedef struct crude_gfx_mesh_instance_cpu
 {

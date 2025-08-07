@@ -54,4 +54,16 @@ vec3 crude_octahedral_decode( vec2 f )
   return normalize( n );
 }
 
+vec3 crude_ndc_from_uv_depth( vec2 uv, float depth )
+{
+  return vec3( uv.x * 2 - 1, ( 1 - uv.y ) * 2 - 1, depth );
+}
+
+vec3 crude_world_position_from_depth( vec2 uv, float depth, mat4 clip_to_world )
+{
+  vec4 h = vec4( crude_ndc_from_uv_depth( uv, depth ), 1.0 );
+  vec4 d = h * clip_to_world;
+  return d.xyz / d.w;
+}
+
 #endif /* CRUDE_PLATFORM_GLSL */

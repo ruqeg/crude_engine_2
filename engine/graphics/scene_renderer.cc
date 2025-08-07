@@ -569,6 +569,8 @@ update_dynamic_buffers_
       scene_constant->flags = 0u;
       scene_constant->camera_previous = scene_constant->camera;
       scene_constant->camera_debug_previous = scene_constant->camera_debug;
+      scene_constant->resolution.x = scene_renderer->renderer->gpu->vk_swapchain_width;
+      scene_constant->resolution.y = scene_renderer->renderer->gpu->vk_swapchain_height;
       crude_gfx_camera_to_camera_gpu( scene_renderer->scene->main_camera, &scene_constant->camera );
       crude_gfx_camera_to_camera_gpu( scene_renderer->scene->debug_camera, &scene_constant->camera_debug );
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
@@ -675,6 +677,7 @@ update_dynamic_buffers_
   {
     crude_camera const                                    *camera;
     crude_transform const                                 *camera_transform;
+    crude_gfx_light_gpu                                   *lights_gpu;
     crude_gfx_sorted_light                                *sorted_lights;
     uint32                                                *lights_luts;
     uint32                                                *bin_range_per_light;
@@ -686,7 +689,8 @@ update_dynamic_buffers_
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( bin_range_per_light, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GFX_LIGHT_Z_BINS, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-    
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_gpu, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+
     camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_camera );
     camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_transform );
     
@@ -699,13 +703,29 @@ update_dynamic_buffers_
     /* Sort lights based on Z */
     zfar = camera->far_z;
     znear = camera->near_z;
+    
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    {
+      crude_light const                                   *light;
+      crude_transform const                               *light_transform;
+
+      light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( scene_renderer->lights[ i ].node, crude_light );
+      light_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( scene_renderer->lights[ i ].node, crude_transform );
+      
+      lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_gpu );
+      lights_gpu[ i ].color = light->color;
+      lights_gpu[ i ].intensity = light->intensity;
+      lights_gpu[ i ].position = light_transform->translation;
+      lights_gpu[ i ].radius = light->radius;
+    }
+
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
     {
       crude_gfx_sorted_light                              *sorted_light;
       crude_gfx_light_gpu                                 *light_gpu;
       XMVECTOR                                             world_pos, view_pos, view_pos_min, view_pos_max;
     
-      light_gpu = &scene_renderer->lights[ i ];
+      light_gpu = &lights_gpu[ i ];
     
       world_pos = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
     
@@ -733,7 +753,7 @@ update_dynamic_buffers_
       lights_gpu_mapped = CRUDE_CAST( crude_gfx_light_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
       if ( lights_gpu_mapped )
       {
-        memcpy( lights_gpu_mapped, scene_renderer->lights, sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights ) );
+        memcpy( lights_gpu_mapped, lights_gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights ) );
         crude_gfx_unmap_buffer( gpu, scene_renderer->lights_sb );
       }
     }
@@ -826,7 +846,7 @@ update_dynamic_buffers_
       buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
       buffer_map.buffer = scene_renderer->lights_bins_sb[ gpu->current_frame ];
       buffer_map.offset = 0;
-      buffer_map.size = sizeof( uint32 );
+      buffer_map.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
       lights_luts_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
       if ( lights_luts_mapped )
       {
@@ -847,7 +867,7 @@ update_dynamic_buffers_
   
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( light_tiles_bits, tiles_entry_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
       memset( light_tiles_bits, 0, buffer_size );
-  
+
       znear = camera->near_z;
       tile_size_inv = 1.0f / CRUDE_GFX_LIGHT_TILE_SIZE;
       tile_stride = tile_x_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
@@ -865,7 +885,7 @@ update_dynamic_buffers_
         bool                                               camera_visible, ty_camera_inside, tx_camera_inside;
 
         light_index = sorted_lights[ i ].light_index;
-        light_gpu = &scene_renderer->lights[ light_index ];
+        light_gpu = &lights_gpu[ light_index ];
   
         /* Transform light in camera space */
         light_world_position = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
@@ -975,7 +995,7 @@ update_dynamic_buffers_
             {
               uint32                                       array_index, word_index, bit_index;
 
-              array_index = y * tile_stride + x;
+              array_index = y * tile_stride + x * CRUDE_GFX_LIGHT_WORDS_COUNT;
 
               word_index = i / 32;
               bit_index = i % 32;
@@ -1031,14 +1051,8 @@ register_nodes_
       }
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
       {
-        crude_light const* light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_light );
-        crude_transform const* light_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_transform );
-
-        crude_gfx_light_gpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_gpu );
-        light_gpu.color = light->color;
-        light_gpu.intensity = light->intensity;
-        light_gpu.position = light_transform->translation;
-        light_gpu.radius = light->radius;
+        crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
+        light_gpu.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
       }
 

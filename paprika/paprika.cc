@@ -304,12 +304,10 @@ paprika_graphics_system_
   
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
-  crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 0 );
+  crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 1u );
 
   {
-    crude_gfx_render_graph_node *final_render_graph_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "imgui_pass" );
-    crude_gfx_framebuffer *final_render_framebuffer = crude_gfx_access_framebuffer( &paprika->graphics.gpu, final_render_graph_node->framebuffer );
-    crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &paprika->graphics.gpu, final_render_framebuffer->color_attachments[ 0 ] );
+    crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_render_graph_builder_access_resource_by_name( paprika->graphics.scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
     crude_gfx_present( &paprika->graphics.gpu, final_render_texture );
   }
 }
@@ -572,6 +570,14 @@ paprika_draw_imgui_inspector_node_
     ImGui::InputFloat( "near_z", &camera->near_z );
     ImGui::SliderAngle( "fov_radians", &camera->fov_radians );
     ImGui::InputFloat( "aspect_ratio", &camera->aspect_ratio );
+  }
+  
+  crude_light *light = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_light );
+  if ( light && ImGui::CollapsingHeader( "crude_light" ) )
+  {
+    ImGui::ColorEdit3( "color", &light->color.x );
+    ImGui::InputFloat( "intensity", &light->intensity );
+    ImGui::InputFloat( "radius", &light->radius );
   }
 }
 void

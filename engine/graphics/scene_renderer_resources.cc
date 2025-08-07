@@ -24,12 +24,14 @@ crude_gfx_camera_to_camera_gpu
   XMMATRIX view_to_clip = crude_camera_view_to_clip( camera );
   XMMATRIX clip_to_view = XMMatrixInverse( NULL, view_to_clip );
   XMMATRIX world_to_clip = XMMatrixMultiply( world_to_view, view_to_clip );
+  XMMATRIX clip_to_world = XMMatrixMultiply( clip_to_view, view_to_world );
   
   XMStoreFloat4x4A( &camera_gpu->clip_to_view, clip_to_view ); 
   XMStoreFloat4x4A( &camera_gpu->view_to_clip, view_to_clip ); 
   XMStoreFloat4x4A( &camera_gpu->view_to_world, view_to_world );
   XMStoreFloat4x4A( &camera_gpu->world_to_view, world_to_view );
   XMStoreFloat4x4A( &camera_gpu->world_to_clip, world_to_clip );
+  XMStoreFloat4x4A( &camera_gpu->clip_to_world, clip_to_world );
   
   camera_gpu->position.x = transform->translation.x;
   camera_gpu->position.y = transform->translation.y;

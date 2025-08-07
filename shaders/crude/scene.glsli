@@ -34,6 +34,7 @@ struct crude_camera
   mat4                                                     view_to_clip;
   mat4                                                     clip_to_view;
   mat4                                                     view_to_world;
+  mat4                                                     clip_to_world;
   vec4                                                     frustum_planes_culling[ 6 ];
   vec3                                                     position;
   float                                                    padding1;
@@ -50,6 +51,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=0, row_major, std140) uniform CrudeSceneC
   crude_camera                                             camera_debug_previous;
   vec2                                                     resolution;
   uint                                                     scene_flags;
+  uint                                                     padding5;
 };
 
 layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer CrudeMeshDraws
