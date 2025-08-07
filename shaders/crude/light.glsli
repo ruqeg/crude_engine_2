@@ -71,10 +71,10 @@ vec4 crude_calculate_lighting( vec4 albedo, vec3 normal, vec3 world_position, uv
       uint word_id = light_id / 32;
       uint bit_id = light_id % 32;
 
-      if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) == 0 )
+      if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
       {
         uint global_light_index = lights_indices[ light_id ];
-        final_color.rgb += vec3( 1.f );// crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, normal, world_position, view_position.xyz );
+        final_color.rgb += crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, normal, world_position, view_position.xyz );
       }
     }
   }

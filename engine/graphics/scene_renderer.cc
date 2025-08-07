@@ -913,7 +913,8 @@ update_dynamic_buffers_
             corner = XMVectorSet( ( c % 2 ) ? 1.f : -1.f, ( c & 2 ) ? 1.f : -1.f, ( c & 4 ) ? 1.f : -1.f, 1 );
             corner = XMVectorScale( corner, light_radius );
             corner = XMVectorAdd( corner, light_world_position );
-  
+            corner = XMVectorSetW( corner, 1.f );
+
             corner_vs = XMVector4Transform( corner, world_to_view );
             corner_vs = XMVectorSetZ( corner_vs, CRUDE_MAX( znear, XMVectorGetZ( corner_vs ) ) );
             corner_ndc = XMVector4Transform( corner_vs, view_to_clip );

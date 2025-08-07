@@ -26,7 +26,7 @@ void main()
 {
   if ( gl_VertexIndex == 0 )
   {
-    crude_debug_draw_box( lights[ 0 ].world_position - lights[ 0 ].radius, lights[ 0 ].world_position + lights[ 0 ].radius, vec4( 0, 1, 0, 1 ) );
+    crude_debug_draw_box( lights[ 0 ].world_position - lights[ 0 ].radius, lights[ 0 ].world_position + lights[ 0 ].radius, vec4( 1, 0, 0, 1 ) );
   }
   out_texcoord = fullscreen_texcoord[ gl_VertexIndex ];
   gl_Position = fullscreen_vertices[ gl_VertexIndex ];
