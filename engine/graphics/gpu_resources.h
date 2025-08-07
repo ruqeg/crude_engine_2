@@ -242,6 +242,13 @@ typedef enum crude_gfx_pipeline_type
   CRUDE_GFX_PIPELINE_TYPE_COUNT
 } crude_gfx_pipeline_type;
 
+typedef enum crude_gfx_resource_asyns_load_state
+{
+  CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_NONE,
+  CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED,
+  CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY,
+} crude_gfx_resource_asyns_load_state;
+
 /************************************************
  *
  * GPU Resoruces Structs
@@ -524,7 +531,7 @@ typedef struct crude_gfx_buffer
   crude_gfx_buffer_handle                                  parent_buffer;
   char const                                              *name;
   uint8                                                   *mapped_data;
-  bool                                                     ready;
+  crude_gfx_resource_asyns_load_state                      load_state;
 } crude_gfx_buffer;
 
 typedef struct crude_gfx_sampler
@@ -555,7 +562,7 @@ typedef struct crude_gfx_texture
   crude_gfx_sampler                                       *sampler;
   char const                                              *name;
   crude_gfx_resource_state                                 state;
-  bool                                                     ready;
+  crude_gfx_resource_asyns_load_state                      load_state;
   crude_gfx_texture_handle                                 parent_texture_handle;
 } crude_gfx_texture;
 

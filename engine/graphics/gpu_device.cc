@@ -497,6 +497,15 @@ crude_gfx_present
       bindless_descriptor_set = crude_gfx_access_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
       texture_to_update = &gpu->texture_to_update_bindless[ i ];
       texture = crude_gfx_access_texture( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { texture_to_update->handle } ) );
+      
+      if ( texture->load_state != CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY )
+      {
+        if ( texture->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED )
+        {
+          texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+        }
+        continue;
+      }
 
       descriptor_write = &bindless_descriptor_writes[ current_write_index ];
       memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
@@ -833,7 +842,7 @@ crude_gfx_buffer_ready
 )
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, buffer_handle );
-  return buffer->ready;
+  return buffer->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
 }
 
 bool
@@ -844,7 +853,7 @@ crude_gfx_texture_ready
 )
 {
   crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-  return texture->ready;
+  return texture->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
 }
 
 VkShaderModuleCreateInfo
@@ -1212,7 +1221,7 @@ crude_gfx_create_texture
     vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
   }
 
-  texture->ready = true;
+  texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
 
   return handle;
 }
@@ -1853,7 +1862,7 @@ crude_gfx_create_buffer
   buffer->handle = handle;
   buffer->global_offset = 0;
   buffer->parent_buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-  buffer->ready = true;
+  buffer->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
 
   bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) ) != 0;
   if ( creation->usage == CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC && use_global_buffer )

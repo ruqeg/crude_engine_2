@@ -103,8 +103,7 @@ crude_gfx_renderer_add_texture_update_commands
     crude_gfx_texture *texture = crude_gfx_access_texture( renderer->gpu, renderer->textures_to_update[ i ] );
     crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, renderer->gpu->vk_transfer_queue_family, renderer->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
     texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
-    texture->ready = true;
-
+    texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED;
     //generate_mipmaps( texture, cb, true );
   }
 
