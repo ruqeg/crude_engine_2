@@ -3130,9 +3130,9 @@ vk_create_swapchain_
   selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
   for ( uint32 i = 0; i < available_present_modes_count; ++i )
   {
-    if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
+    if ( available_present_modes[ i ] == VK_PRESENT_MODE_FIFO_KHR )
     {
-      selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+      selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
       break;
     }
   }
