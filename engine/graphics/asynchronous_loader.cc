@@ -70,10 +70,9 @@ crude_gfx_asynchronous_loader_initialize
   }
 
   {
-    VkFenceCreateInfo fence_info = {
-      .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-      .flags = 0
-    };
+    VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_completed_fence ), "Failed to create fence" );
   }
 }
@@ -112,7 +111,7 @@ crude_gfx_asynchronous_loader_request_texture_data
   CRUDE_ARRAY_PUSH( asynloader->file_load_requests, request );
   
   crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->renderer->gpu, texture_handle );
-  texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_NONE;
+  texture->ready = false;
 }
 
 void
@@ -131,7 +130,7 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
 
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( asynloader->renderer->gpu, gpu_buffer );
-  buffer->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_NONE;
+  buffer->ready = false;
 }
 
 void
@@ -152,7 +151,7 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_destroy_buffer( asynloader->renderer->gpu, asynloader->cpu_buffer_ready );
 
     crude_gfx_buffer *buffer = crude_gfx_access_buffer( asynloader->renderer->gpu, asynloader->gpu_buffer_ready );
-    buffer->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+    buffer->ready = true;
 
     asynloader->cpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
     asynloader->gpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
@@ -163,6 +162,12 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
     
+    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
+    {
+      return;
+    }
+    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence );
+
     request = CRUDE_ARRAY_POP( asynloader->upload_requests );
 
     cmd = &asynloader->cmd_buffers[ asynloader->renderer->gpu->current_frame ];
@@ -196,23 +201,15 @@ crude_gfx_asynchronous_loader_update
       VkCommandBufferSubmitInfo command_buffers[] = {
         { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
       };
-
-      VkSubmitInfo2 submit_info = {
-        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
-        .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
-        .pCommandBufferInfos      = command_buffers,
-      };
+      
+      VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+      submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+      submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+      submit_info.pCommandBufferInfos      = command_buffers;
     
-
       VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( asynloader->renderer->gpu->vkQueueSubmit2KHR( used_queue, 1, &submit_info, asynloader->vk_transfer_completed_fence ), "Failed to sumbit queue" );
     }
-    
-    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
-    {
-      vkWaitForFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
-    }
-    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
     {

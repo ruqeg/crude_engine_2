@@ -56,14 +56,14 @@ CRUDE_API void
 crude_log_initialize
 ()
 {
-  log_file_ = fopen( "crude_log.txt", "w" );
+  //log_file_ = fopen( "crude_log.txt", "w" );
 }
 
 CRUDE_API void
 crude_log_deinitialize
 ()
 {
-  fclose( log_file_ );
+  //fclose( log_file_ );
 }
 
 void
@@ -84,7 +84,7 @@ crude_log_common
 #ifdef _WIN32
   OutputDebugStringA( ( LPCSTR )message_buffer_ );
 #endif
-  fprintf( log_file_, message_buffer_ );
+  //fprintf( log_file_, message_buffer_ );
   printf( "%s", message_buffer_ );
   va_end( args );
 }

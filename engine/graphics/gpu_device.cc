@@ -471,7 +471,7 @@ crude_gfx_present
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
     {
-      crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[i];
+      crude_gfx_cmd_buffer* command_buffer = gpu->queued_command_buffers[ i ];
       enqueued_command_buffers[ i ] = command_buffer->vk_cmd_buffer;
 
       crude_gfx_cmd_end_render_pass( command_buffer );
@@ -498,15 +498,11 @@ crude_gfx_present
       texture_to_update = &gpu->texture_to_update_bindless[ i ];
       texture = crude_gfx_access_texture( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { texture_to_update->handle } ) );
       
-      if ( texture->load_state != CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY )
+      if ( !texture->ready )
       {
-        if ( texture->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED )
-        {
-          texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
-        }
         continue;
       }
-
+      
       descriptor_write = &bindless_descriptor_writes[ current_write_index ];
       memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
       descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -842,7 +838,7 @@ crude_gfx_buffer_ready
 )
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, buffer_handle );
-  return buffer->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+  return buffer->ready;
 }
 
 bool
@@ -853,7 +849,7 @@ crude_gfx_texture_ready
 )
 {
   crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-  return texture->load_state == CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+  return texture->ready;
 }
 
 VkShaderModuleCreateInfo
@@ -1221,7 +1217,7 @@ crude_gfx_create_texture
     vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
   }
 
-  texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+  texture->ready = true;
 
   return handle;
 }
@@ -1862,7 +1858,7 @@ crude_gfx_create_buffer
   buffer->handle = handle;
   buffer->global_offset = 0;
   buffer->parent_buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-  buffer->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_READY;
+  buffer->ready = true;
 
   bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) ) != 0;
   if ( creation->usage == CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC && use_global_buffer )
@@ -3169,13 +3165,12 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
-  VkCommandBufferBeginInfo beginInfo = { 
-    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-  };
+  VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, false );
-  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );

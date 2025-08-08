@@ -561,7 +561,7 @@ update_dynamic_buffers_
     buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     buffer_map.buffer = scene_renderer->scene_cb;
     buffer_map.offset = 0;
-    buffer_map.size = 0;
+    buffer_map.size = sizeof( crude_gfx_scene_constant_gpu );
     scene_constant = CRUDE_CAST( crude_gfx_scene_constant_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
     if ( scene_constant )
     {
@@ -584,7 +584,7 @@ update_dynamic_buffers_
     buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     buffer_map.buffer = scene_renderer->meshes_instances_draws_sb;
     buffer_map.offset = 0;
-    buffer_map.size = 0;
+    buffer_map.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
     meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
   
     if ( meshes_instances_draws )

@@ -88,6 +88,10 @@ crude_gfx_renderer_add_texture_update_commands
   _In_ uint32                                              thread_id
 )
 {
+  crude_gfx_cmd_buffer                                    *cmd;
+  VkCommandBufferBeginInfo                                 begin_info;
+  VkSubmitInfo2                                            submit_info;
+
   mtx_lock( &renderer->texture_update_mutex );
   
   if ( renderer->num_textures_to_update == 0 )
@@ -96,18 +100,46 @@ crude_gfx_renderer_add_texture_update_commands
     return;
   }
   
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( renderer->gpu, thread_id, true );
+  // !TODO this is a temporary fix, should just queue_cmd
+  cmd = crude_gfx_get_primary_cmd( renderer->gpu, 1, false );
+  begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
   for ( uint32 i = 0; i < renderer->num_textures_to_update; ++i )
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( renderer->gpu, renderer->textures_to_update[ i ] );
     crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, renderer->gpu->vk_transfer_queue_family, renderer->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+    texture->ready = true;
     texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
-    texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED;
     //generate_mipmaps( texture, cb, true );
   }
+  vkEndCommandBuffer( cmd->vk_cmd_buffer );
+  VkCommandBufferSubmitInfo command_buffers[] = {
+    CRUDE_COMPOUNT( VkCommandBufferSubmitInfo, { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 } ),
+  };
+  
+  submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+  submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+  submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+  submit_info.pCommandBufferInfos      = command_buffers;
+  
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( renderer->gpu->vkQueueSubmit2KHR( renderer->gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+ 
+  vkQueueWaitIdle( renderer->gpu->vk_main_queue );
+  //crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( renderer->gpu, thread_id, true );
 
-  crude_gfx_queue_cmd( cmd );
+  //for ( uint32 i = 0; i < renderer->num_textures_to_update; ++i )
+  //{
+  //  crude_gfx_texture *texture = crude_gfx_access_texture( renderer->gpu, renderer->textures_to_update[ i ] );
+  //  crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, renderer->gpu->vk_transfer_queue_family, renderer->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  //  texture->load_state = CRUDE_GFX_ASYNC_RESOURCE_ASYNS_LOAD_STATE_QUEUED;
+  //  texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
+  //  //generate_mipmaps( texture, cb, true );
+  //}
+
+  //crude_gfx_queue_cmd( cmd );
   
   renderer->num_textures_to_update = 0;
 
