@@ -10,6 +10,7 @@
 #include <graphics/passes/culling_late_pass.h>
 #include <graphics/passes/debug_pass.h>
 #include <graphics/passes/light_pass.h>
+#include <graphics/passes/pointlight_shadow_pass.h>
 
 typedef struct crude_scene crude_scene;
 
@@ -76,6 +77,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  
+  crude_gfx_buffer_handle                                  light_meshlet_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  per_light_meshlet_instances_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
   crude_allocator_container                                allocator_container;
 
@@ -85,6 +89,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_gbuffer_late_pass                              gbuffer_late_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
+  crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
 } crude_gfx_scene_renderer;

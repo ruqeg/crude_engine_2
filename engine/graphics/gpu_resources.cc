@@ -501,11 +501,11 @@ crude_gfx_vk_shader_stage_to_defines
 {
   switch ( value )
   {
-    case VK_SHADER_STAGE_VERTEX_BIT:      return "VERTEX";
-    case VK_SHADER_STAGE_FRAGMENT_BIT:    return "FRAGMENT";
-    case VK_SHADER_STAGE_COMPUTE_BIT:     return "COMPUTE";
-    case VK_SHADER_STAGE_MESH_BIT_EXT:    return "MESH";
-    case VK_SHADER_STAGE_TASK_BIT_EXT:    return "TASK";
+    case VK_SHADER_STAGE_VERTEX_BIT:      return "CRUDE_STAGE_VERTEX";
+    case VK_SHADER_STAGE_FRAGMENT_BIT:    return "CRUDE_STAGE_FRAGMENT";
+    case VK_SHADER_STAGE_COMPUTE_BIT:     return "CRUDE_STAGE_COMPUTE";
+    case VK_SHADER_STAGE_MESH_BIT_EXT:    return "CRUDE_STAGE_MESH";
+    case VK_SHADER_STAGE_TASK_BIT_EXT:    return "CRUDE_STAGE_TASK";
   }
    return "";
 }

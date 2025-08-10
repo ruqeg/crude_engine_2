@@ -1,4 +1,6 @@
 
+#extension GL_EXT_mesh_shader : require
+
 #ifdef CRUDE_VALIDATOR_LINTING
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"

@@ -11,6 +11,7 @@
 #define CRUDE_GFX_LIGHTS_MAX_COUNT                         ( 256 )
 #define CRUDE_GFX_LIGHT_TILE_SIZE                          ( 8 )
 #define CRUDE_GFX_LIGHT_WORDS_COUNT                        ( ( CRUDE_GFX_LIGHTS_MAX_COUNT + 31 ) / 32 )
+#define CRUDE_GFX_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_line_vertex_gpu
 {
@@ -47,7 +48,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   crude_gfx_camera_gpu                                     camera_debug_previous;
   XMFLOAT2                                                 resolution;
   uint32                                                   flags;
-  uint32                                                   padding;
+  uint32                                                   mesh_instances_count;
+  uint32                                                   active_lights_count;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu

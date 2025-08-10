@@ -172,6 +172,22 @@
       ]
     },
     {
+      "name": "pointlight_shadow_culling_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "buffer",
+          "name": "MESHLET_LATE_PASS_MARKER"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "buffer",
+          "name": "POINTLIGHT_SHADOW_CULLING_MARKER"
+        }
+      ]
+    },
+    {
       "name": "light_pass",
       "inputs": [
         {
@@ -192,7 +208,7 @@
         },
         {
           "type": "buffer",
-          "name": "MESHLET_LATE_PASS_MARKER"
+          "name": "POINTLIGHT_SHADOW_CULLING_MARKER"
         }
       ],
       "outputs": [

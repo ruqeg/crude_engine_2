@@ -66,4 +66,14 @@ vec3 crude_world_position_from_depth( vec2 uv, float depth, mat4 clip_to_world )
   return d.xyz / d.w;
 }
 
+#ifdef CRUDE_STAGE_COMPUTE
+void crude_global_shader_barrier()
+{
+  memoryBarrierBuffer();
+  memoryBarrierShared();
+  memoryBarrier();
+  barrier();
+}
+#endif /* CRUDE_STAGE_COMPUTE */
+
 #endif /* CRUDE_PLATFORM_GLSL */

@@ -317,6 +317,20 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
     buffer_creation.name = "debug_line_vertices";
     scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = sizeof( XMUINT2 ) * CRUDE_GFX_MAX_MESHLETS_PER_LIGHT * CRUDE_GFX_LIGHTS_MAX_COUNT;
+    buffer_creation.name = "light_meshlet_instances_sb";
+    scene_renderer->light_meshlet_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHTS_MAX_COUNT;
+    buffer_creation.name = "per_light_meshlet_instances_count_sb";
+    scene_renderer->per_light_meshlet_instances_count_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   }
 
   {
@@ -358,6 +372,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
   crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
   crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
+  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
   crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
   crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
   crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
@@ -374,6 +389,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_gbuffer_early_pass_deinitialize( &scene_renderer->gbuffer_early_pass );
   crude_gfx_gbuffer_late_pass_deinitialize( &scene_renderer->gbuffer_late_pass );
   crude_gfx_depth_pyramid_pass_deinitialize( &scene_renderer->depth_pyramid_pass );
+  crude_gfx_pointlight_shadow_pass_deinitialize( &scene_renderer->pointlight_shadow_pass );
   crude_gfx_culling_early_pass_deinitialize( &scene_renderer->culling_early_pass );
   crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
@@ -416,6 +432,8 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->debug_line_commands_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->light_meshlet_instances_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->per_light_meshlet_instances_count_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_count_early_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
@@ -465,6 +483,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "pointlight_shadow_culling_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
   crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
@@ -573,6 +592,8 @@ update_dynamic_buffers_
       scene_constant->resolution.y = scene_renderer->renderer->gpu->vk_swapchain_height;
       crude_gfx_camera_to_camera_gpu( scene_renderer->scene->main_camera, &scene_constant->camera );
       crude_gfx_camera_to_camera_gpu( scene_renderer->scene->debug_camera, &scene_constant->camera_debug );
+      scene_constant->mesh_instances_count = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
+      scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }

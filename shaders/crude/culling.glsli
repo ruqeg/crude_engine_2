@@ -7,6 +7,13 @@ bool crude_clustered_backface_culling( vec3 center, float radius, vec3 cone_axis
   return dot( center - camera_pos, cone_axis ) >= cone_cutoff * length( center - camera_pos ) + radius;
 }
 
+bool crude_sphere_intersect( vec3 center_a, float radius_a, vec3 center_b, float radius_b )
+{
+	vec3 v = center_b - center_a;
+	float total_radius = radius_a + radius_b;
+	return dot( v, v ) < total_radius;
+}
+
 /* 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013 */
 bool crude_bounding_sphere_to_clipped_aabb( vec3 c, float r, float znear, float p00, float p11, out vec4 aabb )
 {

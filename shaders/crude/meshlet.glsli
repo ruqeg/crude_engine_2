@@ -2,7 +2,6 @@
 #ifndef CRUDE_MESHLET_GLSL
 #define CRUDE_MESHLET_GLSL
 
-#extension GL_EXT_mesh_shader : require
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_ARB_shader_draw_parameters : require

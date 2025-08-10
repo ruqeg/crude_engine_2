@@ -876,7 +876,6 @@ crude_gfx_compile_shader
   crude_write_file( temp_filename, code, code_size );
   
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
-  
   {
     char vulkan_env[ 512 ];
     crude_process_expand_environment_strings( "%VULKAN_SDK%", vulkan_env, 512 );
