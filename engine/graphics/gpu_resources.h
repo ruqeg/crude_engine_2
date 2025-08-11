@@ -25,6 +25,7 @@
 #define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX            0u
 #define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX            1u
 #define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
+#define CRUDE_GFX_MAX_PUSH_CONSTANTS                       1u
 
 /************************************************
  *
@@ -504,10 +505,16 @@ typedef struct crude_gfx_shader_input_reflect
   crude_gfx_vertex_attribute                              *vertex_attributes;
 } crude_gfx_shader_input_reflect;
 
+typedef struct crude_gfx_shader_push_constant_reflect
+{
+  uint32                                                   stride;
+} crude_gfx_shader_push_constant_reflect;
+
 typedef struct crude_gfx_shader_reflect
 {
   crude_gfx_shader_descriptor_reflect                      descriptor;
   crude_gfx_shader_input_reflect                           input;
+  crude_gfx_shader_push_constant_reflect                   push_constant;
 } crude_gfx_shader_reflect;
 
 typedef struct crude_gfx_buffer

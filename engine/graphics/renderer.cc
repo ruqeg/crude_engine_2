@@ -348,25 +348,33 @@ crude_gfx_renderer_create_technique
   technique->json_name = creation->json_name;
   technique->name = creation->name;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->num_creations, renderer->gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, renderer->gpu->allocator_container );
   CRUDE_HASHMAP_INITIALIZE( technique->name_hashed_to_pass_index, renderer->gpu->allocator_container );
 
-  for ( size_t i = 0; i < creation->num_creations; ++i )
+  for ( size_t i = 0; i < creation->passes_count; ++i )
   {
-    crude_gfx_renderer_technique_pass *pass = &technique->passes[ i ];
+    crude_gfx_renderer_technique_pass                     *pass;
+    crude_gfx_renderer_technique_pass_creation const      *pass_creation;
+    crude_gfx_pipeline                                    *pipeline;
+    crude_gfx_renderer_technique_pass                      technique_pass;
+    uint64                                                 pass_name_hashed;
+
+    pass = &technique->passes[ i ];
     
-    crude_gfx_pipeline_creation const *pass_creation = &creation->creations[ i ];
-    crude_gfx_renderer_technique_pass technique_pass = CRUDE_COMPOUNT( crude_gfx_renderer_technique_pass, { .pipeline =  crude_gfx_create_pipeline( renderer->gpu, pass_creation ) } );
+    pass_creation = &creation->passes[ i ];
+    technique_pass = CRUDE_COMPOUNT( crude_gfx_renderer_technique_pass, { pass_creation->pipeline } );
     if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( technique_pass.pipeline ) )
     {
       return NULL;
     }
+
+    pipeline = crude_gfx_access_pipeline( renderer->gpu, technique_pass.pipeline );
+
     CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
     
-    uint64 pass_name_hashed = crude_hash_string( pass_creation->name, 0 );
+    pass_name_hashed = crude_hash_string( pipeline->name, 0 );
     CRUDE_HASHMAP_SET( technique->name_hashed_to_pass_index, pass_name_hashed, i );
     
-    crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( renderer->gpu, pass->pipeline );
     for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
     {
       crude_gfx_descriptor_set_layout const *descriptor_set_layout = pipeline->descriptor_set_layout[ i ];

@@ -69,17 +69,16 @@ typedef struct crude_gfx_renderer_sampler
   char const                                              *name;
 } crude_gfx_renderer_sampler;
 
-typedef struct crude_gfx_renderer_program_pass
+typedef struct crude_gfx_renderer_technique_pass_creation
 {
   crude_gfx_pipeline_handle                                pipeline;
-  crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout;
-} crude_gfx_renderer_program_pass;
+} crude_gfx_renderer_technique_pass_creation;
 
 typedef struct crude_gfx_renderer_technique_creation
 {
   char const                                              *json_name;
-  crude_gfx_pipeline_creation                              creations[ 8 ];
-  uint32                                                   num_creations;
+  crude_gfx_renderer_technique_pass_creation               passes[ 8 ];
+  uint32                                                   passes_count;
   char const                                              *name;
 } crude_gfx_renderer_technique_creation;
 
@@ -125,4 +124,11 @@ crude_gfx_renderer_technique_pass_get_binding_index
 (
   _In_ crude_gfx_renderer_technique_pass                  *technique_pass,
   _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_renderer_technique_creation_add_pass
+(
+  _In_ crude_gfx_renderer_technique_creation              *creation,
+  _In_ crude_gfx_pipeline_handle                           pipeline
 );

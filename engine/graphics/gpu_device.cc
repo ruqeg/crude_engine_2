@@ -1507,6 +1507,7 @@ crude_gfx_create_pipeline
   VkPipelineLayoutCreateInfo                               vk_pipeline_layout_info;
   crude_gfx_pipeline_handle                                pipeline_handle;
   crude_gfx_shader_state_handle                            shader_state_handle;
+  VkPushConstantRange                                      vk_push_constant;
 
   pipeline_handle = crude_gfx_obtain_pipeline( gpu );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( pipeline_handle ) )
@@ -1546,10 +1547,17 @@ crude_gfx_create_pipeline
     }
   }
 
+  vk_push_constant = CRUDE_COMPOUNT_EMPTY( VkPushConstantRange );
+	vk_push_constant.offset = 0;
+	vk_push_constant.size = shader_state->reflect.push_constant.stride;
+	vk_push_constant.stageFlags = VK_SHADER_STAGE_ALL;
+
   vk_pipeline_layout_info = CRUDE_COMPOUNT_EMPTY( VkPipelineLayoutCreateInfo );
   vk_pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   vk_pipeline_layout_info.setLayoutCount = shader_state->reflect.descriptor.sets_count;
   vk_pipeline_layout_info.pSetLayouts = vk_layouts;
+  vk_pipeline_layout_info.pushConstantRangeCount = shader_state->reflect.push_constant.stride ? 1u : 0u;
+  vk_pipeline_layout_info.pPushConstantRanges = &vk_push_constant;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( gpu->vk_device, &vk_pipeline_layout_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline_layout ), "Failed to create pipeline layout" );
 
   pipeline->num_active_layouts = shader_state->reflect.descriptor.sets_count;
@@ -1710,7 +1718,7 @@ crude_gfx_create_pipeline
     vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
     vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     vk_rasterizer.depthClampEnable = VK_FALSE;
-    vk_rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    vk_rasterizer.rasterizerDiscardEnable = creation->render_pass_output.num_color_formats ? VK_FALSE : VK_TRUE;
     vk_rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     vk_rasterizer.cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization.cull_mode );
     vk_rasterizer.frontFace = creation->rasterization.front;
@@ -3606,6 +3614,11 @@ vk_reflect_shader_
   result = spvReflectCreateShaderModule( code_size, code, &spv_reflect );
   CRUDE_ASSERT( result == SPV_REFLECT_RESULT_SUCCESS );
   
+  if ( spv_reflect.push_constant_block_count )
+  {
+    reflect->push_constant.stride = spv_reflect.push_constant_blocks[ 0 ].size;
+  }
+
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator_container );

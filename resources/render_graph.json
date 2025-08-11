@@ -172,7 +172,7 @@
       ]
     },
     {
-      "name": "pointlight_shadow_culling_pass",
+      "name": "point_shadows_pass",
       "type": "compute",
       "inputs": [
         {
@@ -182,8 +182,13 @@
       ],
       "outputs": [
         {
+            "type": "texture",
+            "external": true,
+            "name": "point_shadows_depth"
+        },
+        {
           "type": "buffer",
-          "name": "POINTLIGHT_SHADOW_CULLING_MARKER"
+          "name": "POINTLIGHT_SHADOW_MARKER"
         }
       ]
     },
@@ -208,7 +213,7 @@
         },
         {
           "type": "buffer",
-          "name": "POINTLIGHT_SHADOW_CULLING_MARKER"
+          "name": "POINTLIGHT_SHADOW_MARKER"
         }
       ],
       "outputs": [

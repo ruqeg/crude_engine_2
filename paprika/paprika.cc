@@ -241,6 +241,18 @@ paprika_graphics_initialize_
     crude_gfx_render_graph_compile( &paprika->graphics.render_graph );
   }
   
+  crude_gfx_render_graph_node *pointlight_shadow_pass_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "point_shadows_pass" );
+  if ( pointlight_shadow_pass_node )
+  {
+    CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( pointlight_shadow_pass_node->render_pass ) );
+    crude_gfx_render_pass_creation creation = crude_gfx_render_pass_creation_empty( );
+    creation.name = "point_shadows_pass";
+    creation.depth_stencil_format = VK_FORMAT_D16_UNORM;
+    creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+    pointlight_shadow_pass_node->render_pass = crude_gfx_create_render_pass( &paprika->graphics.gpu, &creation );
+  }
+
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );

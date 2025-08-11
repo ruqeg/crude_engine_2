@@ -61,7 +61,7 @@ crude_gfx_renderer_technique_load_from_file
 
   allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
-  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 128 ), crude_stack_allocator_pack( temporary_allocator ) );
+  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 64 ), crude_stack_allocator_pack( temporary_allocator ) );
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
@@ -104,7 +104,8 @@ crude_gfx_renderer_technique_load_from_file
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
       parse_gpu_pipeline_( pipeline, &pipeline_creation, renderer->gpu, &path_buffer, &shader_code_buffer, render_graph, temporary_allocator );
-      technique_creation.creations[ technique_creation.num_creations++ ] = pipeline_creation;
+      crude_gfx_renderer_technique_creation_add_pass( &technique_creation, crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation ) );
+      crude_string_buffer_clear( &shader_code_buffer );
     }
   }
 
@@ -192,10 +193,6 @@ parse_gpu_pipeline_
       else if ( strcmp( stage, "task" ) == 0 )
       {
         crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_TASK_BIT_EXT );
-      }
-      else if ( strcmp( stage, "compute" ) == 0 )
-      {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, current_code, total_code_size, VK_SHADER_STAGE_COMPUTE_BIT );
       }
     }
   }

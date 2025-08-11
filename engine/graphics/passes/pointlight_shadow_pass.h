@@ -8,7 +8,8 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_pointlight_shadow_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          pointlight_shadow_culling_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          pointshadow_culling_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          pointshadow_commands_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_pointlight_shadow_pass;
 
 CRUDE_API void

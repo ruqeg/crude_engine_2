@@ -25,3 +25,14 @@ crude_gfx_renderer_technique_pass_get_binding_index
   uint32 index = CRUDE_HASHMAP_GET( technique_pass->name_hashed_to_descriptor_index, hashed_name )->value;
   return index;
 }
+
+void
+crude_gfx_renderer_technique_creation_add_pass
+(
+  _In_ crude_gfx_renderer_technique_creation              *creation,
+  _In_ crude_gfx_pipeline_handle                           pipeline
+)
+{
+  creation->passes[ creation->passes_count ].pipeline = pipeline;
+  ++creation->passes_count;
+}

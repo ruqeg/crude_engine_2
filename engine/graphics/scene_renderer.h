@@ -78,8 +78,12 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   
+  crude_gfx_buffer_handle                                  light_meshlet_draw_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  light_meshlet_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  per_light_meshlet_instances_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  per_light_meshlet_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  
+  crude_gfx_buffer_handle                                  pointlight_world_to_view_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_spheres_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
   crude_allocator_container                                allocator_container;
 

@@ -10,20 +10,22 @@ crude_gfx_pointlight_shadow_pass_initialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_pipeline_handle                                pointlight_shadow_culling_pipeline;
-  crude_gfx_descriptor_set_layout_handle                   pointlight_shadow_culling_dsl;
+  crude_gfx_pipeline_handle                                pointshadow_culling_pipeline;
+  crude_gfx_descriptor_set_layout_handle                   pointshadow_culling_dsl;
+  crude_gfx_pipeline_handle                                pointshadow_commands_generation_pipeline;
+  crude_gfx_descriptor_set_layout_handle                   pointshadow_commands_generation_dsl;
 
   pass->scene_renderer = scene_renderer;
 
-  pointlight_shadow_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointlight_shadow_culling" )->pipeline;
-  pointlight_shadow_culling_dsl = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, pointlight_shadow_culling_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-
+  pointshadow_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_culling" )->pipeline;
+  pointshadow_culling_dsl = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, pointshadow_culling_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
     
     ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = pointlight_shadow_culling_dsl;
+    ds_creation.layout = pointshadow_culling_dsl;
     ds_creation.name = "pointlight_shadow_culling_ds";
   
     crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
@@ -32,9 +34,29 @@ crude_gfx_pointlight_shadow_pass_initialize
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->light_meshlet_instances_sb[ i ], 10u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->per_light_meshlet_instances_count_sb[ i ], 11u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->per_light_meshlet_instances_sb[ i ], 11u );
     
-    pass->pointlight_shadow_culling_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+    pass->pointshadow_culling_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+  }
+  
+  pointshadow_commands_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_commands_generation" )->pipeline;
+  pointshadow_commands_generation_dsl = crude_gfx_get_descriptor_set_layout( scene_renderer->renderer->gpu, pointshadow_commands_generation_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_descriptor_set_creation                    ds_creation;
+    
+    ds_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation.layout = pointshadow_commands_generation_dsl;
+    ds_creation.name = "pointlight_shadow_culling_ds";
+  
+    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->per_light_meshlet_instances_sb[ i ], 10u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, scene_renderer->light_meshlet_draw_commands_sb[ i ], 11u );
+    
+    pass->pointshadow_commands_generation_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 }
 
@@ -46,7 +68,8 @@ crude_gfx_pointlight_shadow_pass_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->pointlight_shadow_culling_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->pointshadow_culling_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->pointshadow_commands_generation_ds[ i ] );
   }
 }
 
@@ -58,19 +81,23 @@ crude_gfx_pointlight_shadow_pass_render
 )
 {
   crude_gfx_device                                        *gpu;
-  crude_gfx_buffer                                        *count_late_sb;
-  crude_gfx_buffer                                        *commands_late_sb;
   crude_gfx_pointlight_shadow_pass                        *pass;
-  crude_gfx_pipeline_handle                                mesh_culling_pipeline;
+  crude_gfx_pipeline_handle                                pointshadow_culling_pipeline;
+  crude_gfx_pipeline_handle                                pointshadow_commands_generation_pipeline;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_pointlight_shadow_pass*, ctx );
-
-  if ( !pass->scene_renderer->total_meshes_instances_count )
-  {
-    return;
-  }
-
   gpu = pass->scene_renderer->renderer->gpu;
+
+  pointshadow_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_culling" )->pipeline;
+  pointshadow_commands_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_commands_generation" )->pipeline;
+
+  crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_culling_pipeline );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->pointshadow_culling_ds[ gpu->current_frame ] );
+  crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count * CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
+
+  crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_commands_generation_pipeline );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->pointshadow_commands_generation_ds[ gpu->current_frame ] );
+  crude_gfx_cmd_dispatch( primary_cmd, ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
 }
 
 crude_gfx_render_graph_pass_container
