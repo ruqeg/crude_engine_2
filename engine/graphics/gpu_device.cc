@@ -3467,7 +3467,7 @@ vk_create_texture_
 
     if ( crude_gfx_has_depth_or_stencil( creation->format ) )
     {
-      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
     else
     {
@@ -3526,7 +3526,7 @@ vk_create_texture_view_
   
   if ( crude_gfx_has_depth_or_stencil( texture->vk_format ))
   {
-    image_view_info.subresourceRange.aspectMask = crude_gfx_has_depth( texture->vk_format ) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+    image_view_info.subresourceRange.aspectMask = crude_gfx_has_depth( texture->vk_format ) ? ( VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_DEPTH_BIT ) : 0;
   }
   else
   {

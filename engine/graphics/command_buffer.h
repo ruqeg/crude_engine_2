@@ -286,6 +286,37 @@ crude_gfx_cmd_add_image_barrier_ext3
 );
 
 CRUDE_API void
+crude_gfx_cmd_add_image_barrier_ext4
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_resource_state                            new_state,
+  _In_ uint32                                              base_mip_level,
+  _In_ uint32                                              mip_count,
+  _In_ uint32                                              base_array_layer,
+  _In_ uint32                                              array_layer_count,
+  _In_ bool                                                is_depth
+);
+
+CRUDE_API void
+crude_gfx_cmd_add_image_barrier_ext5
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ VkImage                                             vk_image,
+  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_resource_state                            new_state,
+  _In_ uint32                                              base_mip_level,
+  _In_ uint32                                              mip_count,
+  _In_ uint32                                              base_array_layer,
+  _In_ uint32                                              array_layer_count,
+  _In_ bool                                                is_depth,
+  _In_ uint32                                              source_queue_family,
+  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_queue_type                                source_queue_type,
+  _In_ crude_gfx_queue_type                                destination_queue_type
+);
+
+CRUDE_API void
 crude_gfx_cmd_upload_texture_data
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

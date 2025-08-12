@@ -12,12 +12,12 @@ layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
 layout(set=CRUDE_MATERIAL_SET, binding=10) buffer MeshletInstances
 {
-  uvec2                                                    light_meshlet_instances[];
+  uvec2                                                    meshletes_instances[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11) buffer PerLightMeshletIndices
+layout(set=CRUDE_MATERIAL_SET, binding=11) buffer PointLightMeshletCount
 {
-  uint                                                     per_light_meshlet_instances[];
+  uint                                                     pointshadow_meshletes_instances_count[];
 };
 
 void main()
@@ -26,7 +26,7 @@ void main()
   {
     for ( uint i = 0; i < CRUDE_LIGHTS_MAX_COUNT; ++i )
     {
-      per_light_meshlet_instances[ i ] = 0;
+      pointshadow_meshletes_instances_count[ i ] = 0;
     }
   }
 
@@ -72,8 +72,8 @@ void main()
 
     if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
     {
-      uint offset = atomicAdd( per_light_meshlet_instances[ light_index ], 1 );
-      light_meshlet_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+      uint offset = atomicAdd( pointshadow_meshletes_instances_count[ light_index ], 1 );
+      meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
     }
   }
 }

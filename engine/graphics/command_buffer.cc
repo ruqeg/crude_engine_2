@@ -766,34 +766,7 @@ crude_gfx_cmd_add_image_barrier_ext2
   _In_ bool                                                is_depth
 )
 {
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
-
-  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_vk_access_flags2( old_state );
-  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
-
-  VkImageMemoryBarrier2 barrier = CRUDE_COMPOUNT_EMPTY( VkImageMemoryBarrier2 );
-  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
-  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags2( src_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  barrier.srcAccessMask = src_access_mask;
-  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags2( dst_access_mask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  barrier.dstAccessMask = dst_access_mask;
-  barrier.oldLayout = crude_gfx_resource_state_to_vk_image_layout2( old_state );
-  barrier.newLayout = crude_gfx_resource_state_to_vk_image_layout2( new_state );
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = vk_image;
-  barrier.subresourceRange.aspectMask = CRUDE_STATIC_CAST( VkImageAspectFlags, is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT );
-  barrier.subresourceRange.baseMipLevel = base_mip_level;
-  barrier.subresourceRange.levelCount = mip_count;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
-
-  VkDependencyInfo dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfo );
-  dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
-  dependency_info.imageMemoryBarrierCount = 1;
-  dependency_info.pImageMemoryBarriers = &barrier;
-
-  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, vk_image, old_state, new_state, base_mip_level, mip_count, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
 }
 
 void
@@ -805,6 +778,44 @@ crude_gfx_cmd_add_image_barrier_ext3
   _In_ crude_gfx_resource_state                            new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
+  _In_ bool                                                is_depth,
+  _In_ uint32                                              source_queue_family,
+  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_queue_type                                source_queue_type,
+  _In_ crude_gfx_queue_type                                destination_queue_type
+)
+{
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, vk_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+}
+
+void
+crude_gfx_cmd_add_image_barrier_ext4
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_resource_state                            new_state,
+  _In_ uint32                                              base_mip_level,
+  _In_ uint32                                              mip_count,
+  _In_ uint32                                              base_array_layer,
+  _In_ uint32                                              array_layer_count,
+  _In_ bool                                                is_depth
+)
+{
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->vk_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  texture->state = new_state;
+}
+
+void
+crude_gfx_cmd_add_image_barrier_ext5
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ VkImage                                             vk_image,
+  _In_ crude_gfx_resource_state                            old_state,
+  _In_ crude_gfx_resource_state                            new_state,
+  _In_ uint32                                              base_mip_level,
+  _In_ uint32                                              mip_count,
+  _In_ uint32                                              base_array_layer,
+  _In_ uint32                                              array_layer_count,
   _In_ bool                                                is_depth,
   _In_ uint32                                              source_queue_family,
   _In_ uint32                                              destination_family,
@@ -831,8 +842,8 @@ crude_gfx_cmd_add_image_barrier_ext3
   barrier.subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel = base_mip_level;
   barrier.subresourceRange.levelCount = mip_count;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
+  barrier.subresourceRange.baseArrayLayer = base_array_layer;
+  barrier.subresourceRange.layerCount = array_layer_count;
 
   VkDependencyInfo dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfo );
   dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;

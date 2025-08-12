@@ -10,6 +10,15 @@ typedef struct crude_gfx_pointlight_shadow_pass
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_descriptor_set_handle                          pointshadow_culling_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          pointshadow_commands_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          pointshadow_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_texture_handle                                 tetrahedron_shadow_texture;
+  crude_gfx_render_pass_handle                             tetrahedron_render_pass_handle;
+  crude_gfx_framebuffer_handle                             tetrahedron_framebuffer_handle;
+  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_spheres_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointshadow_meshlet_draw_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  meshletes_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointshadow_meshletes_instances_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_pointlight_shadow_pass;
 
 CRUDE_API void

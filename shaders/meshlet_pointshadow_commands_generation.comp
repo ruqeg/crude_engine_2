@@ -8,21 +8,21 @@
 
 layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
-layout(set=CRUDE_MATERIAL_SET, binding=10) buffer PerLightMeshletIndices
+layout(set=CRUDE_MATERIAL_SET, binding=10) buffer PointLightMeshletCount
 {
-  uint                                                     per_light_meshlet_instances[];
+  uint                                                     pointshadow_meshletes_instances_count[];
 };
 
 layout(set=CRUDE_MATERIAL_SET, binding=11) buffer MeshletDrawCommands
 {
-  uvec4                                                    light_meshlet_draw_commands[];
+  uvec4                                                    pointshadow_meshlet_draw_commands[];
 };
 
 void main()
 {
   if (gl_GlobalInvocationID.x == 0 )
   {
-    per_light_meshlet_instances[ CRUDE_LIGHTS_MAX_COUNT ] = 0;
+    pointshadow_meshletes_instances_count[ CRUDE_LIGHTS_MAX_COUNT ] = 0;
   }
 
   crude_global_shader_barrier( );
@@ -33,17 +33,15 @@ void main()
     return;
   }
 
-  const uint visible_meshlets = per_light_meshlet_instances[ light_index ];
+  const uint visible_meshlets = pointshadow_meshletes_instances_count[ light_index ];
 
   if ( visible_meshlets > 0 )
   {
-    const uint command_offset = atomicAdd( per_light_meshlet_instances[ CRUDE_LIGHTS_MAX_COUNT ], 6 );
+    const uint command_offset = atomicAdd( pointshadow_meshletes_instances_count[ CRUDE_LIGHTS_MAX_COUNT ], 4 );
     uint packed_light_index = ( light_index & 0xffff ) << 16;
-    light_meshlet_draw_commands[ command_offset ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 0 );
-    light_meshlet_draw_commands[ command_offset + 1 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 1 );
-    light_meshlet_draw_commands[ command_offset + 2 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 2 );
-    light_meshlet_draw_commands[ command_offset + 3 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 3 );
-    light_meshlet_draw_commands[ command_offset + 4 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 4 );
-    light_meshlet_draw_commands[ command_offset + 5 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 5 );
+    pointshadow_meshlet_draw_commands[ command_offset ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 0 );
+    pointshadow_meshlet_draw_commands[ command_offset + 1 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 1 );
+    pointshadow_meshlet_draw_commands[ command_offset + 2 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 2 );
+    pointshadow_meshlet_draw_commands[ command_offset + 3 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 3 );
   }
 }

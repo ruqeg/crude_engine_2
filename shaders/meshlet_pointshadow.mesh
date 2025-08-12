@@ -19,38 +19,26 @@ layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out flat uint out_mesh_draw_index[];
 layout(location=2) out vec3 out_normals[];
 
-layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
+layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer ShadowCameraSpheres
 {
-  uint                                                     opaque_mesh_visible_count;
-  uint                                                     opaque_mesh_culled_count;
-  uint                                                     transparent_mesh_visible_count;
-  uint                                                     transparent_mesh_culled_count;
-
-  uint                                                     total_count;
-  uint                                                     depth_pyramid_texture_index;
-  uint                                                     occlusion_culling_late_flag;
-  uint                                                     meshlet_index_count;
-
-  uint                                                     dispatch_task_x;
-  uint                                                     dispatch_task_y;
-  uint                                                     dispatch_task_z;
-  uint                                                     meshlet_instances_count;
+  vec4                                                     pointlight_spheres[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer MeshDrawCommands
+layout(set=CRUDE_MATERIAL_SET, binding=11) readonly buffer ShadowViews
 {
-  crude_mesh_draw_command                                  mesh_draw_commands[];
+  mat4                                                      pointlight_world_to_clip[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=12) readonly buffer ShadowCameraSpheres
+layout(set=CRUDE_MATERIAL_SET, binding=12) readonly buffer MeshletDrawCommands
 {
-  vec4                                                     shadow_camera_spheres[];
+  uvec4                                                    pointshadow_meshlet_draw_commands[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=13) readonly buffer ShadowViews
+layout(set=CRUDE_MATERIAL_SET, binding=13) readonly buffer MeshletInstances
 {
-  mat4                                                      shadow_world_to_view[];
+  uvec2                                                    meshletes_instances[];
 };
+
 layout(push_constant) uniform PushConstants
 {
   uint                                                     command_read_offset;
@@ -91,7 +79,7 @@ void main()
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
     
-    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * shadow_world_to_view[ layer_index ];
+    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * pointlight_world_to_clip[ layer_index ];
   }
 
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
