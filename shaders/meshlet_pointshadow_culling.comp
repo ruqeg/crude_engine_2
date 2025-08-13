@@ -61,7 +61,7 @@ void main()
   const bool mesh_intersects_sphere = crude_sphere_intersect( mesh_world_bounding_center.xyz, mesh_radius, light.world_position, light.radius );
   if (!mesh_intersects_sphere)
   {
-    return;
+  //  return;
   }
 
   for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
@@ -70,7 +70,7 @@ void main()
     float meshlet_radius = meshlets[ meshlet_index ].radius * scale * 1.1;
     vec4 meshlet_world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
 
-    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
+    if ( true )// crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
     {
       uint offset = atomicAdd( pointshadow_meshletes_instances_count[ light_index ], 1 );
       meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );

@@ -1718,7 +1718,7 @@ crude_gfx_create_pipeline
     vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
     vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     vk_rasterizer.depthClampEnable = VK_FALSE;
-    vk_rasterizer.rasterizerDiscardEnable = creation->render_pass_output.num_color_formats ? VK_FALSE : VK_TRUE;
+    vk_rasterizer.rasterizerDiscardEnable = VK_FALSE;
     vk_rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     vk_rasterizer.cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization.cull_mode );
     vk_rasterizer.frontFace = creation->rasterization.front;
@@ -3467,7 +3467,7 @@ vk_create_texture_
 
     if ( crude_gfx_has_depth_or_stencil( creation->format ) )
     {
-      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
     else
     {

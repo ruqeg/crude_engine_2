@@ -24,7 +24,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer ShadowCameraSpheres
   vec4                                                     pointlight_spheres[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11) readonly buffer ShadowViews
+layout(set=CRUDE_MATERIAL_SET, binding=11, row_major) readonly buffer ShadowViews
 {
   mat4                                                      pointlight_world_to_clip[];
 };
@@ -39,17 +39,34 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) readonly buffer MeshletInstances
   uvec2                                                    meshletes_instances[];
 };
 
-layout(push_constant) uniform PushConstants
-{
-  uint                                                     command_read_offset;
-};
-
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_instance_draw_indices[ 128 ];
   uint                                                     light_index_face_index;
 } shared_data;
+
+const vec3 plane_normals[ 12 ] =
+{
+  vec3( 0.00000000, -0.03477280, 0.99939519 ),
+  vec3( -0.47510946, -0.70667917, 0.52428567 ),
+  vec3( 0.47510946, -0.70667917, 0.52428567 ),
+  vec3( 0.00000000, -0.03477280, -0.99939519 ),
+  vec3( 0.47510946, -0.70667917, -0.52428567 ),
+  vec3( -0.47510946, -0.70667917, -0.52428567 ),
+  vec3( -0.52428567, 0.70667917, -0.47510946 ),
+  vec3( -0.52428567, 0.70667917, 0.47510946 ),
+  vec3( -0.99939519, 0.03477280, 0.00000000 ),
+  vec3( 0.52428567, 0.70667917, -0.47510946 ),
+  vec3( 0.99939519, 0.03477280, 0.00000000 ),
+  vec3( 0.52428567, 0.70667917, 0.47510946 )
+};
+
+float get_clip_distance( vec3 light_position, vec3 vertex_position, uint plane_index )
+{
+  vec3 normal = plane_normals[ plane_index ];
+  return ( dot( vertex_position, normal ) + dot( -normal, light_position ) );
+}
 
 void main()
 {
@@ -68,7 +85,7 @@ void main()
 
   uint light_index = shared_data.light_index_face_index >> 16;
   uint face_index = ( shared_data.light_index_face_index & 0xf );
-  int layer_index = int( CRUDE_CUBEMAP_COUNT * light_index + face_index );
+  int layer_index = int( 4 * light_index + face_index );
 
   mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
 
@@ -79,7 +96,17 @@ void main()
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
     
-    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * pointlight_world_to_clip[ layer_index ];
+    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * pointlight_world_to_clip[ 0 ];
+    
+    //float clip_distances[ 3 ];
+    //vec3 light_position = pointlight_spheres[ light_index ].xyz;
+    //for( uint plane_index = 0; plane_index < 3; plane_index++ )
+    //{
+    //  clip_distances[ plane_index ] = get_clip_distance( light_position, gl_MeshVerticesEXT[ i ].gl_Position.xyz, 3 * face_index + plane_index );
+    //}
+    //gl_MeshVerticesEXT[ i ].gl_ClipDistance[ 0 ] = clip_distances[ 0 ]; 
+    //gl_MeshVerticesEXT[ i ].gl_ClipDistance[ 1 ] = clip_distances[ 1 ];
+    //gl_MeshVerticesEXT[ i ].gl_ClipDistance[ 2 ] = clip_distances[ 2 ];
   }
 
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
@@ -87,9 +114,4 @@ void main()
     uint triangle_index = uint( 3 * i + triangles_offset );
     gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
   }
-
-  gl_MeshPrimitivesEXT[ task_index ].gl_Layer = layer_index;
-  gl_MeshPrimitivesEXT[ task_index + gl_WorkGroupSize.x ].gl_Layer = layer_index;
-  gl_MeshPrimitivesEXT[ task_index + 2 * gl_WorkGroupSize.x ].gl_Layer = layer_index;
-  gl_MeshPrimitivesEXT[ task_index + 3 * gl_WorkGroupSize.x ].gl_Layer = layer_index;
 }

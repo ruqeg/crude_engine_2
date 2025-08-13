@@ -184,7 +184,7 @@
         {
             "type": "texture",
             "external": true,
-            "name": "point_shadows_depth"
+            "name": "tetrahedron_shadow_texture"
         },
         {
           "type": "buffer",

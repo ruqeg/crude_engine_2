@@ -7,7 +7,6 @@
 #define CRUDE_LIGHT_TILE_SIZE                          ( 8 )
 #define CRUDE_LIGHT_WORDS_COUNT                        ( ( CRUDE_LIGHTS_MAX_COUNT + 31 ) / 32 )
 #define CRUDE_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
-#define CRUDE_CUBEMAP_COUNT                            ( 6 )
 
 struct crude_light
 {
