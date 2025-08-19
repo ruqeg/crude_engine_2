@@ -183,8 +183,8 @@
       "outputs": [
         {
             "type": "texture",
-            "external": true,
-            "name": "tetrahedron_shadow_texture"
+            "name": "tetrahedron_shadow_texture",
+            "external": true
         },
         {
           "type": "buffer",
@@ -214,6 +214,10 @@
         {
           "type": "buffer",
           "name": "POINTLIGHT_SHADOW_MARKER"
+        },
+        {
+          "type": "reference", 
+          "name": "tetrahedron_shadow_texture"
         }
       ],
       "outputs": [

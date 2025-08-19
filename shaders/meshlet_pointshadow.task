@@ -20,11 +20,6 @@ layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer ShadowCameraSpheres
   vec4                                                     pointlight_spheres[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major) readonly buffer ShadowViews
-{
-  mat4                                                      pointlight_world_to_clip[];
-};
-
 layout(set=CRUDE_MATERIAL_SET, binding=12) readonly buffer MeshletDrawCommands
 {
   uvec4                                                    pointshadow_meshlet_draw_commands[];

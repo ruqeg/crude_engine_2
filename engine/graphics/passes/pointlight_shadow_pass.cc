@@ -20,18 +20,12 @@ crude_gfx_pointlight_shadow_pass_initialize
   crude_gfx_texture_creation                               texture_creation;
   crude_gfx_framebuffer_creation                           framebuffer_creation;
   crude_gfx_render_pass_creation                           render_pass_creation;
+  crude_gfx_sampler_creation                               sampler_creation;
 
   pass->scene_renderer = scene_renderer;
     
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GFX_LIGHTS_MAX_COUNT * 4u;
-    buffer_creation.name = "pointlight_world_to_clip_sb";
-    pass->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
-  
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -119,7 +113,6 @@ crude_gfx_pointlight_shadow_pass_initialize
     crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointlight_spheres_sb[ i ], 10u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointlight_world_to_clip_sb[ i ], 11u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointshadow_meshlet_draw_commands_sb[ i ], 12u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshletes_instances_sb[ i ], 13u );
     
@@ -150,6 +143,20 @@ crude_gfx_pointlight_shadow_pass_initialize
   render_pass_creation.depth_stencil_format = VK_FORMAT_D16_UNORM;
   render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   pass->tetrahedron_render_pass_handle = crude_gfx_create_render_pass( scene_renderer->renderer->gpu, &render_pass_creation );
+
+  sampler_creation = crude_gfx_sampler_creation_empty();
+  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = VK_FILTER_LINEAR;
+  sampler_creation.min_filter = VK_FILTER_LINEAR;
+  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_creation.reduction_mode = VK_SAMPLER_REDUCTION_MODE_MAX;
+  sampler_creation.name = "tetrahedron_shadow_sampler";
+
+  pass->tetrahedron_shadow_sampler = crude_gfx_create_sampler( scene_renderer->renderer->gpu, &sampler_creation );
+  
+  crude_gfx_link_texture_sampler( scene_renderer->renderer->gpu, pass->tetrahedron_shadow_texture, pass->tetrahedron_shadow_sampler );
 }
 
 void
@@ -167,13 +174,13 @@ crude_gfx_pointlight_shadow_pass_deinitialize
     crude_gfx_destroy_descriptor_set( gpu, pass->pointshadow_culling_ds[ i ] );
     crude_gfx_destroy_descriptor_set( gpu, pass->pointshadow_commands_generation_ds[ i ] );
     crude_gfx_destroy_descriptor_set( gpu, pass->pointshadow_ds[ i ] );
-    crude_gfx_destroy_buffer( gpu, pass->pointlight_world_to_clip_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->pointlight_spheres_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->meshletes_instances_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ i ] );
   }
 
+  crude_gfx_destroy_sampler( gpu, pass->tetrahedron_shadow_sampler );
   crude_gfx_destroy_texture( gpu, pass->tetrahedron_shadow_texture );
   crude_gfx_destroy_framebuffer( gpu, pass->tetrahedron_framebuffer_handle );
   crude_gfx_destroy_render_pass( gpu, pass->tetrahedron_render_pass_handle );
@@ -249,14 +256,12 @@ crude_gfx_pointlight_shadow_pass_render
     XMFLOAT4X4                                            *pointlight_world_to_clip_mapped;
     crude_gfx_map_buffer_parameters                        cb_map;
     float32                                                fov0, fov1; 
-
-    crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
     
     fov0 = 143.98570868f + 1.99273682f;
     fov1 = 125.26438968f + 2.78596497f;
 
     cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    cb_map.buffer = pass->pointlight_world_to_clip_sb[ gpu->current_frame ];
+    cb_map.buffer = pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ];
     pointlight_world_to_clip_mapped = CRUDE_CAST( XMFLOAT4X4*, crude_gfx_map_buffer( gpu, &cb_map ) );
 
     cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -271,9 +276,11 @@ crude_gfx_pointlight_shadow_pass_render
       float32                                                tile_size, tile_position_x, tile_position_y;
       
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
-      view_to_faceed_view[ 0 ] = x_rot_matrix;
-      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
       y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 180.f ) );
+      z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 0.f ) );
+      view_to_faceed_view[ 0 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
+      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 0.f ) );
       z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.f ) );
       view_to_faceed_view[ 1 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
       y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 90.0f ) );
@@ -289,8 +296,8 @@ crude_gfx_pointlight_shadow_pass_render
       tile_position_y = 0.f;
 
       clip_to_face_clip[ 0 ] = XMMatrixSet(
-        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y - ( tile_size * 0.5f ), 0.f, 1.f
+        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size /** 0.5f*/, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y /*- ( tile_size * 0.5f )*/, 0.f, 1.f
       ) ;
       clip_to_face_clip[ 1 ] = XMMatrixSet(
         tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,
@@ -340,10 +347,14 @@ crude_gfx_pointlight_shadow_pass_render
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 1 ] );
         XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 3 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 3 ] ) );
       }
-      crude_gfx_unmap_buffer( gpu, pass->pointlight_world_to_clip_sb[ gpu->current_frame ] );
+      crude_gfx_unmap_buffer( gpu, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ] );
       crude_gfx_unmap_buffer( gpu, pass->pointlight_spheres_sb[ gpu->current_frame ] );
     }
+    
+    
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0u, 1u, true );
 
+    crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
     crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_pipeline );
 
     crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->pointshadow_ds[ gpu->current_frame ] );
@@ -354,6 +365,8 @@ crude_gfx_pointlight_shadow_pass_render
       4u * CRUDE_GFX_LIGHTS_MAX_COUNT, sizeof( XMUINT4 ) );
 
     crude_gfx_cmd_end_render_pass( primary_cmd );
+
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, true );
   }
 }
 

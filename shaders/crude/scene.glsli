@@ -53,6 +53,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=0, row_major, std140) uniform CrudeSceneC
   uint                                                     scene_flags;
   uint                                                     mesh_instances_count;
   uint                                                     active_lights_count;
+  uint                                                     tiled_shadowmap_texture_index;
 };
 
 layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer CrudeMeshDraws

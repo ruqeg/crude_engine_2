@@ -36,6 +36,11 @@ layout(set=CRUDE_MATERIAL_SET, binding=23) readonly buffer LightIndices
   uint                                                     lights_indices[];
 };
 
+layout(set=CRUDE_MATERIAL_SET, binding=24, row_major) readonly buffer ShadowViews
+{
+  mat4                                                      pointlight_world_to_clip[];
+};
+
 vec3 crude_calculate_point_light_contribution( crude_light light, vec3 albedo, vec3 normal, vec3 world_position, vec3 view_position )
 {
   vec3 light_to_pos = light.world_position - world_position;

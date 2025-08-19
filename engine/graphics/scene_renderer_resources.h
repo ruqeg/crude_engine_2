@@ -50,6 +50,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   uint32                                                   flags;
   uint32                                                   mesh_instances_count;
   uint32                                                   active_lights_count;
+  uint32                                                   tiled_shadowmap_texture_index;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
