@@ -127,8 +127,8 @@ crude_gfx_pointlight_shadow_pass_initialize
   }
 
   texture_creation = crude_gfx_texture_creation_empty( );
-  texture_creation.width = 512;
-  texture_creation.height = 512;
+  texture_creation.width = 8192;
+  texture_creation.height = 8192;
   texture_creation.depth = 1u;
   texture_creation.format = VK_FORMAT_D16_UNORM;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
@@ -139,8 +139,8 @@ crude_gfx_pointlight_shadow_pass_initialize
   framebuffer_creation = crude_gfx_framebuffer_creation_empty( );
   framebuffer_creation.depth_stencil_texture = pass->tetrahedron_shadow_texture;
   framebuffer_creation.name = "tetrahedron_framebuffer";
-  framebuffer_creation.width = 512;
-  framebuffer_creation.height = 512;
+  framebuffer_creation.width = 8192;
+  framebuffer_creation.height = 8192;
   framebuffer_creation.manual_resources_free = true;
   pass->tetrahedron_framebuffer_handle = crude_gfx_create_framebuffer( scene_renderer->renderer->gpu, &framebuffer_creation );
 
@@ -202,11 +202,11 @@ crude_gfx_pointlight_shadow_pass_render
   pointshadow_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow" )->pipeline;
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->meshletes_instances_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_culling_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->pointshadow_culling_ds[ gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count * CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->meshletes_instances_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
@@ -243,6 +243,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_cmd_set_viewport( primary_cmd, &viewport );
   }
   
+  /* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi, mixed with http://www.hd-prg.com/tileBasedShadows.html */
   {
     XMFLOAT4                                              *pointlight_spheres_mapped;
     XMFLOAT4X4                                            *pointlight_world_to_clip_mapped;
@@ -250,9 +251,9 @@ crude_gfx_pointlight_shadow_pass_render
     float32                                                fov0, fov1; 
 
     crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
-
-    fov0 = 143.98570868f;
-    fov1 = 125.26438968f;
+    
+    fov0 = 143.98570868f + 1.99273682f;
+    fov1 = 125.26438968f + 2.78596497f;
 
     cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     cb_map.buffer = pass->pointlight_world_to_clip_sb[ gpu->current_frame ];
@@ -266,41 +267,42 @@ crude_gfx_pointlight_shadow_pass_render
     {
       XMMATRIX                                               clip_to_face_clip[ 4 ];
       XMMATRIX                                               view_to_faceed_view[ 4 ];
-      XMMATRIX                                               rotation_matrix_x, rotation_matrix_y, rotation_matrix_z;
+      XMMATRIX                                               x_rot_matrix, y_rot_matrix, z_rot_matrix;
       float32                                                tile_size, tile_position_x, tile_position_y;
       
-      view_to_faceed_view[ 0 ] = XMMatrixMultiply( XMMatrixRotationX( 27.36780516f ), XMMatrixRotationY( XMConvertToRadians( 180.f ) ) );
-      view_to_faceed_view[ 1 ] = XMMatrixMultiply( XMMatrixRotationX( 27.36780516f ), XMMatrixRotationY( XMConvertToRadians( 90.f ) ) );
-      view_to_faceed_view[ 2 ] = XMMatrixMultiply( XMMatrixRotationX( -27.36780516f ), XMMatrixRotationY( XMConvertToRadians( 270.f ) ) );
-      view_to_faceed_view[ 3 ] = XMMatrixMultiply( XMMatrixMultiply( XMMatrixRotationX( -27.36780516f ), XMMatrixRotationY( XMConvertToRadians( 90.f ) ) ), XMMatrixRotationZ( XMConvertToRadians( 90.f ) ) );
+      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
+      view_to_faceed_view[ 0 ] = x_rot_matrix;
+      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 180.f ) );
+      z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.f ) );
+      view_to_faceed_view[ 1 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 90.0f ) );
+      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( 27.36780516f ) );
+      view_to_faceed_view[ 2 ] = XMMatrixMultiply( y_rot_matrix, x_rot_matrix ); /* TODO why the hell is it y->x and not x->y */
+      x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( 27.36780516f ) );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 270.0f ) );
+      z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.0f ) );
+      view_to_faceed_view[ 3 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix ); /* same question here */
 
       tile_size = 1.f;
       tile_position_x = 0.f;
       tile_position_y = 0.f;
 
       clip_to_face_clip[ 0 ] = XMMatrixSet(
-        tile_size,          0.f ,                                   0.f,          0.f,
-        0.f,                tile_size * 0.5f,                       0.f,          0.f,
-        0.f,                0.f,                                    1.f,          0.f,
-        tile_position_x,    tile_position_y - ( tile_size * 0.5f ), 0.f,          1.f
-      );
+        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y - ( tile_size * 0.5f ), 0.f, 1.f
+      ) ;
       clip_to_face_clip[ 1 ] = XMMatrixSet(
-        tile_size * 0.5f,                       0.f,                0.f,          0.f,
-        0.f,                                    tile_size,          0.f,          0.f,
-        0.f,                                    0.f,                1.f,          0.f,
-        tile_position_x + ( tile_size * 0.5f ), tile_position_y,    0.f,          1.f
+        tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x + ( tile_size * 0.5f ), tile_position_y, 0.f, 1.f
       );
       clip_to_face_clip[ 2 ] = XMMatrixSet(
-        tile_size,       0.f,                                       0.f,          0.f, 
-        0.f,             tile_size * 0.5f,                          0.f,          0.f, 
-        0.f,             0.f,                                       1.f,          0.f,
-        tile_position_x, tile_position_y + ( tile_size * .5f ),     0.f,          1.f
+        tile_size, 0.f, 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y + ( tile_size * 0.5f ), 0.f, 1.f
       );
       clip_to_face_clip[ 3 ] = XMMatrixSet(
-        tile_size * 0.5f,                         0.f,              0.f,          0.f,
-        0.f,                                      tile_size,        0.f,          0.f,
-        0.f,                                      0.f,              0.f,          1.f,
-        tile_position_x - ( tile_size * 0.5f ),   tile_position_y,  0.f,          1.f
+        tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x - ( tile_size * 0.5f ), tile_position_y, 0.f, 1.f
       );
 
       for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ); ++i )
@@ -317,16 +319,14 @@ crude_gfx_pointlight_shadow_pass_render
 
         XMStoreFloat4( &pointlight_spheres_mapped[ i ], XMVectorSet( light_transform->translation.x, light_transform->translation.y, light_transform->translation.z, light->radius ) );
    
-        view_to_clip[ 0 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov1 ), fov0 / fov1, 0.01f, light->radius );
-        view_to_clip[ 1 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov0 ), fov1 / fov0, 0.01f, light->radius );
+        view_to_clip[ 0 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov1 ), tanf( XMConvertToRadians( fov0 ) * 0.5f ) / tanf( XMConvertToRadians( fov1 ) * 0.5f ), 0.2f, light->radius );
+        view_to_clip[ 1 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov0 ), tanf( XMConvertToRadians( fov1 ) * 0.5f ) / tanf( XMConvertToRadians( fov0 ) * 0.5f ), 0.2f, light->radius );
 
         world_to_view = XMMatrixTranslation( -1.f * light_transform->translation.x, -1.f * light_transform->translation.y, -1.f * light_transform->translation.z );
 
         world_to_faced_view = XMMatrixMultiply( world_to_view, view_to_faceed_view[ 0 ] );
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 0 ] );
         XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 0 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 0 ] ) );
-        
-        XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 0 ], XMMatrixMultiply( world_to_view, view_to_clip[ 0 ] ) );
 
         world_to_faced_view = XMMatrixMultiply( world_to_view, view_to_faceed_view[ 1 ] );
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 1 ] );
@@ -335,7 +335,7 @@ crude_gfx_pointlight_shadow_pass_render
         world_to_faced_view = XMMatrixMultiply( world_to_view, view_to_faceed_view[ 2 ] );
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 0 ] );
         XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 2 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 2 ] ) );
-        
+ 
         world_to_faced_view = XMMatrixMultiply( world_to_view, view_to_faceed_view[ 3 ] );
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 1 ] );
         XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 3 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 3 ] ) );
@@ -351,7 +351,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_cmd_draw_mesh_task_indirect_count( primary_cmd,
       pass->pointshadow_meshlet_draw_commands_sb[ gpu->current_frame ], 0u,
       pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ], sizeof( uint32 ) * CRUDE_GFX_LIGHTS_MAX_COUNT,
-      1u, sizeof( XMUINT4 ) );
+      4u * CRUDE_GFX_LIGHTS_MAX_COUNT, sizeof( XMUINT4 ) );
 
     crude_gfx_cmd_end_render_pass( primary_cmd );
   }

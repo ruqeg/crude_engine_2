@@ -55,6 +55,13 @@ void main()
   uint global_meshlet_index = meshletes_instances[ meshlet_index_read_offset + meshlet_index ].y;
   uint mesh_instance_index = meshletes_instances[ meshlet_index_read_offset + meshlet_index ].x;
 
+  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_index ].mesh_draw_index;
+
+  if ( global_meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
+  {
+    return;
+  }
+
   uint face_index = ( packed_light_index_face_index & 0xf );
 
   mat4 model_to_world = mesh_instance_draws[ mesh_instance_index ].model_to_world;
