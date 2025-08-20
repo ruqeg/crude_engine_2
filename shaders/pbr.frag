@@ -119,7 +119,7 @@ void main()
     {
       color = vec4( 0, 0, 1, 1 );
     }
-    color = vec4( shadow.xxx, 1.f );vec4( shadow.xxx, 1.f ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
+    color = vec4( shadow.xxx, 1.0 ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
     //else
     //{
     //  color = vec4( 0.f, 0.4, 0.4, 1.f );
