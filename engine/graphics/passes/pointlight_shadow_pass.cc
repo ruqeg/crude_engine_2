@@ -276,28 +276,28 @@ crude_gfx_pointlight_shadow_pass_render
       float32                                                tile_size, tile_position_x, tile_position_y;
       
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
-      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 180.f ) );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 0.f ) );
       z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 0.f ) );
       view_to_faceed_view[ 0 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( -27.36780516f ) );
-      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 0.f ) );
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 180.f ) );
       z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.f ) );
       view_to_faceed_view[ 1 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
       y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 90.0f ) );
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( 27.36780516f ) );
-      view_to_faceed_view[ 2 ] = XMMatrixMultiply( y_rot_matrix, x_rot_matrix ); /* TODO why the hell is it y->x and not x->y */
+      view_to_faceed_view[ 2 ] = XMMatrixMultiply( y_rot_matrix, x_rot_matrix );
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( 27.36780516f ) );
-      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 270.0f ) );
-      z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.0f ) );
-      view_to_faceed_view[ 3 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix ); /* same question here */
+      y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 270.f ) );
+      z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.f ) );
+      view_to_faceed_view[ 3 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
 
       tile_size = 1.f;
       tile_position_x = 0.f;
       tile_position_y = 0.f;
 
       clip_to_face_clip[ 0 ] = XMMatrixSet(
-        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size /** 0.5f*/, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y /*- ( tile_size * 0.5f )*/, 0.f, 1.f
+        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y - ( tile_size * 0.5f ), 0.f, 1.f
       ) ;
       clip_to_face_clip[ 1 ] = XMMatrixSet(
         tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,

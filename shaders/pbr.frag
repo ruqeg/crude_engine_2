@@ -51,19 +51,6 @@ uint get_tetrahedron_face_index( vec3 dir )
   return index;
 }
 
-float vector_to_depth_value( vec3 direction, float radius, float rcp_n_minus_f )
-{
-  vec3 absolute_vec = abs( direction );
-  float local_z_component = max( absolute_vec.x, max( absolute_vec.y, absolute_vec.z ) );
-
-  float f = radius;
-  float n = 0.01f;
-  /* Original value, for reference. */
-  /* const float normalized_z_component = -(f / (n - f) - (n * f) / (n - f) / local_z_component); */
-  float normalized_z_component = ( n * f * rcp_n_minus_f ) / local_z_component - f * rcp_n_minus_f;
-  return normalized_z_component;
-}
-
 void main()
 { 
   float depth = texelFetch( global_textures[ nonuniformEXT( textures.w )], ivec2( gl_FragCoord.xy ), 0 ).r;
@@ -80,18 +67,19 @@ void main()
   {
     crude_light light = lights[ 0 ];
     vec3 shadow_position_to_light = light.world_position - pixel_world_position.xyz;
-    uint face_index = get_tetrahedron_face_index( normalize( shadow_position_to_light ) );
+    uint face_index = get_tetrahedron_face_index( normalize( -shadow_position_to_light ) );
     vec4 proj_pos = vec4( pixel_world_position.xyz, 1.0 ) * pointlight_world_to_clip[ 0 * 4 + face_index ];
     proj_pos.xyz /= proj_pos.w;
-    proj_pos.xyz = ( proj_pos.xyz * 0.5 ) + 0.5;
+    
+    vec2 proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
+    proj_uv.y = 1.f - proj_uv.y;
 
     float shadow = 0.f;
     
-    float current_depth = vector_to_depth_value( -shadow_position_to_light, light.radius, 1.0f / ( 0.01f - light.radius ) );
     float bias = 0.0001f;
-
-    float closest_depth = texture( global_textures[ nonuniformEXT( tiled_shadowmap_texture_index ) ], proj_pos.xy ).x;
-    shadow += ( current_depth - bias ) < closest_depth ? 1 : 0;
+    float current_depth = proj_pos.z;
+    float closest_depth = texture( global_textures[ nonuniformEXT( tiled_shadowmap_texture_index ) ], proj_uv ).x;
+    shadow += current_depth - bias < closest_depth ? 1 : 0;
 //#if 1
 //    const uint samples = 4;
 //    float shadow = 0;
@@ -131,7 +119,11 @@ void main()
     {
       color = vec4( 0, 0, 1, 1 );
     }
-    //color = vec4( closest_depth.xxx, 1.f );vec4( shadow.xxx, 1.f ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
+    color = vec4( shadow.xxx, 1.f );vec4( shadow.xxx, 1.f ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
+    //else
+    //{
+    //  color = vec4( 0.f, 0.4, 0.4, 1.f );
+    //}
   }
   out_color = color;
 }
