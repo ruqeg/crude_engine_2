@@ -115,13 +115,14 @@ crude_gfx_pointlight_shadow_pass_initialize
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointlight_spheres_sb[ i ], 10u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointshadow_meshlet_draw_commands_sb[ i ], 12u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshletes_instances_sb[ i ], 13u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointshadow_meshletes_instances_count_sb[ i ], 14u );
     
     pass->pointshadow_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
   }
 
   texture_creation = crude_gfx_texture_creation_empty( );
-  texture_creation.width = 8192;
-  texture_creation.height = 8192;
+  texture_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
+  texture_creation.height = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
   texture_creation.depth = 1u;
   texture_creation.format = VK_FORMAT_D16_UNORM;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
@@ -132,8 +133,8 @@ crude_gfx_pointlight_shadow_pass_initialize
   framebuffer_creation = crude_gfx_framebuffer_creation_empty( );
   framebuffer_creation.depth_stencil_texture = pass->tetrahedron_shadow_texture;
   framebuffer_creation.name = "tetrahedron_framebuffer";
-  framebuffer_creation.width = 8192;
-  framebuffer_creation.height = 8192;
+  framebuffer_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
+  framebuffer_creation.height = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
   framebuffer_creation.manual_resources_free = true;
   pass->tetrahedron_framebuffer_handle = crude_gfx_create_framebuffer( scene_renderer->renderer->gpu, &framebuffer_creation );
 
@@ -350,8 +351,7 @@ crude_gfx_pointlight_shadow_pass_render
       crude_gfx_unmap_buffer( gpu, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ] );
       crude_gfx_unmap_buffer( gpu, pass->pointlight_spheres_sb[ gpu->current_frame ] );
     }
-    
-    
+
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0u, 1u, true );
 
     crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );

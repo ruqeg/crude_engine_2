@@ -3,6 +3,9 @@
 #include <graphics/render_graph.h>
 #include <graphics/scene_renderer_resources.h>
 
+#define CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH 8192
+#define CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT 8192
+
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_pointlight_shadow_pass

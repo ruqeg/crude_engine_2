@@ -50,6 +50,28 @@ uint get_tetrahedron_face_index( vec3 dir )
 
   return index;
 }
+#define NUM_SAMPLES 16
+#define FILTER_RADIUS 1.5
+
+const vec2 filter_kernel[NUM_SAMPLES] =
+{
+  vec2(-0.94201624, -0.39906216),
+  vec2(0.94558609, -0.76890725),
+  vec2(-0.094184101, -0.92938870),
+  vec2(0.34495938, 0.29387760),
+  vec2(-0.91588581, 0.45771432),
+  vec2(-0.81544232, -0.87912464),
+  vec2(-0.38277543, 0.27676845),
+  vec2(0.97484398, 0.75648379),
+  vec2(0.44323325, -0.97511554),
+  vec2(0.53742981, -0.47373420),
+  vec2(-0.26496911, -0.41893023),
+  vec2(0.79197514, 0.19090188),
+  vec2(-0.24188840, 0.99706507),
+  vec2(-0.81409955, 0.91437590),
+  vec2(0.19984126, 0.78641367),
+  vec2(0.14383161, -0.14100790)
+};
 
 void main()
 { 
@@ -74,56 +96,22 @@ void main()
     vec2 proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
     proj_uv.y = 1.f - proj_uv.y;
 
-    float shadow = 0.f;
-    
-    float bias = 0.0001f;
+    float bias = 0.01f;
     float current_depth = proj_pos.z;
-    float closest_depth = texture( global_textures[ nonuniformEXT( tiled_shadowmap_texture_index ) ], proj_uv ).x;
-    shadow += current_depth - bias < closest_depth ? 1 : 0;
-//#if 1
-//    const uint samples = 4;
-//    float shadow = 0;
-//    for(uint i = 0; i < samples; ++i) {
-//
-//        vec2 disk_offset = vogel_disk_offset(i, 4, 0.1f);
-//        vec3 sampling_position = shadow_position_to_light + disk_offset.xyx * 0.0005f;
-//        const float closest_depth = texture(global_textures_cubemaps_array[nonuniformEXT(cubemap_shadows_index)], vec4(sampling_position, shadow_light_index)).r;
-//        shadow += current_depth - bias < closest_depth ? 1 : 0;
-//    }
-//
-//    shadow /= samples;
+    
+    vec2 filter_radius = inv_shadow_map_size.xy * FILTER_RADIUS; 
+    float shadow = 0;
+    for(uint i = 0; i < NUM_SAMPLES; ++i)
+    {
+      vec2 texcoords;
+      texcoords.xy = proj_uv.xy + ( filter_kernel[i] * filter_radius );
+      float closest_depth = texture( global_textures[ nonuniformEXT( tiled_shadowmap_texture_index ) ], texcoords ).r;
+      shadow += current_depth - bias < closest_depth ? 1 : 0;
+    }
 
+    shadow /= NUM_SAMPLES;
 
-    //const vec2 filterRadius = customUB.invShadowMapSize.xy*FILTER_RADIUS;  
-    //for(uint i=0; i<NUM_SAMPLES; i++)
-    //{
-    //  vec3 texCoords;
-    //  texCoords.xy = result.xy+(filterKernel[i]*filterRadius);
-    //  texCoords.z = result.z;
-    //  shadowTerm += texture(shadowMap, texCoords);
-    //}
-    //shadowTerm /= NUM_SAMPLES;
-    if ( face_index == 0 )
-    {
-      color = vec4( 1, 1, 0, 1 );
-    }
-    if ( face_index == 1 )
-    {
-      color = vec4( 1, 0, 0, 1 );
-    }
-    if ( face_index == 2 )
-    {
-      color = vec4( 0, 1, 0, 1 );
-    }
-    if ( face_index == 3 )
-    {
-      color = vec4( 0, 0, 1, 1 );
-    }
     color = vec4( shadow.xxx, 1.0 ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
-    //else
-    //{
-    //  color = vec4( 0.f, 0.4, 0.4, 1.f );
-    //}
   }
   out_color = color;
 }

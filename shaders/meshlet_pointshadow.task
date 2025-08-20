@@ -30,6 +30,11 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) readonly buffer MeshletInstances
   uvec2                                                    meshletes_instances[];
 };
 
+layout(set=CRUDE_MATERIAL_SET, binding=14) buffer PointLightMeshletCount
+{
+  uint                                                     pointshadow_meshletes_instances_count[];
+};
+
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
@@ -39,30 +44,27 @@ taskPayloadSharedEXT struct
 
 void main()
 {
-  uint task_index = gl_LocalInvocationID.x;
-
-  uint meshlet_group_index = gl_WorkGroupID.x;
+  uint meshlete_instance_index = gl_GlobalInvocationID.x;
 
   uint packed_light_index_face_index = pointshadow_meshlet_draw_commands[ gl_DrawIDARB ].w;
-  uint meshlet_index = meshlet_group_index * gl_WorkGroupSize.x + task_index;
   uint light_index = packed_light_index_face_index >> 16;
-  uint meshlet_index_read_offset = light_index * CRUDE_MAX_MESHLETS_PER_LIGHT;
-  uint global_meshlet_index = meshletes_instances[ meshlet_index_read_offset + meshlet_index ].y;
-  uint mesh_instance_index = meshletes_instances[ meshlet_index_read_offset + meshlet_index ].x;
 
-  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_index ].mesh_draw_index;
-
-  if ( global_meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
+  if ( meshlete_instance_index >= pointshadow_meshletes_instances_count[ light_index ] )
   {
     return;
   }
+
+  uvec2 packed_meshlet_instance = meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + meshlete_instance_index ];
+
+  uint mesh_instance_index = packed_meshlet_instance.x;
+  uint global_meshlet_index = packed_meshlet_instance.y;
 
   uint face_index = ( packed_light_index_face_index & 0xf );
 
   mat4 model_to_world = mesh_instance_draws[ mesh_instance_index ].model_to_world;
   vec4 world_center = vec4( meshlets[ global_meshlet_index ].center, 1 ) * model_to_world;
   float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
-  float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+  float radius = meshlets[ global_meshlet_index ].radius * scale * 1.1;
   vec3 cone_axis = vec3(
     int( meshlets[ global_meshlet_index ].cone_axis[ 0 ] ) / 127.f,
     int( meshlets[ global_meshlet_index ].cone_axis[ 1 ] ) / 127.f,
@@ -113,7 +115,7 @@ void main()
 
   shared_data.light_index_face_index = packed_light_index_face_index;
 
-  if ( task_index == 0 )
+  if ( gl_LocalInvocationID.x == 0 )
   {
     EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
   }

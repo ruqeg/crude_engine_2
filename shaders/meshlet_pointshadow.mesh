@@ -34,6 +34,11 @@ layout(set=CRUDE_MATERIAL_SET, binding=13) readonly buffer MeshletInstances
   uvec2                                                    meshletes_instances[];
 };
 
+layout(set=CRUDE_MATERIAL_SET, binding=14) buffer PointLightMeshletCount
+{
+  uint                                                     pointshadow_meshletes_instances_count[];
+};
+
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
@@ -61,7 +66,6 @@ const vec3 plane_normals[ 12 ] =
 float get_clip_distance( vec3 light_position, vec3 vertex_position, uint plane_index )
 {
   vec3 normal = plane_normals[ plane_index ];
-  /* return dot( vertex_position - light_position, normal ); */
   return dot( vertex_position, normal ) + dot( light_position, -normal );
 }
 
