@@ -40,6 +40,9 @@ typedef struct crude_devgui
   crude_devgui_viewport                                    dev_viewport;
   crude_devgui_render_graph                                dev_render_graph;
   crude_gfx_renderer                                      *renderer;
+  crude_gfx_render_graph                                  *render_graph;
+  crude_stack_allocator                                    temporary_allocator;
+  bool                                                     should_reload_shaders;
 } crude_devgui;
 
 /*********
@@ -49,7 +52,14 @@ CRUDE_API void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_gfx_renderer                                 *renderer
+);
+
+CRUDE_API void
+crude_devgui_deinitialize
+(
+  _In_ crude_devgui                                       *devgui
 );
 
 CRUDE_API void
@@ -65,6 +75,12 @@ crude_devgui_handle_input
 (
   _In_ crude_devgui                                       *devgui,
   _In_ crude_input                                        *input
+);
+
+CRUDE_API void
+crude_devgui_post_graphics_update
+(
+  _In_ crude_devgui                                       *devgui
 );
 
 /******************************

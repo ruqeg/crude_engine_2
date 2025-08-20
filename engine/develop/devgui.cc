@@ -4,6 +4,7 @@
 #include <core/ecs.h>
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
+#include <graphics/renderer_resources_loader.h>
 
 #include <develop/devgui.h>
 
@@ -15,9 +16,14 @@ crude_devgui_reload_techniques_
 {
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->renderer->resource_cache.techniques ); ++i )
   {
-    crude_gfx_renderer_technique *technique = devgui->renderer->resource_cache.techniques[ i ].value;
+    if ( !devgui->renderer->resource_cache.techniques[ i ].key )
+    {
+      continue;
+    }
+    
+    crude_gfx_renderer_technique *technique = devgui->renderer->resource_cache.techniques[ i ].value; 
     crude_gfx_renderer_destroy_technique( devgui->renderer, technique );
-    crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
+    crude_gfx_renderer_technique_load_from_file( technique->json_name, devgui->renderer, devgui->render_graph, &devgui->temporary_allocator );
   }
 }
 
@@ -25,14 +31,28 @@ void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_gfx_renderer                                 *renderer
 )
 {
+  devgui->should_reload_shaders = false;
   devgui->menubar_enabled = false;
+  devgui->renderer = renderer;
+  devgui->render_graph = render_graph;
+  crude_stack_allocator_initialize( &devgui->temporary_allocator, CRUDE_RMEGA( 32 ), "devgui_temp_allocator" );
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, render_graph->builder->gpu );
   crude_devgui_render_graph_initialize( &devgui->dev_render_graph, render_graph );
+}
+
+void
+crude_devgui_deinitialize
+(
+  _In_ crude_devgui                                       *devgui
+)
+{
+  crude_stack_allocator_deinitialize( &devgui->temporary_allocator );
 }
 
 void
@@ -47,8 +67,9 @@ crude_devgui_draw
   {
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
-      if ( ImGui::MenuItem( "Reload shader" ) )
+      if ( ImGui::MenuItem( "Reload Shaders" ) )
       {
+        devgui->should_reload_shaders = true;
       }
       if ( ImGui::MenuItem( "Render Graph" ) )
       {
@@ -89,6 +110,19 @@ crude_devgui_handle_input
     devgui->menubar_enabled = !devgui->menubar_enabled;
   }
   crude_devgui_viewport_input( &devgui->dev_viewport, input );
+}
+
+void
+crude_devgui_post_graphics_update
+(
+  _In_ crude_devgui                                       *devgui
+)
+{
+  if ( devgui->should_reload_shaders )
+  {
+    crude_devgui_reload_techniques_( devgui );
+    devgui->should_reload_shaders = false;
+  }
 }
 
 /******************************

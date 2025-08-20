@@ -119,7 +119,7 @@ crude_paprika_initialize
     } );
   }
   
-  crude_devgui_initialize( &paprika->devgui, &paprika->graphics.render_graph );
+  crude_devgui_initialize( &paprika->devgui, &paprika->graphics.render_graph, &paprika->graphics.renderer );
   
   CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_update_system_, EcsOnUpdate, paprika, {
     { .id = ecs_id( crude_input ) },
@@ -289,6 +289,8 @@ paprika_graphics_system_
     crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_render_graph_builder_access_resource_by_name( paprika->graphics.scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
     crude_gfx_present( &paprika->graphics.gpu, final_render_texture );
   }
+
+  crude_devgui_post_graphics_update( &paprika->devgui );
 }
 
 void
