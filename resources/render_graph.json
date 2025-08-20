@@ -248,7 +248,7 @@
         },
         {
           "type": "buffer",
-          "name": "DEBUG_PASS_MARKER"
+          "name": "IMGUI_PASS_MARKER"
         }
       ]
     },
@@ -256,12 +256,8 @@
       "name": "imgui_pass",
       "inputs": [
         {
-          "type": "texture",
-          "name": "pbr"
-        },
-        {
           "type": "buffer",
-          "name": "DEBUG_PASS_MARKER"
+          "name": "IMGUI_PASS_MARKER"
         }
       ],
       "outputs": [

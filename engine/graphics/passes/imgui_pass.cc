@@ -108,6 +108,44 @@ crude_gfx_imgui_pass_deinitialize
 }
 
 void
+crude_gfx_imgui_pass_pre_render
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  crude_gfx_imgui_pass                                    *pass;
+  crude_gfx_device                                        *gpu;
+  ImDrawData                                              *imgui_draw_data;
+  int32                                                    draw_counts;
+
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
+  
+  gpu = pass->scene_renderer->renderer->gpu;
+  
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
+  
+  ImGui::Render();
+  imgui_draw_data = ImGui::GetDrawData();
+  
+  draw_counts = imgui_draw_data->CmdListsCount;
+  for ( int32 n = 0; n < draw_counts; ++n )
+  {
+    ImDrawList const *cmd_list = imgui_draw_data->CmdLists[ n ];
+    for ( int32 cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; ++cmd_i )
+    {
+      const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[ cmd_i ];
+      crude_gfx_texture_handle texture_handle = *( crude_gfx_texture_handle* )( pcmd->TexRef.GetTexID() );
+      if ( texture_handle.index != pass->font_texture.index )
+      {
+        crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
+        crude_gfx_cmd_add_image_barrier( primary_cmd, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
+      }
+    }
+  }
+}
+
+void
 crude_gfx_imgui_pass_render
 (
   _In_ void                                               *ctx,
@@ -121,7 +159,7 @@ crude_gfx_imgui_pass_render
   ImDrawData                                              *imgui_draw_data;
   float32                                                 *cb_data;
   crude_gfx_pipeline_handle                                imgui_pipeline;
-  crude_gfx_viewport                                       viewport;
+  crude_gfx_viewport                                       dev_viewport;
   crude_gfx_map_buffer_parameters                          map_parameters;
   XMFLOAT4X4                                               ortho_projection;
   ImVec2                                                   clip_off, clip_scale;
@@ -135,7 +173,6 @@ crude_gfx_imgui_pass_render
   gpu = pass->scene_renderer->renderer->gpu;
 
   ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
-  ImGui::Render();
   
   imgui_draw_data = ImGui::GetDrawData();
   
@@ -197,17 +234,17 @@ crude_gfx_imgui_pass_render
     crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
   }
   
-  // TODO: Add the sorting.
+  // TODO add the sorting
   imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
   crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->vertex_buffer, 0u, 0u );
   crude_gfx_cmd_bind_index_buffer( primary_cmd, pass->index_buffer, 0u );
   
-  viewport = { 0, 0, ( uint16 )framebuffer_width, ( uint16 )framebuffer_height, 0.0f, 1.0f };
-  crude_gfx_cmd_set_viewport( primary_cmd, &viewport ); 
+  dev_viewport = { 0, 0, ( uint16 )framebuffer_width, ( uint16 )framebuffer_height, 0.0f, 1.0f };
+  crude_gfx_cmd_set_viewport( primary_cmd, &dev_viewport ); 
   
-  /* Setup viewport, orthographic projection matrix */
-  /* Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps. */
+  /* Setup dev_viewport, orthographic projection matrix */
+  /* Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single dev_viewport apps. */
   l = imgui_draw_data->DisplayPos.x;
   r = imgui_draw_data->DisplayPos.x + imgui_draw_data->DisplaySize.x;
   t = imgui_draw_data->DisplayPos.y;
@@ -293,5 +330,6 @@ crude_gfx_imgui_pass_pack
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
   container.render = crude_gfx_imgui_pass_render;
+  container.pre_render = crude_gfx_imgui_pass_pre_render;
   return container;
 }

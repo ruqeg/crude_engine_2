@@ -1,13 +1,13 @@
 #pragma once
 
 #include <imgui/imgui.h>
-#include <ImGuizmo.h>
 
 #include <engine.h>
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>
 #include <core/ecs.h>
 #include <platform/platform_components.h>
+#include <develop/devgui.h>
 
 typedef struct crude_paprika_graphics
 {
@@ -32,19 +32,11 @@ typedef struct crude_paprika
   void                                                    *imgui_context;
   bool                                                     working;
   crude_mouse_input                                        wrapwnd;
-  
-  uint32                                                   viewport_bindless_texture;
-
-  uint32                                                   selected_node_index;
-  crude_entity                                             selected_node;
-  ImGuizmo::OPERATION                                      gizmo_operation;
-  ImGuizmo::MODE                                           gizmo_mode;
 
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
 
-  bool                                                     debug_camera_culling;
-  bool                                                     debug_camera_view;
+  crude_devgui                                             devgui;
 } crude_paprika;
 
 CRUDE_API void

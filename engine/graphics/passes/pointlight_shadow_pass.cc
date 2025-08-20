@@ -230,7 +230,7 @@ crude_gfx_pointlight_shadow_pass_render
   
   {
     crude_gfx_rect2d_int                                   scissor;
-    crude_gfx_viewport                                     viewport;
+    crude_gfx_viewport                                     dev_viewport;
     
     crude_gfx_cmd_set_clear_color( primary_cmd, 0, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
 
@@ -241,14 +241,14 @@ crude_gfx_pointlight_shadow_pass_render
     scissor.height = height;
     crude_gfx_cmd_set_scissor( primary_cmd, &scissor );
 
-    viewport = CRUDE_COMPOUNT_EMPTY( crude_gfx_viewport );
-    viewport.rect.x = 0u;
-    viewport.rect.y = 0u;
-    viewport.rect.width = width;
-    viewport.rect.height = height;
-    viewport.min_depth = 0.0f;
-    viewport.max_depth = 1.0f;
-    crude_gfx_cmd_set_viewport( primary_cmd, &viewport );
+    dev_viewport = CRUDE_COMPOUNT_EMPTY( crude_gfx_viewport );
+    dev_viewport.rect.x = 0u;
+    dev_viewport.rect.y = 0u;
+    dev_viewport.rect.width = width;
+    dev_viewport.rect.height = height;
+    dev_viewport.min_depth = 0.0f;
+    dev_viewport.max_depth = 1.0f;
+    crude_gfx_cmd_set_viewport( primary_cmd, &dev_viewport );
   }
   
   /* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi, mixed with http://www.hd-prg.com/tileBasedShadows.html */

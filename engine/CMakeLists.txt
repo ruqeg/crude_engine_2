@@ -22,6 +22,7 @@ source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(physics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/physics/*")
 source_group(sound REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/sound/*")
 source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
+source_group(develop REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/develop/*")
 source_group(engine FILES engine.cc engine.h)
 
 add_definitions(

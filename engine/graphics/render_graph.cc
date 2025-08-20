@@ -415,7 +415,8 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.height = output_resource_info->texture.height;
             output_resource_texture_creation.depth = output_resource_info->texture.depth;
             output_resource_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
-            output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+            // !TODO Hard for debugging render graph, try to figure out something in the future!
+            //output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
             output_resource_info->texture.handle = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
           }
@@ -651,7 +652,7 @@ crude_gfx_render_graph_render
     {
       uint32                                               width, height;
       crude_gfx_rect2d_int                                 scissor;
-      crude_gfx_viewport                                   viewport;
+      crude_gfx_viewport                                   dev_viewport;
 
       // TODO add clear to json
       crude_gfx_cmd_set_clear_color( gpu_commands, 0, CRUDE_COMPOUNT( VkClearValue, { .color = { 0.3f, 0.3f, 0.3f, 1.f } } ) );
@@ -719,18 +720,20 @@ crude_gfx_render_graph_render
       scissor.height = CRUDE_STATIC_CAST( uint16, height );
       crude_gfx_cmd_set_scissor( gpu_commands, &scissor );
 
-      viewport = CRUDE_COMPOUNT_EMPTY( crude_gfx_viewport );
-      viewport.rect.x = 0;
-      viewport.rect.y = 0;
-      viewport.rect.width = CRUDE_STATIC_CAST( uint16, width );
-      viewport.rect.height = CRUDE_STATIC_CAST( uint16, height );
-      viewport.min_depth = 0.0f;
-      viewport.max_depth = 1.0f;
-      crude_gfx_cmd_set_viewport( gpu_commands, &viewport );
+      dev_viewport = CRUDE_COMPOUNT_EMPTY( crude_gfx_viewport );
+      dev_viewport.rect.x = 0;
+      dev_viewport.rect.y = 0;
+      dev_viewport.rect.width = CRUDE_STATIC_CAST( uint16, width );
+      dev_viewport.rect.height = CRUDE_STATIC_CAST( uint16, height );
+      dev_viewport.min_depth = 0.0f;
+      dev_viewport.max_depth = 1.0f;
+      crude_gfx_cmd_set_viewport( gpu_commands, &dev_viewport );
       
+      crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
       crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_cmd_end_render_pass( gpu_commands );
+      crude_gfx_render_graph_render_pass_container_post_render( node->render_graph_pass_container, gpu_commands );
     }
     else if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE )
     {
@@ -1131,6 +1134,26 @@ crude_gfx_render_graph_render_pass_container_render
 )
 {
   container.render( container.ctx, primary_cmd );
+}
+
+void
+crude_gfx_render_graph_render_pass_container_pre_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  container.pre_render( container.ctx, primary_cmd );
+}
+
+void
+crude_gfx_render_graph_render_pass_container_post_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  container.post_render( container.ctx, primary_cmd );
 }
 
 CRUDE_API void

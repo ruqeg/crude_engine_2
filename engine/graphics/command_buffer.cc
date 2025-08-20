@@ -334,19 +334,19 @@ void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_opt_ crude_gfx_viewport const                       *viewport
+  _In_opt_ crude_gfx_viewport const                       *dev_viewport
 )
 {
   VkViewport vk_viewport;
   
-  if ( viewport )
+  if ( dev_viewport )
   {
-    vk_viewport.x = viewport->rect.x * 1.f;
-    vk_viewport.width = viewport->rect.width * 1.f;
-    vk_viewport.y = viewport->rect.height * 1.f - viewport->rect.y;
-    vk_viewport.height = -viewport->rect.height * 1.f;
-    vk_viewport.minDepth = viewport->min_depth;
-    vk_viewport.maxDepth = viewport->max_depth;
+    vk_viewport.x = dev_viewport->rect.x * 1.f;
+    vk_viewport.width = dev_viewport->rect.width * 1.f;
+    vk_viewport.y = dev_viewport->rect.height * 1.f - dev_viewport->rect.y;
+    vk_viewport.height = -dev_viewport->rect.height * 1.f;
+    vk_viewport.minDepth = dev_viewport->min_depth;
+    vk_viewport.maxDepth = dev_viewport->max_depth;
   }
   else
   {

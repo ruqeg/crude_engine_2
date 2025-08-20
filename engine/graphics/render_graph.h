@@ -375,6 +375,20 @@ crude_gfx_render_graph_render_pass_container_render
 );
 
 CRUDE_API void
+crude_gfx_render_graph_render_pass_container_pre_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+);
+
+CRUDE_API void
+crude_gfx_render_graph_render_pass_container_post_render
+(
+  _In_ crude_gfx_render_graph_pass_container               container,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+);
+
+CRUDE_API void
 crude_gfx_render_graph_render_pass_container_on_resize
 (
   _In_ crude_gfx_render_graph_pass_container               container,

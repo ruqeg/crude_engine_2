@@ -445,7 +445,7 @@ typedef struct crude_gfx_viewport_state
 {
   uint32                                                   num_viewports;
   uint32                                                   num_scissors;
-  crude_gfx_viewport                                      *viewport;
+  crude_gfx_viewport                                      *dev_viewport;
   crude_gfx_rect2d_int                                    *scissors;
 } crude_gfx_viewport_state;
 
@@ -479,7 +479,7 @@ typedef struct crude_gfx_pipeline_creation
   uint32                                                   vertex_streams_num;
   uint32                                                   vertex_attributes_num;
   VkPrimitiveTopology                                      topology;
-  crude_gfx_viewport_state const                          *viewport;
+  crude_gfx_viewport_state const                          *dev_viewport;
   char const                                              *name;
 } crude_gfx_pipeline_creation;
 

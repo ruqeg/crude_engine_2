@@ -114,7 +114,7 @@ CRUDE_API void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_opt_ crude_gfx_viewport const                       *viewport
+  _In_opt_ crude_gfx_viewport const                       *dev_viewport
 );
 
 CRUDE_API void

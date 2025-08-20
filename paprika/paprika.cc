@@ -55,34 +55,6 @@ paprika_draw_imgui_
   _In_ crude_paprika                                      *paprika
 );
 
-static void
-paprika_draw_imgui_debug_
-(
-  _In_ crude_paprika                                      *paprika
-);
-
-static void
-paprika_draw_imgui_scene_nodes_
-(
-  _In_ crude_paprika                                      *paprika,
-  _In_ crude_entity                                        node,
-  _In_ crude_string_buffer                                *temporary_string_buffer,
-  _In_ uint32                                             *current_node_index
-);
-
-static void
-paprika_draw_imgui_inspector_node_
-(
-  _In_ crude_paprika                                      *paprika,
-  _In_ crude_string_buffer                                *temporary_string_buffer
-);
-
-static void
-paprika_imgui_draw_viewport_
-(  
-  _In_ crude_paprika                                      *paprika
-);
-
 void
 crude_paprika_initialize
 (
@@ -100,7 +72,7 @@ crude_paprika_initialize
   
   ECS_IMPORT( paprika->engine->world, crude_platform_system );
   ECS_IMPORT( paprika->engine->world, crude_free_camera_system );
-  
+
   {
     IMGUI_CHECKVERSION();
     paprika->imgui_context = ImGui::CreateContext();
@@ -147,13 +119,12 @@ crude_paprika_initialize
     } );
   }
   
+  crude_devgui_initialize( &paprika->devgui, &paprika->graphics.render_graph );
+  
   CRUDE_ECS_SYSTEM_DEFINE( paprika->engine->world, paprika_update_system_, EcsOnUpdate, paprika, {
     { .id = ecs_id( crude_input ) },
     { .id = ecs_id( crude_window_handle ) },
   } );
-
-  paprika->debug_camera_culling = false;
-  paprika->debug_camera_view = false;
 
   crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene.main_camera, crude_free_camera );
   free_camera->enabled = true;
@@ -275,10 +246,6 @@ paprika_graphics_initialize_
   }
   
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_marker );
-
-  paprika->selected_node = paprika->scene.main_node;
-  paprika->gizmo_operation = ImGuizmo::TRANSLATE;
-  paprika->gizmo_mode = ImGuizmo::WORLD;
 }
 
 void
@@ -355,7 +322,9 @@ paprika_update_system_
   {
     crude_input *input = &input_per_entity[ i ];
     crude_window_handle *window_handle = &window_handle_per_entity[ i ];
-    
+
+    crude_devgui_handle_input( &paprika->devgui, input );
+
     if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
       ImGuiIO *imgui_io = &ImGui::GetIO();
@@ -379,18 +348,6 @@ paprika_update_system_
       {
         SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), paprika->wrapwnd.x, paprika->wrapwnd.y );
       }
-    }
-    if ( input->keys[ 'z' ].pressed )
-    {
-      paprika->gizmo_operation = ImGuizmo::TRANSLATE;
-    }
-    if ( input->keys[ 'x' ].pressed )
-    {
-      paprika->gizmo_operation = ImGuizmo::ROTATE;
-    }
-    if ( input->keys[ 'c' ].pressed )
-    {
-      paprika->gizmo_operation = ImGuizmo::SCALE;
     }
   }
 }
@@ -418,273 +375,7 @@ paprika_draw_imgui_
   temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
   crude_string_buffer_initialize( &temporary_string_buffer, 4096, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
   
-  ImGui::Begin( "techniques" );
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( paprika->graphics.renderer.resource_cache.techniques ); ++i )
-  {
-    if ( !paprika->graphics.renderer.resource_cache.techniques[ i ].key )
-    {
-      continue;
-    }
-  
-    crude_gfx_renderer_technique *technique = paprika->graphics.renderer.resource_cache.techniques[ i ].value;
-    if ( ImGui::TreeNode( technique->name ) )
-    {
-      if ( ImGui::Button( "reload" ) )
-      {
-        char const *json_name = technique->json_name;
-        crude_gfx_renderer_destroy_technique( &paprika->graphics.renderer, technique );
-        crude_gfx_renderer_technique_load_from_file( json_name, &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
-      }
-      ImGui::TreePop();
-    }
-  }
-  ImGui::End();
-  ImGui::Begin("scene");
-  uint32 current_node_index = 0u;
-  paprika_draw_imgui_scene_nodes_( paprika, paprika->scene.main_node, &temporary_string_buffer, &current_node_index );
-  ImGui::End();
-  ImGui::Begin("inspector");
-  paprika_draw_imgui_inspector_node_( paprika, &temporary_string_buffer );
-  ImGui::End();
-  ImGui::Begin("viewport");
-  paprika_imgui_draw_viewport_( paprika );
-  ImGui::End();
-  ImGui::Begin( "debug" );
-  paprika_draw_imgui_debug_( paprika );
-  ImGui::End( );
+  crude_devgui_draw( &paprika->devgui, paprika->scene.main_node, paprika->scene.main_camera );
+
   crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
-}
-
-void
-paprika_draw_imgui_debug_
-(
-  _In_ crude_paprika                                      *paprika
-)
-{
-  ImGui::Checkbox( "debug_camera_culling", &paprika->debug_camera_culling );
-  if ( ImGui::Checkbox( "debug_camera_view", &paprika->debug_camera_view ) )
-  {
-    crude_free_camera *main_free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene.main_camera, crude_free_camera );
-    crude_free_camera *debug_free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->scene.debug_camera, crude_free_camera );
-
-    main_free_camera->enabled = !paprika->debug_camera_view;
-    debug_free_camera->enabled = paprika->debug_camera_view;
-  }
-}
-
-void
-paprika_draw_imgui_scene_nodes_
-(
-  _In_ crude_paprika                                      *paprika,
-  _In_ crude_entity                                        node,
-  _In_ crude_string_buffer                                *temporary_string_buffer,
-  _In_ uint32                                             *current_node_index
-)
-{
-  ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-  
-  if ( paprika->selected_node_index == *current_node_index )
-  {
-    tree_node_flags |= ImGuiTreeNodeFlags_Selected;
-  }
-
-  bool tree_node_open = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( node ) );
-  if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
-  {
-    paprika->selected_node = node;
-    paprika->selected_node_index = *current_node_index;
-  }
-
-  char const *popup_id = crude_string_buffer_append_use_f( temporary_string_buffer, "node_pop_up %s", crude_entity_get_name( node ) );
-
-  if (ImGui::IsItemClicked( ImGuiMouseButton_Right ) && !ImGui::IsItemToggledOpen())
-  {
-    ImGui::OpenPopup( popup_id );
-  }
-
-  if ( ImGui::BeginPopup( popup_id ) )
-  {
-    if ( ImGui::BeginMenu( "add_component" ) )
-    {
-      //for (Component_Type componentType : cComponentsTypes)
-      //{
-      //  if (ImGui::MenuItem(componentTypeToStr(componentType)))
-      //  {
-      //    addComponentToNode(node, componentType);
-      //  }
-      //}
-      //ImGui::EndMenu();
-    }
-
-    if ( ImGui::MenuItem( "add_node" ) )
-    {
-    }
-    ImGui::EndPopup();
-  }
-
-  if (ImGui::BeginDragDropSource( ) )
-  {
-    ImGui::SetDragDropPayload( crude_entity_get_name( node ), NULL, 0 );
-    ImGui::Text( crude_entity_get_name( node ) );
-    ImGui::EndDragDropSource( );
-  }
-
-  ++( *current_node_index );
-  if ( tree_node_open )
-  {
-    ecs_iter_t it = ecs_children( node.world, node.handle );
-    while ( ecs_children_next( &it ) )
-    {
-      for (int i = 0; i < it.count; i ++)
-      {
-        crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
-        child.world = it.world;
-        child.handle = it.entities[ i ];
-        paprika_draw_imgui_scene_nodes_( paprika, child, temporary_string_buffer, current_node_index );
-      }
-    }
-    ImGui::TreePop( );
-  }
-}
-
-void
-paprika_draw_imgui_inspector_node_
-(
-  _In_ crude_paprika                                      *paprika,
-  _In_ crude_string_buffer                                *temporary_string_buffer
-)
-{
-  if ( !crude_entity_valid( paprika->selected_node ) )
-  {
-    return;
-  }
-
-  ImGui::Text( "node: \"%s\"", crude_entity_get_name( paprika->selected_node ) );
-  
-  crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_transform );
-  if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
-  {
-    ImGui::DragFloat3( "translation", &transform->translation.x, .1f );
-    ImGui::DragFloat3( "scale", &transform->scale.x, .1f );
-  }
-  
-  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_free_camera );
-  if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
-  {
-    ImGui::DragFloat3( "moving_speed", &free_camera->moving_speed_multiplier.x, .1f );
-    ImGui::DragFloat2( "rotating_speed", &free_camera->rotating_speed_multiplier.x, .1f );
-  }
-  
-  crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_camera );
-  if ( camera && ImGui::CollapsingHeader( "crude_camera" ) )
-  {
-    ImGui::InputFloat( "far_z", &camera->far_z );
-    ImGui::InputFloat( "near_z", &camera->near_z );
-    ImGui::SliderAngle( "fov_radians", &camera->fov_radians );
-    ImGui::InputFloat( "aspect_ratio", &camera->aspect_ratio );
-  }
-  
-  crude_light *light = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_light );
-  if ( light && ImGui::CollapsingHeader( "crude_light" ) )
-  {
-    ImGui::ColorEdit3( "color", &light->color.x );
-    ImGui::InputFloat( "intensity", &light->intensity );
-    ImGui::InputFloat( "radius", &light->radius );
-  }
-}
-void
-paprika_imgui_draw_viewport_
-(  
-  _In_ crude_paprika                                      *paprika
-)
-{
-  crude_entity                                             camera_node;
-  crude_camera                                            *camera;
-  crude_transform                                         *camera_transform;
-  crude_transform                                         *selected_node_transform;
-  XMFLOAT4X4                                               selected_node_to_parent, selected_parent_to_view, view_to_clip;
-  XMMATRIX                                                 world_to_view;
-  crude_entity                                             selected_node_parent;
-  XMVECTOR                                                 new_translation, new_rotation, new_scale;
-  ImVec2                                                   viewport_size;
-
-  ImGuizmo::SetDrawlist( );
-  ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
-
-  viewport_size = ImGui::GetContentRegionAvail();
-  
-  paprika->viewport_bindless_texture = 0u;
-  for ( uint32 i = 0; i < paprika->graphics.gpu.textures.pool_size; ++i )
-  {
-    crude_gfx_texture *texture = crude_gfx_access_texture( &paprika->graphics.gpu, crude_gfx_texture_handle{ i } );
-    if ( texture->name && crude_string_cmp( texture->name, "pbr" ) == 0 )
-    {
-      paprika->viewport_bindless_texture = i;
-      break;
-    }
-  }
-
-  ImGui::Image( CRUDE_CAST( ImTextureRef, &paprika->viewport_bindless_texture ), viewport_size );
-
-  camera_node = paprika->debug_camera_view ? paprika->scene.debug_camera : paprika->scene.main_camera;
-  camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_camera );
-  camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_transform );
-  selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( paprika->selected_node, crude_transform );
-
-  if ( !camera || !camera_transform || !selected_node_transform )
-  {
-    return;
-  }
-
-  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  if ( ImGui::RadioButton( "translate", paprika->gizmo_operation == ImGuizmo::TRANSLATE ) )
-  {
-    paprika->gizmo_operation = ImGuizmo::TRANSLATE;
-  }
-  ImGui::SameLine();
-  if ( ImGui::RadioButton( "rotate", paprika->gizmo_operation == ImGuizmo::ROTATE ) )
-  {
-    paprika->gizmo_operation = ImGuizmo::ROTATE;
-  }
-  ImGui::SameLine();
-  if ( ImGui::RadioButton( "scale", paprika->gizmo_operation == ImGuizmo::SCALE ) )
-  {
-    paprika->gizmo_operation = ImGuizmo::SCALE;
-  }
-  if ( paprika->gizmo_operation != ImGuizmo::SCALE )
-  {
-    if ( ImGui::RadioButton( "local", paprika->gizmo_mode == ImGuizmo::LOCAL ) )
-    {
-      paprika->gizmo_mode = ImGuizmo::LOCAL;
-    }
-    ImGui::SameLine();
-    if ( ImGui::RadioButton( "world", paprika->gizmo_mode == ImGuizmo::WORLD ) )
-    {
-      paprika->gizmo_mode = ImGuizmo::WORLD;
-    }
-  }
-
-  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  XMStoreFloat4x4( &view_to_clip, crude_camera_view_to_clip( camera ) );
-  XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
-  
-  world_to_view = XMMatrixInverse( NULL, crude_transform_node_to_world( camera_node, camera_transform ) );
-
-  selected_node_parent = crude_entity_get_parent( paprika->selected_node );
-  if ( crude_entity_valid( selected_node_parent ) )
-  {
-    XMMATRIX seleted_node_parent_to_world = crude_transform_node_to_world( selected_node_parent, NULL );
-    XMStoreFloat4x4( &selected_parent_to_view, XMMatrixMultiply( seleted_node_parent_to_world, world_to_view ) );
-  }
-  else
-  {
-    XMStoreFloat4x4( &selected_parent_to_view, world_to_view );
-  }
-
-  ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
-  ImGuizmo::Manipulate( &selected_parent_to_view._11, &view_to_clip._11, paprika->gizmo_operation, paprika->gizmo_mode, &selected_node_to_parent._11, NULL, NULL );
-  XMMatrixDecompose( &new_scale, &new_rotation, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
-  XMStoreFloat3( &selected_node_transform->translation, new_translation );
-  XMStoreFloat3( &selected_node_transform->scale, new_scale );
-  XMStoreFloat4( &selected_node_transform->rotation, new_rotation );
 }
