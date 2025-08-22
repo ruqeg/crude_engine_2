@@ -65,3 +65,4 @@ crude_hashmap_set_index
 #define CRUDE_HASHMAP_GET_INDEX( h, k ) ( crude_hashmap_get_index( CRUDE_REINTERPRET_CAST( uint8*, h ), k, sizeof*( h ) ) )
 #define CRUDE_HASHMAP_GET( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? NULL : &( h )[ CRUDE_HASHMAP_TEMP( h ) ] )
 #define CRUDE_HASHMAP_SET( h, k, v ) ( ( h ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( h ), crude_hashmap_set_index( CRUDE_REINTERPRET_CAST( uint8*, h ), k, sizeof*( h ) ) ), ( h )[ CRUDE_HASHMAP_TEMP( h ) ].value = v )
+#define CRUDE_HASHMAP_REMOVE( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? 0 : ( h )[ CRUDE_HASHMAP_TEMP( h ) ].key = 0 )

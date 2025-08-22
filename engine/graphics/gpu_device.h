@@ -40,6 +40,7 @@ typedef struct crude_gfx_device
   SDL_Window                                              *sdl_window;
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
+  uint32                                                   absolute_frame;
   /**
    * Serves as the primary dynamic buffer.
    * This buffer acts as a foundation for mapping 
@@ -90,10 +91,10 @@ typedef struct crude_gfx_device
   VkPhysicalDevice                                         vk_physical_device;
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
+  VkSemaphore                                              vk_graphics_semaphore;
   VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  VkFence                                                  vk_command_buffer_executed_fences[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   VkDescriptorPool                                         vk_descriptor_pool;
   /**
    * Vulkan queues

@@ -416,14 +416,21 @@ crude_gfx_renderer_destroy_technique
   {
     return;
   }
+
+  uint64 technique_name_hashed = crude_hash_string( technique->name, 0u );
   
   for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( technique->passes ); ++i )
   {
     crude_gfx_destroy_pipeline( renderer->gpu, technique->passes[ i ].pipeline );
+    if ( technique->passes[ i ].name_hashed_to_descriptor_index )
+    {
+      CRUDE_HASHMAP_DEINITIALIZE( technique->passes[ i ].name_hashed_to_descriptor_index );
+    }
   }
   
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
   CRUDE_HASHMAP_DEINITIALIZE( technique->name_hashed_to_pass_index );
+  CRUDE_HASHMAP_REMOVE( renderer->resource_cache.techniques, technique_name_hashed );
   crude_gfx_renderer_release_technique( renderer, CRUDE_COMPOUNT( crude_gfx_renderer_technique_handle, { technique->pool_index } ) );
 }
 

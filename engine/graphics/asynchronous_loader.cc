@@ -49,6 +49,8 @@ crude_gfx_asynchronous_loader_initialize
       .commandBufferCount = 1,
     } );
     vkAllocateCommandBuffers( renderer->gpu->vk_device, &cmd, &asynloader->cmd_buffers[ i ].vk_cmd_buffer );
+
+    crude_gfx_set_resource_name( renderer->gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )asynloader->cmd_buffers[ i ].vk_cmd_buffer, "asynchronous_loader_cmd" );
     
     asynloader->cmd_buffers[ i ].is_recording = false;
     asynloader->cmd_buffers[ i ].gpu = renderer->gpu;
@@ -72,7 +74,6 @@ crude_gfx_asynchronous_loader_initialize
   {
     VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_completed_fence ), "Failed to create fence" );
   }
 }
@@ -161,12 +162,6 @@ crude_gfx_asynchronous_loader_update
   {
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
-    
-    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
-    {
-      return;
-    }
-    vkResetFences( asynloader->renderer->gpu->vk_device, 1, &asynloader->vk_transfer_completed_fence );
 
     request = CRUDE_ARRAY_POP( asynloader->upload_requests );
 
@@ -210,6 +205,13 @@ crude_gfx_asynchronous_loader_update
       VkQueue used_queue = asynloader->renderer->gpu->vk_transfer_queue;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( asynloader->renderer->gpu->vkQueueSubmit2KHR( used_queue, 1, &submit_info, asynloader->vk_transfer_completed_fence ), "Failed to sumbit queue" );
     }
+    
+    
+    if ( vkGetFenceStatus( asynloader->renderer->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
+    {
+      vkWaitForFences( asynloader->renderer->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
+    }
+    vkResetFences( asynloader->renderer->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
     {

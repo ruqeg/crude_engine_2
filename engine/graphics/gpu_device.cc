@@ -205,6 +205,7 @@ crude_gfx_device_initialize
   gpu->temporary_allocator = creation->temporary_allocator;
   gpu->previous_frame = 0;
   gpu->current_frame = 1;
+  gpu->absolute_frame = 0;
   gpu->vk_swapchain_image_index = 0;
   gpu->swapchain_resized_last_frame = false;
   gpu->mesh_shaders_extension_present = false;
@@ -279,14 +280,22 @@ crude_gfx_device_initialize
   {
     
     VkSemaphoreCreateInfo semaphore_info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-    VkFenceCreateInfo fence_info = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT };
     for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
     {
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_updated_semaphore[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_rendering_finished_semaphore[ i ] );
-      vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &gpu->vk_command_buffer_executed_fences[ i ] );
+      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_image_avalivable_semaphores[ i ], "image_avalivable_semaphores" );
+      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_swapchain_updated_semaphore[ i ], "swapchain_updated_semaphore" );
+      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_rendering_finished_semaphore[ i ], "rendering_finished_semaphore" );
     }
+
+    
+    VkSemaphoreTypeCreateInfo semaphore_type_info = { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO };
+    semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    semaphore_info.pNext = &semaphore_type_info;
+    vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_graphics_semaphore );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_graphics_semaphore, "graphics_semaphore" );
   }
   
   crude_gfx_cmd_manager_initialize( &gpu->cmd_buffer_manager, gpu, creation->num_threads );
@@ -379,13 +388,13 @@ crude_gfx_device_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( gpu->texture_to_update_bindless );
   
   crude_gfx_cmd_manager_deinitialize( &gpu->cmd_buffer_manager );
-
+  
+  vkDestroySemaphore( gpu->vk_device, gpu->vk_graphics_semaphore, gpu->vk_allocation_callbacks );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     vkDestroySemaphore( gpu->vk_device, gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_swapchain_updated_semaphore[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_rendering_finished_semaphore[ i ], gpu->vk_allocation_callbacks );
-    vkDestroyFence( gpu->vk_device, gpu->vk_command_buffer_executed_fences[ i ], gpu->vk_allocation_callbacks );
   }
   
   crude_resource_pool_deinitialize( &gpu->buffers );
@@ -431,18 +440,24 @@ crude_gfx_new_frame
 (
   _In_ crude_gfx_device                                   *gpu
 )
-{
+{  
+  if ( gpu->absolute_frame >= CRUDE_GFX_MAX_SWAPCHAIN_IMAGES )
   {
-    VkFence *swapchain_updated_fence = &gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-    if ( vkGetFenceStatus( gpu->vk_device, *swapchain_updated_fence ) != VK_SUCCESS )
-    {
-      vkWaitForFences( gpu->vk_device, 1, swapchain_updated_fence, VK_TRUE, UINT64_MAX );
-    }
-    vkResetFences( gpu->vk_device, 1, swapchain_updated_fence );
+    uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GFX_MAX_SWAPCHAIN_IMAGES - 1 );
+    uint64 wait_values[ ] = { graphics_timeline_value };
+  
+    VkSemaphore semaphores[] = { gpu->vk_graphics_semaphore };
+  
+    VkSemaphoreWaitInfo semaphore_wait_info{ VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO };
+    semaphore_wait_info.semaphoreCount = 1;
+    semaphore_wait_info.pSemaphores = semaphores;
+    semaphore_wait_info.pValues = wait_values;
+  
+    vkWaitSemaphores( gpu->vk_device, &semaphore_wait_info, UINT64_MAX );
   }
 
   {
-    VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
+    VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->vk_swapchain_image_index ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
       CRUDE_ASSERT( false );
@@ -543,6 +558,10 @@ crude_gfx_present
   }
   
   {
+    VkSemaphoreSubmitInfo wait_semaphores[] = {
+      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame - ( CRUDE_GFX_MAX_SWAPCHAIN_IMAGES - 1 ), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0 }
+    };
+      
     VkSemaphoreSubmitInfo signal_semaphores[] = {
       { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
     };
@@ -553,13 +572,14 @@ crude_gfx_present
       { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, enqueued_command_buffers[ 3 ], 0 },
     };
     
-    VkSubmitInfo2 submit_info = {
-      .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
-      .commandBufferInfoCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ),
-      .pCommandBufferInfos      = command_buffers,
-      .signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores ),
-      .pSignalSemaphoreInfos    = signal_semaphores
-    };
+    VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+    submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+    submit_info.waitSemaphoreInfoCount   = ( gpu->absolute_frame >= CRUDE_GFX_MAX_SWAPCHAIN_IMAGES );
+    submit_info.pWaitSemaphoreInfos      = wait_semaphores;
+    submit_info.commandBufferInfoCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers );
+    submit_info.pCommandBufferInfos      = command_buffers;
+    submit_info.signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores );
+    submit_info.pSignalSemaphoreInfos    = signal_semaphores;
     
     CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
   }
@@ -593,45 +613,42 @@ crude_gfx_present
     {
       VkSemaphoreSubmitInfo wait_semaphores[] = {
         { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
-        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0 },
+        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_image_avalivable_semaphores[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0 },
       };
-
+      
       VkSemaphoreSubmitInfo signal_semaphores[] = {
         { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
+        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame + 1, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 }
       };
       VkCommandBufferSubmitInfo command_buffers[] = {
         { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
       };
 
-      VkSubmitInfo2 submit_info = {
-        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,    
-        .waitSemaphoreInfoCount   = CRUDE_COUNTOF( wait_semaphores ),
-        .pWaitSemaphoreInfos      = wait_semaphores,
-        .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
-        .pCommandBufferInfos      = command_buffers,
-        .signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores ),
-        .pSignalSemaphoreInfos    = signal_semaphores
-      };
+      VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+      submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+      submit_info.waitSemaphoreInfoCount   = 2;
+      submit_info.pWaitSemaphoreInfos      = wait_semaphores;
+      submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+      submit_info.pCommandBufferInfos      = command_buffers;
+      submit_info.signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores );
+      submit_info.pSignalSemaphoreInfos    = signal_semaphores;
     
-      VkFence swapchain_updated_fence = gpu->vk_command_buffer_executed_fences[ gpu->current_frame ];
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, swapchain_updated_fence ), "Failed to sumbit queue" );
+      CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
     }
   }
   
   {
     VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ] };
     VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
-    VkPresentInfoKHR present_info = {
-      .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-      .waitSemaphoreCount = 1,
-      .pWaitSemaphores    = wait_semaphores,
-      .swapchainCount     = CRUDE_COUNTOF( swap_chains ),
-      .pSwapchains        = swap_chains,
-      .pImageIndices      = &gpu->vk_swapchain_image_index,
-    };
+    VkPresentInfoKHR vk_present_info = CRUDE_COMPOUNT_EMPTY( VkPresentInfoKHR );
+    vk_present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    vk_present_info.waitSemaphoreCount = 1;
+    vk_present_info.pWaitSemaphores    = wait_semaphores;
+    vk_present_info.swapchainCount     = CRUDE_COUNTOF( swap_chains );
+    vk_present_info.pSwapchains        = swap_chains;
+    vk_present_info.pImageIndices      = &gpu->vk_swapchain_image_index;
   
-    VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &present_info );
-    CRUDE_PROFILER_MARK_FRAME;
+    VkResult result = vkQueuePresentKHR( gpu->vk_main_queue, &vk_present_info );
     
     CRUDE_ARRAY_SET_LENGTH( gpu->queued_command_buffers, 0u );
     
@@ -645,6 +662,7 @@ crude_gfx_present
 
   gpu->previous_frame = gpu->current_frame;
   gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
+  gpu->absolute_frame = gpu->absolute_frame + 1;
   
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
@@ -3137,9 +3155,9 @@ vk_create_swapchain_
   selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
   for ( uint32 i = 0; i < available_present_modes_count; ++i )
   {
-    if ( available_present_modes[ i ] == VK_PRESENT_MODE_FIFO_KHR )
+    if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
     {
-      selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+      selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
       break;
     }
   }
@@ -3230,17 +3248,17 @@ vk_create_descriptor_pool_
     {
       VkDescriptorPoolSize pool_sizes[] =
       {
-        { VK_DESCRIPTOR_TYPE_SAMPLER, 10 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
-        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 10 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 10 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 10 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 10 },
-        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10 }
+        { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 }
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
