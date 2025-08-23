@@ -1,7 +1,5 @@
 #pragma once
 
-#include <imgui/imgui.h>
-
 #include <engine.h>
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>

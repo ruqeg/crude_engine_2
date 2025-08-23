@@ -18,7 +18,6 @@
 
 #include "launcher.h"
 
-
 static char*
 get_plugin_dll_path_
 (

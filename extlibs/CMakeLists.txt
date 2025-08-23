@@ -8,8 +8,6 @@ add_subdirectory(vma_cmake)
 add_subdirectory(spirv_reflect_cmake)
 add_subdirectory(cjson_cmake)
 add_subdirectory(imgui_cmake)
-add_subdirectory(imguizmo_cmake)
-add_subdirectory(imgui_node_editor_cmake)
 
 # ENKITS
 FetchContent_Declare(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ImGuizmo.h>
+#include <imgui.h>
 
 #include <graphics/render_graph.h>
 #include <graphics/renderer.h>
@@ -22,8 +22,6 @@ typedef struct crude_devgui_viewport
 {
   crude_gfx_device                                        *gpu;
   crude_gfx_texture_handle                                 selected_texture;
-  ImGuizmo::OPERATION                                      gizmo_operation;
-  ImGuizmo::MODE                                           gizmo_mode;
 } crude_devgui_scene_node_viewport;
 
 typedef struct crude_devgui_render_graph

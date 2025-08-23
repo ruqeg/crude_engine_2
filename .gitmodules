@@ -7,17 +7,10 @@
 [submodule "extlibs/cr_cmake/cr"]
 	path = extlibs/cr_cmake/cr
 	url = https://github.com/ruqeg/cr.git
-[submodule "extlibs/imguizmo_cmake/ImGuizmo"]
-	path = extlibs/imguizmo_cmake/ImGuizmo
-	url = https://github.com/ruqeg/ImGuizmo.git
 [submodule "extlibs/imgui_cmake/imgui"]
 	path = extlibs/imgui_cmake/imgui
 	url = https://github.com/ruqeg/imgui.git
 	branch = docking
-[submodule "extlibs/imgui_node_editor_cmake/imgui-node-editor"]
-	path = extlibs/imgui_node_editor_cmake/imgui-node-editor
-	url = https://github.com/ruqeg/imgui-node-editor.git
-	branch = ruqeg/crude_engine_2
 [submodule "extlibs/spirv_reflect_cmake/SPIRV-Reflect"]
 	path = extlibs/spirv_reflect_cmake/SPIRV-Reflect
 	url = https://github.com/ruqeg/SPIRV-Reflect.git

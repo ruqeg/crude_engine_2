@@ -1,4 +1,4 @@
-#include <imgui.h>
+#include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 
@@ -47,12 +47,6 @@ paprika_input_callback_
 (
   _In_ void                                               *ctx,
   _In_ void                                               *sdl_event
-);
-
-static void
-paprika_draw_imgui_
-(
-  _In_ crude_paprika                                      *paprika
 );
 
 void
@@ -267,20 +261,16 @@ paprika_graphics_system_
   crude_gfx_new_frame( &paprika->graphics.gpu );
   
   ImGui::SetCurrentContext( ( ImGuiContext* ) paprika->imgui_context );
-  ImGuizmo::SetImGuiContext( ( ImGuiContext* ) paprika->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
-  ImGuizmo::BeginFrame();
-  ImGuizmo::SetOrthographic( false );
   ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
+  crude_devgui_draw( &paprika->devgui, paprika->scene.main_node, paprika->scene.main_camera );
 
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
   {
     crude_gfx_render_graph_on_resize( &paprika->graphics.render_graph, paprika->graphics.gpu.vk_swapchain_width, paprika->graphics.gpu.vk_swapchain_height );
   }
 
-  paprika_draw_imgui_( paprika );
-  
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
   crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 1u );
@@ -363,21 +353,4 @@ paprika_input_callback_
 {
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-}
-
-void
-paprika_draw_imgui_
-(
-  _In_ crude_paprika                                      *paprika
-)
-{
-  crude_string_buffer                                      temporary_string_buffer;
-  uint32                                                   temporary_allocator_mark;
-  
-  temporary_allocator_mark = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
-  crude_string_buffer_initialize( &temporary_string_buffer, 4096, crude_stack_allocator_pack( &paprika->temporary_allocator ) );
-  
-  crude_devgui_draw( &paprika->devgui, paprika->scene.main_node, paprika->scene.main_camera );
-
-  crude_stack_allocator_free_marker( &paprika->temporary_allocator, temporary_allocator_mark );
 }

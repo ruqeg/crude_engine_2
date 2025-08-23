@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#include <imgui/backends/imgui_impl_sdl3.h>
 
 #include <core/array.h>
 #include <core/profiler.h>
@@ -8,8 +9,6 @@
 #include <platform/platform_components.h>
 
 #include <platform/platform_system.h>
-
-#include <imgui/backends/imgui_impl_sdl3.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_process_events_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_creation_observer_ );

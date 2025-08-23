@@ -1,5 +1,3 @@
-#include <imgui/imgui.h>
-
 #include <core/hash_map.h>
 #include <core/ecs.h>
 #include <scene/scene_components.h>
@@ -293,9 +291,8 @@ crude_devgui_viewport_initialize
 {
   devgui_viewport->gpu = gpu;
   devgui_viewport->selected_texture = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  devgui_viewport->gizmo_operation = ImGuizmo::TRANSLATE;
-  devgui_viewport->gizmo_mode = ImGuizmo::WORLD;
 }
+
 void
 crude_devgui_viewport_draw
 (
@@ -309,9 +306,6 @@ crude_devgui_viewport_draw
   crude_transform                                         *selected_node_transform;
   
   ImGui::Begin( "Viewport" );
-
-  ImGuizmo::SetDrawlist( );
-  ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
@@ -362,77 +356,6 @@ crude_devgui_viewport_draw
     }
     ImGui::EndCombo();
   }
-  
-  camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_camera );
-  camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_transform );
-
-  if ( crude_entity_valid( selected_node ) )
-  {
-    selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( selected_node, crude_transform );
-  }
-  else
-  {
-    selected_node_transform = NULL;
-  }
-
-  if ( camera && camera_transform && selected_node_transform )
-  {
-    XMFLOAT4X4                                             selected_node_to_parent, selected_parent_to_view, view_to_clip;
-    XMMATRIX                                               world_to_view;
-    crude_entity                                           selected_node_parent;
-    XMVECTOR                                               new_translation, new_rotation, new_scale;
-    
-    if ( ImGui::RadioButton( "translate", devgui_viewport->gizmo_operation == ImGuizmo::TRANSLATE ) )
-    {
-      devgui_viewport->gizmo_operation = ImGuizmo::TRANSLATE;
-    }
-    ImGui::SameLine();
-    if ( ImGui::RadioButton( "rotate", devgui_viewport->gizmo_operation == ImGuizmo::ROTATE ) )
-    {
-      devgui_viewport->gizmo_operation = ImGuizmo::ROTATE;
-    }
-    ImGui::SameLine();
-    if ( ImGui::RadioButton( "scale", devgui_viewport->gizmo_operation == ImGuizmo::SCALE ) )
-    {
-      devgui_viewport->gizmo_operation = ImGuizmo::SCALE;
-    }
-    if ( devgui_viewport->gizmo_operation != ImGuizmo::SCALE )
-    {
-      if ( ImGui::RadioButton( "local", devgui_viewport->gizmo_mode == ImGuizmo::LOCAL ) )
-      {
-        devgui_viewport->gizmo_mode = ImGuizmo::LOCAL;
-      }
-      ImGui::SameLine();
-      if ( ImGui::RadioButton( "world", devgui_viewport->gizmo_mode == ImGuizmo::WORLD ) )
-      {
-        devgui_viewport->gizmo_mode = ImGuizmo::WORLD;
-      }
-    }
-
-    ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-    XMStoreFloat4x4( &view_to_clip, crude_camera_view_to_clip( camera ) );
-    XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
-    
-    world_to_view = XMMatrixInverse( NULL, crude_transform_node_to_world( camera_node, camera_transform ) );
-
-    selected_node_parent = crude_entity_get_parent( selected_node );
-    if ( crude_entity_valid( selected_node_parent ) )
-    {
-      XMMATRIX seleted_node_parent_to_world = crude_transform_node_to_world( selected_node_parent, NULL );
-      XMStoreFloat4x4( &selected_parent_to_view, XMMatrixMultiply( seleted_node_parent_to_world, world_to_view ) );
-    }
-    else
-    {
-      XMStoreFloat4x4( &selected_parent_to_view, world_to_view );
-    }
-
-    ImGuizmo::SetRect( ImGui::GetWindowPos( ).x, ImGui::GetWindowPos( ).y, ImGui::GetWindowWidth( ), ImGui::GetWindowHeight( ) );
-    ImGuizmo::Manipulate( &selected_parent_to_view._11, &view_to_clip._11, devgui_viewport->gizmo_operation, devgui_viewport->gizmo_mode, &selected_node_to_parent._11, NULL, NULL );
-    XMMatrixDecompose( &new_scale, &new_rotation, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
-    XMStoreFloat3( &selected_node_transform->translation, new_translation );
-    XMStoreFloat3( &selected_node_transform->scale, new_scale );
-    XMStoreFloat4( &selected_node_transform->rotation, new_rotation );
-  }
   ImGui::End();
 }
 
@@ -443,18 +366,6 @@ crude_devgui_viewport_input
   _In_ crude_input                                        *input
 )
 {
-  if ( input->keys[ 'z' ].pressed )
-  {
-    devgui_viewport->gizmo_operation = ImGuizmo::TRANSLATE;
-  }
-  if ( input->keys[ 'x' ].pressed )
-  {
-    devgui_viewport->gizmo_operation = ImGuizmo::ROTATE;
-  }
-  if ( input->keys[ 'c' ].pressed )
-  {
-    devgui_viewport->gizmo_operation = ImGuizmo::SCALE;
-  }
 }
 
 /******************************
