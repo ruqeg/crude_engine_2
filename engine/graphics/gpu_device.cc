@@ -457,7 +457,7 @@ crude_gfx_new_frame
   }
 
   {
-    VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->vk_swapchain_image_index ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
+    VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
       CRUDE_ASSERT( false );
@@ -563,7 +563,7 @@ crude_gfx_present
     };
       
     VkSemaphoreSubmitInfo signal_semaphores[] = {
-      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
+      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
     };
     VkCommandBufferSubmitInfo command_buffers[] = {
       { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, enqueued_command_buffers[ 0 ], 0 },
@@ -612,12 +612,12 @@ crude_gfx_present
   
     {
       VkSemaphoreSubmitInfo wait_semaphores[] = {
-        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
-        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_image_avalivable_semaphores[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0 },
+        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
+        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0 },
       };
       
       VkSemaphoreSubmitInfo signal_semaphores[] = {
-        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
+        { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_swapchain_updated_semaphore[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 },
         { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame + 1, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0 }
       };
       VkCommandBufferSubmitInfo command_buffers[] = {
@@ -638,7 +638,7 @@ crude_gfx_present
   }
   
   {
-    VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->current_frame ] };
+    VkSemaphore wait_semaphores[] = { gpu->vk_swapchain_updated_semaphore[ gpu->vk_swapchain_image_index ] };
     VkSwapchainKHR swap_chains[] = { gpu->vk_swapchain };
     VkPresentInfoKHR vk_present_info = CRUDE_COMPOUNT_EMPTY( VkPresentInfoKHR );
     vk_present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
