@@ -793,6 +793,19 @@ crude_gfx_render_graph_on_resize
   }
 }
 
+void
+crude_gfx_render_graph_on_techniques_reloaded
+(
+  _In_ crude_gfx_render_graph                             *render_graph
+)
+{
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
+    crude_gfx_render_graph_render_pass_container_on_techniques_reloaded( node->render_graph_pass_container );
+  }
+}
+
 /************************************************
  *
  * Render Graph Builder Function Implementation
@@ -1156,7 +1169,7 @@ crude_gfx_render_graph_render_pass_container_post_render
   container.post_render( container.ctx, primary_cmd );
 }
 
-CRUDE_API void
+void
 crude_gfx_render_graph_render_pass_container_on_resize
 (
   _In_ crude_gfx_render_graph_pass_container               container,
@@ -1168,6 +1181,15 @@ crude_gfx_render_graph_render_pass_container_on_resize
   container.on_resize( container.ctx, gpu, new_width, new_height );
 }
 
+void
+crude_gfx_render_graph_render_pass_container_on_techniques_reloaded
+(
+  _In_ crude_gfx_render_graph_pass_container               container
+)
+{
+  container.on_techniques_reloaded( container.ctx );
+}
+
 static void
 empty_pass_on_resize_
 (
@@ -1175,6 +1197,14 @@ empty_pass_on_resize_
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
+)
+{
+}
+
+static void
+empty_pass_on_techniques_reloaded_
+(
+  _In_ void                                               *ctx
 )
 {
 }
@@ -1216,6 +1246,7 @@ crude_gfx_render_graph_pass_container_empty
   container.render = empty_pass_render_;
   container.post_render = empty_pass_post_render_;
   container.on_resize = empty_pass_on_resize_;
+  container.on_techniques_reloaded = empty_pass_on_techniques_reloaded_;
   container.ctx = NULL;
   return container;
 }

@@ -113,6 +113,7 @@ typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_
 typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_post_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
+typedef void (*crude_gfx_render_graph_render_pass_on_techniques_reloaded)( void *ctx );
 
 typedef struct crude_gfx_render_graph_pass_container
 {
@@ -120,6 +121,7 @@ typedef struct crude_gfx_render_graph_pass_container
   crude_gfx_render_graph_render_pass_render                render;
   crude_gfx_render_graph_render_pass_post_render           post_render;
   crude_gfx_render_graph_render_pass_on_resize             on_resize;
+  crude_gfx_render_graph_render_pass_on_techniques_reloaded on_techniques_reloaded;
   void                                                    *ctx;
 } crude_gfx_render_graph_pass_container;
 
@@ -236,6 +238,12 @@ crude_gfx_render_graph_on_resize
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
+);
+
+CRUDE_API void
+crude_gfx_render_graph_on_techniques_reloaded
+(
+  _In_ crude_gfx_render_graph                             *render_graph
 );
 
 /************************************************
@@ -395,6 +403,12 @@ crude_gfx_render_graph_render_pass_container_on_resize
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
+);
+
+CRUDE_API void
+crude_gfx_render_graph_render_pass_container_on_techniques_reloaded
+(
+  _In_ crude_gfx_render_graph_pass_container               container
 );
 
 CRUDE_API crude_gfx_render_graph_pass_container

@@ -25,6 +25,8 @@ crude_devgui_reload_techniques_
     crude_gfx_renderer_destroy_technique( devgui->renderer, technique );
     crude_gfx_renderer_technique_load_from_file( technique->json_name, devgui->renderer, devgui->render_graph, &devgui->temporary_allocator );
   }
+
+  crude_gfx_render_graph_on_techniques_reloaded( devgui->render_graph );
 }
 
 void
@@ -67,7 +69,7 @@ crude_devgui_draw
   {
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
-      if ( ImGui::MenuItem( "Reload Shaders" ) )
+      if ( ImGui::MenuItem( "Reload Techniques" ) )
       {
         devgui->should_reload_shaders = true;
       }

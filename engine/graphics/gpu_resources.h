@@ -92,6 +92,7 @@ typedef struct crude_gfx_framebuffer_handle
 #define CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_framebuffer_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_GFX_RENDER_PASS_HANDLE_INVALID               ( CRUDE_COMPOUNT( crude_gfx_render_pass_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_GFX_DESCRIPTOR_SET_LAYOUT_HANDLE_INVALID     ( CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
+#define CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID            ( CRUDE_COMPOUNT( crude_gfx_descriptor_set_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 
 /************************************************
  *
