@@ -138,6 +138,8 @@ typedef struct crude_gfx_device
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;
   float32                                                  gpu_timestamp_frequency;
 
+  bool                                                     timestamps_enabled;
+
   bool                                                     mesh_shaders_extension_present;
 
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
@@ -313,6 +315,13 @@ crude_gfx_copy_gpu_timestamps
 (
   _In_ crude_gfx_device                                   *gpu,
   _Out_ crude_gfx_gpu_time_query                          *timestamps
+);
+
+CRUDE_API void
+crude_gfx_gpu_set_timestamps_enable
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ bool                                                value
 );
 
 /************************************************

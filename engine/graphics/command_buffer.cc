@@ -1107,6 +1107,9 @@ crude_gfx_cmd_manager_get_primary_cmd
     crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
     crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
     vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count * 2 );
+
+    vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
+    vkCmdBeginQuery( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, 0 );
   }
   
   return cmd;

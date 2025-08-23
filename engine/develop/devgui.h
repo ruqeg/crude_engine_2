@@ -46,15 +46,19 @@ typedef struct crude_devgui_gpu_visual_profiler
   uint32                                                   max_frames;
   uint32                                                   max_queries_per_frame;
   uint32                                                   current_frame;
-  uint32                                                   max_visible_depth;
+  int32                                                    max_visible_depth;
   float32                                                  average_time;
   float32                                                  max_time;
   float32                                                  min_time;
   float32                                                  new_average;
+  uint32                                                   framebuffer_pixel_count;
   uint16                                                  *per_frame_active;
   crude_gfx_gpu_time_query                                *timestamps;
+  crude_gfx_gpu_pipeline_statistics                       *pipeline_statistics;
   crude_heap_allocator                                    *allocator;
   struct { uint64 key; uint32 value; }                    *name_hashed_to_color_index;
+  uint32                                                   initial_frames_paused;
+  bool                                                     paused;
   bool                                                     enabled;
 } crude_devgui_gpu_visual_profiler;
 

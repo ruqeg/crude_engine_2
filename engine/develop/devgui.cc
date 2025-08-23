@@ -528,8 +528,12 @@ crude_devgui_gpu_visual_profiler_initialize
   dev_gpu_profiler->max_visible_depth = 2;
   dev_gpu_profiler->max_queries_per_frame = 32;
   dev_gpu_profiler->allocator = allocator;
+  dev_gpu_profiler->paused = false;
+  dev_gpu_profiler->pipeline_statistics = NULL;
   dev_gpu_profiler->timestamps = CRUDE_CAST( crude_gfx_gpu_time_query*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( crude_gfx_gpu_time_query ) * dev_gpu_profiler->max_frames * dev_gpu_profiler->max_queries_per_frame ) );
   dev_gpu_profiler->per_frame_active = CRUDE_CAST( uint16*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( uint16 ) * dev_gpu_profiler->max_frames, allocator ) );
+  dev_gpu_profiler->framebuffer_pixel_count = 0u;
+  dev_gpu_profiler->initial_frames_paused = 15;
   memset( dev_gpu_profiler->per_frame_active, 0, sizeof( uint16 ) * dev_gpu_profiler->max_frames );
   CRUDE_HASHMAP_INITIALIZE( dev_gpu_profiler->name_hashed_to_color_index, crude_heap_allocator_pack( dev_gpu_profiler->allocator ) );
 }
@@ -551,14 +555,26 @@ crude_devgui_gpu_visual_profiler_update
   _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 )
 {
+  crude_gfx_gpu_set_timestamps_enable( dev_gpu_profiler->gpu, !dev_gpu_profiler->paused );
+
+  if ( dev_gpu_profiler->initial_frames_paused )
+  {
+    --dev_gpu_profiler->initial_frames_paused;
+    return;
+  }
+
+  if ( dev_gpu_profiler->paused )
+  {
+    return;
+  }
+
   uint32 active_timestamps = crude_gfx_copy_gpu_timestamps( dev_gpu_profiler->gpu, &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame ] );
 
   dev_gpu_profiler->per_frame_active[ dev_gpu_profiler->current_frame ] = active_timestamps;
+  
+  dev_gpu_profiler->framebuffer_pixel_count = dev_gpu_profiler->gpu->vk_swapchain_width * dev_gpu_profiler->gpu->vk_swapchain_height;
 
-    //// Collect pipeline statistics
-    //pipeline_statistics = &gpu.gpu_time_queries_manager->frame_pipeline_statistics;
-    //
-    //s_framebuffer_pixel_count = gpu.swapchain_width * gpu.swapchain_height;
+  dev_gpu_profiler->pipeline_statistics = &dev_gpu_profiler->gpu->gpu_time_queries_manager->frame_pipeline_statistics;
 
   for ( uint32 i = 0; i < active_timestamps; ++i )
   {
@@ -605,7 +621,7 @@ crude_devgui_gpu_visual_profiler_draw
     
     float32 legend_width = 250;
     float32 graph_width = fabsf( canvas_size.x - legend_width );
-    uint32 rect_width = CRUDE_CEIL( graph_width / CRUDE_GFX_MAX_SWAPCHAIN_IMAGES );
+    uint32 rect_width = CRUDE_CEIL( graph_width / dev_gpu_profiler->max_frames );
     int32 rect_x = CRUDE_CEIL( graph_width - rect_width );
 
     float64 new_average = 0;
@@ -737,57 +753,59 @@ crude_devgui_gpu_visual_profiler_draw
     ImGui::Dummy( { canvas_size.x, widget_height } );
   }
 
-   // ImGui::SetNextItemWidth( 100.f );
-   // ImGui::LabelText( "", "Max %3.4fms", max_time );
-   // ImGui::SameLine();
-   // ImGui::SetNextItemWidth( 100.f );
-   // ImGui::LabelText( "", "Min %3.4fms", min_time );
-   // ImGui::SameLine();
-   // ImGui::LabelText( "", "Ave %3.4fms", average_time );
-   //
-   // ImGui::Separator();
-   // ImGui::Checkbox( "Pause", &paused );
-   //
-   // static const char* items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
-   // static const float max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
-   //
-   // static int max_duration_index = 4;
-   // if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) ) {
-   //     max_duration = max_durations[ max_duration_index ];
-   // }
-   //
-   // ImGui::SliderUint( "Max Depth", &max_visible_depth, 1, 4 );
-   //
-   // ImGui::Separator();
-   // static const char* stat_unit_names[] = { "Normal", "Kilo", "Mega" };
-   // static const char* stat_units[] = { "", "K", "M" };
-   // static const f32 stat_unit_multipliers[] = { 1.0f, 1000.f, 1000000.f };
-   //
-   // static int stat_unit_index = 1;
-   // const f32 stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
-   // cstring stat_unit_name = stat_units[ stat_unit_index ];
-   // if ( pipeline_statistics ) {
-   //     f32 stat_values[ GpuPipelineStatistics::Count ];
-   //     for ( u32 i = 0; i < GpuPipelineStatistics::Count; ++i ) {
-   //         stat_values[ i ] = pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
-   //     }
-   //
-   //     ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s", stat_values[ GpuPipelineStatistics::VerticesCount ], stat_unit_name,
-   //                  stat_values[ GpuPipelineStatistics::PrimitiveCount ], stat_unit_name );
-   //
-   //     ImGui::Text( "Clipping: Invocations %0.2f%s, Visible Primitives %0.2f%s, Visible Perc %3.1f", stat_values[ GpuPipelineStatistics::ClippingInvocations ], stat_unit_name,
-   //                  stat_values[ GpuPipelineStatistics::ClippingPrimitives ], stat_unit_name,
-   //                  stat_values[ GpuPipelineStatistics::ClippingPrimitives ] / stat_values[ GpuPipelineStatistics::ClippingInvocations ] * 100.0f, stat_unit_name );
-   //
-   //     ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s", stat_values[ GpuPipelineStatistics::VertexShaderInvocations ], stat_unit_name,
-   //                  stat_values[ GpuPipelineStatistics::FragmentShaderInvocations ], stat_unit_name, stat_values[ GpuPipelineStatistics::ComputeShaderInvocations ], stat_unit_name );
-   //
-   //     ImGui::Text( "Invocations divided by number of full screen quad pixels." );
-   //     ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f", stat_values[ GpuPipelineStatistics::VertexShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count,
-   //                  stat_values[ GpuPipelineStatistics::FragmentShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count,
-   //                  stat_values[ GpuPipelineStatistics::ComputeShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count );
-   //
-   // }
-   //
-   // ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
+  ImGui::SetNextItemWidth( 100.f );
+  ImGui::LabelText( "", "Max %3.4fms", dev_gpu_profiler->max_time );
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth( 100.f );
+  ImGui::LabelText( "", "Min %3.4fms", dev_gpu_profiler->min_time );
+  ImGui::SameLine();
+  ImGui::LabelText( "", "Ave %3.4fms", dev_gpu_profiler->average_time );
+  
+  ImGui::Separator();
+  ImGui::Checkbox( "Pause", &dev_gpu_profiler->paused );
+  
+  static const char* items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
+  static const float max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
+
+  static int max_duration_index = 4;
+  if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) )
+  {
+    dev_gpu_profiler->max_duration = max_durations[ max_duration_index ];
+  }
+  
+  ImGui::SliderInt( "Max Depth", &dev_gpu_profiler->max_visible_depth, 1, 4 );
+  
+  ImGui::Separator();
+  static const char* stat_unit_names[] = { "Normal", "Kilo", "Mega" };
+  static const char* stat_units[] = { "", "K", "M" };
+  static const float32 stat_unit_multipliers[] = { 1.0f, 1000.f, 1000000.f };
+  
+  static int stat_unit_index = 1;
+  const float32 stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
+  char const *stat_unit_name = stat_units[ stat_unit_index ];
+  if ( dev_gpu_profiler->pipeline_statistics )
+  {
+    float32 stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT ];
+    for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i )
+    {
+      stat_values[ i ] = dev_gpu_profiler->pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
+    }
+  
+    ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTICES_COUNT ], stat_unit_name,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_PRIMITIVE_COUNT ], stat_unit_name );
+  
+    ImGui::Text( "Clipping: Invocations %0.2f%s, Visible Primitives %0.2f%s, Visible Perc %3.1f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ], stat_unit_name,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ], stat_unit_name,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ] / stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ] * 100.0f, stat_unit_name );
+  
+    ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ], stat_unit_name,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ], stat_unit_name, stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ], stat_unit_name );
+  
+    ImGui::Text( "Invocations divided by number of full screen quad pixels." );
+    ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
+      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count );
+  }
+  
+  ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
 }

@@ -209,6 +209,7 @@ crude_gfx_device_initialize
   gpu->vk_swapchain_image_index = 0;
   gpu->swapchain_resized_last_frame = false;
   gpu->mesh_shaders_extension_present = false;
+  gpu->timestamps_enabled = false;
 
   crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
 
@@ -255,19 +256,18 @@ crude_gfx_device_initialize
       vkCreateQueryPool( gpu->vk_device, &vk_timestamp_pool_info, gpu->vk_allocation_callbacks, &pool->vk_timestamp_query_pool );
       
       /* Create pipeline statistics query pool */
-      VkQueryPoolCreateInfo statistics_pool_info = {
-        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, 
-        .queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS,
-        .queryCount = 7,
-        .pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
-          VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT
-      };
-      vkCreateQueryPool( gpu->vk_device, &statistics_pool_info, gpu->vk_allocation_callbacks, &pool->vk_pipeline_stats_query_pool);
+      VkQueryPoolCreateInfo vk_statistics_pool_info = CRUDE_COMPOUNT_EMPTY( VkQueryPoolCreateInfo );
+      vk_statistics_pool_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+      vk_statistics_pool_info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+      vk_statistics_pool_info.queryCount = CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT;
+      vk_statistics_pool_info.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+      vkCreateQueryPool( gpu->vk_device, &vk_statistics_pool_info, gpu->vk_allocation_callbacks, &pool->vk_pipeline_stats_query_pool);
     }
   }
 
@@ -494,7 +494,7 @@ crude_gfx_present
       
       if ( command_buffer->thread_frame_pool->time_queries->allocated_time_query )
       {
-        //vkCmdEndQuery( command_buffer->vk_cmd_buffer, command_buffer->thread_frame_pool->vk_pipeline_stats_query_pool, 0 );
+        vkCmdEndQuery( command_buffer->vk_cmd_buffer, command_buffer->thread_frame_pool->vk_pipeline_stats_query_pool, 0 );
       }
 
       crude_gfx_cmd_end_render_pass( command_buffer );
@@ -611,12 +611,17 @@ crude_gfx_present
       .extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 },
     };
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 1, true );
+    
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 1, false );
+    VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
-    crude_gfx_cmd_end( cmd );
+    vkEndCommandBuffer( cmd->vk_cmd_buffer );
   
     {
       VkSemaphoreSubmitInfo wait_semaphores[] = {
@@ -668,52 +673,58 @@ crude_gfx_present
     }
   }
   
-  for ( uint32 i = 0; i < gpu->num_threads; ++i )
+  if ( gpu->timestamps_enabled )
   {
-    uint32 pool_index = ( gpu->previous_frame * gpu->num_threads ) + i;
-    crude_gfx_gpu_thread_frame_pools *thread_pool = &gpu->thread_frame_pools[ pool_index ];
-    crude_gfx_gpu_time_query_tree *time_query = thread_pool->time_queries;
-    uint32 temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
+    crude_gfx_gpu_pipeline_statistics_reset( &gpu->gpu_time_queries_manager->frame_pipeline_statistics );
 
-    if ( time_query && time_query->allocated_time_query )
+    for ( uint32 i = 0; i < gpu->num_threads; ++i )
     {
-      uint32 query_offset = ( pool_index * gpu->gpu_time_queries_manager->queries_per_thread );
-      uint32 query_count = time_query->allocated_time_query;
-      uint64 *timestamps_data;
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( timestamps_data, query_count * 2, crude_stack_allocator_pack( gpu->temporary_allocator ) );
-      vkGetQueryPoolResults( gpu->vk_device, thread_pool->vk_timestamp_query_pool, 0, query_count * 2,
-        sizeof( uint64 ) * query_count * 2, timestamps_data,
-        sizeof( uint64 ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
-      );
-      
-      for ( uint32 i = 0; i < query_count; ++i )
+      uint32 pool_index = ( gpu->previous_frame * gpu->num_threads ) + i;
+      crude_gfx_gpu_thread_frame_pools *thread_pool = &gpu->thread_frame_pools[ pool_index ];
+      crude_gfx_gpu_time_query_tree *time_query = thread_pool->time_queries;
+      uint32 temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
+
+      if ( time_query && time_query->allocated_time_query )
       {
-        uint32 index = ( query_offset) + i;
+        uint32 query_offset = ( pool_index * gpu->gpu_time_queries_manager->queries_per_thread );
+        uint32 query_count = time_query->allocated_time_query;
+        uint64 *timestamps_data;
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( timestamps_data, query_count * 2, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+        vkGetQueryPoolResults( gpu->vk_device, thread_pool->vk_timestamp_query_pool, 0, query_count * 2,
+          sizeof( uint64 ) * query_count * 2, timestamps_data,
+          sizeof( uint64 ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
+        );
+        
+        for ( uint32 i = 0; i < query_count; ++i )
+        {
+          uint32 index = ( query_offset) + i;
 
-        crude_gfx_gpu_time_query *timestamp = &gpu->gpu_time_queries_manager->timestamps[ index ];
+          crude_gfx_gpu_time_query *timestamp = &gpu->gpu_time_queries_manager->timestamps[ index ];
 
-        float64 start = timestamps_data[ ( i * 2 ) ];
-        float64 end = timestamps_data[ ( i * 2 ) + 1 ];
-        float64 range = end - start;
-        float64 elapsed_time = range * gpu->gpu_timestamp_frequency;
+          float64 start = timestamps_data[ ( i * 2 ) ];
+          float64 end = timestamps_data[ ( i * 2 ) + 1 ];
+          float64 range = end - start;
+          float64 elapsed_time = range * gpu->gpu_timestamp_frequency;
 
-        timestamp->elapsed_ms = elapsed_time;
-        timestamp->frame_index = gpu->absolute_frame;
+          timestamp->elapsed_ms = elapsed_time;
+          timestamp->frame_index = gpu->absolute_frame;
+        }
+
+        uint64 *pipeline_statistics_data;
+        
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( pipeline_statistics_data, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+        vkGetQueryPoolResults( gpu->vk_device, thread_pool->vk_pipeline_stats_query_pool, 0, 1,
+          CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT * sizeof( uint64 ), pipeline_statistics_data, sizeof( uint64 ), VK_QUERY_RESULT_64_BIT
+        );
+
+        for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i )
+        {
+          gpu->gpu_time_queries_manager->frame_pipeline_statistics.statistics[ i ] += pipeline_statistics_data[ i ];
+        }
       }
-
-      uint64 *pipeline_statistics_data;
       
-      //CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( pipeline_statistics_data, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT, crude_stack_allocator_pack( gpu->temporary_allocator ) );
-      //vkGetQueryPoolResults( gpu->vk_device, thread_pool->vk_pipeline_stats_query_pool, 0, 1,
-      //  CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT * sizeof( uint64 ), pipeline_statistics_data, sizeof( uint64 ), VK_QUERY_RESULT_64_BIT
-      //);
-
-      //for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i ) {
-      //  gpu->gpu_time_queries_manager->frame_pipeline_statistics.statistics[ i ] += pipeline_statistics_data[ i ];
-      //}
+      crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
     }
-    
-    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
   }
 
   gpu->previous_frame = gpu->current_frame;
@@ -1072,6 +1083,16 @@ crude_gfx_copy_gpu_timestamps
   return crude_gfx_gpu_time_queries_manager_resolve( gpu->gpu_time_queries_manager, gpu->previous_frame, timestamps );
 }
 
+void
+crude_gfx_gpu_set_timestamps_enable
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ bool                                                value
+)
+{
+  gpu->timestamps_enabled = value;
+}
+
 /************************************************
  *
  * GPU Device Resources Functions
@@ -1204,8 +1225,14 @@ crude_gfx_create_texture
     memcpy( destination_data, creation->initial_data, image_size );
     vmaUnmapMemory( gpu->vma_allocator, staging_allocation );
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, 0u, true );
+    crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, 0u, false );
     
+    VkCommandBufferBeginInfo beginInfo = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
+
     VkBufferImageCopy region =
     {
       .bufferOffset = 0,
@@ -1271,7 +1298,7 @@ crude_gfx_create_texture
     
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->subresource.mip_level_count, false );
     
-    crude_gfx_cmd_end( cmd );
+    vkEndCommandBuffer( cmd->vk_cmd_buffer );
     
     {
       VkCommandBufferSubmitInfo command_buffers[] = {
@@ -3249,11 +3276,11 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, false );
+  
   VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, false );
   vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
