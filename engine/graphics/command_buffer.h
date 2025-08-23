@@ -10,6 +10,7 @@
  * 
  ***********************************************/
 typedef struct crude_gfx_device crude_gfx_device;
+typedef struct crude_gfx_gpu_thread_frame_pools crude_gfx_gpu_thread_frame_pools;
 
 typedef struct crude_gfx_cmd_buffer
 {
@@ -27,6 +28,8 @@ typedef struct crude_gfx_cmd_buffer
   crude_resource_pool                                      frame_descriptor_sets;
   VkDescriptorPool                                         vk_descriptor_pool;
   VkCommandBuffer                                          vk_cmd_buffer;
+
+  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
 } crude_gfx_cmd_buffer;
 
 typedef struct crude_gfx_cmd_buffer_manager

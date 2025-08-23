@@ -32,19 +32,22 @@ crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_renderer                                 *renderer
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
 )
 {
   devgui->should_reload_shaders = false;
   devgui->menubar_enabled = false;
   devgui->renderer = renderer;
   devgui->render_graph = render_graph;
+  devgui->allocator = allocator;
   crude_stack_allocator_initialize( &devgui->temporary_allocator, CRUDE_RMEGA( 32 ), "devgui_temp_allocator" );
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, render_graph->builder->gpu );
   crude_devgui_render_graph_initialize( &devgui->dev_render_graph, render_graph );
   crude_devgui_gpu_initialize( &devgui->dev_gpu, render_graph->builder->gpu, &devgui->temporary_allocator );
+  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, render_graph->builder->gpu, allocator );
 }
 
 void
@@ -102,6 +105,7 @@ crude_devgui_draw
   crude_devgui_viewport_draw( &devgui->dev_viewport, camera_node, devgui->dev_nodes_tree.selected_node );
   crude_devgui_render_graph_draw( &devgui->dev_render_graph );
   crude_devgui_gpu_draw( &devgui->dev_gpu );
+  crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
 }
 
 void
@@ -119,7 +123,16 @@ crude_devgui_handle_input
 }
 
 void
-crude_devgui_post_graphics_update
+crude_devgui_graphics_pre_update
+(
+  _In_ crude_devgui                                       *devgui
+)
+{
+  crude_devgui_gpu_visual_profiler_update( &devgui->dev_gpu_profiler );
+}
+
+void
+crude_devgui_graphics_post_update
 (
   _In_ crude_devgui                                       *devgui
 )
@@ -424,8 +437,8 @@ crude_devgui_render_graph_draw
         }
       }
     }
-    ImGui::End( );
   }
+  ImGui::End( );
 }
 
 /******************************
@@ -494,4 +507,287 @@ crude_devgui_gpu_draw
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->framebuffers, "Framebuffers" );
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->render_passes, "RenderPasses" );
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->shaders, "Shaders" );
+}
+
+/******************************
+ * Dev Gui GPU Visual Profiler
+ *******************************/
+void
+crude_devgui_gpu_visual_profiler_initialize
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_heap_allocator                               *allocator
+)
+{
+  dev_gpu_profiler->gpu = gpu;
+  dev_gpu_profiler->enabled = true;
+  dev_gpu_profiler->max_duration = 16.666f;
+  dev_gpu_profiler->max_frames = 100u;
+  dev_gpu_profiler->current_frame = 0u;
+  dev_gpu_profiler->max_visible_depth = 2;
+  dev_gpu_profiler->max_queries_per_frame = 32;
+  dev_gpu_profiler->allocator = allocator;
+  dev_gpu_profiler->timestamps = CRUDE_CAST( crude_gfx_gpu_time_query*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( crude_gfx_gpu_time_query ) * dev_gpu_profiler->max_frames * dev_gpu_profiler->max_queries_per_frame ) );
+  dev_gpu_profiler->per_frame_active = CRUDE_CAST( uint16*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( uint16 ) * dev_gpu_profiler->max_frames, allocator ) );
+  memset( dev_gpu_profiler->per_frame_active, 0, sizeof( uint16 ) * dev_gpu_profiler->max_frames );
+  CRUDE_HASHMAP_INITIALIZE( dev_gpu_profiler->name_hashed_to_color_index, crude_heap_allocator_pack( dev_gpu_profiler->allocator ) );
+}
+
+void
+crude_devgui_gpu_visual_profiler_deinitialize
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+)
+{
+  CRUDE_HASHMAP_DEINITIALIZE( dev_gpu_profiler->name_hashed_to_color_index );
+  CRUDE_DEALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), dev_gpu_profiler->timestamps );
+  CRUDE_DEALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), dev_gpu_profiler->per_frame_active );
+}
+
+void
+crude_devgui_gpu_visual_profiler_update
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+)
+{
+  uint32 active_timestamps = crude_gfx_copy_gpu_timestamps( dev_gpu_profiler->gpu, &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame ] );
+
+  dev_gpu_profiler->per_frame_active[ dev_gpu_profiler->current_frame ] = active_timestamps;
+
+    //// Collect pipeline statistics
+    //pipeline_statistics = &gpu.gpu_time_queries_manager->frame_pipeline_statistics;
+    //
+    //s_framebuffer_pixel_count = gpu.swapchain_width * gpu.swapchain_height;
+
+  for ( uint32 i = 0; i < active_timestamps; ++i )
+  {
+    crude_gfx_gpu_time_query *timestamp = &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame + i ];
+  
+    uint64 hashed_name = crude_hash_string( timestamp->name, 0u );
+    int64 hash_color_index = CRUDE_HASHMAP_GET_INDEX( dev_gpu_profiler->name_hashed_to_color_index, hashed_name );
+    uint64 color_index;
+
+    if ( hash_color_index == -1 )
+    {
+      color_index = CRUDE_HASHMAP_LENGTH( dev_gpu_profiler->name_hashed_to_color_index );
+      CRUDE_HASHMAP_SET( dev_gpu_profiler->name_hashed_to_color_index, hashed_name, color_index );
+    }
+    else
+    {
+      color_index = dev_gpu_profiler->name_hashed_to_color_index[ hash_color_index ].value;
+    }
+  
+    timestamp->color = crude_color_get_distinct_color( color_index );
+  }
+
+  dev_gpu_profiler->current_frame = ( dev_gpu_profiler->current_frame + 1 ) % dev_gpu_profiler->max_frames;
+
+  if ( dev_gpu_profiler->current_frame == 0 )
+  {
+    dev_gpu_profiler->max_time = -FLT_MAX;
+    dev_gpu_profiler->min_time = FLT_MAX;
+    dev_gpu_profiler->average_time = 0.f;
+  }
+}
+
+void
+crude_devgui_gpu_visual_profiler_draw
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+)
+{
+  {
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+    ImVec2 canvas_size = ImGui::GetContentRegionAvail();
+    float32 widget_height = canvas_size.y - 100;
+    
+    float32 legend_width = 250;
+    float32 graph_width = fabsf( canvas_size.x - legend_width );
+    uint32 rect_width = CRUDE_CEIL( graph_width / CRUDE_GFX_MAX_SWAPCHAIN_IMAGES );
+    int32 rect_x = CRUDE_CEIL( graph_width - rect_width );
+
+    float64 new_average = 0;
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    static char buf[ 128 ];
+
+    const ImVec2 mouse_pos = io.MousePos;
+
+    int32 selected_frame = -1;
+
+    /* Draw Graph */
+    for ( uint32 i = 0; i < dev_gpu_profiler->max_frames; ++i )
+    {
+      uint32 frame_index = ( dev_gpu_profiler->current_frame - 1 - i ) % dev_gpu_profiler->max_frames;
+
+      float32 frame_x = cursor_pos.x + rect_x;
+      crude_gfx_gpu_time_query *frame_timestamps = &dev_gpu_profiler->timestamps[ frame_index * dev_gpu_profiler->max_queries_per_frame ];
+      float32 frame_time = ( float32 )frame_timestamps[ 0 ].elapsed_ms;
+      
+      frame_time = CRUDE_CLAMP( frame_time, 1000.f, 0.00001f );
+            
+      new_average += frame_time;
+      dev_gpu_profiler->min_time = CRUDE_MIN( dev_gpu_profiler->min_time, frame_time );
+      dev_gpu_profiler->max_time = CRUDE_MAX( dev_gpu_profiler->max_time, frame_time );
+      
+      float32 rect_height = frame_time / dev_gpu_profiler->max_duration * widget_height;
+      float32 current_height = cursor_pos.y;
+      
+      /* Draw timestamps from the bottom */
+      for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ frame_index ]; ++j )
+      {
+        crude_gfx_gpu_time_query const *timestamp = &frame_timestamps[ j ];
+      
+        if ( timestamp->depth != 1 )
+        {
+          continue;
+        }
+        
+        uint32 width_margin = 2;
+      
+        rect_height = ( float32 )timestamp->elapsed_ms / dev_gpu_profiler->max_duration * widget_height;
+        ImVec2 rect_min { frame_x + width_margin, current_height + widget_height - rect_height };
+        ImVec2 rect_max { frame_x + width_margin + rect_width - width_margin, current_height + widget_height };
+        draw_list->AddRectFilled( rect_min, rect_max, timestamp->color );
+      
+        current_height -= rect_height;
+      }
+      
+      if ( mouse_pos.x >= frame_x && mouse_pos.x < frame_x + rect_width && mouse_pos.y >= cursor_pos.y && mouse_pos.y < cursor_pos.y + widget_height )
+      {
+        draw_list->AddRectFilled(
+          { frame_x, cursor_pos.y + widget_height },
+          { frame_x + rect_width, cursor_pos.y },
+          0x0fffffff
+        );
+      
+        ImGui::SetTooltip( "(%u): %f", frame_index, frame_time );
+      
+        selected_frame = frame_index;
+      }
+
+      draw_list->AddLine( { frame_x, cursor_pos.y + widget_height }, { frame_x, cursor_pos.y }, 0x0fffffff );
+
+      rect_x -= rect_width;
+    }
+    
+    sprintf( buf, "%3.4fms", dev_gpu_profiler->max_duration );
+    draw_list->AddText( { cursor_pos.x, cursor_pos.y }, 0xff0000ff, buf );
+    draw_list->AddRectFilled( { cursor_pos.x + rect_width, cursor_pos.y }, { cursor_pos.x + graph_width, cursor_pos.y + 1 }, 0xff0000ff );
+
+    sprintf( buf, "%3.4fms", dev_gpu_profiler->max_duration / 2.f );
+    draw_list->AddText( { cursor_pos.x, cursor_pos.y + widget_height / 2.f }, 0xff00ffff, buf );
+    draw_list->AddRectFilled( { cursor_pos.x + rect_width, cursor_pos.y + widget_height / 2.f }, { cursor_pos.x + graph_width, cursor_pos.y + widget_height / 2.f + 1 }, 0xff00ffff );
+
+    dev_gpu_profiler->average_time = CRUDE_CAST( float32, dev_gpu_profiler->new_average ) / dev_gpu_profiler->max_frames;
+
+    /* Draw legend */
+    ImGui::SetCursorPosX( cursor_pos.x + graph_width );
+
+    selected_frame = selected_frame == -1 ? ( dev_gpu_profiler->current_frame - 1 ) % dev_gpu_profiler->max_frames : selected_frame;
+    if ( selected_frame >= 0 )
+    {
+      crude_gfx_gpu_time_query *frame_timestamps = &dev_gpu_profiler->timestamps[ selected_frame * dev_gpu_profiler->max_queries_per_frame ];
+    
+      float32 x = cursor_pos.x + graph_width + 8;
+      float32 y = cursor_pos.y + widget_height - 14;
+    
+      for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ selected_frame ]; ++j )
+      {
+        crude_gfx_gpu_time_query *timestamp = &frame_timestamps[ j ];
+    
+        if ( timestamp->depth > dev_gpu_profiler->max_visible_depth )
+        {
+          continue;
+        }
+    
+        float32 timestamp_x = x + timestamp->depth * 4;
+    
+        if ( timestamp->depth == 0 )
+        {
+          draw_list->AddRectFilled(
+            { timestamp_x, cursor_pos.y + 4 },
+            { timestamp_x + 8, cursor_pos.y + 12 },
+            timestamp->color
+          );
+          
+          sprintf( buf, "%2.3fms %d %s", timestamp->elapsed_ms, timestamp->depth, timestamp->name );
+          draw_list->AddText( { timestamp_x + 20, cursor_pos.y }, 0xffffffff, buf );
+        }
+        else
+        {
+          /* Draw all other timestamps starting from bottom */
+          draw_list->AddRectFilled(
+            { timestamp_x, y + 4 },
+            { timestamp_x + 8, y + 12 },
+            timestamp->color
+          );
+    
+          sprintf( buf, "%2.3fms %d %s", timestamp->elapsed_ms, timestamp->depth, timestamp->name );
+          draw_list->AddText( { timestamp_x + 20, y }, 0xffffffff, buf );
+    
+          y -= 14;
+        }
+      }
+    }
+
+    ImGui::Dummy( { canvas_size.x, widget_height } );
+  }
+
+   // ImGui::SetNextItemWidth( 100.f );
+   // ImGui::LabelText( "", "Max %3.4fms", max_time );
+   // ImGui::SameLine();
+   // ImGui::SetNextItemWidth( 100.f );
+   // ImGui::LabelText( "", "Min %3.4fms", min_time );
+   // ImGui::SameLine();
+   // ImGui::LabelText( "", "Ave %3.4fms", average_time );
+   //
+   // ImGui::Separator();
+   // ImGui::Checkbox( "Pause", &paused );
+   //
+   // static const char* items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
+   // static const float max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
+   //
+   // static int max_duration_index = 4;
+   // if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) ) {
+   //     max_duration = max_durations[ max_duration_index ];
+   // }
+   //
+   // ImGui::SliderUint( "Max Depth", &max_visible_depth, 1, 4 );
+   //
+   // ImGui::Separator();
+   // static const char* stat_unit_names[] = { "Normal", "Kilo", "Mega" };
+   // static const char* stat_units[] = { "", "K", "M" };
+   // static const f32 stat_unit_multipliers[] = { 1.0f, 1000.f, 1000000.f };
+   //
+   // static int stat_unit_index = 1;
+   // const f32 stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
+   // cstring stat_unit_name = stat_units[ stat_unit_index ];
+   // if ( pipeline_statistics ) {
+   //     f32 stat_values[ GpuPipelineStatistics::Count ];
+   //     for ( u32 i = 0; i < GpuPipelineStatistics::Count; ++i ) {
+   //         stat_values[ i ] = pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
+   //     }
+   //
+   //     ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s", stat_values[ GpuPipelineStatistics::VerticesCount ], stat_unit_name,
+   //                  stat_values[ GpuPipelineStatistics::PrimitiveCount ], stat_unit_name );
+   //
+   //     ImGui::Text( "Clipping: Invocations %0.2f%s, Visible Primitives %0.2f%s, Visible Perc %3.1f", stat_values[ GpuPipelineStatistics::ClippingInvocations ], stat_unit_name,
+   //                  stat_values[ GpuPipelineStatistics::ClippingPrimitives ], stat_unit_name,
+   //                  stat_values[ GpuPipelineStatistics::ClippingPrimitives ] / stat_values[ GpuPipelineStatistics::ClippingInvocations ] * 100.0f, stat_unit_name );
+   //
+   //     ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s", stat_values[ GpuPipelineStatistics::VertexShaderInvocations ], stat_unit_name,
+   //                  stat_values[ GpuPipelineStatistics::FragmentShaderInvocations ], stat_unit_name, stat_values[ GpuPipelineStatistics::ComputeShaderInvocations ], stat_unit_name );
+   //
+   //     ImGui::Text( "Invocations divided by number of full screen quad pixels." );
+   //     ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f", stat_values[ GpuPipelineStatistics::VertexShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count,
+   //                  stat_values[ GpuPipelineStatistics::FragmentShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count,
+   //                  stat_values[ GpuPipelineStatistics::ComputeShaderInvocations ] * stat_unit_multiplier / s_framebuffer_pixel_count );
+   //
+   // }
+   //
+   // ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
 }

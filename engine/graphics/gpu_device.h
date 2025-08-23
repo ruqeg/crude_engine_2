@@ -7,6 +7,7 @@
 #include <core/assert.h>
 #include <graphics/command_buffer.h>
 
+typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
 
@@ -135,6 +136,7 @@ typedef struct crude_gfx_device
 
   uint32                                                   num_threads;
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;
+  float32                                                  gpu_timestamp_frequency;
 
   bool                                                     mesh_shaders_extension_present;
 
@@ -304,6 +306,13 @@ crude_gfx_resize_texture
   _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ uint32                                              width,
   _In_ uint32                                              height
+);
+
+CRUDE_API uint32
+crude_gfx_copy_gpu_timestamps
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _Out_ crude_gfx_gpu_time_query                          *timestamps
 );
 
 /************************************************

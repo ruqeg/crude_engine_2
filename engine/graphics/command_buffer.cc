@@ -2,6 +2,7 @@
 #include <core/array.h>
 #include <core/profiler.h>
 #include <graphics/gpu_device.h>
+#include <graphics/gpu_profiler.h>
 
 #include <graphics/command_buffer.h>
 
@@ -916,6 +917,9 @@ crude_gfx_cmd_push_marker
   _In_ char const                                         *name
 )
 {
+  crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
+  vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
+
   VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
   vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
   vk_label.pLabelName = name;
@@ -932,6 +936,9 @@ crude_gfx_cmd_pop_marker
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
+  crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
+  vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
+
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
 }
 
@@ -991,6 +998,7 @@ crude_gfx_cmd_manager_initialize
     allocate_info.commandBufferCount = 1;
     
     current_cmd_buffer = &cmd_manager->primary_cmd_buffers[ i ];
+    current_cmd_buffer->thread_frame_pool = &gpu->thread_frame_pools[ pool_index ];
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &allocate_info, &current_cmd_buffer->vk_cmd_buffer ), "Failed to allocate command buffer" );
     crude_gfx_cmd_initialize( current_cmd_buffer, gpu );
   }
@@ -1019,6 +1027,7 @@ crude_gfx_cmd_manager_initialize
       crude_gfx_cmd_buffer                                 cmd;
 
       cmd.vk_cmd_buffer = secondary_buffers[ second_cmd_index ];
+      cmd.thread_frame_pool = &gpu->thread_frame_pools[ pool_index ];
       crude_gfx_cmd_initialize( &cmd, gpu );
       cmd_manager->secondary_cmd_buffers[ pool_index * cmd_manager->num_secondary_cmd_buffer_per_pool + second_cmd_index ] = cmd;
     }
@@ -1094,6 +1103,10 @@ crude_gfx_cmd_manager_get_primary_cmd
     crude_gfx_cmd_begin_primary( cmd );
     CRUDE_ASSERT( current_used_buffer < cmd_manager->num_primary_cmd_buffers_per_thread );
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
+    
+    crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
+    crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
+    vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count * 2 );
   }
   
   return cmd;

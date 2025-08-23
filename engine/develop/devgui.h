@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <core/color.h>
+#include <graphics/gpu_profiler.h>
 #include <graphics/render_graph.h>
 #include <graphics/renderer.h>
 #include <platform/platform_components.h>
@@ -37,6 +39,25 @@ typedef struct crude_devgui_gpu
   bool                                                     enabled;
 } crude_devgui_gpu;
 
+typedef struct crude_devgui_gpu_visual_profiler
+{
+  crude_gfx_device                                        *gpu;
+  float32                                                  max_duration;
+  uint32                                                   max_frames;
+  uint32                                                   max_queries_per_frame;
+  uint32                                                   current_frame;
+  uint32                                                   max_visible_depth;
+  float32                                                  average_time;
+  float32                                                  max_time;
+  float32                                                  min_time;
+  float32                                                  new_average;
+  uint16                                                  *per_frame_active;
+  crude_gfx_gpu_time_query                                *timestamps;
+  crude_heap_allocator                                    *allocator;
+  struct { uint64 key; uint32 value; }                    *name_hashed_to_color_index;
+  bool                                                     enabled;
+} crude_devgui_gpu_visual_profiler;
+
 typedef struct crude_devgui
 {
   bool                                                     menubar_enabled;
@@ -45,9 +66,11 @@ typedef struct crude_devgui
   crude_devgui_viewport                                    dev_viewport;
   crude_devgui_render_graph                                dev_render_graph;
   crude_devgui_gpu                                         dev_gpu;
+  crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_stack_allocator                                    temporary_allocator;
+  crude_heap_allocator                                    *allocator;
   bool                                                     should_reload_shaders;
 } crude_devgui;
 
@@ -59,7 +82,8 @@ crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_renderer                                 *renderer
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
 );
 
 CRUDE_API void
@@ -84,7 +108,13 @@ crude_devgui_handle_input
 );
 
 CRUDE_API void
-crude_devgui_post_graphics_update
+crude_devgui_graphics_pre_update
+(
+  _In_ crude_devgui                                       *devgui
+);
+
+CRUDE_API void
+crude_devgui_graphics_post_update
 (
   _In_ crude_devgui                                       *devgui
 );
@@ -177,4 +207,33 @@ CRUDE_API void
 crude_devgui_gpu_draw
 (
   _In_ crude_devgui_gpu                                   *dev_gpu
+);
+
+/******************************
+ * Dev Gui GPU Visual Profiler
+ *******************************/
+CRUDE_API void
+crude_devgui_gpu_visual_profiler_initialize
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_devgui_gpu_visual_profiler_deinitialize
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+);
+
+CRUDE_API void
+crude_devgui_gpu_visual_profiler_update
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+);
+
+CRUDE_API void
+crude_devgui_gpu_visual_profiler_draw
+(
+  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 );

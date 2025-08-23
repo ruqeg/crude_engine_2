@@ -453,8 +453,10 @@ crude_gfx_scene_renderer_submit_draw_task
  
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
   
+  crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
   update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
+  crude_gfx_cmd_pop_marker( primary_cmd );
   crude_gfx_queue_cmd( primary_cmd );
 }
 

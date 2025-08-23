@@ -1,5 +1,6 @@
 #pragma once
 
+#include <core/color.h>
 #include <graphics/gpu_device.h>
 
 typedef enum crude_gfx_gpu_pipeline_statistics_v
@@ -21,7 +22,7 @@ typedef struct crude_gfx_gpu_time_query
   uint16                                                   end_query_index;
   uint16                                                   parent_index;
   uint16                                                   depth;
-  uint32                                                   color;
+  crude_color                                              color;
   uint32                                                   frame_index;
   char const                                              *name;
 } crude_gfx_gpu_time_query;
@@ -29,6 +30,7 @@ typedef struct crude_gfx_gpu_time_query
 typedef struct crude_gfx_gpu_time_query_tree
 {
   crude_gfx_gpu_time_query                                *time_queries;
+  uint32                                                   time_queries_count;
   uint16                                                   current_time_query;
   uint16                                                   allocated_time_query;
   uint16                                                   depth;
