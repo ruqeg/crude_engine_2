@@ -30,6 +30,13 @@ typedef struct crude_devgui_render_graph
   bool                                                     enabled;
 } crude_devgui_render_graph;
 
+typedef struct crude_devgui_gpu
+{
+  crude_gfx_device                                        *gpu;
+  crude_stack_allocator                                   *temporary_allocator;
+  bool                                                     enabled;
+} crude_devgui_gpu;
+
 typedef struct crude_devgui
 {
   bool                                                     menubar_enabled;
@@ -37,6 +44,7 @@ typedef struct crude_devgui
   crude_devgui_node_inspector                              dev_node_inspector;
   crude_devgui_viewport                                    dev_viewport;
   crude_devgui_render_graph                                dev_render_graph;
+  crude_devgui_gpu                                         dev_gpu;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_stack_allocator                                    temporary_allocator;
@@ -152,4 +160,21 @@ CRUDE_API void
 crude_devgui_render_graph_draw
 (
   _In_ crude_devgui_render_graph                          *devgui_render_graph
+);
+
+/******************************
+ * Dev Gui GPU
+ *******************************/
+CRUDE_API void
+crude_devgui_gpu_initialize
+(
+  _In_ crude_devgui_gpu                                   *dev_gpu,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API void
+crude_devgui_gpu_draw
+(
+  _In_ crude_devgui_gpu                                   *dev_gpu
 );

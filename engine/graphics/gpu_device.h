@@ -54,8 +54,7 @@ typedef struct crude_gfx_device
   /**
    * Default sampler and texture references.
    * These fallback resources will be used when
-   * sampler/texture is undefined. Ensures consistent
-   * rendering behavior even with missing assets.
+   * sampler/texture is undefined.
    */
   crude_gfx_sampler_handle                                 default_sampler;
   /**
@@ -81,8 +80,7 @@ typedef struct crude_gfx_device
    */
   crude_gfx_cmd_buffer                                   **queued_command_buffers;
   /**
-   * Vulkan handles and additional data related to the
-   * foundation of the renderer.
+   * Additional data related to the foundation of the renderer.
    */
   VkInstance                                               vk_instance;
   VkDebugUtilsMessengerEXT                                 vk_debug_utils_messenger;

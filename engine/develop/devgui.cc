@@ -44,6 +44,7 @@ crude_devgui_initialize
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, render_graph->builder->gpu );
   crude_devgui_render_graph_initialize( &devgui->dev_render_graph, render_graph );
+  crude_devgui_gpu_initialize( &devgui->dev_gpu, render_graph->builder->gpu, &devgui->temporary_allocator );
 }
 
 void
@@ -75,6 +76,10 @@ crude_devgui_draw
       {
         devgui->dev_render_graph.enabled = !devgui->dev_render_graph.enabled;
       }
+      if ( ImGui::MenuItem( "GPU" ) )
+      {
+        devgui->dev_gpu.enabled = !devgui->dev_gpu.enabled;
+      }
       ImGui::EndMenu( );
     }
     if ( ImGui::BeginMenu( "Scene" ) )
@@ -96,6 +101,7 @@ crude_devgui_draw
   crude_devgui_node_inspector_draw( &devgui->dev_node_inspector, devgui->dev_nodes_tree.selected_node );
   crude_devgui_viewport_draw( &devgui->dev_viewport, camera_node, devgui->dev_nodes_tree.selected_node );
   crude_devgui_render_graph_draw( &devgui->dev_render_graph );
+  crude_devgui_gpu_draw( &devgui->dev_gpu );
 }
 
 void
@@ -420,4 +426,72 @@ crude_devgui_render_graph_draw
     }
     ImGui::End( );
   }
+}
+
+/******************************
+ * Dev Gui GPU
+ *******************************/
+static void
+crude_devgui_gpu_pool_draw_
+(
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ char const                                         *resource_name
+)
+{
+  ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
+}
+
+void
+crude_devgui_gpu_initialize
+(
+  _In_ crude_devgui_gpu                                   *dev_gpu,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  dev_gpu->enabled = false;
+  dev_gpu->gpu = gpu;
+  dev_gpu->temporary_allocator = temporary_allocator;
+}
+
+void
+crude_devgui_gpu_draw
+(
+  _In_ crude_devgui_gpu                                   *dev_gpu
+)
+{
+  if ( !dev_gpu->enabled )
+  {
+    return;
+  }
+
+  VkPhysicalDeviceProperties                               vk_physical_properties;
+  VmaBudget                                                gpu_memory_heap_budgets[ VK_MAX_MEMORY_HEAPS ];
+  uint64                                                   memory_used, memory_allocated;
+
+  crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
+  vmaGetHeapBudgets( dev_gpu->gpu->vma_allocator, gpu_memory_heap_budgets );
+ 
+  memory_used = memory_allocated = 0;
+  for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
+  {
+    memory_used += gpu_memory_heap_budgets[ i ].usage;
+    memory_allocated += gpu_memory_heap_budgets[ i ].budget;
+  }
+   
+  vkGetPhysicalDeviceProperties( dev_gpu->gpu->vk_physical_device, &vk_physical_properties );
+
+  ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
+  ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
+
+  ImGui::Separator();
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->buffers, "Buffers" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->textures, "Textures" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->pipelines, "Pipelines" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->samplers, "Samplers" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->descriptor_sets, "DescriptorSets" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->descriptor_set_layouts, "DescriptorSetLayouts" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->framebuffers, "Framebuffers" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->render_passes, "RenderPasses" );
+  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->shaders, "Shaders" );
 }
