@@ -18,6 +18,7 @@ crude_gfx_light_pass_initialize
   {
     pass->light_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
+  pass->light_cb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 }
 
 void
@@ -41,12 +42,17 @@ crude_gfx_light_pass_on_render_graph_registered
 {
   crude_gfx_light_constant_gpu                             light_constant;
   crude_gfx_buffer_creation                                buffer_creation;
-
+  
   light_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_constant_gpu );
   light_constant.textures.x = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_albedo" )->resource_info.texture.handle.index;
   light_constant.textures.y = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" )->resource_info.texture.handle.index;
   light_constant.textures.z = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_roughness_metalness" )->resource_info.texture.handle.index;
   light_constant.textures.w = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" )->resource_info.texture.handle.index;
+
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->light_cb ) )
+  {
+    crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->light_cb );
+  }
 
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -120,6 +126,18 @@ crude_gfx_light_pass_on_techniques_reloaded
   }
 }
 
+void
+crude_gfx_light_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+  crude_gfx_light_pass_on_techniques_reloaded( ctx );
+}
+
 crude_gfx_render_graph_pass_container
 crude_gfx_light_pass_pack
 (
@@ -130,5 +148,6 @@ crude_gfx_light_pass_pack
   container.ctx = pass;
   container.render = crude_gfx_light_pass_render;
   container.on_techniques_reloaded = crude_gfx_light_pass_on_techniques_reloaded;
+  container.on_resize = crude_gfx_light_pass_on_resize;
   return container;
 }

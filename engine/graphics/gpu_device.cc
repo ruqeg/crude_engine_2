@@ -181,6 +181,12 @@ crude_gfx_compile_shader
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
+void
+crude_gfx_update_frame_counters_
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
 /************************************************
  *
  * GPU Device Initialize/Deinitialize
@@ -617,7 +623,7 @@ crude_gfx_present
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
-    
+
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
@@ -671,6 +677,7 @@ crude_gfx_present
     if ( result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR )
     {
       vk_resize_swapchain_( gpu );
+      crude_gfx_update_frame_counters_( gpu );
       return;
     }
   }
@@ -741,9 +748,7 @@ crude_gfx_present
     }
   }
 
-  gpu->previous_frame = gpu->current_frame;
-  gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
-  gpu->absolute_frame = gpu->absolute_frame + 1;
+  crude_gfx_update_frame_counters_( gpu );
 
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
@@ -1011,6 +1016,17 @@ crude_gfx_compile_shader
     .pCode = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code ),
   } );
   return shader_create_info;
+}
+
+void
+crude_gfx_update_frame_counters_
+(
+  _In_ crude_gfx_device                                   *gpu
+)
+{
+  gpu->previous_frame = gpu->current_frame;
+  gpu->current_frame = ( gpu->current_frame + 1u ) % gpu->vk_swapchain_images_count;
+  gpu->absolute_frame = gpu->absolute_frame + 1;
 }
 
 void
@@ -3553,7 +3569,8 @@ vk_create_texture_
   texture->flags          = creation->flags;
   texture->handle         = handle;
   texture->parent_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  
+  texture->state          = CRUDE_GFX_RESOURCE_STATE_UNDEFINED;
+
   {
     VmaAllocationCreateInfo                                memory_info;
     VkImageCreateInfo                                      image_info;

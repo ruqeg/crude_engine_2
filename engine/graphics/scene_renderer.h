@@ -125,6 +125,12 @@ crude_gfx_scene_renderer_register_passes
   _In_ crude_gfx_render_graph                             *render_graph
 );
 
+CRUDE_API void
+crude_gfx_scene_renderer_on_resize
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
 /**
  *
  * Renderer Scene Utils

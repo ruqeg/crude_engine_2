@@ -112,6 +112,12 @@ crude_devgui_handle_input
 );
 
 CRUDE_API void
+crude_devgui_on_resize
+(
+  _In_ crude_devgui                                       *devgui
+);
+
+CRUDE_API void
 crude_devgui_graphics_pre_update
 (
   _In_ crude_devgui                                       *devgui

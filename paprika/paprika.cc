@@ -267,13 +267,15 @@ paprika_graphics_system_
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
   ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
-  crude_devgui_draw( &paprika->devgui, paprika->scene.main_node, paprika->scene.main_camera );
 
   if ( paprika->graphics.gpu.swapchain_resized_last_frame )
   {
+    crude_gfx_scene_renderer_on_resize( &paprika->graphics.scene_renderer );
     crude_gfx_render_graph_on_resize( &paprika->graphics.render_graph, paprika->graphics.gpu.vk_swapchain_width, paprika->graphics.gpu.vk_swapchain_height );
+    crude_devgui_on_resize( &paprika->devgui );
   }
-
+  
+  crude_devgui_draw( &paprika->devgui, paprika->scene.main_node, paprika->scene.main_camera );
   crude_gfx_scene_renderer_submit_draw_task( &paprika->graphics.scene_renderer, false );
   
   crude_gfx_renderer_add_texture_update_commands( &paprika->graphics.renderer, 1u );

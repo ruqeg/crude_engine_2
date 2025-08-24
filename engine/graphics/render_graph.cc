@@ -788,8 +788,8 @@ crude_gfx_render_graph_on_resize
       continue;
     }
     
-    crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, render_graph->builder->gpu, new_width, new_height );
     crude_gfx_resize_framebuffer( render_graph->builder->gpu, node->framebuffer, new_width, new_height );
+    crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, render_graph->builder->gpu, new_width, new_height );
   }
 }
 

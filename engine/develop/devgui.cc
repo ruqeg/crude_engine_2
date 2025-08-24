@@ -128,6 +128,14 @@ crude_devgui_handle_input
 }
 
 void
+crude_devgui_on_resize
+(
+  _In_ crude_devgui                                       *devgui
+)
+{
+}
+
+void
 crude_devgui_graphics_pre_update
 (
   _In_ crude_devgui                                       *devgui

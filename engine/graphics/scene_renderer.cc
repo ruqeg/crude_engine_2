@@ -269,18 +269,6 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
     buffer_creation.name = "lights_bins_sb";
     scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
-    
-    {
-      uint32 tile_x_count = scene_renderer->renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
-      uint32 tile_y_count = scene_renderer->renderer->gpu->vk_swapchain_height / CRUDE_GFX_LIGHT_TILE_SIZE;
-      uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
-      buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-      buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-      buffer_creation.size = sizeof( uint32 ) * tiles_entry_count;
-      buffer_creation.name = "lights_tiles_sb";
-      scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
-    }
   }
 
   /* Create Immutable Buffers */
@@ -360,6 +348,13 @@ crude_gfx_scene_renderer_initialize
 
     crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
   }
+  
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  }
+
+  crude_gfx_scene_renderer_on_resize( scene_renderer );
 
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
@@ -481,6 +476,36 @@ crude_gfx_scene_renderer_register_passes
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
   crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
+}
+
+void
+crude_gfx_scene_renderer_on_resize
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_buffer_creation                                buffer_creation;
+  
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_tiles_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
+    }
+  }
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    uint32 tile_x_count = scene_renderer->renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
+    uint32 tile_y_count = scene_renderer->renderer->gpu->vk_swapchain_height / CRUDE_GFX_LIGHT_TILE_SIZE;
+    uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( uint32 ) * tiles_entry_count;
+    buffer_creation.name = "lights_tiles_sb";
+    scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+  }
 }
 
 /**

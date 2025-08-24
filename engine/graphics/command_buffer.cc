@@ -58,7 +58,7 @@ crude_gfx_cmd_initialize
   pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes );
   pool_info.pPoolSizes    = pool_sizes;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( cmd->gpu->vk_device, &pool_info, cmd->gpu->vk_allocation_callbacks, &cmd->vk_descriptor_pool ), "Failed create descriptor pool" );
-  
+
   crude_resource_pool_initialize( &cmd->frame_descriptor_sets, cmd->gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set ) );
   
   crude_gfx_cmd_reset( cmd );
@@ -1001,6 +1001,9 @@ crude_gfx_cmd_manager_initialize
     current_cmd_buffer->thread_frame_pool = &gpu->thread_frame_pools[ pool_index ];
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &allocate_info, &current_cmd_buffer->vk_cmd_buffer ), "Failed to allocate command buffer" );
     crude_gfx_cmd_initialize( current_cmd_buffer, gpu );
+
+    char const *resource_name = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "primary_cmd frame: %i thread: %i pool: %i", frame_index, thread_index, pool_index );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )current_cmd_buffer->vk_cmd_buffer, resource_name );
   }
   
   total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_pool;
