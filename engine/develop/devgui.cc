@@ -56,6 +56,7 @@ crude_devgui_deinitialize
   _In_ crude_devgui                                       *devgui
 )
 {
+  crude_devgui_gpu_visual_profiler_deinitialize( &devgui->dev_gpu_profiler );
   crude_stack_allocator_deinitialize( &devgui->temporary_allocator );
 }
 
@@ -79,9 +80,13 @@ crude_devgui_draw
       {
         devgui->dev_render_graph.enabled = !devgui->dev_render_graph.enabled;
       }
-      if ( ImGui::MenuItem( "GPU" ) )
+      if ( ImGui::MenuItem( "GPU Pools" ) )
       {
         devgui->dev_gpu.enabled = !devgui->dev_gpu.enabled;
+      }
+      if ( ImGui::MenuItem( "GPU Profiler" ) )
+      {
+        devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
       }
       ImGui::EndMenu( );
     }
@@ -521,7 +526,7 @@ crude_devgui_gpu_visual_profiler_initialize
 )
 {
   dev_gpu_profiler->gpu = gpu;
-  dev_gpu_profiler->enabled = true;
+  dev_gpu_profiler->enabled = false;
   dev_gpu_profiler->max_duration = 16.666f;
   dev_gpu_profiler->max_frames = 100u;
   dev_gpu_profiler->current_frame = 0u;
@@ -555,6 +560,10 @@ crude_devgui_gpu_visual_profiler_update
   _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 )
 {
+  if ( !dev_gpu_profiler->enabled )
+  {
+    return;
+  }
   crude_gfx_gpu_set_timestamps_enable( dev_gpu_profiler->gpu, !dev_gpu_profiler->paused );
 
   if ( dev_gpu_profiler->initial_frames_paused )
@@ -578,11 +587,15 @@ crude_devgui_gpu_visual_profiler_update
 
   for ( uint32 i = 0; i < active_timestamps; ++i )
   {
-    crude_gfx_gpu_time_query *timestamp = &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame + i ];
+    crude_gfx_gpu_time_query                              *timestamp;
+    int64                                                  hash_color_index;
+    uint64                                                 hashed_name, color_index;
+
+    timestamp = &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame + i ];
   
-    uint64 hashed_name = crude_hash_string( timestamp->name, 0u );
-    int64 hash_color_index = CRUDE_HASHMAP_GET_INDEX( dev_gpu_profiler->name_hashed_to_color_index, hashed_name );
-    uint64 color_index;
+    hashed_name = crude_hash_string( timestamp->name, 0u );
+    hash_color_index = CRUDE_HASHMAP_GET_INDEX( dev_gpu_profiler->name_hashed_to_color_index, hashed_name );
+    color_index;
 
     if ( hash_color_index == -1 )
     {
@@ -613,35 +626,53 @@ crude_devgui_gpu_visual_profiler_draw
   _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 )
 {
+  if ( !dev_gpu_profiler->enabled )
   {
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-    ImVec2 canvas_size = ImGui::GetContentRegionAvail();
-    float32 widget_height = canvas_size.y - 100;
+    return;
+  }
+
+  {
+    ImGuiIO                                               *imgui_io;
+    ImDrawList                                            *draw_list;
+    char                                                   buf[ 128 ];
+    ImVec2                                                 cursor_pos, canvas_size, mouse_pos;
+    float64                                                new_average;
+    float32                                                widget_height, legend_width, graph_width;
+    uint32                                                 rect_width;
+    int32                                                  rect_x, selected_frame;
+
+    draw_list = ImGui::GetWindowDrawList();
+    cursor_pos = ImGui::GetCursorScreenPos();
+    canvas_size = ImGui::GetContentRegionAvail();
+    widget_height = canvas_size.y - 100;
     
-    float32 legend_width = 250;
-    float32 graph_width = fabsf( canvas_size.x - legend_width );
-    uint32 rect_width = CRUDE_CEIL( graph_width / dev_gpu_profiler->max_frames );
-    int32 rect_x = CRUDE_CEIL( graph_width - rect_width );
+    legend_width = 250;
+    graph_width = fabsf( canvas_size.x - legend_width );
+    rect_width = CRUDE_CEIL( graph_width / dev_gpu_profiler->max_frames );
+    rect_x = CRUDE_CEIL( graph_width - rect_width );
 
-    float64 new_average = 0;
+    new_average = 0;
 
-    ImGuiIO& io = ImGui::GetIO();
+    imgui_io = &ImGui::GetIO();
 
-    static char buf[ 128 ];
+    crude_memory_set( buf, 0u, sizeof( buf ) );
 
-    const ImVec2 mouse_pos = io.MousePos;
+    mouse_pos = imgui_io->MousePos;
 
-    int32 selected_frame = -1;
+    selected_frame = -1;
 
     /* Draw Graph */
     for ( uint32 i = 0; i < dev_gpu_profiler->max_frames; ++i )
     {
-      uint32 frame_index = ( dev_gpu_profiler->current_frame - 1 - i ) % dev_gpu_profiler->max_frames;
+      crude_gfx_gpu_time_query                            *frame_timestamps;
+      uint32                                               frame_index;
+      float32                                              frame_x, frame_time, rect_height, current_height;
 
-      float32 frame_x = cursor_pos.x + rect_x;
-      crude_gfx_gpu_time_query *frame_timestamps = &dev_gpu_profiler->timestamps[ frame_index * dev_gpu_profiler->max_queries_per_frame ];
-      float32 frame_time = ( float32 )frame_timestamps[ 0 ].elapsed_ms;
+      frame_index = ( dev_gpu_profiler->current_frame - 1 - i ) % dev_gpu_profiler->max_frames;
+
+      frame_x = cursor_pos.x + rect_x;
+      frame_timestamps = &dev_gpu_profiler->timestamps[ frame_index * dev_gpu_profiler->max_queries_per_frame ];
+      frame_time = frame_timestamps[ 0 ].elapsed_ms;
       
       frame_time = CRUDE_CLAMP( frame_time, 1000.f, 0.00001f );
             
@@ -649,24 +680,28 @@ crude_devgui_gpu_visual_profiler_draw
       dev_gpu_profiler->min_time = CRUDE_MIN( dev_gpu_profiler->min_time, frame_time );
       dev_gpu_profiler->max_time = CRUDE_MAX( dev_gpu_profiler->max_time, frame_time );
       
-      float32 rect_height = frame_time / dev_gpu_profiler->max_duration * widget_height;
-      float32 current_height = cursor_pos.y;
+      rect_height = frame_time / dev_gpu_profiler->max_duration * widget_height;
+      current_height = cursor_pos.y;
       
       /* Draw timestamps from the bottom */
       for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ frame_index ]; ++j )
       {
-        crude_gfx_gpu_time_query const *timestamp = &frame_timestamps[ j ];
-      
+        crude_gfx_gpu_time_query const                    *timestamp;
+        ImVec2                                             rect_min, rect_max;
+        uint32                                             width_margin;
+
+        timestamp = &frame_timestamps[ j ];
+
         if ( timestamp->depth != 1 )
         {
           continue;
         }
         
-        uint32 width_margin = 2;
+        width_margin = 2;
       
         rect_height = ( float32 )timestamp->elapsed_ms / dev_gpu_profiler->max_duration * widget_height;
-        ImVec2 rect_min { frame_x + width_margin, current_height + widget_height - rect_height };
-        ImVec2 rect_max { frame_x + width_margin + rect_width - width_margin, current_height + widget_height };
+        rect_min = CRUDE_COMPOUNT( ImVec2, { frame_x + width_margin, current_height + widget_height - rect_height } );
+        rect_max = CRUDE_COMPOUNT( ImVec2, { frame_x + width_margin + rect_width - width_margin, current_height + widget_height } );
         draw_list->AddRectFilled( rect_min, rect_max, timestamp->color );
       
         current_height -= rect_height;
@@ -706,21 +741,27 @@ crude_devgui_gpu_visual_profiler_draw
     selected_frame = selected_frame == -1 ? ( dev_gpu_profiler->current_frame - 1 ) % dev_gpu_profiler->max_frames : selected_frame;
     if ( selected_frame >= 0 )
     {
-      crude_gfx_gpu_time_query *frame_timestamps = &dev_gpu_profiler->timestamps[ selected_frame * dev_gpu_profiler->max_queries_per_frame ];
+      crude_gfx_gpu_time_query                            *frame_timestamps;
+      float32                                              x, y;
+
+      frame_timestamps = &dev_gpu_profiler->timestamps[ selected_frame * dev_gpu_profiler->max_queries_per_frame ];
     
-      float32 x = cursor_pos.x + graph_width + 8;
-      float32 y = cursor_pos.y + widget_height - 14;
+      x = cursor_pos.x + graph_width + 8;
+      y = cursor_pos.y + widget_height - 14;
     
       for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ selected_frame ]; ++j )
       {
-        crude_gfx_gpu_time_query *timestamp = &frame_timestamps[ j ];
+        crude_gfx_gpu_time_query                          *timestamp;
+        float32                                            timestamp_x;
+
+        timestamp = &frame_timestamps[ j ];
     
         if ( timestamp->depth > dev_gpu_profiler->max_visible_depth )
         {
           continue;
         }
     
-        float32 timestamp_x = x + timestamp->depth * 4;
+        timestamp_x = x + timestamp->depth * 4;
     
         if ( timestamp->depth == 0 )
         {
@@ -764,48 +805,53 @@ crude_devgui_gpu_visual_profiler_draw
   ImGui::Separator();
   ImGui::Checkbox( "Pause", &dev_gpu_profiler->paused );
   
-  static const char* items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
-  static const float max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
+  {
+    char const                                            *stat_unit_name;
+    float32                                                stat_unit_multiplier;
 
-  static int max_duration_index = 4;
-  if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) )
-  {
-    dev_gpu_profiler->max_duration = max_durations[ max_duration_index ];
-  }
-  
-  ImGui::SliderInt( "Max Depth", &dev_gpu_profiler->max_visible_depth, 1, 4 );
-  
-  ImGui::Separator();
-  static const char* stat_unit_names[] = { "Normal", "Kilo", "Mega" };
-  static const char* stat_units[] = { "", "K", "M" };
-  static const float32 stat_unit_multipliers[] = { 1.0f, 1000.f, 1000000.f };
-  
-  static int stat_unit_index = 1;
-  const float32 stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
-  char const *stat_unit_name = stat_units[ stat_unit_index ];
-  if ( dev_gpu_profiler->pipeline_statistics )
-  {
-    float32 stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT ];
-    for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i )
+    static const char                                     *items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
+    static const float                                     max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
+    static const char                                     *stat_unit_names[] = { "Normal", "Kilo", "Mega" };
+    static const char                                     *stat_units[] = { "", "K", "M" };
+    static const float32                                   stat_unit_multipliers[] = { 1.f, 1000.f, 1000000.f };
+    static int                                             max_duration_index = 4;
+    static int                                             stat_unit_index = 1;
+
+    if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) )
     {
-      stat_values[ i ] = dev_gpu_profiler->pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
+      dev_gpu_profiler->max_duration = max_durations[ max_duration_index ];
+    }
+    
+    ImGui::SliderInt( "Max Depth", &dev_gpu_profiler->max_visible_depth, 1, 4 );
+    
+    ImGui::Separator();
+    
+    stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
+    stat_unit_name = stat_units[ stat_unit_index ];
+    if ( dev_gpu_profiler->pipeline_statistics )
+    {
+      float32 stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT ];
+      for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i )
+      {
+        stat_values[ i ] = dev_gpu_profiler->pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
+      }
+    
+      ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTICES_COUNT ], stat_unit_name,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_PRIMITIVE_COUNT ], stat_unit_name );
+    
+      ImGui::Text( "Clipping: Invocations %0.2f%s, Visible Primitives %0.2f%s, Visible Perc %3.1f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ], stat_unit_name,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ], stat_unit_name,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ] / stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ] * 100.0f, stat_unit_name );
+    
+      ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ], stat_unit_name,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ], stat_unit_name, stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ], stat_unit_name );
+    
+      ImGui::Text( "Invocations divided by number of full screen quad pixels." );
+      ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
+        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count );
     }
   
-    ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTICES_COUNT ], stat_unit_name,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_PRIMITIVE_COUNT ], stat_unit_name );
-  
-    ImGui::Text( "Clipping: Invocations %0.2f%s, Visible Primitives %0.2f%s, Visible Perc %3.1f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ], stat_unit_name,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ], stat_unit_name,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ] / stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ] * 100.0f, stat_unit_name );
-  
-    ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ], stat_unit_name,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ], stat_unit_name, stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ], stat_unit_name );
-  
-    ImGui::Text( "Invocations divided by number of full screen quad pixels." );
-    ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f", stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
-      stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count );
+    ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
   }
-  
-  ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
 }

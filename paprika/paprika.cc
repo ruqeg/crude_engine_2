@@ -138,6 +138,7 @@ crude_paprika_deinitialize
   
   crude_entity_destroy( paprika->platform_node );
   crude_scene_deinitialize( &paprika->scene );
+  crude_devgui_deinitialize( &paprika->devgui );
   paprika_graphics_deinitialize_( paprika );
   crude_heap_allocator_deinitialize( &paprika->graphics_allocator );
   crude_stack_allocator_deinitialize( &paprika->temporary_allocator );

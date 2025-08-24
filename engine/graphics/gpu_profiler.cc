@@ -15,7 +15,8 @@ crude_gfx_gpu_time_queries_manager_initialize
   manager->thread_frame_pools = thread_frame_pools;
   manager->queries_per_thread = queries_per_thread;
   manager->queries_per_frame = queries_per_thread * num_threads;
-  
+  manager->allocator_container = allocator_container;
+
   uint32 total_time_queries = manager->queries_per_frame * max_frames;
   uint64 allocated_size = sizeof( crude_gfx_gpu_time_query ) * total_time_queries;
   uint8 *memory = CRUDE_CAST( uint8*, CRUDE_ALLOCATE( allocator_container, allocated_size ) );
