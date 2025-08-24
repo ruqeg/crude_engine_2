@@ -560,10 +560,6 @@ crude_devgui_gpu_visual_profiler_update
   _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 )
 {
-  if ( !dev_gpu_profiler->enabled )
-  {
-    return;
-  }
   crude_gfx_gpu_set_timestamps_enable( dev_gpu_profiler->gpu, !dev_gpu_profiler->paused );
 
   if ( dev_gpu_profiler->initial_frames_paused )

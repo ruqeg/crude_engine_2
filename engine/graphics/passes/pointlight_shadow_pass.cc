@@ -145,7 +145,8 @@ crude_gfx_pointlight_shadow_pass_render
   pointshadow_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_culling" )->pipeline;
   pointshadow_commands_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_commands_generation" )->pipeline;
   pointshadow_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow" )->pipeline;
-
+  
+  crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_culling" );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->meshletes_instances_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_culling_pipeline );
@@ -153,12 +154,15 @@ crude_gfx_pointlight_shadow_pass_render
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count * CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->meshletes_instances_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
-
+  crude_gfx_cmd_pop_marker( primary_cmd );
+  
+  crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_commands_generation" );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_commands_generation_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->pointshadow_commands_generation_ds[ gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_pop_marker( primary_cmd );
 
   tetrahedron_shadow_texture = crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture );
   
@@ -288,7 +292,8 @@ crude_gfx_pointlight_shadow_pass_render
       crude_gfx_unmap_buffer( gpu, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ] );
       crude_gfx_unmap_buffer( gpu, pass->pointlight_spheres_sb[ gpu->current_frame ] );
     }
-
+    
+    crude_gfx_cmd_push_marker( primary_cmd, "pointshadow" );
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0u, 1u, true );
 
     crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
@@ -304,6 +309,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_cmd_end_render_pass( primary_cmd );
 
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, true );
+    crude_gfx_cmd_pop_marker( primary_cmd );
   }
 }
 
