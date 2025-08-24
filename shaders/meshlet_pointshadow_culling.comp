@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #define CRUDE_STAGE_COMPUTE
+#extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #include "crude/meshlet.glsli"
 #include "crude/scene.glsli"
@@ -58,10 +59,10 @@ void main()
   float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
   float mesh_radius = bounding_sphere.w * scale * 1.1;
 
-  const bool mesh_intersects_sphere = crude_sphere_intersect( mesh_world_bounding_center.xyz, mesh_radius, light.world_position, light.radius );
+  const bool mesh_intersects_sphere = crude_sphere_intersect( mesh_world_bounding_center.xyz, mesh_radius, light.world_position, 2 * light.radius );
   if (!mesh_intersects_sphere)
   {
-  //  return;
+    return;
   }
 
   for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
@@ -70,7 +71,7 @@ void main()
     float meshlet_radius = meshlets[ meshlet_index ].radius * scale * 1.1;
     vec4 meshlet_world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
 
-    if ( true )// crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
+    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, 2 * light.radius ) )
     {
       uint offset = atomicAdd( pointshadow_meshletes_instances_count[ light_index ], 1 );
       meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );

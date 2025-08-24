@@ -1,6 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #define CRUDE_STAGE_COMPUTE
+#extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"
 #include "crude/light.glsli"

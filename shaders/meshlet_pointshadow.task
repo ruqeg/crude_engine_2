@@ -4,6 +4,7 @@
 #extension GL_KHR_shader_subgroup_ballot: require
 
 #ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
@@ -73,8 +74,8 @@ void main()
 
   const vec4 camera_sphere = pointlight_spheres[ light_index ];
 
-  bool accept = true;// !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
-/*
+  bool accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
+
   if ( accept )
   {
     uint visible_faces = crude_get_cube_face_mask( camera_sphere.xyz, world_center.xyz - vec3( radius ), world_center.xyz + vec3( radius ) );
@@ -93,15 +94,9 @@ void main()
     case 3:
       accept = accept || ( ( visible_faces & 8 ) != 0 );
       break;
-    case 4:
-      accept = accept || ( ( visible_faces & 16 ) != 0 );
-      break;
-    case 5:
-      accept = accept || ( ( visible_faces & 32 ) != 0 );
-      break;
     }
   }
-*/
+
   uvec4 ballot = subgroupBallot( accept );
   uint index = subgroupBallotExclusiveBitCount( ballot );
 
