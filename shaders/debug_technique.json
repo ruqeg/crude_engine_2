@@ -3,7 +3,10 @@
   "pipelines": [
     {
       "name": "debug_line3d",
-      "render_pass": "debug_pass",
+		  "render_pass_output":
+		  {
+			  "reference": "debug_pass" 
+		  },
 	  "blend": [
 	    {
 		  "enable": 1,
@@ -57,7 +60,10 @@
     },
     {
       "name": "debug_line2d",
-      "render_pass": "debug_pass",
+		  "render_pass_output":
+		  {
+			  "reference": "light_pass" 
+		  },
 	  "blend": [
 	    {
 		  "enable": 1,

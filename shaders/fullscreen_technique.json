@@ -3,7 +3,10 @@
 	"pipelines" : [
 		{
 		"name" : "light",
-		"render_pass": "light_pass",
+		"render_pass_output":
+		{
+			"reference": "light_pass" 
+		},
 			"shaders" : [
 				{
 					"stage" : "vertex",

@@ -180,6 +180,22 @@ crude_gfx_render_pass_output_add_color
 }
 
 void
+crude_gfx_render_pass_output_set_depth
+(
+  _In_ crude_gfx_render_pass_output                       *output,
+  _In_ VkFormat                                            depth_stencil_format,
+  _In_ VkImageLayout                                       depth_stencil_final_layout,
+  _In_ crude_gfx_render_pass_operation                     depth_operation,
+  _In_ crude_gfx_render_pass_operation                     stencil_operation
+)
+{
+  output->depth_stencil_format = depth_stencil_format;
+  output->depth_stencil_final_layout = depth_stencil_final_layout;
+  output->depth_operation = depth_operation;
+  output->stencil_operation = stencil_operation;
+}
+
+void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
@@ -451,6 +467,7 @@ crude_gfx_string_to_vk_format
 {
   if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return VK_FORMAT_R16G16B16A16_SFLOAT;
   if ( strcmp( format, "VK_FORMAT_D32_SFLOAT" ) == 0 ) return VK_FORMAT_D32_SFLOAT;
+  if ( strcmp( format, "VK_FORMAT_D16_UNORM" ) == 0 ) return VK_FORMAT_D16_UNORM;
   if ( strcmp( format, "VK_FORMAT_R8G8B8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8_SRGB;
   if ( strcmp( format, "VK_FORMAT_R8G8B8A8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8A8_SRGB;
   if ( strcmp( format, "VK_FORMAT_R16G16_SNORM" ) == 0 ) return VK_FORMAT_R16G16_SNORM;
@@ -556,4 +573,23 @@ crude_gfx_resource_state_to_name
     case CRUDE_GFX_RESOURCE_STATE_SHADING_RATE_SOURCE:                return "Shading Rate";
   }
   return "UnknownState";
+}
+
+crude_gfx_render_pass_operation
+crude_gfx_string_to_render_pass_operation
+(
+  _In_ char const                                         *op
+)
+{
+  if ( strcmp( op, "clear" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
+  }
+  else if ( strcmp( op, "load" ) == 0 )
+  {
+    return CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
+  }
+  
+  CRUDE_ASSERT( false );
+  return CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }

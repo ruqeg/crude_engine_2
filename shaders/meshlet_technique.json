@@ -3,7 +3,10 @@
 	"pipelines" : [
 		{
 		"name" : "meshlet",
-		"render_pass": "gbuffer_early_pass",
+		"render_pass_output":
+		{
+			"reference": "gbuffer_early_pass" 
+		},
 		"depth" : {
 			"write" : 1,
 			"test" : "less_or_equal"
@@ -79,7 +82,16 @@
 		},
 		{
 		  	"name" : "pointshadow",
-		  	"render_pass": "point_shadows_pass",
+		  	"render_pass_output":
+			{
+				"custom":
+				[
+					{
+						"format": "VK_FORMAT_D16_UNORM",
+						"op": "clear"
+					}
+				] 
+			},
 		  	"depth" : {
 				"write" : 1,
 				"test" : "less_or_equal"

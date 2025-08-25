@@ -290,29 +290,57 @@ parse_gpu_pipeline_
 
   pipeline_creation->rasterization.front = VK_FRONT_FACE_CLOCKWISE;
   
-  cJSON const *render_pass_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "render_pass" );
-  if ( render_pass_json != NULL )
+  cJSON const *render_pass_output_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "render_pass_output" );
+  if ( render_pass_output_json != NULL )
   {
-    char const *render_pass_name = cJSON_GetStringValue( render_pass_json );
-    
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, render_pass_name );
-    
-    if ( node )
+    cJSON const *render_pass_output_reference_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_json, "reference" );
+    cJSON const *render_pass_output_custom_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_json, "custom" );
+    if ( render_pass_output_reference_json )
     {
-      if ( strcmp( render_pass_name, "swapchain" ) == 0 )
+      char const *render_pass_name = cJSON_GetStringValue( render_pass_output_reference_json );
+    
+      crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, render_pass_name );
+    
+      if ( node )
       {
-        pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
+        if ( strcmp( render_pass_name, "swapchain" ) == 0 )
+        {
+          pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
+        }
+        else
+        {
+          crude_gfx_render_pass const *render_pass = crude_gfx_access_render_pass( render_graph->builder->gpu, node->render_pass );
+          pipeline_creation->render_pass_output = render_pass->output;
+        }
       }
       else
       {
-        crude_gfx_render_pass const *render_pass = crude_gfx_access_render_pass( render_graph->builder->gpu, node->render_pass );
-        pipeline_creation->render_pass_output = render_pass->output;
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find render pass %s. Defaulting to swapchain", render_pass_name );
+        pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
       }
     }
-    else
+    else if ( render_pass_output_custom_json )
     {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find render pass %s. Defaulting to swapchain", render_pass_name );
-      pipeline_creation->render_pass_output = render_graph->builder->gpu->swapchain_output;
+      pipeline_creation->render_pass_output = crude_gfx_render_pass_output_empty( );
+
+      for ( uint32 i = 0; i < cJSON_GetArraySize( render_pass_output_custom_json ); ++i )
+      {
+        cJSON const *render_pass_output_custom_attachment_json = cJSON_GetArrayItem( render_pass_output_custom_json, i );
+        cJSON const *render_pass_output_custom_attachment_format_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_custom_attachment_json, "format" );
+        cJSON const *render_pass_output_custom_attachment_load_op_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_custom_attachment_json, "op" );
+
+        VkFormat vk_format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) );
+        crude_gfx_render_pass_operation operation = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( render_pass_output_custom_attachment_load_op_json ) );
+
+        if ( crude_gfx_has_depth_or_stencil( vk_format ) )
+        {
+          crude_gfx_render_pass_output_set_depth( &pipeline_creation->render_pass_output, vk_format, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, operation, CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE );
+        }
+        else
+        {
+          crude_gfx_render_pass_output_add_color( &pipeline_creation->render_pass_output, crude_gfx_string_to_vk_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) ), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, operation );
+        }
+      }
     }
   }
 

@@ -3,7 +3,10 @@
 	"pipelines" : [
 		{
 		"name" : "imgui",
-		"render_pass": "imgui_pass",
+		"render_pass_output":
+		{
+			"reference": "imgui_pass" 
+		},
 		"blend": [
 		  {
 			"enable": 1,

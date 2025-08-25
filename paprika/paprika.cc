@@ -162,24 +162,22 @@ paprika_graphics_initialize_
   
   /* Create Device */
   {
-    crude_gfx_device_creation device_creation = {
-      .sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle.value ),
-      .vk_application_name    = "CrudeEngine",
-      .vk_application_version = VK_MAKE_VERSION( 1, 0, 0 ),
-      .allocator_container    = paprika->graphics.allocator_container,
-      .temporary_allocator    = &paprika->temporary_allocator,
-      .queries_per_frame      = 1u,
-      .num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, paprika->graphics.asynchronous_loader_manager->task_sheduler ) ) ),
-    };
+    crude_gfx_device_creation device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
+    device_creation.sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle.value );
+    device_creation.vk_application_name    = "CrudeEngine";
+    device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
+    device_creation.allocator_container    = paprika->graphics.allocator_container;
+    device_creation.temporary_allocator    = &paprika->temporary_allocator;
+    device_creation.queries_per_frame      = 1u;
+    device_creation.num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, paprika->graphics.asynchronous_loader_manager->task_sheduler ) ) );
     crude_gfx_device_initialize( &paprika->graphics.gpu, &device_creation );
   }
   
   /* Create Renderer */
   {
-    crude_gfx_renderer_creation renderer_creation = {
-      .gpu                 = &paprika->graphics.gpu,
-      .allocator_container = paprika->graphics.allocator_container,
-    };
+    crude_gfx_renderer_creation renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_creation );
+    renderer_creation.gpu                 = &paprika->graphics.gpu;
+    renderer_creation.allocator_container = paprika->graphics.allocator_container;
     crude_gfx_renderer_initialize( &paprika->graphics.renderer, &renderer_creation );
   }    
   
@@ -207,20 +205,6 @@ paprika_graphics_initialize_
     crude_gfx_render_graph_compile( &paprika->graphics.render_graph, &paprika->temporary_allocator );
   }
   
-
-  // !TODO
-  crude_gfx_render_graph_node *pointlight_shadow_pass_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "point_shadows_pass" );
-  if ( pointlight_shadow_pass_node )
-  {
-    CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( pointlight_shadow_pass_node->render_pass ) );
-    crude_gfx_render_pass_creation creation = crude_gfx_render_pass_creation_empty( );
-    creation.name = "point_shadows_pass";
-    creation.depth_stencil_format = VK_FORMAT_D16_UNORM;
-    creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
-    pointlight_shadow_pass_node->render_pass = crude_gfx_create_render_pass( &paprika->graphics.gpu, &creation );
-  }
-
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &paprika->graphics.renderer, &paprika->graphics.render_graph, &paprika->temporary_allocator );

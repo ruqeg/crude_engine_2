@@ -19,12 +19,6 @@ string_to_resource_type_
   _In_ char const                                         *input_type
 );
 
-crude_gfx_render_pass_operation
-string_to_render_pass_operation_
-(
-  _In_ char const                                         *op
-);
-
 /************************************************
  *
  * Render Graph Functions
@@ -184,7 +178,7 @@ crude_gfx_render_graph_parse_from_file
           CRUDE_ASSERT( cJSON_GetArraySize( output_resolution ) == 2 );
 
           output_creation.resource_info.texture.format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( output_format ) );
-          output_creation.resource_info.texture.load_op = string_to_render_pass_operation_( cJSON_GetStringValue( output_load_op ) );
+          output_creation.resource_info.texture.load_op = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
           output_creation.resource_info.texture.width = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 0 ) );
           output_creation.resource_info.texture.height = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 1 ) );
           output_creation.resource_info.texture.depth = 1;
@@ -810,7 +804,9 @@ crude_gfx_render_graph_render
         }
       }
       
+      crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
+      crude_gfx_render_graph_render_pass_container_post_render( node->render_graph_pass_container, gpu_commands );
     }
 
     crude_gfx_cmd_pop_marker( gpu_commands );
@@ -1326,23 +1322,4 @@ string_to_resource_type_
   
   CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );
   return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_INVALID;
-}
-
-crude_gfx_render_pass_operation
-string_to_render_pass_operation_
-(
-  _In_ char const                                         *op
-)
-{
-  if ( strcmp( op, "clear" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
-  }
-  else if ( strcmp( op, "load" ) == 0 )
-  {
-    return CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
-  }
-  
-  CRUDE_ASSERT( false );
-  return CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 }

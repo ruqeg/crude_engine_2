@@ -757,6 +757,16 @@ crude_gfx_render_pass_output_add_color
 );
 
 CRUDE_API void
+crude_gfx_render_pass_output_set_depth
+(
+  _In_ crude_gfx_render_pass_output                       *output,
+  _In_ VkFormat                                            depth_stencil_format,
+  _In_ VkImageLayout                                       depth_stencil_final_layout,
+  _In_ crude_gfx_render_pass_operation                     depth_operation,
+  _In_ crude_gfx_render_pass_operation                     stencil_operation
+);
+
+CRUDE_API void
 crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
@@ -876,4 +886,10 @@ CRUDE_API char const*
 crude_gfx_resource_state_to_name
 (
   _In_ crude_gfx_resource_state                            value
+);
+
+crude_gfx_render_pass_operation
+crude_gfx_string_to_render_pass_operation
+(
+  _In_ char const                                         *op
 );
