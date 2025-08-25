@@ -42,7 +42,7 @@ typedef struct crude_gfx_render_graph_node_handle
 typedef enum crude_gfx_render_graph_resource_type
 {
   CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_INVALID    = -1,
-  CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_BUFFER     = 0,
+  CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_MARKER     = 0,
   CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE    = 1,
   CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT = 2,
   CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE  = 3
@@ -63,9 +63,9 @@ typedef struct crude_gfx_render_graph_resource_info
   {
     struct
     {
-      sizet                                                size;
-      VkBufferUsageFlags                                   flags;
-      crude_gfx_buffer_handle                              handle;
+      /**
+       * Being used as simple marker to handle graph sort. For exampled buffers or other stuff...
+       */
     } buffer;
     struct
     {

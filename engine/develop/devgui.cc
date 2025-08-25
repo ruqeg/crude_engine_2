@@ -439,14 +439,14 @@ crude_devgui_render_graph_draw
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
         {
           crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( devgui_render_graph->render_graph->builder, node->inputs[ i ] );
-          ImGui::Text( "\t\t%s %u %u", resource->name, resource->resource_info.texture.handle.index, resource->resource_info.buffer.handle.index );
+          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
         }
 
         ImGui::Text( "\tOutputs" );
         for ( uint32 o = 0; o < CRUDE_ARRAY_LENGTH( node->outputs ); ++o )
         {
           crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( devgui_render_graph->render_graph->builder, node->outputs[ o ] );
-          ImGui::Text( "\t\t%s %u %u", resource->name, resource->resource_info.texture.handle.index, resource->resource_info.buffer.handle.index );
+          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
         }
       }
     }

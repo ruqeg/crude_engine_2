@@ -7,11 +7,11 @@
       "inputs": [],
       "outputs": [
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "mesh_task_indirect_commands_early"
         },
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "mesh_task_indirect_count_early"
         }
       ]
@@ -20,11 +20,11 @@
       "name": "gbuffer_early_pass",
       "inputs": [
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_commands_early"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_count_early"
         }
       ],
@@ -84,11 +84,11 @@
           "name": "depth"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_commands_early"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_count_early"
         }
       ],
@@ -111,11 +111,11 @@
       ],
       "outputs": [
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "mesh_task_indirect_commands_late"
         },
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "mesh_task_indirect_count_late"
         }
       ]
@@ -128,11 +128,11 @@
           "name": "depth_pyramid"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_commands_late"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "mesh_task_indirect_count_late"
         },
         {
@@ -170,7 +170,7 @@
           "name": "depth"
         },
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "MESHLET_LATE_PASS_MARKER"
         }
       ]
@@ -180,7 +180,7 @@
       "type": "compute",
       "inputs": [
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "MESHLET_LATE_PASS_MARKER"
         }
       ],
@@ -191,7 +191,7 @@
             "external": true
         },
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "POINTLIGHT_SHADOW_MARKER"
         }
       ]
@@ -216,7 +216,7 @@
           "name": "depth"
         },
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "POINTLIGHT_SHADOW_MARKER"
         },
         {
@@ -252,7 +252,7 @@
           "name": "pbr"
         },
         {
-          "type": "buffer",
+          "type": "marker",
           "name": "IMGUI_PASS_MARKER"
         }
       ]
@@ -261,7 +261,7 @@
       "name": "imgui_pass",
       "inputs": [
         {
-          "type": "buffer",
+          "type": "reference",
           "name": "IMGUI_PASS_MARKER"
         },
         {
