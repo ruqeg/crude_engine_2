@@ -173,7 +173,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_rect2d_int                                   scissor;
     crude_gfx_viewport                                     dev_viewport;
     
-    crude_gfx_cmd_set_clear_color( primary_cmd, 0, CRUDE_COMPOUNT( VkClearValue, { .depthStencil = { 1.0f, 0 } } ) );
+    crude_gfx_cmd_set_clear_depth_and_stencil( primary_cmd, 1.f, 0.f );
 
     scissor = CRUDE_COMPOUNT_EMPTY( crude_gfx_rect2d_int );
     scissor.x = 0u;

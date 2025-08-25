@@ -76,6 +76,11 @@ typedef struct crude_gfx_render_graph_resource_info
       VkImageUsageFlags                                    flags;
       crude_gfx_render_pass_operation                      load_op;
       crude_gfx_texture_handle                             handle;
+      union
+      {
+        // !TODO handle uint32, int32
+        float32                                            clear_values[ 4 ];
+      };
     } texture;
   };
 } crude_gfx_render_graph_resource_info;

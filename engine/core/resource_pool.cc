@@ -52,7 +52,7 @@ crude_resource_pool_deinitialize
 
   CRUDE_ASSERT( ( resource_pool->free_indices_head == 0 ) && ( resource_pool->used_indices == 0 ) );
 
-  CRUDE_DEALLOCATE(resource_pool->allocator, resource_pool->memory );
+  CRUDE_DEALLOCATE( resource_pool->allocator, resource_pool->memory );
 }
 
 uint32

@@ -3,6 +3,7 @@
 #include <graphics/gpu_resources.h>
 
 #define CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT ( 1024u )
+#define CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ( 8u )
 
 /************************************************
  *
@@ -19,7 +20,7 @@ typedef struct crude_gfx_cmd_buffer
   crude_gfx_render_pass                                   *current_render_pass;
   crude_gfx_framebuffer                                   *current_framebuffer;
   crude_gfx_pipeline                                      *current_pipeline;
-  VkClearValue                                             clears[ 2 ];
+  VkClearValue                                             clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
   /**
    * frame_descriptor_sets holds the resource pool for descriptor sets for the current frame.
    * They will be automatically deallocated on the end of each frame.
@@ -121,11 +122,22 @@ crude_gfx_cmd_set_viewport
 );
 
 CRUDE_API void
-crude_gfx_cmd_set_clear_color
+crude_gfx_cmd_set_clear_color_f32
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ uint32                                              index,
-  _In_ VkClearValue                                        clear
+  _In_ float32                                             r,
+  _In_ float32                                             g,
+  _In_ float32                                             b,
+  _In_ float32                                             a,
+  _In_ uint32                                              index
+);
+
+CRUDE_API void
+crude_gfx_cmd_set_clear_depth_and_stencil
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ float32                                             depth,
+  _In_ float32                                             stencil
 );
 
 CRUDE_API void

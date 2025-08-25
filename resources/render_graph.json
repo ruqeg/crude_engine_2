@@ -37,7 +37,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
         },
         {
           "type": "attachment",
@@ -47,7 +48,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_color": [ 1, 1, 1, 1 ]
         },
         {
           "type": "attachment",
@@ -57,7 +59,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_color": [ 1, 1, 1, 1 ]
         },
         {
           "type": "attachment",
@@ -67,7 +70,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_depth": 1.0
         }
       ]
     },
@@ -229,7 +233,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
         }
       ]
     },
@@ -289,7 +294,8 @@
             800,
             600
           ],
-          "op": "clear"
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
         }
       ]
     }

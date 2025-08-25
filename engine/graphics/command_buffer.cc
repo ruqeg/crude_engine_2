@@ -255,7 +255,7 @@ crude_gfx_cmd_bind_render_pass
     color_attachment_info->resolveMode = VK_RESOLVE_MODE_NONE;
     color_attachment_info->loadOp = color_op;
     color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 0 ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ i ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   vk_depth_attachment_info = CRUDE_COMPOUNT_EMPTY( VkRenderingAttachmentInfoKHR );
@@ -287,7 +287,7 @@ crude_gfx_cmd_bind_render_pass
     vk_depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
     vk_depth_attachment_info.loadOp = depth_op;
     vk_depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ 1 ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   vk_rendering_info = CRUDE_COMPOUNT_EMPTY( VkRenderingInfoKHR );
@@ -373,14 +373,32 @@ crude_gfx_cmd_set_viewport
 }
 
 void
-crude_gfx_cmd_set_clear_color
+crude_gfx_cmd_set_clear_color_f32
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ uint32                                              index,
-  _In_ VkClearValue                                        clear
+  _In_ float32                                             r,
+  _In_ float32                                             g,
+  _In_ float32                                             b,
+  _In_ float32                                             a,
+  _In_ uint32                                              index
 )
 {
-  cmd->clears[ index ] = clear;
+  cmd->clears[ index ].color.float32[ 0 ] = r;
+  cmd->clears[ index ].color.float32[ 1 ] = g;
+  cmd->clears[ index ].color.float32[ 2 ] = b;
+  cmd->clears[ index ].color.float32[ 3 ] = a;
+}
+
+void
+crude_gfx_cmd_set_clear_depth_and_stencil
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ float32                                             depth,
+  _In_ float32                                             stencil
+)
+{
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
 }
 
 void
