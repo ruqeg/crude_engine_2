@@ -94,6 +94,12 @@ void main()
     case 3:
       accept = accept || ( ( visible_faces & 8 ) != 0 );
       break;
+    case 4:
+      accept = accept || ( ( visible_faces & 16 ) != 0 );
+      break;
+    case 5:
+      accept = accept || ( ( visible_faces & 32 ) != 0 );
+      break;
     }
   }
 
