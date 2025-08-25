@@ -1,3 +1,4 @@
+
 # Crude Engine 2
 
 ![Hey sweetie have you heard about crude engine](https://github.com/ruqeg/crude_engine_2/blob/main/docs/intro.png?raw=true)
@@ -14,8 +15,7 @@ CE2 is a 3D game engine designed to have fun at free time, written in C++ due to
 - Shader Hot Reloading, Task/Mesh Shader, ECS, etc
 
 ## Setup
-Download and install the Vulkan SDK from the [LunarG website](https://vulkan.lunarg.com/) for your system. Then clone the repository
-
+Download and install Vulkan SDK from [LunarG website](https://vulkan.lunarg.com/) for your system. Then clone this repository
 ```
 git clone https://github.com/ruqeg/crude_engine_2
 cd crude_engine_2
@@ -27,7 +27,18 @@ mkdir build
 cd build
 cmake ../ -G "Visual Studio 17 2022"
 ```
-open the generated `.sln` file in Visual Studio 2022 and build the solution.
+open generated `.sln` file in Visual Studio 2022 and build solution. 
+
+To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visualstudio.com/items?itemName=dtoplak.vscode-glsllint) extension and configure custom glslangValidatorArgs
+```
+"glsllint.glslangValidatorArgs": [
+	"--target-env",
+	"vulkan1.2",
+	"--glsl-version",
+	"460",
+	"-DCRUDE_VALIDATOR_LINTING"
+],
+```
 
 ## Dependencies
 - [cgltf](https://github.com/jkuhlmann/cgltf)
@@ -45,3 +56,4 @@ open the generated `.sln` file in Visual Studio 2022 and build the solution.
 - [tracy](https://github.com/ruqeg/tracy)
 - [meshoptimizer](https://github.com/ruqeg/meshoptimizer)
 - [flecs](https://github.com/SanderMertens/flecs)
+
