@@ -216,7 +216,7 @@ typedef struct crude_gfx_scene_renderer_meshes_resources
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_scene_renderer_meshes_resources;
 
-typedef struct crude_gfx_scene_renderer_frame_resource
+typedef struct crude_gfx_scene_renderer_frame_resources
 {
   /* CTX */
   crude_gfx_renderer                                      *renderer;
@@ -224,17 +224,34 @@ typedef struct crude_gfx_scene_renderer_frame_resource
   /* CPU */
   /* GPU */
   crude_gfx_buffer_handle                                  scene_cb;
-} crude_gfx_scene_renderer_frame_resource;
+} crude_gfx_scene_renderer_frame_resources;
 
-typedef struct crude_gfx_scene_light_renderer
+typedef struct crude_gfx_scene_renderer_lights_resources
+{
+  /* CTX */
+  crude_gfx_renderer                                      *renderer;
+  crude_heap_allocator                                    *allocator;
+  /* CPU */
+  crude_gfx_light_cpu                                     *lights;
+  /* GPU */
+
+  crude_gfx_buffer_handle                                  lights_sb;
+  crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+} crude_gfx_scene_renderer_lights_resources;
+
+typedef struct crude_gfx_scene_renderer_debug_resources
 {
   /* CTX */
   crude_gfx_renderer                                      *renderer;
   crude_heap_allocator                                    *allocator;
   /* CPU */
   /* GPU */
-  crude_gfx_buffer_handle                                  scene_cb;
-} crude_gfx_scene_light_renderer;
+  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+} crude_gfx_scene_renderer_debug_resources;
 
 CRUDE_API bool
 crude_gfx_mesh_is_transparent

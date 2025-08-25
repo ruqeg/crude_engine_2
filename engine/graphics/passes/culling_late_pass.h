@@ -9,7 +9,9 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_culling_late_pass
 {
-  crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_scene_renderer_frame_resources                *frame_resources;
+  crude_gfx_scene_renderer_debug_resources                *debug_resources;
+  crude_gfx_scene_renderer_meshes_resources               *meshes_resources;
   crude_gfx_descriptor_set_handle                          culling_late_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_culling_late_pass;
 
@@ -17,7 +19,9 @@ CRUDE_API void
 crude_gfx_culling_late_pass_initialize
 (
   _In_ crude_gfx_culling_late_pass                        *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  crude_gfx_scene_renderer_frame_resources                *frame_resources,
+  crude_gfx_scene_renderer_debug_resources                *debug_resources,
+  crude_gfx_scene_renderer_meshes_resources               *meshes_resources
 );
 
 CRUDE_API void

@@ -21,44 +21,30 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_scene_renderer_creation;
 
 typedef struct crude_gfx_scene_renderer
 {
   void                                                    *world;
-
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
+  crude_heap_allocator                                    *allocator;
+  crude_stack_allocator                                   *temporary_allocator;
+  void                                                    *imgui_context;
+  crude_scene                                             *scene;
 
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
 
-  crude_gfx_light_cpu                                     *lights;
-
-  void                                                    *imgui_context;
-
-  crude_scene                                             *scene;
-  crude_stack_allocator                                   *temporary_allocator;
-
   crude_gfx_scene_renderer_meshes_resources                meshes_resources;
   crude_gfx_scene_renderer_meshlets_resources              meshlets_resources;
-  crude_gfx_scene_renderer_frame_resource                  frame_resources;
-
-  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-
-  crude_gfx_buffer_handle                                  lights_sb;
-  crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-
-  crude_allocator_container                                allocator_container;
+  crude_gfx_scene_renderer_frame_resources                  frame_resources;
+  crude_gfx_scene_renderer_lights_resources                light_resources;
 
   crude_gfx_culling_early_pass                             culling_early_pass;
   crude_gfx_culling_late_pass                              culling_late_pass;
@@ -110,35 +96,6 @@ crude_gfx_scene_renderer_on_resize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
-/**
- *
- * Renderer Scene Utils
- * 
- */
-CRUDE_API void
-crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_scene_add_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
 /******************************
  * 
  * Scene Renderer Meshes Resources
@@ -171,6 +128,116 @@ crude_gfx_scene_renderer_meshes_resources_add_to_descriptor_set_creation
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources
+);
+
+/******************************
+ * 
+ * Scene Renderer Frame Resources
+ * 
+ *******************************/
+CRUDE_API void
+crude_gfx_scene_renderer_frame_resources_initialize
+(
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources,
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_frame_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_frame_resources_update_frame
+(
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources,
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
+  _In_ crude_scene                                        *scene,
+  _In_ uint32                                              tetrahedron_shadow_texture_index
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_frame_resources_add_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources
+);
+
+/******************************
+ * 
+ * Scene Renderer Lights Resources
+ * 
+ *******************************/
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_initialize
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_update_frame
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
+  _In_ crude_entity                                        camera_node,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_add_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
+  _In_ uint32                                              frame
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_on_resize
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
+);
+
+/******************************
+ * 
+ * Scene Renderer Debug Resources
+ * 
+ *******************************/
+CRUDE_API void
+crude_gfx_scene_renderer_debug_resources_initialize
+(
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_debug_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_debug_resources_update_frame
+(
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_debug_resources_add_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
+  _In_ uint32                                              frame
 );
 
 /******************************

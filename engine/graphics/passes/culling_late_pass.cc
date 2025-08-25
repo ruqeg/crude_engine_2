@@ -8,10 +8,14 @@ void
 crude_gfx_culling_late_pass_initialize
 (
   _In_ crude_gfx_culling_late_pass                        *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  crude_gfx_scene_renderer_frame_resources                *frame_resources,
+  crude_gfx_scene_renderer_debug_resources                *debug_resources,
+  crude_gfx_scene_renderer_meshes_resources               *meshes_resources
 )
 {
-  pass->scene_renderer = scene_renderer;
+  pass->frame_resources = frame_resources;
+  pass->debug_resources = debug_resources;
+  pass->meshes_resources = meshes_resources;
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -29,7 +33,7 @@ crude_gfx_culling_late_pass_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->culling_late_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->meshes_resources->renderer->gpu, pass->culling_late_ds[ i ] );
   }
 }
 
@@ -48,24 +52,24 @@ crude_gfx_culling_late_pass_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_culling_late_pass*, ctx );
 
-  if ( !pass->scene_renderer->total_meshes_instances_count )
+  if ( !pass->meshes_resources->total_meshes_instances_count )
   {
     return;
   }
 
-  gpu = pass->scene_renderer->renderer->gpu;
-  mesh_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "culling" )->pipeline;
+  gpu = pass->meshes_resources->renderer->gpu;
+  mesh_culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->meshes_resources->renderer, "culling", "culling" )->pipeline;
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, mesh_culling_pipeline );
   
-  count_late_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
-  commands_late_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ gpu->current_frame ] );
+  count_late_sb = crude_gfx_access_buffer( gpu, pass->meshes_resources->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
+  commands_late_sb = crude_gfx_access_buffer( gpu, pass->meshes_resources->mesh_task_indirect_commands_late_sb[ gpu->current_frame ] );
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
 
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->culling_late_ds[ primary_cmd->gpu->current_frame ] );
-  crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count + 63u ) / 64u, 1u, 1u );
+  crude_gfx_cmd_dispatch( primary_cmd, ( pass->meshes_resources->total_meshes_instances_count + 63u ) / 64u, 1u, 1u );
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_late_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
@@ -83,8 +87,8 @@ crude_gfx_culling_late_pass_on_techniques_reloaded
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_culling_late_pass*, ctx );
 
-  culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "culling" )->pipeline;
-  culling_descriptor_sets_layout_handle = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, culling_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  culling_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->meshes_resources->renderer, "culling", "culling" )->pipeline;
+  culling_descriptor_sets_layout_handle = crude_gfx_get_descriptor_set_layout( pass->meshes_resources->renderer->gpu, culling_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
