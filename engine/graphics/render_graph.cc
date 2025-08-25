@@ -37,11 +37,10 @@ crude_gfx_render_graph_initialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  crude_linear_allocator_initialize( &render_graph->local_allocator, CRUDE_RMEGA( 1u ), "RenderGraphLocalAllocator" );
-  render_graph->local_allocator_container = crude_linear_allocator_pack( &render_graph->local_allocator );
+  crude_linear_allocator_initialize( &render_graph->linear_allocator, CRUDE_RMEGA( 1u ), "render_graph_linear_allocator" );
   render_graph->builder = builder;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, render_graph->local_allocator_container); 
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, crude_linear_allocator_pack( &render_graph->linear_allocator ) ); 
 }
 
 void
@@ -64,7 +63,7 @@ crude_gfx_render_graph_deinitialize
   
   CRUDE_ARRAY_DEINITIALIZE( render_graph->nodes ); 
 
-  crude_linear_allocator_deinitialize( &render_graph->local_allocator );
+  crude_linear_allocator_deinitialize( &render_graph->linear_allocator );
 }
 
 void
@@ -72,31 +71,29 @@ crude_gfx_render_graph_parse_from_file
 (
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ char const                                         *file_path,
-  _In_ crude_stack_allocator                              *temp_allocator
+  _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
   crude_string_buffer                                      string_buffer;
-  crude_allocator_container                                temp_allocator_container;
   cJSON                                                   *render_graph_json;
   cJSON const                                             *passes;
   cJSON const                                             *pass;
   uint8                                                   *render_graph_json_buffer;
-  uint32                                                   render_graph_json_buffer_size, temp_allocator_container_maker;
-
-  temp_allocator_container = crude_stack_allocator_pack( temp_allocator );
-  temp_allocator_container_maker = crude_stack_allocator_get_marker( temp_allocator );
+  uint32                                                   render_graph_json_buffer_size, temporary_allocator_maker;
   
-  crude_string_buffer_initialize( &string_buffer, 1024, render_graph->local_allocator_container );
-
   if ( !crude_file_exist( file_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", file_path );
     return;
   }
 
-  crude_read_file( file_path, temp_allocator_container, &render_graph_json_buffer, &render_graph_json_buffer_size );
+  crude_string_buffer_initialize( &string_buffer, CRUDE_RKILO( 2 ), crude_linear_allocator_pack( &render_graph->linear_allocator ) );
 
+  temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
+  crude_read_file( file_path, crude_stack_allocator_pack( temporary_allocator ), &render_graph_json_buffer, &render_graph_json_buffer_size );
   render_graph_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, render_graph_json_buffer ), render_graph_json_buffer_size );
+  crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_maker );
+    
   if ( !render_graph_json )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file \"%s\" for render graph... Error %s", file_path, cJSON_GetErrorPtr() );
@@ -115,24 +112,34 @@ crude_gfx_render_graph_parse_from_file
     cJSON const                                           *pass_name;
     cJSON const                                           *pass_enabled;
     cJSON const                                           *pass_pipeline_type;
+    
+  
+    temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
 
     pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
     CRUDE_ASSERT( pass_inputs && pass_outputs );
 
     node_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_node_creation );
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), temp_allocator_container );
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), temp_allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), crude_stack_allocator_pack( temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), crude_stack_allocator_pack( temporary_allocator ) );
   
     pass_input = NULL;
     cJSON_ArrayForEach( pass_input, pass_inputs )
     {
       cJSON const                                         *input_type;
       cJSON const                                         *input_name;
+      crude_gfx_render_graph_resource_input_creation       creation;
 
       input_type = cJSON_GetObjectItemCaseSensitive( pass_input, "type" );
       input_name = cJSON_GetObjectItemCaseSensitive( pass_input, "name" );
       CRUDE_ASSERT( input_type && input_name );
+
+      creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_input_creation );
+      creation.type = string_to_resource_type_( cJSON_GetStringValue( input_type ) );
+      creation.resource_info.external = false;
+      creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) );
+
       CRUDE_ARRAY_PUSH( node_creation.inputs, CRUDE_COMPOUNT( crude_gfx_render_graph_resource_input_creation, {
         .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
         .resource_info = {
@@ -211,16 +218,18 @@ crude_gfx_render_graph_parse_from_file
 
     crude_gfx_render_graph_node_handle node_handle = crude_gfx_render_graph_builder_create_node( render_graph->builder, &node_creation );
     CRUDE_ARRAY_PUSH( render_graph->nodes, node_handle );
+    
+    crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_maker );
   }
   
   cJSON_Delete( render_graph_json );
-  crude_stack_allocator_free_marker( temp_allocator, temp_allocator_container_maker );
 }
 
 void
 crude_gfx_render_graph_compile
 (
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
@@ -266,13 +275,15 @@ crude_gfx_render_graph_compile
     crude_gfx_render_graph_node_handle                    *sorted_nodes;
     crude_gfx_render_graph_node_handle                    *stack;
     uint8                                                 *visited;
+    uint32                                                 temporary_allocator_marker;
 
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( sorted_nodes, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+    temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
 
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( visited, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( sorted_nodes, CRUDE_ARRAY_LENGTH( render_graph->nodes ), crude_stack_allocator_pack( temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( visited, CRUDE_ARRAY_LENGTH( render_graph->nodes ), crude_stack_allocator_pack( temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( stack, CRUDE_ARRAY_LENGTH( render_graph->nodes ), crude_stack_allocator_pack( temporary_allocator ) );
+
     memset( visited, 0, sizeof( uint8 ) * CRUDE_ARRAY_LENGTH( visited ) );
-    
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( stack, CRUDE_ARRAY_LENGTH( render_graph->nodes ), render_graph->local_allocator_container );
     
     for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
     {
@@ -332,10 +343,8 @@ crude_gfx_render_graph_compile
       CRUDE_ARRAY_PUSH( render_graph->nodes, sorted_nodes[ i ] );
     }
     
-    // TODO use temproray allocator? (currently linear)
-    CRUDE_ARRAY_DEINITIALIZE( visited );
-    CRUDE_ARRAY_DEINITIALIZE( stack );
-    CRUDE_ARRAY_DEINITIALIZE( sorted_nodes );
+
+    crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
   }
   
   /* Compute Resource Aliasing */
@@ -344,22 +353,26 @@ crude_gfx_render_graph_compile
     crude_gfx_render_graph_node_handle                    *deallocations;
     crude_gfx_texture_handle                              *free_list;
     sizet                                                  resource_count, peak_memory, instant_memory;
+    uint32                                                 temporary_allocator_marker;
+
+    temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
 
     resource_count = render_graph->builder->resource_cache.resources.used_indices;
     
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, render_graph->local_allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( allocations, resource_count, crude_stack_allocator_pack( temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( deallocations, resource_count, crude_stack_allocator_pack( temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( free_list, resource_count, crude_stack_allocator_pack( temporary_allocator ) );
+
     for ( uint32 i = 0; i < resource_count; ++i)
     {
       allocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
     }
     
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( deallocations, resource_count, render_graph->local_allocator_container );
     for ( uint32 i = 0; i < resource_count; ++i)
     {
       deallocations[ i ] = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
     }
     
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( free_list, resource_count, render_graph->local_allocator_container );
     
     peak_memory = 0;
     instant_memory = 0;
@@ -415,8 +428,7 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.height = output_resource_info->texture.height;
             output_resource_texture_creation.depth = output_resource_info->texture.depth;
             output_resource_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
-            // !TODO Hard for debugging render graph, try to figure out something in the future!
-            //output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+            output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
             output_resource_info->texture.handle = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
           }
@@ -453,10 +465,7 @@ crude_gfx_render_graph_compile
       }
     }
     
-    // TODO use temproray allocator? (currently linear)
-    CRUDE_ARRAY_DEINITIALIZE( allocations );
-    CRUDE_ARRAY_DEINITIALIZE( deallocations );
-    CRUDE_ARRAY_DEINITIALIZE( free_list );
+    crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
   }
   
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )

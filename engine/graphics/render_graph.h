@@ -188,8 +188,7 @@ typedef struct crude_gfx_render_graph
 {
   crude_gfx_render_graph_node_handle                      *nodes;
   crude_gfx_render_graph_builder                          *builder;
-  crude_linear_allocator                                   local_allocator;
-  crude_allocator_container                                local_allocator_container;
+  crude_linear_allocator                                   linear_allocator;
   char const                                              *name;
 } crude_gfx_render_graph;
 
@@ -222,7 +221,8 @@ crude_gfx_render_graph_parse_from_file
 CRUDE_API void
 crude_gfx_render_graph_compile
 (
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_render_graph                             *render_graph,
+  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API void

@@ -5,7 +5,7 @@
 #if defined(__cplusplus)
 #include <meshoptimizer.h>
 #else
-#error "TODO"
+#error "meh"
 #endif
 
 #include <core/profiler.h>

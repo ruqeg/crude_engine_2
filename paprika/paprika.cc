@@ -204,9 +204,11 @@ paprika_graphics_initialize_
   
     render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json", "\\..\\..\\resources\\render_graph.json" );
     crude_gfx_render_graph_parse_from_file( &paprika->graphics.render_graph, render_graph_file_path, &paprika->temporary_allocator );
-    crude_gfx_render_graph_compile( &paprika->graphics.render_graph );
+    crude_gfx_render_graph_compile( &paprika->graphics.render_graph, &paprika->temporary_allocator );
   }
   
+
+  // !TODO
   crude_gfx_render_graph_node *pointlight_shadow_pass_node = crude_gfx_render_graph_builder_access_node_by_name( &paprika->graphics.render_graph_builder, "point_shadows_pass" );
   if ( pointlight_shadow_pass_node )
   {
