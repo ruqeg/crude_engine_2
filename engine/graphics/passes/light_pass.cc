@@ -12,15 +12,13 @@ crude_gfx_light_pass_initialize
   _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources,
   _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
   _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
-  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
 )
 {
   pass->frame_resources = frame_resources;
   pass->debug_resources = debug_resources;
   pass->meshes_resources = meshes_resources;
   pass->lights_resources = lights_resources;
-  pass->render_graph = render_graph;
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -45,12 +43,15 @@ crude_gfx_light_pass_deinitialize
 void
 crude_gfx_light_pass_on_render_graph_registered
 (
-  _In_ crude_gfx_light_pass                               *pass
+  _In_ crude_gfx_light_pass                               *pass,
+  _In_ crude_gfx_render_graph                             *render_graph
 )
 {
   crude_gfx_light_constant_gpu                             light_constant;
   crude_gfx_buffer_creation                                buffer_creation;
   
+  pass->render_graph = render_graph;
+
   light_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_constant_gpu );
   light_constant.textures.x = crude_gfx_render_graph_builder_access_resource_by_name( pass->render_graph->builder, "gbuffer_albedo" )->resource_info.texture.handle.index;
   light_constant.textures.y = crude_gfx_render_graph_builder_access_resource_by_name( pass->render_graph->builder, "gbuffer_normal" )->resource_info.texture.handle.index;

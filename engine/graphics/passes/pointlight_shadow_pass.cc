@@ -55,14 +55,6 @@ crude_gfx_pointlight_shadow_pass_initialize
     buffer_creation.size = sizeof( uint32 ) * ( CRUDE_GFX_LIGHTS_MAX_COUNT + 1u );
     buffer_creation.name = "pointshadow_meshletes_instances_count_sb";
     pass->pointshadow_meshletes_instances_count_sb[ i ] = crude_gfx_create_buffer( frame_resources->renderer->gpu, &buffer_creation );
-
-    
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GFX_LIGHTS_MAX_COUNT * 4u;
-    buffer_creation.name = "pointlight_world_to_clip_sb";
-    pass->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
   }
 
   texture_creation = crude_gfx_texture_creation_empty( );
@@ -132,7 +124,6 @@ crude_gfx_pointlight_shadow_pass_deinitialize
     crude_gfx_destroy_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->meshletes_instances_sb[ i ] );
     crude_gfx_destroy_buffer( gpu, pass->pointshadow_meshletes_instances_count_sb[ i ] );
-    crude_gfx_destroy_buffer( gpu, pass->pointlight_world_to_clip_sb[ i ] );
   }
 
   crude_gfx_destroy_sampler( gpu, pass->tetrahedron_shadow_sampler );
@@ -220,7 +211,7 @@ crude_gfx_pointlight_shadow_pass_render
     fov1 = 125.26438968f + 2.78596497f;
 
     cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    cb_map.buffer = pass->pointlight_world_to_clip_sb[ gpu->current_frame ];
+    cb_map.buffer = pass->lights_resources->pointlight_world_to_clip_sb[ gpu->current_frame ];
     pointlight_world_to_clip_mapped = CRUDE_CAST( XMFLOAT4X4*, crude_gfx_map_buffer( gpu, &cb_map ) );
 
     cb_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
@@ -306,7 +297,7 @@ crude_gfx_pointlight_shadow_pass_render
         world_to_clip = XMMatrixMultiply( world_to_faced_view, view_to_clip[ 1 ] );
         XMStoreFloat4x4( &pointlight_world_to_clip_mapped[ i * 4 + 3 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 3 ] ) );
       }
-      crude_gfx_unmap_buffer( gpu, pass->pointlight_world_to_clip_sb[ gpu->current_frame ] );
+      crude_gfx_unmap_buffer( gpu, pass->lights_resources->pointlight_world_to_clip_sb[ gpu->current_frame ] );
       crude_gfx_unmap_buffer( gpu, pass->pointlight_spheres_sb[ gpu->current_frame ] );
     }
     

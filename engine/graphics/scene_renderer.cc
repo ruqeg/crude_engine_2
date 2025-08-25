@@ -187,12 +187,12 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer, scene_renderer->imgui_context );
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
   crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
-  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer->render_graph, scene_renderer->renderer );
+  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer->renderer );
   crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->light_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
   crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
   crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
-  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
-  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->light_resources, scene_renderer->render_graph );
+  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, &scene_renderer->debug_resources, &scene_renderer->frame_resources );
+  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->light_resources );
 }
 
 void
@@ -280,8 +280,8 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 
-  crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
-  crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
+  crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass, scene_renderer->render_graph );
+  crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass, scene_renderer->render_graph );
 }
 
 void
@@ -612,6 +612,8 @@ crude_gfx_scene_renderer_lights_resources_initialize
 {
   lights_resources->allocator = allocator;
   lights_resources->renderer = renderer;
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( lights_resources->lights, 0u, crude_heap_allocator_pack( lights_resources->allocator ) );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -627,7 +629,6 @@ crude_gfx_scene_renderer_lights_resources_initialize_post_registred
 {
   crude_gfx_buffer_creation                                buffer_creation;
   
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( lights_resources->lights, 0u, lights_resources->renderer->allocator_container );
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -650,6 +651,13 @@ crude_gfx_scene_renderer_lights_resources_initialize_post_registred
     buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
     buffer_creation.name = "lights_bins_sb";
     lights_resources->lights_bins_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GFX_LIGHTS_MAX_COUNT * 4u;
+    buffer_creation.name = "pointlight_world_to_clip_sb";
+    lights_resources->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
   }
 }
 
@@ -666,6 +674,7 @@ crude_gfx_scene_renderer_lights_resources_deinitialize
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_indices_sb[ i ] );
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_bins_sb[ i ] );
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_tiles_sb[ i ] );
+    crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->pointlight_world_to_clip_sb[ i ] );
   }
   
   CRUDE_ARRAY_DEINITIALIZE( lights_resources->lights );
@@ -1046,7 +1055,7 @@ crude_gfx_scene_renderer_lights_resources_add_to_descriptor_set_creation
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_sb, 21u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_tiles_sb[ frame ], 22u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_indices_sb[ frame ], 23u );
-  crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_indices_sb[ frame ], 23u );
+  crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->pointlight_world_to_clip_sb[ frame ], 24u );
 }
 
 void
@@ -1190,7 +1199,7 @@ crude_gfx_scene_renderer_meshlets_resources_initialize
 }
 
 void
-crude_gfx_scene_renderer_meshlets_resources_initalize_post_registred
+crude_gfx_scene_renderer_meshlets_resources_initialize_post_registred
 (
   _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
 )

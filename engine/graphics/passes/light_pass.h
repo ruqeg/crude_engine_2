@@ -28,8 +28,7 @@ crude_gfx_light_pass_initialize
   _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources,
   _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
   _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
-  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
-  _In_ crude_gfx_render_graph                             *render_graph
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
 );
 
 CRUDE_API void
@@ -41,7 +40,8 @@ crude_gfx_light_pass_deinitialize
 CRUDE_API void
 crude_gfx_light_pass_on_render_graph_registered
 (
-  _In_ crude_gfx_light_pass                               *pass
+  _In_ crude_gfx_light_pass                               *pass,
+  _In_ crude_gfx_render_graph                             *render_graph
 );
 
 CRUDE_API void

@@ -7,11 +7,11 @@ crude_gfx_debug_pass_initialize
 (
   _In_ crude_gfx_debug_pass                               *pass,
   _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
-  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources
 )
 {
   pass->debug_resources = debug_resources;
-  pass->meshes_resources = meshes_resources;
+  pass->frame_resources = frame_resources;
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -137,9 +137,8 @@ crude_gfx_debug_pass_on_techniques_reloaded
     ds_creation = crude_gfx_descriptor_set_creation_empty();
     ds_creation.name = "debug_descriptor_set";
     ds_creation.layout = debug_layout_handle;
-
-    crude_gfx_scene_renderer_debug_resources_add_to_descriptor_set_creation( &ds_creation, pass->debug_resources, i );
-    crude_gfx_scene_renderer_meshes_resources_add_to_descriptor_set_creation( &ds_creation, pass->meshes_resources );
+    
+    crude_gfx_scene_renderer_frame_resources_add_to_descriptor_set_creation( &ds_creation, pass->frame_resources );
     
     pass->depth_lines3d_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }

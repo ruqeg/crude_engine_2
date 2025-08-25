@@ -9,8 +9,8 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_depth_pyramid_pass
 {
-  crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
+  crude_gfx_renderer                                      *renderer;
   crude_gfx_texture_handle                                 depth_pyramid_texture_handle;
   crude_gfx_texture_handle                                 depth_pyramid_views_handles[ CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ];
   crude_gfx_descriptor_set_handle                          depth_hierarchy_ds[ CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ];
@@ -22,7 +22,6 @@ CRUDE_API void
 crude_gfx_depth_pyramid_pass_initialize
 (
   _In_ crude_gfx_depth_pyramid_pass                       *pass,
-  _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_gfx_renderer                                 *renderer
 );
 
@@ -35,7 +34,8 @@ crude_gfx_depth_pyramid_pass_deinitialize
 CRUDE_API void
 crude_gfx_depth_pyramid_pass_on_render_graph_registered
 (
-  _In_ crude_gfx_depth_pyramid_pass                       *pass
+  _In_ crude_gfx_depth_pyramid_pass                       *pass,
+  _In_ crude_gfx_render_graph                             *render_graph
 );
 
 CRUDE_API void

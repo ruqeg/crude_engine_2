@@ -8,11 +8,9 @@ void
 crude_gfx_depth_pyramid_pass_initialize
 (
   _In_ crude_gfx_depth_pyramid_pass                       *pass,
-  _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_gfx_renderer                                 *renderer
 )
 {
-  pass->render_graph = render_graph;
   pass->renderer = renderer;
 
   for ( uint32 i = 0; i < CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS; ++i )
@@ -29,7 +27,7 @@ crude_gfx_depth_pyramid_pass_deinitialize
   _In_ crude_gfx_depth_pyramid_pass                       *pass
 )
 {
-  crude_gfx_device *gpu = pass->render_graph->builder->gpu;
+  crude_gfx_device *gpu = pass->renderer->gpu;
   crude_gfx_destroy_texture( gpu, pass->depth_pyramid_texture_handle );
   crude_gfx_destroy_sampler( gpu, pass->depth_pyramid_sampler );
 
@@ -49,12 +47,14 @@ crude_gfx_depth_pyramid_pass_deinitialize
 void
 crude_gfx_depth_pyramid_pass_on_render_graph_registered
 (
-  _In_ crude_gfx_depth_pyramid_pass                       *pass
+  _In_ crude_gfx_depth_pyramid_pass                       *pass,
+  _In_ crude_gfx_render_graph                             *render_graph
 )
 {
   crude_gfx_device                                        *gpu;
   crude_gfx_sampler_creation                               sampler_creation;
   
+  pass->render_graph = render_graph;
   gpu = pass->renderer->gpu;
 
   sampler_creation = crude_gfx_sampler_creation_empty();

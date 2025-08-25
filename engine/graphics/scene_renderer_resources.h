@@ -241,6 +241,7 @@ typedef struct crude_gfx_scene_renderer_lights_resources
   crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ]; // !TODO I'm not sure this buffer should be here...
 } crude_gfx_scene_renderer_lights_resources;
 
 typedef struct crude_gfx_scene_renderer_debug_resources
