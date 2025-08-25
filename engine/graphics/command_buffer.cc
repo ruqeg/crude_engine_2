@@ -197,7 +197,10 @@ crude_gfx_cmd_bind_render_pass
   VkRenderingAttachmentInfoKHR                            *vk_color_attachments_info;
   VkRenderingAttachmentInfoKHR                             vk_depth_attachment_info;
   VkRenderingInfoKHR                                       vk_rendering_info;
+  uint32                                                   temporary_allocator_marker;
   bool                                                     has_depth_attachment;
+  
+  temporary_allocator_marker = crude_stack_allocator_get_marker( cmd->gpu->temporary_allocator );
 
   cmd->is_recording = true;
   
@@ -221,11 +224,8 @@ crude_gfx_cmd_bind_render_pass
   
   framebuffer = crude_gfx_access_framebuffer( cmd->gpu, framebuffer_handle );
   
-  // !TODO tmp allocator?
-  // Answer: yes, good idea :) 
-  // I should do it later....
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_color_attachments_info, framebuffer->num_color_attachments, cmd->gpu->allocator_container );
-  memset( vk_color_attachments_info, 0, sizeof( VkRenderingAttachmentInfoKHR ) * framebuffer->num_color_attachments );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_color_attachments_info, framebuffer->num_color_attachments, crude_stack_allocator_pack( cmd->gpu->temporary_allocator ) );
+  crude_memory_set( vk_color_attachments_info, 0, sizeof( VkRenderingAttachmentInfoKHR ) * framebuffer->num_color_attachments );
   
   for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
   {
@@ -310,7 +310,7 @@ crude_gfx_cmd_bind_render_pass
   cmd->current_render_pass = render_pass;
   cmd->current_framebuffer = framebuffer;
   
-  CRUDE_ARRAY_DEINITIALIZE( vk_color_attachments_info );
+  crude_stack_allocator_free_marker( cmd->gpu->temporary_allocator, temporary_allocator_marker );
 }
 
 void
