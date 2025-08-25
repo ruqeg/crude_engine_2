@@ -14,7 +14,8 @@ void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  crude_gfx_scene_renderer                                *scene_renderer
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ void                                               *imgui_context
 )
 {
   crude_gfx_device                                        *gpu;
@@ -25,10 +26,12 @@ crude_gfx_imgui_pass_initialize
   crude_gfx_buffer_creation                                index_buffer_creation;
   int32                                                    font_width, font_height;
 
-  pass->scene_renderer = scene_renderer;
-  gpu = scene_renderer->renderer->gpu;
+  pass->renderer = renderer;
+  pass->imgui_context = imgui_context;
 
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
+  gpu = pass->renderer->gpu;
+
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   
   /* Setup Platform/Renderer bindings */
   ImGui_ImplSDL3_InitForVulkan( gpu->sdl_window );
@@ -87,16 +90,16 @@ crude_gfx_imgui_pass_deinitialize
 )
 {
 
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   ImGui_ImplSDL3_Shutdown( );
 
-  crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->imgui_ds );
+  crude_gfx_destroy_descriptor_set( pass->renderer->gpu, pass->imgui_ds );
 
-  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->vertex_buffer );
-  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->index_buffer );
-  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->ui_cb );
+  crude_gfx_destroy_buffer( pass->renderer->gpu, pass->vertex_buffer );
+  crude_gfx_destroy_buffer( pass->renderer->gpu, pass->index_buffer );
+  crude_gfx_destroy_buffer( pass->renderer->gpu, pass->ui_cb );
   
-  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->font_texture );
+  crude_gfx_destroy_texture( pass->renderer->gpu, pass->font_texture );
 }
 
 void
@@ -113,9 +116,9 @@ crude_gfx_imgui_pass_pre_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
   
-  gpu = pass->scene_renderer->renderer->gpu;
+  gpu = pass->renderer->gpu;
   
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   
   ImGui::Render();
   imgui_draw_data = ImGui::GetDrawData();
@@ -162,9 +165,9 @@ crude_gfx_imgui_pass_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
   
-  gpu = pass->scene_renderer->renderer->gpu;
+  gpu = pass->renderer->gpu;
 
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
+  ImGui::SetCurrentContext( ( ImGuiContext* )pass->imgui_context );
   
   imgui_draw_data = ImGui::GetDrawData();
   
@@ -227,7 +230,7 @@ crude_gfx_imgui_pass_render
   }
   
   // !TODO add the sorting
-  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
+  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->renderer, "imgui", "imgui" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
   crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->vertex_buffer, 0u, 0u );
   crude_gfx_cmd_bind_index_buffer( primary_cmd, pass->index_buffer, 0u );
@@ -325,18 +328,18 @@ crude_gfx_imgui_pass_on_techniques_reloaded
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
 
-  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
+  imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->renderer, "imgui", "imgui" )->pipeline;
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->imgui_ds) )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->imgui_ds );
+    crude_gfx_destroy_descriptor_set( pass->renderer->gpu, pass->imgui_ds );
   }
 
   ds_creation = crude_gfx_descriptor_set_creation_empty();
-  ds_creation.layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, imgui_pipeline, 1u );
+  ds_creation.layout = crude_gfx_get_descriptor_set_layout( pass->renderer->gpu, imgui_pipeline, 1u );
   ds_creation.name = "rl_imgui";
   crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ui_cb, 0u );
-  pass->imgui_ds = crude_gfx_create_descriptor_set( pass->scene_renderer->renderer->gpu, &ds_creation );
+  pass->imgui_ds = crude_gfx_create_descriptor_set( pass->renderer->gpu, &ds_creation );
 }
 
 crude_gfx_render_graph_pass_container

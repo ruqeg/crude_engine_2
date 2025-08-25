@@ -4,6 +4,8 @@
 #include <scene/scene_components.h>
 #include <graphics/renderer_resources.h>
 
+typedef struct crude_gfx_renderer crude_gfx_renderer;
+
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 #define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )
 #define CRUDE_GFX_MAX_DEBUG_LINES                          ( 640000 )
@@ -239,7 +241,6 @@ typedef struct crude_gfx_scene_renderer_lights_resources
   crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_scene_renderer_lights_resources;
 
 typedef struct crude_gfx_scene_renderer_debug_resources

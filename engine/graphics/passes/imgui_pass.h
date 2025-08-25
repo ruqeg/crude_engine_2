@@ -6,7 +6,8 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_imgui_pass
 {
-  crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_renderer                                      *renderer;
+  void                                                    *imgui_context;
   crude_gfx_descriptor_set_handle                          imgui_ds;
   crude_gfx_buffer_handle                                  vertex_buffer;
   crude_gfx_buffer_handle                                  index_buffer;
@@ -18,7 +19,8 @@ CRUDE_API void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  crude_gfx_scene_renderer                                *scene_renderer
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ void                                               *imgui_context
 );
 
 CRUDE_API void

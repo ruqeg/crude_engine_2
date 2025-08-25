@@ -10,7 +10,11 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_pointlight_shadow_pass
 {
-  crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_scene_renderer_frame_resources                *frame_resources;
+  crude_gfx_scene_renderer_debug_resources                *debug_resources;
+  crude_gfx_scene_renderer_lights_resources               *lights_resources;
+  crude_gfx_scene_renderer_meshes_resources               *meshes_resources;
+  crude_gfx_scene_renderer_meshlets_resources             *meshlets_resources;
   crude_gfx_descriptor_set_handle                          pointshadow_culling_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          pointshadow_commands_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          pointshadow_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -21,6 +25,7 @@ typedef struct crude_gfx_pointlight_shadow_pass
   crude_gfx_buffer_handle                                  pointshadow_meshlet_draw_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  meshletes_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  pointshadow_meshletes_instances_count_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_sampler_handle                                 tetrahedron_shadow_sampler;
 } crude_gfx_pointlight_shadow_pass;
 
@@ -28,7 +33,11 @@ CRUDE_API void
 crude_gfx_pointlight_shadow_pass_initialize
 (
   _In_ crude_gfx_pointlight_shadow_pass                   *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  _In_  crude_gfx_scene_renderer_frame_resources          *frame_resources,
+  _In_  crude_gfx_scene_renderer_debug_resources          *debug_resources,
+  _In_  crude_gfx_scene_renderer_lights_resources         *lights_resources,
+  _In_  crude_gfx_scene_renderer_meshes_resources         *meshes_resources,
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
 );
 
 CRUDE_API void

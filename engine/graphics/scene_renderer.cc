@@ -19,16 +19,6 @@
 #include <graphics/scene_renderer.h>
 
 /**
- * Scene Renderer Other
- */
-static void
-update_dynamic_buffers_
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-);
-
-/**
  * Scene Renderer Register Nodes & Gltf & Lights
  */
 static void
@@ -179,20 +169,30 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->samplers, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
+  crude_gfx_scene_renderer_meshlets_resources_initialize( &scene_renderer->meshlets_resources, scene_renderer->renderer, scene_renderer->allocator );
+  crude_gfx_scene_renderer_debug_resources_initialize( &scene_renderer->debug_resources, scene_renderer->renderer, scene_renderer->allocator );
+  crude_gfx_scene_renderer_lights_resources_initialize( &scene_renderer->light_resources, scene_renderer->renderer, scene_renderer->allocator );
+  crude_gfx_scene_renderer_frame_resources_initialize( &scene_renderer->frame_resources, scene_renderer->renderer, scene_renderer->allocator );
+  crude_gfx_scene_renderer_meshes_resources_initialize( &scene_renderer->meshes_resources, scene_renderer->renderer, scene_renderer->allocator );
+
   /* Register Nodes */
   register_nodes_( scene_renderer, scene_renderer->scene->main_node, scene_renderer->temporary_allocator );
+  
+  crude_gfx_scene_renderer_meshlets_resources_initialize_post_registred( &scene_renderer->meshlets_resources );
+  crude_gfx_scene_renderer_lights_resources_initialize_post_registred( &scene_renderer->light_resources );
+  crude_gfx_scene_renderer_meshes_resources_initialize_post_registred( &scene_renderer->meshes_resources, scene_renderer->temporary_allocator );
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
-  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
-  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
-  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
-  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
-  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
-  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
-  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
-  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
-  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
+  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer->renderer, scene_renderer->imgui_context );
+  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
+  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
+  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer->render_graph, scene_renderer->renderer );
+  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->light_resources, &scene_renderer->meshes_resources, &scene_renderer->meshlets_resources );
+  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
+  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
+  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, &scene_renderer->debug_resources, &scene_renderer->meshes_resources );
+  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, &scene_renderer->frame_resources, &scene_renderer->debug_resources, &scene_renderer->meshes_resources, &scene_renderer->light_resources, scene_renderer->render_graph );
 }
 
 void
@@ -210,6 +210,12 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
+
+  crude_gfx_scene_renderer_meshlets_resources_deinitialize( &scene_renderer->meshlets_resources );
+  crude_gfx_scene_renderer_debug_resources_deinitialize( &scene_renderer->debug_resources );
+  crude_gfx_scene_renderer_lights_resources_deinitialize( &scene_renderer->light_resources );
+  crude_gfx_scene_renderer_frame_resources_deinitialize( &scene_renderer->frame_resources );
+  crude_gfx_scene_renderer_meshes_resources_deinitialize( &scene_renderer->meshes_resources );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->images ); ++i )
   {
@@ -241,10 +247,16 @@ crude_gfx_scene_renderer_submit_draw_task
   crude_gfx_cmd_buffer                                    *primary_cmd;
  
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
-  
   crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
-  update_dynamic_buffers_( scene_renderer, primary_cmd );
+
+  crude_gfx_scene_renderer_meshlets_resources_update_frame( &scene_renderer->meshlets_resources );
+  crude_gfx_scene_renderer_debug_resources_update_frame( &scene_renderer->debug_resources );
+  crude_gfx_scene_renderer_lights_resources_update_frame( &scene_renderer->light_resources, scene_renderer->scene->main_camera, scene_renderer->temporary_allocator );
+  crude_gfx_scene_renderer_frame_resources_update_frame( &scene_renderer->frame_resources, &scene_renderer->meshes_resources, &scene_renderer->light_resources, scene_renderer->scene, scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index );
+  crude_gfx_scene_renderer_meshes_resources_update_frame( &scene_renderer->meshes_resources, scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index );
+
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
+  
   crude_gfx_cmd_pop_marker( primary_cmd );
   crude_gfx_queue_cmd( primary_cmd );
 }
@@ -278,6 +290,7 @@ crude_gfx_scene_renderer_on_resize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  crude_gfx_scene_renderer_lights_resources_on_resize( &scene_renderer->light_resources );
 }
 
 /******************************
@@ -290,7 +303,20 @@ crude_gfx_scene_renderer_meshes_resources_initialize
 (
   _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
   _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_heap_allocator                               *allocator,
+  _In_ crude_heap_allocator                               *allocator
+)
+{
+  meshes_resources->renderer = renderer;
+  meshes_resources->allocator = allocator;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshes_resources->meshes, 0u, crude_heap_allocator_pack( meshes_resources->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshes_resources->meshes_instances, 0u, crude_heap_allocator_pack( meshes_resources->allocator ) );
+}
+
+void
+crude_gfx_scene_renderer_meshes_resources_initialize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
@@ -300,14 +326,8 @@ crude_gfx_scene_renderer_meshes_resources_initialize
   crude_gfx_buffer_creation                                buffer_creation;
   uint32                                                   temporary_allocator_marker;
 
-  meshes_resources->renderer = renderer;
-  meshes_resources->allocator = allocator;
-
   gpu = meshes_resources->renderer->gpu;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshes_resources->meshes, 0u, crude_heap_allocator_pack( meshes_resources->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshes_resources->meshes_instances, 0u, crude_heap_allocator_pack( meshes_resources->allocator ) );
-  
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -590,10 +610,22 @@ crude_gfx_scene_renderer_lights_resources_initialize
   _In_ crude_heap_allocator                               *allocator
 )
 {
-  crude_gfx_buffer_creation                                buffer_creation;
-
   lights_resources->allocator = allocator;
   lights_resources->renderer = renderer;
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    lights_resources->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  }
+}
+
+void
+crude_gfx_scene_renderer_lights_resources_initialize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
+)
+{
+  crude_gfx_buffer_creation                                buffer_creation;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( lights_resources->lights, 0u, lights_resources->renderer->allocator_container );
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
@@ -608,13 +640,6 @@ crude_gfx_scene_renderer_lights_resources_initialize
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GFX_LIGHTS_MAX_COUNT * 4u;
-    buffer_creation.name = "pointlight_world_to_clip_sb";
-    lights_resources->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
-    
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
     buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( lights_resources->lights );
     buffer_creation.name = "lights_indices_sb";
     lights_resources->lights_indices_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
@@ -625,11 +650,6 @@ crude_gfx_scene_renderer_lights_resources_initialize
     buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
     buffer_creation.name = "lights_bins_sb";
     lights_resources->lights_bins_sb[ i ] = crude_gfx_create_buffer( lights_resources->renderer->gpu, &buffer_creation );
-  }
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    lights_resources->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   }
 }
 
@@ -643,7 +663,6 @@ crude_gfx_scene_renderer_lights_resources_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->pointlight_world_to_clip_sb[ i ] );
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_indices_sb[ i ] );
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_bins_sb[ i ] );
     crude_gfx_destroy_buffer( lights_resources->renderer->gpu, lights_resources->lights_tiles_sb[ i ] );
@@ -1028,7 +1047,6 @@ crude_gfx_scene_renderer_lights_resources_add_to_descriptor_set_creation
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_tiles_sb[ frame ], 22u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_indices_sb[ frame ], 23u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->lights_indices_sb[ frame ], 23u );
-  crude_gfx_descriptor_set_creation_add_buffer( creation, lights_resources->pointlight_world_to_clip_sb[ frame ], 24u );
 }
 
 void
@@ -1162,8 +1180,6 @@ crude_gfx_scene_renderer_meshlets_resources_initialize
   _In_ crude_heap_allocator                               *allocator
 )
 {
-  crude_gfx_buffer_creation                                buffer_creation;
-
   meshlets_resources->renderer = renderer;
   meshlets_resources->allocator = allocator;
   
@@ -1171,6 +1187,15 @@ crude_gfx_scene_renderer_meshlets_resources_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_resources->meshlets_triangles_indices, 0u, crude_heap_allocator_pack( meshlets_resources->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_resources->meshlets_vertices_indices, 0u, crude_heap_allocator_pack( meshlets_resources->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_resources->meshlets, 0u, crude_heap_allocator_pack( meshlets_resources->allocator ) );
+}
+
+void
+crude_gfx_scene_renderer_meshlets_resources_initalize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
+)
+{
+  crude_gfx_buffer_creation                                buffer_creation;
 
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -1223,6 +1248,14 @@ crude_gfx_scene_renderer_meshlets_resources_deinitialize
 }
 
 void
+crude_gfx_scene_renderer_meshlets_resources_update_frame
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
+)
+{
+}
+
+void
 crude_gfx_scene_renderer_meshlets_resources_add_to_descriptor_set_creation
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
@@ -1233,18 +1266,6 @@ crude_gfx_scene_renderer_meshlets_resources_add_to_descriptor_set_creation
   crude_gfx_descriptor_set_creation_add_buffer( creation, meshlets_resources->meshlets_vertices_sb, 6u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, meshlets_resources->meshlets_triangles_indices_sb, 7u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, meshlets_resources->meshlets_vertices_indices_sb, 8u );
-}
-
-/**
- * Scene Renderer Other
- */
-static void
-update_dynamic_buffers_
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd
-)
-{
 }
 
 /**

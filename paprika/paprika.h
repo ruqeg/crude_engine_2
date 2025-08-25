@@ -15,7 +15,7 @@ typedef struct crude_paprika_graphics
   crude_gfx_render_graph_builder                           render_graph_builder;
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *allocator;
   crude_gfx_asynchronous_loader_manager                   *asynchronous_loader_manager;
 } crude_paprika_graphics;
 

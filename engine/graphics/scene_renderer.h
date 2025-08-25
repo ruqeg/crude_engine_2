@@ -43,8 +43,9 @@ typedef struct crude_gfx_scene_renderer
 
   crude_gfx_scene_renderer_meshes_resources                meshes_resources;
   crude_gfx_scene_renderer_meshlets_resources              meshlets_resources;
-  crude_gfx_scene_renderer_frame_resources                  frame_resources;
+  crude_gfx_scene_renderer_frame_resources                 frame_resources;
   crude_gfx_scene_renderer_lights_resources                light_resources;
+  crude_gfx_scene_renderer_debug_resources                 debug_resources;
 
   crude_gfx_culling_early_pass                             culling_early_pass;
   crude_gfx_culling_late_pass                              culling_late_pass;
@@ -106,7 +107,13 @@ crude_gfx_scene_renderer_meshes_resources_initialize
 (
   _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
   _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_heap_allocator                               *allocator,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshes_resources_initialize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
@@ -177,6 +184,12 @@ crude_gfx_scene_renderer_lights_resources_initialize
   _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources,
   _In_ crude_gfx_renderer                                 *renderer,
   _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_lights_resources_initialize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_lights_resources          *lights_resources
 );
 
 CRUDE_API void
@@ -254,7 +267,19 @@ crude_gfx_scene_renderer_meshlets_resources_initialize
 );
 
 CRUDE_API void
+crude_gfx_scene_renderer_meshlets_resources_initialize_post_registred
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
+);
+
+CRUDE_API void
 crude_gfx_scene_renderer_meshlets_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshlets_resources_update_frame
 (
   _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
 );

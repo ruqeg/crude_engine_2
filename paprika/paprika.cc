@@ -158,7 +158,6 @@ paprika_graphics_initialize_
   temporary_allocator_marker = crude_stack_allocator_get_marker( &paprika->temporary_allocator );
   
   paprika->graphics.asynchronous_loader_manager = &paprika->engine->asynchronous_loader_manager;
-  paprika->graphics.allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator );
   
   /* Create Device */
   {
@@ -166,7 +165,7 @@ paprika_graphics_initialize_
     device_creation.sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle.value );
     device_creation.vk_application_name    = "CrudeEngine";
     device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-    device_creation.allocator_container    = paprika->graphics.allocator_container;
+    device_creation.allocator_container    = crude_heap_allocator_pack( &paprika->graphics_allocator );
     device_creation.temporary_allocator    = &paprika->temporary_allocator;
     device_creation.queries_per_frame      = 1u;
     device_creation.num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, paprika->graphics.asynchronous_loader_manager->task_sheduler ) ) );
@@ -177,7 +176,7 @@ paprika_graphics_initialize_
   {
     crude_gfx_renderer_creation renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_creation );
     renderer_creation.gpu                 = &paprika->graphics.gpu;
-    renderer_creation.allocator_container = paprika->graphics.allocator_container;
+    renderer_creation.allocator_container = crude_heap_allocator_pack( &paprika->graphics_allocator );
     crude_gfx_renderer_initialize( &paprika->graphics.renderer, &renderer_creation );
   }    
   
@@ -217,7 +216,7 @@ paprika_graphics_initialize_
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
     creation.renderer = &paprika->graphics.renderer;
     creation.async_loader = &paprika->graphics.async_loader;
-    creation.allocator_container = paprika->graphics.allocator_container;
+    creation.allocator = &paprika->graphics_allocator;
     creation.temporary_allocator = &paprika->temporary_allocator;
     creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
     creation.imgui_context = paprika->imgui_context;

@@ -9,10 +9,16 @@ void
 crude_gfx_gbuffer_early_pass_initialize
 (
   _In_ crude_gfx_gbuffer_early_pass                       *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  _In_ crude_gfx_scene_renderer_frame_resources           *frame_resources,
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
 )
 {
-  pass->scene_renderer = scene_renderer;
+  pass->frame_resources = frame_resources;
+  pass->debug_resources = debug_resources;
+  pass->meshes_resources = meshes_resources;
+  pass->meshlets_resources = meshlets_resources;
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -30,7 +36,7 @@ crude_gfx_gbuffer_early_pass_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->meshlet_early_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->frame_resources->renderer->gpu, pass->meshlet_early_ds[ i ] );
   }
 }
 
@@ -47,18 +53,18 @@ crude_gfx_gbuffer_early_pass_render
  
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_early_pass*, ctx );
 
-  renderer = pass->scene_renderer->renderer;
+  renderer = pass->frame_resources->renderer;
 
   pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "meshlet", "meshlet" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->meshlet_early_ds[ renderer->gpu->current_frame ] );
   crude_gfx_cmd_draw_mesh_task_indirect_count(
     primary_cmd,
-    pass->scene_renderer->mesh_task_indirect_commands_early_sb[ renderer->gpu->current_frame ],
+    pass->meshes_resources->mesh_task_indirect_commands_early_sb[ renderer->gpu->current_frame ],
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
-    pass->scene_renderer->mesh_task_indirect_count_early_sb[ renderer->gpu->current_frame ],
+    pass->meshes_resources->mesh_task_indirect_count_early_sb[ renderer->gpu->current_frame ],
     0,
-    CRUDE_ARRAY_LENGTH( pass->scene_renderer->meshes_instances ),
+    CRUDE_ARRAY_LENGTH( pass->meshes_resources->meshes_instances ),
     sizeof( crude_gfx_mesh_draw_command_gpu )
   );
 }
@@ -75,14 +81,14 @@ crude_gfx_gbuffer_early_pass_on_techniques_reloaded
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_early_pass*, ctx );
 
-  meshlet_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "meshlet" );
-  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  meshlet_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->meshes_resources->renderer, "meshlet", "meshlet" );
+  layout = crude_gfx_get_descriptor_set_layout( pass->meshes_resources->renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->meshlet_early_ds[ i ] ) )
     {
-      crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->meshlet_early_ds[ i ] );
+      crude_gfx_destroy_descriptor_set( pass->meshes_resources->renderer->gpu, pass->meshlet_early_ds[ i ] );
     }
   }
 
@@ -94,14 +100,14 @@ crude_gfx_gbuffer_early_pass_on_techniques_reloaded
     ds_creation.layout = layout;
     ds_creation.name = "meshlet_descriptor_set";
   
-    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_early_sb[ i ], 10u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 11u );
+    crude_gfx_scene_renderer_debug_resources_add_to_descriptor_set_creation( &ds_creation, pass->debug_resources, i );
+    crude_gfx_scene_renderer_frame_resources_add_to_descriptor_set_creation( &ds_creation, pass->frame_resources );
+    crude_gfx_scene_renderer_meshes_resources_add_to_descriptor_set_creation( &ds_creation, pass->meshes_resources );
+    crude_gfx_scene_renderer_meshlets_resources_add_to_descriptor_set_creation( &ds_creation, pass->meshlets_resources );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshes_resources->mesh_task_indirect_count_early_sb[ i ], 10u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshes_resources->mesh_task_indirect_commands_early_sb[ i ], 11u );
     
-    pass->meshlet_early_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->renderer->gpu, &ds_creation );
+    pass->meshlet_early_ds[ i ] = crude_gfx_create_descriptor_set( pass->meshes_resources->renderer->gpu, &ds_creation );
   }
 }
 
