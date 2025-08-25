@@ -830,7 +830,7 @@ crude_gfx_render_graph_on_resize
     }
     
     crude_gfx_resize_framebuffer( render_graph->builder->gpu, node->framebuffer, new_width, new_height );
-    crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, render_graph->builder->gpu, new_width, new_height );
+    crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, new_width, new_height );
   }
 }
 
@@ -1214,12 +1214,11 @@ void
 crude_gfx_render_graph_render_pass_container_on_resize
 (
   _In_ crude_gfx_render_graph_pass_container               container,
-  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
 )
 {
-  container.on_resize( container.ctx, gpu, new_width, new_height );
+  container.on_resize( container.ctx, new_width, new_height );
 }
 
 void
@@ -1235,7 +1234,6 @@ static void
 empty_pass_on_resize_
 (
   _In_ void                                               *ctx,
-  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
 )

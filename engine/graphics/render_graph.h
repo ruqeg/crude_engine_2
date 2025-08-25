@@ -117,7 +117,7 @@ typedef struct crude_gfx_render_graph_resource_output_creation
 typedef void (*crude_gfx_render_graph_render_pass_pre_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
 typedef void (*crude_gfx_render_graph_render_pass_post_render)( void *ctx, crude_gfx_cmd_buffer *gpu_commands );
-typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, crude_gfx_device *gpu, uint32 new_width, uint32 new_height );
+typedef void (*crude_gfx_render_graph_render_pass_on_resize)( void *ctx, uint32 new_width, uint32 new_height );
 typedef void (*crude_gfx_render_graph_render_pass_on_techniques_reloaded)( void *ctx );
 
 typedef struct crude_gfx_render_graph_pass_container
@@ -405,7 +405,6 @@ CRUDE_API void
 crude_gfx_render_graph_render_pass_container_on_resize
 (
   _In_ crude_gfx_render_graph_pass_container               container,
-  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
 );

@@ -47,7 +47,6 @@ CRUDE_API void
 crude_gfx_depth_pyramid_pass_on_resize
 (
   _In_ void                                               *ctx,
-  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
 );
