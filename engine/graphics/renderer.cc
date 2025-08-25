@@ -197,7 +197,8 @@ crude_gfx_renderer_create_buffer
   
   if ( creation->name )
   {
-    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+    // !OPTTODO
+    // Hash name and add to buffer hashmap
   }
   
   buffer_resource->references = 1;
@@ -235,7 +236,8 @@ crude_gfx_renderer_create_texture
   
   if ( creation->name )
   {
-    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+    // !OPTTODO
+    // Hash name and add to texture hashmap
   }
   
   texture_resource->references = 1;
@@ -273,7 +275,8 @@ crude_gfx_renderer_create_sampler
   
   if ( creation->name )
   {
-    // !TODO resource_cache.buffers.insert( hash_calculate( creation.name ), buffer );
+    // !OPTTODO
+    // Hash name and add to sampler hashmap
   }
   
   sampler_resource->references = 1;
@@ -385,11 +388,11 @@ crude_gfx_renderer_create_technique
       
       for ( uint32 b = 0; b < descriptor_set_layout->num_bindings; ++b )
       {
-        // !TODO
-        //crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ b ];
-        //
-        //uint64 binding_name_hashed = crude_hash_string( binding->name, 0 );
-        //CRUDE_HASHMAP_SET( pass->name_hashed_to_descriptor_index, binding_name_hashed, binding->start );
+        // !OPTTODO
+        // we can get binding->name from reflect of shader, but how to manager names, don't want to allocate sep memory for each of them
+        // crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ b ];
+        // uint64 binding_name_hashed = crude_hash_string( binding->name, 0 );
+        // CRUDE_HASHMAP_SET( pass->name_hashed_to_descriptor_index, binding_name_hashed, binding->start );
       }
     }
 

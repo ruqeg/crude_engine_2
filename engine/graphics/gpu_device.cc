@@ -217,6 +217,7 @@ crude_gfx_device_initialize
   gpu->mesh_shaders_extension_present = false;
   gpu->timestamps_enabled = false;
 
+  // !TODO
   crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
 
   vk_create_instance_( gpu, creation->vk_application_name, creation->vk_application_version, temporary_allocator );
@@ -2138,7 +2139,6 @@ crude_gfx_create_descriptor_set_layout
     binding->start = ( input_binding->start == UINT16_MAX ) ? i : input_binding->start;
     binding->count = input_binding->count;
     binding->type = input_binding->type;
-    binding->name = input_binding->name;
     binding->set = descriptor_set_layout->set_index;
     
     vk_binding = &descriptor_set_layout->vk_binding[ used_bindings++ ];
@@ -2798,10 +2798,10 @@ vk_debug_callback_
   {
     CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
   }
-  else if ( pCallbackData->pMessageIdName && strcmp( "WARNING-DEBUG-PRINTF", pCallbackData->pMessageIdName ) == 0 ) // !TODO
-  {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
-  }
+  //else if ( pCallbackData->pMessageIdName && strcmp( "WARNING-DEBUG-PRINTF", pCallbackData->pMessageIdName ) == 0 ) // !TODO
+  //{
+  //  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
+  //}
   return VK_FALSE;
 }
 
@@ -3407,13 +3407,11 @@ vk_create_descriptor_pool_
       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
       .start = CRUDE_GFX_BINDLESS_TEXTURE_BINDING,
       .count = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
-      .name = "",
     } ) );
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
       .start = CRUDE_GFX_BINDLESS_TEXTURE_BINDING + 1,
       .count = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
-      .name = "",
     } ) );
     gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &creation );
   }
@@ -3806,7 +3804,6 @@ vk_reflect_shader_
       binding = &set_layout->bindings[ binding_index ];
       memset( binding, 0, sizeof( crude_gfx_descriptor_set_layout_binding ) );
       binding->start = spv_binding->binding;
-      binding->name  = spv_binding->name; //!TODO UNSAFE
       binding->count = spv_binding->count;
       
       switch ( spv_binding->descriptor_type )

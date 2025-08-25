@@ -21,6 +21,7 @@ crude_gfx_renderer_technique_pass_get_binding_index
   _In_ char const                                         *name
 )
 {
+  CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "technique_pass->name_hashed_to_descriptor_index is not implemented yet! lookt at crude_gfx_renderer_create_technique" );
   uint64 hashed_name = crude_hash_string( name, 0 );
   uint32 index = CRUDE_HASHMAP_GET( technique_pass->name_hashed_to_descriptor_index, hashed_name )->value;
   return index;

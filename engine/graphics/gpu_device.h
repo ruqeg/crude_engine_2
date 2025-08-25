@@ -130,7 +130,7 @@ typedef struct crude_gfx_device
   crude_string_buffer                                      objects_names_string_buffer;
 
   /**
-   * //!TODO
+   * Other
    */
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
 

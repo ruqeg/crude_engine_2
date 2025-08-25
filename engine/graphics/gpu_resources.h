@@ -455,7 +455,6 @@ typedef struct crude_gfx_descriptor_set_layout_binding
   VkDescriptorType                                         type;
   uint16                                                   start;
   uint16                                                   count;
-  char const                                              *name;
 } crude_gfx_descriptor_set_layout_binding;
 
 typedef struct crude_gfx_descriptor_set_layout_creation

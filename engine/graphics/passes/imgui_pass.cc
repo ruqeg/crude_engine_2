@@ -226,7 +226,7 @@ crude_gfx_imgui_pass_render
     crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
   }
   
-  // TODO add the sorting
+  // !TODO add the sorting
   imgui_pipeline = crude_gfx_renderer_access_technique_pass_by_name(pass->scene_renderer->renderer, "imgui", "imgui" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
   crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->vertex_buffer, 0u, 0u );
