@@ -38,37 +38,16 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
 
-  crude_gfx_mesh_cpu                                      *meshes;
-  crude_gfx_mesh_instance_cpu                             *meshes_instances;
-
-  crude_gfx_meshlet_gpu                                   *meshlets;
-  crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
-  uint32                                                  *meshlets_vertices_indices;
-  uint8                                                   *meshlets_triangles_indices;
-
   crude_gfx_light_cpu                                     *lights;
-
-  uint32                                                   total_meshes_instances_count;
 
   void                                                    *imgui_context;
 
   crude_scene                                             *scene;
   crude_stack_allocator                                   *temporary_allocator;
 
-  crude_gfx_buffer_handle                                  scene_cb;
-
-  crude_gfx_buffer_handle                                  meshes_draws_sb;
-  crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
-  crude_gfx_buffer_handle                                  meshes_bounds_sb;
-  crude_gfx_buffer_handle                                  meshlets_sb;
-  crude_gfx_buffer_handle                                  meshlets_vertices_sb;
-  crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
-  crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
-
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_scene_renderer_meshes_resources                meshes_resources;
+  crude_gfx_scene_renderer_meshlets_resources              meshlets_resources;
+  crude_gfx_scene_renderer_frame_resource                  frame_resources;
 
   crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -145,23 +124,7 @@ crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation
+crude_gfx_scene_renderer_scene_add_to_descriptor_set_creation
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -174,4 +137,64 @@ crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ uint32                                              frame
+);
+
+/******************************
+ * 
+ * Scene Renderer Meshes Resources
+ * 
+ *******************************/
+CRUDE_API void
+crude_gfx_scene_renderer_meshes_resources_initialize
+(
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshes_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshes_resources_update_frame
+(
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources,
+  _In_ uint32                                              depth_pyramid_texture_index
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshes_resources_add_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources
+);
+
+/******************************
+ * 
+ * Scene Renderer Meshlets Resources
+ * 
+ *******************************/
+CRUDE_API void
+crude_gfx_scene_renderer_meshlets_resources_initialize
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources,
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshlets_resources_deinitialize
+(
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_meshlets_resources_add_to_descriptor_set_creation
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ crude_gfx_scene_renderer_meshlets_resources        *meshlets_resources
 );

@@ -33,6 +33,7 @@
  * 
  ***********************************************/
 typedef uint32 crude_gfx_resource_index;
+typedef struct crude_gfx_device crude_gfx_device;
 
 typedef struct crude_gfx_buffer_handle
 {

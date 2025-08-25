@@ -180,6 +180,62 @@ typedef struct crude_gfx_sorted_light
   float32                                                  projected_z_max;
 } crude_gfx_sorted_light;
 
+typedef struct crude_gfx_scene_renderer_meshlets_resources
+{
+  /* CTX */
+  crude_gfx_renderer                                      *renderer;
+  crude_heap_allocator                                    *allocator;
+  /* CPU */
+  crude_gfx_meshlet_gpu                                   *meshlets;
+  crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
+  uint32                                                  *meshlets_vertices_indices;
+  uint8                                                   *meshlets_triangles_indices;
+  /* GPU */
+  crude_gfx_buffer_handle                                  meshlets_sb;
+  crude_gfx_buffer_handle                                  meshlets_vertices_sb;
+  crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
+  crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
+} crude_gfx_scene_renderer_meshlets_resources;
+
+typedef struct crude_gfx_scene_renderer_meshes_resources
+{
+  /* CTX */
+  crude_gfx_renderer                                      *renderer;
+  crude_heap_allocator                                    *allocator;
+  /* CPU */
+  crude_gfx_mesh_cpu                                      *meshes;
+  crude_gfx_mesh_instance_cpu                             *meshes_instances;
+  uint32                                                   total_meshes_instances_count;
+  /* GPU */
+  crude_gfx_buffer_handle                                  meshes_draws_sb;
+  crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
+  crude_gfx_buffer_handle                                  meshes_bounds_sb;
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+} crude_gfx_scene_renderer_meshes_resources;
+
+typedef struct crude_gfx_scene_renderer_frame_resource
+{
+  /* CTX */
+  crude_gfx_renderer                                      *renderer;
+  crude_heap_allocator                                    *allocator;
+  /* CPU */
+  /* GPU */
+  crude_gfx_buffer_handle                                  scene_cb;
+} crude_gfx_scene_renderer_frame_resource;
+
+typedef struct crude_gfx_scene_light_renderer
+{
+  /* CTX */
+  crude_gfx_renderer                                      *renderer;
+  crude_heap_allocator                                    *allocator;
+  /* CPU */
+  /* GPU */
+  crude_gfx_buffer_handle                                  scene_cb;
+} crude_gfx_scene_light_renderer;
+
 CRUDE_API bool
 crude_gfx_mesh_is_transparent
 (
