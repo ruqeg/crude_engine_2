@@ -7,7 +7,8 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_debug_pass
 {
-  crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_scene_renderer_debug_resources                *debug_resources;
+  crude_gfx_scene_renderer_meshes_resources               *meshes_resources;
   crude_gfx_descriptor_set_handle                          depth_lines3d_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_debug_pass;
 
@@ -15,7 +16,8 @@ CRUDE_API void
 crude_gfx_debug_pass_initialize
 (
   _In_ crude_gfx_debug_pass                               *pass,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
+  _In_ crude_gfx_scene_renderer_debug_resources           *debug_resources,
+  _In_ crude_gfx_scene_renderer_meshes_resources          *meshes_resources
 );
 
 CRUDE_API void

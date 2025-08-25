@@ -19,9 +19,9 @@ CRUDE_API void
 crude_gfx_culling_early_pass_initialize
 (
   _In_ crude_gfx_culling_early_pass                       *pass,
-  crude_gfx_scene_renderer_frame_resources                *frame_resources,
-  crude_gfx_scene_renderer_debug_resources                *debug_resources,
-  crude_gfx_scene_renderer_meshes_resources               *meshes_resources
+  _In_  crude_gfx_scene_renderer_frame_resources          *frame_resources,
+  _In_  crude_gfx_scene_renderer_debug_resources          *debug_resources,
+  _In_  crude_gfx_scene_renderer_meshes_resources         *meshes_resources
 );
 
 CRUDE_API void

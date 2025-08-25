@@ -8,14 +8,15 @@ void
 crude_gfx_culling_early_pass_initialize
 (
   _In_ crude_gfx_culling_early_pass                       *pass,
-  crude_gfx_scene_renderer_frame_resources                *frame_resources,
-  crude_gfx_scene_renderer_debug_resources                *debug_resources,
-  crude_gfx_scene_renderer_meshes_resources               *meshes_resources
+  _In_  crude_gfx_scene_renderer_frame_resources          *frame_resources,
+  _In_  crude_gfx_scene_renderer_debug_resources          *debug_resources,
+  _In_  crude_gfx_scene_renderer_meshes_resources         *meshes_resources
 )
 {
   pass->frame_resources = frame_resources;
   pass->debug_resources = debug_resources;
   pass->meshes_resources = meshes_resources;
+
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->culling_early_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
