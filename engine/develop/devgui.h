@@ -64,6 +64,10 @@ typedef struct crude_devgui_gpu_visual_profiler
 
 typedef struct crude_devgui
 {
+  crude_gfx_renderer                                      *renderer;
+  crude_gfx_render_graph                                  *render_graph;
+  crude_stack_allocator                                    temporary_allocator;
+  crude_heap_allocator                                    *allocator;
   bool                                                     menubar_enabled;
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
@@ -71,10 +75,7 @@ typedef struct crude_devgui
   crude_devgui_render_graph                                dev_render_graph;
   crude_devgui_gpu                                         dev_gpu;
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
-  crude_gfx_renderer                                      *renderer;
-  crude_gfx_render_graph                                  *render_graph;
-  crude_stack_allocator                                    temporary_allocator;
-  crude_heap_allocator                                    *allocator;
+  bool                                                     hint_enabled;
   bool                                                     should_reload_shaders;
 } crude_devgui;
 

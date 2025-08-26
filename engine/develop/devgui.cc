@@ -36,6 +36,7 @@ crude_devgui_initialize
   _In_ crude_heap_allocator                               *allocator
 )
 {
+  devgui->hint_enabled = true;
   devgui->should_reload_shaders = false;
   devgui->menubar_enabled = false;
   devgui->renderer = renderer;
@@ -68,6 +69,19 @@ crude_devgui_draw
   _In_ crude_entity                                        camera_node
 )
 {
+  if ( devgui->hint_enabled )
+  {
+    if ( ImGui::Begin( "Hint" ) )
+    {
+      ImGui::Text( "[W][A][S][D][E][Q] => Move Camera\n[RMB] => Rotate Camera\n[TAB] => Devmenu" );
+      if ( ImGui::Button( "Hide" ) )
+      {
+        devgui->hint_enabled = false;
+      }
+    }
+    ImGui::End( );
+  }
+
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
   {
     if ( ImGui::BeginMenu( "Graphics" ) )
@@ -99,6 +113,14 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "Node Inpsector" ) )
       {
         devgui->dev_node_inspector.enabled = !devgui->dev_node_inspector.enabled;
+      }
+      ImGui::EndMenu( );
+    }
+    if ( ImGui::BeginMenu( "Other" ) )
+    {
+      if ( ImGui::MenuItem( "Hint" ) )
+      {
+        devgui->hint_enabled = !devgui->hint_enabled;
       }
       ImGui::EndMenu( );
     }
@@ -448,6 +470,10 @@ crude_devgui_render_graph_draw
           crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( devgui_render_graph->render_graph->builder, node->outputs[ o ] );
           ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
         }
+
+        ImGui::PushID( n );
+        ImGui::Checkbox( "Enabled", &node->enabled );
+        ImGui::PopID( );
       }
     }
   }
