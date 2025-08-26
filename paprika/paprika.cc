@@ -217,7 +217,7 @@ paprika_graphics_initialize_
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
     creation.renderer = &paprika->graphics.renderer;
     creation.async_loader = &paprika->graphics.async_loader;
-    creation.allocator_container = paprika->graphics.allocator_container;
+    creation.allocator = &paprika->graphics_allocator;
     creation.temporary_allocator = &paprika->temporary_allocator;
     creation.task_scheduler = paprika->graphics.asynchronous_loader_manager->task_sheduler;
     creation.imgui_context = paprika->imgui_context;

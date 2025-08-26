@@ -169,21 +169,21 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_buffer_creation                                buffer_creation;
 
   scene_renderer->scene = creation->scene;
-  scene_renderer->allocator_container = creation->allocator_container;
+  scene_renderer->allocator = creation->allocator;
   scene_renderer->temporary_allocator = creation->temporary_allocator;
   scene_renderer->renderer = creation->renderer;
   scene_renderer->async_loader = creation->async_loader;
   scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->images, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->samplers, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_triangles_indices, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices_indices, 0u, scene_renderer->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets, 0u, scene_renderer->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->images, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->samplers, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->buffers, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_triangles_indices, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets_vertices_indices, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshlets, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->meshes_instances, 0u, scene_renderer->renderer->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, scene_renderer->renderer->allocator_container );
   

@@ -21,42 +21,43 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_gfx_renderer                                      *renderer;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_scene_renderer_creation;
 
 typedef struct crude_gfx_scene_renderer
 {
+  /***********************
+   * Context 
+   **********************/
   void                                                    *world;
-
+  void                                                    *task_scheduler;
+  void                                                    *imgui_context;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
-  void                                                    *task_scheduler;
-
+  crude_scene                                             *scene;
+  crude_heap_allocator                                    *allocator;
+  crude_stack_allocator                                   *temporary_allocator;
+  
+  /***********************
+   * Common CPU & GPU Data
+   **********************/
   crude_gfx_renderer_sampler                              *samplers;
   crude_gfx_renderer_texture                              *images;
   crude_gfx_renderer_buffer                               *buffers;
-
+  crude_gfx_buffer_handle                                  scene_cb;
+  
+  /***********************
+   * Common Mesh & Meshlets CPU & GPU Data
+   **********************/
   crude_gfx_mesh_cpu                                      *meshes;
   crude_gfx_mesh_instance_cpu                             *meshes_instances;
-
   crude_gfx_meshlet_gpu                                   *meshlets;
   crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
-
-  crude_gfx_light_cpu                                     *lights;
-
   uint32                                                   total_meshes_instances_count;
-
-  void                                                    *imgui_context;
-
-  crude_scene                                             *scene;
-  crude_stack_allocator                                   *temporary_allocator;
-
-  crude_gfx_buffer_handle                                  scene_cb;
-
   crude_gfx_buffer_handle                                  meshes_draws_sb;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  meshes_bounds_sb;
@@ -64,23 +65,30 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  meshlets_vertices_sb;
   crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
   crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
-
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
+  /***********************
+   * Common Debug CPU & GPU Data
+   **********************/
   crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-
+  
+  /***********************
+   * Common Lights & Shadows CPU & GPU Data
+   **********************/
+  crude_gfx_light_cpu                                     *lights;
   crude_gfx_buffer_handle                                  lights_sb;
   crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 
-  crude_allocator_container                                allocator_container;
-
+  /***********************
+   * Render Graph Passes 
+   **********************/
   crude_gfx_culling_early_pass                             culling_early_pass;
   crude_gfx_culling_late_pass                              culling_late_pass;
   crude_gfx_gbuffer_early_pass                             gbuffer_early_pass;
