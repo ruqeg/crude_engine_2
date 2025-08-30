@@ -29,6 +29,9 @@ crude_engine_initialize
   _In_ crude_engine_creation const                        *creation
 )
 {
+  struct enkiTaskSchedulerConfig                           config;
+  crude_gfx_asynchronous_loader_manager_creation           alm_creation;
+
   crude_log_initialize( );
   crude_time_service_initialize( );
   crude_platform_service_initialize( );
@@ -40,26 +43,20 @@ crude_engine_initialize
 
   ECS_TAG_DEFINE( engine->world, crude_entity_tag );
 
-  if ( creation->asynchronous_loader_manager )
-  {
-    struct enkiTaskSchedulerConfig                         config;
-    crude_gfx_asynchronous_loader_manager_creation         creation;
+  engine->task_sheduler = enkiNewTaskScheduler();
+  config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
+  config.numTaskThreadsToCreate += 1;
+  enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
 
-    engine->task_sheduler = enkiNewTaskScheduler();
-    config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
-    config.numTaskThreadsToCreate += 1;
-    enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
-
-    engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate - 1 );
-    enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
+  engine->pinned_task_loop = enkiCreatePinnedTask( engine->task_sheduler, pinned_task_run_loop_, config.numTaskThreadsToCreate - 1 );
+  enkiAddPinnedTaskArgs( engine->task_sheduler, engine->pinned_task_loop, engine );
   
-    crude_heap_allocator_initialize( &engine->asynchronous_loader_manager_allocator, CRUDE_RKILO( 16 ), "asynchronous_loader_manager_allocator" );
+  crude_heap_allocator_initialize( &engine->asynchronous_loader_manager_allocator, CRUDE_RKILO( 16 ), "asynchronous_loader_manager_allocator" );
 
-    creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_asynchronous_loader_manager_creation );
-    creation.task_sheduler = engine->task_sheduler;
-    creation.allocator_container = crude_heap_allocator_pack( &engine->asynchronous_loader_manager_allocator );
-    crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &creation );
-  }
+  alm_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_asynchronous_loader_manager_creation );
+  alm_creation.task_sheduler = engine->task_sheduler;
+  alm_creation.allocator_container = crude_heap_allocator_pack( &engine->asynchronous_loader_manager_allocator );
+  crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &alm_creation );
 
   engine->resources_path = "\\..\\..\\resources\\";
   engine->shaders_path = "\\..\\..\\shaders\\";

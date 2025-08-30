@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_paprika)
+project(game)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
@@ -12,7 +12,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine cr)
 
-source_group(paprika FILES ${CRUDE_SOURCES})
+source_group(game FILES ${CRUDE_SOURCES})
 
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE "/MP")

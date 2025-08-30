@@ -8,7 +8,7 @@
 
 typedef struct crude_engine_creation
 {
-  bool                                                     asynchronous_loader_manager;
+  uint8                                                    todo;
 } crude_engine_creation;
 
 typedef struct crude_engine

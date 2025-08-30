@@ -36,7 +36,7 @@ crude_devgui_initialize
   _In_ crude_heap_allocator                               *allocator
 )
 {
-  devgui->hint_enabled = true;
+  devgui->hint_enabled = false;
   devgui->should_reload_shaders = false;
   devgui->menubar_enabled = false;
   devgui->renderer = renderer;
