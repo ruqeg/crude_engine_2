@@ -1,37 +1,34 @@
-#include <cr/cr.h>
-
-#include <core/assert.h>
 #include <game.h>
 
-static void
-game_update_
+int
+main
 (
-  _In_ game_t                                             *game
 )
 {
-  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
-  if ( input && input->should_close_window )
-  {
-    ecs_quit( game->engine->world );
-  }
-}
+  crude_engine                                             engine;
+  game_t                                                   game;
 
-CR_EXPORT int
-cr_main
-(
-  struct cr_plugin                                        *ctx,
-  enum cr_op                                               operation
-)
-{
-  CRUDE_ASSERT( ctx );
-
-  if ( operation == CR_CLOSE )
+  /* Initialization */
   {
-    return 0;
+    char                                                   temporary_buffer[ 1024 ];
+    crude_engine_creation                                  engine_creation;
+    
+    engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
+    crude_engine_initialize( &engine, &engine_creation );
+    game_initialize( &game, &engine );
   }
 
-  game_t *game = CRUDE_CAST( game_t*, ctx->userdata );
-  game_update_( game );
- 
+  while ( engine.running )
+  {
+    crude_engine_update( &engine );
+    game_update( &game );
+  }
+  
+  /* Deinitialization */
+  {
+    game_deinitialize( &game );
+    crude_engine_deinitialize( &engine );
+  }
+
   return 0;
 }

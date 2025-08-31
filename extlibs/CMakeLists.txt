@@ -1,7 +1,6 @@
 include(FetchContent)
 
 add_subdirectory(cgltf_cmake)
-add_subdirectory(cr_cmake)
 add_subdirectory(stb_cmake)
 add_subdirectory(tlsf_cmake)
 add_subdirectory(vma_cmake)

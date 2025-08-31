@@ -123,13 +123,21 @@ game_initialize
 }
 
 void
+game_update
+(
+  _In_ game_t                                             *game
+)
+{
+}
+
+void
 game_deinitialize
 (
   _In_ game_t                                             *game
 )
 {
-  crude_entity_destroy( game->platform_node );
-  crude_scene_deinitialize( &game->scene );
+  // crude_entity_destroy( game->platform_node );
+  crude_scene_deinitialize( &game->scene, false /* should be destroyd with world */ );
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
   crude_heap_allocator_deinitialize( &game->allocator );

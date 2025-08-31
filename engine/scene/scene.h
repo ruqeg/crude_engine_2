@@ -37,7 +37,8 @@ crude_scene_initialize
 CRUDE_API void
 crude_scene_deinitialize
 (
-  _In_ crude_scene                                        *scene
+  _In_ crude_scene                                        *scene,
+  _In_ bool                                                destroy_nodes
 );
 
 CRUDE_API void

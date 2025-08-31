@@ -67,7 +67,7 @@ crude_entity_destroy
   _In_ crude_entity                                        entity
 )
 {
-  //ecs_delete( entity.world, entity.handle );
+  ecs_delete( entity.world, entity.handle );
 }
 
 bool

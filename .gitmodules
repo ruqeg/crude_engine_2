@@ -4,9 +4,6 @@
 [submodule "extlibs/cjson_cmake/cJSON"]
 	path = extlibs/cjson_cmake/cJSON
 	url = https://github.com/ruqeg/cJSON.git
-[submodule "extlibs/cr_cmake/cr"]
-	path = extlibs/cr_cmake/cr
-	url = https://github.com/ruqeg/cr.git
 [submodule "extlibs/imgui_cmake/imgui"]
 	path = extlibs/imgui_cmake/imgui
 	url = https://github.com/ruqeg/imgui.git

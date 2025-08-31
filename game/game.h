@@ -41,6 +41,12 @@ game_initialize
 );
 
 CRUDE_API void
+game_update
+(
+  _In_ game_t                                             *game
+);
+
+CRUDE_API void
 game_deinitialize
 (
   _In_ game_t                                             *game
