@@ -15,5 +15,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine)
 source_group(game FILES ${CRUDE_SOURCES})
 
 if(MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
+  target_compile_options(${PROJECT_NAME} PRIVATE "/MP" "/ZI")
 endif()

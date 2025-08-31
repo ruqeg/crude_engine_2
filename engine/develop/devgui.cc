@@ -82,23 +82,31 @@ crude_devgui_draw
     {
       ImGui::OpenPopup( devgui->last_focused_menutab_name );
     }
+    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_R, false ) )
+    {
+      devgui->should_reload_shaders = true;
+    }
+    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_F, false ) )
+    {
+      devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
+    }
 
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
       devgui->last_focused_menutab_name = "Graphics";
-      if ( ImGui::MenuItem( "Reload Techniques" ) )
+      if ( ImGui::MenuItem( "Reload Techniques", "Ctrl+G+R" ) )
       {
         devgui->should_reload_shaders = true;
       }
-      if ( ImGui::MenuItem( "Render Graph" ) )
+      if ( ImGui::MenuItem( "Render Graph", "Ctrl+G+R" ) )
       {
         devgui->dev_render_graph.enabled = !devgui->dev_render_graph.enabled;
       }
-      if ( ImGui::MenuItem( "GPU Pools" ) )
+      if ( ImGui::MenuItem( "GPU Pools", "Ctrl+G+P" ) )
       {
         devgui->dev_gpu.enabled = !devgui->dev_gpu.enabled;
       }
-      if ( ImGui::MenuItem( "GPU Profiler" ) )
+      if ( ImGui::MenuItem( "GPU Profiler", "Ctrl+G" ) )
       {
         devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
       }
@@ -107,11 +115,11 @@ crude_devgui_draw
     if ( ImGui::BeginMenu( "Scene" ) )
     {
       devgui->last_focused_menutab_name = "Scene";
-      if ( ImGui::MenuItem( "Node Tree" ) )
+      if ( ImGui::MenuItem( "Node Tree", "Ctrl+S+T" ) )
       {
         devgui->dev_nodes_tree.enabled = !devgui->dev_nodes_tree.enabled;
       }
-      if ( ImGui::MenuItem( "Node Inpsector" ) )
+      if ( ImGui::MenuItem( "Node Inpsector", "Ctrl+S+I" ) )
       {
         devgui->dev_node_inspector.enabled = !devgui->dev_node_inspector.enabled;
       }
@@ -127,7 +135,7 @@ crude_devgui_draw
   crude_devgui_gpu_draw( &devgui->dev_gpu );
   crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
 
-  ImGui::ShowDemoWindow( );
+  //ImGui::ShowDemoWindow( );
 }
 
 void

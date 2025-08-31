@@ -30,5 +30,5 @@ add_definitions(
 )
 
 if(MSVC)
- target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
+  target_compile_options(${PROJECT_NAME} PRIVATE "/MP" "/ZI")
 endif()
