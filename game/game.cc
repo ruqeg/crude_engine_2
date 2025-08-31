@@ -111,7 +111,7 @@ game_initialize
     } );
   }
   
-  crude_devgui_initialize( &game->devgui, &game->render_graph, &game->renderer, &game->allocator );
+  crude_devgui_initialize( &game->devgui, &game->render_graph, &game->renderer, &game->allocator, game->imgui_context );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },

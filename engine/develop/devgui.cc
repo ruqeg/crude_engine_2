@@ -6,6 +6,8 @@
 
 #include <develop/devgui.h>
 
+ImGuiWindowFlags                                           window_flags_;
+
 static void
 crude_devgui_reload_techniques_
 (
@@ -33,15 +35,18 @@ crude_devgui_initialize
   _In_ crude_devgui                                       *devgui,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_heap_allocator                               *allocator
+  _In_ crude_heap_allocator                               *allocator,
+  _In_ void                                               *imgui_context
 )
 {
-  devgui->hint_enabled = false;
+  window_flags_ = 0;//ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
   devgui->should_reload_shaders = false;
-  devgui->menubar_enabled = false;
+  devgui->menubar_enabled = true;
   devgui->renderer = renderer;
   devgui->render_graph = render_graph;
   devgui->allocator = allocator;
+  devgui->imgui_context = imgui_context;
+  devgui->last_focused_menutab_name = "Graphics";
   crude_stack_allocator_initialize( &devgui->temporary_allocator, CRUDE_RMEGA( 32 ), "devgui_temp_allocator" );
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
@@ -69,23 +74,18 @@ crude_devgui_draw
   _In_ crude_entity                                        camera_node
 )
 {
-  if ( devgui->hint_enabled )
-  {
-    if ( ImGui::Begin( "Hint" ) )
-    {
-      ImGui::Text( "[W][A][S][D][E][Q] => Move Camera\n[RMB] => Rotate Camera\n[TAB] => Devmenu" );
-      if ( ImGui::Button( "Hide" ) )
-      {
-        devgui->hint_enabled = false;
-      }
-    }
-    ImGui::End( );
-  }
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, devgui->imgui_context ) );
 
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
   {
+    if ( !ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed( ImGuiKey_Tab, false ) )
+    {
+      ImGui::OpenPopup( devgui->last_focused_menutab_name );
+    }
+
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
+      devgui->last_focused_menutab_name = "Graphics";
       if ( ImGui::MenuItem( "Reload Techniques" ) )
       {
         devgui->should_reload_shaders = true;
@@ -106,6 +106,7 @@ crude_devgui_draw
     }
     if ( ImGui::BeginMenu( "Scene" ) )
     {
+      devgui->last_focused_menutab_name = "Scene";
       if ( ImGui::MenuItem( "Node Tree" ) )
       {
         devgui->dev_nodes_tree.enabled = !devgui->dev_nodes_tree.enabled;
@@ -113,14 +114,6 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "Node Inpsector" ) )
       {
         devgui->dev_node_inspector.enabled = !devgui->dev_node_inspector.enabled;
-      }
-      ImGui::EndMenu( );
-    }
-    if ( ImGui::BeginMenu( "Other" ) )
-    {
-      if ( ImGui::MenuItem( "Hint" ) )
-      {
-        devgui->hint_enabled = !devgui->hint_enabled;
       }
       ImGui::EndMenu( );
     }
@@ -133,6 +126,8 @@ crude_devgui_draw
   crude_devgui_render_graph_draw( &devgui->dev_render_graph );
   crude_devgui_gpu_draw( &devgui->dev_gpu );
   crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
+
+  ImGui::ShowDemoWindow( );
 }
 
 void
@@ -142,10 +137,6 @@ crude_devgui_handle_input
   _In_ crude_input                                        *input
 )
 {
-  if ( input->keys[ 9 ].pressed )
-  {
-    devgui->menubar_enabled = !devgui->menubar_enabled;
-  }
   crude_devgui_viewport_input( &devgui->dev_viewport, input );
 }
 
@@ -225,7 +216,7 @@ crude_devgui_nodes_tree_draw_internal_
   _In_ uint32                                             *current_node_index
 )
 {
-  ImGui::Begin( "Scene Node Tree" );
+  ImGui::Begin( "Scene Node Tree", NULL, window_flags_ );
 
   ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
   
@@ -297,7 +288,7 @@ crude_devgui_node_inspector_draw
     return;
   }
 
-  ImGui::Begin( "Node Inspector" );
+  ImGui::Begin( "Node Inspector", NULL, window_flags_ );
   ImGui::Text( "Node: \"%s\"", crude_entity_get_name( node ) );
   
   crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_transform );
@@ -359,7 +350,7 @@ crude_devgui_viewport_draw
   crude_transform                                         *camera_transform;
   crude_transform                                         *selected_node_transform;
   
-  ImGui::Begin( "Viewport" );
+  ImGui::Begin( "Viewport", NULL, window_flags_ );
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
@@ -446,7 +437,7 @@ crude_devgui_render_graph_draw
   {
     return;
   }
-  if ( ImGui::Begin( "Render Graph Debug" ) )
+  if ( ImGui::Begin( "Render Graph Debug", NULL, window_flags_ ) )
   {
     if ( ImGui::CollapsingHeader( "Nodes" ) )
     {

@@ -64,6 +64,8 @@ typedef struct crude_devgui_gpu_visual_profiler
 
 typedef struct crude_devgui
 {
+  char const                                              *last_focused_menutab_name;
+  void                                                    *imgui_context;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
   crude_stack_allocator                                    temporary_allocator;
@@ -75,7 +77,6 @@ typedef struct crude_devgui
   crude_devgui_render_graph                                dev_render_graph;
   crude_devgui_gpu                                         dev_gpu;
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
-  bool                                                     hint_enabled;
   bool                                                     should_reload_shaders;
 } crude_devgui;
 
@@ -88,7 +89,8 @@ crude_devgui_initialize
   _In_ crude_devgui                                       *devgui,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_gfx_renderer                                 *renderer,
-  _In_ crude_heap_allocator                               *allocator
+  _In_ crude_heap_allocator                               *allocator,
+  _In_ void                                               *imgui_context
 );
 
 CRUDE_API void

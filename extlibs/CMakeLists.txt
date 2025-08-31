@@ -8,7 +8,11 @@ add_subdirectory(spirv_reflect_cmake)
 add_subdirectory(cjson_cmake)
 add_subdirectory(imgui_cmake)
 
+######################
+#
 # ENKITS
+#
+######################
 FetchContent_Declare(
   enkiTS
 	GIT_REPOSITORY https://github.com/ruqeg/enkiTS.git
@@ -17,7 +21,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(enkiTS)
 
+######################
+#
 # MINIAUDIO
+#
+######################
 FetchContent_Declare(
   miniaudio
 	GIT_REPOSITORY https://github.com/ruqeg/miniaudio.git
@@ -27,7 +35,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(miniaudio)
 
+######################
+#
 # FLECS
+#
+######################
 FetchContent_Declare(
   flecs
 	GIT_REPOSITORY https://github.com/ruqeg/flecs.git
@@ -37,7 +49,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(flecs)
 
+######################
+#
 # SDL
+#
+######################
 FetchContent_Declare(
   SDL3
 	GIT_REPOSITORY https://github.com/ruqeg/SDL.git
@@ -47,7 +63,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL3)
 
+######################
+#
 # TRACY
+#
+######################
 FetchContent_Declare(
 	tracy
 	GIT_REPOSITORY https://github.com/ruqeg/tracy.git
@@ -62,7 +82,11 @@ target_compile_definitions(TracyClient PRIVATE
   TRACY_NO_SYSTEM_TRACING
 )
 
+######################
+#
 # MESHOPTIMIZER
+#
+######################
 FetchContent_Declare(
 	meshoptimizer
 	GIT_REPOSITORY https://github.com/ruqeg/meshoptimizer.git
