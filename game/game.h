@@ -27,7 +27,6 @@ typedef struct game_t
   crude_scene                                              scene;
   /* Window & Input */
   crude_entity                                             platform_node;
-  crude_mouse_input                                        wrapwnd;
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;

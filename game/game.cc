@@ -307,27 +307,12 @@ game_update_system_
 
     if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
-      ImGuiIO *imgui_io = &ImGui::GetIO();
-      imgui_io->ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-      game->wrapwnd.x = input->mouse.wnd.x;
-      game->wrapwnd.y = input->mouse.wnd.y;
-      SDL_HideCursor();
+      SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), true );
     }
     
     if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
-      ImGuiIO *imgui_io = &ImGui::GetIO();
-      imgui_io->ConfigFlags ^= ImGuiConfigFlags_NoMouseCursorChange;
-      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), game->wrapwnd.x, game->wrapwnd.y );
-      SDL_ShowCursor();
-    }
-    
-    if ( input->mouse.rel.x || input->mouse.rel.y )
-    {
-      if ( !SDL_CursorVisible() )
-      {
-        SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), game->wrapwnd.x, game->wrapwnd.y );
-      }
+      SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
     }
   }
 }
