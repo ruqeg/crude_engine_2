@@ -21,13 +21,6 @@ layout(set=CRUDE_MATERIAL_SET, binding=11) buffer MeshletDrawCommands
 
 void main()
 {
-  if (gl_GlobalInvocationID.x == 0 )
-  {
-    pointshadow_meshletes_instances_count[ CRUDE_LIGHTS_MAX_COUNT ] = 0;
-  }
-
-  crude_global_shader_barrier( );
-
   uint light_index = gl_GlobalInvocationID.x;
   if ( light_index >= active_lights_count )
   {

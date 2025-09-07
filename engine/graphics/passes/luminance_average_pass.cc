@@ -1,8 +1,14 @@
-
 #include <core/hash_map.h>
 #include <graphics/scene_renderer.h>
 
 #include <graphics/passes/luminance_average_pass.h>
+
+typedef struct crude_gfx_luminance_histogram_generation_push_constant
+{
+	float32                                                  inverse_log_lum_range;
+	float32                                                  min_log_lum;
+  uint32                                                   hdr_color_texture_index;
+} crude_gfx_luminance_histogram_generation_push_constant;
 
 void
 crude_gfx_luminance_average_pass_initialize
@@ -76,46 +82,34 @@ crude_gfx_luminance_average_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  //crude_gfx_device                                        *gpu;
-  //crude_gfx_texture                                       *depth_pyramid_texture;
-  //crude_gfx_luminance_average_pass                        *pass;
-  //crude_gfx_pipeline_handle                                depth_pyramid_pipeline;
-  //uint32                                                   width;
-  //uint32                                                   height;
-  //uint32                                                   group_x, group_y;
-  //
-  //pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
 
-  //depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "depth_pyramid" )->pipeline;
+  crude_gfx_device                                        *gpu;
+  crude_gfx_luminance_average_pass                        *pass;
+  crude_gfx_pipeline_handle                                luminance_histogram_generation_pipeline;
+  crude_gfx_luminance_histogram_generation_push_constant   constant;
+  crude_gfx_texture_handle                                 hdr_color_texture_handle;
+  crude_gfx_texture                                       *hdr_color_texture;
+  
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_luminance_average_pass*, ctx );
+  gpu = pass->scene_renderer->renderer->gpu;
 
-  //crude_gfx_cmd_bind_pipeline( primary_cmd, depth_pyramid_pipeline );
-  //
-  //gpu = pass->scene_renderer->renderer->gpu;
-  //depth_pyramid_texture = crude_gfx_access_texture( gpu, pass->depth_pyramid_texture_handle );
-  //
-  //width = depth_pyramid_texture->width;
-  //height = depth_pyramid_texture->height;
-  //
-  //crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
+  luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
+  
+  hdr_color_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle;
+  hdr_color_texture = crude_gfx_access_texture( gpu, hdr_color_texture_handle );
 
-  //for ( uint32 mip_index = 0; mip_index < depth_pyramid_texture->subresource.mip_level_count; ++mip_index )
-  //{
-  //  crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
-  //  
-  //  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->depth_hierarchy_ds[ mip_index ] );
-  //  
-  //  group_x = ( width + 7 ) / 8;
-  //  group_y = ( height + 7 ) / 8;
-  //  
-  //  crude_gfx_cmd_dispatch( primary_cmd, group_x, group_y, 1 );
-  //  
-  //  crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
-  //  
-  //  width /= 2;
-  //  height /= 2;
-  //}
-
-  //depth_pyramid_texture->state = CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
+  crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_histogram_generation_ds[ gpu->current_frame ] );
+  
+  float32 min_log_lum = -8.0f;
+  float32 max_log_lum = 3.5f;
+  constant.hdr_color_texture_index = hdr_color_texture_handle.index;
+  constant.inverse_log_lum_range = 1.f / ( max_log_lum - min_log_lum );
+  constant.min_log_lum = min_log_lum;
+  crude_gfx_cmd_push_constant( primary_cmd, &constant, sizeof( constant ) );
+  
+  crude_gfx_cmd_fill_buffer( primary_cmd, pass->luminance_histogram_sb_handle[ gpu->current_frame ], 0u );
+  crude_gfx_cmd_dispatch( primary_cmd, ( hdr_color_texture->width + 15 ) / 16, ( hdr_color_texture->height + 15 ) /  16, 1 );
 }
 
 void

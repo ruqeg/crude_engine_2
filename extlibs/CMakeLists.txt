@@ -7,6 +7,7 @@ add_subdirectory(vma_cmake)
 add_subdirectory(spirv_reflect_cmake)
 add_subdirectory(cjson_cmake)
 add_subdirectory(imgui_cmake)
+add_subdirectory(renderdoc_api_cmake)
 
 ######################
 #

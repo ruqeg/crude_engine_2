@@ -24,16 +24,6 @@ layout(set=CRUDE_MATERIAL_SET, binding=11) buffer PointLightMeshletCount
 
 void main()
 {
-  if ( gl_GlobalInvocationID.x == 0 )
-  {
-    for ( uint i = 0; i < CRUDE_LIGHTS_MAX_COUNT; ++i )
-    {
-      pointshadow_meshletes_instances_count[ i ] = 0;
-    }
-  }
-
-  crude_global_shader_barrier( );
-
   uint light_index = gl_GlobalInvocationID.x % active_lights_count;
   if ( light_index >= active_lights_count )
   {

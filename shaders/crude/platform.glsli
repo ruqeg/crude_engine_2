@@ -106,13 +106,6 @@ float crude_rgb_to_luminance( vec3 rgb )
 }
 
 #ifdef CRUDE_STAGE_COMPUTE
-void crude_global_shader_barrier()
-{
-  memoryBarrierBuffer();
-  memoryBarrierShared();
-  memoryBarrier();
-  barrier();
-}
 #endif /* CRUDE_STAGE_COMPUTE */
 
 #endif /* CRUDE_PLATFORM_GLSL */

@@ -362,6 +362,22 @@ crude_gfx_cmd_pop_marker
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
+CRUDE_API void
+crude_gfx_cmd_push_constant
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ void const                                         *data,
+  _In_ uint64                                              size
+);
+
+CRUDE_API void
+crude_gfx_cmd_fill_buffer
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             handle,
+  _In_ uint32                                              value
+);
+
 /************************************************
  *
  * Command Buffer Manager Functions

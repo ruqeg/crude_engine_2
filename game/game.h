@@ -6,6 +6,7 @@
 #include <core/ecs.h>
 #include <platform/platform_components.h>
 #include <develop/devgui.h>
+
 typedef struct game_t
 {
   /* Context */

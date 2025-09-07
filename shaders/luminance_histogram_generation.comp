@@ -1,5 +1,6 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
+#define CRUDE_STAGE_COMPUTE
 #extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
@@ -24,7 +25,7 @@ uint hdr_color_to_bin( vec3 color )
 {
   float lum = crude_rgb_to_luminance( color );
 
-  if ( lum < 0.05f )
+  if ( lum < 0.005f )
   {
     return 0;
   }
@@ -38,7 +39,7 @@ void main()
   histogram_shared[ gl_LocalInvocationIndex ] = 0;
 
   barrier( );
-
+  
   uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
   if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
   {
@@ -48,6 +49,6 @@ void main()
   }
 
   barrier( );
-
+  
   atomicAdd( histogram[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
 }

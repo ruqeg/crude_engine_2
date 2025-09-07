@@ -960,6 +960,43 @@ crude_gfx_cmd_pop_marker
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
 }
 
+void
+crude_gfx_cmd_push_constant
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ void const                                         *data,
+  _In_ uint64                                              size
+)
+{
+  vkCmdPushConstants( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
+}
+
+void
+crude_gfx_cmd_fill_buffer
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             handle,
+  _In_ uint32                                              value
+)
+{
+  crude_gfx_buffer                                        *buffer;
+  VkBuffer                                                 vk_buffer;
+  uint64                                                   offset;
+
+  buffer = crude_gfx_access_buffer( cmd->gpu, handle );
+  vk_buffer = buffer->vk_buffer;
+  offset = 0u;
+
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
+  {
+    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
+    vk_buffer = parent_buffer->vk_buffer;
+    offset = buffer->global_offset;
+  }
+
+  vkCmdFillBuffer( cmd->vk_cmd_buffer, vk_buffer, offset, buffer->size, value );
+}
+
 /************************************************
  *
  * Command Buffer Manager Functions

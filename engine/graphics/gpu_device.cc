@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <renderdoc_app.h>
 
 #include <core/profiler.h>
 #include <core/string.h>
@@ -451,7 +452,7 @@ crude_gfx_new_frame
 (
   _In_ crude_gfx_device                                   *gpu
 )
-{  
+{
   if ( gpu->absolute_frame >= CRUDE_GFX_MAX_SWAPCHAIN_IMAGES )
   {
     uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GFX_MAX_SWAPCHAIN_IMAGES - 1 );
@@ -466,7 +467,7 @@ crude_gfx_new_frame
   
     vkWaitSemaphores( gpu->vk_device, &semaphore_wait_info, UINT64_MAX );
   }
-
+  
   {
     VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
@@ -475,7 +476,7 @@ crude_gfx_new_frame
       //vk_resize_swapchain_( gpu );
     }
   }
-
+  
   crude_gfx_cmd_manager_reset( &gpu->cmd_buffer_manager, gpu->current_frame );
 
   {

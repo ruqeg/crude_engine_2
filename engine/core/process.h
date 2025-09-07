@@ -30,3 +30,10 @@ crude_system
 (
   _In_ char const                                         *filepath
 );
+
+CRUDE_API void*
+crude_get_proccess_address
+(
+  _In_ char const                                         *module,
+  _In_ char const                                         *proccess
+);

@@ -161,3 +161,21 @@ crude_system
 {
   system( command );
 }
+
+void*
+crude_get_proccess_address
+(
+  _In_ char const                                         *module,
+  _In_ char const                                         *proccess
+)
+{
+  HMODULE                                                  mod;
+
+  mod = GetModuleHandleA( module );
+  if ( !mod )
+  {
+    return NULL;
+  }
+
+  return GetProcAddress( mod, proccess );
+}

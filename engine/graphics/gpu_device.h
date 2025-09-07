@@ -127,6 +127,9 @@ typedef struct crude_gfx_device
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
 
+  /**
+   * Objects names buffer works like a shit since we dont release name with objects... !TODO 
+   */
   crude_string_buffer                                      objects_names_string_buffer;
 
   /**
@@ -144,6 +147,7 @@ typedef struct crude_gfx_device
 
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
   
+
   PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
   PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;

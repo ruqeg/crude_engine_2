@@ -63,12 +63,6 @@ typedef struct crude_gfx_render_graph_resource_info
   {
     struct
     {
-      /**
-       * Being used as simple marker to handle graph sort. For exampled buffers or other stuff...
-       */
-    } buffer;
-    struct
-    {
       uint32                                               width;
       uint32                                               height;
       uint32                                               depth;
