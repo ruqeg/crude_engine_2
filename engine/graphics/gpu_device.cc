@@ -3243,7 +3243,7 @@ vk_create_swapchain_
   surface_format_found = false;
   for ( uint32 i = 0; i < available_formats_count; ++i )
   {
-    if ( available_formats[ i ].format == VK_FORMAT_R8G8B8A8_SRGB && available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+    if ( available_formats[ i ].format == VK_FORMAT_R8G8B8A8_UNORM && available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
     {
       gpu->vk_surface_format = available_formats[ i ];
       surface_format_found = true;

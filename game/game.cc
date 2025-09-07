@@ -72,7 +72,7 @@ game_initialize
     ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
     ImGui::StyleColorsDark();
     ImGuiIO *imgui_io = &ImGui::GetIO();
-    imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NoMouseCursorChange;
+    imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     imgui_io->ConfigWindowsResizeFromEdges = true;
     imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
   }
@@ -208,6 +208,8 @@ game_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+
 
   /* Create Scene Renderer */
   {

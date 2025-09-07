@@ -1,0 +1,17 @@
+{
+	"name": "postprocessing",
+	"pipelines": [
+	  {
+		"name": "luminance_histogram_generation",
+		"shaders": [
+		  {
+			"stage": "compute",
+			"shader": "luminance_histogram_generation.comp",
+			"includes": [
+			  "crude/platform.glsli"
+			]
+		  }
+		]
+	  }
+	]
+}

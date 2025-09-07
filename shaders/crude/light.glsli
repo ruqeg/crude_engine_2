@@ -49,7 +49,7 @@ vec3 crude_calculate_point_light_contribution( crude_light light, vec3 albedo, v
 
   float fadeout = pow( clamp( 1.f - pow( light_distance / light.radius, 2.f ), 0.f, 1.f ), 2.f );   
   float ldotn = clamp( dot( lightdir, normal ), 0.f, 1.f );
-  return fadeout * ldotn * albedo;
+  return fadeout * ldotn * ( light.color * light.intensity.xxx * albedo );
 }
 
 vec4 crude_calculate_lighting( vec4 albedo, vec3 normal, vec3 world_position, uvec2 position )

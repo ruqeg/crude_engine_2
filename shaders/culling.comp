@@ -1,5 +1,6 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/mesh.glsli"

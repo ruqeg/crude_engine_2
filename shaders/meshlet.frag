@@ -46,7 +46,7 @@ void main()
   //! TODO
   if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
   {
-    out_abledo = texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor;
+    out_abledo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor, vec4( 2.2 ) );
   }
   else
   {

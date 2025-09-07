@@ -1,0 +1,53 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
+#include "crude/platform.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
+
+layout(set=CRUDE_MATERIAL_SET, binding=0) buffer Histogram
+{
+  uint                                                    histogram[];
+};
+
+layout( push_constant ) uniform Constants
+{
+	float                                                    inverse_log_lum_range;
+	float                                                    min_log_lum;
+  uint                                                     hdr_color_texture_index;
+};
+
+shared uint histogram_shared[ 256 ];
+
+uint hdr_color_to_bin( vec3 color )
+{
+  float lum = crude_rgb_to_luminance( color );
+
+  if ( lum < 0.05f )
+  {
+    return 0;
+  }
+
+  float log_lum = clamp( ( log2( lum ) - min_log_lum ) * inverse_log_lum_range, 0.0, 1.0 );
+  return uint( log_lum * 254.0 + 1.0 );
+}
+
+void main()
+{
+  histogram_shared[ gl_LocalInvocationIndex ] = 0;
+
+  barrier( );
+
+  uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
+  if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
+  {
+    vec3 hdr_color = texelFetch( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], ivec2( gl_GlobalInvocationID.xy ), 0 ).xyz;
+    uint bin_index = hdr_color_to_bin( hdr_color );
+    atomicAdd( histogram_shared[ bin_index ], 1 );
+  }
+
+  barrier( );
+
+  atomicAdd( histogram[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
+}

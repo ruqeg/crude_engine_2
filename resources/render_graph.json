@@ -32,7 +32,7 @@
         {
           "type": "attachment",
           "name": "gbuffer_albedo",
-          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
           "resolution": [
             800,
             600
@@ -228,7 +228,7 @@
         {
           "type": "attachment",
           "name": "pbr",
-          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
           "resolution": [
             800,
             600
@@ -239,11 +239,31 @@
       ]
     },
     {
+      "name": "luminance_average_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "pbr"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "marker",
+          "name": "SOME_BUFFER"
+        }
+      ]
+    },
+    {
       "name": "debug_pass",
       "inputs": [
         {
           "type": "attachment",
           "name": "pbr"
+        },
+        {
+          "type": "reference",
+          "name": "SOME_BUFFER"
         }
       ],
       "outputs": [
