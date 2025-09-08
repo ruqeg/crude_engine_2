@@ -6,15 +6,15 @@
 
 typedef struct crude_gfx_luminance_histogram_generation_push_constant
 {
-	float32                                                  inverse_log_lum_range;
-	float32                                                  min_log_lum;
+  float32                                                  inverse_log_lum_range;
+  float32                                                  min_log_lum;
   uint32                                                   hdr_color_texture_index;
 } crude_gfx_luminance_histogram_generation_push_constant;
 
 typedef struct crude_gfx_luminance_average_calculation_push_constant
 {
-	float32                                                  log_lum_range;
-	float32                                                  min_log_lum;
+  float32                                                  log_lum_range;
+  float32                                                  min_log_lum;
   float32                                                  time_coeff;
   uint32                                                   num_pixels;
 } crude_gfx_luminance_average_calculation_push_constant;
