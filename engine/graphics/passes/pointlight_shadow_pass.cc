@@ -146,6 +146,7 @@ crude_gfx_pointlight_shadow_pass_render
   pointshadow_commands_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow_commands_generation" )->pipeline;
   pointshadow_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "meshlet", "pointshadow" )->pipeline;
   
+  /* Pointshadow Culling */
   {
     crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_culling" );
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->meshletes_instances_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
@@ -163,6 +164,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_cmd_pop_marker( primary_cmd );
   }
   
+  /* Pointshadow Commands Generation */
   {
     crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_commands_generation" );
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, crude_gfx_access_buffer( gpu, pass->pointshadow_meshlet_draw_commands_sb[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
@@ -180,6 +182,7 @@ crude_gfx_pointlight_shadow_pass_render
   width = tetrahedron_shadow_texture->width;
   height = tetrahedron_shadow_texture->height;
   
+  /* Pointshadow Rendering */
   {
     crude_gfx_rect2d_int                                   scissor;
     crude_gfx_viewport                                     dev_viewport;

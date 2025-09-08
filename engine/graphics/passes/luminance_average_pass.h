@@ -10,6 +10,7 @@ typedef struct crude_gfx_luminance_average_pass
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_texture_handle                                 luminance_average_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          luminance_histogram_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          luminance_average_calculation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  luminance_histogram_sb_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_luminance_average_pass;
 

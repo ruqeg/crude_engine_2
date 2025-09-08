@@ -1,4 +1,6 @@
 
+/* Thanks to https://www.alextardif.com/HistogramLuminance.html */
+
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
@@ -10,7 +12,7 @@ layout( push_constant ) uniform Constants
 {
 	float                                                    log_lum_range;
 	float                                                    min_log_lum;
-  uint                                                     time_coeff;
+  float                                                    time_coeff;
   uint                                                     num_pixels;
 };
 
@@ -26,6 +28,7 @@ shared uint histogram_shared[ 256 ];
 void main()
 {
   uint local_index = gl_LocalInvocationIndex;
+
   uint count_for_this_bin = histogram[ local_index ];
   histogram_shared[ local_index ] = count_for_this_bin * local_index;
 
@@ -33,6 +36,8 @@ void main()
 
   histogram[ local_index ] = 0;
 
+  /* Add all histogram_shared values to histogram_shared[0] in O(log(n)) instead of O(n) */ 
+  [[unroll]]
   for ( uint cutoff = ( 256 >> 1 ); cutoff > 0; cutoff >>= 1 )
   {
     if ( uint( local_index ) < cutoff )
@@ -49,7 +54,7 @@ void main()
 
     float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
     float lum_last_frame = imageLoad( luminance_avarage_texture, ivec2( 0, 0 ) ).x;
-    float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
+    float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff; /* (1 - exp(-timeDelta * tau)) or smth like that in future*/
     imageStore( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
   }
 }

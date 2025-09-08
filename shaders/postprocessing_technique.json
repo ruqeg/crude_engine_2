@@ -12,6 +12,18 @@
 			]
 		  }
 		]
+	  },
+	  {
+		"name": "luminance_average_calculation",
+		"shaders": [
+		  {
+			"stage": "compute",
+			"shader": "luminance_average_calculation.comp",
+			"includes": [
+			  "crude/platform.glsli"
+			]
+		  }
+		]
 	  }
 	]
 }

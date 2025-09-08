@@ -13,6 +13,7 @@
 
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_control_flow_attributes : require
 
 /* Read only */
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];
