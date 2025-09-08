@@ -70,20 +70,18 @@ vec3 crude_world_position_from_depth( vec2 uv, float depth, mat4 clip_to_world )
 /* https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl */
 
 /* sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT */
-const mat3 crude_aces_input_mat  =
-{
-  { 0.59719f, 0.35458f, 0.04823f },
-  { 0.07600f, 0.90834f, 0.01566f },
-  { 0.02840f, 0.13383f, 0.83777f }
-};
+const mat3 crude_aces_input_mat = mat3(
+  0.59719f, 0.35458f, 0.04823f,
+  0.07600f, 0.90834f, 0.01566f,
+  0.02840f, 0.13383f, 0.83777f
+);
 
 /* ODT_SAT => XYZ => D60_2_D65 => sRGB */
-const mat3 crude_aces_output_mat =
-{
-  {  1.60475f, -0.53108f, -0.07367f },
-  { -0.10208f,  1.10813f, -0.00605f },
-  { -0.00327f, -0.07276f,  1.07602f }
-};
+const mat3 crude_aces_output_mat = mat3(
+   1.60475f, -0.53108f, -0.07367f,
+  -0.10208f,  1.10813f, -0.00605f,
+  -0.00327f, -0.07276f,  1.07602f
+);
 
 vec3 crude_rrt_and_odt_fit( vec3 v )
 {
@@ -99,6 +97,16 @@ vec3 crude_aces_fitted( vec3 color )
   color = color * crude_aces_output_mat;
   color = clamp( color, 0.f, 1.f );
   return color;
+}
+
+vec3 crude_aces_fitted2( vec3 x )
+{
+  float a = 2.51f;
+  float b = 0.03f;
+  float c = 2.43f;
+  float d = 0.59f;
+  float e = 0.14f;
+  return clamp( ( x * ( a * x + b ) ) / ( x * ( c * x + d ) + e ), 0, 1 );
 }
 
 float crude_rgb_to_luminance( vec3 rgb )

@@ -1,4 +1,5 @@
 #include <core/hash_map.h>
+#include <core/time.h>
 #include <graphics/scene_renderer.h>
 
 #include <graphics/passes/postprocessing_pass.h>
@@ -63,6 +64,10 @@ crude_gfx_postprocessing_pass_initialize
     pass->luminance_histogram_generation_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->luminance_average_calculation_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
+
+  pass->luminance_avarge_last_update_time = 0.f;
+  pass->min_log_lum = -8.0f;
+  pass->max_log_lum = 3.5f;
 }
 
 void
@@ -124,43 +129,50 @@ crude_gfx_postprocessing_pass_pre_render
   crude_gfx_luminance_histogram_generation_push_constant   histogram_generation_constant;
   crude_gfx_luminance_average_calculation_push_constant    luminance_avarge_constant;
   crude_gfx_texture_handle                                 hdr_color_texture_handle;
-  
+  float32                                                  luminance_avarge_last_update_delta_time;
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->renderer->gpu;
-
-  luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
   
   hdr_color_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle;
   hdr_color_texture = crude_gfx_access_texture( gpu, hdr_color_texture_handle );
 
-  crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_histogram_generation_ds[ gpu->current_frame ] );
-  
-  float32 min_log_lum = -8.0f;
-  float32 max_log_lum = 3.5f;
-  histogram_generation_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_histogram_generation_push_constant );
-  histogram_generation_constant.hdr_color_texture_index = hdr_color_texture_handle.index;
-  histogram_generation_constant.inverse_log_lum_range = 1.f / ( max_log_lum - min_log_lum );
-  histogram_generation_constant.min_log_lum = min_log_lum;
-  crude_gfx_cmd_push_constant( primary_cmd, &histogram_generation_constant, sizeof( histogram_generation_constant ) );
-  
-  crude_gfx_cmd_fill_buffer( primary_cmd, pass->luminance_histogram_sb_handle[ gpu->current_frame ], 0u );
-  crude_gfx_cmd_dispatch( primary_cmd, ( hdr_color_texture->width + 15u ) / 16u, ( hdr_color_texture->height + 15u ) / 16u, 1u );
+  luminance_avarge_last_update_delta_time = crude_time_delta_seconds( pass->luminance_avarge_last_update_time, crude_time_now( ) );
+  pass->luminance_avarge_last_update_time = crude_time_now( );
 
-  luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_average_calculation" )->pipeline;
-  crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_average_calculation_pipeline );
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_average_calculation_ds[ gpu->current_frame ] );
+  {
+    luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
   
-  luminance_avarge_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_average_calculation_push_constant );
-  luminance_avarge_constant.log_lum_range = ( max_log_lum - min_log_lum );
-  luminance_avarge_constant.min_log_lum = min_log_lum;
-  luminance_avarge_constant.num_pixels = hdr_color_texture->width * hdr_color_texture->height;
-  luminance_avarge_constant.time_coeff = 0.016f;
-  crude_gfx_cmd_push_constant( primary_cmd, &luminance_avarge_constant, sizeof( luminance_avarge_constant ) );
+
+    crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
+    crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_histogram_generation_ds[ gpu->current_frame ] );
   
-  crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0u, 1u, false );
-  crude_gfx_cmd_dispatch( primary_cmd, 1u, 1u, 1u );
-  crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
+    histogram_generation_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_histogram_generation_push_constant );
+    histogram_generation_constant.hdr_color_texture_index = hdr_color_texture_handle.index;
+    histogram_generation_constant.inverse_log_lum_range = 1.f / ( pass->max_log_lum - pass->min_log_lum );
+    histogram_generation_constant.min_log_lum = pass->min_log_lum;
+    crude_gfx_cmd_push_constant( primary_cmd, &histogram_generation_constant, sizeof( histogram_generation_constant ) );
+  
+    crude_gfx_cmd_fill_buffer( primary_cmd, pass->luminance_histogram_sb_handle[ gpu->current_frame ], 0u );
+    crude_gfx_cmd_dispatch( primary_cmd, ( hdr_color_texture->width + 15u ) / 16u, ( hdr_color_texture->height + 15u ) / 16u, 1u );
+  }
+
+  {
+    luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_average_calculation" )->pipeline;
+    crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_average_calculation_pipeline );
+    crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_average_calculation_ds[ gpu->current_frame ] );
+ 
+    luminance_avarge_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_average_calculation_push_constant );
+    luminance_avarge_constant.log_lum_range = ( pass->max_log_lum - pass->min_log_lum );
+    luminance_avarge_constant.min_log_lum = pass->min_log_lum;
+    luminance_avarge_constant.num_pixels = hdr_color_texture->width * hdr_color_texture->height;
+    luminance_avarge_constant.time_coeff = CRUDE_CLAMP( ( 1 - exp( -luminance_avarge_last_update_delta_time * 1.1f ) ), 1.0, 0.001 );
+    crude_gfx_cmd_push_constant( primary_cmd, &luminance_avarge_constant, sizeof( luminance_avarge_constant ) );
+  
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0u, 1u, false );
+    crude_gfx_cmd_dispatch( primary_cmd, 1u, 1u, 1u );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
+  }
 }
 
 void

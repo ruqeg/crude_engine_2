@@ -54,7 +54,7 @@ void main()
 
     float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
     float lum_last_frame = imageLoad( luminance_avarage_texture, ivec2( 0, 0 ) ).x;
-    float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff; /* (1 - exp(-timeDelta * tau)) or smth like that in future*/
+    float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
     imageStore( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
   }
 }

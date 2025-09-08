@@ -12,6 +12,9 @@ typedef struct crude_gfx_postprocessing_pass
   crude_gfx_descriptor_set_handle                          luminance_histogram_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          luminance_average_calculation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  luminance_histogram_sb_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  int64                                                    luminance_avarge_last_update_time;
+  float32                                                  min_log_lum;
+  float32                                                  max_log_lum;
 } crude_gfx_postprocessing_pass;
 
 CRUDE_API void
