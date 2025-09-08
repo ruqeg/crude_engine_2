@@ -1,7 +1,7 @@
 #include <core/hash_map.h>
 #include <graphics/scene_renderer.h>
 
-#include <graphics/passes/luminance_average_pass.h>
+#include <graphics/passes/postprocessing_pass.h>
 
 typedef struct crude_gfx_luminance_histogram_generation_push_constant
 {
@@ -18,10 +18,16 @@ typedef struct crude_gfx_luminance_average_calculation_push_constant
   uint32                                                   num_pixels;
 } crude_gfx_luminance_average_calculation_push_constant;
 
+typedef struct crude_gfx_postprocessing_push_constant
+{
+  uint32                                                   luminance_average_texture_index;
+  uint32                                                   pbr_texture_index;
+} crude_gfx_postprocessing_push_constant;
+
 void
-crude_gfx_luminance_average_pass_initialize
+crude_gfx_postprocessing_pass_initialize
 (
-  _In_ crude_gfx_luminance_average_pass                   *pass,
+  _In_ crude_gfx_postprocessing_pass                      *pass,
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
@@ -60,9 +66,9 @@ crude_gfx_luminance_average_pass_initialize
 }
 
 void
-crude_gfx_luminance_average_pass_deinitialize
+crude_gfx_postprocessing_pass_deinitialize
 (
-  _In_ crude_gfx_luminance_average_pass                   *pass
+  _In_ crude_gfx_postprocessing_pass                      *pass
 )
 {
   crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
@@ -91,28 +97,27 @@ crude_gfx_luminance_average_pass_deinitialize
 }
 
 void
-crude_gfx_luminance_average_pass_on_render_graph_registered
+crude_gfx_postprocessing_pass_on_render_graph_registered
 (
-  _In_ crude_gfx_luminance_average_pass                   *pass
+  _In_ crude_gfx_postprocessing_pass                      *pass
 )
 {
   crude_gfx_device                                        *gpu;
   
   gpu = pass->scene_renderer->renderer->gpu;
 
-  crude_gfx_luminance_average_pass_on_resize( pass, gpu->vk_swapchain_width, gpu->vk_swapchain_height );
+  crude_gfx_postprocessing_pass_on_resize( pass, gpu->vk_swapchain_width, gpu->vk_swapchain_height );
 }
 
 void
-crude_gfx_luminance_average_pass_render
+crude_gfx_postprocessing_pass_pre_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-
   crude_gfx_device                                        *gpu;
-  crude_gfx_luminance_average_pass                        *pass;
+  crude_gfx_postprocessing_pass                           *pass;
   crude_gfx_texture                                       *hdr_color_texture;
   crude_gfx_pipeline_handle                                luminance_average_calculation_pipeline;
   crude_gfx_pipeline_handle                                luminance_histogram_generation_pipeline;
@@ -120,7 +125,7 @@ crude_gfx_luminance_average_pass_render
   crude_gfx_luminance_average_calculation_push_constant    luminance_avarge_constant;
   crude_gfx_texture_handle                                 hdr_color_texture_handle;
   
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_luminance_average_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->renderer->gpu;
 
   luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
@@ -159,34 +164,64 @@ crude_gfx_luminance_average_pass_render
 }
 
 void
-crude_gfx_luminance_average_pass_on_resize
+crude_gfx_postprocessing_pass_render
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  crude_gfx_postprocessing_pass                           *pass;
+  crude_gfx_device                                        *gpu;
+  crude_gfx_postprocessing_push_constant                   postprocessing_constant;
+  crude_gfx_pipeline_handle                                postprocessing_pipeline;
+  crude_gfx_texture_handle                                 pbr_texture_handle;
+
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
+  gpu = pass->scene_renderer->renderer->gpu;
+  
+  postprocessing_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "postprocessing" )->pipeline;
+  
+  crude_gfx_cmd_bind_pipeline( primary_cmd, postprocessing_pipeline );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID );
+
+  pbr_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle;
+
+  postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
+  postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle[ gpu->current_frame ].index;
+  postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
+  crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );
+  crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
+}
+
+void
+crude_gfx_postprocessing_pass_on_resize
 (
   _In_ void                                               *ctx,
   _In_ uint32                                              new_width,
   _In_ uint32                                              new_height
 )
 {
-  crude_gfx_luminance_average_pass                        *pass;
+  crude_gfx_postprocessing_pass                           *pass;
   
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_luminance_average_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   
-  crude_gfx_luminance_average_pass_on_techniques_reloaded( ctx );
+  crude_gfx_postprocessing_pass_on_techniques_reloaded( ctx );
 }
 
 void
-crude_gfx_luminance_average_pass_on_techniques_reloaded
+crude_gfx_postprocessing_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx
 )
 {
-  crude_gfx_luminance_average_pass                        *pass;
+  crude_gfx_postprocessing_pass                           *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_descriptor_set_layout_handle                   luminance_histogram_generation_dsl;
   crude_gfx_pipeline_handle                                luminance_histogram_generation_pipeline;
   crude_gfx_descriptor_set_layout_handle                   luminance_average_calculation_dsl;
   crude_gfx_pipeline_handle                                luminance_average_calculation_pipeline;
   
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_luminance_average_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->renderer->gpu;
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -236,15 +271,16 @@ crude_gfx_luminance_average_pass_on_techniques_reloaded
 }
 
 crude_gfx_render_graph_pass_container
-crude_gfx_luminance_average_pass_pack
+crude_gfx_postprocessing_pass_pack
 (
-  _In_ crude_gfx_luminance_average_pass                   *pass
+  _In_ crude_gfx_postprocessing_pass                      *pass
 )
 {
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.render = crude_gfx_luminance_average_pass_render;
-  container.on_techniques_reloaded = crude_gfx_luminance_average_pass_on_techniques_reloaded;
-  container.on_resize = crude_gfx_luminance_average_pass_on_resize;
+  container.pre_render = crude_gfx_postprocessing_pass_pre_render;
+  container.render = crude_gfx_postprocessing_pass_render;
+  container.on_techniques_reloaded = crude_gfx_postprocessing_pass_on_techniques_reloaded;
+  container.on_resize = crude_gfx_postprocessing_pass_on_resize;
   return container;
 }

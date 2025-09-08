@@ -11,7 +11,7 @@
 #include <graphics/passes/debug_pass.h>
 #include <graphics/passes/light_pass.h>
 #include <graphics/passes/pointlight_shadow_pass.h>
-#include <graphics/passes/luminance_average_pass.h>
+#include <graphics/passes/postprocessing_pass.h>
 
 typedef struct crude_scene crude_scene;
 
@@ -99,7 +99,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
-  crude_gfx_luminance_average_pass                         luminance_average_pass;
+  crude_gfx_postprocessing_pass                            postprocessing_pass;
 } crude_gfx_scene_renderer;
 
 

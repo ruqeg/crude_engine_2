@@ -113,8 +113,6 @@ void main()
     shadow /= NUM_SAMPLES;
 
     color = vec4( shadow.xxx, 1.0 ) * crude_calculate_lighting( albedo, normal, pixel_world_position, position );
-    //color.xyz = crude_aces_fitted( color.xyz );
-    //color.xyz = pow( color.xyz, vec3( 1 / 2.2 ) );
   }
   out_color = color;
 }

@@ -239,18 +239,24 @@
       ]
     },
     {
-      "name": "luminance_average_pass",
-      "type": "compute",
+      "name": "postprocessing_pass",
       "inputs": [
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "pbr"
         }
       ],
       "outputs": [
         {
-          "type": "marker",
-          "name": "SOME_BUFFER"
+          "type": "attachment",
+          "name": "final",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
         }
       ]
     },
@@ -259,17 +265,13 @@
       "inputs": [
         {
           "type": "attachment",
-          "name": "pbr"
-        },
-        {
-          "type": "reference",
-          "name": "SOME_BUFFER"
+          "name": "final"
         }
       ],
       "outputs": [
         {
           "type": "reference",
-          "name": "pbr"
+          "name": "final"
         },
         {
           "type": "marker",
@@ -303,13 +305,17 @@
         {
           "type": "texture",
           "name": "pbr"
+        },
+        {
+          "type": "texture",
+          "name": "final"
         }
       ],
       "outputs": [
         {
           "type": "attachment",
           "name": "imgui",
-          "format": "VK_FORMAT_R8G8B8A8_SRGB",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
           "resolution": [
             800,
             600

@@ -1696,6 +1696,8 @@ crude_gfx_create_pipeline
   vk_pipeline_layout_info.pPushConstantRanges = &vk_push_constant;
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( gpu->vk_device, &vk_pipeline_layout_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline_layout ), "Failed to create pipeline layout" );
 
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_PIPELINE_LAYOUT, ( uint64 )pipeline->vk_pipeline_layout, creation->name );
+
   pipeline->num_active_layouts = shader_state->reflect.descriptor.sets_count;
 
   if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_GRAPHICS )
