@@ -8,7 +8,7 @@ CE2 is a 3D game engine designed to have fun at free time, written in C++ due to
 
 ## Features
 - Render Graph
-- Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping
+- Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping, Automatic Exposure
 - Asynchronous Resources Loading, Multi-Threading Commands Recording
 - Json Scene, GLTF Models
 - GPU Profiler
