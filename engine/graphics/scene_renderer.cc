@@ -87,6 +87,13 @@ load_samplers_
 );
 
 static void
+load_textures_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ cgltf_data                                         *gltf
+);
+
+static void
 load_buffers_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -1169,6 +1176,7 @@ register_gltf_
   /* Load gltf resources */
   load_images_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
   load_samplers_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
+  load_textures_( scene_renderer, gltf ); /* Should be executed after images/samplers loaded*/
   load_buffers_( scene_renderer, gltf, &temporary_string_buffer, gltf_directory );
   load_meshes_( scene_renderer, node, gltf, gltf_mesh_index_to_mesh_primitive_index, &temporary_string_buffer, gltf_directory, scene_renderer_buffers_offset, scene_renderer_images_offset, scene_renderer_samplers_offset );
   load_meshlets_( scene_renderer, gltf, temporary_allocator );
@@ -1360,6 +1368,7 @@ load_images_
     texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
     texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
     texture_creation.name = image_full_filename;
+    texture_creation.subresource.mip_level_count = log2( CRUDE_MAX( width, height ) ) + 1;
 
     texture_resource = crude_gfx_renderer_create_texture( scene_renderer->renderer, &texture_creation );
     CRUDE_ARRAY_PUSH( scene_renderer->images, *texture_resource );
@@ -1446,6 +1455,21 @@ load_samplers_
     
     sampler_resource = crude_gfx_renderer_create_sampler( scene_renderer->renderer, &creation );
     CRUDE_ARRAY_PUSH( scene_renderer->samplers, *sampler_resource );
+  }
+}
+
+void
+load_textures_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ cgltf_data                                         *gltf
+)
+{
+  for ( uint32 texture_index = 0; texture_index < gltf->textures_count; ++texture_index )
+  {
+    uint32 sampler_index = cgltf_sampler_index( gltf, gltf->textures[ texture_index ].sampler );
+    uint32 image_index = cgltf_image_index( gltf, gltf->textures[ texture_index ].image );
+    crude_gfx_link_texture_sampler( scene_renderer->renderer->gpu, scene_renderer->images[ image_index ].handle, scene_renderer->samplers[ sampler_index ].handle );
   }
 }
 

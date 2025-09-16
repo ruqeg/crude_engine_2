@@ -1125,6 +1125,59 @@ crude_gfx_gpu_set_timestamps_enable
   gpu->timestamps_enabled = value;
 }
 
+void
+crude_gfx_generate_mipmaps
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd_buffer,
+  _In_ crude_gfx_texture                                  *texture
+)
+{
+  int32                                                    w, h;
+
+  if ( texture->subresource.mip_level_count < 2 )
+  {
+    return;
+  }
+
+  crude_gfx_cmd_add_image_barrier( cmd_buffer, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+
+  w = texture->width;
+  h = texture->height;
+
+  for ( uint32 mip_index = 1; mip_index < texture->subresource.mip_level_count; ++mip_index )
+  {
+    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
+
+    VkImageBlit blit_region = CRUDE_COMPOUNT_EMPTY( VkImageBlit );
+    blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blit_region.srcSubresource.mipLevel = mip_index - 1;
+    blit_region.srcSubresource.baseArrayLayer = 0;
+    blit_region.srcSubresource.layerCount = 1;
+
+    blit_region.srcOffsets[ 0 ] = { 0, 0, 0 };
+    blit_region.srcOffsets[ 1 ] = { w, h, 1 };
+
+    w /= 2;
+    h /= 2;
+
+    blit_region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blit_region.dstSubresource.mipLevel = mip_index;
+    blit_region.dstSubresource.baseArrayLayer = 0;
+    blit_region.dstSubresource.layerCount = 1;
+
+    blit_region.dstOffsets[ 0 ] = { 0, 0, 0 };
+    blit_region.dstOffsets[ 1 ] = { w, h, 1 };
+
+    vkCmdBlitImage( cmd_buffer->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
+
+    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
+  }
+
+  crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, texture->subresource.mip_level_count, false );
+
+  texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
+}
+
 /************************************************
  *
  * GPU Device Resources Functions
@@ -1284,51 +1337,7 @@ crude_gfx_create_texture
     
     vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
     
-    if ( creation->subresource.mip_level_count > 1 )
-    {
-      crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
-    }
-    
-    int32 w = creation->width;
-    int32 h = creation->height;
-    
-    for ( int32 mip_index = 1; mip_index < creation->subresource.mip_level_count; ++mip_index )
-    {
-      crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
-    
-      VkImageBlit blit_region =
-      { 
-        .srcSubresource = {
-          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-          .mipLevel = CRUDE_STATIC_CAST( uint32, mip_index - 1 ),
-          .baseArrayLayer = 0,
-          .layerCount = 1,
-        },
-        .srcOffsets = {
-          { 0, 0, 0 },
-          { w, h, 1 },
-        },
-        .dstSubresource = {
-          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-          .mipLevel = CRUDE_STATIC_CAST( uint32, mip_index ),
-          .baseArrayLayer = 0,
-          .layerCount = 1,
-        },
-        .dstOffsets = {
-          { 0, 0, 0 },
-          { w / 2, h / 2, 1 },
-        }
-      };
-    
-      w /= 2;
-      h /= 2;
-    
-      vkCmdBlitImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
-    
-      crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
-    }
-    
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, creation->subresource.mip_level_count, false );
+    crude_gfx_generate_mipmaps( cmd, texture );
     
     vkEndCommandBuffer( cmd->vk_cmd_buffer );
     

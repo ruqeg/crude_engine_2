@@ -89,6 +89,13 @@ crude_gfx_renderer_access_technique_pass_by_name
   _In_ char const                                         *pass_name
 );
 
+CRUDE_API void                                     
+crude_gfx_renderer_generate_mipmaps
+(                                                  
+  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_texture                                  *texture
+);
+
 /************************************************
  *
  * Renderer Resoruces Functions
