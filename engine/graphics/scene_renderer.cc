@@ -659,7 +659,7 @@ update_dynamic_buffers_
         bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
           && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
           && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )
-          && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->roughness_texture_handle ) );
+          && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->metallic_roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->metallic_roughness_texture_handle ) );
 
         if ( mesh_textures_ready )
         {
@@ -1212,8 +1212,8 @@ create_mesh_material_
     material->pbr_metallic_roughness.base_color_factor[ 3 ],
   } );
   
-  mesh_draw->metallic_roughness_occlusion_factor.x = material->pbr_metallic_roughness.roughness_factor;
-  mesh_draw->metallic_roughness_occlusion_factor.y = material->pbr_metallic_roughness.metallic_factor;
+  mesh_draw->metallic_roughness_occlusion_factor.x = material->pbr_metallic_roughness.metallic_factor;
+  mesh_draw->metallic_roughness_occlusion_factor.y = material->pbr_metallic_roughness.roughness_factor;
   mesh_draw->alpha_cutoff = material->alpha_cutoff;
   
   if (material->alpha_mode == cgltf_alpha_mode_mask )
@@ -1242,12 +1242,12 @@ create_mesh_material_
     crude_gfx_renderer_texture *roughness_texture_gpu = &scene_renderer->images[ scene_renderer_images_offset + cgltf_image_index( gltf, roughness_texture->image ) ];
     crude_gfx_renderer_sampler *roughness_sampler_gpu = &scene_renderer->samplers[ scene_renderer_samplers_offset + cgltf_sampler_index( gltf, roughness_texture->sampler ) ];
     
-    mesh_draw->roughness_texture_handle = roughness_texture_gpu->handle;
+    mesh_draw->metallic_roughness_texture_handle = roughness_texture_gpu->handle;
     crude_gfx_link_texture_sampler( renderer->gpu, roughness_texture_gpu->handle, roughness_sampler_gpu->handle );
   }
   else
   {
-    mesh_draw->roughness_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+    mesh_draw->metallic_roughness_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   }
 
   if ( material->occlusion_texture.texture )

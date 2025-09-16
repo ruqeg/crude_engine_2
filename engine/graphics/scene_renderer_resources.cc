@@ -58,7 +58,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 )
 {
   mesh_draw_gpu->textures.x = mesh->albedo_texture_handle.index; /* in case i will be confused in the future, bindless textures bineded by their handles, look at gpu_present... at least at the moment I write this comment */
-  mesh_draw_gpu->textures.y = mesh->roughness_texture_handle.index;
+  mesh_draw_gpu->textures.y = mesh->metallic_roughness_texture_handle.index;
   mesh_draw_gpu->textures.z = mesh->normal_texture_handle.index;
   mesh_draw_gpu->textures.w = mesh->occlusion_texture_handle.index;
   mesh_draw_gpu->albedo_color_factor = mesh->albedo_color_factor;

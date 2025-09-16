@@ -144,7 +144,7 @@ typedef struct crude_gfx_mesh_cpu
   float32                                                  alpha_cutoff;
   uint32                                                   flags;
   crude_gfx_texture_handle                                 albedo_texture_handle;
-  crude_gfx_texture_handle                                 roughness_texture_handle;
+  crude_gfx_texture_handle                                 metallic_roughness_texture_handle;
   crude_gfx_texture_handle                                 normal_texture_handle;
   crude_gfx_texture_handle                                 occlusion_texture_handle;
   uint32                                                   gpu_mesh_index;

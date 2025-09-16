@@ -52,6 +52,14 @@ void main()
   {
     out_abledo = mesh_draw.albedo_color_factor;
   }
+  if ( mesh_draw.textures.y != CRUDE_TEXTURE_INVALID )
+  {
+    out_roughness_metalness.x = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).y * mesh_draw.metallic_roughness_occlusion_factor.y;
+  }
+  else
+  {
+    out_roughness_metalness.x = mesh_draw.metallic_roughness_occlusion_factor.y;
+  }
 
   out_normal = crude_octahedral_encode( in_normal );
 }

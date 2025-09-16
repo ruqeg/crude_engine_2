@@ -8,6 +8,34 @@
 #define CRUDE_LIGHT_WORDS_COUNT                        ( ( CRUDE_LIGHTS_MAX_COUNT + 31 ) / 32 )
 #define CRUDE_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
 
+#define CRUDE_SHADOW_FILTER_NUM_SAMPLES 16
+#define CRUDE_SHADOW_FILTER_RADIUS 1.5
+
+const vec2 filter_kernel[ CRUDE_SHADOW_FILTER_NUM_SAMPLES ] =
+{
+  vec2(-0.94201624, -0.39906216),
+  vec2(0.94558609, -0.76890725),
+  vec2(-0.094184101, -0.92938870),
+  vec2(0.34495938, 0.29387760),
+  vec2(-0.91588581, 0.45771432),
+  vec2(-0.81544232, -0.87912464),
+  vec2(-0.38277543, 0.27676845),
+  vec2(0.97484398, 0.75648379),
+  vec2(0.44323325, -0.97511554),
+  vec2(0.53742981, -0.47373420),
+  vec2(-0.26496911, -0.41893023),
+  vec2(0.79197514, 0.19090188),
+  vec2(-0.24188840, 0.99706507),
+  vec2(-0.81409955, 0.91437590),
+  vec2(0.19984126, 0.78641367),
+  vec2(0.14383161, -0.14100790)
+};
+
+const vec3 crude_tetrahedron_face_a = vec3( 0.0, -0.57735026, 0.81649661 );
+const vec3 crude_tetrahedron_face_b = vec3( 0.0, -0.57735026, -0.81649661 );
+const vec3 crude_tetrahedron_face_c = vec3( -0.81649661, 0.57735026, 0.0 );
+const vec3 crude_tetrahedron_face_d = vec3( 0.81649661, 0.57735026, 0.0 );
+
 struct crude_light
 {
   vec3                                                     world_position;
@@ -41,34 +69,184 @@ layout(set=CRUDE_MATERIAL_SET, binding=24, row_major) readonly buffer ShadowView
   mat4                                                      pointlight_world_to_clip[];
 };
 
-vec3 crude_calculate_point_light_contribution( crude_light light, vec3 albedo, vec3 normal, vec3 world_position, vec3 view_position )
-{
-  vec3 light_to_pos = light.world_position - world_position;
-  float light_distance = length( light_to_pos );
-  vec3 lightdir = light_to_pos / light_distance;
 
-  float fadeout = pow( clamp( 1.f - pow( light_distance / light.radius, 2.f ), 0.f, 1.f ), 2.f );   
-  float ldotn = clamp( dot( lightdir, normal ), 0.f, 1.f );
-  return fadeout * ldotn * ( light.color * light.intensity.xxx * albedo );
+vec3
+crude_schlick_fresnel
+(
+  in vec3                                                  f0,
+  in float                                                 ndotl
+)
+{
+  return f0 + ( 1.f - f0 ) * pow( ( 1.f - max( ndotl, 0.0 ) ), 5.f );
 }
 
-vec4 crude_calculate_lighting( vec4 albedo, vec3 normal, vec3 world_position, uvec2 position )
+float
+crude_trowbridge_reitz_distribution
+(
+  in float                                                 ndotm,
+  in float                                                 r2
+)
 {
-  vec4 final_color = vec4( 0 );
+  float x1 = max( PI * ( 1.f + ndotm * ndotm * ( r2 - 1.f ) ), 0.0001f );
+  float x2 = sign( max( ndotm, 0.f ) ) * r2;
+  return x2 / x1;
+}
 
-  vec4 view_position = vec4( world_position, 1.0 ) * camera.world_to_view;
+float 
+crude_hammon_smith_g_approximation
+(
+  in float                                                 ndotl_abs,
+  in float                                                 ndotv_abs,
+  in float                                                 r
+)
+{
+  return 0.5f / ( mix( 2 * ndotl_abs * ndotv_abs, ndotl_abs + ndotv_abs, r ) );
+}
 
-  float linear_d = ( view_position.z - camera.znear ) / ( camera.zfar - camera.znear );
-  int bin_index = int( linear_d * CRUDE_LIGHT_BINS_COUNT );
-  uint bin_value = bins[ bin_index ];
+uint 
+crude_get_tetrahedron_face_index
+(
+  in vec3                                                  dir
+)
+{
+  mat4x3 face_matrix;
+  face_matrix[ 0 ] = crude_tetrahedron_face_a;
+  face_matrix[ 1 ] = crude_tetrahedron_face_b;
+  face_matrix[ 2 ] = crude_tetrahedron_face_c;
+  face_matrix[ 3 ] = crude_tetrahedron_face_d; 
+  vec4 dot_products = dir * face_matrix;
+  float maximum = max (max( dot_products.x, dot_products.y ), max( dot_products.z, dot_products.w ) );
+  
+  uint index;
+  if ( maximum == dot_products.x )
+  {
+    index = 0;
+  }
+  else if ( maximum == dot_products.y )
+  {
+    index = 1;
+  }
+  else if ( maximum == dot_products.z )
+  {
+    index = 2;
+  }
+  else
+  { 
+    index = 3;
+  }
 
-  uint min_light_id = bin_value & 0xFFFF;
-  uint max_light_id = ( bin_value >> 16 ) & 0xFFFF;
+  return index;
+}
 
-  uvec2 tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
+float
+crude_calculate_point_light_shadow_contribution
+(
+  in crude_light                                           light,
+  in vec3                                                  vertex_position
+)
+{
+  vec4                                                     proj_pos;
+  vec3                                                     vertex_to_light;
+  vec2                                                     proj_uv, filter_radius;
+  uint                                                     face_index;
+  float                                                    bias, current_depth, shadow_factor;
 
-  uint stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
-  uint address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
+  vertex_to_light = light.world_position - vertex_position.xyz;
+  face_index = crude_get_tetrahedron_face_index( normalize( -vertex_to_light ) );
+  proj_pos = vec4( vertex_position.xyz, 1.0 ) * pointlight_world_to_clip[ 0 * 4 + face_index ];
+  proj_pos.xyz /= proj_pos.w;
+    
+  proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
+  proj_uv.y = 1.f - proj_uv.y;
+
+  bias = 0.01f;
+  current_depth = proj_pos.z;
+    
+  filter_radius = inv_shadow_map_size.xy * CRUDE_SHADOW_FILTER_RADIUS; 
+  
+  shadow_factor = 0;
+  for ( uint i = 0; i < CRUDE_SHADOW_FILTER_NUM_SAMPLES; ++i )
+  {
+    vec2 texcoords = proj_uv.xy + ( filter_kernel[i] * filter_radius );
+    float closest_depth = texture( global_textures[ nonuniformEXT( tiled_shadowmap_texture_index ) ], texcoords ).r;
+    shadow_factor += current_depth - bias < closest_depth ? 1 : 0;
+  }
+
+  return shadow_factor / CRUDE_SHADOW_FILTER_NUM_SAMPLES;
+}
+
+vec3
+crude_calculate_point_light_contribution
+(
+  in crude_light                                           light,
+  in vec3                                                  albedo,
+  in float                                                 roughness,
+  in vec3                                                  normal,
+  in vec3                                                  vertex_position,
+  in vec3                                                  camera_position,
+  in vec3                                                  f0
+)
+{
+  float                                                    light_distance, attenuation, ndotl, ndoth, ndotv, hdotl;
+  vec3                                                     light_to_position, l, radiance, f, spec, diff, h, v;
+
+  roughness = 0.2;
+  light_to_position = light.world_position - vertex_position;
+  light_distance = length( light_to_position );
+
+  l = light_to_position / light_distance;
+  v = normalize( camera_position - vertex_position );
+  h = normalize( l + v );
+
+  ndotl = dot( normal, l );
+  ndoth = dot( normal, h );
+  ndotv = dot( normal, v );
+  hdotl = dot( h, l );
+
+  attenuation = max( 1.f - pow( light_distance / light.radius, 2.f ), 0.f );
+  attenuation = attenuation * attenuation;
+
+  radiance = light.color * light.intensity * attenuation;
+
+  f = crude_schlick_fresnel( f0, hdotl );
+  spec = f * crude_trowbridge_reitz_distribution( ndoth, roughness * roughness ) * crude_hammon_smith_g_approximation( abs( ndotl ), abs( ndotv ), roughness ); /* in case i will be confused in the future, crude_hammon_smith_g_approximation already contains /4ndotlndotv (real time rendering p342) */
+  diff = ( 1.f - f ) * albedo / PI;
+  return radiance * max( ndotl, 0.f ) * ( diff + spec );
+}
+
+vec3
+crude_calculate_lighting
+(
+  in vec4                                                  albedo,
+  in float                                                 roughness,
+  in vec3                                                  normal,
+  in vec3                                                  vertex_position,
+  in vec3                                                  camera_position,
+  in uvec2                                                 position
+)
+{
+  vec4                                                     view_position;
+  vec3                                                     radiance;
+  uvec2                                                    tile;
+  float                                                    linear_d;
+  int                                                      bin_index;
+  uint                                                     bin_value, min_light_id, max_light_id, stride, address;
+
+  radiance = vec3( 0 );
+
+  view_position = vec4( vertex_position, 1.0 ) * camera.world_to_view;
+
+  linear_d = ( view_position.z - camera.znear ) / ( camera.zfar - camera.znear );
+  bin_index = int( linear_d * CRUDE_LIGHT_BINS_COUNT );
+  bin_value = bins[ bin_index ];
+
+  min_light_id = bin_value & 0xFFFF;
+  max_light_id = ( bin_value >> 16 ) & 0xFFFF;
+
+  tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
+
+  stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
+  address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
 
   if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
   {
@@ -80,12 +258,12 @@ vec4 crude_calculate_lighting( vec4 albedo, vec3 normal, vec3 world_position, uv
       if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
       {
         uint global_light_index = lights_indices[ light_id ];
-        final_color.rgb += crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, normal, world_position, view_position.xyz );
+        radiance += crude_calculate_point_light_shadow_contribution( lights[ global_light_index ], vertex_position ) * crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, roughness, normal, vertex_position, camera_position, vec3( 0.04f ) );
       }
     }
   }
 
-  return vec4( final_color.rgb, 1.f );
+  return radiance;
 }
 
 #endif /* CRUDE_LIGHT_GLSLI */

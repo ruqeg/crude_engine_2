@@ -2,12 +2,27 @@
 #ifndef CRUDE_CULLING_GLSL
 #define CRUDE_CULLING_GLSL
 
-bool crude_clustered_backface_culling( vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_pos )
+bool
+crude_clustered_backface_culling
+(
+  in vec3                                                  center,
+  in float                                                 radius,
+  in vec3                                                  cone_axis,
+  in float                                                 cone_cutoff,
+  in vec3                                                  camera_pos
+)
 {
   return dot( center - camera_pos, cone_axis ) >= cone_cutoff * length( center - camera_pos ) + radius;
 }
 
-bool crude_sphere_intersect( vec3 center_a, float radius_a, vec3 center_b, float radius_b )
+bool
+crude_sphere_intersect
+(
+  in vec3                                                  center_a,
+  in float                                                 radius_a,
+  in vec3                                                  center_b,
+  in float                                                 radius_b
+)
 {
 	vec3 v = center_b - center_a;
 	float total_radius = radius_a + radius_b;
@@ -15,29 +30,43 @@ bool crude_sphere_intersect( vec3 center_a, float radius_a, vec3 center_b, float
 }
 
 /* 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013 */
-bool crude_bounding_sphere_to_clipped_aabb( vec3 c, float r, float znear, float p00, float p11, out vec4 aabb )
+bool
+crude_bounding_sphere_to_clipped_aabb
+(
+  in vec3                                                  c,
+  in float                                                 r,
+  in float                                                 znear,
+  in float                                                 p00,
+  in float                                                 p11,
+  out vec4                                                 aabb
+)
 {
+  vec2                                                     cx, vx, minx, maxx, cy, vy, miny, maxy;
   if ( c.z - r < znear )
   {
     return false;
   }
 
-  vec2 cx = vec2( c.x, c.z );
-  vec2 vx = vec2( sqrt( dot( cx, cx ) - r * r ), r );
-  vec2 minx = mat2( vx.x, vx.y, -vx.y, vx.x ) * cx;
-  vec2 maxx = mat2( vx.x, -vx.y, vx.y, vx.x ) * cx;
+  cx = vec2( c.x, c.z );
+  vx = vec2( sqrt( dot( cx, cx ) - r * r ), r );
+  minx = mat2( vx.x, vx.y, -vx.y, vx.x ) * cx;
+  maxx = mat2( vx.x, -vx.y, vx.y, vx.x ) * cx;
 
-  vec2 cy = vec2( -c.y, c.z );
-  vec2 vy = vec2( sqrt( dot( cy, cy ) - r * r ), r );
-  vec2 miny = mat2( vy.x, vy.y, -vy.y, vy.x ) * cy;
-  vec2 maxy = mat2( vy.x, -vy.y, vy.y, vy.x ) * cy;
+  cy = vec2( -c.y, c.z );
+  vy = vec2( sqrt( dot( cy, cy ) - r * r ), r );
+  miny = mat2( vy.x, vy.y, -vy.y, vy.x ) * cy;
+  maxy = mat2( vy.x, -vy.y, vy.y, vy.x ) * cy;
 
   aabb = vec4( minx.x / minx.y * p00, miny.x / miny.y * p11, maxx.x / maxx.y * p00, maxy.x / maxy.y * p11 );
 
   return true;
 }
 
-vec4 crude_clip_to_uv_space( vec4 v )
+vec4
+crude_clip_to_uv_space
+(
+  in vec4                                                  v
+)
 {
   return v.xwzy * vec4( 0.5f, -0.5f, 0.5f, -0.5f ) + vec4( 0.5f );
 }
@@ -45,9 +74,22 @@ vec4 crude_clip_to_uv_space( vec4 v )
 /*
  * Occlusion Culling
  * TODO:
- *  Continue testing using using a finer mip level if result are ambiguous
+ *  Continue testing using a finer mip level if result are ambiguous
  */
-bool crude_occlusion_culling( uint mesh_instance_draw_index, vec3 view_bounding_center, float radius, float znear, float projection_00, float projection_11, uint depth_pyramid_texture_index, vec3 world_bounding_center, vec3 camera_world_position, mat4 culling_view_projection )
+bool
+crude_occlusion_culling
+(
+  in uint                                                  mesh_instance_draw_index,
+  in vec3                                                  view_bounding_center,
+  in float                                                 radius,
+  in float                                                 znear,
+  in float                                                 projection_00,
+  in float                                                 projection_11,
+  in uint                                                  depth_pyramid_texture_index,
+  in vec3                                                  world_bounding_center,
+  in vec3                                                  camera_world_position,
+  in mat4                                                  culling_view_projection
+)
 {
   vec4 aabb_clip;
   bool occlusion_visible = true;
@@ -86,7 +128,13 @@ bool crude_occlusion_culling( uint mesh_instance_draw_index, vec3 view_bounding_
   return occlusion_visible;
 }
 
-uint crude_get_cube_face_mask( vec3 cubemap_pos, vec3 aabb_min, vec3 aabb_max )
+uint
+crude_get_cube_face_mask
+(
+  in vec3                                                  cubemap_pos,
+  in vec3                                                  aabb_min,
+  in vec3                                                  aabb_max
+)
 {
   vec3 plane_normals[] = { vec3( -1, 1, 0 ), vec3( 1, 1, 0 ), vec3( 1, 0, 1 ), vec3( 1, 0, -1 ), vec3( 0, 1, 1 ), vec3( 0, -1, 1 ) };
   vec3 abs_plane_normals[] = { vec3( 1, 1, 0 ), vec3( 1, 1, 0 ), vec3( 1, 0, 1 ), vec3( 1, 0, 1 ), vec3( 0, 1, 1 ), vec3( 0, 1, 1 ) };
