@@ -158,9 +158,9 @@
           "components": [
             {
               "type": "crude_light",
-              "radius": 3,
+              "radius": 6,
               "color": [ 1, 1, 1 ],
-              "intensity": 1
+              "intensity": 18
             }
           ],
           "tags": [],
