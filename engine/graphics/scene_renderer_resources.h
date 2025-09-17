@@ -13,6 +13,12 @@
 #define CRUDE_GFX_LIGHT_WORDS_COUNT                        ( ( CRUDE_GFX_LIGHTS_MAX_COUNT + 31 ) / 32 )
 #define CRUDE_GFX_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
 
+typedef enum crude_gfx_mesh_draw_flags
+{
+  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL = ( 1 << 4 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS = ( 1 << 8 ),
+} crude_gfx_mesh_draw_flags;
+
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_line_vertex_gpu
 {
   XMFLOAT3                                                 position;

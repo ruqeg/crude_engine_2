@@ -1660,13 +1660,17 @@ load_meshes_
       crude_gfx_renderer_buffer                           *indices_buffer_gpu;
       XMVECTOR                                             bounding_center;
       float32                                              bounding_radius;
+      uint32                                               flags;
       bool                                                 material_transparent;
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
-
       mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_cpu );
+      
+      flags = 0;
+
       for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
       {
+        // !TODO REMOVE
         crude_gfx_renderer_buffer *buffer_gpu = &scene_renderer->buffers[ scene_renderer_buffers_offset + cgltf_buffer_view_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view ) ];
         switch ( mesh_primitive->attributes[ i ].type )
         {
@@ -1693,12 +1697,14 @@ load_meshes_
         {
           mesh_draw.tangent_buffer = buffer_gpu->handle;
           mesh_draw.tangent_offset = mesh_primitive->attributes[ i ].data->offset;
+          flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS;
           break;
         }
         case cgltf_attribute_type_normal:
         {
           mesh_draw.normal_buffer = buffer_gpu->handle;
           mesh_draw.normal_offset = mesh_primitive->attributes[ i ].data->offset;
+          flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL;
           break;
         }
         case cgltf_attribute_type_texcoord:
@@ -1726,6 +1732,8 @@ load_meshes_
       mesh_draw.bounding_sphere.y = XMVectorGetY( bounding_center );
       mesh_draw.bounding_sphere.z = XMVectorGetZ( bounding_center );
       mesh_draw.bounding_sphere.w = bounding_radius;
+
+      mesh_draw.flags = flags;
 
       CRUDE_ARRAY_PUSH( scene_renderer->meshes, mesh_draw );
     }
@@ -1904,11 +1912,13 @@ load_meshlet_vertices_
   _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
 )
 {
+  XMFLOAT4                                                *primitive_tangents;
   XMFLOAT3                                                *primitive_positions;
   XMFLOAT3                                                *primitive_normals;
   XMFLOAT2                                                *primitive_texcoords;
   uint32                                                   meshlet_vertices_count;
   
+  primitive_tangents = NULL;
   primitive_positions = primitive_normals = NULL;
   primitive_texcoords = NULL;
 
@@ -1927,6 +1937,13 @@ load_meshlet_vertices_
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
       CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT3 ) );
       primitive_positions = CRUDE_CAST( XMFLOAT3*, attribute_data );
+      break;
+    }
+    case cgltf_attribute_type_tangent:
+    {
+      CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT4 ) );
+      primitive_tangents = CRUDE_CAST( XMFLOAT4*, attribute_data );
       break;
     }
     case cgltf_attribute_type_normal:
@@ -1955,13 +1972,27 @@ load_meshlet_vertices_
     CRUDE_ASSERT( primitive_normals );
     CRUDE_ASSERT( primitive_texcoords );
     
-    crude_gfx_meshlet_vertex_gpu new_meshlet_vertex;
+    crude_gfx_meshlet_vertex_gpu new_meshlet_vertex = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet_vertex_gpu );
+
     new_meshlet_vertex.position.x = primitive_positions[ i ].x;
     new_meshlet_vertex.position.y = primitive_positions[ i ].y;
     new_meshlet_vertex.position.z = primitive_positions[ i ].z;
-    new_meshlet_vertex.normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
-    new_meshlet_vertex.normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
-    new_meshlet_vertex.normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
+
+    if ( primitive_normals )
+    {
+      new_meshlet_vertex.normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
+      new_meshlet_vertex.normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
+      new_meshlet_vertex.normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
+    }
+
+    if ( primitive_tangents  )
+    {
+      new_meshlet_vertex.tangent[ 0 ] = ( primitive_tangents[ i ].x + 1.0f ) * 127.0f;
+      new_meshlet_vertex.tangent[ 1 ] = ( primitive_tangents[ i ].y + 1.0f ) * 127.0f;
+      new_meshlet_vertex.tangent[ 2 ] = ( primitive_tangents[ i ].z + 1.0f ) * 127.0f;
+      new_meshlet_vertex.tangent[ 3 ] = ( primitive_tangents[ i ].w + 1.0f ) * 127.0f;
+    }
+
     new_meshlet_vertex.texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
     new_meshlet_vertex.texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
     CRUDE_ARRAY_PUSH( *vertices, new_meshlet_vertex );

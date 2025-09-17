@@ -18,6 +18,11 @@ layout(max_vertices=128, max_primitives=124) out;
 layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out flat uint out_mesh_draw_index[];
 layout(location=2) out vec3 out_normals[];
+layout(location=3) out vec3 out_tangents[];
+layout(location=4) out vec3 out_bitangents[];
+layout(location=5) out vec3 out_world_positions[];
+layout(location=6) out vec3 out_view_surface_normal[];
+layout(location=7) out vec3 out_view_position[];
 
 layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
 {
@@ -72,11 +77,26 @@ void main()
   {
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    vec4 world_position = model_position * model_to_world;
+    vec4 view_position = world_position * camera.world_to_view;
     
-    gl_MeshVerticesEXT[ i ].gl_Position = model_position * model_to_world * ( crude_camera_debug_view() ? camera_debug.world_to_clip : camera.world_to_clip );
+    vec4 tangent = vec4( int( vertices[ vertex_index ].tx ), int( vertices[ vertex_index ].ty ), int( vertices[ vertex_index ].tz ),  int( vertices[ vertex_index ].tw ) ) * i8_inverse - 1.0;
+    vec3 normal = vec3( int( vertices[ vertex_index ].nx ), int( vertices[ vertex_index ].ny ), int( vertices[ vertex_index ].nz ) ) * i8_inverse - 1.0;
+    normal = normal * mat3( model_to_world );
+    tangent.xyz = tangent.xyz * mat3( model_to_world );
+    vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
+
+    vec3 view_normal = normal * mat3( camera.world_to_view );
+
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * ( crude_camera_debug_view() ? camera_debug.world_to_clip : camera.world_to_clip );
     out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
-    out_normals[ i ] = vec3( int( vertices[ vertex_index ].nx ), int( vertices[ vertex_index ].ny ), int( vertices[ vertex_index ].nz ) ) * i8_inverse - 1.0;
+    out_normals[ i ] = normal;
+    out_tangents[ i ] = tangent.xyz;
+    out_bitangents[ i ] = bitangent;
     out_mesh_draw_index[ i ] = mesh_draw_index;
+    out_world_positions[ i ] = world_position.xyz;
+    out_view_surface_normal[ i ] = view_normal;
+    out_view_position[ i ] = camera.position - world_position.xyz;
   }
   
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
