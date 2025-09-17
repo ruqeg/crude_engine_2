@@ -472,8 +472,7 @@ crude_gfx_new_frame
     VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
-      CRUDE_ASSERT( false );
-      //vk_resize_swapchain_( gpu );
+      vk_resize_swapchain_( gpu );
     }
   }
   
