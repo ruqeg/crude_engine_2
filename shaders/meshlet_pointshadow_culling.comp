@@ -59,6 +59,6 @@ void main()
   for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
   {
     uint meshlet_index = mesh_draw.meshletes_offset + i;
-    meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + i ] = uvec2( mesh_instance_index, meshlet_index );
+    meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
   }
 }

@@ -14,7 +14,8 @@ layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
 
 layout(set=CRUDE_MATERIAL_SET, binding=0) writeonly buffer PackedData
 {
-  uint                                                    packed_data[];
+  uint                                                     total_log_luminance;
+  uint                                                     total_count_of_ignored_pixels; /* < 0.005 look at hdr_color_to_bin */
 };
 
 layout( push_constant ) uniform Constants
@@ -77,9 +78,7 @@ void main()
 
   if ( local_index == 0 )
   {
-    /* Save total luminance in packed_data[ 0 ] */
-    /* Save total count of darkest pixels to packed_data[ 1 ] */
-    atomicAdd( packed_data[ 0 ], histogram_shared[ 0 ] );
-    atomicAdd( packed_data[ 1 ], local_count_for_this_bin );
+    atomicAdd( total_log_luminance, histogram_shared[ 0 ] );
+    atomicAdd( total_count_of_ignored_pixels, local_count_for_this_bin );
   }
 }

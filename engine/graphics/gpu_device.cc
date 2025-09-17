@@ -3054,6 +3054,7 @@ vk_create_device_
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
+  VkPhysicalDeviceShaderAtomicInt64Features                shader_atomic_int64_features;
   VkPhysicalDevice16BitStorageFeatures                     bit16_storage_features;
   VkPhysicalDevice8BitStorageFeatures                      bit_storage_features;
   VkPhysicalDeviceSynchronization2Features                 synchronization_features;
@@ -3119,9 +3120,14 @@ vk_create_device_
     queue_create_infos[ 1 ].queueCount = 1;
     queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
   }
+  
+  //shader_atomic_int64_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderAtomicInt64Features );
+  //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
+  //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
 
   bit16_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice16BitStorageFeatures );
   bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+  //bit16_storage_features.pNext = &shader_atomic_int64_features;
   bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
 
   bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );

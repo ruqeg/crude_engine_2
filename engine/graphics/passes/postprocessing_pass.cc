@@ -56,6 +56,7 @@ crude_gfx_postprocessing_pass_initialize
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = sizeof( uint32 ) * 2;
     buffer_creation.name = "luminance_histogram_sb";
+    buffer_creation.device_only = true;
     pass->packed_data_sb_handle[ i ] = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
   }
 

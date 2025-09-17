@@ -307,7 +307,7 @@ crude_gfx_pointlight_shadow_pass_render
       crude_gfx_unmap_buffer( gpu, pass->pointlight_spheres_sb[ gpu->current_frame ] );
     }
     
-    crude_gfx_cmd_push_marker( primary_cmd, "pointshadow" );
+    crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_draw_pass" );
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0u, 1u, true );
 
     crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );

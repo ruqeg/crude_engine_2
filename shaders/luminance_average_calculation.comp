@@ -18,18 +18,19 @@ layout(set=CRUDE_MATERIAL_SET, binding=0, r32f) uniform image2D luminance_avarag
 
 layout(set=CRUDE_MATERIAL_SET, binding=1) buffer PackedData
 {
-  uint                                                    packed_data[];
+  uint                                                     total_log_luminance;
+  uint                                                     total_count_of_ignored_pixels;
 };
 
 void main()
 {
-  float weighted_log_average = ( packed_data[ 0 ] / max( num_pixels - float( packed_data[ 1 ] ), 1.0 ) ) - 1.0;
+  float weighted_log_average = ( total_log_luminance / max( num_pixels - float( total_count_of_ignored_pixels ), 1.0 ) ) - 1.0;
 
   float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
   float lum_last_frame = imageLoad( luminance_avarage_texture, ivec2( 0, 0 ) ).x;
   float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
   imageStore( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
 
-  packed_data[ 0 ] = 0;
-  packed_data[ 1 ] = 0;
+  total_log_luminance = 0;
+  total_count_of_ignored_pixels = 0;
 }
