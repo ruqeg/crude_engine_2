@@ -1,5 +1,9 @@
 
-/* Thanks to https://www.alextardif.com/HistogramLuminance.html */
+/* 
+ * Originaly I've implemented the technique from https://www.alextardif.com/HistogramLuminance.html,
+ * but for some reason atomicAdd in every thread completely fucked up my performance,
+ * so I modified it a bit, I'm not sure if it work correctly, but fewer atomicAdd means less headache 
+ */
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
@@ -8,9 +12,9 @@
 
 layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
 
-layout(set=CRUDE_MATERIAL_SET, binding=0) buffer Histogram
+layout(set=CRUDE_MATERIAL_SET, binding=0) writeonly buffer PackedData
 {
-  uint                                                    histogram[];
+  uint                                                    packed_data[];
 };
 
 layout( push_constant ) uniform Constants
@@ -32,15 +36,17 @@ uint hdr_color_to_bin( vec3 color )
   }
 
   float log_lum = clamp( ( log2( lum ) - min_log_lum ) * inverse_log_lum_range, 0.0, 1.0 );
-  return uint( log_lum * 254.0 + 1.0 );
+  return uint( log_lum * 254.f + 1.f );
 }
 
 void main()
 {
-  histogram_shared[ gl_LocalInvocationIndex ] = 0;
+  uint local_index = gl_LocalInvocationIndex;
+
+  histogram_shared[ local_index ] = 0;
 
   barrier( );
-  
+
   uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
   if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
   {
@@ -50,6 +56,30 @@ void main()
   }
 
   barrier( );
-  
-  atomicAdd( histogram[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
+
+  uint local_count_for_this_bin = histogram_shared[ local_index ];
+  uint luminance_for_this_bin = local_index;
+  histogram_shared[ local_index ] = local_count_for_this_bin * luminance_for_this_bin;
+
+  barrier( );
+
+  /* Add all histogram_shared values to histogram_shared[0] in O(log(n)) instead of O(n) */ 
+  [[unroll]]
+  for ( uint cutoff = ( 256 >> 1 ); cutoff > 0; cutoff >>= 1 )
+  {
+    if ( uint( local_index ) < cutoff )
+    {
+      histogram_shared[ local_index ] += histogram_shared[ local_index + cutoff ];
+    }
+
+    barrier( );
+  }
+
+  if ( local_index == 0 )
+  {
+    /* Save total luminance in packed_data[ 0 ] */
+    /* Save total count of darkest pixels to packed_data[ 1 ] */
+    atomicAdd( packed_data[ 0 ], histogram_shared[ 0 ] );
+    atomicAdd( packed_data[ 1 ], local_count_for_this_bin );
+  }
 }

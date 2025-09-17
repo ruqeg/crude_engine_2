@@ -54,9 +54,9 @@ crude_gfx_postprocessing_pass_initialize
     crude_gfx_buffer_creation buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( uint32 ) * 256;
+    buffer_creation.size = sizeof( uint32 ) * 2;
     buffer_creation.name = "luminance_histogram_sb";
-    pass->luminance_histogram_sb_handle[ i ] = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
+    pass->packed_data_sb_handle[ i ] = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
   }
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -85,7 +85,7 @@ crude_gfx_postprocessing_pass_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->luminance_histogram_sb_handle[ i ] );
+    crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->packed_data_sb_handle[ i ] );
   }
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -139,11 +139,11 @@ crude_gfx_postprocessing_pass_pre_render
 
   luminance_avarge_last_update_delta_time = crude_time_delta_seconds( pass->luminance_avarge_last_update_time, crude_time_now( ) );
   pass->luminance_avarge_last_update_time = crude_time_now( );
-
+  
+  crude_gfx_cmd_push_marker( primary_cmd, "luminance_histogram_generation_pass" );
   {
     luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
   
-
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
     crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_histogram_generation_ds[ gpu->current_frame ] );
   
@@ -153,10 +153,11 @@ crude_gfx_postprocessing_pass_pre_render
     histogram_generation_constant.min_log_lum = pass->min_log_lum;
     crude_gfx_cmd_push_constant( primary_cmd, &histogram_generation_constant, sizeof( histogram_generation_constant ) );
   
-    crude_gfx_cmd_fill_buffer( primary_cmd, pass->luminance_histogram_sb_handle[ gpu->current_frame ], 0u );
     crude_gfx_cmd_dispatch( primary_cmd, ( hdr_color_texture->width + 15u ) / 16u, ( hdr_color_texture->height + 15u ) / 16u, 1u );
   }
-
+  crude_gfx_cmd_pop_marker( primary_cmd );
+  
+  crude_gfx_cmd_push_marker( primary_cmd, "luminance_average_calculation_pass" );
   {
     luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_average_calculation" )->pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_average_calculation_pipeline );
@@ -173,6 +174,7 @@ crude_gfx_postprocessing_pass_pre_render
     crude_gfx_cmd_dispatch( primary_cmd, 1u, 1u, 1u );
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle[ gpu->current_frame ] ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
   }
+  crude_gfx_cmd_pop_marker( primary_cmd );
 }
 
 void
@@ -193,16 +195,20 @@ crude_gfx_postprocessing_pass_render
   
   postprocessing_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "postprocessing" )->pipeline;
   
+  crude_gfx_cmd_push_marker( primary_cmd, "postprocessing_main_pass" );
+
   crude_gfx_cmd_bind_pipeline( primary_cmd, postprocessing_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID );
 
   pbr_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle;
-
+  
   postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
   postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle[ gpu->current_frame ].index;
   postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
   crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
+
+  crude_gfx_cmd_pop_marker( primary_cmd );
 }
 
 void
@@ -259,7 +265,7 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
     ds_creation.name = "luminance_histogram_generation_ds";
     ds_creation.layout = luminance_histogram_generation_dsl;
     
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->luminance_histogram_sb_handle[ i ], 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->packed_data_sb_handle[ i ], 0u );
     
     pass->luminance_histogram_generation_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
@@ -276,7 +282,7 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
     ds_creation.layout = luminance_average_calculation_dsl;
     
     crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->luminance_average_texture_handle[ i ], 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->luminance_histogram_sb_handle[ i ], 1u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->packed_data_sb_handle[ i ], 1u );
     
     pass->luminance_average_calculation_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
