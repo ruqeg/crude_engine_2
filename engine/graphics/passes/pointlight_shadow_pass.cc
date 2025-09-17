@@ -31,6 +31,7 @@ crude_gfx_pointlight_shadow_pass_initialize
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = sizeof( XMUINT4 ) * ( CRUDE_GFX_LIGHTS_MAX_COUNT * 4u );
+    buffer_creation.device_only = true;
     buffer_creation.name = "pointshadow_meshlet_draw_commands_sb";
     pass->pointshadow_meshlet_draw_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   
@@ -38,6 +39,7 @@ crude_gfx_pointlight_shadow_pass_initialize
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = sizeof( XMUINT2 ) * CRUDE_GFX_MAX_MESHLETS_PER_LIGHT * CRUDE_GFX_LIGHTS_MAX_COUNT;
+    buffer_creation.device_only = true;
     buffer_creation.name = "meshletes_instances_sb";
     pass->meshletes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
@@ -45,6 +47,7 @@ crude_gfx_pointlight_shadow_pass_initialize
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = sizeof( uint32 ) * ( CRUDE_GFX_LIGHTS_MAX_COUNT + 1u );
+    buffer_creation.device_only = true;
     buffer_creation.name = "pointshadow_meshletes_instances_count_sb";
     pass->pointshadow_meshletes_instances_count_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   }
@@ -372,6 +375,7 @@ crude_gfx_pointlight_shadow_pass_on_techniques_reloaded
   
     crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshletes_instances_sb[ i ], 10u );

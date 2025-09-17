@@ -58,7 +58,7 @@ crude_gfx_light_pass_on_render_graph_registered
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
   buffer_creation.size = sizeof( crude_gfx_light_constant_gpu );
-  buffer_creation.initial_data = &light_constant; 
+  buffer_creation.initial_data = &light_constant;
   buffer_creation.name = "light_constant";
   pass->light_cb = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
 

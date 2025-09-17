@@ -59,6 +59,7 @@
 				"crude/platform.glsli",
 				"crude/debug.glsli",
 				"crude/scene.glsli",
+				"crude/meshlet.glsli",
 				"crude/light.glsli",
 				"crude/culling.glsli"
 			  ]

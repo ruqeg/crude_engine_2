@@ -74,9 +74,7 @@ void main()
 
   const vec4 camera_sphere = pointlight_spheres[ light_index ];
 
-  bool accept = crude_sphere_intersect( world_center.xyz, radius, lights[ light_index ].world_position, lights[ light_index ].radius );
-
-  accept = accept && !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
+  bool accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
 
   if ( accept )
   {

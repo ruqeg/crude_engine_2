@@ -4,6 +4,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
+#include "crude/meshlet.glsli"
 #include "crude/scene.glsli"
 #include "crude/light.glsli"
 #include "crude/culling.glsli"
@@ -55,10 +56,17 @@ void main()
     return;
   }
 
-  uint offset = atomicAdd( pointshadow_meshletes_instances_count[ light_index ], mesh_draw.meshletes_count );
+
   for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
   {
     uint meshlet_index = mesh_draw.meshletes_offset + i;
-    meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
+    float meshlet_radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+    vec4 meshlet_world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
+
+    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
+    {
+      uint offset = atomicAdd( pointshadow_meshletes_instances_count[ light_index ], 1 );
+      meshletes_instances[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+    }
   }
 }
