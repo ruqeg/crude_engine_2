@@ -90,22 +90,16 @@ void main()
 {
   crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
 
-  //! TODO
+  vec4 albedo = mesh_draw.albedo_color_factor;
   if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
   {
-    out_abledo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * mesh_draw.albedo_color_factor, vec4( 2.2 ) );
+    albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
   }
-  else
-  {
-    out_abledo = mesh_draw.albedo_color_factor;
-  }
+
+  vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
   if ( mesh_draw.textures.y != CRUDE_TEXTURE_INVALID )
   {
-    out_roughness_metalness.x = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).y * mesh_draw.metallic_roughness_occlusion_factor.y;
-  }
-  else
-  {
-    out_roughness_metalness.x = mesh_draw.metallic_roughness_occlusion_factor.y;
+    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
   }
   
   vec3 normal = normalize( in_normal );
@@ -121,5 +115,7 @@ void main()
     normal = normalize( tbn * normalize( bump_normal ) );
   }
 
+  out_abledo = albedo;
   out_normal = crude_octahedral_encode( normal );
+  out_roughness_metalness = roughness_metalness;
 }

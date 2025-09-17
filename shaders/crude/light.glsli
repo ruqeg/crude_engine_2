@@ -181,6 +181,7 @@ crude_calculate_point_light_contribution
   in crude_light                                           light,
   in vec3                                                  albedo,
   in float                                                 roughness,
+  in float                                                 metalness,
   in vec3                                                  normal,
   in vec3                                                  vertex_position,
   in vec3                                                  camera_position,
@@ -210,7 +211,7 @@ crude_calculate_point_light_contribution
 
   f = crude_schlick_fresnel( f0, hdotl );
   spec = f * crude_trowbridge_reitz_distribution( ndoth, roughness * roughness ) * crude_hammon_smith_g_approximation( abs( ndotl ), abs( ndotv ), roughness ); /* in case i will be confused in the future, crude_hammon_smith_g_approximation already contains /4ndotlndotv (real time rendering p342) */
-  diff = ( 1.f - f ) * albedo / PI;
+  diff = ( 1.f - f ) * ( 1.f - metalness ) *albedo / PI;
   return radiance * max( ndotl, 0.f ) * ( diff + spec );
 }
 
@@ -219,6 +220,7 @@ crude_calculate_lighting
 (
   in vec4                                                  albedo,
   in float                                                 roughness,
+  in float                                                 metalness,
   in vec3                                                  normal,
   in vec3                                                  vertex_position,
   in vec3                                                  camera_position,
@@ -258,7 +260,7 @@ crude_calculate_lighting
       if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
       {
         uint global_light_index = lights_indices[ light_id ];
-        radiance += crude_calculate_point_light_shadow_contribution( lights[ global_light_index ], vertex_position ) * crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, roughness, normal, vertex_position, camera_position, vec3( 0.04f ) );
+        radiance += crude_calculate_point_light_shadow_contribution( lights[ global_light_index ], vertex_position ) * crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, vec3( 0.04f ) );
       }
     }
   }

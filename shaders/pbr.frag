@@ -16,13 +16,12 @@ layout(set=CRUDE_MATERIAL_SET, binding=10, row_major) uniform LightingConstants
   uvec4                                                    textures;
 };
 
-
 void main()
 { 
   float depth = texelFetch( global_textures[ nonuniformEXT( textures.w )], ivec2( gl_FragCoord.xy ), 0 ).r;
   vec4 albedo = texture( global_textures[ nonuniformEXT( textures.x ) ], in_texcoord.st ).rgba;
   vec2 packed_normal = texture( global_textures[ nonuniformEXT( textures.y ) ], in_texcoord.st ).xy;
-  float packed_roughness = texture( global_textures[ nonuniformEXT( textures.z ) ], in_texcoord.st ).x;
+  vec2 packed_roughness_metalness = texture( global_textures[ nonuniformEXT( textures.z ) ], in_texcoord.st ).xy;
   vec3 normal = crude_octahedral_decode( packed_normal );
 
   vec3 pixel_world_position = crude_world_position_from_depth( in_texcoord, depth, camera.clip_to_world );
@@ -32,7 +31,7 @@ void main()
   vec4 radiance = vec4( 0.f, 0.f, 0.f, 1.f );
   if ( depth != 1.f )
   {
-    radiance = vec4( crude_calculate_lighting( albedo, packed_roughness, normal, pixel_world_position, camera.position, position ), 1 );
+    radiance = vec4( crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, camera.position, position ), 1 );
   }
   out_color = radiance;
 }
