@@ -209,6 +209,18 @@ crude_gfx_descriptor_set_creation_add_buffer
 }
 
 void
+crude_gfx_descriptor_set_creation_add_acceleration_structure
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ VkAccelerationStructureKHR                          vk_acceleration_structure,
+  _In_ uint16                                              binding
+)
+{
+  creation->vk_acceleration_structure = vk_acceleration_structure;
+  creation->bindings[ creation->num_resources++ ] = binding;
+}
+
+void
 crude_gfx_descriptor_set_creation_add_texture
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
@@ -520,11 +532,14 @@ crude_gfx_vk_shader_stage_to_defines
 {
   switch ( value )
   {
-    case VK_SHADER_STAGE_VERTEX_BIT:      return "CRUDE_STAGE_VERTEX";
-    case VK_SHADER_STAGE_FRAGMENT_BIT:    return "CRUDE_STAGE_FRAGMENT";
-    case VK_SHADER_STAGE_COMPUTE_BIT:     return "CRUDE_STAGE_COMPUTE";
-    case VK_SHADER_STAGE_MESH_BIT_EXT:    return "CRUDE_STAGE_MESH";
-    case VK_SHADER_STAGE_TASK_BIT_EXT:    return "CRUDE_STAGE_TASK";
+    case VK_SHADER_STAGE_VERTEX_BIT:          return "CRUDE_STAGE_VERTEX";
+    case VK_SHADER_STAGE_FRAGMENT_BIT:        return "CRUDE_STAGE_FRAGMENT";
+    case VK_SHADER_STAGE_COMPUTE_BIT:         return "CRUDE_STAGE_COMPUTE";
+    case VK_SHADER_STAGE_MESH_BIT_EXT:        return "CRUDE_STAGE_MESH";
+    case VK_SHADER_STAGE_TASK_BIT_EXT:        return "CRUDE_STAGE_TASK";
+    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "CRUDE_CLOSEST_HIT";
+    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:      return "CRUDE_RAYGEN";
+    case VK_SHADER_STAGE_MISS_BIT_KHR:        return "CRUDE_MISS";
   }
    return "";
 }
@@ -537,11 +552,14 @@ crude_gfx_vk_shader_stage_to_compiler_extension
 {
   switch ( value )
   {
-    case VK_SHADER_STAGE_VERTEX_BIT:        return "vert";
-    case VK_SHADER_STAGE_MESH_BIT_EXT:      return "mesh";
-    case VK_SHADER_STAGE_TASK_BIT_EXT:      return "task";
-    case VK_SHADER_STAGE_FRAGMENT_BIT:      return "frag";
-    case VK_SHADER_STAGE_COMPUTE_BIT:       return "comp";
+    case VK_SHADER_STAGE_VERTEX_BIT:          return "vert";
+    case VK_SHADER_STAGE_MESH_BIT_EXT:        return "mesh";
+    case VK_SHADER_STAGE_TASK_BIT_EXT:        return "task";
+    case VK_SHADER_STAGE_FRAGMENT_BIT:        return "frag";
+    case VK_SHADER_STAGE_COMPUTE_BIT:         return "comp";
+    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "rchit";
+    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:      return "rgen";
+    case VK_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss";
   }
    return "";
 }

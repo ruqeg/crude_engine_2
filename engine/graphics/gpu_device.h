@@ -144,10 +144,11 @@ typedef struct crude_gfx_device
   bool                                                     timestamps_enabled;
 
   bool                                                     mesh_shaders_extension_present;
+  
+  VkFence                                                  vk_immediate_fence;
 
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
   
-
   PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
   PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
@@ -159,6 +160,19 @@ typedef struct crude_gfx_device
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
   PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
   PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
+
+  PFN_vkGetAccelerationStructureBuildSizesKHR              vkGetAccelerationStructureBuildSizesKHR;
+  PFN_vkCreateAccelerationStructureKHR                     vkCreateAccelerationStructureKHR;
+  PFN_vkCmdBuildAccelerationStructuresKHR                  vkCmdBuildAccelerationStructuresKHR;
+  PFN_vkGetAccelerationStructureDeviceAddressKHR           vkGetAccelerationStructureDeviceAddressKHR;
+  PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
+  PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
+  PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
+  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 
 /************************************************
@@ -328,11 +342,24 @@ crude_gfx_gpu_set_timestamps_enable
   _In_ bool                                                value
 );
 
-void                                     
+CRUDE_API void                                     
 crude_gfx_generate_mipmaps
 (
   _In_ crude_gfx_cmd_buffer                               *cmd_buffer,
   _In_ crude_gfx_texture                                  *texture
+);
+
+CRUDE_API VkDeviceAddress
+crude_gfx_get_buffer_device_address
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+);
+
+CRUDE_API void 
+crude_gfx_submit_immediate
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
 /************************************************

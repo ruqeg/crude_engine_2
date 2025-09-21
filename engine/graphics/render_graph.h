@@ -52,7 +52,8 @@ typedef enum crude_gfx_render_graph_node_type
 {
   CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS    = 0,
   CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE     = 1,
-  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COUNT       = 2,
+  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_RAY_TRACING = 2,
+  CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COUNT       = 3,
 } crude_gfx_render_graph_node_type;
 
 typedef struct crude_gfx_render_graph_resource_info

@@ -48,7 +48,8 @@ crude_gfx_cmd_initialize
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
-    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT }
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
+    { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
   };
   
   VkDescriptorPoolCreateInfo pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
@@ -999,6 +1000,39 @@ crude_gfx_cmd_fill_buffer
   }
 
   vkCmdFillBuffer( cmd->vk_cmd_buffer, vk_buffer, offset, buffer->size, value );
+}
+
+void
+crude_gfx_cmd_trace_rays
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_pipeline_handle                           pipeline_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height,
+  _In_ uint32                                              depth
+)
+{
+  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( cmd->gpu, pipeline_handle );
+
+  uint32 shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+
+  VkStridedDeviceAddressRegionKHR raygen_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  raygen_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_raygen );
+  raygen_table.stride = shader_group_handle_size;
+  raygen_table.size = shader_group_handle_size;
+  
+  VkStridedDeviceAddressRegionKHR hit_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  hit_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_hit );
+  hit_table.stride = shader_group_handle_size;
+  hit_table.size = shader_group_handle_size;
+  
+  VkStridedDeviceAddressRegionKHR miss_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  miss_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_miss );
+  miss_table.stride = shader_group_handle_size;
+  miss_table.size = shader_group_handle_size;
+
+  VkStridedDeviceAddressRegionKHR callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  cmd->gpu->vkCmdTraceRaysKHR( cmd->vk_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 }
 
 /************************************************

@@ -16,6 +16,7 @@
 #include <scene/scene_components.h>
 #include <scene/scene.h>
 
+#include <graphics/gpu_profiler.h>
 #include <graphics/scene_renderer.h>
 
 /**
@@ -474,15 +475,18 @@ crude_gfx_scene_renderer_initialize
 
   /* Initialize render graph passes */
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
-  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
-  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
-  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
-  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
-  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
-  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
-  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
-  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
-  crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
+ // crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
+ // crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
+ // crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
+ // crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
+ // crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
+ // crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
+ // crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
+ // crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
+ // crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -501,6 +505,9 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes_instances );
 
@@ -583,20 +590,23 @@ crude_gfx_scene_renderer_register_passes
 {
   scene_renderer->render_graph = render_graph;
 
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_late_pass", crude_gfx_gbuffer_late_pass_pack( &scene_renderer->gbuffer_late_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_late_pass", crude_gfx_gbuffer_late_pass_pack( &scene_renderer->gbuffer_late_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
-  crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
-  crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
-  crude_gfx_postprocessing_pass_on_render_graph_registered( &scene_renderer->postprocessing_pass );
+  //crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
+  //crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
+  //crude_gfx_postprocessing_pass_on_render_graph_registered( &scene_renderer->postprocessing_pass );
 }
 
 void
@@ -1284,6 +1294,344 @@ register_gltf_
     load_nodes_( gltf, scene_renderer, node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, temporary_allocator );
   }
   
+  
+
+  VkAccelerationStructureGeometryKHR *geometries;
+  VkAccelerationStructureBuildRangeInfoKHR *build_range_infos;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( geometries, CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ), crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( build_range_infos, CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ), crude_heap_allocator_pack( scene_renderer->allocator ) );
+
+  //for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ); ++mesh_index )
+  //{
+  //  crude_gfx_mesh_instance_cpu *mesh_instance = &scene_renderer->meshes_instances[ mesh_index ];
+  //  CRUDE_ASSERT( mesh_instance->mesh );
+  //  
+  //  crude_gfx_mesh_cpu *mesh = mesh_instance->mesh;
+  //  
+  //  uint32 vertex_count = mesh->primitive_count / 3;
+  //
+  //  VkAccelerationStructureGeometryKHR geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+  //  geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  //  geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+  //  geometry.flags = crude_gfx_mesh_is_transparent( mesh ) ? 0 : VK_GEOMETRY_OPAQUE_BIT_KHR;
+  //  geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+  //  geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+  //  geometry.geometry.triangles.vertexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, mesh->position_buffer ) + mesh->position_offset;
+  //  geometry.geometry.triangles.vertexStride = sizeof( XMFLOAT3 );
+  //  geometry.geometry.triangles.maxVertex = vertex_count;
+  //  geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT16;
+  //  geometry.geometry.triangles.indexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, mesh->index_buffer ) + mesh->index_offset;
+  //  //geometry.geometry.triangles.transformData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, geometry_transform_buffer );
+  //
+  //  CRUDE_ARRAY_PUSH( geometries, geometry );
+  //
+  //  VkAccelerationStructureBuildRangeInfoKHR build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
+  //  build_range_info.primitiveCount = vertex_count;
+  //  build_range_info.primitiveOffset = mesh->index_offset;
+  //  //build_range_info.transformOffset = sizeof( VkTransformMatrixKHR ) * mesh_index;
+  //
+  //  CRUDE_ARRAY_PUSH( build_range_infos, build_range_info );
+  //}
+  
+  float32 vertices[] = {
+			  1.0f,  1.0f, 0.0f ,
+			 -1.0f,  1.0f, 0.0f ,
+			  0.0f, -1.0f, 0.0f
+		};
+
+		// Setup indices
+		uint16_t indices[] = { 0, 1, 2 };
+
+		// Setup identity transform matrix
+		VkTransformMatrixKHR transformMatrix = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f
+		};
+    
+  crude_gfx_buffer_creation cpu_buffer_creation = crude_gfx_buffer_creation_empty();
+  cpu_buffer_creation.initial_data = vertices;
+  cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+  cpu_buffer_creation.size = sizeof( vertices );
+  cpu_buffer_creation.name = "vvvertices";
+  crude_gfx_buffer_handle vertex_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &cpu_buffer_creation );
+  
+  cpu_buffer_creation = crude_gfx_buffer_creation_empty();
+  cpu_buffer_creation.initial_data = indices;
+  cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+  cpu_buffer_creation.size = sizeof( indices );
+  cpu_buffer_creation.name = "indicessss";
+  crude_gfx_buffer_handle indices_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &cpu_buffer_creation );
+  
+  cpu_buffer_creation = crude_gfx_buffer_creation_empty();
+  cpu_buffer_creation.initial_data = &transformMatrix;
+  cpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  cpu_buffer_creation.type_flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+  cpu_buffer_creation.size = sizeof( transformMatrix );
+  cpu_buffer_creation.name = "transformMatrixx";
+  crude_gfx_buffer_handle transformMatrix_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &cpu_buffer_creation );
+
+  VkAccelerationStructureGeometryKHR geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+  geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+  geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+  geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+  geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+  geometry.geometry.triangles.vertexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, vertex_buffer );
+  geometry.geometry.triangles.vertexStride = sizeof( XMFLOAT3 );
+  geometry.geometry.triangles.maxVertex = 3;
+  geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT16;
+  geometry.geometry.triangles.indexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, indices_buffer );
+  geometry.geometry.triangles.transformData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, transformMatrix_buffer );
+  CRUDE_ARRAY_PUSH( geometries, geometry );
+  
+  VkAccelerationStructureBuildRangeInfoKHR build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
+  build_range_info.primitiveCount = 1;
+  
+  CRUDE_ARRAY_PUSH( build_range_infos, build_range_info );
+
+  VkAccelerationStructureBuildGeometryInfoKHR vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR; // VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+  vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  vk_acceleration_build_geometry_info.geometryCount = CRUDE_ARRAY_LENGTH( geometries );
+  vk_acceleration_build_geometry_info.pGeometries = geometries;
+
+  uint32 *max_primitives_count;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( max_primitives_count, CRUDE_ARRAY_LENGTH( geometries ), crude_heap_allocator_pack( scene_renderer->allocator ) );
+
+  for ( uint32 range_index = 0; range_index < CRUDE_ARRAY_LENGTH( geometries ); range_index++ )
+  {
+    max_primitives_count[ range_index ] = build_range_infos[ range_index ].primitiveCount;
+  }
+  
+  VkAccelerationStructureBuildSizesInfoKHR vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
+  vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  scene_renderer->renderer->gpu->vkGetAccelerationStructureBuildSizesKHR( scene_renderer->renderer->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, max_primitives_count, &vk_acceleration_structure_build_sizes_info );
+
+  crude_gfx_buffer_creation buffer_creation;
+
+  buffer_creation = crude_gfx_buffer_creation_empty( );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
+  buffer_creation.device_only = true;
+  buffer_creation.name = "blas_buffer";
+  scene_renderer->blas_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  crude_gfx_buffer *blas_buffer = crude_gfx_access_buffer( scene_renderer->renderer->gpu, scene_renderer->blas_buffer );
+
+  VkAccelerationStructureCreateInfoKHR vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
+  vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+  vk_acceleration_structure_create_info.buffer = blas_buffer->vk_buffer;
+  vk_acceleration_structure_create_info.offset = 0;
+  vk_acceleration_structure_create_info.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
+  vk_acceleration_structure_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( scene_renderer->renderer->gpu->vkCreateAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, &vk_acceleration_structure_create_info, scene_renderer->renderer->gpu->vk_allocation_callbacks, &scene_renderer->blas ), "Can't create acceleration structure" );
+
+  buffer_creation = crude_gfx_buffer_creation_empty( );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = vk_acceleration_structure_build_sizes_info.buildScratchSize;
+  buffer_creation.device_only = true;
+  buffer_creation.name = "blas_scratch_buffer";
+  crude_gfx_buffer_handle blas_scratch_buffer_handle = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+  vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->blas;
+  vk_acceleration_build_geometry_info.geometryCount = CRUDE_ARRAY_LENGTH( geometries );
+  vk_acceleration_build_geometry_info.pGeometries = geometries;
+  vk_acceleration_build_geometry_info.scratchData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, blas_scratch_buffer_handle );
+
+  VkAccelerationStructureBuildRangeInfoKHR *vk_acceleration_structure_build_range_infos[] = {
+    build_range_infos
+  };
+  
+  //crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 2, false );
+  VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+  scene_renderer->renderer->gpu->vkCmdBuildAccelerationStructuresKHR( cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, vk_acceleration_structure_build_range_infos );
+  //crude_gfx_submit_immediate( cmd );
+  
+  vkEndCommandBuffer( cmd->vk_cmd_buffer );
+  
+  {
+    VkCommandBufferSubmitInfo command_buffers[] = {
+      { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
+    };
+
+    VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+    submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+    submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+    submit_info.pCommandBufferInfos      = command_buffers;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( scene_renderer->renderer->gpu->vkQueueSubmit2KHR( scene_renderer->renderer->gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+  }
+
+  vkQueueWaitIdle( scene_renderer->renderer->gpu->vk_main_queue);
+  
+  ///
+  ///
+  /// 
+  /// 
+  /// 
+  /// 
+  VkAccelerationStructureDeviceAddressInfoKHR accelerationStructureAddressInfo = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
+  accelerationStructureAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+  accelerationStructureAddressInfo.accelerationStructure = scene_renderer->blas;
+
+  VkDeviceAddress blas_address = scene_renderer->renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->renderer->gpu->vk_device, &accelerationStructureAddressInfo );
+  
+  transformMatrix = {
+  	1.0f, 0.0f, 0.0f, 0.0f,
+  	0.0f, 1.0f, 0.0f, 0.0f,
+  	0.0f, 0.0f, 1.0f, 0.0f };
+
+  VkAccelerationStructureInstanceKHR vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
+  vk_acceleration_structure_instance.transform = transformMatrix;
+  vk_acceleration_structure_instance.instanceCustomIndex = 0;
+  vk_acceleration_structure_instance.mask = 0xff;
+  vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+  vk_acceleration_structure_instance.accelerationStructureReference = blas_address;
+
+  buffer_creation = crude_gfx_buffer_creation_empty( );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = sizeof( VkAccelerationStructureInstanceKHR );
+  buffer_creation.initial_data = &vk_acceleration_structure_instance;
+  buffer_creation.name = "tlas_instance_buffer";
+  crude_gfx_buffer_handle tlas_instance_buffer_handle = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  VkAccelerationStructureGeometryKHR tlas_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+  tlas_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  tlas_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+  tlas_geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+  tlas_geometry.geometry.instances.arrayOfPointers = false;
+  tlas_geometry.geometry.instances.data.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, tlas_instance_buffer_handle );
+
+  uint32 max_instance_count = 1;
+  
+  VkAccelerationStructureGeometryKHR vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+  vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  vk_acceleration_structure_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+  vk_acceleration_structure_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+  vk_acceleration_structure_geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+  vk_acceleration_structure_geometry.geometry.instances.arrayOfPointers = VK_FALSE;
+  vk_acceleration_structure_geometry.geometry.instances.data.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, tlas_instance_buffer_handle );
+  
+  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+  vk_acceleration_build_geometry_info.geometryCount = 1;
+  vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
+
+  vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
+  vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+  scene_renderer->renderer->gpu->vkGetAccelerationStructureBuildSizesKHR( scene_renderer->renderer->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
+  
+  buffer_creation = crude_gfx_buffer_creation_empty( );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
+  buffer_creation.device_only = true;
+  buffer_creation.name = "tlas_buffer";
+  scene_renderer->tlas_buffer = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  crude_gfx_buffer *tlas_buffer = crude_gfx_access_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_buffer );
+  
+  vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
+  vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+  vk_acceleration_structure_create_info.buffer = tlas_buffer->vk_buffer;
+  vk_acceleration_structure_create_info.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
+  vk_acceleration_structure_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+
+  scene_renderer->renderer->gpu->vkCreateAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, &vk_acceleration_structure_create_info, scene_renderer->renderer->gpu->vk_allocation_callbacks, &scene_renderer->tlas );
+
+  buffer_creation = crude_gfx_buffer_creation_empty( );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+  buffer_creation.size = vk_acceleration_structure_build_sizes_info.buildScratchSize;
+  buffer_creation.device_only = true;
+  buffer_creation.name = "tlas_scratch_buffer";
+  crude_gfx_buffer_handle tlas_scratch_buffer_handle = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
+
+  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+	vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+	vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+	vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->tlas;
+	vk_acceleration_build_geometry_info.geometryCount = 1;
+	vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
+	vk_acceleration_build_geometry_info.scratchData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, tlas_scratch_buffer_handle );
+
+  VkAccelerationStructureBuildRangeInfoKHR vk_acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
+  vk_acceleration_structure_build_range_info.primitiveCount = 1;
+  vk_acceleration_structure_build_range_info.primitiveOffset = 0;
+  vk_acceleration_structure_build_range_info.firstVertex = 0;
+  vk_acceleration_structure_build_range_info.transformOffset = 0;
+
+  VkAccelerationStructureBuildRangeInfoKHR* tlas_ranges[] = {
+    &vk_acceleration_structure_build_range_info
+  };
+
+  //crude_gfx_cmd_reset( cmd );
+
+  //crude_gfx_cmd_begin_primary( cmd );
+  
+
+
+  //crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
+  //crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
+  //vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count );
+  //vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
+  //vkCmdBeginQuery( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, 0 );
+  
+  begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+  
+  scene_renderer->renderer->gpu->vkCmdBuildAccelerationStructuresKHR( cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
+  
+  vkEndCommandBuffer( cmd->vk_cmd_buffer );
+  
+  {
+    VkCommandBufferSubmitInfo command_buffers[] = {
+      { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
+    };
+
+    VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+    submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+    submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+    submit_info.pCommandBufferInfos      = command_buffers;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( scene_renderer->renderer->gpu->vkQueueSubmit2KHR( scene_renderer->renderer->gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+  }
+
+  vkQueueWaitIdle( scene_renderer->renderer->gpu->vk_main_queue);
+  //crude_gfx_submit_immediate( cmd );
+
+        //scene->geometries.shutdown();
+        //scene->build_range_infos.shutdown();
+        //
+        //gpu.destroy_buffer( blas_scratch_buffer_handle );
+        //gpu.destroy_buffer( tlas_scratch_buffer_handle );
+        //gpu.destroy_buffer( tlas_instance_buffer_handle );
+        //
+        //max_primitives_count.shutdown();
+
   cgltf_free( gltf );
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
 }
@@ -1580,6 +1928,15 @@ load_buffers_
   _In_ char const                                         *gltf_directory
 )
 {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 1, false );
+
+  VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
   for ( uint32 buffer_view_index = 0; buffer_view_index < gltf->buffer_views_count; ++buffer_view_index )
   {
     cgltf_buffer_view const                               *buffer_view;
@@ -1599,7 +1956,7 @@ load_buffers_
   
     if ( buffer_view->name == NULL )
     {
-      cpu_buffer_name = crude_string_buffer_append_use_f( temporary_string_buffer, "scene_renderer_buffer_cpu_%i", buffer_view_index );
+      cpu_buffer_name = "scene_renderer_buffer_cpu";
       gpu_buffer_name = crude_string_buffer_append_use_f( temporary_string_buffer, "scene_renderer_buffer_gpu_%i", buffer_view_index );
     }
     else
@@ -1619,15 +1976,40 @@ load_buffers_
     gpu_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     gpu_buffer_creation.size = buffer_view->size;
     gpu_buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    gpu_buffer_creation.type_flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
     gpu_buffer_creation.name = gpu_buffer_name;
     gpu_buffer_creation.device_only = true;
     gpu_buffer_resource = crude_gfx_renderer_create_buffer( scene_renderer->renderer, &gpu_buffer_creation );
     CRUDE_ARRAY_PUSH( scene_renderer->buffers, *gpu_buffer_resource );
 
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, cpu_buffer );
+#else /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
     crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, cpu_buffer, gpu_buffer_resource->handle );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
     crude_string_buffer_clear( temporary_string_buffer );
   }
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  vkEndCommandBuffer( cmd->vk_cmd_buffer );
+  
+  {
+    VkCommandBufferSubmitInfo command_buffers[] = {
+      { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
+    };
+
+    VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+    submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+    submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
+    submit_info.pCommandBufferInfos      = command_buffers;
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( scene_renderer->renderer->gpu->vkQueueSubmit2KHR( scene_renderer->renderer->gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+  }
+
+  vkQueueWaitIdle( scene_renderer->renderer->gpu->vk_main_queue);
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -2015,6 +2397,7 @@ load_meshlet_indices_
   CRUDE_ARRAY_SET_LENGTH( *indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
+  CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u ); // change ray tracing index property in geometry 
 
   if ( primitive->indices->component_type == cgltf_component_type_r_16u )
   {

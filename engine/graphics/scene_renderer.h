@@ -12,6 +12,7 @@
 #include <graphics/passes/light_pass.h>
 #include <graphics/passes/pointlight_shadow_pass.h>
 #include <graphics/passes/postprocessing_pass.h>
+#include <graphics/passes/ray_tracing_solid_pass.h>
 
 typedef struct crude_scene crude_scene;
 
@@ -86,6 +87,13 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkAccelerationStructureKHR                               blas;
+  VkAccelerationStructureKHR                               tlas;
+  crude_gfx_buffer_handle                                  blas_buffer;
+  crude_gfx_buffer_handle                                  tlas_buffer;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   /***********************
    * Render Graph Passes 
@@ -100,6 +108,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_scene_renderer;
 
 

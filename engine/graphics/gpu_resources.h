@@ -25,6 +25,7 @@
 #define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX            0u
 #define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX            1u
 #define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
+#define CRUDE_GFX_BINDLESS_IMAGE_BINDING                   11
 #define CRUDE_GFX_MAX_PUSH_CONSTANTS                       1u
 
 /************************************************
@@ -200,7 +201,7 @@ typedef enum crude_gfx_texture_mask
 {
   CRUDE_GFX_TEXTURE_MASK_DEFAULT = 1 << 0,
   CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET = 1 << 1,
-  CRUDE_GFX_TEXTURE_MASK_COMPUTE = 1 << 2,
+  CRUDE_GFX_TEXTURE_MASK_COMPUTE = 1 << 2
 } crude_gfx_texture_mask;
 
 typedef enum crude_gfx_vertex_component_format
@@ -241,6 +242,7 @@ typedef enum crude_gfx_pipeline_type
 {
   CRUDE_GFX_PIPELINE_TYPE_GRAPHICS,
   CRUDE_GFX_PIPELINE_TYPE_COMPUTE,
+  CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING,
   CRUDE_GFX_PIPELINE_TYPE_COUNT
 } crude_gfx_pipeline_type;
 
@@ -491,6 +493,9 @@ typedef struct crude_gfx_descriptor_set_creation
   crude_gfx_descriptor_set_layout_handle                   layout;
   uint32                                                   num_resources;
   char const                                              *name;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkAccelerationStructureKHR                               vk_acceleration_structure;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set_creation;
 
 typedef struct crude_gfx_shader_descriptor_reflect
@@ -597,6 +602,9 @@ typedef struct crude_gfx_descriptor_set
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
   char const                                              *name;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkAccelerationStructureKHR                               vk_acceleration_structure;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set;
 
 typedef struct crude_gfx_pipeline
@@ -614,6 +622,12 @@ typedef struct crude_gfx_pipeline
   crude_gfx_pipeline_handle                                handle;
   bool                                                     graphics_pipeline;
   char const                                               *name;
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  crude_gfx_buffer_handle                                  shader_binding_table_raygen;
+  crude_gfx_buffer_handle                                  shader_binding_table_hit;
+  crude_gfx_buffer_handle                                  shader_binding_table_miss;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_pipeline;
 
 typedef struct crude_gfx_render_pass
@@ -641,6 +655,9 @@ typedef struct crude_gfx_framebuffer
 typedef struct crude_gfx_shader_state
 {
   VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GFX_MAX_SHADER_STAGES ];
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GFX_MAX_SHADER_STAGES ];
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
   const char                                              *name;
   uint32                                                   active_shaders;
   crude_gfx_pipeline_type                                  pipeline_type;
@@ -771,6 +788,14 @@ crude_gfx_descriptor_set_creation_add_buffer
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_buffer_handle                             buffer,
+  _In_ uint16                                              binding
+);
+
+CRUDE_API void
+crude_gfx_descriptor_set_creation_add_acceleration_structure
+(
+  _In_ crude_gfx_descriptor_set_creation                  *creation,
+  _In_ VkAccelerationStructureKHR                          vk_acceleration_structure,
   _In_ uint16                                              binding
 );
 

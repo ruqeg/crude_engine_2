@@ -197,18 +197,19 @@ game_graphics_initialize_
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
   
-    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json", "\\..\\..\\resources\\render_graph.json" );
+    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph_ray_tracing.json" );
     crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
     crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
 
 
   /* Create Scene Renderer */

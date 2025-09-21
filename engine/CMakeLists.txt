@@ -25,8 +25,9 @@ source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
 source_group(develop REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/develop/*")
 source_group(engine FILES engine.cc engine.h)
 
-add_definitions(
-  -DCRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+target_compile_definitions(${PROJECT_NAME} PUBLIC 
+  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 )
 
 if(MSVC)

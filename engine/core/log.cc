@@ -84,7 +84,10 @@ crude_log_common
 #ifdef _WIN32
   OutputDebugStringA( ( LPCSTR )message_buffer_ );
 #endif
-  //fprintf( log_file_, message_buffer_ );
+  if ( log_file_ )
+  {
+    fprintf( log_file_, message_buffer_ );
+  }
   printf( "%s", message_buffer_ );
   va_end( args );
 }

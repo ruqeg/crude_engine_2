@@ -378,6 +378,16 @@ crude_gfx_cmd_fill_buffer
   _In_ uint32                                              value
 );
 
+CRUDE_API void
+crude_gfx_cmd_trace_rays
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_pipeline_handle                           pipeline_handle,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height,
+  _In_ uint32                                              depth
+);
+
 /************************************************
  *
  * Command Buffer Manager Functions

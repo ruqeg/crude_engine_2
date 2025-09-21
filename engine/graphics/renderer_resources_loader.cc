@@ -204,6 +204,18 @@ parse_gpu_pipeline_
       {
         crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_TASK_BIT_EXT );
       }
+      else if ( strcmp( stage, "raygen" ) == 0 )
+      {
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_RAYGEN_BIT_KHR );
+      }
+      else if ( strcmp( stage, "closest_hit" ) == 0 )
+      {
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR );
+      }
+      else if ( strcmp( stage, "miss" ) == 0 )
+      {
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_MISS_BIT_KHR );
+      }
     }
   }
   

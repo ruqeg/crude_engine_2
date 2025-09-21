@@ -1,0 +1,44 @@
+{
+  "name": "main_graph",
+  "passes": [
+    {
+      "name": "ray_tracing_solid_pass",
+      "type": "ray_tracing",
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "ray_tracing_solid",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
+      "name": "imgui_pass",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "ray_tracing_solid"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "imgui",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    }
+  ]
+}

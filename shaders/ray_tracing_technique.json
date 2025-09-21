@@ -1,0 +1,26 @@
+{
+	"name" : "ray_tracing",
+	"pipelines" : [
+		{
+			"name" : "ray_tracing_solid",
+			"render_pass": "ray_tracing_solid_pass",
+			"shaders" : [
+				{
+					"stage" : "raygen",
+					"shader" : "ray_tracing.rgen",
+					"includes" : ["crude/platform.glsli", "crude/scene.glsli"]
+				},
+				{
+					"stage" : "closest_hit",
+					"shader" : "ray_tracing.rchit",
+					"includes" : ["crude/platform.glsli"]
+				},
+				{
+					"stage" : "miss",
+					"shader" : "ray_tracing.rmiss",
+					"includes" : ["crude/platform.glsli"]
+				}
+			]
+		}
+	]
+}

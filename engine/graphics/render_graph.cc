@@ -112,35 +112,38 @@ crude_gfx_render_graph_parse_from_file
 
     pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
-    CRUDE_ASSERT( pass_inputs && pass_outputs );
+    CRUDE_ASSERT( pass_outputs );
 
     node_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_node_creation );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), crude_stack_allocator_pack( temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), crude_stack_allocator_pack( temporary_allocator ) );
   
-    pass_input = NULL;
-    cJSON_ArrayForEach( pass_input, pass_inputs )
+    if ( pass_inputs )
     {
-      cJSON const                                         *input_type;
-      cJSON const                                         *input_name;
-      crude_gfx_render_graph_resource_input_creation       creation;
+      pass_input = NULL;
+      cJSON_ArrayForEach( pass_input, pass_inputs )
+      {
+        cJSON const                                         *input_type;
+        cJSON const                                         *input_name;
+        crude_gfx_render_graph_resource_input_creation       creation;
 
-      input_type = cJSON_GetObjectItemCaseSensitive( pass_input, "type" );
-      input_name = cJSON_GetObjectItemCaseSensitive( pass_input, "name" );
-      CRUDE_ASSERT( input_type && input_name );
+        input_type = cJSON_GetObjectItemCaseSensitive( pass_input, "type" );
+        input_name = cJSON_GetObjectItemCaseSensitive( pass_input, "name" );
+        CRUDE_ASSERT( input_type && input_name );
 
-      creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_input_creation );
-      creation.type = string_to_resource_type_( cJSON_GetStringValue( input_type ) );
-      creation.resource_info.external = false;
-      creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) );
+        creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_input_creation );
+        creation.type = string_to_resource_type_( cJSON_GetStringValue( input_type ) );
+        creation.resource_info.external = false;
+        creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) );
 
-      CRUDE_ARRAY_PUSH( node_creation.inputs, CRUDE_COMPOUNT( crude_gfx_render_graph_resource_input_creation, {
-        .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
-        .resource_info = {
-          .external = false,
-        },
-        .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
-      } ) );
+        CRUDE_ARRAY_PUSH( node_creation.inputs, CRUDE_COMPOUNT( crude_gfx_render_graph_resource_input_creation, {
+          .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
+          .resource_info = {
+            .external = false,
+          },
+          .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
+        } ) );
+      }
     }
     
     pass_output = NULL;
@@ -242,6 +245,10 @@ crude_gfx_render_graph_parse_from_file
       if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "compute" ) == 0 )
       {
         node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE;
+      }
+      else if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "ray_tracing" ) == 0 )
+      {
+        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_RAY_TRACING;
       }
     }
 
@@ -428,7 +435,7 @@ crude_gfx_render_graph_compile
       {
         continue;
       }
-      
+
       for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )
       {
         crude_gfx_render_graph_resource                   *output_resource;
@@ -456,7 +463,7 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.width = output_resource_info->texture.width;
             output_resource_texture_creation.height = output_resource_info->texture.height;
             output_resource_texture_creation.depth = output_resource_info->texture.depth;
-            output_resource_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
+            output_resource_texture_creation.flags = ( node->type != CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS ) ? ( CRUDE_GFX_TEXTURE_MASK_COMPUTE | CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) : CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
             output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
             output_resource_info->texture.handle = crude_gfx_create_texture( render_graph->builder->gpu, &output_resource_texture_creation );
@@ -805,6 +812,12 @@ crude_gfx_render_graph_render
         }
       }
       
+      crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
+      crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
+      crude_gfx_render_graph_render_pass_container_post_render( node->render_graph_pass_container, gpu_commands );
+    }
+    else if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_RAY_TRACING )
+    {
       crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_render_graph_render_pass_container_post_render( node->render_graph_pass_container, gpu_commands );

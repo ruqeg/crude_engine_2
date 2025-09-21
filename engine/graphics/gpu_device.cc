@@ -28,7 +28,17 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
   VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
-  VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
+  VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+  VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+  VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+  VK_KHR_RAY_QUERY_EXTENSION_NAME,
+  VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+#ifdef  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
+  VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 };
 
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -289,8 +299,12 @@ crude_gfx_device_initialize
   crude_resource_pool_initialize( &gpu->samplers, gpu->allocator_container, 32, sizeof( crude_gfx_sampler ) );
   crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator_container, 128, sizeof( crude_gfx_framebuffer ) );
   {
-    
-    VkSemaphoreCreateInfo semaphore_info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkSemaphoreCreateInfo                                  semaphore_info;
+    VkSemaphoreTypeCreateInfo                              semaphore_type_info;
+    VkFenceCreateInfo                                      fenceInfo;
+
+    semaphore_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreCreateInfo );
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
     {
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
@@ -300,9 +314,15 @@ crude_gfx_device_initialize
       crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_swapchain_updated_semaphore[ i ], "swapchain_updated_semaphore" );
       crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SEMAPHORE, ( uint64 )gpu->vk_rendering_finished_semaphore[ i ], "rendering_finished_semaphore" );
     }
-
     
-    VkSemaphoreTypeCreateInfo semaphore_type_info = { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO };
+    fenceInfo = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    vkCreateFence( gpu->vk_device, &fenceInfo, gpu->vk_allocation_callbacks, &gpu->vk_immediate_fence );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_FENCE, ( uint64 )gpu->vk_immediate_fence, "immediate_fence" );
+
+    semaphore_type_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreTypeCreateInfo );
+    semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
     semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
     semaphore_info.pNext = &semaphore_type_info;
     vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_graphics_semaphore );
@@ -349,7 +369,20 @@ crude_gfx_device_initialize
     gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
   }
 
-  
+  {
+    VkPhysicalDeviceProperties2                             physical_device_properties_2;
+    physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    gpu->ray_tracing_pipeline_properties = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelinePropertiesKHR );
+    gpu->ray_tracing_pipeline_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
+    physical_device_properties_2.pNext = &gpu->ray_tracing_pipeline_properties;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
+    vkGetPhysicalDeviceProperties2( gpu->vk_physical_device, &physical_device_properties_2 );
+  }
+
   gpu->swapchain_output.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
   gpu->swapchain_output.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -400,6 +433,7 @@ crude_gfx_device_deinitialize
   
   crude_gfx_cmd_manager_deinitialize( &gpu->cmd_buffer_manager );
   
+  vkDestroyFence( gpu->vk_device, gpu->vk_immediate_fence, gpu->vk_allocation_callbacks );
   vkDestroySemaphore( gpu->vk_device, gpu->vk_graphics_semaphore, gpu->vk_allocation_callbacks );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -565,6 +599,23 @@ crude_gfx_present
       CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
 
       ++current_write_index;
+
+      if ( texture->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE )
+      {
+        VkWriteDescriptorSet *descriptor_write_image = &bindless_descriptor_writes[ current_write_index ];
+        VkDescriptorImageInfo *descriptor_image_info_compute = &bindless_image_info[ current_write_index ];
+
+        *descriptor_write_image = *descriptor_write;
+        *descriptor_image_info_compute = *descriptor_image_info;
+
+        descriptor_image_info_compute->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+        descriptor_write_image->dstBinding = CRUDE_GFX_BINDLESS_IMAGE_BINDING;
+        descriptor_write_image->descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        descriptor_write_image->pImageInfo = descriptor_image_info_compute;
+
+        ++current_write_index;
+      }
     }
 
     if ( current_write_index )
@@ -1177,6 +1228,51 @@ crude_gfx_generate_mipmaps
   texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
 }
 
+VkDeviceAddress
+crude_gfx_get_buffer_device_address
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_buffer_handle                             handle
+)
+{
+  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
+  CRUDE_ASSERT( buffer );
+
+  VkBufferDeviceAddressInfo device_address_info = CRUDE_COMPOUNT_EMPTY( VkBufferDeviceAddressInfo );
+  device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+  device_address_info.buffer = buffer->vk_buffer;
+  return gpu->vkGetBufferDeviceAddressKHR( gpu->vk_device, &device_address_info );
+}
+
+void 
+crude_gfx_submit_immediate
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+)
+{
+  VkSubmitInfo                                             submit_info;
+
+  vkCmdEndQuery( cmd->vk_cmd_buffer, cmd->thread_frame_pool->vk_pipeline_stats_query_pool, 0 );
+
+  crude_gfx_cmd_end( cmd );
+
+  vkResetFences( cmd->gpu->vk_device, 1, &cmd->gpu->vk_immediate_fence );
+
+  submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo );
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.pCommandBuffers = &cmd->vk_cmd_buffer;
+  submit_info.commandBufferCount = 1u;
+
+  vkQueueSubmit( cmd->gpu->vk_main_queue, 1, &submit_info, cmd->gpu->vk_immediate_fence );
+
+  if ( vkGetFenceStatus( cmd->gpu->vk_device, cmd->gpu->vk_immediate_fence ) != VK_SUCCESS )
+  {
+    vkWaitForFences( cmd->gpu->vk_device, 1, &cmd->gpu->vk_immediate_fence, VK_TRUE, UINT64_MAX );
+  }
+
+  vkQueueWaitIdle( cmd->gpu->vk_main_queue );
+}
+
 /************************************************
  *
  * GPU Device Resources Functions
@@ -1503,6 +1599,64 @@ crude_gfx_create_shader_state
       break;
     }
     
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    switch ( stage->type )
+    {
+      case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+      {
+        VkRayTracingShaderGroupCreateInfoKHR *shader_group_info = &shader_state->shader_group_info[ compiled_shaders ];
+        *shader_group_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingShaderGroupCreateInfoKHR );
+        shader_group_info->sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        shader_group_info->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+        shader_group_info->generalShader = compiled_shaders;
+        shader_group_info->closestHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->anyHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->intersectionShader = VK_SHADER_UNUSED_KHR;
+        shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
+        break;
+      }
+      case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+      {
+        VkRayTracingShaderGroupCreateInfoKHR *shader_group_info = &shader_state->shader_group_info[ compiled_shaders ];
+        *shader_group_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingShaderGroupCreateInfoKHR );
+        shader_group_info->sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        shader_group_info->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+        shader_group_info->generalShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->closestHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->anyHitShader = compiled_shaders;
+        shader_group_info->intersectionShader = VK_SHADER_UNUSED_KHR;
+        shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
+        break;
+      }
+      case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+      {
+        VkRayTracingShaderGroupCreateInfoKHR *shader_group_info = &shader_state->shader_group_info[ compiled_shaders ];
+        *shader_group_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingShaderGroupCreateInfoKHR );
+        shader_group_info->sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        shader_group_info->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+        shader_group_info->generalShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->closestHitShader = compiled_shaders;
+        shader_group_info->anyHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->intersectionShader = VK_SHADER_UNUSED_KHR;
+        shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
+        break;
+      }
+      case VK_SHADER_STAGE_MISS_BIT_KHR:
+      {
+        VkRayTracingShaderGroupCreateInfoKHR *shader_group_info = &shader_state->shader_group_info[ compiled_shaders ];
+        *shader_group_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingShaderGroupCreateInfoKHR );
+        shader_group_info->sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        shader_group_info->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+        shader_group_info->generalShader = compiled_shaders;
+        shader_group_info->closestHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->anyHitShader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->intersectionShader = VK_SHADER_UNUSED_KHR;
+        shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
+        break;
+      }
+    }
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
 
     if ( shader_create_info.pCode )
@@ -1939,6 +2093,60 @@ crude_gfx_create_pipeline
     
     pipeline->vk_bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
   }
+  else if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING )
+  {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    uint8                                                 *shader_binding_table_data;
+    VkRayTracingPipelineCreateInfoKHR                      vk_pipeline_info;
+    crude_gfx_buffer_creation                              shader_binding_table_creation;
+    uint64                                                 shader_binding_table_size, temporary_allocator_marker;
+    
+    temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
+
+    vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingPipelineCreateInfoKHR );
+    vk_pipeline_info.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    vk_pipeline_info.stageCount = shader_state->active_shaders;
+    vk_pipeline_info.pStages = shader_state->shader_stage_info;
+    vk_pipeline_info.groupCount = shader_state->active_shaders;
+    vk_pipeline_info.pGroups = shader_state->shader_group_info;
+    vk_pipeline_info.maxPipelineRayRecursionDepth = 1;
+    vk_pipeline_info.layout = pipeline->vk_pipeline_layout;
+
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkCreateRayTracingPipelinesKHR( gpu->vk_device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &vk_pipeline_info, gpu->vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
+
+    pipeline->vk_bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    
+		uint32 group_count = shader_state->active_shaders;
+		uint32 group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+		uint32 group_handle_size_aligned = crude_memory_align( group_handle_size, gpu->ray_tracing_pipeline_properties.shaderGroupHandleAlignment );
+    shader_binding_table_size = group_handle_size_aligned * group_count;
+
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkGetRayTracingShaderGroupHandlesKHR( gpu->vk_device, pipeline->vk_pipeline, 0, shader_state->active_shaders, shader_binding_table_size, shader_binding_table_data ), "Failed to get ray tracing shader group handles" );
+    
+		uint32_t bufferSize = group_handle_size;
+
+    shader_binding_table_creation = crude_gfx_buffer_creation_empty( );
+    shader_binding_table_creation.type_flags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+    shader_binding_table_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    shader_binding_table_creation.size = bufferSize;
+
+    shader_binding_table_creation.initial_data = shader_binding_table_data;
+    shader_binding_table_creation.name = "shader_binding_table_raygen";
+    pipeline->shader_binding_table_raygen = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
+    
+    shader_binding_table_creation.initial_data = shader_binding_table_data + group_handle_size_aligned;
+    shader_binding_table_creation.name = "shader_binding_table_hit";
+    pipeline->shader_binding_table_hit = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
+    
+    shader_binding_table_creation.initial_data = shader_binding_table_data + ( 2 * group_handle_size_aligned );
+    shader_binding_table_creation.name = "shader_binding_table_miss";
+    pipeline->shader_binding_table_miss = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
+    
+    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+  }
 
   return pipeline_handle;
 }
@@ -2253,13 +2461,12 @@ crude_gfx_create_descriptor_set
 
   CRUDE_ASSERT( creation->name );
   descriptor_set->name = creation->name;
-  
-  VkDescriptorSetAllocateInfo vk_descriptor_info = {
-    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    .descriptorPool = descriptor_set_layout->bindless ? gpu->vk_bindless_descriptor_pool : gpu->vk_descriptor_pool,
-    .descriptorSetCount = 1u,
-    .pSetLayouts = &descriptor_set_layout->vk_descriptor_set_layout
-  };
+
+  VkDescriptorSetAllocateInfo vk_descriptor_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetAllocateInfo );
+  vk_descriptor_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  vk_descriptor_info.descriptorPool = descriptor_set_layout->bindless ? gpu->vk_bindless_descriptor_pool : gpu->vk_descriptor_pool;
+  vk_descriptor_info.descriptorSetCount = 1u;
+  vk_descriptor_info.pSetLayouts = &descriptor_set_layout->vk_descriptor_set_layout;
 
   if ( descriptor_set_layout->bindless )
   {
@@ -2279,6 +2486,13 @@ crude_gfx_create_descriptor_set
   VkWriteDescriptorSet descriptor_write[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
   VkDescriptorBufferInfo buffer_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
   VkDescriptorImageInfo image_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  VkWriteDescriptorSetAccelerationStructureKHR vk_acceleration_structure_info;
+  
+  vk_acceleration_structure_info = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSetAccelerationStructureKHR );
+  vk_acceleration_structure_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   uint32 num_resources = 0u;
   for ( uint32 i = 0; i < creation->num_resources; i++ )
@@ -2386,6 +2600,18 @@ crude_gfx_create_descriptor_set
       descriptor_write[ i ].pImageInfo = &image_info[ i ];
       break;
     }
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+      descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+
+      vk_acceleration_structure_info.accelerationStructureCount = 1;
+      vk_acceleration_structure_info.pAccelerationStructures = &creation->vk_acceleration_structure;
+
+      descriptor_write[ i ].pNext = &vk_acceleration_structure_info;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+      break;
+    }
     }
 
     ++num_resources;
@@ -2397,6 +2623,9 @@ crude_gfx_create_descriptor_set
     descriptor_set->samplers[ i ] = creation->samplers[ i ];
     descriptor_set->bindings[ i ] = creation->bindings[ i ];
   }
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  descriptor_set->vk_acceleration_structure = creation->vk_acceleration_structure;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   descriptor_set->layout = descriptor_set_layout;
 
@@ -3052,6 +3281,15 @@ vk_create_device_
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  VkPhysicalDeviceRayTracingValidationFeaturesNV           physical_device_ray_tracing_validation_features_nv;
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+  VkPhysicalDeviceRayQueryFeaturesKHR                      physical_device_ray_query_features;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR            physical_device_ray_tracing_pipeline_features;
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR         physical_device_acceleration_structure_features;
+  VkPhysicalDeviceBufferDeviceAddressFeaturesKHR           physical_device_buffer_defice_address_features;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   VkPhysicalDeviceShaderAtomicInt64Features                shader_atomic_int64_features;
   VkPhysicalDevice16BitStorageFeatures                     bit16_storage_features;
   VkPhysicalDevice8BitStorageFeatures                      bit_storage_features;
@@ -3122,10 +3360,42 @@ vk_create_device_
   //shader_atomic_int64_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderAtomicInt64Features );
   //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
   //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
-
+  
   bit16_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice16BitStorageFeatures );
   bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
-  //bit16_storage_features.pNext = &shader_atomic_int64_features;
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  physical_device_ray_query_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayQueryFeaturesKHR );
+  physical_device_ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+  physical_device_ray_query_features.rayQuery = true;
+
+  physical_device_ray_tracing_pipeline_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelineFeaturesKHR );
+  physical_device_ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+  physical_device_ray_tracing_pipeline_features.pNext = &physical_device_ray_query_features;
+  physical_device_ray_tracing_pipeline_features.rayTracingPipeline = true;
+  
+  physical_device_acceleration_structure_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceAccelerationStructureFeaturesKHR );
+  physical_device_acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+  physical_device_acceleration_structure_features.pNext = &physical_device_ray_tracing_pipeline_features;
+  physical_device_acceleration_structure_features.accelerationStructure = true;
+
+  physical_device_buffer_defice_address_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceBufferDeviceAddressFeatures );
+  physical_device_buffer_defice_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+  physical_device_buffer_defice_address_features.pNext = &physical_device_acceleration_structure_features;
+  physical_device_buffer_defice_address_features.bufferDeviceAddress = true;
+  
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
+  physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
+  physical_device_ray_tracing_validation_features_nv.pNext = &physical_device_buffer_defice_address_features;
+  physical_device_ray_tracing_validation_features_nv.rayTracingValidation = true;
+
+  bit16_storage_features.pNext = &physical_device_ray_tracing_validation_features_nv;
+#else
+  bit16_storage_features.pNext = &physical_device_buffer_defice_address_features;
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
   bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
 
   bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );
@@ -3155,7 +3425,7 @@ vk_create_device_
   device_features_mesh.meshShader = VK_TRUE;
   device_features_mesh.multiviewMeshShader = VK_TRUE;
   device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
-
+  
   timeline_semaphore_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceTimelineSemaphoreFeatures );
   timeline_semaphore_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
   timeline_semaphore_features.pNext = &device_features_mesh;
@@ -3214,6 +3484,17 @@ vk_create_device_
   gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
   gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
   gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  gpu->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
+  gpu->vkCreateAccelerationStructureKHR = ( PFN_vkCreateAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateAccelerationStructureKHR" );
+  gpu->vkCmdBuildAccelerationStructuresKHR = ( PFN_vkCmdBuildAccelerationStructuresKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBuildAccelerationStructuresKHR" );
+  gpu->vkGetAccelerationStructureDeviceAddressKHR = ( PFN_vkGetAccelerationStructureDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureDeviceAddressKHR" );
+  gpu->vkCreateRayTracingPipelinesKHR = ( PFN_vkCreateRayTracingPipelinesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateRayTracingPipelinesKHR" );
+  gpu->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
+  gpu->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdTraceRaysKHR" );
+  gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -3357,11 +3638,13 @@ vk_create_vma_allocator_
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  VmaAllocatorCreateInfo allocator_info = {
-    .physicalDevice   = gpu->vk_physical_device,
-    .device           = gpu->vk_device,
-    .instance         = gpu->vk_instance,
-  };
+  VmaAllocatorCreateInfo allocator_info = CRUDE_COMPOUNT_EMPTY( VmaAllocatorCreateInfo );
+  allocator_info.physicalDevice   = gpu->vk_physical_device;
+  allocator_info.device           = gpu->vk_device;
+  allocator_info.instance         = gpu->vk_instance;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  allocator_info.flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &gpu->vma_allocator ), "Failed to create vma allocator" );
 }
 
@@ -3390,7 +3673,8 @@ vk_create_descriptor_pool_
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 }
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
+        { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -3850,6 +4134,15 @@ vk_reflect_shader_
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
           ++set_layout->num_bindings;
+          break;
+        }
+        case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+          reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
+          binding->type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+          ++set_layout->num_bindings;
+#endif /* #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
           break;
         }
       }

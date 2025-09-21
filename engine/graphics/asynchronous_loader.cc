@@ -75,6 +75,7 @@ crude_gfx_asynchronous_loader_initialize
     VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( renderer->gpu->vk_device, &fence_info, renderer->gpu->vk_allocation_callbacks, &asynloader->vk_transfer_completed_fence ), "Failed to create fence" );
+    crude_gfx_set_resource_name( renderer->gpu, VK_OBJECT_TYPE_FENCE, CRUDE_CAST( uint64, asynloader->vk_transfer_completed_fence ), "transfer_completed_fence" );
   }
 }
 
