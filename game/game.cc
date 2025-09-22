@@ -203,12 +203,12 @@ game_graphics_initialize_
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\meshlet_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  //crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
 
 

@@ -137,7 +137,6 @@ crude_gfx_debug_pass_on_techniques_reloaded
     ds_creation.layout = debug_layout_handle;
 
     crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     
     pass->depth_lines3d_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
