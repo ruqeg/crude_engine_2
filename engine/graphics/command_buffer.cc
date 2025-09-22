@@ -1012,26 +1012,31 @@ crude_gfx_cmd_trace_rays
   _In_ uint32                                              depth
 )
 {
-  crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( cmd->gpu, pipeline_handle );
+  crude_gfx_pipeline                                      *pipeline;
+  VkStridedDeviceAddressRegionKHR                          raygen_table, hit_table, miss_table, callable_table;
+  uint32                                                   shader_group_handle_size;
 
-  uint32 shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+  pipeline = crude_gfx_access_pipeline( cmd->gpu, pipeline_handle );
 
-  VkStridedDeviceAddressRegionKHR raygen_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+
+  raygen_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   raygen_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_raygen );
   raygen_table.stride = shader_group_handle_size;
   raygen_table.size = shader_group_handle_size;
   
-  VkStridedDeviceAddressRegionKHR hit_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  hit_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   hit_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_hit );
   hit_table.stride = shader_group_handle_size;
   hit_table.size = shader_group_handle_size;
   
-  VkStridedDeviceAddressRegionKHR miss_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  miss_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   miss_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_miss );
   miss_table.stride = shader_group_handle_size;
   miss_table.size = shader_group_handle_size;
 
-  VkStridedDeviceAddressRegionKHR callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  
   cmd->gpu->vkCmdTraceRaysKHR( cmd->vk_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 }
 

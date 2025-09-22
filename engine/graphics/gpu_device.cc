@@ -2099,7 +2099,7 @@ crude_gfx_create_pipeline
     uint8                                                 *shader_binding_table_data;
     VkRayTracingPipelineCreateInfoKHR                      vk_pipeline_info;
     crude_gfx_buffer_creation                              shader_binding_table_creation;
-    uint64                                                 shader_binding_table_size, temporary_allocator_marker;
+    uint64                                                 shader_binding_table_size, temporary_allocator_marker, group_count, group_handle_size;
     
     temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
 
@@ -2116,31 +2116,28 @@ crude_gfx_create_pipeline
 
     pipeline->vk_bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
     
-		uint32 group_count = shader_state->active_shaders;
-		uint32 group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
-		uint32 group_handle_size_aligned = crude_memory_align( group_handle_size, gpu->ray_tracing_pipeline_properties.shaderGroupHandleAlignment );
-    shader_binding_table_size = group_handle_size_aligned * group_count;
+		group_count = shader_state->active_shaders;
+		group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+    shader_binding_table_size = group_handle_size * group_count;
 
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_stack_allocator_pack( gpu->temporary_allocator ) );
 
     CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkGetRayTracingShaderGroupHandlesKHR( gpu->vk_device, pipeline->vk_pipeline, 0, shader_state->active_shaders, shader_binding_table_size, shader_binding_table_data ), "Failed to get ray tracing shader group handles" );
     
-		uint32_t bufferSize = group_handle_size;
-
     shader_binding_table_creation = crude_gfx_buffer_creation_empty( );
     shader_binding_table_creation.type_flags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
     shader_binding_table_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    shader_binding_table_creation.size = bufferSize;
+    shader_binding_table_creation.size = group_handle_size;
 
     shader_binding_table_creation.initial_data = shader_binding_table_data;
     shader_binding_table_creation.name = "shader_binding_table_raygen";
     pipeline->shader_binding_table_raygen = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
-    shader_binding_table_creation.initial_data = shader_binding_table_data + group_handle_size_aligned;
+    shader_binding_table_creation.initial_data = shader_binding_table_data + group_handle_size;
     shader_binding_table_creation.name = "shader_binding_table_hit";
     pipeline->shader_binding_table_hit = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
-    shader_binding_table_creation.initial_data = shader_binding_table_data + ( 2 * group_handle_size_aligned );
+    shader_binding_table_creation.initial_data = shader_binding_table_data + ( 2 * group_handle_size );
     shader_binding_table_creation.name = "shader_binding_table_miss";
     pipeline->shader_binding_table_miss = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
