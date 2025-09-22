@@ -2188,6 +2188,16 @@ crude_gfx_destroy_pipeline_instant
         crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
       }
     }
+    
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    if ( pipeline->vk_bind_point == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR )
+    {
+      crude_gfx_destroy_buffer( gpu, pipeline->shader_binding_table_raygen );
+      crude_gfx_destroy_buffer( gpu, pipeline->shader_binding_table_hit );
+      crude_gfx_destroy_buffer( gpu, pipeline->shader_binding_table_miss );
+    }
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
     vkDestroyPipeline( gpu->vk_device, pipeline->vk_pipeline, gpu->vk_allocation_callbacks );
     vkDestroyPipelineLayout( gpu->vk_device, pipeline->vk_pipeline_layout, gpu->vk_allocation_callbacks );
   }
@@ -3491,6 +3501,7 @@ vk_create_device_
   gpu->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
   gpu->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdTraceRaysKHR" );
   gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
+  gpu->vkDestroyAccelerationStructureKHR = ( PFN_vkDestroyAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkDestroyAccelerationStructureKHR" );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 

@@ -172,6 +172,7 @@ typedef struct crude_gfx_device
   PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
   PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
   PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
+  PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 
