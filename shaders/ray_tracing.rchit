@@ -8,8 +8,9 @@
 #extension GL_EXT_ray_tracing : enable
 
 layout(location=0) rayPayloadInEXT vec4 payload;
+hitAttributeEXT vec2 attribs;
 
 void main()
 {
-  payload = vec4( 1.0, 0.0, 0.0, 1.0 );
+  payload = vec4( 1.0f - attribs.x, attribs.y, attribs.x, 1.0 );
 }

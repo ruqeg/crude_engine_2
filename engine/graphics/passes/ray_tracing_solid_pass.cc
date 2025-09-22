@@ -20,15 +20,10 @@ crude_gfx_ray_tracing_solid_pass_initialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_renderer_technique_pass                       *ray_tracing_pass;
-  crude_gfx_descriptor_set_layout_handle                   layout;
   crude_gfx_buffer_creation                                buffer_creation;
 
   pass->scene_renderer = scene_renderer;
 
-  ray_tracing_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "ray_tracing", "ray_tracing_solid" );
-  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-  
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -42,18 +37,10 @@ crude_gfx_ray_tracing_solid_pass_initialize
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_descriptor_set_creation                    ds_creation;
-
-    ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = layout;
-    ds_creation.name = "ray_tracing_solid_ds";
-
-    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->tlas, 10u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->uniform_buffer[ i ], 11u );
-    
-    pass->ray_tracing_solid_ds[ i ] = crude_gfx_create_descriptor_set( scene_renderer->renderer->gpu, &ds_creation );
+    pass->ray_tracing_solid_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
+
+  crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded( pass );
 }
 
 void
@@ -111,6 +98,54 @@ crude_gfx_ray_tracing_solid_pass_render
   crude_gfx_cmd_add_image_barrier( primary_cmd, ray_tracing_solid_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );
 }
 
+void
+crude_gfx_ray_tracing_solid_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+}
+
+void
+crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
+(
+  _In_ void                                               *ctx
+)
+{
+  crude_gfx_ray_tracing_solid_pass                        *pass;
+  crude_gfx_renderer_technique_pass                       *ray_tracing_pass;
+  crude_gfx_descriptor_set_layout_handle                   layout;
+
+  pass = CRUDE_CAST( crude_gfx_ray_tracing_solid_pass*, ctx );
+  ray_tracing_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "ray_tracing", "ray_tracing_solid" );
+  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->ray_tracing_solid_ds[ i ] ) )
+    {
+      crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->ray_tracing_solid_ds[ i ] );
+    }
+  }
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_descriptor_set_creation                    ds_creation;
+
+    ds_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation.layout = layout;
+    ds_creation.name = "ray_tracing_solid_ds";
+
+    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->tlas, 10u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->uniform_buffer[ i ], 11u );
+    
+    pass->ray_tracing_solid_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->renderer->gpu, &ds_creation );
+  }
+}
+
 crude_gfx_render_graph_pass_container
 crude_gfx_ray_tracing_solid_pass_pack
 (
@@ -120,5 +155,6 @@ crude_gfx_ray_tracing_solid_pass_pack
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
   container.render = crude_gfx_ray_tracing_solid_pass_render;
+  container.on_techniques_reloaded = crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded;
   return container;
 }

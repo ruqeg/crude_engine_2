@@ -32,6 +32,20 @@ crude_gfx_ray_tracing_solid_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
+CRUDE_API void
+crude_gfx_ray_tracing_solid_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+);
+
+CRUDE_API void
+crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
+(
+  _In_ void                                               *ctx
+);
+
 CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_ray_tracing_solid_pass_pack
 (

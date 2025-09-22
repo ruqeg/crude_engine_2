@@ -2,6 +2,13 @@
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
+#define CRUDE_RAYTRACED_SHADOWS
+
+#ifdef CRUDE_RAYTRACED_SHADOWS
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_ray_query : require
+#endif /* CRUDE_RAYTRACED_SHADOWS */
+
 #define CRUDE_LIGHT_BINS_COUNT                         ( 16 )
 #define CRUDE_LIGHTS_MAX_COUNT                         ( 256 )
 #define CRUDE_LIGHT_TILE_SIZE                          ( 8 )
@@ -69,6 +76,9 @@ layout(set=CRUDE_MATERIAL_SET, binding=24, row_major) readonly buffer ShadowView
   mat4                                                      pointlight_world_to_clip[];
 };
 
+#ifdef CRUDE_RAYTRACED_SHADOWS
+layout(set=CRUDE_MATERIAL_SET, binding=25) uniform accelerationStructureEXT acceleration_structure;
+#endif /* CRUDE_RAYTRACED_SHADOWS */
 
 vec3
 crude_schlick_fresnel
@@ -145,6 +155,28 @@ crude_calculate_point_light_shadow_contribution
   in vec3                                                  vertex_position
 )
 {
+#ifdef CRUDE_RAYTRACED_SHADOWS
+  rayQueryEXT                                              ray_query;
+  float                                                    vertex_to_light_distance;
+  vec3                                                     vertex_to_light, vertex_to_light_normalized;
+
+  vertex_to_light = light.world_position - vertex_position.xyz;
+  vertex_to_light_distance = length( vertex_to_light );
+  vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
+  rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
+  rayQueryProceedEXT( ray_query );
+
+  float visiblity = 0.f;
+  if ( rayQueryGetIntersectionTypeEXT( ray_query, true ) != gl_RayQueryCommittedIntersectionNoneEXT )
+  {
+    visiblity = rayQueryGetIntersectionTEXT( ray_query, true ) > vertex_to_light_distance ? 1.f : 0.f;
+  }
+  else
+  {
+    visiblity = 1.f;
+  }
+  return visiblity;
+#else /* CRUDE_RAYTRACED_SHADOWS */
   vec4                                                     proj_pos;
   vec3                                                     vertex_to_light;
   vec2                                                     proj_uv, filter_radius;
@@ -173,6 +205,7 @@ crude_calculate_point_light_shadow_contribution
   }
 
   return shadow_factor / CRUDE_SHADOW_FILTER_NUM_SAMPLES;
+#endif /* CRUDE_RAYTRACED_SHADOWS */
 }
 
 vec3

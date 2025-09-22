@@ -72,7 +72,7 @@ crude_gfx_renderer_technique_load_from_file
 
   allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
-  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 64 ), crude_stack_allocator_pack( temporary_allocator ) );
+  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 128 ), crude_stack_allocator_pack( temporary_allocator ) );
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );

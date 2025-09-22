@@ -487,6 +487,8 @@ crude_gfx_scene_renderer_initialize
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
+  scene_renderer->ray_trace_shadows = true;
+
   /* Initialize render graph passes */
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
@@ -621,7 +623,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
@@ -729,6 +731,10 @@ crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_indices_sb[ frame ], 23u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->lights_indices_sb[ frame ], 23u );
   crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->pointlight_world_to_clip_sb[ frame ], 24u );
+  if ( scene_renderer->ray_trace_shadows )
+  {
+    crude_gfx_descriptor_set_creation_add_acceleration_structure( creation, scene_renderer->tlas, 25u );
+  }
 }
 
 /**
@@ -796,7 +802,7 @@ update_dynamic_buffers_
           && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )
           && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->metallic_roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->metallic_roughness_texture_handle ) );
 
-        if ( mesh_textures_ready )
+        if ( mesh_textures_ready && !crude_gfx_mesh_is_transparent( mesh_cpu ) )
         {
           crude_transform const                             *transform;
           XMMATRIX                                           model_to_world;
@@ -2151,7 +2157,7 @@ create_top_level_acceleration_structure_
   vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
   vk_acceleration_structure_instance.transform.matrix[ 0 ][ 0 ] = 1.0f;
   vk_acceleration_structure_instance.transform.matrix[ 1 ][ 1 ] = 1.0f;
-  vk_acceleration_structure_instance.transform.matrix[ 2 ][ 2 ] = -1.0f;
+  vk_acceleration_structure_instance.transform.matrix[ 2 ][ 2 ] = 1.0f;
   vk_acceleration_structure_instance.mask = 0xff;
   vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
   vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
