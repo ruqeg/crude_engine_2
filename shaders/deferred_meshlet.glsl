@@ -2,25 +2,55 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define DEFERRED_MESHLET
-#define CRUDE_STAGE_FRAGMENT
+#define CRUDE_STAGE_MESH
 
-#if defined( DEFERRED_MESHLET ) 
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
-#include "crude/culling.glsli"
 #include "crude/scene.glsli"
-#include "crude/meshlet.glsli"
-#include "crude/mesh.glsli"
 #include "crude/culling.glsli"
-#endif /* DEFERRED_MESHLET */
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( DEFERRED_MESHLET ) 
+
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
 
+CRUDE_UNIFORM( SceneConstant, 0 ) 
+{
+  crude_scene                                              scene;
+};
 
-layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
+CRUDE_RBUFFER( MeshDraws, 1 )
+{
+  crude_mesh_draw                                          mesh_draws[];
+};
+
+CRUDE_RBUFFER( MeshInstancesDraws, 2 )
+{
+  crude_mesh_instance_draw                                 mesh_instance_draws[];
+};
+
+CRUDE_RBUFFER( Meshlets, 3 )
+{
+  crude_meshlet                                            meshlets[];
+};
+
+CRUDE_RBUFFER( Vertices, 4 )
+{
+  crude_vertex                                             vertices[];
+};
+
+CRUDE_RBUFFER( TrianglesIndices, 5 )
+{
+  uint8_t                                                  triangles_indices[];
+};
+
+CRUDE_RBUFFER( VerticesIndices, 6 )
+{
+  uint                                                     vertices_indices[];
+};
+
+CRUDE_RBUFFER( VisibleMeshCount, 7 )
 {
   uint                                                     opaque_mesh_visible_count;
   uint                                                     opaque_mesh_culled_count;
@@ -38,22 +68,21 @@ layout(set=CRUDE_MATERIAL_SET, binding=10) readonly buffer VisibleMeshCount
   uint                                                     meshlet_instances_count;
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) readonly buffer MeshDrawCommands
+CRUDE_RBUFFER( MeshDrawCommands, 8 )
 {
   crude_mesh_draw_command                                  mesh_draw_commands[];
 };
 
-#endif /* DEFERRED_MESHLET */
 
-#if defined( DEFERRED_MESHLET ) && ( defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH ) )
+#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_instance_draw_indices[ 128 ];
 } shared_data;
-#endif
+#endif /* CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )*/
 
-#if defined( DEFERRED_MESHLET ) && defined( CRUDE_STAGE_TASK )
+#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_TASK )
 
 layout(local_size_x=32) in;
 
@@ -83,24 +112,24 @@ void main()
   
   bool accept = true;
 
-  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, crude_camera_debug_culling() ? camera_debug.position : camera.position );
+  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.camera.position );
   
-  vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
+  vec4 view_center = world_center * scene.camera.world_to_view;
 
   bool frustum_visible = true;
   for ( uint i = 0; i < 6; ++i )
   {
-    frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+    frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
   accept = accept && frustum_visible;
   
   bool occlusion_visible = false;
   if ( frustum_visible )
   {
-    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, camera.znear,
-      camera.view_to_clip[ 0 ][ 0 ], camera.view_to_clip[ 1 ][ 1 ],
+    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.camera.znear,
+      scene.camera.view_to_clip[ 0 ][ 0 ], scene.camera.view_to_clip[ 1 ][ 1 ],
       depth_pyramid_texture_index,
-      world_center.xyz, camera.position, camera.world_to_clip
+      world_center.xyz, scene.camera.position, scene.camera.world_to_clip
     );
   }
   accept = accept && occlusion_visible;
@@ -120,10 +149,9 @@ void main()
     EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
   }
 }
-#endif /* DEFERRED_MESHLET && CRUDE_STAGE_TASK */
+#endif /* CRUDE_STAGE_TASK */
 
-
-#if defined( DEFERRED_MESHLET ) && defined( CRUDE_STAGE_MESH )
+#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_MESH )
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
@@ -162,7 +190,7 @@ void main()
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
     vec4 world_position = model_position * model_to_world;
-    vec4 view_position = world_position * camera.world_to_view;
+    vec4 view_position = world_position * scene.camera.world_to_view;
     
     vec4 tangent = vec4( int( vertices[ vertex_index ].tx ), int( vertices[ vertex_index ].ty ), int( vertices[ vertex_index ].tz ),  int( vertices[ vertex_index ].tw ) ) * i8_inverse - 1.0;
     vec3 normal = vec3( int( vertices[ vertex_index ].nx ), int( vertices[ vertex_index ].ny ), int( vertices[ vertex_index ].nz ) ) * i8_inverse - 1.0;
@@ -170,9 +198,9 @@ void main()
     tangent.xyz = tangent.xyz * mat3( model_to_world );
     vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
 
-    vec3 view_normal = normal * mat3( camera.world_to_view );
+    vec3 view_normal = normal * mat3( scene.camera.world_to_view );
 
-    gl_MeshVerticesEXT[ i ].gl_Position = world_position * ( crude_camera_debug_view() ? camera_debug.world_to_clip : camera.world_to_clip );
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * scene.camera.world_to_clip;
     out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
     out_normals[ i ] = normal;
     out_tangents[ i ] = tangent.xyz;
@@ -180,7 +208,7 @@ void main()
     out_mesh_draw_index[ i ] = mesh_draw_index;
     out_world_positions[ i ] = world_position.xyz;
     out_view_surface_normal[ i ] = view_normal;
-    out_view_position[ i ] = camera.position - world_position.xyz;
+    out_view_position[ i ] = scene.camera.position - world_position.xyz;
   }
   
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
@@ -189,10 +217,10 @@ void main()
     gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
   }
 }
-#endif /* DEFERRED_MESHLET && CRUDE_STAGE_MESH */
+#endif /* CRUDE_STAGE_MESH */
 
 
-#if defined( DEFERRED_MESHLET ) && defined( CRUDE_STAGE_FRAGMENT )
+#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_FRAGMENT )
 layout(location = 0) out vec4 out_abledo;
 layout(location = 1) out vec2 out_normal;
 layout(location = 2) out vec2 out_roughness_metalness;
@@ -237,4 +265,5 @@ void main()
   out_normal = crude_octahedral_encode( normal );
   out_roughness_metalness = roughness_metalness;
 }
-#endif /* DEFERRED_MESHLET && CRUDE_STAGE_FRAGMENT */
+#endif /* CRUDE_STAGE_FRAGMENT */
+#endif /* DEFERRED_MESHLET */

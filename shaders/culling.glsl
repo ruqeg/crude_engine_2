@@ -1,26 +1,48 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
+#define CULLING
+
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
-#include "crude/mesh.glsli"
 #include "crude/scene.glsli"
 #include "crude/culling.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
+#if defined( CULLING )
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 
-layout(set=CRUDE_MATERIAL_SET, binding=10, row_major, std430) buffer MeshDrawCommands
+CRUDE_UNIFORM( SceneConstant, 0 ) 
+{
+  crude_scene                                              scene;
+};
+
+CRUDE_RBUFFER( MeshDraws, 1 )
+{
+  crude_mesh_draw                                          mesh_draws[];
+};
+
+CRUDE_RBUFFER( MeshInstancesDraws, 2 )
+{
+  crude_mesh_instance_draw                                 mesh_instance_draws[];
+};
+
+CRUDE_RBUFFER( MeshBounds, 3 )
+{
+  vec4                                                     mesh_bounds[];
+};
+
+CRUDE_RWBUFFER( MeshDrawCommandsEarly, 4 )
 {
   crude_mesh_draw_command                                  mesh_draw_commands[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=11, row_major, std430) buffer MeshDrawCommandsLate
+CRUDE_RWBUFFER( MeshDrawCommandsLate, 5 )
 {
   crude_mesh_draw_command                                  late_mesh_draw_commands[];
 };
 
-layout(set=CRUDE_MATERIAL_SET, binding=12) buffer MeshDrawCountsEarly
+CRUDE_RWBUFFER( MeshDrawCountsEarly, 6 )
 {
   uint                                                     early_opaque_mesh_visible_count;
   uint                                                     early_opaque_mesh_culled_count;
@@ -38,8 +60,7 @@ layout(set=CRUDE_MATERIAL_SET, binding=12) buffer MeshDrawCountsEarly
   uint                                                     early_meshlet_instances_count;
 };
 
-
-layout(set=CRUDE_MATERIAL_SET, binding=13) buffer MeshDrawCounts
+CRUDE_RWBUFFER( MeshDrawCountsLate, 7 )
 {
   uint                                                     opaque_mesh_visible_count;
   uint                                                     opaque_mesh_culled_count;
@@ -75,12 +96,12 @@ void main()
     float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
     float radius = bounding_sphere.w * scale * 1.1;
 
-    vec4 view_center = world_center * ( crude_camera_debug_culling() ? camera_debug.world_to_view : camera.world_to_view );
+    vec4 view_center = world_center * scene.camera.world_to_view;
 
     bool frustum_visible = true;
     for ( uint i = 0; i < 6; ++i )
     {
-      frustum_visible = frustum_visible && ( dot( ( crude_camera_debug_culling() ? camera_debug.frustum_planes_culling[ i ] : camera.frustum_planes_culling[ i ] ), view_center ) > -radius );
+      frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
     }
 
     bool occlusion_visible = true;
@@ -88,12 +109,12 @@ void main()
     {
       occlusion_visible = crude_occlusion_culling(
         mesh_draw_index,
-        view_center.xyz, radius, camera.znear, 
-        camera.view_to_clip[ 0 ][ 0 ],
-        camera.view_to_clip[ 1 ][ 1 ],
+        view_center.xyz, radius, scene.camera.znear, 
+        scene.camera.view_to_clip[ 0 ][ 0 ],
+        scene.camera.view_to_clip[ 1 ][ 1 ],
         depth_pyramid_texture_index, world_center.xyz,
-        camera.position,
-        camera.world_to_clip
+        scene.camera.position,
+        scene.camera.world_to_clip
       );
     }
 
@@ -115,3 +136,31 @@ void main()
     }
   }
 }
+#endif /* CULLING */
+
+#if defined( DEPTH_PYRAMID )
+layout(set=CRUDE_MATERIAL_SET, binding=0) uniform sampler2D src;
+layout(set=CRUDE_MATERIAL_SET, binding=1) uniform writeonly image2D dst;
+
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+void main()
+{
+  ivec2 texel_position00 = ivec2( gl_GlobalInvocationID.xy ) * 2;
+  ivec2 texel_position01 = texel_position00 + ivec2( 0, 1 );
+  ivec2 texel_position10 = texel_position00 + ivec2( 1, 0 );
+  ivec2 texel_position11 = texel_position00 + ivec2( 1, 1 );
+
+  float color00 = texelFetch( src, texel_position00, 0 ).r;
+  float color01 = texelFetch( src, texel_position01, 0 ).r;
+  float color10 = texelFetch( src, texel_position10, 0 ).r;
+  float color11 = texelFetch( src, texel_position11, 0 ).r;
+
+  float result = max( max( max( color00, color01 ), color10 ), color11 );
+
+  imageStore( dst, ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
+
+  groupMemoryBarrier();
+  barrier();
+}
+#endif /* DEPTH_PYRAMID */

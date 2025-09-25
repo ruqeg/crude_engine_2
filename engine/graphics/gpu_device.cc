@@ -1027,7 +1027,7 @@ crude_gfx_compile_shader
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
 
-  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_defines( stage ) );
+  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
   crude_write_file( temp_filename, code, code_size );
 
   technique_name_upper[ 0 ] = 0;
@@ -1046,19 +1046,20 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s -gVS --D %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
+  // -gVS 
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
   
-  bool optimize_shaders = false;
+  bool optimize_shaders = true;
   if ( optimize_shaders )
   {
     char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
     char* optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer,"shader_opt.spv" );
-    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe -O --preserve-bindings %s -o %s", final_spirv_filename, optimized_spirv_filename );
+    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe --preserve-bindings -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
     
     crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
+    crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
     crude_file_delete( optimized_spirv_filename );
   }
   else
@@ -4127,6 +4128,16 @@ vk_reflect_shader_
       crude_gfx_descriptor_set_layout_binding             *binding;
 
       spv_binding = spv_descriptor_set->bindings[ binding_index ];
+
+      if ( set_index != CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX )
+      {
+        //CRUDE_ASSERT( spv_binding->accessed );
+        //if ( !spv_binding->accessed )
+        //{
+        //  continue;
+        //}
+      }
+
       binding = &set_layout->bindings[ binding_index ];
       memset( binding, 0, sizeof( crude_gfx_descriptor_set_layout_binding ) );
       binding->start = spv_binding->binding;

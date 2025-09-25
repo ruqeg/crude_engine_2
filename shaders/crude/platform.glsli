@@ -14,6 +14,11 @@
 #define CRUDE_DRAW_FLAGS_HAS_NORMAL ( 1 << 4 )
 #define CRUDE_DRAW_FLAGS_HAS_TANGENTS ( 1 << 8 )
 
+#define CRUDE_UNIFORM( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std140) uniform name
+#define CRUDE_RBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) readonly buffer name
+#define CRUDE_RWBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) buffer name
+#define CRUDE_PUSH_CONSTANT( name ) layout(push_constant) uniform name
+
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_control_flow_attributes : require
@@ -121,7 +126,7 @@ float crude_rgb_to_luminance( vec3 rgb )
   return dot( rgb, vec3( 0.2125, 0.7154, 0.0721 ) );
 }
 
-#ifdef CRUDE_STAGE_COMPUTE
+#if defined( CRUDE_STAGE_COMPUTE )
 #endif /* CRUDE_STAGE_COMPUTE */
 
 

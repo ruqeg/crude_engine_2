@@ -1,0 +1,65 @@
+{
+	"name" : "pointshadow_meshlet",
+	"buffers": [
+		{
+			"name": "pointshadow_meshlet",
+			"filename": "pointshadow_meshlet.glsl",
+			"includes" : [	
+				"crude/platform.glsli",
+				"crude/debug.glsli",
+				"crude/scene.glsli",
+				"crude/culling.glsli",
+				"crude/light.glsli"
+			]
+		}
+	],
+	"pipelines" : [
+		{
+		    "name": "pointshadow_culling",
+		    "shaders": [
+			    {
+			        "stage": "compute",
+			        "buffer": "pointshadow_meshlet"
+			    }
+		    ]
+		},
+		{
+		  "name": "pointshadow_commands_generation",
+		  "shaders": [
+			{
+			  "stage": "compute",
+			  "buffer": "pointshadow_meshlet"
+			}
+		  ]
+		},
+		{
+		    "name" : "pointshadow",
+		  	"render_pass_output":
+            {
+				"custom":
+				[
+					{
+						"format": "VK_FORMAT_D16_UNORM",
+						"op": "clear"
+					}
+				] 
+			},
+		  	"depth":
+            {
+				"write" : 1,
+				"test" : "less_or_equal"
+			},
+			"cull": "back",
+			"shaders": [
+				{
+					"stage" : "mesh",
+					"buffer" : "pointshadow_meshlet"
+				},
+				{
+					"stage" : "task",
+					"buffer" : "pointshadow_meshlet"
+				}
+			]
+		}
+	]
+}

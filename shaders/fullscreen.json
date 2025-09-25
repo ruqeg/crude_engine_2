@@ -1,0 +1,34 @@
+{
+	"name" : "fullscreen",
+	"buffers": [
+		{
+			"name": "fullscreen",
+			"filename": "fullscreen.glsl"	,
+			"includes" : [	
+				"crude/platform.glsli",
+				"crude/debug.glsli",
+				"crude/scene.glsli",
+				"crude/light.glsli"
+			]
+		}
+	],
+	"pipelines" : [
+		{
+			"name" : "light",
+			"render_pass_output":
+			{
+				"reference": "light_pass" 
+			},
+			"shaders" : [
+				{
+					"stage" : "vertex",
+					"buffer" : "fullscreen"
+				},
+				{
+					"stage" : "fragment",
+					"buffer" : "fullscreen"
+				}
+			]
+		}
+	]
+}

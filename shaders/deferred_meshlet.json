@@ -1,5 +1,5 @@
 {
-	"name" : "meshlet",
+	"name" : "deferred_meshlet",
 	"buffers": [
 		{
 			"name": "deferred_meshlet",
@@ -7,24 +7,22 @@
 			"includes" : [	
 				"crude/platform.glsli",
 				"crude/debug.glsli",
-				"crude/culling.glsli",
-				"crude/mesh.glsli",
-				"crude/meshlet.glsli",
-				"crude/scene.glsli"
+				"crude/scene.glsli",
+				"crude/culling.glsli"
 			]
 		}
 	],
 	"pipelines" : [
 		{
-		"name" : "deferred_meshlet",
-		"render_pass_output":
-		{
-			"reference": "gbuffer_early_pass" 
-		},
-		"depth" : {
-			"write" : 1,
-			"test" : "less_or_equal"
-		},
+			"name" : "deferred_meshlet",
+			"render_pass_output":
+			{
+				"reference": "gbuffer_early_pass" 
+			},
+			"depth" : {
+				"write" : 1,
+				"test" : "less_or_equal"
+			},
 			"cull" : "back",
 			"shaders" : [
 				{

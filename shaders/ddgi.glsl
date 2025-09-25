@@ -3,6 +3,10 @@
 #extension GL_GOOGLE_include_directive : enable
 #define PROBE_RAYTRACER
 #define CRUDE_RAYGEN
+
+#include "crude/platform.glsli"
+#include "crude/scene.glsli"
+#include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #define CRUDE_PROBE_STATUS_OFF 0
@@ -10,13 +14,6 @@
 #define CRUDE_PROBE_STATUS_ACTIVE 4
 #define CRUDE_PROBE_STATUS_UNINITIALIZED 6
 #define EPSILON 0.0001f
-
-#ifdef CRUDE_VALIDATOR_LINTING
-#include "crude/platform.glsli"
-#include "crude/scene.glsli"
-#include "crude/mesh.glsli"
-#include "crude/light.glsli"
-#endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( PROBE_RAYTRACER )
 #extension GL_EXT_ray_tracing : enable
@@ -27,6 +24,16 @@ struct crude_ray_payload
   float                                                    distance;
 };
 #endif /* PROBE_RAYTRACER */
+
+layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer CrudeMeshDraws
+{
+  crude_mesh_draw                                          mesh_draws[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=2, row_major, std430) readonly buffer CrudeMeshInstancesDraws
+{
+  crude_mesh_instance_draw                                 mesh_instance_draws[];
+};
 
 layout(set=CRUDE_MATERIAL_SET, binding=40, std140) readonly buffer DDGIConstants
 {

@@ -1,0 +1,35 @@
+{
+	"name": "culling",
+	"buffers": [
+		{
+			"name": "culling",
+			"filename": "culling.glsl"	,
+			"includes" : [
+				"crude/platform.glsli",
+				"crude/scene.glsli",
+				"crude/debug.glsli",
+				"crude/culling.glsli"
+			]
+		}
+	],
+	"pipelines": [
+	  {
+		"name": "depth_pyramid",
+		"shaders": [
+		  {
+			"stage": "compute",
+			"buffer": "culling"
+		  }
+		]
+	  },
+	  {
+		"name": "culling",
+		"shaders": [
+		  {
+			"stage": "compute",
+			"buffer": "culling"
+		  }
+		]
+	  }
+	]
+}
