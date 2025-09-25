@@ -14,10 +14,27 @@
 	],
 	"pipelines" : [
 		{
-			"name" : "light",
+			"name" : "light_pbr",
 			"render_pass_output":
 			{
 				"reference": "light_pass" 
+			},
+			"shaders" : [
+				{
+					"stage" : "vertex",
+					"buffer" : "fullscreen"
+				},
+				{
+					"stage" : "fragment",
+					"buffer" : "fullscreen"
+				}
+			]
+		},
+		{
+			"name" : "postprocessing",
+			"render_pass_output":
+			{
+				"reference": "postprocessing_pass" 
 			},
 			"shaders" : [
 				{

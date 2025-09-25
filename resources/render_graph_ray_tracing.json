@@ -297,22 +297,8 @@
       ]
     },
     {
-      "name": "indirect_light_pass",
-      "type": "ray_tracing",
-      "outputs": [
-        {
-          "type": "marker",
-          "name": "BBBB"
-        }
-      ]
-    },
-    {
       "name": "imgui_pass",
       "inputs": [
-        {
-          "type": "reference",
-          "name": "BBBB"
-        },
         {
           "type": "reference",
           "name": "ray_tracing_solid"

@@ -143,7 +143,7 @@ crude_gfx_postprocessing_pass_pre_render
   
   crude_gfx_cmd_push_marker( primary_cmd, "luminance_histogram_generation_pass" );
   {
-    luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
+    luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "luminance_histogram_generation" )->pipeline;
   
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
     crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_histogram_generation_ds[ gpu->current_frame ] );
@@ -160,7 +160,7 @@ crude_gfx_postprocessing_pass_pre_render
   
   crude_gfx_cmd_push_marker( primary_cmd, "luminance_average_calculation_pass" );
   {
-    luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_average_calculation" )->pipeline;
+    luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "luminance_average_calculation" )->pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_average_calculation_pipeline );
     crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->luminance_average_calculation_ds[ gpu->current_frame ] );
  
@@ -194,7 +194,7 @@ crude_gfx_postprocessing_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->renderer->gpu;
   
-  postprocessing_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "postprocessing" )->pipeline;
+  postprocessing_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "fullscreen", "postprocessing" )->pipeline;
   
   crude_gfx_cmd_push_marker( primary_cmd, "postprocessing_main_pass" );
 
@@ -255,7 +255,7 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
     }
   }
 
-  luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_histogram_generation" )->pipeline;
+  luminance_histogram_generation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "luminance_histogram_generation" )->pipeline;
   luminance_histogram_generation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_histogram_generation_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -271,7 +271,7 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
     pass->luminance_histogram_generation_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
 
-  luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "postprocessing", "luminance_average_calculation" )->pipeline;
+  luminance_average_calculation_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "luminance_average_calculation" )->pipeline;
   luminance_average_calculation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_average_calculation_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )

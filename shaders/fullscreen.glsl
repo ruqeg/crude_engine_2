@@ -2,7 +2,7 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define CRUDE_STAGE_FRAGMENT
-#define LIGHT_PBR
+#define POSTPROCESSING
 
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -10,6 +10,8 @@
 #include "crude/light.glsli"
 #include "crude/culling.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
+
+#define CRUDE_RAYTRACED_SHADOWS
 
 #if defined( CRUDE_STAGE_VERTEX )
 layout(location=0) out vec2 out_texcoord;
@@ -54,32 +56,32 @@ CRUDE_UNIFORM( SceneConstant, 0 )
   crude_scene                                              scene;
 };
 
-CRUDE_RBUFFER( ZBins, 2 ) 
+CRUDE_RBUFFER( ZBins, 1 ) 
 {
   uint                                                     bins[];
 };
 
-CRUDE_RBUFFER( Lights, 3 ) 
+CRUDE_RBUFFER( Lights, 2 ) 
 {
   crude_light                                              lights[];
 };
 
-CRUDE_RBUFFER( Tiles, 4 ) 
+CRUDE_RBUFFER( Tiles, 3 ) 
 {
   uint                                                     lights_tiles[];
 };
 
-CRUDE_RBUFFER( LightIndices, 5 ) 
+CRUDE_RBUFFER( LightIndices, 4 ) 
 {
   uint                                                     lights_indices[];
 };
 
-CRUDE_RBUFFER( ShadowViews, 6 )
+CRUDE_RBUFFER( ShadowViews, 5 )
 {
   mat4                                                      pointlight_world_to_clip[];
 };
 
-CRUDE_PUSH_CONSTANT( LightingConstants )
+CRUDE_UNIFORM( LightingConstants, 6 )
 {
   uvec4                                                    textures;
 };
@@ -257,4 +259,28 @@ void main()
   out_color = radiance;
 }
 
-#endif /* LIGHT_PBR && CRUDE_STAGE_FRAGMENT */ 
+#endif /* LIGHT_PBR && CRUDE_STAGE_FRAGMENT */
+
+#if defined( POSTPROCESSING ) && defined( CRUDE_STAGE_FRAGMENT ) 
+
+layout(location = 0) out vec4 out_color;
+layout(location=0) in vec2 in_texcoord;
+
+layout( push_constant ) uniform Constants
+{
+  uint                                                     luminance_average_texture_index;
+  uint                                                     pbr_texture_index;
+};
+
+void main()
+{ 
+  vec4 color = texelFetch( global_textures[ nonuniformEXT( pbr_texture_index )], ivec2( gl_FragCoord.xy ), 0 );
+  float luminance_average = texelFetch( global_textures[ nonuniformEXT( luminance_average_texture_index )], ivec2( 0, 0 ), 0 ).r;
+  
+  float luminance = crude_rgb_to_luminance( color.xyz );
+  color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );
+  color.xyz = crude_aces_fitted( color.xyz );
+  color.xyz = pow( color.xyz, vec3( 1 / 2.2 ) );
+  out_color = color;
+}
+#endif /* POSTPROCESSING && CRUDE_STAGE_FRAGMENT */

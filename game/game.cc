@@ -205,12 +205,11 @@ game_graphics_initialize_
   /* Create Render Tecnhique & Renderer Passes*/
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\culling.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\postprocessing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_technique.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
 
 
   /* Create Scene Renderer */

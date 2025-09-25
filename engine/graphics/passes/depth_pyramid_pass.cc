@@ -87,7 +87,7 @@ crude_gfx_depth_pyramid_pass_render
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
 
-  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "depth_pyramid" )->pipeline;
+  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "depth_pyramid" )->pipeline;
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, depth_pyramid_pipeline );
   
@@ -209,7 +209,7 @@ crude_gfx_depth_pyramid_pass_on_techniques_reloaded
   depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
   depth_texture_handle = depth_resource->resource_info.texture.handle;
 
-  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "culling", "depth_pyramid" )->pipeline;
+  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "depth_pyramid" )->pipeline;
   depth_pyramid_dsl = crude_gfx_get_descriptor_set_layout( gpu, depth_pyramid_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS; ++i )

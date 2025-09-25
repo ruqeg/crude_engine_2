@@ -1,0 +1,53 @@
+{
+	"name": "compute",
+	"buffers": [
+		{
+			"name": "compute",
+			"filename": "compute.glsl"	,
+			"includes" : [
+				"crude/platform.glsli",
+				"crude/scene.glsli",
+				"crude/debug.glsli",
+				"crude/culling.glsli"
+			]
+		}
+	],
+	"pipelines": [
+	  	{
+			"name": "depth_pyramid",
+			"shaders": [
+		  		{
+				"stage": "compute",
+				"buffer": "compute"
+		  		}
+			]
+	  	},
+	  	{
+			"name": "culling",
+			"shaders": [
+				{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+	  	},
+	  	{
+			"name": "luminance_histogram_generation",
+			"shaders": [
+				{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+		},
+	  	{
+			"name": "luminance_average_calculation",
+			"shaders": [
+		  		{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+		}
+	]
+}

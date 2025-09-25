@@ -178,38 +178,6 @@ crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_add_meshlet_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-);
-
-CRUDE_API void
 crude_gfx_mesh_cpu_to_mesh_draw_gpu
 (
   _In_ crude_gfx_device                                   *gpu,

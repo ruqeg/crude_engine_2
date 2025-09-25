@@ -1,7 +1,7 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define CULLING
+#define LUMINANCE_HISTOGRAM_GENERATION
 
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -32,7 +32,7 @@ CRUDE_RBUFFER( MeshBounds, 3 )
   vec4                                                     mesh_bounds[];
 };
 
-CRUDE_RWBUFFER( MeshDrawCommandsEarly, 4 )
+CRUDE_RWBUFFER( MeshDrawCommands, 4 )
 {
   crude_mesh_draw_command                                  mesh_draw_commands[];
 };
@@ -60,7 +60,7 @@ CRUDE_RWBUFFER( MeshDrawCountsEarly, 6 )
   uint                                                     early_meshlet_instances_count;
 };
 
-CRUDE_RWBUFFER( MeshDrawCountsLate, 7 )
+CRUDE_RWBUFFER( MeshDrawCounts, 7 )
 {
   uint                                                     opaque_mesh_visible_count;
   uint                                                     opaque_mesh_culled_count;
@@ -164,3 +164,111 @@ void main()
   barrier();
 }
 #endif /* DEPTH_PYRAMID */
+
+#if defined( LUMINANCE_AVERAGE_CALCULATION )
+layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
+
+CRUDE_PUSH_CONSTANT( Constants )
+{
+	float                                                    log_lum_range;
+	float                                                    min_log_lum;
+  float                                                    time_coeff;
+  uint                                                     num_pixels;
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=0, r32f) uniform image2D luminance_avarage_texture;
+
+CRUDE_RWBUFFER( Histogram, 1 )
+{
+  uint                                                    histogram[];
+};
+
+shared uint histogram_shared[ 256 ];
+
+void main()
+{
+  uint local_index = gl_LocalInvocationIndex;
+
+  uint count_for_this_bin = histogram[ local_index ];
+  histogram_shared[ local_index ] = count_for_this_bin * local_index;
+
+  barrier( );
+
+  histogram[ local_index ] = 0;
+
+  /* Add all histogram_shared values to histogram_shared[0] in O(log(n)) instead of O(n) */ 
+  [[unroll]]
+  for ( uint cutoff = ( 256 >> 1 ); cutoff > 0; cutoff >>= 1 )
+  {
+    if ( uint( local_index ) < cutoff )
+    {
+      histogram_shared[ local_index ] += histogram_shared[ local_index + cutoff ];
+    }
+
+    barrier( );
+  }
+
+  if ( local_index == 0 )
+  {
+    float weighted_log_average = ( histogram_shared[ 0 ] / max( num_pixels - float( count_for_this_bin ), 1.0 ) ) - 1.0;
+
+    float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
+    float lum_last_frame = imageLoad( luminance_avarage_texture, ivec2( 0, 0 ) ).x;
+    float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
+    imageStore( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
+  }
+}
+#endif /* LUMINANCE_AVERAGE_CALCULATION */
+
+#if defined( LUMINANCE_HISTOGRAM_GENERATION )
+
+/* Thanks to https://www.alextardif.com/HistogramLuminance.html */
+layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
+
+CRUDE_RWBUFFER( Histogram, 0 ) 
+{
+  uint                                                    histogram[];
+};
+
+CRUDE_PUSH_CONSTANT( Constants )
+{
+	float                                                    inverse_log_lum_range;
+	float                                                    min_log_lum;
+  uint                                                     hdr_color_texture_index;
+};
+
+shared uint histogram_shared[ 256 ];
+
+uint hdr_color_to_bin( vec3 color )
+{
+  float lum = crude_rgb_to_luminance( color );
+
+  if ( lum < 0.005f )
+  {
+    return 0;
+  }
+
+  float log_lum = clamp( ( log2( lum ) - min_log_lum ) * inverse_log_lum_range, 0.0, 1.0 );
+  return uint( log_lum * 254.0 + 1.0 );
+}
+
+void main()
+{
+  histogram_shared[ gl_LocalInvocationIndex ] = 0;
+
+  barrier( );
+  
+  uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
+  if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
+  {
+    vec3 hdr_color = texelFetch( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], ivec2( gl_GlobalInvocationID.xy ), 0 ).xyz;
+    uint bin_index = hdr_color_to_bin( hdr_color );
+    atomicAdd( histogram_shared[ bin_index ], 1 );
+  }
+
+  barrier( );
+  
+  atomicAdd( histogram[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
+}
+
+#endif /* LUMINANCE_HISTOGRAM_GENERATION */

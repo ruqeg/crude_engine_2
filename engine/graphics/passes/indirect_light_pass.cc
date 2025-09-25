@@ -65,9 +65,9 @@ crude_gfx_indirect_light_pass_initialize
     ds_creation.layout = probe_raytracer_technique_dsl;
     ds_creation.name = "probe_raytracer_technique_dsl";
     
-    crude_gfx_scene_renderer_add_scene_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
+    //crude_gfx_scene_renderer_add_mesh_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    //crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ddgi_sb, 40u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->probe_status_sb, 41u );
     
