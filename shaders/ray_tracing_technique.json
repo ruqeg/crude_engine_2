@@ -1,5 +1,12 @@
 {
 	"name" : "ray_tracing",
+	"buffers": [
+		{
+			"name": "ddgi",
+			"filename": "ddgi.glsl"	,
+			"includes" : [ "crude/platform.glsli", "crude/scene.glsli" ]
+		}
+	],
 	"pipelines" : [
 		{
 			"name" : "ray_tracing_solid",
@@ -7,17 +14,17 @@
 			"shaders" : [
 				{
 					"stage" : "raygen",
-					"shader" : "ray_tracing.rgen",
+					"shader" : "ray_tracing_solid.rgen",
 					"includes" : ["crude/platform.glsli", "crude/scene.glsli"]
 				},
 				{
 					"stage" : "closest_hit",
-					"shader" : "ray_tracing.rchit",
+					"shader" : "ray_tracing_solid.rchit",
 					"includes" : ["crude/platform.glsli"]
 				},
 				{
 					"stage" : "miss",
-					"shader" : "ray_tracing.rmiss",
+					"shader" : "ray_tracing_solid.rmiss",
 					"includes" : ["crude/platform.glsli"]
 				}
 			]

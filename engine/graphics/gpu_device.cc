@@ -29,6 +29,7 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
+  VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME,
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -1016,15 +1017,26 @@ crude_gfx_compile_shader
   char const                                              *temp_filename;
   char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
   uint8                                                   *spirv_code;
+  char                                                     technique_name_upper[ 1024 ];
+  uint64                                                   temporary_allocator_marker;
   uint32                                                   spirv_codesize;
+  uint32                                                   i;
   
   spirv_code = NULL;
   spirv_codesize = 0u;
 
-  temp_filename = "temp.shader";
-  crude_write_file( temp_filename, code, code_size );
-  
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+
+  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_defines( stage ) );
+  crude_write_file( temp_filename, code, code_size );
+
+  technique_name_upper[ 0 ] = 0;
+  for ( i = 0; name && name[ i ] != '\0'; i++ )
+  {
+    technique_name_upper[ i ] = toupper( name[ i ] );
+  }
+  technique_name_upper[ i ] = 0;
+
   {
     char vulkan_env[ 512 ];
     crude_process_expand_environment_strings( "%VULKAN_SDK%", vulkan_env, 512 );
@@ -1034,7 +1046,7 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s -gVS --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ) );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s -gVS --D %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
   
@@ -3298,6 +3310,7 @@ vk_create_device_
   VkPhysicalDeviceBufferDeviceAddressFeaturesKHR           physical_device_buffer_defice_address_features;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   VkPhysicalDeviceShaderAtomicInt64Features                shader_atomic_int64_features;
+  VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shader_relaxed_extended_instruction_features;
   VkPhysicalDevice16BitStorageFeatures                     bit16_storage_features;
   VkPhysicalDevice8BitStorageFeatures                      bit_storage_features;
   VkPhysicalDeviceSynchronization2Features                 synchronization_features;
@@ -3404,10 +3417,15 @@ vk_create_device_
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
+  
+  shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
+  shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+  shader_relaxed_extended_instruction_features.pNext = &bit16_storage_features;
+  shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
 
   bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );
   bit_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
-  bit_storage_features.pNext = &bit16_storage_features;
+  bit_storage_features.pNext = &shader_relaxed_extended_instruction_features;
   bit_storage_features.storageBuffer8BitAccess = VK_TRUE;
 
   synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );

@@ -244,7 +244,7 @@ crude_calculate_point_light_contribution
 
   f = crude_schlick_fresnel( f0, hdotl );
   spec = f * crude_trowbridge_reitz_distribution( ndoth, roughness * roughness ) * crude_hammon_smith_g_approximation( abs( ndotl ), abs( ndotv ), roughness ); /* in case i will be confused in the future, crude_hammon_smith_g_approximation already contains /4ndotlndotv (real time rendering p342) */
-  diff = ( 1.f - f ) /* ( 1.f - metalness ) */ * albedo / PI;
+  diff = ( 1.f - f ) * albedo / PI;
   return radiance * max( ndotl, 0.f ) * ( diff + spec );
 }
 

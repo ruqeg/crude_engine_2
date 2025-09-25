@@ -624,7 +624,6 @@ crude_devgui_gpu_visual_profiler_update
   
     hashed_name = crude_hash_string( timestamp->name, 0u );
     hash_color_index = CRUDE_HASHMAP_GET_INDEX( dev_gpu_profiler->name_hashed_to_color_index, hashed_name );
-    color_index;
 
     if ( hash_color_index == -1 )
     {

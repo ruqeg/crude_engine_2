@@ -348,7 +348,7 @@ crude_gfx_scene_renderer_initialize
 
       for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes ); ++i )
       {
-        crude_gfx_mesh_cpu_to_mesh_draw_gpu( &scene_renderer->meshes[ i ], &meshes_draws[ i ] );
+        crude_gfx_mesh_cpu_to_mesh_draw_gpu( scene_renderer->renderer->gpu, &scene_renderer->meshes[ i ], &meshes_draws[ i ] );
         meshes_bounds[ i ] = scene_renderer->meshes[ i ].bounding_sphere;
       }
 
@@ -502,6 +502,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
+  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
@@ -523,6 +524,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
+  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes_instances );
@@ -624,6 +626,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
@@ -811,6 +814,7 @@ update_dynamic_buffers_
           model_to_world = crude_transform_node_to_world( scene_renderer->meshes_instances[ i ].node, transform );
 
           XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].model_to_world, model_to_world );
+          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].world_to_model, XMMatrixInverse( NULL, model_to_world ) );
           meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_draw_index = scene_renderer->meshes_instances[ i ].mesh->gpu_mesh_index;
 
           ++scene_renderer->total_meshes_instances_count;
@@ -2404,4 +2408,27 @@ sorting_light_
     return 1;
   }
   return 0;
+}
+
+void
+crude_gfx_mesh_cpu_to_mesh_draw_gpu
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_mesh_cpu const                           *mesh,
+  _Out_ crude_gfx_mesh_draw_gpu                           *mesh_draw_gpu
+)
+{
+  mesh_draw_gpu->textures.x = mesh->albedo_texture_handle.index; /* in case i will be confused in the future, bindless textures bineded by their handles, look at gpu_present... at least at the moment I write this comment */
+  mesh_draw_gpu->textures.y = mesh->metallic_roughness_texture_handle.index;
+  mesh_draw_gpu->textures.z = mesh->normal_texture_handle.index;
+  mesh_draw_gpu->textures.w = mesh->occlusion_texture_handle.index;
+  mesh_draw_gpu->albedo_color_factor = mesh->albedo_color_factor;
+  mesh_draw_gpu->flags = mesh->flags;
+  mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
+  mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
+  mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
+  mesh_draw_gpu->position_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->position_buffer );
+  mesh_draw_gpu->texcoord_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->texcoord_buffer );
+  mesh_draw_gpu->index_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->index_buffer );
+  mesh_draw_gpu->normal_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->normal_buffer );
 }

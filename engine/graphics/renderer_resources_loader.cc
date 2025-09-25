@@ -2,6 +2,7 @@
 
 #include <core/file.h>
 #include <core/string.h>
+#include <core/hash_map.h>
 
 #include <graphics/renderer_resources_loader.h>
 
@@ -10,6 +11,19 @@
  * Local Renderer Resources Loader Functions Declaration.
  * 
  ***********************************************/
+
+typedef struct shader_buffer_data
+{
+  char                                                    *buffer;
+  uint64                                                   size;
+} shader_buffer_data;
+
+typedef struct shader_buffer_data_hashmap
+{
+  uint64                                                   key;
+  shader_buffer_data                                       value;
+} shader_buffer_data_hashmap;
+
 static void
 load_shader_to_string_buffer_
 (
@@ -26,9 +40,9 @@ parse_gpu_pipeline_
 (
   _In_ cJSON const                                        *pipeline_json,
   _Out_ crude_gfx_pipeline_creation                       *pipeline_creation,
+  _In_ char const                                         *working_directory,
+  _In_ shader_buffer_data_hashmap                         *name_hashed_to_buffer,
   _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_string_buffer                                *path_buffer,
-  _In_ crude_string_buffer                                *shader_code_buffer,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
@@ -62,6 +76,7 @@ crude_gfx_renderer_technique_load_from_file
   char                                                     working_directory[ 512 ];
   char const                                              *json_path;
   crude_gfx_renderer_technique_creation                    technique_creation;
+  shader_buffer_data_hashmap                              *name_hashed_to_buffer;
   cJSON                                                   *technique_json;
   cJSON const                                             *passes;
   uint8                                                   *technique_json_buffer;
@@ -72,7 +87,9 @@ crude_gfx_renderer_technique_load_from_file
 
   allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
-  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 128 ), crude_stack_allocator_pack( temporary_allocator ) );
+  CRUDE_HASHMAP_INITIALIZE( name_hashed_to_buffer, crude_stack_allocator_pack( temporary_allocator ) );
+
+  crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RKILO( 64 ), crude_stack_allocator_pack( temporary_allocator ) );
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
@@ -103,7 +120,57 @@ crude_gfx_renderer_technique_load_from_file
     technique_name = cJSON_GetStringValue( technique_name_json );
     technique_creation.name = crude_string_buffer_append_use_f( &renderer->gpu->objects_names_string_buffer, "%s", technique_name );
   }
+
   {
+    cJSON const                                           *buffers_json;
+
+    buffers_json = cJSON_GetObjectItemCaseSensitive( technique_json, "buffers" );
+    for ( uint32 i = 0; i < cJSON_GetArraySize( buffers_json ); ++i )
+    {
+      cJSON const                                       *buffer_json;
+      cJSON const                                       *includes_json;
+      char const                                        *filename;
+
+      buffer_json = cJSON_GetArrayItem( buffers_json, i );
+
+      
+      char const                                          *stage;
+      char                                                *total_code;
+      char const                                          *buffer_name;
+      char const                                          *shader_path;
+      shader_buffer_data                                   shader_buffer;
+      uint64                                               key;
+      uint32                                               total_code_size;
+      
+      crude_string_buffer_clear( &path_buffer );
+
+      total_code = crude_string_buffer_current( &shader_code_buffer );
+      total_code_size = 0u;
+
+      includes_json = cJSON_GetObjectItemCaseSensitive( buffer_json, "includes" );
+      if ( cJSON_IsArray( includes_json ) )
+      {
+        for ( size_t include_index = 0; include_index < cJSON_GetArraySize( includes_json ); ++include_index )
+        {
+          filename = cJSON_GetStringValue( cJSON_GetArrayItem( includes_json, include_index ) );
+          load_shader_to_string_buffer_( filename, working_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
+        }
+      }
+      
+      filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( buffer_json, "filename" ) );
+      load_shader_to_string_buffer_( filename, working_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
+      
+      buffer_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( buffer_json, "name" ) );
+
+      shader_buffer.buffer = total_code;
+      shader_buffer.size = total_code_size;
+      key = crude_hash_string( buffer_name, 0 );
+      CRUDE_HASHMAP_SET( name_hashed_to_buffer, key, shader_buffer );
+    }
+  }
+
+  {
+  
     cJSON const                                           *pipelines_json;
 
     pipelines_json = cJSON_GetObjectItemCaseSensitive( technique_json, "pipelines" );
@@ -114,10 +181,8 @@ crude_gfx_renderer_technique_load_from_file
 
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline_( pipeline, &pipeline_creation, renderer->gpu, &path_buffer, &shader_code_buffer, render_graph, temporary_allocator );
+      parse_gpu_pipeline_( pipeline, &pipeline_creation, working_directory, name_hashed_to_buffer, renderer->gpu, render_graph, temporary_allocator );
       crude_gfx_renderer_technique_creation_add_pass( &technique_creation, crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation ) );
-      crude_string_buffer_clear( &shader_code_buffer );
-      crude_string_buffer_clear( &path_buffer );
     }
   }
 
@@ -139,82 +204,74 @@ parse_gpu_pipeline_
 (
   _In_ cJSON const                                        *pipeline_json,
   _Out_ crude_gfx_pipeline_creation                       *pipeline_creation,
+  _In_ char const                                         *working_directory,
+  _In_ shader_buffer_data_hashmap                         *name_hashed_to_buffer,
   _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_string_buffer                                *path_buffer,
-  _In_ crude_string_buffer                                *shader_code_buffer,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  char                                                     working_directory[ 512 ];
-
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-
+  cJSON const *name_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "name" );
+  if ( name_json != NULL )
+  {
+    pipeline_creation->name = cJSON_GetStringValue( name_json );
+  }
+  
   cJSON const *shaders_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "shaders" );
   if ( shaders_json != NULL )
   {
     for ( size_t shader_index = 0; shader_index < cJSON_GetArraySize( shaders_json ); ++shader_index )
     {
       cJSON const                                         *shader_stage_json;
-      cJSON const                                         *includes;
       char const                                          *stage;
-      char                                                *total_code;
-      char const                                          *shader_filename;
-      char const                                          *shader_path;
-      uint32                                               total_code_size;
+      char const                                          *buffer_name;
+      uint64                                               buffer_hashed_name;
+      shader_buffer_data                                  *shader_buffer;
+      int64                                                shader_buffer_index;
+
+      pipeline_creation->shaders.name = pipeline_creation->name;
       
-      crude_string_buffer_clear( path_buffer );
-
-      total_code = crude_string_buffer_current( shader_code_buffer );
-      total_code_size = 0u;
-
       shader_stage_json = cJSON_GetArrayItem( shaders_json, shader_index );
-      includes = cJSON_GetObjectItemCaseSensitive( shader_stage_json, "includes" );
-
-      if ( cJSON_IsArray( includes ) )
-      {
-        for ( size_t include_index = 0; include_index < cJSON_GetArraySize( includes ); ++include_index )
-        {
-          shader_filename = cJSON_GetStringValue( cJSON_GetArrayItem( includes, include_index ) );
-          load_shader_to_string_buffer_( shader_filename, working_directory, &total_code_size, shader_code_buffer, path_buffer, temporary_allocator );
-        }
-      }
       
-      shader_filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "shader" ) );
-      load_shader_to_string_buffer_( shader_filename, working_directory, &total_code_size, shader_code_buffer, path_buffer, temporary_allocator );
+      buffer_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "buffer" ) );
+      buffer_hashed_name = crude_hash_string( buffer_name, 0 );
+      
+      shader_buffer_index = CRUDE_HASHMAP_GET_INDEX( name_hashed_to_buffer, buffer_hashed_name );
+      CRUDE_ASSERT( shader_buffer_index >= 0 );
+      shader_buffer = &name_hashed_to_buffer[ shader_buffer_index ].value;
 
       stage = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
       if ( strcmp( stage, "vertex" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_VERTEX_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_VERTEX_BIT );
       }
       else if ( strcmp( stage, "fragment" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_FRAGMENT_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_FRAGMENT_BIT );
       }
       else if ( strcmp( stage, "compute" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_COMPUTE_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_COMPUTE_BIT );
       }
       else if ( strcmp( stage, "mesh" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_MESH_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_MESH_BIT_EXT );
       }
       else if ( strcmp( stage, "task" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_TASK_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_TASK_BIT_EXT );
       }
       else if ( strcmp( stage, "raygen" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_RAYGEN_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_RAYGEN_BIT_KHR );
       }
       else if ( strcmp( stage, "closest_hit" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR );
       }
       else if ( strcmp( stage, "miss" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, total_code, total_code_size, VK_SHADER_STAGE_MISS_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_MISS_BIT_KHR );
       }
     }
   }
@@ -379,12 +436,6 @@ parse_gpu_pipeline_
       char const *input_rate = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( vertex_stream_json, "input_rate" ) );
       crude_gfx_pipeline_creation_add_vertex_stream( pipeline_creation, binding, stride, crude_string_cmp( input_rate, "instance" ) ?  CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX : CRUDE_GFX_VERTEX_INPUT_RATE_PER_INSTANCE );
     }
-  }
-  
-  cJSON const *name_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "name" );
-  if ( name_json != NULL )
-  {
-    pipeline_creation->name = cJSON_GetStringValue( name_json );
   }
 }
 

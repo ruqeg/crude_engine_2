@@ -2,6 +2,11 @@
 #ifndef CRUDE_MESH_GLSLI
 #define CRUDE_MESH_GLSLI
 
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
 struct crude_mesh_draw_command
 {
   uint                                                     draw_id;
@@ -26,13 +31,34 @@ struct crude_mesh_draw
   uint                                                     meshletes_count;
   uint                                                     meshletes_index_count;
   uint                                                     padding1;
+
+  uint64_t                                                 position_buffer;
+  uint64_t                                                 texcoord_buffer;
+  uint64_t                                                 index_buffer;
+  uint64_t                                                 normal_buffer;
 };
 
 struct crude_mesh_instance_draw
 {
   mat4                                                     model_to_world;
+  mat4                                                     world_to_model;
   uint                                                     mesh_draw_index;
   vec3                                                     padding1;
+};
+
+layout(buffer_reference, buffer_reference_align=4, std430) buffer vec2_array_type
+{
+  vec2                                                     v;
+};
+
+layout(buffer_reference, buffer_reference_align=2, std430) buffer int_array_type
+{
+  uint16_t                                                 v;
+};
+
+layout(buffer_reference, buffer_reference_align=4, std430) buffer float_array_type
+{
+  float                                                    v;
 };
 
 layout(set=CRUDE_MATERIAL_SET, binding=1, row_major, std430) readonly buffer CrudeMeshDraws

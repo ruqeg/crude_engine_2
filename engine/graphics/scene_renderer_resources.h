@@ -113,11 +113,17 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_gpu
   uint32                                                   meshletes_count;
   uint32                                                   meshletes_index_count;
   uint32                                                   padding1;
+
+  uint64                                                   position_buffer;
+  uint64                                                   texcoord_buffer;
+  uint64                                                   index_buffer;
+  uint64                                                   normal_buffer;
 } crude_gfx_mesh_draw_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
 {
   XMFLOAT4X4                                               model_to_world;
+  XMFLOAT4X4                                               world_to_model;
   uint32                                                   mesh_draw_index;
   XMFLOAT3A                                                padding;
 } crude_gfx_mesh_darw_gpu;
@@ -197,11 +203,4 @@ crude_gfx_camera_to_camera_gpu
 (
   _In_ crude_entity                                        camera_node,
   _Out_ crude_gfx_camera_gpu                              *camera_gpu
-);
-
-CRUDE_API void
-crude_gfx_mesh_cpu_to_mesh_draw_gpu
-(
-  _In_ crude_gfx_mesh_cpu const                           *mesh,
-  _Out_ crude_gfx_mesh_draw_gpu                           *mesh_draw_gpu
 );

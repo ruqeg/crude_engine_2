@@ -13,6 +13,7 @@
 #include <graphics/passes/pointlight_shadow_pass.h>
 #include <graphics/passes/postprocessing_pass.h>
 #include <graphics/passes/ray_tracing_solid_pass.h>
+#include <graphics/passes/indirect_light_pass.h>
 
 typedef struct crude_scene crude_scene;
 
@@ -120,6 +121,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_postprocessing_pass                            postprocessing_pass;
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
+  crude_gfx_indirect_light_pass                            indirect_light_pass;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_scene_renderer;
 
@@ -205,4 +207,12 @@ crude_gfx_scene_renderer_add_light_resources_to_descriptor_set_creation
   _In_ crude_gfx_descriptor_set_creation                  *creation,
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ uint32                                              frame
+);
+
+CRUDE_API void
+crude_gfx_mesh_cpu_to_mesh_draw_gpu
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_mesh_cpu const                           *mesh,
+  _Out_ crude_gfx_mesh_draw_gpu                           *mesh_draw_gpu
 );
