@@ -502,7 +502,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
-  //crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
+  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
@@ -524,7 +524,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
-  //crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
+  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshes_instances );
@@ -626,7 +626,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
-  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
@@ -742,6 +742,7 @@ update_dynamic_buffers_
       scene_constant->mesh_instances_count = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
+      scene_constant->depth_texture_index = TODO;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
       scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );

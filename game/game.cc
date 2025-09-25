@@ -211,7 +211,6 @@ game_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
 
-
   /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );

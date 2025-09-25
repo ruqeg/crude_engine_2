@@ -5,6 +5,11 @@
 			"name": "ray_tracing_solid",
 			"filename": "ray_tracing_solid.glsl",
 			"includes" : [ "crude/platform.glsli", "crude/scene.glsli" ]
+		},
+		{
+			"name": "ddgi",
+			"filename": "ddgi.glsl"	,
+			"includes" : ["crude/platform.glsli", "crude/debug.glsli", "crude/scene.glsli", "crude/light.glsli"]
 		}
 	],
 	"pipelines" : [
@@ -23,6 +28,54 @@
 				{
 					"stage" : "miss",
 					"buffer" : "ray_tracing_solid"
+				}
+			]
+		},
+		{
+			"name" : "probe_raytracer",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "raygen",
+					"buffer" : "ddgi"
+				},
+				{
+					"stage" : "closest_hit",
+					"buffer" : "ddgi"
+				},
+				{
+					"stage" : "miss",
+					"buffer" : "ddgi"
+				}
+			]
+		},
+		{
+			"name" : "probe_update_visibility",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "compute",
+					"buffer" : "ddgi"
+				}
+			]
+		},
+		{
+			"name" : "probe_update_irradiance",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "compute",
+					"buffer" : "ddgi"
+				}
+			]
+		},
+		{
+			"name" : "calculate_probe_status",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "compute",
+					"buffer" : "ddgi"
 				}
 			]
 		}
