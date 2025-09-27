@@ -241,7 +241,7 @@ crude_calculate_lighting
 
 void main()
 { 
-  float depth = texelFetch( global_textures[ nonuniformEXT( textures.w )], ivec2( gl_FragCoord.xy ), 0 ).r;
+  float depth = CRUDE_TEXTURE_FETCH( textures.w, ivec2( gl_FragCoord.xy ), 0 ).r;
   vec4 albedo = texture( global_textures[ nonuniformEXT( textures.x ) ], in_texcoord.st ).rgba;
   vec2 packed_normal = texture( global_textures[ nonuniformEXT( textures.y ) ], in_texcoord.st ).xy;
   vec2 packed_roughness_metalness = texture( global_textures[ nonuniformEXT( textures.z ) ], in_texcoord.st ).xy;
@@ -274,8 +274,8 @@ layout( push_constant ) uniform Constants
 
 void main()
 { 
-  vec4 color = texelFetch( global_textures[ nonuniformEXT( pbr_texture_index )], ivec2( gl_FragCoord.xy ), 0 );
-  float luminance_average = texelFetch( global_textures[ nonuniformEXT( luminance_average_texture_index )], ivec2( 0, 0 ), 0 ).r;
+  vec4 color = CRUDE_TEXTURE_FETCH( pbr_texture_index, ivec2( gl_FragCoord.xy ), 0 );
+  float luminance_average = CRUDE_TEXTURE_FETCH( luminance_average_texture_index, ivec2( 0, 0 ), 0 ).r;
   
   float luminance = crude_rgb_to_luminance( color.xyz );
   color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );

@@ -36,7 +36,7 @@ hitAttributeEXT vec2 attribs;
 
 void main()
 {
-  payload = vec4( 1.0f - attribs.x, attribs.y, attribs.x, 1.0 );
+  payload = vec4( 1.0f - attribs.x - attribs.y, attribs.y, attribs.x, 1.0 );
 }
 #endif /* CRUDE_CLOSEST_HIT */
 

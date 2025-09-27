@@ -112,5 +112,4 @@ crude_get_tetrahedron_face_index
   return index;
 }
 
-
 #endif /* CRUDE_LIGHT_GLSLI */

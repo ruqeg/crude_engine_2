@@ -115,7 +115,6 @@ struct crude_scene
   uint                                                     mesh_instances_count;
   uint                                                     active_lights_count;
   uint                                                     tiled_shadowmap_texture_index;
-  uint                                                     depth_texture_index;
   vec2                                                     inv_shadow_map_size;
 };
 

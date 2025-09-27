@@ -302,7 +302,7 @@
       "outputs": [
         {
           "type": "marker",
-          "name": "BBBB"
+          "name": "BBBBBBBBBB"
         }
       ]
     },
@@ -311,7 +311,7 @@
       "inputs": [
         {
           "type": "reference",
-          "name": "BBBB"
+          "name": "BBBBBBBBBB"
         },
         {
           "type": "reference",

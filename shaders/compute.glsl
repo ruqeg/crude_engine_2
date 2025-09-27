@@ -261,7 +261,7 @@ void main()
   uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
   if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
   {
-    vec3 hdr_color = texelFetch( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], ivec2( gl_GlobalInvocationID.xy ), 0 ).xyz;
+    vec3 hdr_color = CRUDE_TEXTURE_FETCH( hdr_color_texture_index, ivec2( gl_GlobalInvocationID.xy ), 0 ).xyz;
     uint bin_index = hdr_color_to_bin( hdr_color );
     atomicAdd( histogram_shared[ bin_index ], 1 );
   }

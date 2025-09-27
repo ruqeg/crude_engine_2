@@ -1,0 +1,889 @@
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
+#define CALCULATE_PROBE_STATUSES
+//#define COMPUTE_SAMPLE_IRRADIANCE
+
+#include "crude/platform.glsli"
+#include "crude/scene.glsli"
+#include "crude/light.glsli"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+#define CRUDE_PROBE_STATUS_OFF 0
+#define CRUDE_PROBE_STATUS_SLEEP 1
+#define CRUDE_PROBE_STATUS_ACTIVE 4
+#define CRUDE_PROBE_STATUS_UNINITIALIZED 6
+#define EPSILON 0.0001f
+
+CRUDE_RBUFFER( DDGIConstants, 10 )
+{
+  ivec3                                                    probe_counts;
+  int                                                      probe_rays;
+  vec3                                                     probe_spacing;
+  int                                                      probe_update_offset;
+  vec3                                                     probe_grid_position;
+  float                                                    max_probe_offset;
+
+  uint                                                     radiance_output_index;
+  uint                                                     indirect_output_index;
+  uint                                                     normal_texture_index;
+  uint                                                     depth_fullscreen_texture_index;
+  uint                                                     grid_irradiance_output_index;
+  uint                                                     grid_visibility_texture_index;
+  uint                                                     probe_offset_texture_index;
+  
+  mat4                                                     random_rotation;
+
+  int                                                      irradiance_texture_width;
+  int                                                      irradiance_texture_height;
+  int                                                      irradiance_side_length;
+
+  int                                                      visibility_texture_width;
+  int                                                      visibility_texture_height;
+  int                                                      visibility_side_length;
+
+  float                                                    hysteresis;
+  float                                                    self_shadow_bias;
+  vec3                                                     reciprocal_probe_spacing;
+  float                                                    infinite_bounces_multiplier;
+};
+
+vec2 uv_nearest( ivec2 pixel, vec2 texture_size )
+{
+  vec2 uv = pixel + .5;
+  return uv / texture_size;
+}
+
+vec3 grid_indices_to_world_no_offsets( ivec3 grid_indices )
+{
+  return grid_indices * probe_spacing + probe_grid_position;
+}
+
+vec3 grid_indices_to_world( ivec3 grid_indices, int probe_index )
+{
+  const int probe_counts_xy = probe_counts.x * probe_counts.y;
+  ivec2 probe_offset_sampling_coordinates = ivec2( probe_index % probe_counts_xy, probe_index / probe_counts_xy );
+  vec3 probe_offset = CRUDE_TEXTURE_FETCH( probe_offset_texture_index, probe_offset_sampling_coordinates, 0 ).rgb;
+  return grid_indices_to_world_no_offsets( grid_indices ) + probe_offset;
+}
+
+ivec3 probe_index_to_grid_indices( int probe_index )
+{
+  int probe_x = probe_index % probe_counts.x;
+  int probe_counts_xy = probe_counts.x * probe_counts.y;
+
+  int probe_y = ( probe_index % probe_counts_xy ) / probe_counts.x;
+  int probe_z = probe_index / probe_counts_xy;
+
+  return ivec3( probe_x, probe_y, probe_z );
+}
+
+int get_probe_index_from_pixels( ivec2 pixels, int probe_with_border_side, int full_texture_width )
+{
+  int probes_per_side = full_texture_width / probe_with_border_side;
+  return int( pixels.x / probe_with_border_side ) + probes_per_side * int( pixels.y / probe_with_border_side );
+}
+
+vec3 oct_decode( vec2 o )
+{
+  vec3 v = vec3( o.x, o.y, 1.0 - abs( o.x ) - abs( o.y ) );
+  if ( v.z < 0.0 )
+  {
+    v.xy = ( 1.0 - abs( v.yx ) ) * crude_sign_not_zero( v.xy );
+  }
+  return normalize( v );
+}
+
+vec2 normalized_oct_coord(ivec2 fragCoord, int probe_side_length)
+{
+  int probe_with_border_side = probe_side_length + 2;
+  vec2 octahedral_texel_coordinates = ivec2((fragCoord.x - 1) % probe_with_border_side, (fragCoord.y - 1) % probe_with_border_side);
+
+  octahedral_texel_coordinates += vec2(0.5f);
+  octahedral_texel_coordinates *= (2.0f / float(probe_side_length));
+  octahedral_texel_coordinates -= vec2(1.0f);
+
+  return octahedral_texel_coordinates;
+}
+
+vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
+{/*
+  const float minimum_distance_between_probes = 1.0f;
+
+  vec3 v = normalize( camera_position.xyz - world_position );
+  vec3 bias_vector = ( normal * 0.2f + v * 0.8f ) * ( 0.75f * minimum_distance_between_probes ) * self_shadow_bias;
+  
+  vec3 biased_world_position = world_position + bias_vector;
+
+  //  // Sample at world position + probe offset reduces shadow leaking.
+  //  ivec3 base_grid_indices = world_to_grid_indices(biased_world_position);
+  //  vec3 base_probe_world_position = grid_indices_to_world_no_offsets( base_grid_indices );
+
+  //  // alpha is how far from the floor(currentVertex) position. on [0, 1] for each axis.
+  //  vec3 alpha = clamp((biased_world_position - base_probe_world_position) , vec3(0.0f), vec3(1.0f));
+
+  vec3 sum_irradiance = vec3(0.0f);
+  float sum_weight = 0.0f;
+
+  for ( int i = 0; i < 8; ++i )
+  {
+        // Compute the offset grid coord and clamp to the probe grid boundary
+        // Offset = 0 or 1 along each axis
+    ivec3 offset = ivec3( i, i >> 1, i >> 2 ) & ivec3( 1 );
+    ivec3 probe_grid_coord = clamp( base_grid_indices + offset, ivec3( 0 ), probe_counts - ivec3( 1 ) );
+    int probe_index = probe_indices_to_index(probe_grid_coord);
+
+        // Make cosine falloff in tangent plane with respect to the angle from the surface to the probe so that we never
+        // test a probe that is *behind* the surface.
+        // It doesn't have to be cosine, but that is efficient to compute and we must clip to the tangent plane.
+    vec3 probe_pos = grid_indices_to_world(probe_grid_coord, probe_index);
+
+        // Compute the trilinear weights based on the grid cell vertex to smoothly
+        // transition between probes. Avoid ever going entirely to zero because that
+        // will cause problems at the border probes. This isn't really a lerp. 
+        // We're using 1-a when offset = 0 and a when offset = 1.
+    vec3 trilinear = mix(1.0 - alpha, alpha, offset);
+    float weight = 1.0;
+
+        if ( use_smooth_backface() ) {
+            // Computed without the biasing applied to the "dir" variable. 
+            // This test can cause reflection-map looking errors in the image
+            // (stuff looks shiny) if the transition is poor.
+            vec3 direction_to_probe = normalize(probe_pos - world_position);
+
+            // The naive soft backface weight would ignore a probe when
+            // it is behind the surface. That's good for walls. But for small details inside of a
+            // room, the normals on the details might rule out all of the probes that have mutual
+            // visibility to the point. So, we instead use a "wrap shading" test below inspired by
+            // NPR work.
+
+            // The small offset at the end reduces the "going to zero" impact
+            // where this is really close to exactly opposite
+            const float dir_dot_n = (dot(direction_to_probe, normal) + 1.0) * 0.5f;
+            weight *= (dir_dot_n * dir_dot_n) + 0.2;
+        }
+
+        // Bias the position at which visibility is computed; this avoids performing a shadow 
+        // test *at* a surface, which is a dangerous location because that is exactly the line
+        // between shadowed and unshadowed. If the normal bias is too small, there will be
+        // light and dark leaks. If it is too large, then samples can pass through thin occluders to
+        // the other side (this can only happen if there are MULTIPLE occluders near each other, a wall surface
+        // won't pass through itself.)
+        vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
+        float distance_to_biased_point = length(probe_to_biased_point_direction);
+        probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
+
+        // Visibility
+        if ( use_visibility() ) {
+
+            vec2 uv = get_probe_uv(probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
+
+            vec2 visibility = textureLod(global_textures[nonuniformEXT(grid_visibility_texture_index)], uv, 0).rg;
+
+            float mean_distance_to_occluder = visibility.x;
+
+            float chebyshev_weight = 1.0;
+            if (distance_to_biased_point > mean_distance_to_occluder) {
+                // In "shadow"
+                float variance = abs((visibility.x * visibility.x) - visibility.y);
+                // http://www.punkuser.net/vsm/vsm_paper.pdf; equation 5
+                // Need the max in the denominator because biasing can cause a negative displacement
+                const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
+                chebyshev_weight = variance / (variance + (distance_diff * distance_diff));
+                
+                // Increase contrast in the weight
+                chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
+            }
+
+            // Avoid visibility weights ever going all of the way to zero because when *no* probe has
+            // visibility we need some fallback value.
+            chebyshev_weight = max(0.05f, chebyshev_weight);
+            weight *= chebyshev_weight;
+        }
+
+        // Avoid zero weight
+        weight = max(0.000001, weight);
+
+        // A small amount of light is visible due to logarithmic perception, so
+        // crush tiny weights but keep the curve continuous
+        const float crushThreshold = 0.2f;
+        if (weight < crushThreshold) {
+            weight *= (weight * weight) * (1.f / (crushThreshold * crushThreshold));
+        }
+
+        vec2 uv = get_probe_uv(normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
+
+        vec3 probe_irradiance = textureLod(global_textures[nonuniformEXT(grid_irradiance_output_index)], uv, 0).rgb;
+
+        if ( use_perceptual_encoding() ) {
+            probe_irradiance = pow(probe_irradiance, vec3(0.5f * 5.0f));
+        }
+
+        // Trilinear weights
+        weight *= trilinear.x * trilinear.y * trilinear.z + 0.001f;
+
+        sum_irradiance += weight * probe_irradiance;
+        sum_weight += weight;
+    }
+
+    vec3 net_irradiance = sum_irradiance / sum_weight;
+
+    if ( use_perceptual_encoding() ) {
+        net_irradiance = net_irradiance * net_irradiance;
+    }
+
+    vec3 irradiance = 0.5f * PI * net_irradiance * 0.95f;
+
+    return irradiance;*/
+  return vec3( 0 );
+}
+
+#if defined( PROBE_RAYTRACER )
+
+#extension GL_EXT_ray_tracing : enable
+
+struct ray_payload
+{
+  vec3                                                     radiance;
+  float                                                    distance;
+};
+
+CRUDE_UNIFORM( SceneConstant, 0 ) 
+{
+  crude_scene                                              scene;
+};
+
+CRUDE_RBUFFER( MeshDraws, 1 )
+{
+  crude_mesh_draw                                          mesh_draws[];
+};
+
+CRUDE_RBUFFER( MeshInstancesDraws, 2 )
+{
+  crude_mesh_instance_draw                                 mesh_instance_draws[];
+};
+
+CRUDE_RBUFFER( Lights, 3 ) 
+{
+  crude_light                                              lights[];
+};
+
+CRUDE_RBUFFER( ProbeStatusSSBO, 4 )
+{
+  uint                                                     probe_status[];
+};
+
+layout(set=CRUDE_MATERIAL_SET, binding=5) uniform accelerationStructureEXT as;
+
+#if defined( CRUDE_RAYGEN )
+
+layout(location=0) rayPayloadEXT ray_payload payload;
+
+void main()
+{
+  ivec2 pixel_coord = ivec2( gl_LaunchIDEXT.xy );
+  int probe_index = pixel_coord.y + probe_update_offset;
+  int ray_index = pixel_coord.x;
+
+  bool skip_probe = ( probe_status[ probe_index ] == CRUDE_PROBE_STATUS_OFF ) || ( probe_status[ probe_index ] == CRUDE_PROBE_STATUS_UNINITIALIZED );
+  
+  if ( skip_probe )
+  {
+    return;
+  }
+
+  int probe_counts = probe_counts.x * probe_counts.y * probe_counts.z;
+  if ( probe_index >= probe_counts )
+  {
+    return;
+  }
+
+  ivec3 probe_grid_indices = probe_index_to_grid_indices( probe_index );
+  vec3 ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
+  vec3 direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
+  payload.radiance = vec3( 0 );
+  payload.distance = 0;
+
+  traceRayEXT( as, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0);
+
+  imageStore( global_images_2d[ radiance_output_index ], ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
+}
+
+#endif /* CRUDE_RAYGEN */
+
+#if defined( CRUDE_CLOSEST_HIT )
+
+layout(location=0) rayPayloadInEXT ray_payload payload;
+
+hitAttributeEXT vec2 barycentric_weights;
+
+float attenuation_square_falloff(vec3 position_to_light, float light_inverse_radius) {
+    const float distance_square = dot(position_to_light, position_to_light);
+    const float factor = distance_square * light_inverse_radius * light_inverse_radius;
+    const float smoothFactor = max(1.0 - factor * factor, 0.0);
+    return (smoothFactor * smoothFactor) / max(distance_square, 1e-4);
+}
+
+void main()
+{
+  vec3 radiance = vec3( 0 );
+  float distance = 0.0f;
+  
+  if ( gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT )
+  {
+    distance = gl_RayTminEXT + gl_HitTEXT;
+    distance *= -0.2;        
+  }
+  else
+  {
+    uint mesh_index = mesh_instance_draws[ gl_GeometryIndexEXT ].mesh_draw_index;
+    crude_mesh_draw mesh = mesh_draws[ mesh_index ];
+
+    int_array_type index_buffer = int_array_type( mesh.index_buffer );
+    int i0 = index_buffer[ gl_PrimitiveID * 3 ].v;
+    int i1 = index_buffer[ gl_PrimitiveID * 3 + 1 ].v;
+    int i2 = index_buffer[ gl_PrimitiveID * 3 + 2 ].v;
+
+    float_array_type vertex_buffer = float_array_type( mesh.position_buffer );
+    vec4 p0 = vec4(
+      vertex_buffer[ i0 * 3 + 0 ].v,
+      vertex_buffer[ i0 * 3 + 1 ].v,
+      vertex_buffer[ i0 * 3 + 2 ].v,
+      1.0
+    );
+    vec4 p1 = vec4(
+      vertex_buffer[ i1 * 3 + 0 ].v,
+      vertex_buffer[ i1 * 3 + 1 ].v,
+      vertex_buffer[ i1 * 3 + 2 ].v,
+      1.0
+    );
+    vec4 p2 = vec4(
+      vertex_buffer[ i2 * 3 + 0 ].v,
+      vertex_buffer[ i2 * 3 + 1 ].v,
+      vertex_buffer[ i2 * 3 + 2 ].v,
+      1.0
+    );
+
+    mat4 model_to_world = mesh_instance_draws[ gl_GeometryIndexEXT ].model_to_world;
+    vec4 p0_world = p0 * model_to_world;
+    vec4 p1_world = p1 * model_to_world;
+    vec4 p2_world = p2 * model_to_world;
+
+    vec2_array_type texcoord_buffer = vec2_array_type( mesh.texcoord_buffer );
+    vec2 texcoord0 = texcoord_buffer[ i0 ].v;
+    vec2 texcoord1 = texcoord_buffer[ i1 ].v;
+    vec2 texcoord2 = texcoord_buffer[ i2 ].v;
+
+    float b = barycentric_weights.x;
+    float c = barycentric_weights.y;
+    float a = 1 - b - c;
+
+    vec2 texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
+
+    vec3 albedo = CRUDE_TEXTURE_LOD( mesh.textures.x, texcoord, 3 ).rgb;
+
+    float_array_type normals_buffer = float_array_type( mesh.normal_buffer );
+    vec3 n0 = vec3(
+      normals_buffer[ i0 * 3 + 0 ].v,
+      normals_buffer[ i0 * 3 + 1 ].v,
+      normals_buffer[ i0 * 3 + 2 ].v
+    );
+    vec3 n1 = vec3(
+      normals_buffer[ i1 * 3 + 0 ].v,
+      normals_buffer[ i1 * 3 + 1 ].v,
+      normals_buffer[ i1 * 3 + 2 ].v
+    );
+    vec3 n2 = vec3(
+      normals_buffer[ i2 * 3 + 0 ].v,
+      normals_buffer[ i2 * 3 + 1 ].v,
+      normals_buffer[ i2 * 3 + 2 ].v
+    );
+
+    vec3 normal = a * n0 + b * n1 + c * n2;
+
+    mat3 world_to_model = mat3( mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_model );
+    normal = normal * world_to_model;
+
+    vec3 world_position = a * p0_world.xyz + b * p1_world.xyz + c * p2_world.xyz;
+
+    // TODO: calculate lighting.
+    crude_light light = lights[ 0 ];
+
+    vec3 position_to_light = light.world_position - world_position;
+    vec3 l = normalize( position_to_light );
+    float ndotl = clamp( dot( normal, l ), 0.0, 1.0 );
+
+    float attenuation = attenuation_square_falloff( position_to_light, 1.0f / light.radius );
+
+    vec3 light_intensity = vec3( 0.0f );
+    if ( attenuation > 0.001f && ndotl > 0.001f )
+    {
+      light_intensity += ( light.intensity * attenuation * ndotl ) * light.color;
+    }
+
+    vec3 diffuse = albedo * light_intensity;
+
+    if ( true ) // use_infinite_bounces() )
+    {
+      diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
+    }
+
+    radiance = diffuse;
+    distance = gl_RayTminEXT + gl_HitTEXT;
+  }
+
+  payload.radiance = radiance;
+  payload.distance = distance;
+}
+
+#endif /* CRUDE_CLOSEST_HIT */
+
+#if defined( CRUDE_MISS )
+
+layout(location=0) rayPayloadInEXT ray_payload payload;
+
+void main()
+{
+  payload.radiance = vec3( 0.529, 0.807, 0.921 );
+  payload.distance = 1000;
+}
+
+#endif /* CRUDE_MISS */
+
+#endif /* PROBE_RAYTRACER */
+
+#if defined( PROBE_UPDATE_IRRADIANCE ) || defined( PROBE_UPDATE_VISIBILITY )
+
+layout(set=CRUDE_MATERIAL_SET, binding=0, rgba16f) uniform image2D irradiance_image;
+layout(set=CRUDE_MATERIAL_SET, binding=1, rg16f) uniform image2D visibility_image;
+
+int k_read_table[6] = {5, 3, 1, -1, -3, -5};
+
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+void main() {
+  ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+  int probe_texture_width = irradiance_texture_width;
+  int probe_texture_height = irradiance_texture_height;
+  int probe_side_length = irradiance_side_length;
+#else
+  int probe_texture_width = visibility_texture_width;
+  int probe_texture_height = visibility_texture_height;
+  int probe_side_length = visibility_side_length;
+#endif /* PROBE_UPDATE_IRRADIANCE */
+
+  if ( coords.x >= probe_texture_width || coords.y >= probe_texture_height )
+  {
+    return;
+  }
+
+  uint probe_with_border_side = probe_side_length + 2;
+  uint probe_last_pixel = probe_side_length + 1;
+
+  int probe_index = get_probe_index_from_pixels(coords.xy, int(probe_with_border_side), probe_texture_width);
+
+  bool border_pixel = ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == 0 ) || ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == probe_last_pixel );
+  border_pixel = border_pixel || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == 0) || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == probe_last_pixel );
+
+  if ( !border_pixel )
+  {
+    vec4 result = vec4( 0.f );
+
+    const float energy_conservation = 0.95;
+    
+    uint backfaces = 0;
+    uint max_backfaces = uint( probe_rays * 0.1f );
+
+    for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
+    {
+      ivec2 sample_position = ivec2( ray_index, probe_index );
+      vec3 ray_direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
+
+      vec3 texel_direction = oct_decode( normalized_oct_coord( coords.xy, probe_side_length ) );
+      
+      float weight = max( 0.0, dot( texel_direction, ray_direction ) );
+
+      float distance2 = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0).w;
+      if ( distance2 < 0.0f )
+      {
+        ++backfaces;
+        
+        if ( backfaces >= max_backfaces )
+        {
+          return;
+        }
+        
+        continue;
+      }
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+      if ( weight >= EPSILON )
+      {
+        vec3 radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0).rgb;
+        radiance.rgb *= energy_conservation;
+
+        result += vec4(radiance * weight, weight);
+      }
+#else
+      float probe_max_ray_distance = 1.0f * 1.5f;
+
+      weight = pow( weight, 2.5f );
+      if ( weight >= EPSILON )
+      {
+        float distance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).w;
+        distance = min( abs( distance ), probe_max_ray_distance );
+        vec3 value = vec3( distance, distance * distance, 0 );
+        result += vec4( value * weight, weight );
+      }
+#endif
+  }
+
+  if ( result.w > EPSILON )
+  {
+    result.xyz /= result.w;
+    result.w = 1.0f;
+  }
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+  vec4 previous_value = imageLoad( irradiance_image, coords.xy );
+#else
+  vec2 previous_value = imageLoad( visibility_image, coords.xy ).rg;
+#endif
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+  //if ( use_perceptual_encoding() ) {
+    result.rgb = pow(result.rgb, vec3(1.0f / 5.0f));    
+  //}
+
+  result = mix( result, previous_value, hysteresis );
+  imageStore(irradiance_image, coords.xy, result);
+#else
+  result.rg = mix( result.rg, previous_value, hysteresis );
+  imageStore(visibility_image, coords.xy, vec4(result.rg, 0, 1));
+#endif
+
+    return;
+  }
+
+  groupMemoryBarrier( );
+  barrier( );
+
+  uint probe_pixel_x = gl_GlobalInvocationID.x % probe_with_border_side;
+  uint probe_pixel_y = gl_GlobalInvocationID.y % probe_with_border_side;
+  bool corner_pixel = ( probe_pixel_x == 0 || probe_pixel_x == probe_last_pixel ) && ( probe_pixel_y == 0 || probe_pixel_y == probe_last_pixel );
+  bool row_pixel = ( probe_pixel_x > 0 && probe_pixel_x < probe_last_pixel );
+
+  ivec2 source_pixel_coordinate = coords.xy;
+
+  if ( corner_pixel )
+  {
+    source_pixel_coordinate.x += probe_pixel_x == 0 ? probe_side_length : -probe_side_length;
+    source_pixel_coordinate.y += probe_pixel_y == 0 ? probe_side_length : -probe_side_length;
+  }
+  else if ( row_pixel )
+  {
+    source_pixel_coordinate.x += k_read_table[probe_pixel_x - 1];
+    source_pixel_coordinate.y += (probe_pixel_y > 0) ? -1 : 1;
+  }
+  else
+  {
+    source_pixel_coordinate.x += (probe_pixel_x > 0) ? -1 : 1;
+    source_pixel_coordinate.y += k_read_table[probe_pixel_y - 1];
+  }
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+    vec4 copied_data = imageLoad( irradiance_image, source_pixel_coordinate );
+#else
+    vec4 copied_data = imageLoad( visibility_image, source_pixel_coordinate );
+#endif
+
+#if defined( PROBE_UPDATE_IRRADIANCE )
+    imageStore( irradiance_image, coords.xy, copied_data );
+#else
+    imageStore( visibility_image, coords.xy, copied_data );
+#endif
+}
+
+#endif // COMPUTE_PROBE_UPDATE
+
+#if defined( CALCULATE_PROBE_OFFSETS ) || defined( CALCULATE_PROBE_STATUSES )
+
+CRUDE_PUSH_CONSTANT( PushConstants )
+{
+  uint                                                     first_frame;
+};
+
+CRUDE_RWBUFFER( ProbeStatusSSBO, 0 )
+{
+  uint                                                     probe_status[];
+};
+
+#endif /* CALCULATE_PROBE_OFFSETS || CALCULATE_PROBE_STATUSES */
+
+#if defined( CALCULATE_PROBE_OFFSETS )
+
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
+
+void main()
+{
+  ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
+  int probe_index = coords.x;
+  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
+  
+  if ( probe_index >= total_probes )
+  {
+    return;
+  }
+
+  int closest_backface_index = -1;
+  float closest_backface_distance = 100000000.f;
+
+  int closest_frontface_index = -1;
+  float closest_frontface_distance = 100000000.f;
+
+  int farthest_frontface_index = -1;
+  float farthest_frontface_distance = 0;
+
+  int backfaces_count = 0;
+
+  for (int ray_index = 0; ray_index < probe_rays; ++ray_index)
+  {
+    ivec2 ray_tex_coord = ivec2(ray_index, probe_index);
+
+    float ray_distance = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0).w;
+    if ( ray_distance <= 0.f )
+    {
+      ++backfaces_count;
+      if ( (-ray_distance) < closest_backface_distance )
+      {
+        closest_backface_distance = ray_distance;
+        closest_backface_index = ray_index;
+      }
+    }
+    else
+    {
+      if ( ray_distance < closest_frontface_distance )
+      {
+        closest_frontface_distance = ray_distance;
+        closest_frontface_index = ray_index;
+      }
+      else if ( ray_distance > farthest_frontface_distance )
+      {
+        farthest_frontface_distance = ray_distance;
+        farthest_frontface_index = ray_index;
+      }
+    }
+  }
+
+  vec3 full_offset = vec3( 10000.f );
+  vec3 cell_offset_limit = max_probe_offset * probe_spacing;
+
+  vec4 current_offset = vec4( 0.f );
+
+  if ( first_frame == 0 )
+  {
+    int probe_counts_xy = probe_counts.x * probe_counts.y;
+    ivec2 probe_offset_sampling_coordinates = ivec2( probe_index % probe_counts_xy, probe_index / probe_counts_xy );
+    current_offset.rgb = CRUDE_TEXTURE_FETCH( probe_offset_texture_index, probe_offset_sampling_coordinates, 0 ).rgb;
+  }
+
+  bool inside_geometry = ( float( backfaces_count ) / probe_rays ) > 0.25f;
+  if ( inside_geometry && ( closest_backface_index != -1 ) )
+  {
+    vec3 closest_backface_direction = closest_backface_distance * normalize( crude_spherical_fibonacci( closest_backface_index, probe_rays ) * mat3( random_rotation ) );
+    
+    vec3 positive_offset = ( current_offset.xyz + cell_offset_limit ) / closest_backface_direction;
+    vec3 negative_offset = ( current_offset.xyz - cell_offset_limit ) / closest_backface_direction;
+    vec3 maximum_offset = vec3( max( positive_offset.x, negative_offset.x ), max( positive_offset.y, negative_offset.y ), max( positive_offset.z, negative_offset.z ) );
+
+    float direction_scale_factor = min( min( maximum_offset.x, maximum_offset.y ), maximum_offset.z ) - 0.001f;
+    full_offset = current_offset.xyz - closest_backface_direction * direction_scale_factor;
+  }
+  else if ( closest_frontface_distance < 0.05f )
+  {
+    vec3 farthest_direction = min( 0.2f, farthest_frontface_distance) * normalize( crude_spherical_fibonacci( farthest_frontface_index, probe_rays ) * mat3(random_rotation) );
+    vec3 closest_direction = normalize( crude_spherical_fibonacci( closest_frontface_index, probe_rays ) * mat3( random_rotation ) );
+
+    if ( dot( farthest_direction, closest_direction ) < 0.5f )
+    {
+      full_offset = current_offset.xyz + farthest_direction;
+    }
+  } 
+
+  if ( all( lessThan( abs( full_offset ), cell_offset_limit ) ) )
+  {
+    current_offset.xyz = full_offset;
+  }
+
+  int probe_counts_xy = probe_counts.x * probe_counts.y;
+  int probe_texel_x = ( probe_index % probe_counts_xy );
+  int probe_texel_y = probe_index / probe_counts_xy;
+
+  imageStore( global_images_2d[ probe_offset_texture_index ], ivec2( probe_texel_x, probe_texel_y ), current_offset );
+}
+
+#endif /* CALCULATE_PROBE_OFFSETS */
+
+
+#if defined( CALCULATE_PROBE_STATUSES )
+
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
+
+void main()
+{
+  ivec3 coords = ivec3(gl_GlobalInvocationID.xyz);
+
+  int offset = 0;
+
+  int probe_index = coords.x;
+
+  int closest_backface_index = -1;
+  float closest_backface_distance = 100000000.f;
+
+  int closest_frontface_index = -1;
+  float closest_frontface_distance = 100000000.f;
+
+  int farthest_frontface_index = -1;
+  float farthest_frontface_distance = 0;
+
+  int backfaces_count = 0;
+  uint flag = first_frame == 1 ? CRUDE_PROBE_STATUS_UNINITIALIZED : probe_status[ probe_index ];
+
+  vec3 outer_bounds = normalize( probe_spacing ) * ( length( probe_spacing ) + ( 2.f * self_shadow_bias ) );
+
+  for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
+  {
+    ivec2 ray_tex_coord = ivec2( ray_index, probe_index );
+
+    float d_front = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0).w;
+    float d_back = -d_front;
+
+    if ( d_back > 0.f )
+    {
+      backfaces_count += 1;
+      if ( d_back < closest_backface_distance )
+      {
+        closest_backface_distance = d_back;
+        closest_backface_index = ray_index;
+      }
+    }
+
+    if ( d_front > 0.0f )
+    {
+      vec3 frontFaceDirection = d_front * normalize( crude_spherical_fibonacci(ray_index, probe_rays) * mat3( random_rotation ) );
+      if (all(lessThan(abs(frontFaceDirection), outer_bounds)))
+      {
+        flag = CRUDE_PROBE_STATUS_ACTIVE;
+      }
+      
+      if ( d_front < closest_frontface_distance )
+      {
+        closest_frontface_distance = d_front;
+        closest_frontface_index = ray_index;
+      }
+      else if ( d_front > farthest_frontface_distance )
+      {
+        farthest_frontface_distance = d_front;
+        farthest_frontface_index = ray_index;
+      }
+    }
+  }
+
+  if (closest_backface_index != -1 && (float(backfaces_count) / probe_rays) > 0.25f)
+  {
+    flag = CRUDE_PROBE_STATUS_OFF;
+  }
+  else if (closest_frontface_index == -1)
+  {
+    flag = CRUDE_PROBE_STATUS_OFF;
+  }
+  else if (closest_frontface_distance < 0.05f)
+  {
+    flag = CRUDE_PROBE_STATUS_ACTIVE;
+  } 
+
+  probe_status[ probe_index ] = flag;
+}
+
+#endif /* CALCULATE_PROBE_STATUSES */
+
+
+#if defined( SAMPLE_IRRADIANCE )
+
+CRUDE_UNIFORM( SceneConstant, 0 ) 
+{
+  crude_scene                                              scene;
+};
+
+CRUDE_RBUFFER( ProbeStatusSSBO, 1 )
+{
+  uint                                                     probe_status[];
+};
+
+CRUDE_PUSH_CONSTANT( PushConstants )
+{
+  uint                                                     output_resolution_half;
+};
+
+ivec2 pixel_offsets[] = ivec2[]( ivec2(0,0), ivec2(0,1), ivec2(1,0), ivec2(1,1));
+
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+void main()
+{
+  ivec3 coords = ivec3(gl_GlobalInvocationID.xyz);
+
+  int resolution_divider = output_resolution_half == 1 ? 2 : 1;
+  vec2 screen_uv = uv_nearest( coords.xy, scene.resolution / resolution_divider );
+    
+  float raw_depth = 1.0f;
+  int chosen_hiresolution_sample_index = 0;
+  if (output_resolution_half == 1)
+  {
+    float closer_depth = 0.f;
+    for ( int i = 0; i < 4; ++i )
+    {
+      float depth = CRUDE_TEXTURE_FETCH( depth_fullscreen_texture_index, ( coords.xy ) * 2 + pixel_offsets[ i ], 0 ).r;
+
+      if ( closer_depth < depth )
+      {
+        closer_depth = depth;
+        chosen_hiresolution_sample_index = i;
+      }
+    }
+
+    raw_depth = closer_depth;
+  }
+  else
+  {
+    raw_depth = CRUDE_TEXTURE_FETCH( depth_fullscreen_texture_index, coords.xy, 0).r;
+  }
+
+  if ( raw_depth == 1.0f )
+  {
+    imageStore(global_images_2d[ indirect_output_index ], coords.xy, vec4(0,0,0,1));
+    return;
+  }
+
+  vec3 normal = vec3(0);
+
+  if (output_resolution_half == 1)
+  {
+    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, (coords.xy) * 2 + pixel_offsets[chosen_hiresolution_sample_index], 0).rg;
+    normal = normalize(crude_octahedral_decode(encoded_normal));
+  }
+  else
+  {
+    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, coords.xy, 0 ).rg;
+    normal = crude_octahedral_decode(encoded_normal);
+  }
+
+  vec3 pixel_world_position = crude_world_position_from_depth(screen_uv, raw_depth, scene.camera.clip_to_world );
+  vec3 irradiance = sample_irradiance( pixel_world_position, normal, scene.camera.position.xyz );
+
+  imageStore(global_images_2d[ indirect_output_index ], coords.xy, vec4(irradiance,1));
+}
+
+#endif /* SAMPLE_IRRADIANCE */

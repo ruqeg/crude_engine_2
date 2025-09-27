@@ -57,7 +57,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   uint32                                                   mesh_instances_count;
   uint32                                                   active_lights_count;
   uint32                                                   tiled_shadowmap_texture_index;
-  uint32                                                   depth_texture_index;
   XMFLOAT2                                                 inv_shadow_map_size;
 } crude_gfx_scene_constant_gpu;
 
