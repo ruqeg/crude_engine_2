@@ -131,7 +131,7 @@ crude_gfx_imgui_pass_pre_render
       if ( texture_handle.index != pass->font_texture.index )
       {
         crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-        crude_gfx_cmd_add_image_barrier( primary_cmd, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
+        crude_gfx_cmd_add_image_barrier( primary_cmd, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, crude_gfx_has_depth( texture->vk_format ) );
       }
     }
   }
