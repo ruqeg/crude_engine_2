@@ -258,7 +258,7 @@ crude_gfx_indirect_light_pass_render
   crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_offsets_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-  
+
   crude_gfx_cmd_bind_pipeline( primary_cmd, calculate_probe_statuses_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->calculate_probe_status_ds[ renderer->gpu->current_frame ] );
   uint32 first_frame = 0;

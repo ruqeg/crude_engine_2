@@ -2,20 +2,7 @@
 #ifndef CRUDE_DEBUG_GLSLI
 #define CRUDE_DEBUG_GLSLI
 
-#define CRUDE_DEBUG_2D_LINES_OFFSET ( 1000 )
-
-struct crude_debug_line_vertex
-{
-  vec3                                                     position;
-  uint                                                     color;
-};
-
-layout(set=CRUDE_MATERIAL_SET, binding=50) buffer CrudeDebugLines
-{
-  crude_debug_line_vertex                                  debug_line_vertices[];
-};
-
-layout(set=CRUDE_MATERIAL_SET, binding=51) buffer CrudeDebugLinesCount
+CRUDE_RWBUFFER( CrudeDebugCount, 50 )
 {
   uint                                                     debug_lines_3d_vertices_count;
   uint                                                     debug_lines_3d_instances_count;
@@ -25,6 +12,19 @@ layout(set=CRUDE_MATERIAL_SET, binding=51) buffer CrudeDebugLinesCount
   uint                                                     debug_lines_2d_instances_count;
   uint                                                     debug_lines_2d_first_vertex;
   uint                                                     debug_lines_2d_first_instance;
+  uint                                                     debug_cubes_vertices_count;
+  uint                                                     debug_cubes_instances_count;
+  uint                                                     debug_cubes_first_vertex;
+  uint                                                     debug_cubes_first_instance;
+};
+
+CRUDE_RWBUFFER( CrudeDebugLines, 51 )
+{
+  crude_debug_line_vertex                                  debug_line_vertices[];
+};
+CRUDE_RWBUFFER( CrudeDebugCubes, 52 )
+{
+  crude_debug_cube_instance                                debug_cube_instances[];
 };
 
 void crude_debug_draw_line_coloru( vec3 start, vec3 end, uint start_color, uint end_color )
@@ -79,6 +79,15 @@ void crude_debug_draw_line_2d_coloru( vec2 start, vec2 end, uint start_color, ui
   debug_line_vertices[ offset + 1 ].color = end_color;
 }
 
+void crude_debug_draw_cube_coloru( vec3 translation, vec3 scale, uint color )
+{
+  uint offset = atomicAdd( debug_cubes_instances_count, 1 );
+
+  debug_cube_instances[ offset ].translation = translation;
+  debug_cube_instances[ offset ].scale = scale;
+  debug_cube_instances[ offset ].color = color;
+}
+
 void crude_debug_draw_2d_line( vec2 start, vec2 end, vec4 start_color, vec4 end_color )
 {
   crude_debug_draw_line_2d_coloru( start, end, crude_vec4_to_rgba( start_color ), crude_vec4_to_rgba( end_color ) );
@@ -92,6 +101,12 @@ void crude_debug_draw_2d_box( vec2 min, vec2 max, vec4 color )
   crude_debug_draw_line_2d_coloru( vec2(max.x, min.y), vec2(max.x, max.y), color_uint, color_uint );
   crude_debug_draw_line_2d_coloru( vec2(max.x, max.y), vec2(min.x, max.y), color_uint, color_uint );
   crude_debug_draw_line_2d_coloru( vec2(min.x, max.y), vec2(min.x, min.y), color_uint, color_uint );
+}
+
+void crude_debug_draw_cube( vec3 translation, vec3 scale, vec4 color )
+{
+  uint color_uint = crude_vec4_to_rgba( color );
+  crude_debug_draw_cube_coloru( translation, scale, color_uint );
 }
 
 #endif /* CRUDE_DEBUG_GLSLI */

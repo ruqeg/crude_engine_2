@@ -7,6 +7,7 @@
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 #define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )
 #define CRUDE_GFX_MAX_DEBUG_LINES                          ( 640000 )
+#define CRUDE_GFX_MAX_DEBUG_CUBES                          ( 1000 )
 #define CRUDE_GFX_LIGHT_Z_BINS                             ( 16 )
 #define CRUDE_GFX_LIGHTS_MAX_COUNT                         ( 256 )
 #define CRUDE_GFX_LIGHT_TILE_SIZE                          ( 8 )
@@ -19,6 +20,14 @@ typedef enum crude_gfx_mesh_draw_flags
   CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS = ( 1 << 8 ),
 } crude_gfx_mesh_draw_flags;
 
+typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_cube_instance_gpu
+{
+  XMFLOAT3                                                 translation;
+  uint32                                                   color;
+  XMFLOAT3                                                 scale;
+  uint32                                                   padding;
+} crude_gfx_debug_cube_instance_gpu;
+
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_line_vertex_gpu
 {
   XMFLOAT3                                                 position;
@@ -29,6 +38,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_draw_command_gpu
 {
   VkDrawIndirectCommand                                    draw_indirect_3dline;
   VkDrawIndirectCommand                                    draw_indirect_2dline;
+  VkDrawIndirectCommand                                    draw_indirect_cube;
 } crude_gfx_debug_draw_command_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu

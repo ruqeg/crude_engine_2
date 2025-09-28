@@ -26,27 +26,27 @@
 	            }
 	        ],
             "vertex_input": {
-            "attributes": [
-                {
-                "location": 0,
-                "binding": 0,
-                "offset": 0,
-                "format": "FLOAT3"
-                },
-                {
-                "location": 1,
-                "binding": 0,
-                "offset": 12,
-                "format": "UINT"
-                }
-            ],
-            "streams": [
-                {
-                "binding": 0,
-                "stride": 16,
-                "input_rate": "vertex"
-                }
-            ]
+                "attributes": [
+                    {
+                        "location": 0,
+                        "binding": 0,
+                        "offset": 0,
+                        "format": "FLOAT3"
+                    },
+                    {
+                        "location": 1,
+                        "binding": 0,
+                        "offset": 12,
+                        "format": "UINT"
+                    }
+                ],
+                "streams": [
+                    {
+                        "binding": 0,
+                        "stride": 16,
+                        "input_rate": "vertex"
+                    }
+                ]
             },
             "topology" : "LINE_LIST",
             "shaders": [
@@ -75,29 +75,55 @@
 	            }
 	        ],
             "vertex_input": {
-            "attributes": [
-                {
-                    "location": 0,
-                    "binding": 0,
-                    "offset": 0,
-                    "format": "FLOAT3"
-                },
-                {
-                    "location": 1,
-                    "binding": 0,
-                    "offset": 12,
-                    "format": "UINT"
-                }
-            ],
-            "streams": [
-                {
-                "binding": 0,
-                "stride": 16,
-                "input_rate": "vertex"
-                }
-            ]
+                "attributes": [
+                    {
+                        "location": 0,
+                        "binding": 0,
+                        "offset": 0,
+                        "format": "FLOAT3"
+                    },
+                    {
+                        "location": 1,
+                        "binding": 0,
+                        "offset": 12,
+                        "format": "UINT"
+                    }
+                ],
+                "streams": [
+                    {
+                        "binding": 0,
+                        "stride": 16,
+                        "input_rate": "vertex"
+                    }
+                ]
             },
             "topology" : "LINE_LIST",
+            "shaders": [
+                {
+                    "stage": "vertex",
+                    "buffer": "debug"
+                },
+                {
+                    "stage": "fragment",
+                    "buffer": "debug"
+                }
+            ]
+        },  
+        {   
+            "name": "debug_cube",
+		    "render_pass_output":
+		        {
+		    	    "reference": "debug_pass" 
+		        },
+	        "blend": [
+	            {
+		        "enable": 1,
+		        "src_colour": "SRC_ALPHA",
+		        "dst_colour": "ONE_MINUS_SRC_ALPHA",
+		        "op": "ADD"
+	            }
+	        ],
+            "topology" : "TRIANGLE_LIST",
             "shaders": [
                 {
                     "stage": "vertex",

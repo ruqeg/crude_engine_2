@@ -191,4 +191,21 @@ void crude_calculate_geometric_tbn
 #extension GL_EXT_mesh_shader : require
 #endif /* CRUDE_STAGE_TASK || CRUDE_STAGE_MESH */
 
+// Debug Related
+#define CRUDE_DEBUG_2D_LINES_OFFSET ( 1000 )
+
+struct crude_debug_cube_instance
+{
+  vec3                                                     translation;
+  uint                                                     color;
+  vec3                                                     scale;
+  uint                                                     padding;
+};
+
+struct crude_debug_line_vertex
+{
+  vec3                                                     position;
+  uint                                                     color;
+};
+
 #endif /* CRUDE_PLATFORM_GLSL */

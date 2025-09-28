@@ -41,8 +41,6 @@ crude_gfx_culling_late_pass_render
 )
 {
   crude_gfx_device                                        *gpu;
-  crude_gfx_buffer                                        *count_late_sb;
-  crude_gfx_buffer                                        *commands_late_sb;
   crude_gfx_culling_late_pass                             *pass;
   crude_gfx_pipeline_handle                                mesh_culling_pipeline;
 
@@ -58,17 +56,14 @@ crude_gfx_culling_late_pass_render
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, mesh_culling_pipeline );
   
-  count_late_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
-  commands_late_sb = crude_gfx_access_buffer( gpu, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ gpu->current_frame ] );
-  
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_late_sb, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
 
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->culling_late_ds[ primary_cmd->gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_meshes_instances_count + 63u ) / 64u, 1u, 1u );
 
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, count_late_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, commands_late_sb, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
 }
 
 void

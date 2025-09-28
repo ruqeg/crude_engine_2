@@ -76,8 +76,9 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Common Debug CPU & GPU Data
    **********************/
+  crude_gfx_buffer_handle                                  debug_cubes_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_line_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   
   /***********************
    * Common Lights & Shadows CPU & GPU Data

@@ -241,7 +241,7 @@ CRUDE_API void
 crude_gfx_cmd_add_buffer_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer                                   *buffer,
+  _In_ crude_gfx_buffer_handle                             buffer_handle,
   _In_ crude_gfx_resource_state                            old_state,
   _In_ crude_gfx_resource_state                            new_state
 );

@@ -1,8 +1,8 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define CALCULATE_PROBE_STATUSES
-//#define COMPUTE_SAMPLE_IRRADIANCE
+#define PROBE_DEBUG
+#define CRUDE_STAGE_VERTEX
 
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"

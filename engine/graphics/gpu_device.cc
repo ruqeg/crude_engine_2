@@ -37,7 +37,7 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_RAY_QUERY_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 #ifdef  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
-  VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
+ // VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 };
@@ -1594,7 +1594,7 @@ crude_gfx_create_shader_state
       shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
     }
   
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode && shader_create_info.codeSize, "Shader code contains an error or empty!" );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode && shader_create_info.codeSize, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
 
     if ( !shader_create_info.pCode || !shader_create_info.codeSize )
     {
