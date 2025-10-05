@@ -99,16 +99,6 @@ crude_gfx_ray_tracing_solid_pass_render
 }
 
 void
-crude_gfx_ray_tracing_solid_pass_on_resize
-(
-  _In_ void                                               *ctx,
-  _In_ uint32                                              new_width,
-  _In_ uint32                                              new_height
-)
-{
-}
-
-void
 crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx

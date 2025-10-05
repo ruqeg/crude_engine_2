@@ -702,13 +702,11 @@ crude_gfx_cmd_bind_descriptor_set
     {
       if ( descriptor_set->layout->bindings[ i ].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER )
       {
-        uint32                                               resource_index;
         crude_gfx_buffer_handle                              buffer_handle;
         crude_gfx_buffer                                    *buffer;
 
         CRUDE_ASSERT( num_offsets < CRUDE_COUNTOF( offsets_cache ) );
-        resource_index = descriptor_set->bindings[ i ];
-        buffer_handle = { descriptor_set->resources[ resource_index ] };
+        buffer_handle = CRUDE_COMPOUNT( crude_gfx_buffer_handle, { descriptor_set->resources[ i ] } );
         buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
       }
@@ -881,6 +879,30 @@ crude_gfx_cmd_add_image_barrier_ext5
   dependency_info.pImageMemoryBarriers = &barrier;
 
   cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
+}
+
+void
+crude_gfx_cmd_global_debug_barrier
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+)
+{
+  VkMemoryBarrier2KHR                                      vk_barrier;
+  VkDependencyInfoKHR                                      vk_dependency_info;
+
+  vk_barrier = CRUDE_COMPOUNT_EMPTY( VkMemoryBarrier2KHR );
+  vk_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
+  vk_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+  vk_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
+  vk_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+  vk_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
+
+  vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
+  vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+  vk_dependency_info.memoryBarrierCount = 1;
+  vk_dependency_info.pMemoryBarriers = &vk_barrier;
+
+  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &vk_dependency_info );
 }
 
 void

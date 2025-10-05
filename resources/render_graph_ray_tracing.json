@@ -197,8 +197,36 @@
       ]
     },
     {
+      "name": "indirect_light_pass",
+      "type": "ray_tracing",
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "POINTLIGHT_SHADOW_MARKER"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "texture",
+          "name": "depth"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "marker",
+          "name": "BBBBBBBBBB"
+        }
+      ]
+    },
+    {
       "name": "light_pass",
       "inputs": [
+        {
+          "type": "reference",
+          "name": "BBBBBBBBBB"
+        },
         {
           "type": "texture",
           "name": "gbuffer_albedo"
@@ -266,6 +294,10 @@
         {
           "type": "attachment",
           "name": "final"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
         }
       ],
       "outputs": [
@@ -293,16 +325,6 @@
           ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
-        }
-      ]
-    },
-    {
-      "name": "indirect_light_pass",
-      "type": "ray_tracing",
-      "outputs": [
-        {
-          "type": "marker",
-          "name": "BBBBBBBBBB"
         }
       ]
     },

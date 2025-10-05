@@ -223,7 +223,7 @@ crude_gfx_scene_renderer_initialize
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
   buffer_creation.size = sizeof( crude_gfx_scene_constant_gpu );
-  buffer_creation.name = "frame_buffer";
+  buffer_creation.name = "scene_cb";
   scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
   /* Common lights gpu data */

@@ -123,6 +123,10 @@
 		        "op": "ADD"
 	            }
 	        ],
+			"depth" : {
+				"write" : 1,
+				"test" : "less_or_equal"
+			},
             "topology" : "TRIANGLE_LIST",
             "shaders": [
                 {

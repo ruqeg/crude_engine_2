@@ -7,7 +7,7 @@
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 #define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )
 #define CRUDE_GFX_MAX_DEBUG_LINES                          ( 640000 )
-#define CRUDE_GFX_MAX_DEBUG_CUBES                          ( 1000 )
+#define CRUDE_GFX_MAX_DEBUG_CUBES                          ( 60000 )
 #define CRUDE_GFX_LIGHT_Z_BINS                             ( 16 )
 #define CRUDE_GFX_LIGHTS_MAX_COUNT                         ( 256 )
 #define CRUDE_GFX_LIGHT_TILE_SIZE                          ( 8 )

@@ -45,7 +45,7 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 probe_offsets_texture_handle;
   crude_gfx_texture_handle                                 indirect_texture_handle;
   crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  ddgi_sb;
+  crude_gfx_buffer_handle                                  ddgi_cb;
   crude_gfx_buffer_handle                                  probe_status_sb;
   uint32                                                   probe_count_x;
   uint32                                                   probe_count_y;
@@ -79,6 +79,20 @@ crude_gfx_indirect_light_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
+);
+
+CRUDE_API void
+crude_gfx_indirect_light_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+);
+
+CRUDE_API void
+crude_gfx_indirect_light_pass_on_techniques_reloaded
+(
+  _In_ void                                               *ctx
 );
 
 CRUDE_API crude_gfx_render_graph_pass_container

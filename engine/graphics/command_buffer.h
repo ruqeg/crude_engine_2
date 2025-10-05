@@ -332,6 +332,12 @@ crude_gfx_cmd_add_image_barrier_ext5
 );
 
 CRUDE_API void
+crude_gfx_cmd_global_debug_barrier
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+);
+
+CRUDE_API void
 crude_gfx_cmd_upload_texture_data
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

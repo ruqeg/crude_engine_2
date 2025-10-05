@@ -51,7 +51,7 @@ crude_gfx_debug_pass_pre_render
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
 }
 
 void
@@ -102,7 +102,7 @@ crude_gfx_debug_pass_post_render
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_sb[ renderer->gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
 }
 
 void
