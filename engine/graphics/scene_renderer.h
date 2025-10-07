@@ -25,6 +25,7 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
   crude_heap_allocator                                    *allocator;
+  crude_heap_allocator                                    *resources_allocator;
   crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_scene_renderer_creation;
 
@@ -41,8 +42,14 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_scene                                             *scene;
   crude_heap_allocator                                    *allocator;
+  crude_heap_allocator                                    *resources_allocator;
   crude_stack_allocator                                   *temporary_allocator;
   
+  /***********************
+   * Base
+   **********************/
+  crude_heap_allocator                                     gltf_allocator;
+
   /***********************
    * Common CPU & GPU Data
    **********************/

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Transfiguration Class
+* source:	https://sketchfab.com/3d-models/transfiguration-class-cde7c77e75b34892ba7c7b60d89138b5
+* author:	zack_graham (https://sketchfab.com/zack_graham)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Transfiguration Class" (https://sketchfab.com/3d-models/transfiguration-class-cde7c77e75b34892ba7c7b60d89138b5) by zack_graham (https://sketchfab.com/zack_graham) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

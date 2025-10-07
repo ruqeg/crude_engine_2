@@ -34,7 +34,7 @@
               "fov_radians": 1.0,
               "near_z": 0.01,
               "far_z": 1000,
-              "aspect_ratio": 1.3
+              "aspect_ratio": 1.8
             },
             {
               "type": "crude_free_camera",
@@ -127,7 +127,7 @@
           "components": [
             {
               "type": "crude_gltf",
-              "path": "glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
+              "path": "transfiguration_class\\scene.gltf"
             }
           ],
           "tags": [],
@@ -144,9 +144,9 @@
               1
             ],
             "scale": [
-              0.01,
-              0.01,
-              0.01
+              1,
+              1,
+              1
             ]
           }
         },
@@ -158,9 +158,9 @@
           "components": [
             {
               "type": "crude_light",
-              "radius": 20,
+              "radius": 5,
               "color": [ 1, 1, 1 ],
-              "intensity": 18
+              "intensity": 5
             }
           ],
           "tags": [],

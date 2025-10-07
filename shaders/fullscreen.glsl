@@ -264,6 +264,10 @@ void main()
   {
     radiance = vec4( crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position, in_texcoord.st ), 1 );
   }
+  else
+  {
+    radiance = vec4( CRUDE_BACKGROUND_RADIANCE, 1.f );
+  }
   out_color = radiance;
 }
 

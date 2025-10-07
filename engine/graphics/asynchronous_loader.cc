@@ -181,7 +181,7 @@ crude_gfx_asynchronous_loader_update
       texture_channels = 4;
       texture_alignment = 4;
       aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );
-      current_offset = asynloader->staging_buffer_offset + aligned_image_size;
+      current_offset = asynloader->staging_buffer_offset;
       
       crude_gfx_cmd_upload_texture_data( cmd, texture->handle, request.data, asynloader->staging_buffer->handle, current_offset );
      

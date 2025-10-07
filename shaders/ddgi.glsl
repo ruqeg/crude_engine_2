@@ -220,8 +220,8 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
     probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
 
     // Visibility
-    //if ( use_visibility() ) {
-    //
+    //if ( use_visibility() )
+    //{
     //        vec2 uv = get_probe_uv(probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
     //
     //        vec2 visibility = textureLod(global_textures[nonuniformEXT(grid_visibility_texture_index)], uv, 0).rg;
@@ -257,7 +257,7 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
       weight *= (weight * weight) * (1.f / (crushThreshold * crushThreshold));
     }
 
-    vec2 uv = get_probe_uv(normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
+    vec2 uv = get_probe_uv( normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
 
     vec3 probe_irradiance = textureLod(global_textures[nonuniformEXT(grid_irradiance_output_index)], uv, 0).rgb;
 
@@ -474,7 +474,7 @@ layout(location=0) rayPayloadInEXT ray_payload payload;
 
 void main()
 {
-  payload.radiance = 60 * vec3( 0.529, 0.807, 0.921 );
+  payload.radiance = CRUDE_BACKGROUND_RADIANCE;
   payload.distance = 1000;
 }
 
@@ -590,7 +590,7 @@ void main()
     result.rgb = pow( result.rgb, vec3( 1.0f / 5.0f ) );
 
     result = mix( result, previous_value, hysteresis );
-    imageStore(irradiance_image, coords.xy, result);
+    imageStore(irradiance_image, coords.xy, result );
 #else
     result.rg = mix( result.rg, previous_value, hysteresis );
     imageStore(visibility_image, coords.xy, vec4(result.rg, 0, 1));
@@ -788,7 +788,7 @@ void main()
 #if defined( CALCULATE_PROBE_STATUSES ) && defined( PROBE_STATUSES_DEBUG )
   ivec3 probe_grid_indices = probe_index_to_grid_indices( probe_index );
   vec3 ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
-  if ( flag == CRUDE_PROBE_STATUS_ACTIVE )
+  if ( !inside_geometry )// flag == CRUDE_PROBE_STATUS_ACTIVE )
   {
     crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 0, 1, 0, 1 )  );
   }

@@ -13,6 +13,7 @@ typedef struct game_t
   crude_engine                                            *engine;
   /* Common */
   crude_heap_allocator                                     allocator;
+  crude_heap_allocator                                     resources_allocator;
   crude_stack_allocator                                    temporary_allocator;
   /* Graphics */
   crude_gfx_device                                         gpu;

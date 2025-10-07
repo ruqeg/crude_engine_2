@@ -60,7 +60,8 @@ game_initialize
   game->framerate = 60;
   game->last_graphics_update_time = 0.f;
 
-  crude_heap_allocator_initialize( &game->allocator, CRUDE_RMEGA( 64 ), "game_allocator" );
+  crude_heap_allocator_initialize( &game->allocator, CRUDE_RMEGA( 64 ), "common_allocator" );
+  crude_heap_allocator_initialize( &game->resources_allocator, CRUDE_RMEGA( 512 ), "resources_allocator" );
   crude_stack_allocator_initialize( &game->temporary_allocator, CRUDE_RMEGA( 64 ), "temprorary_allocator" );
   
   ECS_IMPORT( game->engine->world, crude_platform_system );
@@ -141,6 +142,7 @@ game_deinitialize
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
   crude_heap_allocator_deinitialize( &game->allocator );
+  crude_heap_allocator_deinitialize( &game->resources_allocator );
   crude_stack_allocator_deinitialize( &game->temporary_allocator );
 
   ImGui::DestroyContext( ( ImGuiContext* )game->imgui_context );
@@ -217,6 +219,7 @@ game_graphics_initialize_
     creation.renderer = &game->renderer;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
+    creation.resources_allocator = &game->resources_allocator;
     creation.temporary_allocator = &game->temporary_allocator;
     creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
     creation.imgui_context = game->imgui_context;
