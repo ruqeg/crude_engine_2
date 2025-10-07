@@ -457,7 +457,7 @@ void main()
 
     vec3 diffuse = albedo * light_intensity;
     diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
-
+  
     radiance = diffuse;
     distance = gl_RayTminEXT + gl_HitTEXT;
   }
@@ -474,7 +474,7 @@ layout(location=0) rayPayloadInEXT ray_payload payload;
 
 void main()
 {
-  payload.radiance = 50 * vec3( 0.529, 0.807, 0.921 );
+  payload.radiance = vec3( 0.529, 0.807, 0.921 );
   payload.distance = 1000;
 }
 

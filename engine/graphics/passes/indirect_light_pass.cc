@@ -157,7 +157,7 @@ crude_gfx_indirect_light_pass_render
     gpu_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
     gpu_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
     gpu_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
-    XMStoreFloat4x4( &gpu_data->random_rotation, XMMatrixRotationRollPitchYaw( 0, 0, 0 ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+    XMStoreFloat4x4( &gpu_data->random_rotation, XMMatrixRotationRollPitchYaw( crude_random_unit_f32( ) * 0.001f, crude_random_unit_f32( ) * 0.001f, crude_random_unit_f32( ) * 0.001f ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
     gpu_data->irradiance_texture_width = pass->irradiance_atlas_width;
     gpu_data->irradiance_texture_height = pass->irradiance_atlas_height;
     gpu_data->irradiance_side_length = pass->irradiance_side_length;
