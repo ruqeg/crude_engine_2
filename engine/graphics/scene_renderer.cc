@@ -754,6 +754,7 @@ update_dynamic_buffers_
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
       scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
+      scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }

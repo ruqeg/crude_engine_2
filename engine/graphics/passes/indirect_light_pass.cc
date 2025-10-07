@@ -93,7 +93,8 @@ crude_gfx_indirect_light_pass_initialize
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->probe_raytrace_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
-    pass->probe_grid_update_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
+    pass->probe_update_irradiance_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
+    pass->probe_update_visibility_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->calculate_probe_status_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->sample_irradiance_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
@@ -169,9 +170,8 @@ crude_gfx_indirect_light_pass_render
     gpu_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / gpu_data->probe_spacing.x, 1.f / gpu_data->probe_spacing.y, 1.f / gpu_data->probe_spacing.z } );
     gpu_data->infinite_bounces_multiplier = 0.75f;
     
-    // !TODO
-    //pass->probe_update_offset = ( pass->probe_update_offset + per_frame_probe_updates ) % probe_count;
-    pass->probe_update_offset = 2000;//( pass->probe_update_offset + 1000 /*per_frame_probe_updates*/ ) % probe_count;
+    pass->probe_update_offset = ( pass->probe_update_offset + 1000 ) % probe_count;
+    //pass->probe_update_offset = 2000;
 
     crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );
   }
@@ -199,29 +199,29 @@ crude_gfx_indirect_light_pass_render
   
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_update_irradiance_pipeline );
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_grid_update_ds[ renderer->gpu->current_frame ] );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_update_irradiance_ds[ renderer->gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->irradiance_atlas_width + 7 ) / 8, ( pass->irradiance_atlas_height + 7 ) / 8, 1 );
   
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-  /*
+
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_update_visibility_pipeline );
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_grid_update_ds[ renderer->gpu->current_frame ] );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_update_visibility_ds[ renderer->gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->visibility_atlas_width + 7 ) / 8, ( pass->visibility_atlas_height + 7 ) / 8, 1 );
 
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
 
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->indirect_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+
   crude_gfx_cmd_bind_pipeline( primary_cmd, sample_irradiance_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->sample_irradiance_ds[ renderer->gpu->current_frame ] );
-
   uint32 half_resolution = pass->use_half_resolution ? 1 : 0;
   crude_gfx_cmd_push_constant( primary_cmd, &half_resolution, sizeof( half_resolution ) );
   float32 resolution_divider = pass->use_half_resolution ? 0.5f : 1.0f;
   uint32 width = renderer->gpu->vk_swapchain_width * resolution_divider;
   uint32 height = renderer->gpu->vk_swapchain_height * resolution_divider;
   crude_gfx_cmd_dispatch( primary_cmd, ( width + 7 ) / 8, ( height + 7 ) / 8, 1 );
-  crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->indirect_texture_handle ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );*/
+  crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->indirect_texture_handle ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );
 }
 
 void
@@ -263,22 +263,10 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   crude_gfx_indirect_light_pass                           *pass;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_renderer_technique_pass                       *technique_pass;
-  crude_gfx_descriptor_set_layout_handle                   probe_raytrace_dsl, probe_update_irradiance_dsl, calculate_probe_status_dsl, sample_irradiance_dsl;
+  crude_gfx_descriptor_set_layout_handle                   pipeline_dsl;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
   renderer = pass->scene_renderer->renderer;
-
-  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" );
-  probe_raytrace_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-  
-  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" );
-  probe_update_irradiance_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-
-  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "calculate_probe_statuses" );
-  calculate_probe_status_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
-  
-  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "sample_irradiance" );
-  sample_irradiance_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -286,9 +274,13 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     {
       crude_gfx_destroy_descriptor_set( renderer->gpu, pass->probe_raytrace_ds[ i ] );
     }
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->probe_grid_update_ds[ i ] ) )
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->probe_update_visibility_ds[ i ] ) )
     {
-      crude_gfx_destroy_descriptor_set( renderer->gpu, pass->probe_grid_update_ds[ i ] );
+      crude_gfx_destroy_descriptor_set( renderer->gpu, pass->probe_update_visibility_ds[ i ] );
+    }
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->probe_update_irradiance_ds[ i ] ) )
+    {
+      crude_gfx_destroy_descriptor_set( renderer->gpu, pass->probe_update_irradiance_ds[ i ] );
     }
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->calculate_probe_status_ds[ i ] ) )
     {
@@ -299,13 +291,15 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
       crude_gfx_destroy_descriptor_set( renderer->gpu, pass->sample_irradiance_ds[ i ] );
     }
   }
-
+  
+  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
     ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = probe_raytrace_dsl;
+    ds_creation.layout = pipeline_dsl;
     ds_creation.name = "probe_raytrace_ds";
     
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
@@ -318,28 +312,51 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     pass->probe_raytrace_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );
   }
-
+  
+  
+  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_visibility" );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
     ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = probe_update_irradiance_dsl;
-    ds_creation.name = "probe_grid_update_ds";
+    ds_creation.layout = pipeline_dsl;
+    ds_creation.name = "probe_update_visibility_ds";
     
     crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->probe_grid_irradiance_texture_handle, 0u );
     crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->probe_grid_visibility_texture_handle, 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ddgi_cb, 10u );
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
-    pass->probe_grid_update_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );
+    pass->probe_update_visibility_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );
   }
-
+  
+  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
     ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = calculate_probe_status_dsl;
+    ds_creation.layout = pipeline_dsl;
+    ds_creation.name = "probe_update_irradiance_ds";
+    
+    crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->probe_grid_irradiance_texture_handle, 0u );
+    crude_gfx_descriptor_set_creation_add_texture( &ds_creation, pass->probe_grid_visibility_texture_handle, 1u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ddgi_cb, 10u );
+    crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
+    pass->probe_update_irradiance_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );
+  }
+  
+
+  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "calculate_probe_statuses" );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_descriptor_set_creation                    ds_creation;
+
+    ds_creation = crude_gfx_descriptor_set_creation_empty();
+    ds_creation.layout = pipeline_dsl;
     ds_creation.name = "calculate_probe_status_ds";
     
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->probe_status_sb, 0u );
@@ -347,13 +364,15 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     pass->calculate_probe_status_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );
   }
-
+  
+  technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "sample_irradiance" );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
     ds_creation = crude_gfx_descriptor_set_creation_empty();
-    ds_creation.layout = sample_irradiance_dsl;
+    ds_creation.layout = pipeline_dsl;
     ds_creation.name = "sample_irradiance_ds";
     
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );

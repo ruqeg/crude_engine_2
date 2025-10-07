@@ -116,6 +116,7 @@ struct crude_scene
   uint                                                     active_lights_count;
   uint                                                     tiled_shadowmap_texture_index;
   vec2                                                     inv_shadow_map_size;
+  uint                                                     indirect_light_texture_index;
 };
 
 #endif /* CRUDE_SCENE_GLSL */

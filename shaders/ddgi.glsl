@@ -1,14 +1,16 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define PROBE_DEBUG
-#define CALCULATE_PROBE_OFFSETS
+//#define CALCULATE_PROBE_OFFSETS
+#define SAMPLE_IRRADIANCE
 
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"
 #include "crude/debug.glsli"
 #include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
+
+//#define PROBE_STATUSES_DEBUG
 
 #define CRUDE_PROBE_STATUS_OFF 0
 #define CRUDE_PROBE_STATUS_SLEEP 1
@@ -32,6 +34,7 @@ CRUDE_UNIFORM( DDGIConstants, 10 )
   uint                                                     grid_irradiance_output_index;
   uint                                                     grid_visibility_texture_index;
   uint                                                     probe_offset_texture_index;
+  float                                                    hysteresis;
   
   mat4                                                     random_rotation;
 
@@ -43,16 +46,20 @@ CRUDE_UNIFORM( DDGIConstants, 10 )
   int                                                      visibility_texture_height;
   int                                                      visibility_side_length;
 
-  float                                                    hysteresis;
   float                                                    self_shadow_bias;
-  vec3                                                     reciprocal_probe_spacing;
   float                                                    infinite_bounces_multiplier;
+  vec3                                                     reciprocal_probe_spacing;
 };
 
 vec2 uv_nearest( ivec2 pixel, vec2 texture_size )
 {
   vec2 uv = pixel + .5;
   return uv / texture_size;
+}
+
+int probe_indices_to_index( ivec3 probe_coords )
+{
+  return int( probe_coords.x + probe_coords.y * probe_counts.x + probe_coords.z * probe_counts.x * probe_counts.y );
 }
 
 vec3 grid_indices_to_world_no_offsets( ivec3 grid_indices )
@@ -66,6 +73,11 @@ vec3 grid_indices_to_world( ivec3 grid_indices, int probe_index )
   ivec2 probe_offset_sampling_coordinates = ivec2( probe_index % probe_counts_xy, probe_index / probe_counts_xy );
   vec3 probe_offset = CRUDE_TEXTURE_FETCH( probe_offset_texture_index, probe_offset_sampling_coordinates, 0 ).rgb;
   return grid_indices_to_world_no_offsets( grid_indices ) + probe_offset;
+}
+
+ivec3 world_to_grid_indices( vec3 world_position )
+{
+  return clamp( ivec3(( world_position - probe_grid_position ) * reciprocal_probe_spacing ), ivec3( 0 ), probe_counts - ivec3( 1 ) );
 }
 
 ivec3 probe_index_to_grid_indices( int probe_index )
@@ -83,6 +95,17 @@ int get_probe_index_from_pixels( ivec2 pixels, int probe_with_border_side, int f
 {
   int probes_per_side = full_texture_width / probe_with_border_side;
   return int( pixels.x / probe_with_border_side ) + probes_per_side * int( pixels.y / probe_with_border_side );
+}
+
+vec2 oct_encode( vec3 v )
+{
+  float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+  vec2 result = v.xy * (1.0 / l1norm);
+  if (v.z < 0.0)
+  {
+    result = (1.0 - abs(result.yx)) * crude_sign_not_zero(result.xy);
+  }
+  return result;
 }
 
 vec3 oct_decode( vec2 o )
@@ -107,136 +130,151 @@ vec2 normalized_oct_coord(ivec2 fragCoord, int probe_side_length)
   return octahedral_texel_coordinates;
 }
 
+vec2 get_probe_uv( vec3 direction, int probe_index, int full_texture_width, int full_texture_height, int probe_side_length )
+{
+  // Get octahedral coordinates (-1,1)
+  vec2 octahedral_coordinates = oct_encode(normalize(direction));
+  // TODO: use probe index for this.
+  const float probe_with_border_side = float(probe_side_length) + 2.0f;
+  const int probes_per_row = (full_texture_width) / int(probe_with_border_side);
+  // Get probe indices in the atlas
+  ivec2 probe_indices = ivec2((probe_index % probes_per_row), 
+                               (probe_index / probes_per_row));
+    
+  // Get top left atlas texels
+  vec2 atlas_texels = vec2( probe_indices.x * probe_with_border_side, probe_indices.y * probe_with_border_side );
+  // Account for 1 pixel border
+  atlas_texels += vec2(1.0f);
+  // Move to center of the probe area
+  atlas_texels += vec2(probe_side_length * 0.5f);
+  // Use octahedral coordinates (-1,1) to move between internal pixels, no border
+  atlas_texels += octahedral_coordinates * (probe_side_length * 0.5f);
+  // Calculate final uvs
+  const vec2 uv = atlas_texels / vec2(float(full_texture_width), float(full_texture_height));
+  return uv;
+}
+
 vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
-{/*
+{
   const float minimum_distance_between_probes = 1.0f;
 
   vec3 v = normalize( camera_position.xyz - world_position );
-  vec3 bias_vector = ( normal * 0.2f + v * 0.8f ) * ( 0.75f * minimum_distance_between_probes ) * self_shadow_bias;
   
+  vec3 bias_vector = ( normal * 0.2f + v * 0.8f) * ( 0.75f * minimum_distance_between_probes ) * self_shadow_bias;
   vec3 biased_world_position = world_position + bias_vector;
 
-  //  // Sample at world position + probe offset reduces shadow leaking.
-  //  ivec3 base_grid_indices = world_to_grid_indices(biased_world_position);
-  //  vec3 base_probe_world_position = grid_indices_to_world_no_offsets( base_grid_indices );
+  /* Sample at world position + probe offset reduces shadow leaking. */
+  ivec3 base_grid_indices = world_to_grid_indices( biased_world_position );
+  vec3 base_probe_world_position = grid_indices_to_world_no_offsets( base_grid_indices );
 
-  //  // alpha is how far from the floor(currentVertex) position. on [0, 1] for each axis.
-  //  vec3 alpha = clamp((biased_world_position - base_probe_world_position) , vec3(0.0f), vec3(1.0f));
+  /* Alpha is how far from the floor(currentVertex) position. on [0, 1] for each axis. */
+  vec3 alpha = clamp( ( biased_world_position - base_probe_world_position ) , vec3( 0.0f ), vec3( 1.0f ) );
 
-  vec3 sum_irradiance = vec3(0.0f);
+  vec3 sum_irradiance = vec3( 0.0f );
   float sum_weight = 0.0f;
 
+  /* Iterate over adjacent probe cage */
   for ( int i = 0; i < 8; ++i )
   {
-        // Compute the offset grid coord and clamp to the probe grid boundary
-        // Offset = 0 or 1 along each axis
+    /* Compute the offset grid coord and clamp to the probe grid boundary. Offset = 0 or 1 along each axis */
     ivec3 offset = ivec3( i, i >> 1, i >> 2 ) & ivec3( 1 );
     ivec3 probe_grid_coord = clamp( base_grid_indices + offset, ivec3( 0 ), probe_counts - ivec3( 1 ) );
-    int probe_index = probe_indices_to_index(probe_grid_coord);
+    int probe_index = probe_indices_to_index( probe_grid_coord );
 
-        // Make cosine falloff in tangent plane with respect to the angle from the surface to the probe so that we never
-        // test a probe that is *behind* the surface.
-        // It doesn't have to be cosine, but that is efficient to compute and we must clip to the tangent plane.
+    // Make cosine falloff in tangent plane with respect to the angle from the surface to the probe so that we never
+    // test a probe that is *behind* the surface.
+    // It doesn't have to be cosine, but that is efficient to compute and we must clip to the tangent plane.
     vec3 probe_pos = grid_indices_to_world(probe_grid_coord, probe_index);
 
-        // Compute the trilinear weights based on the grid cell vertex to smoothly
-        // transition between probes. Avoid ever going entirely to zero because that
-        // will cause problems at the border probes. This isn't really a lerp. 
-        // We're using 1-a when offset = 0 and a when offset = 1.
+    // Compute the trilinear weights based on the grid cell vertex to smoothly
+    // transition between probes. Avoid ever going entirely to zero because that
+    // will cause problems at the border probes. This isn't really a lerp. 
+    // We're using 1-a when offset = 0 and a when offset = 1.
     vec3 trilinear = mix(1.0 - alpha, alpha, offset);
     float weight = 1.0;
 
-        if ( use_smooth_backface() ) {
-            // Computed without the biasing applied to the "dir" variable. 
-            // This test can cause reflection-map looking errors in the image
-            // (stuff looks shiny) if the transition is poor.
-            vec3 direction_to_probe = normalize(probe_pos - world_position);
+    // Computed without the biasing applied to the "dir" variable. 
+    // This test can cause reflection-map looking errors in the image
+    // (stuff looks shiny) if the transition is poor.
+    vec3 direction_to_probe = normalize(probe_pos - world_position);
 
-            // The naive soft backface weight would ignore a probe when
-            // it is behind the surface. That's good for walls. But for small details inside of a
-            // room, the normals on the details might rule out all of the probes that have mutual
-            // visibility to the point. So, we instead use a "wrap shading" test below inspired by
-            // NPR work.
+    // The naive soft backface weight would ignore a probe when
+    // it is behind the surface. That's good for walls. But for small details inside of a
+    // room, the normals on the details might rule out all of the probes that have mutual
+    // visibility to the point. So, we instead use a "wrap shading" test below inspired by
+    // NPR work.
 
-            // The small offset at the end reduces the "going to zero" impact
-            // where this is really close to exactly opposite
-            const float dir_dot_n = (dot(direction_to_probe, normal) + 1.0) * 0.5f;
-            weight *= (dir_dot_n * dir_dot_n) + 0.2;
-        }
+    // The small offset at the end reduces the "going to zero" impact
+    // where this is really close to exactly opposite
+    const float dir_dot_n = (dot(direction_to_probe, normal) + 1.0) * 0.5f;
+    weight *= (dir_dot_n * dir_dot_n) + 0.2;
 
-        // Bias the position at which visibility is computed; this avoids performing a shadow 
-        // test *at* a surface, which is a dangerous location because that is exactly the line
-        // between shadowed and unshadowed. If the normal bias is too small, there will be
-        // light and dark leaks. If it is too large, then samples can pass through thin occluders to
-        // the other side (this can only happen if there are MULTIPLE occluders near each other, a wall surface
-        // won't pass through itself.)
-        vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
-        float distance_to_biased_point = length(probe_to_biased_point_direction);
-        probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
+    // Bias the position at which visibility is computed; this avoids performing a shadow 
+    // test *at* a surface, which is a dangerous location because that is exactly the line
+    // between shadowed and unshadowed. If the normal bias is too small, there will be
+    // light and dark leaks. If it is too large, then samples can pass through thin occluders to
+    // the other side (this can only happen if there are MULTIPLE occluders near each other, a wall surface
+    // won't pass through itself.)
+    vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
+    float distance_to_biased_point = length(probe_to_biased_point_direction);
+    probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
 
-        // Visibility
-        if ( use_visibility() ) {
+    // Visibility
+    //if ( use_visibility() ) {
+    //
+    //        vec2 uv = get_probe_uv(probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
+    //
+    //        vec2 visibility = textureLod(global_textures[nonuniformEXT(grid_visibility_texture_index)], uv, 0).rg;
+    //
+    //        float mean_distance_to_occluder = visibility.x;
+    //
+    //        float chebyshev_weight = 1.0;
+    //        if (distance_to_biased_point > mean_distance_to_occluder) {
+    //            // In "shadow"
+    //            float variance = abs((visibility.x * visibility.x) - visibility.y);
+    //            // http://www.punkuser.net/vsm/vsm_paper.pdf; equation 5
+    //            // Need the max in the denominator because biasing can cause a negative displacement
+    //            const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
+    //            chebyshev_weight = variance / (variance + (distance_diff * distance_diff));
+    //            
+    //            // Increase contrast in the weight
+    //            chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
+    //        }
+    //
+    //        // Avoid visibility weights ever going all of the way to zero because when *no* probe has
+    //        // visibility we need some fallback value.
+    //        chebyshev_weight = max(0.05f, chebyshev_weight);
+    //        weight *= chebyshev_weight;
+    //}
 
-            vec2 uv = get_probe_uv(probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
+    weight = max( 0.000001, weight );
 
-            vec2 visibility = textureLod(global_textures[nonuniformEXT(grid_visibility_texture_index)], uv, 0).rg;
-
-            float mean_distance_to_occluder = visibility.x;
-
-            float chebyshev_weight = 1.0;
-            if (distance_to_biased_point > mean_distance_to_occluder) {
-                // In "shadow"
-                float variance = abs((visibility.x * visibility.x) - visibility.y);
-                // http://www.punkuser.net/vsm/vsm_paper.pdf; equation 5
-                // Need the max in the denominator because biasing can cause a negative displacement
-                const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
-                chebyshev_weight = variance / (variance + (distance_diff * distance_diff));
-                
-                // Increase contrast in the weight
-                chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
-            }
-
-            // Avoid visibility weights ever going all of the way to zero because when *no* probe has
-            // visibility we need some fallback value.
-            chebyshev_weight = max(0.05f, chebyshev_weight);
-            weight *= chebyshev_weight;
-        }
-
-        // Avoid zero weight
-        weight = max(0.000001, weight);
-
-        // A small amount of light is visible due to logarithmic perception, so
-        // crush tiny weights but keep the curve continuous
-        const float crushThreshold = 0.2f;
-        if (weight < crushThreshold) {
-            weight *= (weight * weight) * (1.f / (crushThreshold * crushThreshold));
-        }
-
-        vec2 uv = get_probe_uv(normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
-
-        vec3 probe_irradiance = textureLod(global_textures[nonuniformEXT(grid_irradiance_output_index)], uv, 0).rgb;
-
-        if ( use_perceptual_encoding() ) {
-            probe_irradiance = pow(probe_irradiance, vec3(0.5f * 5.0f));
-        }
-
-        // Trilinear weights
-        weight *= trilinear.x * trilinear.y * trilinear.z + 0.001f;
-
-        sum_irradiance += weight * probe_irradiance;
-        sum_weight += weight;
+    // A small amount of light is visible due to logarithmic perception, so
+    // crush tiny weights but keep the curve continuous
+    const float crushThreshold = 0.2f;
+    if ( weight < crushThreshold )
+    {
+      weight *= (weight * weight) * (1.f / (crushThreshold * crushThreshold));
     }
 
-    vec3 net_irradiance = sum_irradiance / sum_weight;
+    vec2 uv = get_probe_uv(normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
 
-    if ( use_perceptual_encoding() ) {
-        net_irradiance = net_irradiance * net_irradiance;
-    }
+    vec3 probe_irradiance = textureLod(global_textures[nonuniformEXT(grid_irradiance_output_index)], uv, 0).rgb;
 
-    vec3 irradiance = 0.5f * PI * net_irradiance * 0.95f;
+    probe_irradiance = pow(probe_irradiance, vec3(0.5f * 5.0f));
 
-    return irradiance;*/
-  return vec3( 0 );
+    // Trilinear weights
+    weight *= trilinear.x * trilinear.y * trilinear.z + 0.001f;
+
+    sum_irradiance += weight * probe_irradiance;
+    sum_weight += weight;
+  }
+
+  vec3 net_irradiance = sum_irradiance / sum_weight;
+  net_irradiance = net_irradiance * net_irradiance;
+
+  vec3 irradiance = 0.5f * PI * net_irradiance * 0.95f;
+  return irradiance;
 }
 
 #if defined( PROBE_RAYTRACER )
@@ -306,7 +344,7 @@ void main()
   payload.radiance = vec3( 0 );
   payload.distance = 0;
 
-  traceRayEXT( as, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0);
+  traceRayEXT( as, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0 );
 
   imageStore( global_images_2d[ radiance_output_index ], ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
 }
@@ -425,11 +463,7 @@ void main()
     }
 
     vec3 diffuse = albedo * light_intensity;
-
-    if ( true ) // use_infinite_bounces() )
-    {
-      diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
-    }
+    diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
 
     radiance = diffuse;
     distance = gl_RayTminEXT + gl_HitTEXT;
@@ -460,11 +494,15 @@ void main()
 layout(set=CRUDE_MATERIAL_SET, binding=0, rgba16f) uniform image2D irradiance_image;
 layout(set=CRUDE_MATERIAL_SET, binding=1, rg16f) uniform image2D visibility_image;
 
-int k_read_table[6] = {5, 3, 1, -1, -3, -5};
-
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
-void main() {
+int read_table[ 6 ] =
+{
+  5, 3, 1, -1, -3, -5
+};
+
+void main()
+{
   ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
@@ -475,7 +513,7 @@ void main() {
   int probe_texture_width = visibility_texture_width;
   int probe_texture_height = visibility_texture_height;
   int probe_side_length = visibility_side_length;
-#endif /* PROBE_UPDATE_IRRADIANCE */
+#endif
 
   if ( coords.x >= probe_texture_width || coords.y >= probe_texture_height )
   {
@@ -485,7 +523,7 @@ void main() {
   uint probe_with_border_side = probe_side_length + 2;
   uint probe_last_pixel = probe_side_length + 1;
 
-  int probe_index = get_probe_index_from_pixels(coords.xy, int(probe_with_border_side), probe_texture_width);
+  int probe_index = get_probe_index_from_pixels( coords.xy, int( probe_with_border_side ), probe_texture_width );
 
   bool border_pixel = ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == 0 ) || ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == probe_last_pixel );
   border_pixel = border_pixel || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == 0) || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == probe_last_pixel );
@@ -508,7 +546,7 @@ void main() {
       
       float weight = max( 0.0, dot( texel_direction, ray_direction ) );
 
-      float distance2 = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0).w;
+      float distance2 = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).w;
       if ( distance2 < 0.0f )
       {
         ++backfaces;
@@ -524,10 +562,10 @@ void main() {
 #if defined( PROBE_UPDATE_IRRADIANCE )
       if ( weight >= EPSILON )
       {
-        vec3 radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0).rgb;
+        vec3 radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).rgb;
         radiance.rgb *= energy_conservation;
 
-        result += vec4(radiance * weight, weight);
+        result += vec4( radiance * weight, weight );
       }
 #else
       float probe_max_ray_distance = 1.0f * 1.5f;
@@ -541,32 +579,29 @@ void main() {
         result += vec4( value * weight, weight );
       }
 #endif
-  }
+    }
 
-  if ( result.w > EPSILON )
-  {
-    result.xyz /= result.w;
-    result.w = 1.0f;
-  }
+    if ( result.w > EPSILON )
+    {
+      result.xyz /= result.w;
+      result.w = 1.0f;
+    }
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
-  vec4 previous_value = imageLoad( irradiance_image, coords.xy );
+    vec4 previous_value = imageLoad( irradiance_image, coords.xy );
 #else
-  vec2 previous_value = imageLoad( visibility_image, coords.xy ).rg;
+    vec2 previous_value = imageLoad( visibility_image, coords.xy ).xy;
 #endif
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
-  //if ( use_perceptual_encoding() ) {
-    result.rgb = pow(result.rgb, vec3(1.0f / 5.0f));    
-  //}
+    result.rgb = pow( result.rgb, vec3( 1.0f / 5.0f ) );
 
-  result = mix( result, previous_value, hysteresis );
-  imageStore(irradiance_image, coords.xy, result);
+    result = mix( result, previous_value, hysteresis );
+    imageStore(irradiance_image, coords.xy, result);
 #else
-  result.rg = mix( result.rg, previous_value, hysteresis );
-  imageStore(visibility_image, coords.xy, vec4(result.rg, 0, 1));
+    result.rg = mix( result.rg, previous_value, hysteresis );
+    imageStore(visibility_image, coords.xy, vec4(result.rg, 0, 1));
 #endif
-
     return;
   }
 
@@ -587,25 +622,25 @@ void main() {
   }
   else if ( row_pixel )
   {
-    source_pixel_coordinate.x += k_read_table[probe_pixel_x - 1];
-    source_pixel_coordinate.y += (probe_pixel_y > 0) ? -1 : 1;
+    source_pixel_coordinate.x += read_table[probe_pixel_x - 1];
+    source_pixel_coordinate.y += ( probe_pixel_y > 0 ) ? -1 : 1;
   }
   else
   {
-    source_pixel_coordinate.x += (probe_pixel_x > 0) ? -1 : 1;
-    source_pixel_coordinate.y += k_read_table[probe_pixel_y - 1];
+    source_pixel_coordinate.x += ( probe_pixel_x > 0 ) ? -1 : 1;
+    source_pixel_coordinate.y += read_table[ probe_pixel_y - 1 ];
   }
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
-    vec4 copied_data = imageLoad( irradiance_image, source_pixel_coordinate );
+  vec4 copied_data = imageLoad( irradiance_image, source_pixel_coordinate );
 #else
-    vec4 copied_data = imageLoad( visibility_image, source_pixel_coordinate );
+  vec4 copied_data = imageLoad( visibility_image, source_pixel_coordinate );
 #endif
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
-    imageStore( irradiance_image, coords.xy, copied_data );
+  imageStore( irradiance_image, coords.xy, copied_data );
 #else
-    imageStore( visibility_image, coords.xy, copied_data );
+  imageStore( visibility_image, coords.xy, copied_data );
 #endif
 }
 
@@ -623,22 +658,12 @@ CRUDE_RWBUFFER( ProbeStatusSSBO, 0 )
   uint                                                     probe_status[];
 };
 
-#endif /* CALCULATE_PROBE_OFFSETS || CALCULATE_PROBE_STATUSES */
-
-#if defined( CALCULATE_PROBE_OFFSETS )
-
 layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
 void main()
 {
   ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
   int probe_index = coords.x;
-  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
-  
-  if ( probe_index >= total_probes )
-  {
-    return;
-  }
 
   int closest_backface_index = -1;
   float closest_backface_distance = 100000000.f;
@@ -648,39 +673,80 @@ void main()
 
   int farthest_frontface_index = -1;
   float farthest_frontface_distance = 0;
-
+  
   int backfaces_count = 0;
 
-  for (int ray_index = 0; ray_index < probe_rays; ++ray_index)
+#if defined( CALCULATE_PROBE_STATUSES ) 
+  int offset = 0;
+  uint flag = first_frame == 1 ? CRUDE_PROBE_STATUS_UNINITIALIZED : probe_status[ probe_index ];
+  vec3 outer_bounds = normalize( probe_spacing ) * ( length( probe_spacing ) + ( 2.f * self_shadow_bias ) );
+#else
+  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
+  if ( probe_index >= total_probes )
   {
-    ivec2 ray_tex_coord = ivec2(ray_index, probe_index);
+    return;
+  }
+#endif
+
+  for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
+  {
+    ivec2 ray_tex_coord = ivec2( ray_index, probe_index );
 
     float d_front = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0 ).w;
     float d_back = -d_front;
-    if ( ray_distance <= 0.f )
+
+    if ( d_back > 0.f ) /* not sure about >= 0.f for CALCULATE_PROBE_STATUSES */
     {
-      ++backfaces_count;
-      if ( (-ray_distance) < closest_backface_distance )
+      backfaces_count += 1;
+      if ( d_back < closest_backface_distance )
       {
-        closest_backface_distance = ray_distance;
+        closest_backface_distance = d_back;
         closest_backface_index = ray_index;
       }
     }
-    else
+
+    if ( d_front > 0.0f )
     {
-      if ( ray_distance < closest_frontface_distance )
+#if defined( CALCULATE_PROBE_STATUSES ) 
+      vec3 probe_ray = crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation );
+      vec3 front_face_direction = d_front * probe_ray;
+      if ( all( lessThan( abs( front_face_direction ), outer_bounds ) ) )
       {
-        closest_frontface_distance = ray_distance;
+        flag = CRUDE_PROBE_STATUS_ACTIVE;
+      }
+#endif
+      
+      if ( d_front < closest_frontface_distance )
+      {
+        closest_frontface_distance = d_front;
         closest_frontface_index = ray_index;
       }
-      else if ( ray_distance > farthest_frontface_distance )
+      else if ( d_front > farthest_frontface_distance )
       {
-        farthest_frontface_distance = ray_distance;
+        farthest_frontface_distance = d_front;
         farthest_frontface_index = ray_index;
       }
     }
   }
 
+#if defined( CALCULATE_PROBE_STATUSES ) 
+  const bool inside_geometry = closest_backface_index != -1 && ( float( backfaces_count ) / probe_rays ) > 0.25f;
+  if ( inside_geometry )
+  {
+    flag = CRUDE_PROBE_STATUS_OFF;
+  }
+  else if ( closest_frontface_index == -1 )
+  {
+    flag = CRUDE_PROBE_STATUS_OFF;
+  }
+  else if ( closest_frontface_distance < 0.05f )
+  {
+    flag = CRUDE_PROBE_STATUS_ACTIVE;
+  }
+
+  probe_status[ probe_index ] = flag;
+#else
+  // TODO double check this one
   vec3 full_offset = vec3( 10000.f );
   vec3 cell_offset_limit = max_probe_offset * probe_spacing;
 
@@ -721,96 +787,12 @@ void main()
     current_offset.xyz = full_offset;
   }
 
-  int probe_counts_xy = probe_counts.x * probe_counts.y;
-  int probe_texel_x = ( probe_index % probe_counts_xy );
-  int probe_texel_y = probe_index / probe_counts_xy;
+  const int probe_counts_xy = probe_counts.x * probe_counts.y;
+  ivec2 probe_offset_store_coordinates = ivec2( probe_index % probe_counts_xy, probe_index / probe_counts_xy );
+  imageStore( global_images_2d[ probe_offset_texture_index ], probe_offset_store_coordinates, current_offset );
+#endif
 
-  imageStore( global_images_2d[ probe_offset_texture_index ], ivec2( probe_texel_x, probe_texel_y ), current_offset );
-}
-
-#endif /* CALCULATE_PROBE_OFFSETS */
-
-
-#if defined( CALCULATE_PROBE_STATUSES )
-
-layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
-
-void main()
-{
-  ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
-
-  int offset = 0;
-
-  int probe_index = coords.x;
-
-  int closest_backface_index = -1;
-  float closest_backface_distance = 100000000.f;
-
-  int closest_frontface_index = -1;
-  float closest_frontface_distance = 100000000.f;
-
-  int farthest_frontface_index = -1;
-  float farthest_frontface_distance = 0;
-  
-  int backfaces_count = 0;
-  uint flag = first_frame == 1 ? CRUDE_PROBE_STATUS_UNINITIALIZED : probe_status[ probe_index ];
-
-  vec3 outer_bounds = normalize( probe_spacing ) * ( length( probe_spacing ) + ( 2.f * self_shadow_bias ) );
-
-  for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
-  {
-    ivec2 ray_tex_coord = ivec2( ray_index, probe_index );
-
-    float d_front = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0 ).w;
-    float d_back = -d_front;
-
-    if ( d_back > 0.f )
-    {
-      backfaces_count += 1;
-      if ( d_back < closest_backface_distance )
-      {
-        closest_backface_distance = d_back;
-        closest_backface_index = ray_index;
-      }
-    }
-
-    if ( d_front > 0.0f )
-    {
-      vec3 probe_ray = crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation );
-      vec3 front_face_direction = d_front * probe_ray;
-      if ( all( lessThan( abs( front_face_direction ), outer_bounds ) ) )
-      {
-        flag = CRUDE_PROBE_STATUS_ACTIVE;
-      }
-      
-      if ( d_front < closest_frontface_distance )
-      {
-        closest_frontface_distance = d_front;
-        closest_frontface_index = ray_index;
-      }
-      else if ( d_front > farthest_frontface_distance )
-      {
-        farthest_frontface_distance = d_front;
-        farthest_frontface_index = ray_index;
-      }
-    }
-  }
-
-  const bool inside_geometry = closest_backface_index != -1 && ( float( backfaces_count ) / probe_rays ) > 0.25f;
-  if ( inside_geometry )
-  {
-    flag = CRUDE_PROBE_STATUS_OFF;
-  }
-  else if ( closest_frontface_index == -1 )
-  {
-    flag = CRUDE_PROBE_STATUS_OFF;
-  }
-  else if ( closest_frontface_distance < 0.05f )
-  {
-    flag = CRUDE_PROBE_STATUS_ACTIVE;
-  }
-
-
+#if defined( CALCULATE_PROBE_STATUSES ) && defined( PROBE_STATUSES_DEBUG )
   ivec3 probe_grid_indices = probe_index_to_grid_indices( probe_index );
   vec3 ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
   if ( flag == CRUDE_PROBE_STATUS_ACTIVE )
@@ -820,12 +802,11 @@ void main()
   else
   {
     crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 1, 0, 0, 1 )  );
-  }  /**/
-
-  probe_status[ probe_index ] = flag;
+  }
+#endif
 }
 
-#endif /* CALCULATE_PROBE_STATUSES */
+#endif /* CALCULATE_PROBE_OFFSETS || CALCULATE_PROBE_STATUSES */
 
 
 #if defined( SAMPLE_IRRADIANCE )

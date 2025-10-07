@@ -2,7 +2,7 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define CRUDE_STAGE_FRAGMENT
-#define POSTPROCESSING
+#define LIGHT_PBR
 
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -159,8 +159,8 @@ crude_calculate_point_light_contribution
   in vec3                                                  f0
 )
 {
+  vec3                                                     indirect_irradiance, indirect_diffuse, light_to_position, l, radiance, f, spec, diff, h, v;
   float                                                    light_distance, attenuation, ndotl, ndoth, ndotv, hdotl;
-  vec3                                                     light_to_position, l, radiance, f, spec, diff, h, v;
 
   roughness = 0.2;
   light_to_position = light.world_position - vertex_position;
@@ -195,15 +195,18 @@ crude_calculate_lighting
   in vec3                                                  normal,
   in vec3                                                  vertex_position,
   in vec3                                                  camera_position,
-  in uvec2                                                 position
+  in uvec2                                                 position,
+  in vec2                                                  screen_texcoord
 )
 {
   vec4                                                     view_position;
-  vec3                                                     radiance;
+  vec3                                                     radiance, indirect_irradiance, indirect_diffuse;
   uvec2                                                    tile;
   float                                                    linear_d;
   int                                                      bin_index;
   uint                                                     bin_value, min_light_id, max_light_id, stride, address;
+
+  vec3 f0 = vec3( 0.04f );
 
   radiance = vec3( 0 );
 
@@ -231,10 +234,16 @@ crude_calculate_lighting
       if ( ( lights_tiles[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
       {
         uint global_light_index = lights_indices[ light_id ];
-        radiance += crude_calculate_point_light_shadow_contribution( lights[ global_light_index ], vertex_position ) * crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, vec3( 0.04f ) );
+        radiance += crude_calculate_point_light_shadow_contribution( lights[ global_light_index ], vertex_position ) * crude_calculate_point_light_contribution( lights[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
       }
     }
   }
+
+  
+  indirect_irradiance = CRUDE_TEXTURE_LOD( scene.indirect_light_texture_index, screen_texcoord, 0 ).rgb;
+  indirect_diffuse = indirect_irradiance * albedo.rgb;
+  const float ao = 1.0f;
+  radiance.xyz += indirect_diffuse * ao;
 
   return radiance;
 }
@@ -254,7 +263,7 @@ void main()
   vec4 radiance = vec4( 0.f, 0.f, 0.f, 1.f );
   if ( depth != 1.f )
   {
-    radiance = vec4( crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position ), 1 );
+    radiance = vec4( crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position, in_texcoord.st ), 1 );
   }
   out_color = radiance;
 }
