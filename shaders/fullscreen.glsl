@@ -239,7 +239,6 @@ crude_calculate_lighting
     }
   }
 
-  
   indirect_irradiance = CRUDE_TEXTURE_LOD( scene.indirect_light_texture_index, screen_texcoord, 0 ).rgb;
   indirect_diffuse = indirect_irradiance * albedo.rgb;
   const float ao = 1.0f;

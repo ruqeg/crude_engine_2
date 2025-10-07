@@ -2,7 +2,7 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define CALCULATE_PROBE_OFFSETS
-#define SAMPLE_IRRADIANCE
+#define CALCULATE_PROBE_STATUSES
 
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"
@@ -11,9 +11,9 @@
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 //#define PROBE_STATUSES_DEBUG
+//#define PROBE_IRRADIANCE_DEBUG
 
 #define CRUDE_PROBE_STATUS_OFF 0
-#define CRUDE_PROBE_STATUS_SLEEP 1
 #define CRUDE_PROBE_STATUS_ACTIVE 4
 #define CRUDE_PROBE_STATUS_UNINITIALIZED 6
 #define EPSILON 0.0001f
@@ -324,13 +324,6 @@ void main()
   int probe_index = pixel_coord.y + probe_update_offset;
   int ray_index = pixel_coord.x;
 
-  bool skip_probe = ( probe_status[ probe_index ] == CRUDE_PROBE_STATUS_OFF ) || ( probe_status[ probe_index ] == CRUDE_PROBE_STATUS_UNINITIALIZED );
-  
-  if ( skip_probe )
-  {
-    // TODO return;
-  }
-
   int probe_counts = probe_counts.x * probe_counts.y * probe_counts.z;
   if ( probe_index >= probe_counts )
   {
@@ -459,7 +452,7 @@ void main()
     vec3 light_intensity = vec3( 0.0f );
     if ( attenuation > 0.001f && ndotl > 0.001f )
     {
-      light_intensity += ( light.intensity * attenuation * ndotl ) * light.color;
+      light_intensity += attenuation * ndotl * light.color * light.intensity;
     }
 
     vec3 diffuse = albedo * light_intensity;
@@ -481,7 +474,7 @@ layout(location=0) rayPayloadInEXT ray_payload payload;
 
 void main()
 {
-  payload.radiance = vec3( 0.529, 0.807, 0.921 );
+  payload.radiance = 50 * vec3( 0.529, 0.807, 0.921 );
   payload.distance = 1000;
 }
 
@@ -804,6 +797,40 @@ void main()
     crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 1, 0, 0, 1 )  );
   }
 #endif
+
+
+#if defined( CALCULATE_PROBE_STATUSES ) && defined( PROBE_IRRADIANCE_DEBUG )
+
+    const float energy_conservation = 0.95;
+  vec4 debug_result = vec4(0.f);
+  int probe_side_length = irradiance_side_length;
+  for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
+  {
+    ivec2 sample_position = ivec2( ray_index, probe_index );
+    vec3 ray_direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
+
+    vec3 texel_direction = oct_decode( normalized_oct_coord( coords.xy, probe_side_length ) );
+      
+    float weight = max( 0.0, dot( texel_direction, ray_direction ) );
+
+    if ( weight >= EPSILON )
+    {
+      vec3 radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).rgb;
+      radiance.rgb *= energy_conservation;
+
+      debug_result += vec4( radiance * weight, weight );
+    }
+  }
+
+    if ( debug_result.w > EPSILON )
+    {
+      debug_result.xyz /= debug_result.w;
+      debug_result.w = 1.0f;
+    }
+  ivec3 probe_grid_indices = probe_index_to_grid_indices( probe_index );
+  vec3 ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
+  crude_debug_draw_cube( ray_origin, vec3( 0.1 ), debug_result );
+#endif
 }
 
 #endif /* CALCULATE_PROBE_OFFSETS || CALCULATE_PROBE_STATUSES */
@@ -876,7 +903,7 @@ void main()
 
   if ( output_resolution_half == 1 )
   {
-    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, (coords.xy) * 2 + pixel_offsets[chosen_hiresolution_sample_index], 0).rg;
+    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, (coords.xy) * 2 + pixel_offsets[ chosen_hiresolution_sample_index ], 0).rg;
     normal = normalize(crude_octahedral_decode(encoded_normal));
   }
   else

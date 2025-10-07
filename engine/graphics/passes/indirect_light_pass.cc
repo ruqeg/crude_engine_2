@@ -171,7 +171,6 @@ crude_gfx_indirect_light_pass_render
     gpu_data->infinite_bounces_multiplier = 0.75f;
     
     pass->probe_update_offset = ( pass->probe_update_offset + 1000 ) % probe_count;
-    //pass->probe_update_offset = 2000;
 
     crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );
   }
@@ -203,14 +202,14 @@ crude_gfx_indirect_light_pass_render
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->irradiance_atlas_width + 7 ) / 8, ( pass->irradiance_atlas_height + 7 ) / 8, 1 );
   
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-
+  
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_update_visibility_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_update_visibility_ds[ renderer->gpu->current_frame ] );
   crude_gfx_cmd_dispatch( primary_cmd, ( pass->visibility_atlas_width + 7 ) / 8, ( pass->visibility_atlas_height + 7 ) / 8, 1 );
-
+  
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-
+  
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->indirect_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, sample_irradiance_pipeline );
