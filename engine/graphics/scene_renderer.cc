@@ -2041,7 +2041,7 @@ create_bottom_level_acceleration_structure_
     vk_geometry.geometry.triangles.vertexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, mesh->position_buffer ) + mesh->position_offset;
     vk_geometry.geometry.triangles.vertexStride = sizeof( XMFLOAT3 );
     vk_geometry.geometry.triangles.maxVertex = vertices_count;
-    vk_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+    vk_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT16;
     vk_geometry.geometry.triangles.indexData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, mesh->index_buffer ) + mesh->index_offset;
     vk_geometry.geometry.triangles.transformData.deviceAddress = crude_gfx_get_buffer_device_address( scene_renderer->renderer->gpu, scene_renderer->geometry_transform_asb );
     CRUDE_ARRAY_PUSH( vk_geometries, vk_geometry );
@@ -2358,7 +2358,7 @@ load_meshlet_indices_
   CRUDE_ARRAY_SET_LENGTH( *indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
-  CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_32u ); // change ray tracing index property in geometry 
+  CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u ); // change ray tracing index property in geometry 
 
   if ( primitive->indices->component_type == cgltf_component_type_r_16u )
   {

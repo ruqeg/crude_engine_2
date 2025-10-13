@@ -127,7 +127,7 @@
           "components": [
             {
               "type": "crude_gltf",
-              "path": "transfiguration_class\\scene.gltf"
+              "path": "glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
             }
           ],
           "tags": [],
@@ -144,9 +144,9 @@
               1
             ],
             "scale": [
-              1,
-              1,
-              1
+              0.01,
+              0.01,
+              0.01
             ]
           }
         },

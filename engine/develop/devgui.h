@@ -62,12 +62,19 @@ typedef struct crude_devgui_gpu_visual_profiler
   bool                                                     enabled;
 } crude_devgui_gpu_visual_profiler;
 
+typedef struct crude_devgui_scene_renderer
+{
+  crude_gfx_scene_renderer                                *scene_renderer;
+  bool                                                     enabled;
+} crude_devgui_scene_renderer;
+
 typedef struct crude_devgui
 {
   char const                                              *last_focused_menutab_name;
   void                                                    *imgui_context;
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph                                  *render_graph;
+  crude_gfx_scene_renderer                                *scene_renderer;
   crude_stack_allocator                                    temporary_allocator;
   crude_heap_allocator                                    *allocator;
   bool                                                     menubar_enabled;
@@ -77,6 +84,7 @@ typedef struct crude_devgui
   crude_devgui_render_graph                                dev_render_graph;
   crude_devgui_gpu                                         dev_gpu;
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
+  crude_devgui_scene_renderer                              dev_scene_renderer;
   bool                                                     should_reload_shaders;
 } crude_devgui;
 
@@ -87,8 +95,7 @@ CRUDE_API void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_heap_allocator                               *allocator,
   _In_ void                                               *imgui_context
 );
@@ -249,4 +256,32 @@ CRUDE_API void
 crude_devgui_gpu_visual_profiler_draw
 (
   _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
+);
+
+/******************************
+ * Dev Gui Scene Renderer
+ *******************************/
+CRUDE_API void
+crude_devgui_scene_renderer_initialize
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
+crude_devgui_scene_renderer_deinitialize
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+);
+
+CRUDE_API void
+crude_devgui_scene_renderer_update
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+);
+
+CRUDE_API void
+crude_devgui_scene_renderer_draw
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
 );

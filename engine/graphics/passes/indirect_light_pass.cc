@@ -17,6 +17,13 @@ crude_gfx_indirect_light_pass_initialize
   crude_gfx_texture_creation                               texture_creation;
   
   pass->scene_renderer = scene_renderer;
+  pass->options.probe_spacing = XMFLOAT3{ 2.0, 1.0, 1.0 };
+  pass->options.self_shadow_bias = 0.3f;
+  pass->options.infinite_bounces_multiplier = 0.75f;
+  pass->options.hysteresis = 0.95f;
+  pass->options.probe_grid_position = XMFLOAT3{ -20.0,0.5,-15.0 };
+  pass->options.max_probe_offset = 0.4f;
+
   pass->probe_update_offset = 0u;
   pass->probe_count_x = 20;
   pass->probe_count_y = 12;
@@ -108,11 +115,24 @@ crude_gfx_indirect_light_pass_deinitialize
   _In_ crude_gfx_indirect_light_pass                      *pass
 )
 {
+  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->ddgi_cb );
+  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->probe_status_sb );
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->probe_update_irradiance_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->probe_update_visibility_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->calculate_probe_status_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->sample_irradiance_ds[ i ] );
+  }
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
     crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_radiance_texture_handle[ i ] );
   }
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_irradiance_texture_handle );
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_visibility_texture_handle );
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_offsets_texture_handle );
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->indirect_texture_handle );
 }
 
 void
@@ -142,9 +162,6 @@ crude_gfx_indirect_light_pass_render
     gpu_data->probe_counts.y = pass->probe_count_y;
     gpu_data->probe_counts.z = pass->probe_count_z;
     gpu_data->probe_rays = pass->probe_rays;
-    gpu_data->probe_update_offset = pass->probe_update_offset;
-    gpu_data->probe_grid_position = XMFLOAT3{ -10.0,0.5,-10.0 };
-    gpu_data->max_probe_offset = 0.4f;
     gpu_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle[ renderer->gpu->current_frame ].index;
     gpu_data->indirect_output_index = pass->indirect_texture_handle.index;
 
@@ -164,12 +181,16 @@ crude_gfx_indirect_light_pass_render
     gpu_data->visibility_texture_width = pass->visibility_atlas_width;
     gpu_data->visibility_texture_height = pass->visibility_atlas_height;
     gpu_data->visibility_side_length = pass->visibility_side_length;
-    gpu_data->hysteresis = 0.95f;
-    gpu_data->self_shadow_bias = 0.3f;
-    gpu_data->probe_spacing = XMFLOAT3{ 1, 1, 1 };
-    gpu_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / gpu_data->probe_spacing.x, 1.f / gpu_data->probe_spacing.y, 1.f / gpu_data->probe_spacing.z } );
-    gpu_data->infinite_bounces_multiplier = 0.75f;
     
+    gpu_data->hysteresis = pass->options.hysteresis;
+    gpu_data->self_shadow_bias = pass->options.self_shadow_bias;
+    gpu_data->probe_grid_position = pass->options.probe_grid_position;
+    gpu_data->max_probe_offset = pass->options.max_probe_offset;
+    gpu_data->infinite_bounces_multiplier = pass->options.infinite_bounces_multiplier;
+    gpu_data->probe_spacing = pass->options.probe_spacing;
+    gpu_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / gpu_data->probe_spacing.x, 1.f / gpu_data->probe_spacing.y, 1.f / gpu_data->probe_spacing.z } );
+
+
     pass->probe_update_offset = ( pass->probe_update_offset + 1000 ) % probe_count;
 
     crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );

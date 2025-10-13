@@ -38,6 +38,16 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ddgi_gpu_data
   XMFLOAT3                                                 reciprocal_probe_spacing;
 } crude_gfx_ddgi_gpu_data;
 
+typedef struct crude_gfx_indirect_light_pass_options
+{
+  XMFLOAT3                                                 probe_spacing;
+  XMFLOAT3                                                 probe_grid_position;
+  float32                                                  hysteresis;
+  float32                                                  self_shadow_bias;
+  float32                                                  infinite_bounces_multiplier;
+  float32                                                  max_probe_offset;
+} crude_gfx_indirect_light_pass_options;
+
 typedef struct crude_gfx_indirect_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
@@ -53,18 +63,23 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  ddgi_cb;
   crude_gfx_buffer_handle                                  probe_status_sb;
-  uint32                                                   probe_count_x;
-  uint32                                                   probe_count_y;
-  uint32                                                   probe_count_z;
-  int32                                                    probe_rays;
+
   uint32                                                   irradiance_atlas_width;
   uint32                                                   irradiance_atlas_height;
   uint32                                                   irradiance_side_length;
   uint32                                                   visibility_atlas_width;
   uint32                                                   visibility_atlas_height;
   uint32                                                   visibility_side_length;
-  bool                                                     use_half_resolution;
+
   uint32                                                   probe_update_offset;
+  
+  uint32                                                   probe_count_x;
+  uint32                                                   probe_count_y;
+  uint32                                                   probe_count_z;
+  int32                                                    probe_rays;
+  bool                                                     use_half_resolution;
+
+  crude_gfx_indirect_light_pass_options                    options;
 } crude_gfx_indirect_light_pass;
 
 CRUDE_API void

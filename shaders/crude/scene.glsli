@@ -11,7 +11,7 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
 
-#define CRUDE_BACKGROUND_RADIANCE ( 40 * vec3( 0.529, 0.807, 0.921 ) )
+#define CRUDE_BACKGROUND_RADIANCE ( 10 * vec3( 0.529, 0.807, 0.921 ) )
 
 layout(buffer_reference, buffer_reference_align=4, std430) buffer vec2_array_type
 {

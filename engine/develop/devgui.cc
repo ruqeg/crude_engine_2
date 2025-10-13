@@ -33,8 +33,7 @@ void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_heap_allocator                               *allocator,
   _In_ void                                               *imgui_context
 )
@@ -42,18 +41,20 @@ crude_devgui_initialize
   window_flags_ = 0;//ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
   devgui->should_reload_shaders = false;
   devgui->menubar_enabled = true;
-  devgui->renderer = renderer;
-  devgui->render_graph = render_graph;
+  devgui->scene_renderer = scene_renderer;
+  devgui->renderer = scene_renderer->renderer;
+  devgui->render_graph = scene_renderer->render_graph;
   devgui->allocator = allocator;
   devgui->imgui_context = imgui_context;
   devgui->last_focused_menutab_name = "Graphics";
   crude_stack_allocator_initialize( &devgui->temporary_allocator, CRUDE_RMEGA( 32 ), "devgui_temp_allocator" );
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
-  crude_devgui_viewport_initialize( &devgui->dev_viewport, render_graph->builder->gpu );
-  crude_devgui_render_graph_initialize( &devgui->dev_render_graph, render_graph );
-  crude_devgui_gpu_initialize( &devgui->dev_gpu, render_graph->builder->gpu, &devgui->temporary_allocator );
-  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, render_graph->builder->gpu, allocator );
+  crude_devgui_viewport_initialize( &devgui->dev_viewport, scene_renderer->render_graph->builder->gpu );
+  crude_devgui_render_graph_initialize( &devgui->dev_render_graph, scene_renderer->render_graph );
+  crude_devgui_gpu_initialize( &devgui->dev_gpu, scene_renderer->render_graph->builder->gpu, &devgui->temporary_allocator );
+  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, scene_renderer->render_graph->builder->gpu, allocator );
+  crude_devgui_scene_renderer_initialize( &devgui->dev_scene_renderer, scene_renderer );
 }
 
 void
@@ -62,6 +63,7 @@ crude_devgui_deinitialize
   _In_ crude_devgui                                       *devgui
 )
 {
+  crude_devgui_scene_renderer_deinitialize( &devgui->dev_scene_renderer );
   crude_devgui_gpu_visual_profiler_deinitialize( &devgui->dev_gpu_profiler );
   crude_stack_allocator_deinitialize( &devgui->temporary_allocator );
 }
@@ -90,6 +92,10 @@ crude_devgui_draw
     {
       devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
     }
+    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_S, false ) )
+    {
+      devgui->dev_scene_renderer.enabled = !devgui->dev_scene_renderer.enabled;
+    }
 
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
@@ -109,6 +115,10 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "GPU Profiler", "Ctrl+G" ) )
       {
         devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
+      }
+      if ( ImGui::MenuItem( "Scene Renderer", "Ctrl+G+S" ) )
+      {
+        devgui->dev_scene_renderer.enabled = !devgui->dev_scene_renderer.enabled;
       }
       ImGui::EndMenu( );
     }
@@ -134,6 +144,7 @@ crude_devgui_draw
   crude_devgui_render_graph_draw( &devgui->dev_render_graph );
   crude_devgui_gpu_draw( &devgui->dev_gpu );
   crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
+  crude_devgui_scene_renderer_draw( &devgui->dev_scene_renderer );
 
   //ImGui::ShowDemoWindow( );
 }
@@ -195,7 +206,7 @@ crude_devgui_nodes_tree_initialize
   _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
 )
 {
-  devgui_nodes_tree->enabled = false;
+  devgui_nodes_tree->enabled = true;
   devgui_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   devgui_nodes_tree->selected_node_index = 0;
 }
@@ -276,7 +287,7 @@ crude_devgui_node_inspector_initialize
   _In_ crude_devgui_node_inspector                        *devgui_inspector
 )
 {
-  devgui_inspector->enabled = false;
+  devgui_inspector->enabled = true;
 }
 
 void
@@ -882,4 +893,57 @@ crude_devgui_gpu_visual_profiler_draw
   
     ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
   }
+}
+
+/******************************
+ * Dev Gui Scene Renderer
+ *******************************/
+void
+crude_devgui_scene_renderer_initialize
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer,
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  dev_scene_renderer->enabled = true;
+  dev_scene_renderer->scene_renderer = scene_renderer;
+}
+
+void
+crude_devgui_scene_renderer_deinitialize
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+)
+{
+}
+
+void
+crude_devgui_scene_renderer_update
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+)
+{
+}
+
+void
+crude_devgui_scene_renderer_draw
+(
+  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+)
+{
+  if ( !dev_scene_renderer->enabled )
+  {
+    return;
+  }
+  ImGui::Begin( "Scene Renderer", NULL, window_flags_ );
+  if ( ImGui::CollapsingHeader( "Indirect Light Pass" ) )
+  {
+    ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
+    ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
+    ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
+    ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
+    ImGui::DragFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis );
+    ImGui::DragFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier );
+  }
+  ImGui::End( );
 }

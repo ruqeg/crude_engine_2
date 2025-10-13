@@ -434,7 +434,6 @@ void main()
     );
 
     vec3 normal = a * n0 + b * n1 + c * n2;
-
     mat3 world_to_model = mat3( mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_model );
     normal = normal * world_to_model;
 
@@ -590,6 +589,7 @@ void main()
     result.rgb = pow( result.rgb, vec3( 1.0f / 5.0f ) );
 
     result = mix( result, previous_value, hysteresis );
+    // MARKER1 for search
     imageStore(irradiance_image, coords.xy, result );
 #else
     result.rg = mix( result.rg, previous_value, hysteresis );

@@ -8,6 +8,7 @@
  * - Manage a staging buffer to handle a copy of the data
  * - Enqueue the command buffers with copy commands
  * - Signal to the renderer that a texture has finished a transfer
+ * - !TODO It's fucking borken, need huge rework (too lazy for now)
  */
 
 /************************************************

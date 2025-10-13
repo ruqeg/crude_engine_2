@@ -1,6 +1,6 @@
 
 # Crude Engine 2
-![TMP](https://github.com/ruqeg/crude_engine_2/blob/main/docs/tmp_screenshot.png?raw=true)
+![Hey sweetie, have you heard about crude engine](https://github.com/ruqeg/crude_engine_2/blob/main/docs/intro.png?raw=true)
 
 ## Overview
 CE2 is a 3D game engine designed to have fun at free time, written in C++ due to some dependencies, but I use C99-style to reduce headache with extra abstraction. The renderer is based on Vulkan with no current plans to support other graphics APIs. Currently CE2 only supports Windows, but Linux support is planned at the future. The project is still under active development, but I think that readme won't hurt.

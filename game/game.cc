@@ -112,7 +112,7 @@ game_initialize
     } );
   }
   
-  crude_devgui_initialize( &game->devgui, &game->render_graph, &game->renderer, &game->allocator, game->imgui_context );
+  crude_devgui_initialize( &game->devgui, &game->scene_renderer, &game->allocator, game->imgui_context );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },
@@ -226,6 +226,11 @@ game_graphics_initialize_
     creation.scene = &game->scene;
     crude_gfx_scene_renderer_initialize( &game->scene_renderer, &creation );
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+    // Yes, i block it, because i don't want to fuck with rtx (long story)
+    while ( CRUDE_ARRAY_LENGTH( game->async_loader.upload_requests ) || CRUDE_ARRAY_LENGTH( game->async_loader.file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( game->async_loader.texture_ready ) )
+    {
+      crude_gfx_renderer_add_texture_update_commands( &game->renderer, 1u );
+    }
   }
   
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
