@@ -46,13 +46,15 @@ typedef struct crude_gfx_indirect_light_pass_options
   float32                                                  self_shadow_bias;
   float32                                                  infinite_bounces_multiplier;
   float32                                                  max_probe_offset;
+  uint32                                                   probe_debug_flags;
 } crude_gfx_indirect_light_pass_options;
 
 typedef struct crude_gfx_indirect_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_descriptor_set_handle                          probe_raytrace_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          calculate_probe_status_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          probe_debug_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          calculate_probe_offsets_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          probe_update_irradiance_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          probe_update_visibility_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_descriptor_set_handle                          sample_irradiance_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -62,7 +64,6 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 indirect_texture_handle;
   crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  ddgi_cb;
-  crude_gfx_buffer_handle                                  probe_status_sb;
 
   uint32                                                   irradiance_atlas_width;
   uint32                                                   irradiance_atlas_height;
@@ -78,6 +79,8 @@ typedef struct crude_gfx_indirect_light_pass
   uint32                                                   probe_count_z;
   int32                                                    probe_rays;
   bool                                                     use_half_resolution;
+
+  uint32                                                   offsets_calculations_count;
 
   crude_gfx_indirect_light_pass_options                    options;
 } crude_gfx_indirect_light_pass;

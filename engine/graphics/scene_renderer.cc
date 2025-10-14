@@ -200,6 +200,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
   
+  scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
+  scene_renderer->options.background_intensity = 1.f;
+
   crude_heap_allocator_initialize( &scene_renderer->gltf_allocator, CRUDE_RMEGA( 512 ), "gltf_allocator" );
 
   /* Common resources arrays initialization */
@@ -760,6 +763,8 @@ update_dynamic_buffers_
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
       scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
       scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
+      scene_constant->background_color = scene_renderer->options.background_color;
+      scene_constant->background_intensity = scene_renderer->options.background_intensity;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }

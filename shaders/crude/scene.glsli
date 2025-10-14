@@ -11,8 +11,6 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
 
-#define CRUDE_BACKGROUND_RADIANCE ( 10 * vec3( 0.529, 0.807, 0.921 ) )
-
 layout(buffer_reference, buffer_reference_align=4, std430) buffer vec2_array_type
 {
   vec2                                                     v;
@@ -115,9 +113,13 @@ struct crude_scene
   vec2                                                     resolution;
   uint                                                     flags;
   uint                                                     mesh_instances_count;
+
   uint                                                     active_lights_count;
   uint                                                     tiled_shadowmap_texture_index;
   vec2                                                     inv_shadow_map_size;
+
+  vec3                                                     background_color;
+  float                                                    background_intensity;
   uint                                                     indirect_light_texture_index;
 };
 

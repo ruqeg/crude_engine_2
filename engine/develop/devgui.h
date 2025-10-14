@@ -65,6 +65,8 @@ typedef struct crude_devgui_gpu_visual_profiler
 typedef struct crude_devgui_scene_renderer
 {
   crude_gfx_scene_renderer                                *scene_renderer;
+  bool                                                     debug_probes_statuses;
+  bool                                                     debug_probes_radiance;
   bool                                                     enabled;
 } crude_devgui_scene_renderer;
 

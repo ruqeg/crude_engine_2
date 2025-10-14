@@ -92,10 +92,6 @@ crude_devgui_draw
     {
       devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
     }
-    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_S, false ) )
-    {
-      devgui->dev_scene_renderer.enabled = !devgui->dev_scene_renderer.enabled;
-    }
 
     if ( ImGui::BeginMenu( "Graphics" ) )
     {
@@ -936,7 +932,12 @@ crude_devgui_scene_renderer_draw
     return;
   }
   ImGui::Begin( "Scene Renderer", NULL, window_flags_ );
-  if ( ImGui::CollapsingHeader( "Indirect Light Pass" ) )
+  if ( ImGui::CollapsingHeader( "Background" ) )
+  {
+    ImGui::ColorEdit3( "Background Color", &dev_scene_renderer->scene_renderer->options.background_color.x );
+    ImGui::DragFloat( "Background Intensity", &dev_scene_renderer->scene_renderer->options.background_intensity, 1.f, 0.f );
+  }
+  if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
     ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
     ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
@@ -944,6 +945,10 @@ crude_devgui_scene_renderer_draw
     ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
     ImGui::DragFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis );
     ImGui::DragFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier );
+    ImGui::Text( "Probe Debug Flags" );
+    ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
+    ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
   }
+  
   ImGui::End( );
 }

@@ -70,7 +70,7 @@
 			]
 		},
 		{
-			"name" : "calculate_probe_statuses",
+			"name" : "probe_debug",
 			"render_pass": "indirect_light_pass",
 			"shaders" : [
 				{
@@ -81,6 +81,16 @@
 		},
 		{
 			"name" : "sample_irradiance",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "compute",
+					"buffer" : "ddgi"
+				}
+			]
+		},
+		{
+			"name" : "calculate_probe_offsets",
 			"render_pass": "indirect_light_pass",
 			"shaders" : [
 				{

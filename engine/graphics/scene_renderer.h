@@ -29,6 +29,12 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_scene_renderer_creation;
 
+typedef struct crude_gfx_scene_renderer_options
+{
+  XMFLOAT3                                                 background_color;
+  float32                                                  background_intensity;
+} crude_gfx_scene_renderer_options;
+
 typedef struct crude_gfx_scene_renderer
 {
   /***********************
@@ -48,6 +54,7 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Base
    **********************/
+  crude_gfx_scene_renderer_options                         options;
   crude_heap_allocator                                     gltf_allocator;
 
   /***********************

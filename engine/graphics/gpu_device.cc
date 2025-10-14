@@ -293,8 +293,8 @@ crude_gfx_device_initialize
   crude_resource_pool_initialize( &gpu->buffers, gpu->allocator_container, 4096, sizeof( crude_gfx_buffer ) );
   crude_resource_pool_initialize( &gpu->textures, gpu->allocator_container, 512, sizeof( crude_gfx_texture ) );
   crude_resource_pool_initialize( &gpu->render_passes, gpu->allocator_container, 256, sizeof( crude_gfx_render_pass ) );
-  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator_container, 128, sizeof( crude_gfx_descriptor_set_layout ) );
-  crude_resource_pool_initialize( &gpu->descriptor_sets, gpu->allocator_container, 128, sizeof( crude_gfx_descriptor_set ) );
+  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set_layout ) );
+  crude_resource_pool_initialize( &gpu->descriptor_sets, gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set ) );
   crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator_container, 128, sizeof( crude_gfx_pipeline ) );
   crude_resource_pool_initialize( &gpu->shaders, gpu->allocator_container, 128, sizeof( crude_gfx_shader_state ) );
   crude_resource_pool_initialize( &gpu->samplers, gpu->allocator_container, 32, sizeof( crude_gfx_sampler ) );
