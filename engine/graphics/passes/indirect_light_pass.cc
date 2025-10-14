@@ -326,6 +326,10 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     {
       crude_gfx_destroy_descriptor_set( renderer->gpu, pass->sample_irradiance_ds[ i ] );
     }
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->calculate_probe_offsets_ds[ i ] ) )
+    {
+      crude_gfx_destroy_descriptor_set( renderer->gpu, pass->calculate_probe_offsets_ds[ i ] );
+    }
   }
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" );
