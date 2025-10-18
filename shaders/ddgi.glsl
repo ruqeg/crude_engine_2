@@ -4,9 +4,10 @@
 //#define CRUDE_CLOSEST_HIT
 //#define PROBE_RAYTRACER
 //#define CRUDE_RAYGEN
-#define PROBE_DEBUG
+//#define PROBE_DEBUG
 //#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
+#define PROBE_UPDATE_IRRADIANCE
 //#define CALCULATE_PROBE_OFFSETS
 
 #include "crude/platform.glsli"
@@ -14,8 +15,6 @@
 #include "crude/debug.glsli"
 #include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
-
-#define EPSILON 0.0001f
 
 CRUDE_UNIFORM( DDGIConstants, 10 )
 {
@@ -184,28 +183,28 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
     vec3 trilinear = mix( probe_spacing - alpha, alpha, offset );
     float weight = 1.0;
 
-    //vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
-    //float distance_to_biased_point = length( probe_to_biased_point_direction );
-    //probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
-//
-    //vec2 probe_visibility_uv = get_probe_uv( probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
-    //vec2 visibility = CRUDE_TEXTURE_LOD( grid_visibility_texture_index, probe_visibility_uv, 0 ).rg;
-    //float mean_distance_to_occluder = visibility.x;
-    //float mean_distance_to_occluder2 = visibility.y;
-//
-    //float chebyshev_weight = 1.0;
-    //if ( distance_to_biased_point > mean_distance_to_occluder )
-    //{
-    //  float variance = abs( ( mean_distance_to_occluder * mean_distance_to_occluder ) - mean_distance_to_occluder2 );
-    //  
-    //  /* http://www.punkuser.net/vsm/vsm_paper.pdf */
-    //  const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
-    //  chebyshev_weight = variance / ( variance + ( distance_diff * distance_diff ) );
-    //  chebyshev_weight = max( ( chebyshev_weight * chebyshev_weight * chebyshev_weight ), 0.0f );
-    //}
-//
-    //chebyshev_weight = max(0.05f, chebyshev_weight);
-    //weight *= chebyshev_weight;
+    vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
+    float distance_to_biased_point = length( probe_to_biased_point_direction );
+    probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
+
+    vec2 probe_visibility_uv = get_probe_uv( probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
+    vec2 probe_visibility = CRUDE_TEXTURE_LOD( grid_visibility_texture_index, probe_visibility_uv, 0 ).rg;
+    float mean_distance_to_occluder = probe_visibility.x;
+    float mean_distance_to_occluder2 = probe_visibility.y;
+
+    float chebyshev_weight = 1.0;
+    if ( distance_to_biased_point > mean_distance_to_occluder )
+    {
+      float variance = abs( ( mean_distance_to_occluder * mean_distance_to_occluder ) - mean_distance_to_occluder2 );
+      
+      /* http://www.punkuser.net/vsm/vsm_paper.pdf */
+      const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
+      chebyshev_weight = variance / ( variance + ( distance_diff * distance_diff ) );
+      chebyshev_weight = max( ( chebyshev_weight * chebyshev_weight * chebyshev_weight ), 0.0f );
+    }
+
+    chebyshev_weight = max(0.05f, chebyshev_weight);
+    weight *= chebyshev_weight;
 
     weight = max( 0.000001, weight );
 
@@ -229,7 +228,7 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
   vec3 net_irradiance = sum_irradiance / sum_weight;
   net_irradiance = net_irradiance * net_irradiance;
   vec3 irradiance = 0.5f * PI * net_irradiance * 0.95f;
-  return irradiance;//vec3( alpha.x, alpha.x, alpha.x );
+  return irradiance;
 }
 
 #if defined( PROBE_RAYTRACER )
@@ -296,7 +295,7 @@ void main()
 
   imageStore( global_images_2d[ radiance_output_index ], ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
   
-  //if ( probe_index == 3124 )
+  //if ( probe_index == 3123 ) 
   //{
   //  crude_debug_draw_line( ray_origin, ray_origin + direction * payload.distance, vec4( payload.radiance, 1 ), vec4( payload.radiance, 1 ) );
   //}
@@ -437,6 +436,8 @@ void main()
   int probe_texture_width = visibility_texture_width;
   int probe_texture_height = visibility_texture_height;
   int probe_side_length = visibility_side_length;
+
+  float probe_max_ray_distance = max( probe_spacing.x, max( probe_spacing.y, probe_spacing.z ) ) * 1.5f;
 #endif
 
   if ( coords.x >= probe_texture_width || coords.y >= probe_texture_height )
@@ -460,6 +461,7 @@ void main()
     
     uint backfaces = 0;
     uint max_backfaces = uint( probe_rays * 0.1f );
+    const float epsilon = 0.0001f;
 
     for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
     {
@@ -484,18 +486,16 @@ void main()
       }
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
-      if ( weight >= EPSILON )
+      vec3 radiance = vec3( 0.f );
+      if ( weight >= epsilon )
       {
-        vec3 radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).rgb;
-        radiance.rgb *= energy_conservation;
-
+        radiance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).rgb;
+        radiance *= energy_conservation;
         result += vec4( radiance * weight, weight );
       }
 #else
-      float probe_max_ray_distance = 1.0f * 1.5f;
-
       weight = pow( weight, 2.5f );
-      if ( weight >= EPSILON )
+      if ( weight >= epsilon )
       {
         float distance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).w;
         distance = min( abs( distance ), probe_max_ray_distance );
@@ -505,7 +505,7 @@ void main()
 #endif
     }
 
-    if ( result.w > EPSILON )
+    if ( result.w > epsilon )
     {
       result.xyz /= result.w;
       result.w = 1.0f;
@@ -856,8 +856,6 @@ void main()
   {
     vec3 radiance = vec3( 0.f );
 
-    const float energy_conservation = 0.95;
-    
     for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
     {
       ivec2 sample_position = ivec2( ray_index, probe_index );
@@ -867,9 +865,7 @@ void main()
       float d_front = irradiance_distance.w;
       if ( d_front > 0.0f )
       { 
-        vec3 irradiance = pow( irradiance_distance.xyz, vec3( 0.5f * 5.0f ) );
-        irradiance = irradiance * irradiance;
-        radiance += energy_conservation * irradiance;
+        radiance += irradiance_distance.xyz;
       }
     }
 
