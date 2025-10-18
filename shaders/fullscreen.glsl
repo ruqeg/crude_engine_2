@@ -160,7 +160,7 @@ crude_calculate_point_light_contribution
 )
 {
   vec3                                                     indirect_irradiance, indirect_diffuse, light_to_position, l, radiance, f, spec, diff, h, v;
-  float                                                    light_distance, attenuation, ndotl, ndoth, ndotv, hdotl;
+  float                                                    light_distance, ndotl, ndoth, ndotv, hdotl;
 
   roughness = 0.2;
   light_to_position = light.world_position - vertex_position;
@@ -175,10 +175,7 @@ crude_calculate_point_light_contribution
   ndotv = dot( normal, v );
   hdotl = dot( h, l );
 
-  attenuation = max( 1.f - pow( light_distance / light.radius, 2.f ), 0.f );
-  attenuation = attenuation * attenuation;
-
-  radiance = light.color * light.intensity * attenuation;
+  radiance = light.color * light.intensity * crude_light_attenuation( light_distance, light.radius );
 
   f = crude_schlick_fresnel( f0, hdotl );
   spec = f * crude_trowbridge_reitz_distribution( ndoth, roughness * roughness ) * crude_hammon_smith_g_approximation( abs( ndotl ), abs( ndotv ), roughness ); /* in case i will be confused in the future, crude_hammon_smith_g_approximation already contains /4ndotlndotv (real time rendering p342) */

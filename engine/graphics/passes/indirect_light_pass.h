@@ -80,7 +80,7 @@ typedef struct crude_gfx_indirect_light_pass
   int32                                                    probe_rays;
   bool                                                     use_half_resolution;
 
-  uint32                                                   offsets_calculations_count;
+  int32                                                    offsets_calculations_count;
 
   crude_gfx_indirect_light_pass_options                    options;
 } crude_gfx_indirect_light_pass;

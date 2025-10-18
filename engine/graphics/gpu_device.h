@@ -451,7 +451,7 @@ crude_gfx_destroy_render_pass
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_render_pass_handle                        handle
 );                                                  
-                                                    
+
 CRUDE_API void                                      
 crude_gfx_destroy_render_pass_instant               
 (                                                   

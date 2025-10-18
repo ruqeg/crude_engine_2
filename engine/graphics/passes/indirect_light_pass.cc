@@ -83,7 +83,14 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation.name = "probe_offsets";
   pass->probe_offsets_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
   
-  pass->indirect_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  texture_creation = crude_gfx_texture_creation_empty( );
+  texture_creation.width = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_width ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_width;
+  texture_creation.height = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_height ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_height;
+  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
+  texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
+  texture_creation.name = "indirect_texture";
+  pass->indirect_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
 
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -273,19 +280,9 @@ crude_gfx_indirect_light_pass_on_resize
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
 
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->indirect_texture_handle ) )
-  {
-    crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->indirect_texture_handle );
-  }
-
-  texture_creation = crude_gfx_texture_creation_empty( );
-  texture_creation.width = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_width ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_width;
-  texture_creation.height = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_height ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_height;
-  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-  texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-  texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
-  texture_creation.name = "indirect_texture";
-  pass->indirect_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
+  uint32 new_indirect_texture_width = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_width ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_width;
+  uint32 new_indirect_texture_height = pass->use_half_resolution ? ( pass->scene_renderer->renderer->gpu->vk_swapchain_height ) / 2 : pass->scene_renderer->renderer->gpu->vk_swapchain_height;
+  crude_gfx_resize_texture( pass->scene_renderer->renderer->gpu, pass->indirect_texture_handle, new_indirect_texture_width, new_indirect_texture_height );
 
   crude_gfx_indirect_light_pass_on_techniques_reloaded( ctx );
 }

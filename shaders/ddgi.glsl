@@ -1,9 +1,13 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
+//#define CRUDE_CLOSEST_HIT
+//#define PROBE_RAYTRACER
+//#define CRUDE_RAYGEN
+#define PROBE_DEBUG
 //#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
-#define CALCULATE_PROBE_OFFSETS
+//#define CALCULATE_PROBE_OFFSETS
 
 #include "crude/platform.glsli"
 #include "crude/scene.glsli"
@@ -11,12 +15,6 @@
 #include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-//#define PROBE_STATUSES_DEBUG
-#define PROBE_IRRADIANCE_DEBUG
-
-#define CRUDE_PROBE_STATUS_OFF 0
-#define CRUDE_PROBE_STATUS_ACTIVE 4
-#define CRUDE_PROBE_STATUS_UNINITIALIZED 6
 #define EPSILON 0.0001f
 
 CRUDE_UNIFORM( DDGIConstants, 10 )
@@ -169,8 +167,7 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
   ivec3 base_grid_indices = world_to_grid_indices( biased_world_position );
   vec3 base_probe_world_position = grid_indices_to_world_no_offsets( base_grid_indices );
 
-  /* Alpha is how far from the floor(currentVertex) position. on [0, 1] for each axis. */
-  vec3 alpha = clamp( ( biased_world_position - base_probe_world_position ) , vec3( 0.0f ), vec3( 1.0f ) );
+  vec3 alpha = clamp( ( biased_world_position - base_probe_world_position ), vec3( 0.0f ), probe_spacing );
 
   vec3 sum_irradiance = vec3( 0.0f );
   float sum_weight = 0.0f;
@@ -184,53 +181,55 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
     int probe_index = probe_indices_to_index( probe_grid_coord );
 
     vec3 probe_pos = grid_indices_to_world( probe_grid_coord, probe_index );
-    vec3 trilinear = mix( 1.0 - alpha, alpha, offset );
+    vec3 trilinear = mix( probe_spacing - alpha, alpha, offset );
     float weight = 1.0;
 
-    vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
-    float distance_to_biased_point = length( probe_to_biased_point_direction );
-    probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
-
-    vec2 probe_visibility_uv = get_probe_uv( probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
-    vec2 visibility = CRUDE_TEXTURE_LOD( grid_visibility_texture_index, probe_visibility_uv, 0 ).rg;
-    float mean_distance_to_occluder = visibility.x;
-    float mean_distance_to_occluder2 = visibility.y;
-
-    float chebyshev_weight = 1.0;
-    if ( distance_to_biased_point > mean_distance_to_occluder )
-    {
-      float variance = abs( ( mean_distance_to_occluder * mean_distance_to_occluder ) - mean_distance_to_occluder2 );
-      
-      /* http://www.punkuser.net/vsm/vsm_paper.pdf */
-      const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
-      chebyshev_weight = variance / ( variance + ( distance_diff * distance_diff ) );
-      chebyshev_weight = max( ( chebyshev_weight * chebyshev_weight * chebyshev_weight ), 0.0f );
-    }
-
-    chebyshev_weight = max(0.05f, chebyshev_weight);
-    weight *= chebyshev_weight;
+    //vec3 probe_to_biased_point_direction = biased_world_position - probe_pos;
+    //float distance_to_biased_point = length( probe_to_biased_point_direction );
+    //probe_to_biased_point_direction *= 1.0 / distance_to_biased_point;
+//
+    //vec2 probe_visibility_uv = get_probe_uv( probe_to_biased_point_direction, probe_index, visibility_texture_width, visibility_texture_height, visibility_side_length );
+    //vec2 visibility = CRUDE_TEXTURE_LOD( grid_visibility_texture_index, probe_visibility_uv, 0 ).rg;
+    //float mean_distance_to_occluder = visibility.x;
+    //float mean_distance_to_occluder2 = visibility.y;
+//
+    //float chebyshev_weight = 1.0;
+    //if ( distance_to_biased_point > mean_distance_to_occluder )
+    //{
+    //  float variance = abs( ( mean_distance_to_occluder * mean_distance_to_occluder ) - mean_distance_to_occluder2 );
+    //  
+    //  /* http://www.punkuser.net/vsm/vsm_paper.pdf */
+    //  const float distance_diff = distance_to_biased_point - mean_distance_to_occluder;
+    //  chebyshev_weight = variance / ( variance + ( distance_diff * distance_diff ) );
+    //  chebyshev_weight = max( ( chebyshev_weight * chebyshev_weight * chebyshev_weight ), 0.0f );
+    //}
+//
+    //chebyshev_weight = max(0.05f, chebyshev_weight);
+    //weight *= chebyshev_weight;
 
     weight = max( 0.000001, weight );
 
-    const float crushThreshold = 0.2f;
-    if ( weight < crushThreshold )
+    /* A small amount of light is visible due to logarithmic perception, so crush tiny weights but keep the curve continuous */
+    const float crush_threshold = 0.2f;
+    if ( weight < crush_threshold )
     {
-      weight *= ( weight * weight ) * ( 1.f / ( crushThreshold * crushThreshold ) );
+      weight *= ( weight * weight ) * ( 1.f / ( crush_threshold * crush_threshold ) );
     }
 
-    vec2 probe_irradiance_uv = get_probe_uv( normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
-
-    vec3 probe_irradiance = CRUDE_TEXTURE_LOD( grid_irradiance_output_index, probe_irradiance_uv, 0 ).rgb;
-
     weight *= trilinear.x * trilinear.y * trilinear.z + 0.001f;
+
+    vec2 probe_irradiance_uv = get_probe_uv( normal, probe_index, irradiance_texture_width, irradiance_texture_height, irradiance_side_length );
+    vec3 probe_irradiance = CRUDE_TEXTURE_LOD( grid_irradiance_output_index, probe_irradiance_uv, 0 ).rgb;
+    probe_irradiance = pow( probe_irradiance, vec3( 0.5f * 5.0f ) );
 
     sum_irradiance += weight * probe_irradiance;
     sum_weight += weight;
   }
 
   vec3 net_irradiance = sum_irradiance / sum_weight;
+  net_irradiance = net_irradiance * net_irradiance;
   vec3 irradiance = 0.5f * PI * net_irradiance * 0.95f;
-  return irradiance;
+  return irradiance;//vec3( alpha.x, alpha.x, alpha.x );
 }
 
 #if defined( PROBE_RAYTRACER )
@@ -271,25 +270,36 @@ layout(location=0) rayPayloadEXT ray_payload payload;
 
 void main()
 {
-  ivec2 pixel_coord = ivec2( gl_LaunchIDEXT.xy );
-  int probe_index = pixel_coord.y + probe_update_offset;
-  int ray_index = pixel_coord.x;
+  vec3                                                     ray_origin, direction;
+  ivec3                                                    probe_grid_indices;
+  ivec2                                                    pixel_coord;
+  int                                                      ray_index, probe_index;
 
-  int probe_counts = probe_counts.x * probe_counts.y * probe_counts.z;
-  if ( probe_index >= probe_counts )
+  pixel_coord = ivec2( gl_LaunchIDEXT.xy );
+  probe_index = pixel_coord.y + probe_update_offset;
+  ray_index = pixel_coord.x;
+
+  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
+  if ( probe_index >= total_probes )
   {
     return;
   }
 
-  ivec3 probe_grid_indices = probe_index_to_grid_indices( probe_index );
-  vec3 ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
-  vec3 direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
-  payload.radiance = vec3( 0 );
-  payload.distance = 0;
+  probe_grid_indices = probe_index_to_grid_indices( probe_index );
+  ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
+  direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
+
+  payload.radiance = vec3( 0.f );
+  payload.distance = 0.f;
 
   traceRayEXT( as, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0 );
 
   imageStore( global_images_2d[ radiance_output_index ], ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
+  
+  //if ( probe_index == 3124 )
+  //{
+  //  crude_debug_draw_line( ray_origin, ray_origin + direction * payload.distance, vec4( payload.radiance, 1 ), vec4( payload.radiance, 1 ) );
+  //}
 }
 
 #endif /* CRUDE_RAYGEN */
@@ -299,13 +309,6 @@ void main()
 layout(location=0) rayPayloadInEXT ray_payload payload;
 
 hitAttributeEXT vec2 barycentric_weights;
-
-float attenuation_square_falloff(vec3 position_to_light, float light_inverse_radius) {
-    const float distance_square = dot(position_to_light, position_to_light);
-    const float factor = distance_square * light_inverse_radius * light_inverse_radius;
-    const float smoothFactor = max(1.0 - factor * factor, 0.0);
-    return (smoothFactor * smoothFactor) / max(distance_square, 1e-4);
-}
 
 void main()
 {
@@ -319,92 +322,71 @@ void main()
   }
   else
   {
-    uint mesh_index = mesh_instance_draws[ gl_GeometryIndexEXT ].mesh_draw_index;
-    crude_mesh_draw mesh_draw = mesh_draws[ mesh_index ];
+    float_array_type                                       vertex_buffer, normals_buffer;
+    int_array_type                                         index_buffer;
+    vec2_array_type                                        texcoord_buffer;
+    crude_mesh_draw                                        mesh_draw;
+    mat4                                                   model_to_world, world_to_model;
+    vec4                                                   p0, p1, p2, p0_world, p1_world, p2_world;
+    vec3                                                   n0, n1, n2, normal, world_position, position_to_light, position_to_light_direction, diffuse, light_intensity, albedo;
+    vec2                                                   texcoord, texcoord0, texcoord1, texcoord2;
+    float                                                  a, b, c, ndotl, attenuation;
+    int                                                    i0, i1, i2;
+    uint                                                   mesh_index;
 
-    int_array_type index_buffer = int_array_type( mesh_draw.index_buffer );
-    int i0 = index_buffer[ gl_PrimitiveID * 3 ].v;
-    int i1 = index_buffer[ gl_PrimitiveID * 3 + 1 ].v;
-    int i2 = index_buffer[ gl_PrimitiveID * 3 + 2 ].v;
+    mesh_index = mesh_instance_draws[ gl_GeometryIndexEXT ].mesh_draw_index;
+    mesh_draw = mesh_draws[ mesh_index ];
 
-    float_array_type vertex_buffer = float_array_type( mesh_draw.position_buffer );
-    vec4 p0 = vec4(
-      vertex_buffer[ i0 * 3 + 0 ].v,
-      vertex_buffer[ i0 * 3 + 1 ].v,
-      vertex_buffer[ i0 * 3 + 2 ].v,
-      1.0
-    );
-    vec4 p1 = vec4(
-      vertex_buffer[ i1 * 3 + 0 ].v,
-      vertex_buffer[ i1 * 3 + 1 ].v,
-      vertex_buffer[ i1 * 3 + 2 ].v,
-      1.0
-    );
-    vec4 p2 = vec4(
-      vertex_buffer[ i2 * 3 + 0 ].v,
-      vertex_buffer[ i2 * 3 + 1 ].v,
-      vertex_buffer[ i2 * 3 + 2 ].v,
-      1.0
-    );
+    world_to_model = mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_model;
+    model_to_world = mesh_instance_draws[ gl_GeometryIndexEXT ].model_to_world;
 
-    mat4 model_to_world = mesh_instance_draws[ gl_GeometryIndexEXT ].model_to_world;
-    vec4 p0_world = p0 * model_to_world;
-    vec4 p1_world = p1 * model_to_world;
-    vec4 p2_world = p2 * model_to_world;
+    index_buffer = int_array_type( mesh_draw.index_buffer );
+    i0 = index_buffer[ gl_PrimitiveID * 3 ].v;
+    i1 = index_buffer[ gl_PrimitiveID * 3 + 1 ].v;
+    i2 = index_buffer[ gl_PrimitiveID * 3 + 2 ].v;
 
-    vec2_array_type texcoord_buffer = vec2_array_type( mesh_draw.texcoord_buffer );
-    vec2 texcoord0 = texcoord_buffer[ i0 ].v;
-    vec2 texcoord1 = texcoord_buffer[ i1 ].v;
-    vec2 texcoord2 = texcoord_buffer[ i2 ].v;
+    vertex_buffer = float_array_type( mesh_draw.position_buffer );
+    p0 = vec4( vertex_buffer[ i0 * 3 + 0 ].v, vertex_buffer[ i0 * 3 + 1 ].v, vertex_buffer[ i0 * 3 + 2 ].v, 1.0 );
+    p1 = vec4( vertex_buffer[ i1 * 3 + 0 ].v, vertex_buffer[ i1 * 3 + 1 ].v, vertex_buffer[ i1 * 3 + 2 ].v, 1.0 );
+    p2 = vec4( vertex_buffer[ i2 * 3 + 0 ].v, vertex_buffer[ i2 * 3 + 1 ].v, vertex_buffer[ i2 * 3 + 2 ].v, 1.0 );
 
-    float b = barycentric_weights.x;
-    float c = barycentric_weights.y;
-    float a = 1 - b - c;
+    p0_world = p0 * model_to_world;
+    p1_world = p1 * model_to_world;
+    p2_world = p2 * model_to_world;
 
-    vec2 texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
+    texcoord_buffer = vec2_array_type( mesh_draw.texcoord_buffer );
+    texcoord0 = texcoord_buffer[ i0 ].v;
+    texcoord1 = texcoord_buffer[ i1 ].v;
+    texcoord2 = texcoord_buffer[ i2 ].v;
 
-    vec3 albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
-    // Don't work for some reason if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
+    b = barycentric_weights.x;
+    c = barycentric_weights.y;
+    a = 1 - b - c;
 
-    float_array_type normals_buffer = float_array_type( mesh_draw.normal_buffer );
-    vec3 n0 = vec3(
-      normals_buffer[ i0 * 3 + 0 ].v,
-      normals_buffer[ i0 * 3 + 1 ].v,
-      normals_buffer[ i0 * 3 + 2 ].v
-    );
-    vec3 n1 = vec3(
-      normals_buffer[ i1 * 3 + 0 ].v,
-      normals_buffer[ i1 * 3 + 1 ].v,
-      normals_buffer[ i1 * 3 + 2 ].v
-    );
-    vec3 n2 = vec3(
-      normals_buffer[ i2 * 3 + 0 ].v,
-      normals_buffer[ i2 * 3 + 1 ].v,
-      normals_buffer[ i2 * 3 + 2 ].v
-    );
+    normals_buffer = float_array_type( mesh_draw.normal_buffer );
+    n0 = vec3( normals_buffer[ i0 * 3 + 0 ].v, normals_buffer[ i0 * 3 + 1 ].v, normals_buffer[ i0 * 3 + 2 ].v );
+    n1 = vec3( normals_buffer[ i1 * 3 + 0 ].v, normals_buffer[ i1 * 3 + 1 ].v, normals_buffer[ i1 * 3 + 2 ].v );
+    n2 = vec3( normals_buffer[ i2 * 3 + 0 ].v, normals_buffer[ i2 * 3 + 1 ].v, normals_buffer[ i2 * 3 + 2 ].v );
 
-    vec3 normal = a * n0 + b * n1 + c * n2;
-    mat3 world_to_model = mat3( mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_model );
-    normal = normal * world_to_model;
+    world_position = a * p0_world.xyz + b * p1_world.xyz + c * p2_world.xyz;
+    texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
+    normal = a * n0 + b * n1 + c * n2;
 
-    vec3 world_position = a * p0_world.xyz + b * p1_world.xyz + c * p2_world.xyz;
+    normal = normal * mat3( world_to_model );
 
+    albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
+    
     // TODO calculate lighting.
     crude_light light = lights[ 0 ];
 
-    vec3 position_to_light = light.world_position - world_position;
-    vec3 l = normalize( position_to_light );
-    float ndotl = clamp( dot( normal, l ), 0.0, 1.0 );
+    position_to_light = light.world_position - world_position;
+    position_to_light_direction = normalize( position_to_light );
+    ndotl = clamp( dot( normal, position_to_light_direction ), 0.0, 1.0 );
 
-    float attenuation = attenuation_square_falloff( position_to_light, 1.0f / light.radius );
+    light_intensity = vec3( 0.0f );
+    light_intensity += crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
 
-    vec3 light_intensity = vec3( 0.0f );
-    if ( attenuation > 0.001f && ndotl > 0.001f )
-    {
-      light_intensity += attenuation * ndotl * light.color * light.intensity;
-    }
-
-    vec3 diffuse = albedo * light_intensity;
+    diffuse = albedo * light_intensity;
     diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
 
     radiance = diffuse;
@@ -536,6 +518,7 @@ void main()
 #endif
 
 #if defined( PROBE_UPDATE_IRRADIANCE )
+    result.rgb = pow( result.rgb, vec3( 1.0f / 5.0f ) );
     result = mix( result, previous_value, hysteresis );
     imageStore(irradiance_image, coords.xy, result );
 #else
@@ -760,8 +743,8 @@ void main()
 
   if ( output_resolution_half == 1 )
   {
-    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, (coords.xy) * 2 + pixel_offsets[ chosen_hiresolution_sample_index ], 0).rg;
-    normal = normalize(crude_octahedral_decode(encoded_normal));
+    vec2 encoded_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, ( coords.xy ) * 2 + pixel_offsets[ chosen_hiresolution_sample_index ], 0 ).rg;
+    normal = normalize( crude_octahedral_decode( encoded_normal ) );
   }
   else
   {
@@ -791,8 +774,8 @@ void main()
   ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
   int probe_index = coords.x;
 
-  int probe_counts = probe_counts.x * probe_counts.y * probe_counts.z;
-  if ( probe_index >= probe_counts )
+  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
+  if ( probe_index >= total_probes )
   {
     return;
   }
@@ -814,14 +797,16 @@ void main()
     int backfaces_count = 0;
 
     int offset = 0;
-    uint flag = CRUDE_PROBE_STATUS_UNINITIALIZED;
+    uint flag = 0;
     vec3 outer_bounds = normalize( probe_spacing ) * ( length( probe_spacing ) + ( 2.f * self_shadow_bias ) );
 
     for ( int ray_index = 0; ray_index < probe_rays; ++ray_index )
     {
       ivec2 ray_tex_coord = ivec2( ray_index, probe_index );
 
-      float d_front = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0 ).w;
+      vec4 irradiance_distance = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0 );
+
+      float d_front = irradiance_distance.w;
       float d_back = -d_front;
 
       if ( d_back > 0.f ) /* not sure about >= 0.f for CALCULATE_PROBE_STATUSES */
@@ -840,7 +825,7 @@ void main()
         vec3 front_face_direction = d_front * probe_ray;
         if ( all( lessThan( abs( front_face_direction ), outer_bounds ) ) )
         {
-          flag = CRUDE_PROBE_STATUS_ACTIVE;
+          flag = 1;
         }
         
         if ( d_front < closest_frontface_distance )
@@ -856,27 +841,14 @@ void main()
       }
     }
 
-    const bool inside_geometry = closest_backface_index != -1 && ( float( backfaces_count ) / probe_rays ) > 0.25f;
+    const bool inside_geometry = /* closest_backface_index != -1 && */ ( float( backfaces_count ) / probe_rays ) > 0.25f;
     if ( inside_geometry )
     {
-      flag = CRUDE_PROBE_STATUS_OFF;
-    }
-    else if ( closest_frontface_index == -1 )
-    {
-      flag = CRUDE_PROBE_STATUS_OFF;
-    }
-    else if ( closest_frontface_distance < 0.05f )
-    {
-      flag = CRUDE_PROBE_STATUS_ACTIVE;
-    }
-
-    if ( flag == CRUDE_PROBE_STATUS_ACTIVE )
-    {
-      crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 0, 1, 0, 1 )  );
+      crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 1, 0, 0, 1 )  );
     }
     else
     {
-      crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 1, 0, 0, 1 )  );
+      crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( 0, 1, 0, 1 )  );
     }
   }
 
@@ -890,17 +862,23 @@ void main()
     {
       ivec2 sample_position = ivec2( ray_index, probe_index );
       vec3 ray_direction = normalize( crude_spherical_fibonacci( ray_index, probe_rays ) * mat3( random_rotation ) );
+      vec4 irradiance_distance = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 );
 
-      float distance2 = CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).w;
-      if ( distance2 < 0.0f )
+      float d_front = irradiance_distance.w;
+      if ( d_front > 0.0f )
       { 
-        continue;
+        vec3 irradiance = pow( irradiance_distance.xyz, vec3( 0.5f * 5.0f ) );
+        irradiance = irradiance * irradiance;
+        radiance += energy_conservation * irradiance;
       }
-
-      radiance += energy_conservation * CRUDE_TEXTURE_FETCH( radiance_output_index, sample_position, 0 ).rgb;
     }
 
     crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( radiance / probe_rays, 1 ) ); // fine for now, maybe move to pixel shader for models with proper calculation for debug
+  }
+
+  if ( ( probe_debug_flags & 4 ) == 4 )
+  {
+    crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( probe_index / float( total_probes ), 0, 0, 1 ) );
   }
 }
 #endif /* PROBE_DEBUG */

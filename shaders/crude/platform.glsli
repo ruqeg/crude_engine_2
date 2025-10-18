@@ -140,6 +140,18 @@ vec3 crude_spherical_fibonacci( float i, float n )
 #undef madfrac
 }
 
+float
+crude_light_attenuation
+(
+  in float                                                 light_distance,
+  in float                                                 light_radius
+)
+{
+  float attenuation = max( 1.f - pow( light_distance / light_radius, 2.f ), 0.f );
+  attenuation = attenuation * attenuation;
+  return attenuation;
+}
+
 #if defined( CRUDE_STAGE_COMPUTE )
 #endif /* CRUDE_STAGE_COMPUTE */
 

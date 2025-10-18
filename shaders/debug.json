@@ -48,6 +48,10 @@
                     }
                 ]
             },
+			"depth" : {
+				"write" : 0,
+				"test" : "less_or_equal"
+			},
             "topology" : "LINE_LIST",
             "shaders": [
                 {
