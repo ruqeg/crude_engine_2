@@ -203,7 +203,7 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
       chebyshev_weight = max( ( chebyshev_weight * chebyshev_weight * chebyshev_weight ), 0.0f );
     }
 
-    chebyshev_weight = max(0.05f, chebyshev_weight);
+    chebyshev_weight = max( 0.05f, chebyshev_weight );
     weight *= chebyshev_weight;
 
     weight = max( 0.000001, weight );
@@ -520,10 +520,10 @@ void main()
 #if defined( PROBE_UPDATE_IRRADIANCE )
     result.rgb = pow( result.rgb, vec3( 1.0f / 5.0f ) );
     result = mix( result, previous_value, hysteresis );
-    imageStore(irradiance_image, coords.xy, result );
+    imageStore( irradiance_image, coords.xy, result );
 #else
     result.rg = mix( result.rg, previous_value, hysteresis );
-    imageStore(visibility_image, coords.xy, vec4(result.rg, 0, 1));
+    imageStore( visibility_image, coords.xy, vec4( result.rg, 0, 1 ) );
 #endif
     return;
   }
@@ -607,7 +607,7 @@ void main()
     float d_front = CRUDE_TEXTURE_FETCH( radiance_output_index, ray_tex_coord, 0 ).w;
     float d_back = -d_front;
 
-    if ( d_back > 0.f ) /* not sure about >= 0.f for CALCULATE_PROBE_STATUSES */
+    if ( d_back > 0.f )
     {
       backfaces_count += 1;
       if ( d_back < closest_backface_distance )
@@ -809,7 +809,7 @@ void main()
       float d_front = irradiance_distance.w;
       float d_back = -d_front;
 
-      if ( d_back > 0.f ) /* not sure about >= 0.f for CALCULATE_PROBE_STATUSES */
+      if ( d_back > 0.f ) 
       {
         backfaces_count += 1;
         if ( d_back < closest_backface_distance )
@@ -869,7 +869,7 @@ void main()
       }
     }
 
-    crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( radiance / probe_rays, 1 ) ); // fine for now, maybe move to pixel shader for models with proper calculation for debug
+    crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( radiance / probe_rays, 1 ) ); /* fine for now, maybe move to pixel shader for models with proper calculation for debug */
   }
 
   if ( ( probe_debug_flags & 4 ) == 4 )
