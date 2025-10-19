@@ -129,7 +129,7 @@ crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
     ds_creation.name = "ray_tracing_solid_ds";
 
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->tlas, 1u );
+    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->uniform_buffer[ i ], 2u );
     
     pass->ray_tracing_solid_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->renderer->gpu, &ds_creation );

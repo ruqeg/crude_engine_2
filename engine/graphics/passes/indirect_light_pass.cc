@@ -343,7 +343,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_draws_sb, 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_instances_draws_sb, 2u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 3u );
-    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->tlas, 5u );
+    crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ddgi_cb, 10u );
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     pass->probe_raytrace_ds[ i ] = crude_gfx_create_descriptor_set( renderer->gpu, &ds_creation );

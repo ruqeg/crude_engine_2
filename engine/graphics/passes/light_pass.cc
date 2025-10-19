@@ -128,7 +128,7 @@ crude_gfx_light_pass_on_techniques_reloaded
     
     if ( pass->scene_renderer->ray_trace_shadows )
     {
-      crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->tlas, 10u );
+      crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 10u );
     }
 
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
