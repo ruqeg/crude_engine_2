@@ -123,7 +123,7 @@
       },
       {
         "node": {
-          "name": "model",
+          "name": "model_sponza",
           "components": [
             {
               "type": "crude_gltf",
@@ -147,6 +147,37 @@
               0.01,
               0.01,
               0.01
+            ]
+          }
+        },
+        "children": []
+      },
+      {
+        "node": {
+          "name": "model_box",
+          "components": [
+            {
+              "type": "crude_gltf",
+              "path": "glTF-Sample-Models\\2.0\\Box\\glTF\\Box.gltf"
+            }
+          ],
+          "tags": [],
+          "transform": {
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
             ]
           }
         },
