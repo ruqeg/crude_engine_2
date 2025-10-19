@@ -118,6 +118,8 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                 *blases_buffers;
   VkAccelerationStructureKHR                               vk_tlas;
   crude_gfx_buffer_handle                                  tlas_buffer;
+  crude_gfx_buffer_handle                                  tlas_instances_buffer_handle;
+  crude_gfx_buffer_handle                                  tlas_scratch_buffer_handle;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   /***********************
