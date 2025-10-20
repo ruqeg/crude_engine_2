@@ -36,6 +36,7 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
   VK_KHR_RAY_QUERY_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+  VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME,
 #ifdef  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
   //VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -3305,6 +3306,7 @@ vk_create_device_
 #ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkPhysicalDeviceRayTracingValidationFeaturesNV           physical_device_ray_tracing_validation_features_nv;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+  VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR       physical_device_ray_tracing_position_fetch_features;
   VkPhysicalDeviceRayQueryFeaturesKHR                      physical_device_ray_query_features;
   VkPhysicalDeviceRayTracingPipelineFeaturesKHR            physical_device_ray_tracing_pipeline_features;
   VkPhysicalDeviceAccelerationStructureFeaturesKHR         physical_device_acceleration_structure_features;
@@ -3386,9 +3388,14 @@ vk_create_device_
   bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
+  physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
+  physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = true;
+
   physical_device_ray_query_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayQueryFeaturesKHR );
   physical_device_ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
   physical_device_ray_query_features.rayQuery = true;
+  physical_device_ray_query_features.pNext = &physical_device_ray_tracing_position_fetch_features;
 
   physical_device_ray_tracing_pipeline_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelineFeaturesKHR );
   physical_device_ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;

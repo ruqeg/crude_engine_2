@@ -79,15 +79,6 @@ void crude_debug_draw_line_2d_coloru( vec2 start, vec2 end, uint start_color, ui
   debug_line_vertices[ offset + 1 ].color = end_color;
 }
 
-void crude_debug_draw_cube_coloru( vec3 translation, vec3 scale, uint color )
-{
-  uint offset = atomicAdd( debug_cubes_instances_count, 1 );
-
-  debug_cube_instances[ offset ].translation = translation;
-  debug_cube_instances[ offset ].scale = scale;
-  debug_cube_instances[ offset ].color = color;
-}
-
 void crude_debug_draw_2d_line( vec2 start, vec2 end, vec4 start_color, vec4 end_color )
 {
   crude_debug_draw_line_2d_coloru( start, end, crude_vec4_to_rgba( start_color ), crude_vec4_to_rgba( end_color ) );
@@ -105,8 +96,11 @@ void crude_debug_draw_2d_box( vec2 min, vec2 max, vec4 color )
 
 void crude_debug_draw_cube( vec3 translation, vec3 scale, vec4 color )
 {
-  uint color_uint = crude_vec4_to_rgba( color );
-  crude_debug_draw_cube_coloru( translation, scale, color_uint );
+  uint offset = atomicAdd( debug_cubes_instances_count, 1 );
+
+  debug_cube_instances[ offset ].translation = translation;
+  debug_cube_instances[ offset ].scale = scale;
+  debug_cube_instances[ offset ].color = color;
 }
 
 #endif /* CRUDE_DEBUG_GLSLI */

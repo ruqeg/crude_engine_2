@@ -1,13 +1,13 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-//#define CRUDE_CLOSEST_HIT
-//#define PROBE_RAYTRACER
+#define CRUDE_CLOSEST_HIT
+#define PROBE_RAYTRACER
 //#define CRUDE_RAYGEN
 //#define PROBE_DEBUG
 //#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
-#define PROBE_UPDATE_IRRADIANCE
+//#define PROBE_UPDATE_IRRADIANCE
 //#define CALCULATE_PROBE_OFFSETS
 
 #include "crude/platform.glsli"
@@ -234,11 +234,14 @@ vec3 sample_irradiance( vec3 world_position, vec3 normal, vec3 camera_position )
 #if defined( PROBE_RAYTRACER )
 
 #extension GL_EXT_ray_tracing : enable
+#extension GL_EXT_ray_query : require
+#extension GL_EXT_ray_tracing_position_fetch  : require
 
 struct ray_payload
 {
   vec3                                                     radiance;
   float                                                    distance;
+  int                                                      probe_index_debug;
 };
 
 CRUDE_UNIFORM( SceneConstant, 0 ) 
@@ -290,12 +293,13 @@ void main()
 
   payload.radiance = vec3( 0.f );
   payload.distance = 0.f;
+  payload.probe_index_debug = probe_index;
 
   traceRayEXT( as, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0 );
 
   imageStore( global_images_2d[ radiance_output_index ], ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
   
-  //if ( probe_index == 3123 ) 
+  //if ( probe_index == 2867 ) 
   //{
   //  crude_debug_draw_line( ray_origin, ray_origin + direction * payload.distance, vec4( payload.radiance, 1 ), vec4( payload.radiance, 1 ) );
   //}
@@ -321,13 +325,11 @@ void main()
   }
   else
   {
-    float_array_type                                       vertex_buffer, normals_buffer;
     int_array_type                                         index_buffer;
     vec2_array_type                                        texcoord_buffer;
     crude_mesh_draw                                        mesh_draw;
     mat4                                                   model_to_world, world_to_model;
-    vec4                                                   p0, p1, p2, p0_world, p1_world, p2_world;
-    vec3                                                   n0, n1, n2, normal, world_position, position_to_light, position_to_light_direction, diffuse, light_intensity, albedo;
+    vec3                                                   normal, p0_world, p1_world, p2_world, world_position, diffuse, albedo;
     vec2                                                   texcoord, texcoord0, texcoord1, texcoord2;
     float                                                  a, b, c, ndotl, attenuation;
     int                                                    i0, i1, i2;
@@ -344,14 +346,11 @@ void main()
     i1 = index_buffer[ gl_PrimitiveID * 3 + 1 ].v;
     i2 = index_buffer[ gl_PrimitiveID * 3 + 2 ].v;
 
-    vertex_buffer = float_array_type( mesh_draw.position_buffer );
-    p0 = vec4( vertex_buffer[ i0 * 3 + 0 ].v, vertex_buffer[ i0 * 3 + 1 ].v, vertex_buffer[ i0 * 3 + 2 ].v, 1.0 );
-    p1 = vec4( vertex_buffer[ i1 * 3 + 0 ].v, vertex_buffer[ i1 * 3 + 1 ].v, vertex_buffer[ i1 * 3 + 2 ].v, 1.0 );
-    p2 = vec4( vertex_buffer[ i2 * 3 + 0 ].v, vertex_buffer[ i2 * 3 + 1 ].v, vertex_buffer[ i2 * 3 + 2 ].v, 1.0 );
-
-    p0_world = p0 * model_to_world;
-    p1_world = p1 * model_to_world;
-    p2_world = p2 * model_to_world;
+    p0_world = gl_HitTriangleVertexPositionsEXT[ 0 ];
+    p1_world = gl_HitTriangleVertexPositionsEXT[ 1 ];
+    p2_world = gl_HitTriangleVertexPositionsEXT[ 2 ];
+    
+    normal = cross( p1_world - p0_world, p2_world - p0_world );
 
     texcoord_buffer = vec2_array_type( mesh_draw.texcoord_buffer );
     texcoord0 = texcoord_buffer[ i0 ].v;
@@ -361,31 +360,41 @@ void main()
     b = barycentric_weights.x;
     c = barycentric_weights.y;
     a = 1 - b - c;
-
-    normals_buffer = float_array_type( mesh_draw.normal_buffer );
-    n0 = vec3( normals_buffer[ i0 * 3 + 0 ].v, normals_buffer[ i0 * 3 + 1 ].v, normals_buffer[ i0 * 3 + 2 ].v );
-    n1 = vec3( normals_buffer[ i1 * 3 + 0 ].v, normals_buffer[ i1 * 3 + 1 ].v, normals_buffer[ i1 * 3 + 2 ].v );
-    n2 = vec3( normals_buffer[ i2 * 3 + 0 ].v, normals_buffer[ i2 * 3 + 1 ].v, normals_buffer[ i2 * 3 + 2 ].v );
-
+  
     world_position = a * p0_world.xyz + b * p1_world.xyz + c * p2_world.xyz;
+    world_position = vec4( vec4( world_position, 1 ) * model_to_world ).xyz;
     texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
-    normal = a * n0 + b * n1 + c * n2;
-
-    normal = normal * mat3( world_to_model );
 
     albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
     
-    // TODO calculate lighting.
-    crude_light light = lights[ 0 ];
+    diffuse = vec3( 0 );
+    for ( uint i = 0; i < scene.active_lights_count; ++i )
+    {
+      rayQueryEXT                                          ray_query;
+      crude_light                                          light;
+      float                                                position_to_light_distance;
+      vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
+      
+      light = lights[ i ];
+      position_to_light = light.world_position - world_position;
+      position_to_light_distance = length( position_to_light );
+      position_to_light_normalized = position_to_light / position_to_light_distance;
 
-    position_to_light = light.world_position - world_position;
-    position_to_light_direction = normalize( position_to_light );
-    ndotl = clamp( dot( normal, position_to_light_direction ), 0.0, 1.0 );
+      float visiblity = 1.f;
+      if ( position_to_light_distance <= light.radius )
+      {
+        rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
+        rayQueryProceedEXT( ray_query );
+        visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
+      }
+      
+      ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
 
-    light_intensity = vec3( 0.0f );
-    light_intensity += crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
+      light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
 
-    diffuse = albedo * light_intensity;
+      diffuse += visiblity * albedo * light_intensity;
+    }
+
     diffuse += albedo * sample_irradiance( world_position, normal, scene.camera.position.xyz ) * infinite_bounces_multiplier;
 
     radiance = diffuse;
@@ -874,7 +883,7 @@ void main()
 
   if ( ( probe_debug_flags & 4 ) == 4 )
   {
-    crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( probe_index / float( total_probes ), 0, 0, 1 ) );
+    crude_debug_draw_cube( ray_origin, vec3( 0.1 ), vec4( ( probe_index ) / float( total_probes ), 0, 0, 1 ) );
   }
 }
 #endif /* PROBE_DEBUG */

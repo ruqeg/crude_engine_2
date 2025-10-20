@@ -157,7 +157,7 @@ void main()
   position = position * debug_cube_instances[ gl_InstanceIndex ].scale;
   position = position + debug_cube_instances[ gl_InstanceIndex ].translation;
   
-  out_color = crude_unpack_color_rgba( debug_cube_instances[ gl_InstanceIndex ].color );
+  out_color = debug_cube_instances[ gl_InstanceIndex ].color;
   gl_Position = vec4( position, 1 ) * scene.camera.world_to_clip;
 }
 

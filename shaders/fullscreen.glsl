@@ -101,17 +101,13 @@ crude_calculate_point_light_shadow_contribution
   vertex_to_light = light.world_position - vertex_position.xyz;
   vertex_to_light_distance = length( vertex_to_light );
   vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
-  rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
-  rayQueryProceedEXT( ray_query );
 
   float visiblity = 0.f;
-  if ( rayQueryGetIntersectionTypeEXT( ray_query, true ) != gl_RayQueryCommittedIntersectionNoneEXT )
+  if ( vertex_to_light_distance <= light.radius )
   {
-    visiblity = rayQueryGetIntersectionTEXT( ray_query, true ) > vertex_to_light_distance ? 1.f : 0.f;
-  }
-  else
-  {
-    visiblity = 1.f;
+    rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
+    rayQueryProceedEXT( ray_query );
+    visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
   }
   return visiblity;
 #else /* CRUDE_RAYTRACED_SHADOWS */

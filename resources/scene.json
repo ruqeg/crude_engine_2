@@ -189,17 +189,17 @@
           "components": [
             {
               "type": "crude_light",
-              "radius": 5,
-              "color": [ 0, 0, 0 ],
-              "intensity": 5
+              "radius": 52,
+              "color": [ 1, 1, 1 ],
+              "intensity": 52
             }
           ],
           "tags": [],
           "transform": {
             "translation": [
               0,
-              1,
-              0
+              17,
+              3.7
             ],
             "rotation": [
               0,

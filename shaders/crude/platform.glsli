@@ -25,7 +25,7 @@
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_control_flow_attributes : require
-
+ 
 /* Read only */
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler3D global_textures_3d[];
@@ -209,9 +209,10 @@ void crude_calculate_geometric_tbn
 struct crude_debug_cube_instance
 {
   vec3                                                     translation;
-  uint                                                     color;
+  uint                                                     padding1;
+  vec4                                                     color;
   vec3                                                     scale;
-  uint                                                     padding;
+  uint                                                     padding2;
 };
 
 struct crude_debug_line_vertex
