@@ -36,6 +36,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ddgi_gpu_data
   float32                                                  self_shadow_bias;
   float32                                                  infinite_bounces_multiplier;
   XMFLOAT3                                                 reciprocal_probe_spacing;
+
+  float32                                                  shadow_weight_power;
 } crude_gfx_ddgi_gpu_data;
 
 typedef struct crude_gfx_indirect_light_pass_options
@@ -47,6 +49,7 @@ typedef struct crude_gfx_indirect_light_pass_options
   float32                                                  infinite_bounces_multiplier;
   float32                                                  max_probe_offset;
   uint32                                                   probe_debug_flags;
+  float32                                                  shadow_weight_power;
 } crude_gfx_indirect_light_pass_options;
 
 typedef struct crude_gfx_indirect_light_pass
@@ -64,6 +67,7 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 indirect_texture_handle;
   crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  ddgi_cb;
+  crude_gfx_sampler_handle                                 probe_grid_sampler_handle;
 
   uint32                                                   irradiance_atlas_width;
   uint32                                                   irradiance_atlas_height;

@@ -4,7 +4,7 @@
 		{
 			"name": "ray_tracing_solid",
 			"filename": "ray_tracing_solid.glsl",
-			"includes" : [ "crude/platform.glsli", "crude/scene.glsli" ]
+			"includes" : [ "crude/platform.glsli", "crude/debug.glsli", "crude/scene.glsli" ]
 		},
 		{
 			"name": "ddgi",

@@ -82,6 +82,46 @@ vec3 crude_world_position_from_depth( vec2 uv, float depth, mat4 clip_to_world )
   return d.xyz / d.w;
 }
 
+vec2
+crude_oct_encode
+(
+  in vec3                                                  v
+)
+{
+  float l1norm = abs( v.x ) + abs( v.y ) + abs( v.z );
+  vec2 result = v.xy * ( 1.0 / l1norm );
+  if ( v.z < 0.0 )
+  {
+    result = ( 1.0 - abs( result.yx ) ) * crude_sign_not_zero( result.xy );
+  }
+  return result;
+}
+
+vec3
+crude_oct_decode
+(
+  in vec2                                                  o
+)
+{
+  vec3 v = vec3( o.x, o.y, 1.0 - abs( o.x ) - abs( o.y ) );
+  if ( v.z < 0.0 )
+  {
+    v.xy = ( 1.0 - abs( v.yx ) ) * crude_sign_not_zero( v.xy );
+  }
+  return normalize( v );
+}
+
+vec2
+crude_uv_nearest
+(
+  in ivec2                                                 pixel,
+  in vec2                                                  texture_size
+)
+{
+  vec2 uv = pixel + .5;
+  return uv / texture_size;
+}
+
 /* https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl */
 
 /* sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT */

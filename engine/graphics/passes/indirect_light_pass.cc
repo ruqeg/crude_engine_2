@@ -15,15 +15,17 @@ crude_gfx_indirect_light_pass_initialize
   crude_gfx_renderer                                      *renderer;
   crude_gfx_buffer_creation                                buffer_creation;
   crude_gfx_texture_creation                               texture_creation;
+  crude_gfx_sampler_creation                               sampler_creation;
   
   pass->scene_renderer = scene_renderer;
-  pass->options.probe_spacing = XMFLOAT3{ 2.0, 1.0, 1.0 };
+  pass->options.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
   pass->options.self_shadow_bias = 0.3f;
   pass->options.infinite_bounces_multiplier = 0.75f;
-  pass->options.hysteresis = 0.95f;
+  pass->options.hysteresis = 0.99f;
   pass->options.probe_grid_position = XMFLOAT3{ -20.0,0.5,-13.0 };
   pass->options.max_probe_offset = 0.4f;
   pass->options.probe_debug_flags = 0;
+  pass->options.shadow_weight_power = 2.5;
 
   pass->offsets_calculations_count = 24;
   pass->probe_update_offset = 0u;
@@ -74,6 +76,18 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation.name = "probe_visibility";
   pass->probe_grid_visibility_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
   
+  sampler_creation = crude_gfx_sampler_creation_empty( );
+  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = VK_FILTER_LINEAR;
+  sampler_creation.min_filter = VK_FILTER_LINEAR;
+  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  pass->probe_grid_sampler_handle = crude_gfx_create_sampler( pass->scene_renderer->renderer->gpu, &sampler_creation );
+
+  crude_gfx_link_texture_sampler( pass->scene_renderer->renderer->gpu, pass->probe_grid_irradiance_texture_handle, pass->probe_grid_sampler_handle );
+  crude_gfx_link_texture_sampler( pass->scene_renderer->renderer->gpu, pass->probe_grid_visibility_texture_handle, pass->probe_grid_sampler_handle );
+
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = pass->probe_count_x * pass->probe_count_y;
   texture_creation.height = pass->probe_count_z;
@@ -132,6 +146,7 @@ crude_gfx_indirect_light_pass_deinitialize
   {
     crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_radiance_texture_handle[ i ] );
   }
+  crude_gfx_destroy_sampler( pass->scene_renderer->renderer->gpu, pass->probe_grid_sampler_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_irradiance_texture_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_visibility_texture_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_offsets_texture_handle );
@@ -177,7 +192,8 @@ crude_gfx_indirect_light_pass_render
     gpu_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
     gpu_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
     gpu_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
-    XMStoreFloat4x4( &gpu_data->random_rotation, XMMatrixRotationRollPitchYaw( crude_random_unit_f32( ) * 0.001f, crude_random_unit_f32( ) * 0.001f, crude_random_unit_f32( ) * 0.001f ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+    //XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//
+    XMStoreFloat4x4( &gpu_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
     gpu_data->irradiance_texture_width = pass->irradiance_atlas_width;
     gpu_data->irradiance_texture_height = pass->irradiance_atlas_height;
     gpu_data->irradiance_side_length = pass->irradiance_side_length;
@@ -193,6 +209,7 @@ crude_gfx_indirect_light_pass_render
     gpu_data->probe_spacing = pass->options.probe_spacing;
     gpu_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / gpu_data->probe_spacing.x, 1.f / gpu_data->probe_spacing.y, 1.f / gpu_data->probe_spacing.z } );
 
+    gpu_data->shadow_weight_power = pass->options.shadow_weight_power;
 
     pass->probe_update_offset = ( pass->probe_update_offset + 1000 ) % probe_count;
 
