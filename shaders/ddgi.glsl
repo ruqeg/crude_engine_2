@@ -50,6 +50,7 @@ CRUDE_UNIFORM( DDGIConstants, 10 )
   vec3                                                     reciprocal_probe_spacing;
 
   float                                                    shadow_weight_power;
+  int                                                      probe_update_per_frame;
 };
 
 

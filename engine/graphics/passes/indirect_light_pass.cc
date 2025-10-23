@@ -26,11 +26,12 @@ crude_gfx_indirect_light_pass_initialize
   pass->options.max_probe_offset = 0.4f;
   pass->options.probe_debug_flags = 0;
   pass->options.shadow_weight_power = 2.5;
+  pass->options.probe_update_per_frame = 1000;
 
   pass->offsets_calculations_count = 24;
   pass->probe_update_offset = 0u;
   pass->probe_count_x = 20;
-  pass->probe_count_y = 12;
+  pass->probe_count_y = 15;
   pass->probe_count_z = 20;
   pass->probe_rays = 128;
   pass->use_half_resolution = true;
@@ -164,54 +165,59 @@ crude_gfx_indirect_light_pass_render
   crude_gfx_renderer                                      *renderer;
   crude_gfx_render_graph_resource                         *render_graph_resource;
   crude_gfx_texture                                       *probe_raytrace_radiance_texture;
+  crude_gfx_ddgi_gpu_data                                 *ddgi_mapped_data;
   crude_gfx_pipeline_handle                                probe_raytrace_pipeline, probe_update_irradiance_pipeline, probe_update_visibility_pipeline, sample_irradiance_pipeline, probe_debug_pipeline, calculate_probe_offset_pipeline;
-  
+  crude_gfx_map_buffer_parameters                          map_parameters;
+  uint32                                                   probe_count;
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
   renderer = pass->scene_renderer->renderer;
   
-  crude_gfx_map_buffer_parameters map_parameters = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+  probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
+  pass->probe_update_offset = ( pass->probe_update_offset + pass->options.probe_update_per_frame ) % probe_count;
+  
+  map_parameters = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
   map_parameters.buffer = pass->ddgi_cb;
-
-  uint32 probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
-  crude_gfx_ddgi_gpu_data *gpu_data = CRUDE_CAST( crude_gfx_ddgi_gpu_data*, crude_gfx_map_buffer( renderer->gpu, &map_parameters ) );
-  if ( gpu_data )
+  ddgi_mapped_data = CRUDE_CAST( crude_gfx_ddgi_gpu_data*, crude_gfx_map_buffer( renderer->gpu, &map_parameters ) );
+  if ( ddgi_mapped_data )
   {
-    gpu_data->probe_counts.x = pass->probe_count_x;
-    gpu_data->probe_counts.y = pass->probe_count_y;
-    gpu_data->probe_counts.z = pass->probe_count_z;
-    gpu_data->probe_rays = pass->probe_rays;
-    gpu_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle[ renderer->gpu->current_frame ].index;
-    gpu_data->indirect_output_index = pass->indirect_texture_handle.index;
+    ddgi_mapped_data->probe_counts.x = pass->probe_count_x;
+    ddgi_mapped_data->probe_counts.y = pass->probe_count_y;
+    ddgi_mapped_data->probe_counts.z = pass->probe_count_z;
+    ddgi_mapped_data->probe_rays = pass->probe_rays;
+    ddgi_mapped_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle[ renderer->gpu->current_frame ].index;
+    ddgi_mapped_data->indirect_output_index = pass->indirect_texture_handle.index;
 
     render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
-    gpu_data->depth_fullscreen_texture_index = render_graph_resource->resource_info.texture.handle.index;
+    ddgi_mapped_data->depth_fullscreen_texture_index = render_graph_resource->resource_info.texture.handle.index;
     
     render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" );
-    gpu_data->normal_texture_index = render_graph_resource->resource_info.texture.handle.index;
+    ddgi_mapped_data->normal_texture_index = render_graph_resource->resource_info.texture.handle.index;
 
-    gpu_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
-    gpu_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
-    gpu_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
+    ddgi_mapped_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
+    ddgi_mapped_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
+    ddgi_mapped_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
     //XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//
-    XMStoreFloat4x4( &gpu_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
-    gpu_data->irradiance_texture_width = pass->irradiance_atlas_width;
-    gpu_data->irradiance_texture_height = pass->irradiance_atlas_height;
-    gpu_data->irradiance_side_length = pass->irradiance_side_length;
-    gpu_data->visibility_texture_width = pass->visibility_atlas_width;
-    gpu_data->visibility_texture_height = pass->visibility_atlas_height;
-    gpu_data->visibility_side_length = pass->visibility_side_length;
+    XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+    ddgi_mapped_data->irradiance_texture_width = pass->irradiance_atlas_width;
+    ddgi_mapped_data->irradiance_texture_height = pass->irradiance_atlas_height;
+    ddgi_mapped_data->irradiance_side_length = pass->irradiance_side_length;
+    ddgi_mapped_data->visibility_texture_width = pass->visibility_atlas_width;
+    ddgi_mapped_data->visibility_texture_height = pass->visibility_atlas_height;
+    ddgi_mapped_data->visibility_side_length = pass->visibility_side_length;
     
-    gpu_data->hysteresis = pass->options.hysteresis;
-    gpu_data->self_shadow_bias = pass->options.self_shadow_bias;
-    gpu_data->probe_grid_position = pass->options.probe_grid_position;
-    gpu_data->max_probe_offset = pass->options.max_probe_offset;
-    gpu_data->infinite_bounces_multiplier = pass->options.infinite_bounces_multiplier;
-    gpu_data->probe_spacing = pass->options.probe_spacing;
-    gpu_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / gpu_data->probe_spacing.x, 1.f / gpu_data->probe_spacing.y, 1.f / gpu_data->probe_spacing.z } );
+    ddgi_mapped_data->hysteresis = pass->options.hysteresis;
+    ddgi_mapped_data->self_shadow_bias = pass->options.self_shadow_bias;
+    ddgi_mapped_data->probe_grid_position = pass->options.probe_grid_position;
+    ddgi_mapped_data->max_probe_offset = pass->options.max_probe_offset;
+    ddgi_mapped_data->infinite_bounces_multiplier = pass->options.infinite_bounces_multiplier;
+    ddgi_mapped_data->probe_spacing = pass->options.probe_spacing;
+    ddgi_mapped_data->probe_update_per_frame = pass->options.probe_update_per_frame;
+    ddgi_mapped_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / pass->options.probe_spacing.x, 1.f / pass->options.probe_spacing.y, 1.f / pass->options.probe_spacing.z } );
 
-    gpu_data->shadow_weight_power = pass->options.shadow_weight_power;
+    ddgi_mapped_data->shadow_weight_power = pass->options.shadow_weight_power;
 
-    pass->probe_update_offset = ( pass->probe_update_offset + 1000 ) % probe_count;
+    //ddgi_mapped_data->probe_update_offset = pass->probe_update_offset;
 
     crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );
   }
@@ -246,6 +252,9 @@ crude_gfx_indirect_light_pass_render
     crude_gfx_cmd_dispatch( primary_cmd, ( probe_count + 31 ) / 32, 1u, 1 );
     crude_gfx_cmd_pop_marker( primary_cmd );
   }
+
+  uint32 x1 = pass->irradiance_atlas_width / ( pass->irradiance_side_length + 2 /* border */ );
+  uint32 y1 = pass->options.probe_update_per_frame ;
 
   crude_gfx_cmd_push_marker( primary_cmd, "probe_update_irradiance" );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );

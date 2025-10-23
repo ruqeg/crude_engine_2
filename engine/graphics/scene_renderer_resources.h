@@ -184,7 +184,7 @@ typedef struct crude_gfx_light_cpu
 
 typedef struct crude_gfx_mesh_instance_cpu
 {
-  crude_gfx_mesh_cpu                                      *mesh;
+  uint32                                                   mesh_cpu_index;
   crude_entity                                             node;
   uint32                                                   material_pass_index;
 } crude_gfx_mesh_instance_cpu;

@@ -537,7 +537,9 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
+#endif
   crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
@@ -559,7 +561,9 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
+#endif
   crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
@@ -643,10 +647,10 @@ crude_gfx_scene_renderer_submit_draw_task
 {
   crude_gfx_cmd_buffer                                    *primary_cmd;
  
-  primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
-  
-  crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
   update_top_level_acceleration_structure_( scene_renderer, scene_renderer->temporary_allocator );
+
+  primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
+  crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
   update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
   crude_gfx_cmd_pop_marker( primary_cmd );
@@ -673,7 +677,9 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
+#endif
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
@@ -711,6 +717,16 @@ crude_gfx_scene_renderer_on_resize
     buffer_creation.name = "lights_tiles_sb";
     scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   }
+}
+
+crude_gfx_mesh_cpu*
+crude_gfx_scene_renderer_get_mesh_cpu
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_gfx_mesh_instance_cpu const                  *mesh_instance_cpu
+)
+{
+  return &scene_renderer->meshes[ mesh_instance_cpu->mesh_cpu_index ];
 }
 
 /**
@@ -815,7 +831,7 @@ update_dynamic_buffers_
       scene_renderer->total_meshes_instances_count = 0u;
       for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ); ++i )
       {
-        crude_gfx_mesh_cpu *mesh_cpu = scene_renderer->meshes_instances[ i ].mesh;
+        crude_gfx_mesh_cpu *mesh_cpu = crude_gfx_scene_renderer_get_mesh_cpu( scene_renderer, &scene_renderer->meshes_instances[ i ] );
         
         bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
           && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
@@ -832,7 +848,7 @@ update_dynamic_buffers_
 
           XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].model_to_world, model_to_world );
           XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].world_to_model, XMMatrixInverse( NULL, model_to_world ) );
-          meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_draw_index = scene_renderer->meshes_instances[ i ].mesh->gpu_mesh_index;
+          meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_draw_index = crude_gfx_scene_renderer_get_mesh_cpu( scene_renderer, &scene_renderer->meshes_instances[ i ] )->gpu_mesh_index;
 
           ++scene_renderer->total_meshes_instances_count;
         }
@@ -2005,7 +2021,7 @@ load_nodes_
       {
         crude_gfx_mesh_instance_cpu mesh_instance;
         mesh_instance.node = node;
-        mesh_instance.mesh = &scene_renderer->meshes[ mesh_index_offset + pi ];
+        mesh_instance.mesh_cpu_index = mesh_index_offset + pi;
         mesh_instance.material_pass_index = 0;
         CRUDE_ARRAY_PUSH( scene_renderer->meshes_instances, mesh_instance );
       }
@@ -2196,7 +2212,7 @@ create_top_level_acceleration_structure_
     int64                                                  mesh_index;
     
     mesh_instance = &scene_renderer->meshes_instances[ i ];
-    mesh_index = mesh_instance->mesh - scene_renderer->meshes;
+    mesh_index = mesh_instance->mesh_cpu_index;
 
     XMStoreFloat4x4( &node_to_world, crude_transform_node_to_world( mesh_instance->node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance->node, crude_transform ) ) );
     for ( int32 y = 0; y < 3; ++y )
@@ -2298,7 +2314,7 @@ create_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
-  cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
+  cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 3, true );
   scene_renderer->renderer->gpu->vkCmdBuildAccelerationStructuresKHR( cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   crude_gfx_submit_immediate( cmd );
 
@@ -2343,7 +2359,7 @@ update_top_level_acceleration_structure_
     int64                                                  mesh_index;
     
     mesh_instance = &scene_renderer->meshes_instances[ i ];
-    mesh_index = mesh_instance->mesh - scene_renderer->meshes;
+    mesh_index = mesh_instance->mesh_cpu_index;
 
     XMStoreFloat4x4( &node_to_world, crude_transform_node_to_world( mesh_instance->node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance->node, crude_transform ) ) );
     for ( int32 y = 0; y < 3; ++y )
@@ -2410,7 +2426,7 @@ update_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
-  cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 3, true );
+  cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 0, true );
   scene_renderer->renderer->gpu->vkCmdBuildAccelerationStructuresKHR( cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   crude_gfx_submit_immediate( cmd );
 

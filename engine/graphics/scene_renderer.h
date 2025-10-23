@@ -136,7 +136,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_light_pass                                     light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
+#endif
   crude_gfx_indirect_light_pass                            indirect_light_pass;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_scene_renderer;
@@ -178,6 +180,13 @@ CRUDE_API void
 crude_gfx_scene_renderer_on_resize
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API crude_gfx_mesh_cpu*
+crude_gfx_scene_renderer_get_mesh_cpu
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_gfx_mesh_instance_cpu const                  *mesh_instance_cpu
 );
 
 /**

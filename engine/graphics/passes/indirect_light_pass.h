@@ -38,6 +38,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ddgi_gpu_data
   XMFLOAT3                                                 reciprocal_probe_spacing;
 
   float32                                                  shadow_weight_power;
+  int32                                                    probe_update_per_frame;
 } crude_gfx_ddgi_gpu_data;
 
 typedef struct crude_gfx_indirect_light_pass_options
@@ -50,6 +51,7 @@ typedef struct crude_gfx_indirect_light_pass_options
   float32                                                  max_probe_offset;
   uint32                                                   probe_debug_flags;
   float32                                                  shadow_weight_power;
+  int32                                                    probe_update_per_frame;
 } crude_gfx_indirect_light_pass_options;
 
 typedef struct crude_gfx_indirect_light_pass
