@@ -1,13 +1,13 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define CRUDE_CLOSEST_HIT
-#define PROBE_RAYTRACER
+//#define CRUDE_CLOSEST_HIT
+//#define PROBE_RAYTRACER
 //#define CRUDE_RAYGEN
 //#define PROBE_DEBUG
 //#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
-//#define PROBE_UPDATE_IRRADIANCE
+#define PROBE_UPDATE_IRRADIANCE
 //#define CALCULATE_PROBE_OFFSETS
 
 #include "crude/platform.glsli"
@@ -107,18 +107,6 @@ probe_index_to_grid_indices
   int probe_z = probe_index / probe_counts_xy;
 
   return ivec3( probe_x, probe_y, probe_z );
-}
-
-int
-get_probe_index_from_pixels
-(
-  in ivec2                                                 pixels,
-  in int                                                   probe_with_border_side,
-  in int                                                   full_texture_width
-)
-{
-  int probes_per_side = full_texture_width / probe_with_border_side;
-  return int( pixels.x / probe_with_border_side ) + probes_per_side * int( pixels.y / probe_with_border_side );
 }
 
 vec2
@@ -293,17 +281,13 @@ void main()
   vec3                                                     ray_origin, direction;
   ivec3                                                    probe_grid_indices;
   ivec2                                                    pixel_coord;
-  int                                                      ray_index, probe_index;
+  int                                                      ray_index, probe_index, total_probes;
+
+  total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
 
   pixel_coord = ivec2( gl_LaunchIDEXT.xy );
-  probe_index = pixel_coord.y + probe_update_offset;
+  probe_index = ( pixel_coord.y + probe_update_offset ) % total_probes;
   ray_index = pixel_coord.x;
-
-  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
-  if ( probe_index >= total_probes )
-  {
-    return;
-  }
 
   probe_grid_indices = probe_index_to_grid_indices( probe_index );
   ray_origin = grid_indices_to_world( probe_grid_indices, probe_index );
@@ -464,9 +448,7 @@ int read_table[ 6 ] =
 };
 
 void main()
-{
-  ivec3 coords = ivec3( gl_GlobalInvocationID.xyz );
-
+{ 
 #if defined( PROBE_UPDATE_IRRADIANCE )
   int probe_texture_width = irradiance_texture_width;
   int probe_texture_height = irradiance_texture_height;
@@ -480,18 +462,24 @@ void main()
   probe_max_ray_distance = sqrt( probe_max_ray_distance * probe_max_ray_distance + probe_max_ray_distance * probe_max_ray_distance ); // maybe we can remove sqrt, like who gives a fuck?
 #endif
 
+  int probe_with_border_side = probe_side_length + 2;
+  uint probe_last_pixel = probe_side_length + 1;
+  int probes_per_row = probe_texture_width / probe_with_border_side;
+
+  int total_probes = probe_counts.x * probe_counts.y * probe_counts.z;
+  int probe_index = ( int( gl_GlobalInvocationID.z ) + probe_update_offset ) % total_probes; 
+
+  ivec2 probe_indices = ivec2( ( probe_index % probes_per_row ), ( probe_index / probes_per_row ) );
+  ivec2 atlas_texels = ivec2( probe_indices.x * probe_with_border_side, probe_indices.y * probe_with_border_side );
+  ivec2 coords = ivec2( gl_GlobalInvocationID.xy ) + atlas_texels;
+
   if ( coords.x >= probe_texture_width || coords.y >= probe_texture_height )
   {
     return;
   }
 
-  uint probe_with_border_side = probe_side_length + 2;
-  uint probe_last_pixel = probe_side_length + 1;
-
-  int probe_index = get_probe_index_from_pixels( coords.xy, int( probe_with_border_side ), probe_texture_width );
-
-  bool border_pixel = ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == 0 ) || ( ( gl_GlobalInvocationID.x % probe_with_border_side ) == probe_last_pixel );
-  border_pixel = border_pixel || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == 0) || ( ( gl_GlobalInvocationID.y % probe_with_border_side ) == probe_last_pixel );
+  bool border_pixel = ( ( coords.x % probe_with_border_side ) == 0 ) || ( ( coords.x % probe_with_border_side ) == probe_last_pixel );
+  border_pixel = border_pixel || ( ( coords.y % probe_with_border_side ) == 0) || ( ( coords.y % probe_with_border_side ) == probe_last_pixel );
 
   if ( !border_pixel )
   {
@@ -522,6 +510,7 @@ void main()
 #if defined( PROBE_UPDATE_IRRADIANCE )
           result = vec4( 0, 0, 0, 1.0 );
 #else
+          result = vec4( -1, 0, 0, 1.0 );
 #endif
           break;
         }
@@ -575,8 +564,8 @@ void main()
   groupMemoryBarrier( );
   barrier( );
 
-  uint probe_pixel_x = gl_GlobalInvocationID.x % probe_with_border_side;
-  uint probe_pixel_y = gl_GlobalInvocationID.y % probe_with_border_side;
+  uint probe_pixel_x = coords.x % probe_with_border_side;
+  uint probe_pixel_y = coords.y % probe_with_border_side;
   bool corner_pixel = ( probe_pixel_x == 0 || probe_pixel_x == probe_last_pixel ) && ( probe_pixel_y == 0 || probe_pixel_y == probe_last_pixel );
   bool row_pixel = ( probe_pixel_x > 0 && probe_pixel_x < probe_last_pixel );
 

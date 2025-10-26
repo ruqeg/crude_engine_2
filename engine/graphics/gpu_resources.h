@@ -340,8 +340,8 @@ typedef struct crude_gfx_framebuffer_creation
   crude_gfx_texture_handle                                 depth_stencil_texture;
   uint32                                                   num_render_targets;
   bool                                                     manual_resources_free;
-  uint16                                                   width;
-  uint16                                                   height;
+  uint32                                                   width;
+  uint32                                                   height;
   uint8                                                    resize;
 } crude_gfx_framebuffer_creation;
 
@@ -380,8 +380,8 @@ typedef struct crude_gfx_texture_subresource
 typedef struct crude_gfx_texture_creation
 {
   void                                                    *initial_data;
-  uint16                                                   width;
-  uint16                                                   height;
+  uint32                                                   width;
+  uint32                                                   height;
   uint16                                                   depth;
   crude_gfx_texture_subresource                            subresource;
   uint8                                                    flags;
@@ -557,8 +557,8 @@ typedef struct crude_gfx_texture
   VkImageView                                              vk_image_view;
   VkFormat                                                 vk_format;
   VmaAllocation                                            vma_allocation;
-  uint16                                                   width;
-  uint16                                                   height;
+  uint32                                                   width;
+  uint32                                                   height;
   uint16                                                   depth;
   crude_gfx_texture_subresource                            subresource;
   uint8                                                    flags;
@@ -640,8 +640,8 @@ typedef struct crude_gfx_render_pass
 typedef struct crude_gfx_framebuffer
 {
   crude_gfx_render_pass_handle                             render_pass;
-  uint16                                                   width;
-  uint16                                                   height;
+  uint32                                                   width;
+  uint32                                                   height;
   float32                                                  scale_x;
   float32                                                  scale_y;
   crude_gfx_texture_handle                                 color_attachments[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];

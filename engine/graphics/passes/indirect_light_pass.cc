@@ -16,34 +16,36 @@ crude_gfx_indirect_light_pass_initialize
   crude_gfx_buffer_creation                                buffer_creation;
   crude_gfx_texture_creation                               texture_creation;
   crude_gfx_sampler_creation                               sampler_creation;
+  uint32                                                   probe_count;
   
   pass->scene_renderer = scene_renderer;
   pass->options.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
   pass->options.self_shadow_bias = 0.3f;
   pass->options.infinite_bounces_multiplier = 0.75f;
-  pass->options.hysteresis = 0.99f;
+  pass->options.hysteresis = 0.95f;
   pass->options.probe_grid_position = XMFLOAT3{ -20.0,0.5,-13.0 };
   pass->options.max_probe_offset = 0.4f;
   pass->options.probe_debug_flags = 0;
   pass->options.shadow_weight_power = 2.5;
   pass->options.probe_update_per_frame = 1000;
 
+  pass->probe_count_x = 20;
+  pass->probe_count_y = 20;
+  pass->probe_count_z = 20;
+  probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
+
   pass->offsets_calculations_count = 24;
   pass->probe_update_offset = 0u;
-  pass->probe_count_x = 20;
-  pass->probe_count_y = 15;
-  pass->probe_count_z = 20;
   pass->probe_rays = 128;
   pass->use_half_resolution = true;
   pass->irradiance_side_length = 6;
   pass->visibility_side_length = 6;
-  uint32 octahedral_visibility_size = pass->visibility_side_length + 2;
-  uint32 octahedral_irradiance_size = pass->irradiance_side_length + 2;
-  uint32 probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
-  pass->irradiance_atlas_width = ( octahedral_irradiance_size * pass->probe_count_x * pass->probe_count_y );
-  pass->irradiance_atlas_height = ( octahedral_irradiance_size * pass->probe_count_z );
-  pass->visibility_atlas_width = ( octahedral_visibility_size * pass->probe_count_x * pass->probe_count_y );
-  pass->visibility_atlas_height = ( octahedral_visibility_size * pass->probe_count_z );
+  pass->irradiance_side_length_with_borders = pass->irradiance_side_length + 2;
+  pass->visibility_side_length_with_borders = pass->visibility_side_length + 2;
+  pass->irradiance_atlas_width = ( pass->irradiance_side_length_with_borders * pass->probe_count_x * pass->probe_count_y );
+  pass->irradiance_atlas_height = ( pass->irradiance_side_length_with_borders * pass->probe_count_z );
+  pass->visibility_atlas_width = ( pass->visibility_side_length_with_borders * pass->probe_count_x * pass->probe_count_y );
+  pass->visibility_atlas_height = ( pass->visibility_side_length_with_borders * pass->probe_count_z );
   
   renderer = pass->scene_renderer->renderer;
 
@@ -54,10 +56,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   texture_creation.name = "probe_rt_radiance";
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    pass->probe_raytrace_radiance_texture_handle[ i ] = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
-  }
+  pass->probe_raytrace_radiance_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &texture_creation );
   
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = pass->irradiance_atlas_width;
@@ -143,10 +142,7 @@ crude_gfx_indirect_light_pass_deinitialize
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->sample_irradiance_ds[ i ] );
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->calculate_probe_offsets_ds[ i ] );
   }
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_radiance_texture_handle[ i ] );
-  }
+  crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_radiance_texture_handle );
   crude_gfx_destroy_sampler( pass->scene_renderer->renderer->gpu, pass->probe_grid_sampler_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_irradiance_texture_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->probe_grid_visibility_texture_handle );
@@ -185,7 +181,7 @@ crude_gfx_indirect_light_pass_render
     ddgi_mapped_data->probe_counts.y = pass->probe_count_y;
     ddgi_mapped_data->probe_counts.z = pass->probe_count_z;
     ddgi_mapped_data->probe_rays = pass->probe_rays;
-    ddgi_mapped_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle[ renderer->gpu->current_frame ].index;
+    ddgi_mapped_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
     ddgi_mapped_data->indirect_output_index = pass->indirect_texture_handle.index;
 
     render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
@@ -197,8 +193,8 @@ crude_gfx_indirect_light_pass_render
     ddgi_mapped_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
     ddgi_mapped_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
     ddgi_mapped_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
-    //XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//
-    XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+    XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationRollPitchYaw( 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ) ) );
+    //XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
     ddgi_mapped_data->irradiance_texture_width = pass->irradiance_atlas_width;
     ddgi_mapped_data->irradiance_texture_height = pass->irradiance_atlas_height;
     ddgi_mapped_data->irradiance_side_length = pass->irradiance_side_length;
@@ -217,12 +213,12 @@ crude_gfx_indirect_light_pass_render
 
     ddgi_mapped_data->shadow_weight_power = pass->options.shadow_weight_power;
 
-    //ddgi_mapped_data->probe_update_offset = pass->probe_update_offset;
+    ddgi_mapped_data->probe_update_offset = pass->probe_update_offset;
 
     crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );
   }
 
-  probe_raytrace_radiance_texture = crude_gfx_access_texture( renderer->gpu, pass->probe_raytrace_radiance_texture_handle[ renderer->gpu->current_frame ] );
+  probe_raytrace_radiance_texture = crude_gfx_access_texture( renderer->gpu, pass->probe_raytrace_radiance_texture_handle );
   probe_raytrace_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" )->pipeline;
   probe_update_irradiance_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" )->pipeline;
   probe_update_visibility_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_visibility" )->pipeline;
@@ -234,7 +230,7 @@ crude_gfx_indirect_light_pass_render
   crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_raytrace_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_raytrace_ds[ renderer->gpu->current_frame ] );
-  crude_gfx_cmd_trace_rays( primary_cmd, probe_raytrace_pipeline, pass->probe_rays, probe_count, 1u );
+  crude_gfx_cmd_trace_rays( primary_cmd, probe_raytrace_pipeline, pass->probe_rays, pass->options.probe_update_per_frame, 1u );
   crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_pop_marker( primary_cmd );
   
@@ -253,21 +249,26 @@ crude_gfx_indirect_light_pass_render
     crude_gfx_cmd_pop_marker( primary_cmd );
   }
 
-  uint32 x1 = pass->irradiance_atlas_width / ( pass->irradiance_side_length + 2 /* border */ );
-  uint32 y1 = pass->options.probe_update_per_frame ;
-
   crude_gfx_cmd_push_marker( primary_cmd, "probe_update_irradiance" );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_update_irradiance_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_update_irradiance_ds[ renderer->gpu->current_frame ] );
-  crude_gfx_cmd_dispatch( primary_cmd, ( pass->irradiance_atlas_width + 7 ) / 8, ( pass->irradiance_atlas_height + 7 ) / 8, 1 );
+  crude_gfx_cmd_dispatch( primary_cmd, 
+    ( pass->irradiance_side_length_with_borders + 7 ) / 8,
+    ( pass->irradiance_side_length_with_borders + 7 ) / 8,
+    pass->options.probe_update_per_frame
+  );
   crude_gfx_cmd_pop_marker( primary_cmd );
   
   crude_gfx_cmd_push_marker( primary_cmd, "probe_update_visibility" );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_bind_pipeline( primary_cmd, probe_update_visibility_pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_update_visibility_ds[ renderer->gpu->current_frame ] );
-  crude_gfx_cmd_dispatch( primary_cmd, ( pass->visibility_atlas_width + 7 ) / 8, ( pass->visibility_atlas_height + 7 ) / 8, 1 );
+  crude_gfx_cmd_dispatch( primary_cmd,
+    ( pass->visibility_side_length_with_borders + 7 ) / 8,
+    ( pass->visibility_side_length_with_borders + 7 ) / 8,
+    pass->options.probe_update_per_frame
+  );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_irradiance_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( renderer->gpu, pass->probe_grid_visibility_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_pop_marker( primary_cmd );

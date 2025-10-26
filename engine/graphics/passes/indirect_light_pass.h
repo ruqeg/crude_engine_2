@@ -67,16 +67,18 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 probe_grid_visibility_texture_handle;
   crude_gfx_texture_handle                                 probe_offsets_texture_handle;
   crude_gfx_texture_handle                                 indirect_texture_handle;
-  crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle;
   crude_gfx_buffer_handle                                  ddgi_cb;
   crude_gfx_sampler_handle                                 probe_grid_sampler_handle;
 
   uint32                                                   irradiance_atlas_width;
   uint32                                                   irradiance_atlas_height;
   uint32                                                   irradiance_side_length;
+  uint32                                                   irradiance_side_length_with_borders;
   uint32                                                   visibility_atlas_width;
   uint32                                                   visibility_atlas_height;
   uint32                                                   visibility_side_length;
+  uint32                                                   visibility_side_length_with_borders;
 
   uint32                                                   probe_update_offset;
   
