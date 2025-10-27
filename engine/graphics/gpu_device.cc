@@ -362,7 +362,10 @@ crude_gfx_device_initialize
 
     dynamic_buffer_creation = crude_gfx_buffer_creation_empty();
     dynamic_buffer_creation.name = "dynamic_persistent_buffer";
-    dynamic_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    dynamic_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    dynamic_buffer_creation.type_flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
     dynamic_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
     gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
@@ -373,6 +376,8 @@ crude_gfx_device_initialize
 
   {
     VkPhysicalDeviceProperties2                             physical_device_properties_2;
+    
+    physical_device_properties_2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceProperties2 );
     physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
@@ -1048,11 +1053,11 @@ crude_gfx_compile_shader
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
   // -gVS 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s -gVS", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
   
-  bool optimize_shaders = true;
+  bool optimize_shaders = false;
   if ( optimize_shaders )
   {
     char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
@@ -1249,6 +1254,7 @@ crude_gfx_get_buffer_device_address
   _In_ crude_gfx_buffer_handle                             handle
 )
 {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   CRUDE_ASSERT( buffer );
 
@@ -1256,6 +1262,10 @@ crude_gfx_get_buffer_device_address
   device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
   device_address_info.buffer = buffer->vk_buffer;
   return gpu->vkGetBufferDeviceAddressKHR( gpu->vk_device, &device_address_info );
+#else
+  CRUDE_ASSERT( false );
+  return 0;
+#endif
 }
 
 void 
@@ -1283,8 +1293,6 @@ crude_gfx_submit_immediate
   {
     vkWaitForFences( cmd->gpu->vk_device, 1, &cmd->gpu->vk_immediate_fence, VK_TRUE, UINT64_MAX );
   }
-
-  vkQueueWaitIdle( cmd->gpu->vk_main_queue );
 }
 
 /************************************************
@@ -1383,89 +1391,66 @@ crude_gfx_create_texture
   _In_ crude_gfx_texture_creation const                   *creation
 )
 {
-  crude_gfx_texture_handle handle = crude_gfx_obtain_texture( gpu );
+  crude_gfx_texture                                       *texture;
+  crude_gfx_texture_handle                                 handle;
+
+  handle = crude_gfx_obtain_texture( gpu );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_texture *texture = crude_gfx_access_texture( gpu, handle );
+  texture = crude_gfx_access_texture( gpu, handle );
   vk_create_texture_( gpu, creation, handle, texture );
 
   if ( creation->initial_data )
   {
-    VkBufferCreateInfo buffer_info =
-    {
-      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    };
+    crude_gfx_cmd_buffer                                  *cmd;
+    void                                                  *destination_data;
+    VkBufferCreateInfo                                     vk_buffer_info;
+    VmaAllocationCreateInfo                                vk_memory_info;
+    VkBufferImageCopy                                      vk_region;
+    VmaAllocationInfo                                      vma_allocation_info;
+    VkBuffer                                               vk_staging_buffer;
+    VmaAllocation                                          vma_staging_allocation;
+    uint64                                                 image_size;
     
-    uint64 image_size = creation->width * creation->height * 4u;
-    buffer_info.size = image_size;
+    image_size = creation->width * creation->height * 4u;
+
+    vk_buffer_info = CRUDE_COMPOUNT_EMPTY( VkBufferCreateInfo );
+    vk_buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    vk_buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    vk_buffer_info.size = image_size;
     
-    VmaAllocationCreateInfo memory_info =
-    {
-      .flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
-      .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
-    };
+    vk_memory_info = CRUDE_COMPOUNT_EMPTY( VmaAllocationCreateInfo );
+    vk_memory_info.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+    vk_memory_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
     
-    VmaAllocationInfo allocation_info;
-    VkBuffer staging_buffer;
-    VmaAllocation staging_allocation;
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateBuffer( gpu->vma_allocator, &buffer_info, &memory_info, &staging_buffer, &staging_allocation, &allocation_info ), "Failed to create staging buffer for texture data" );
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateBuffer( gpu->vma_allocator, &vk_buffer_info, &vk_memory_info, &vk_staging_buffer, &vma_staging_allocation, &vma_allocation_info ), "Failed to create staging buffer for texture data" );
     
-    void* destination_data;
-    vmaMapMemory( gpu->vma_allocator, staging_allocation, &destination_data );
+    vmaMapMemory( gpu->vma_allocator, vma_staging_allocation, &destination_data );
     memcpy( destination_data, creation->initial_data, image_size );
-    vmaUnmapMemory( gpu->vma_allocator, staging_allocation );
+    vmaUnmapMemory( gpu->vma_allocator, vma_staging_allocation );
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_primary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, 0u, false );
-    
-    VkCommandBufferBeginInfo beginInfo = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID, true );
 
-    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &beginInfo );
-
-    VkBufferImageCopy region =
-    {
-      .bufferOffset = 0,
-      .bufferRowLength = 0,
-      .bufferImageHeight = 0,
-      .imageSubresource = {
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel = 0,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-      },
-      .imageOffset = { 0, 0, 0 },
-      .imageExtent = { creation->width, creation->height, creation->depth }
-    };
-    
+    vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferImageCopy );
+    vk_region.bufferOffset = 0;
+    vk_region.bufferRowLength = 0;
+    vk_region.bufferImageHeight = 0;
+    vk_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vk_region.imageSubresource.mipLevel = 0;
+    vk_region.imageSubresource.baseArrayLayer = 0;
+    vk_region.imageSubresource.layerCount = 1;
+    vk_region.imageOffset = { 0, 0, 0 };
+    vk_region.imageExtent = { creation->width, creation->height, creation->depth };
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
-    
-    vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
-    
+    vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, vk_staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
     crude_gfx_generate_mipmaps( cmd, texture );
     
-    vkEndCommandBuffer( cmd->vk_cmd_buffer );
-    
-    {
-      VkCommandBufferSubmitInfo command_buffers[] = {
-        { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
-      };
+    crude_gfx_submit_immediate( cmd );
 
-      VkSubmitInfo2 submit_info = {
-        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
-        .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
-        .pCommandBufferInfos      = command_buffers,
-      };
-    
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
-    }
-
-    vkQueueWaitIdle( gpu->vk_main_queue);
-    vmaDestroyBuffer( gpu->vma_allocator, staging_buffer, staging_allocation );
+    vmaDestroyBuffer( gpu->vma_allocator, vk_staging_buffer, vma_staging_allocation );
 
     vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
   }
@@ -3526,8 +3511,8 @@ vk_create_device_
   gpu->vkCreateRayTracingPipelinesKHR = ( PFN_vkCreateRayTracingPipelinesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateRayTracingPipelinesKHR" );
   gpu->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
   gpu->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdTraceRaysKHR" );
-  gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
   gpu->vkDestroyAccelerationStructureKHR = ( PFN_vkDestroyAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkDestroyAccelerationStructureKHR" );
+  gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
@@ -3538,10 +3523,11 @@ vk_create_swapchain_
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
-  VkSwapchainCreateInfoKHR                                 swapchain_create_info;
-  VkPresentModeKHR                                         selected_present_mode;
+  crude_gfx_cmd_buffer                                    *cmd;
   VkPresentModeKHR                                        *available_present_modes;
   VkSurfaceFormatKHR                                      *available_formats;
+  VkSwapchainCreateInfoKHR                                 swapchain_create_info;
+  VkPresentModeKHR                                         selected_present_mode;
   VkSurfaceCapabilitiesKHR                                 surface_capabilities;
   VkExtent2D                                               swapchain_extent;
   uint32                                                   available_formats_count, available_present_modes_count, image_count;
@@ -3637,33 +3623,12 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( gpu, 0, false );
-  
-  VkCommandBufferBeginInfo begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+  cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_SWAPCHAIN_BARRIER_CMD_THREAD_ID, true );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
   }
-  vkEndCommandBuffer( cmd->vk_cmd_buffer );
-
-  {
-    VkCommandBufferSubmitInfo command_buffers[] = {
-      { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
-    };
-  
-    VkSubmitInfo2 submit_info = {
-      .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
-      .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
-      .pCommandBufferInfos      = command_buffers,
-    };
-  
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
-  }
-
-  vkQueueWaitIdle( gpu->vk_main_queue );
+  crude_gfx_submit_immediate( cmd );
 }
 
 void
@@ -3708,7 +3673,9 @@ vk_create_descriptor_pool_
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
         { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
+#endif
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

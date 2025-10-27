@@ -3,6 +3,8 @@
 #include <graphics/render_graph.h>
 #include <graphics/scene_renderer_resources.h>
 
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ddgi_gpu_data
@@ -132,3 +134,5 @@ crude_gfx_indirect_light_pass_pack
 (
   _In_ crude_gfx_indirect_light_pass                      *pass
 );
+
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */

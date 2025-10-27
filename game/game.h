@@ -7,6 +7,8 @@
 #include <platform/platform_components.h>
 #include <develop/devgui.h>
 
+#define CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID ( 1 )
+
 typedef struct game_t
 {
   /* Context */

@@ -199,7 +199,7 @@ game_graphics_initialize_
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
   
-    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph_ray_tracing.json" );
+    render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
     crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
     crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
   }
@@ -211,7 +211,10 @@ game_graphics_initialize_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   /* Create Scene Renderer */
   {
@@ -226,11 +229,14 @@ game_graphics_initialize_
     creation.scene = &game->scene;
     crude_gfx_scene_renderer_initialize( &game->scene_renderer, &creation );
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
-    // Yes, i block it, because i don't want to fuck with rtx (long story)
+    // Yes, i block it, because i don't want to fuck with rtx AND MESHLETES (long story)
+    
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( game->renderer.gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
     while ( CRUDE_ARRAY_LENGTH( game->async_loader.upload_requests ) || CRUDE_ARRAY_LENGTH( game->async_loader.file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( game->async_loader.texture_ready ) )
     {
-      crude_gfx_renderer_add_texture_update_commands( &game->renderer, 1u );
+      crude_gfx_renderer_add_texture_update_commands( &game->renderer, cmd );
     }
+    crude_gfx_submit_immediate( cmd );
   }
   
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
@@ -270,8 +276,6 @@ game_graphics_system_
   
   crude_devgui_draw( &game->devgui, game->scene.main_node, game->scene.main_camera );
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
-  
-  crude_gfx_renderer_add_texture_update_commands( &game->renderer, 1u );
 
   {
     crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );

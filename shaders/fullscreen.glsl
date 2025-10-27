@@ -11,8 +11,6 @@
 #include "crude/culling.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-#define CRUDE_RAYTRACED_SHADOWS
-
 #if defined( CRUDE_STAGE_VERTEX )
 layout(location=0) out vec2 out_texcoord;
 
@@ -232,10 +230,12 @@ crude_calculate_lighting
     }
   }
 
+#ifdef CRUDE_RAYTRACED_DDGI
   indirect_irradiance = CRUDE_TEXTURE_LOD( scene.indirect_light_texture_index, screen_texcoord, 0 ).rgb;
   indirect_diffuse = indirect_irradiance * albedo.rgb;
   const float ao = 1.0f;
   radiance.xyz += indirect_diffuse * ao;
+#endif /* CRUDE_RAYTRACED_DDGI */
 
   return radiance;
 }

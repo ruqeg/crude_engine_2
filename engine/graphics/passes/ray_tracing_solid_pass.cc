@@ -5,6 +5,8 @@
 
 #include <graphics/passes/ray_tracing_solid_pass.h>
 
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ray_tracing_solid_gpu_data
 {
   uint32                                                   sbt_offset;
@@ -151,3 +153,5 @@ crude_gfx_ray_tracing_solid_pass_pack
   container.on_techniques_reloaded = crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded;
   return container;
 }
+
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */

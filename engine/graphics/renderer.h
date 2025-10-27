@@ -71,7 +71,7 @@ CRUDE_API void
 crude_gfx_renderer_add_texture_update_commands
 (
   _In_ crude_gfx_renderer                                 *renderer,
-  _In_ uint32                                              thread_id
+  _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
 CRUDE_API crude_gfx_renderer_technique*

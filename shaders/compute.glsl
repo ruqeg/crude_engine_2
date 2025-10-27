@@ -82,7 +82,7 @@ void main()
 {
   uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
   uint count = occlusion_culling_late_flag == 1 ? early_opaque_mesh_culled_count : total_mesh_count;
-
+  
   if ( mesh_instance_draw_index < count )
   {
     if ( occlusion_culling_late_flag == 1 )

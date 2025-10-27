@@ -238,8 +238,10 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
   
   /* Common acceleration structures arrays initialization */
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->vk_blases, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->blases_buffers, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
+#endif
   
   /* Register scene nodes */
   register_nodes_( scene_renderer, scene_renderer->scene->main_node, scene_renderer->temporary_allocator );
@@ -315,11 +317,6 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.name = "mesh_count_late_sb";
     scene_renderer->mesh_task_indirect_count_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
   }
-
-  {
-
-
-  }
   
   /* Create device only buffers */
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -368,8 +365,6 @@ crude_gfx_scene_renderer_initialize
   }
 
   {
-    crude_gfx_cmd_buffer                                  *cmd;
-    VkCommandBufferBeginInfo                               begin_info;
     crude_gfx_buffer_handle                                meshlets_cpu_buffer, meshlets_triangles_indices_cpu_buffer, meshlets_vertices_cpu_buffer, meshlets_vertices_indices_cpu_buffer, meshes_draws_cpu_buffer, meshes_bounds_cpu_buffer;
   
     {
@@ -481,44 +476,12 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.name = "meshlets_vertices_indices_sb";
     scene_renderer->meshlets_vertices_indices_sb = crude_gfx_create_buffer( scene_renderer->renderer->gpu, &buffer_creation );
 
-    cmd = crude_gfx_get_primary_cmd( scene_renderer->renderer->gpu, 1, false );
-
-    begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshlets_vertices_cpu_buffer, scene_renderer->meshlets_vertices_sb );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshlets_vertices_indices_cpu_buffer, scene_renderer->meshlets_vertices_indices_sb );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshlets_triangles_indices_cpu_buffer, scene_renderer->meshlets_triangles_indices_sb );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshlets_cpu_buffer, scene_renderer->meshlets_sb );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshes_draws_cpu_buffer, scene_renderer->meshes_draws_sb );
-    crude_gfx_cmd_upload_buffer_data( cmd, meshes_bounds_cpu_buffer, scene_renderer->meshes_bounds_sb );
-    vkEndCommandBuffer( cmd->vk_cmd_buffer );
-    
-    {
-      VkCommandBufferSubmitInfo command_buffers[] = {
-        { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
-      };
-
-      VkSubmitInfo2 submit_info = {
-        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
-        .commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers ),
-        .pCommandBufferInfos      = command_buffers,
-      };
-   
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( scene_renderer->renderer->gpu->vkQueueSubmit2KHR( scene_renderer->renderer->gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
-    }
-
-    vkQueueWaitIdle( scene_renderer->renderer->gpu->vk_main_queue);
-
-    vkResetCommandBuffer( cmd->vk_cmd_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
-  
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshes_draws_cpu_buffer );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshes_bounds_cpu_buffer );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshlets_vertices_cpu_buffer );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshlets_vertices_indices_cpu_buffer );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshlets_triangles_indices_cpu_buffer );
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, meshlets_cpu_buffer );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshlets_vertices_cpu_buffer, scene_renderer->meshlets_vertices_sb );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshlets_vertices_indices_cpu_buffer, scene_renderer->meshlets_vertices_indices_sb );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshlets_triangles_indices_cpu_buffer, scene_renderer->meshlets_triangles_indices_sb );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshlets_cpu_buffer, scene_renderer->meshlets_sb );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshes_draws_cpu_buffer, scene_renderer->meshes_draws_sb );
+    crude_gfx_asynchronous_loader_request_buffer_copy( scene_renderer->async_loader, meshes_bounds_cpu_buffer, scene_renderer->meshes_bounds_sb );
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -587,6 +550,7 @@ crude_gfx_scene_renderer_deinitialize
   }
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->buffers );
   
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->blases_buffers ); ++i )
   {
     crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->blases_buffers[ i ] );
@@ -600,6 +564,7 @@ crude_gfx_scene_renderer_deinitialize
 
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_scratch_buffer_handle );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_instances_buffer_handle );
+#endif
 
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->lights_sb );
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->scene_cb );
@@ -764,10 +729,12 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
   mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
   mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   mesh_draw_gpu->position_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->position_buffer ) + mesh->position_offset;
   mesh_draw_gpu->texcoord_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->texcoord_buffer ) + mesh->texcoord_offset;
   mesh_draw_gpu->index_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->index_buffer ) + mesh->index_offset;
   mesh_draw_gpu->normal_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->normal_buffer ) + mesh->normal_offset;
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 /**
@@ -809,7 +776,11 @@ update_dynamic_buffers_
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
       scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
       scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
+#else
+      scene_constant->indirect_light_texture_index = -1;
+#endif
       scene_constant->background_color = scene_renderer->options.background_color;
       scene_constant->background_intensity = scene_renderer->options.background_intensity;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );

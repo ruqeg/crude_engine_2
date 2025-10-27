@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+
 #include <graphics/render_graph.h>
 #include <graphics/scene_renderer_resources.h>
 
@@ -43,3 +45,5 @@ crude_gfx_ray_tracing_solid_pass_pack
 (
   _In_ crude_gfx_ray_tracing_solid_pass                   *pass
 );
+
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */

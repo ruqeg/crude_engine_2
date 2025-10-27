@@ -112,7 +112,6 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Ray Tracing CPU & GPU Data
    **********************/
-
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                              *vk_blases;
   crude_gfx_buffer_handle                                 *blases_buffers;

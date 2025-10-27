@@ -27,7 +27,7 @@ source_group(engine FILES engine.cc engine.h)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
   CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+  #  CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 )
 
 if(MSVC)

@@ -126,10 +126,12 @@ crude_gfx_light_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->pointlight_world_to_clip_sb[ renderer->gpu->current_frame ], 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->light_cb, 6u );
     
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     if ( pass->scene_renderer->ray_trace_shadows )
     {
       crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 10u );
     }
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
 

@@ -11,6 +11,9 @@ typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
 
+#define CRUDE_GFX_SWAPCHAIN_BARRIER_CMD_THREAD_ID ( 0 )
+#define CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID ( 0 )
+
 /************************************************
  *
  * GPU Device Structs
@@ -171,8 +174,8 @@ typedef struct crude_gfx_device
   PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
   PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
   PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
-  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
   PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
+  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 

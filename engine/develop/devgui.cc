@@ -939,6 +939,7 @@ crude_devgui_scene_renderer_draw
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
     ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
     ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
@@ -951,6 +952,7 @@ crude_devgui_scene_renderer_draw
     ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
     ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
     ImGui::CheckboxFlags( "Probe Index | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 4 );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   }
   
   ImGui::End( );

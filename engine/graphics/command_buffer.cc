@@ -49,7 +49,9 @@ crude_gfx_cmd_initialize
     { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
+#endif
   };
   
   VkDescriptorPoolCreateInfo pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
@@ -1040,6 +1042,7 @@ crude_gfx_cmd_trace_rays
   _In_ uint32                                              depth
 )
 {
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_pipeline                                      *pipeline;
   VkStridedDeviceAddressRegionKHR                          raygen_table, hit_table, miss_table, callable_table;
   uint32                                                   shader_group_handle_size;
@@ -1066,6 +1069,9 @@ crude_gfx_cmd_trace_rays
   callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   
   cmd->gpu->vkCmdTraceRaysKHR( cmd->vk_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
+#else
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can proccess crude_gfx_cmd_trace_rays, CRUDE_GRAPHICS_RAY_TRACING_ENABLED wasn't enabled" );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
 }
 
 /************************************************
@@ -1225,9 +1231,11 @@ crude_gfx_cmd_manager_get_primary_cmd
   uint32 current_used_buffer = cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ];
   uint32 cmd_index = ( pool_index * cmd_manager->num_primary_cmd_buffers_per_thread ) + current_used_buffer;
   crude_gfx_cmd_buffer *cmd = &cmd_manager->primary_cmd_buffers[ cmd_index ];
-  
+
   if ( begin )
   {  
+    CRUDE_ASSERT( !cmd->is_recording );
+
     crude_gfx_cmd_reset( cmd );
     crude_gfx_cmd_begin_primary( cmd );
     CRUDE_ASSERT( current_used_buffer < cmd_manager->num_primary_cmd_buffers_per_thread );

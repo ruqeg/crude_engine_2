@@ -6,10 +6,13 @@
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
-#extension GL_EXT_buffer_reference : require
-#extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference2 : require
 
 layout(buffer_reference, buffer_reference_align=4, std430) buffer vec2_array_type
 {
@@ -25,6 +28,7 @@ layout(buffer_reference, buffer_reference_align=4, std430) buffer float_array_ty
 {
   float                                                    v;
 };
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
 struct crude_mesh_draw_command
 {
