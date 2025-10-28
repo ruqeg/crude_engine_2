@@ -25,6 +25,7 @@ typedef enum crude_channel
   CRUDE_CHANNEL_SOUND,
   CRUDE_CHANNEL_FILEIO,
   CRUDE_CHANNEL_GUI,
+  CRUDE_CHANNEL_PHYSICS,
   CRUDE_CHANNEL_ALL,
 } crude_channel;
 
@@ -45,6 +46,17 @@ crude_log_common
   _In_ crude_verbosity                                     verbosity,
   _In_ char const                                         *format,
   ...
+);
+
+CRUDE_API void
+crude_log_common_va
+(
+  _In_ char const                                         *filename,
+  _In_ int32                                               line,
+  _In_ crude_channel                                       channel,
+  _In_ crude_verbosity                                     verbosity,
+  _In_ char const                                         *format,
+  _In_ va_list                                             args
 );
 
 #define CRUDE_LOG( channel, format, ... )\

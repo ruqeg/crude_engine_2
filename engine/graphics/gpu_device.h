@@ -147,6 +147,7 @@ typedef struct crude_gfx_device
   bool                                                     timestamps_enabled;
 
   bool                                                     mesh_shaders_extension_present;
+  bool                                                     shader_relaxed_extended_instruction_extension_present;
   
   VkFence                                                  vk_immediate_fence;
 
@@ -161,8 +162,11 @@ typedef struct crude_gfx_device
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
   PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
+
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
   PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;

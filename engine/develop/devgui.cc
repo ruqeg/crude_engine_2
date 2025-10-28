@@ -3,7 +3,6 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/renderer_resources_loader.h>
-
 #include <develop/devgui.h>
 
 ImGuiWindowFlags                                           window_flags_;

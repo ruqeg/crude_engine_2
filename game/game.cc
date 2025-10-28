@@ -11,6 +11,7 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/renderer_resources_loader.h>
+#include <physics/physics_system.h>
 
 #include <game.h>
 
@@ -90,6 +91,9 @@ game_initialize
     .ctx = game->imgui_context
   } );
   
+  crude_physics_creation physics_creation = crude_physics_creation_empty( );
+  crude_physics_initialize( &physics_creation );
+
   /* Create scene */
   {
     crude_scene_creation creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
@@ -141,6 +145,7 @@ game_deinitialize
   crude_scene_deinitialize( &game->scene, false /* should be destroyd with world */ );
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
+  crude_physics_deinitialize( );
   crude_heap_allocator_deinitialize( &game->allocator );
   crude_heap_allocator_deinitialize( &game->resources_allocator );
   crude_stack_allocator_deinitialize( &game->temporary_allocator );

@@ -2,3 +2,4 @@ build/
 *.spv
 shaders/include/crude_shaders/*
 *.vscode
+compiled_shaders/

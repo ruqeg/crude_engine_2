@@ -79,6 +79,21 @@ crude_log_common
 {
   va_list args;
   va_start( args, format );
+  crude_log_common_va( filename, line, channel, verbosity, format, args );
+  va_end( args );
+}
+
+void
+crude_log_common_va
+(
+  _In_ char const                                         *filename,
+  _In_ int32                                               line,
+  _In_ crude_channel                                       channel,
+  _In_ crude_verbosity                                     verbosity,
+  _In_ char const                                         *format,
+  _In_ va_list                                             args
+)
+{
   crude_snprintf( format_buffer_, CRUDE_COUNTOF( message_buffer_ ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
   crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
 #ifdef _WIN32
@@ -89,5 +104,4 @@ crude_log_common
     fprintf( log_file_, message_buffer_ );
   }
   printf( "%s", message_buffer_ );
-  va_end( args );
 }

@@ -16,6 +16,12 @@
  * Constants
  * 
  ***********************************************/
+#ifdef CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
+#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS ""
+#else
+#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS"
+#endif
+
 static char const *const vk_device_required_extensions[] = 
 { 
   VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -29,7 +35,6 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-  VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME,
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -125,7 +130,8 @@ static bool
 vk_check_support_required_extensions_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device,
-  _In_ crude_allocator_container                           temporary_allocator
+  _In_ crude_allocator_container                           temporary_allocator,
+  _Out_opt_ char const                                   **not_supported_extension_name
 );
 static bool
 vk_check_swap_chain_adequate_
@@ -228,6 +234,7 @@ crude_gfx_device_initialize
   gpu->vk_swapchain_image_index = 0;
   gpu->swapchain_resized_last_frame = false;
   gpu->mesh_shaders_extension_present = false;
+  gpu->shader_relaxed_extended_instruction_extension_present = false;
   gpu->timestamps_enabled = false;
 
   // !TODO
@@ -1018,21 +1025,29 @@ crude_gfx_compile_shader
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  VkShaderModuleCreateInfo                                 shader_create_info;
-  crude_string_buffer                                      temporary_string_buffer;
-  char const                                              *temp_filename;
-  char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
   uint8                                                   *spirv_code;
-  char                                                     technique_name_upper[ 1024 ];
-  uint64                                                   temporary_allocator_marker;
+  char const                                              *optimized_spirv_filename;
+  char                                                    working_directory[ 512 ];
+  crude_string_buffer                                      temporary_string_buffer;
+  VkShaderModuleCreateInfo                                 shader_create_info;
   uint32                                                   spirv_codesize;
-  uint32                                                   i;
   
   spirv_code = NULL;
   spirv_codesize = 0u;
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+  
+  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\..\\..\\compiled_shaders\\%s.%s.shader_opt.spv", working_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
 
+#ifdef CRUDE_PRODUCTION
+  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
+#else
+  char const                                              *temp_filename;
+  char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
+  char                                                     technique_name_upper[ 1024 ];
+  uint32                                                   i;
+  
   temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
   crude_write_file( temp_filename, code, code_size );
 
@@ -1051,27 +1066,20 @@ crude_gfx_compile_shader
 
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
-  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" );
-  // -gVS 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s -gVS", temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
+  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" ); 
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s" CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
-  
-  bool optimize_shaders = false;
-  if ( optimize_shaders )
-  {
-    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer,"%sspirv-opt.exe", vulkan_binaries_path );
-    char* optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer,"shader_opt.spv" );
+
+#ifdef CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
+    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vulkan_binaries_path );
     char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe --preserve-bindings -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
-    
+
     crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
     crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
-    crude_file_delete( optimized_spirv_filename );
-  }
-  else
-  {
+#else
     crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
-  }
+#endif
 
   if ( !spirv_code )
   {
@@ -1080,12 +1088,14 @@ crude_gfx_compile_shader
   
   crude_file_delete( temp_filename );
   crude_file_delete( final_spirv_filename );
-  
+#endif /* CRUDE_PRODACTION */
+
   shader_create_info = CRUDE_COMPOUNT( VkShaderModuleCreateInfo, {
     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
     .codeSize = spirv_codesize,
     .pCode = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code ),
   } );
+  
   return shader_create_info;
 }
 
@@ -1845,9 +1855,9 @@ crude_gfx_create_pipeline
   }
 
   vk_push_constant = CRUDE_COMPOUNT_EMPTY( VkPushConstantRange );
-	vk_push_constant.offset = 0;
-	vk_push_constant.size = shader_state->reflect.push_constant.stride;
-	vk_push_constant.stageFlags = VK_SHADER_STAGE_ALL;
+  vk_push_constant.offset = 0;
+  vk_push_constant.size = shader_state->reflect.push_constant.stride;
+  vk_push_constant.stageFlags = VK_SHADER_STAGE_ALL;
 
   vk_pipeline_layout_info = CRUDE_COMPOUNT_EMPTY( VkPipelineLayoutCreateInfo );
   vk_pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -2115,8 +2125,8 @@ crude_gfx_create_pipeline
 
     pipeline->vk_bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
     
-		group_count = shader_state->active_shaders;
-		group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+    group_count = shader_state->active_shaders;
+    group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
     shader_binding_table_size = group_handle_size * group_count;
 
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_stack_allocator_pack( gpu->temporary_allocator ) );
@@ -3226,7 +3236,7 @@ vk_pick_physical_device_
     {
       continue;
     }
-    if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator ) )
+    if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator, NULL ) )
     {
       continue;
     }
@@ -3251,7 +3261,51 @@ vk_pick_physical_device_
   
   if ( selected_physical_devices == VK_NULL_HANDLE )
   {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", available_physical_devices_count );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", available_physical_devices_count );
+    
+     for ( uint32 i = 0; i < available_physical_devices_count; ++i )
+     {
+        char const                                            *not_supported_extension_name;
+        VkPhysicalDeviceProperties                             current_physical_properties;
+        VkPhysicalDevice                                       current_physical_device;
+        int32                                                  queue_family_index;
+
+        current_physical_device = available_physical_devices[ i ];
+        vkGetPhysicalDeviceProperties( current_physical_device, &current_physical_properties );
+    
+        not_supported_extension_name = "";
+
+        if ( current_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
+        {
+          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device type isn't discrete GPU!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
+          continue;
+        }
+        
+        if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator, &not_supported_extension_name ) )
+        {
+          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested extension \"%s\"!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown", not_supported_extension_name ? not_supported_extension_name : ""  );
+          continue;
+        }
+        if ( !vk_check_swap_chain_adequate_( current_physical_device, gpu->vk_surface ) )
+        {
+          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested swap chain adequate!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
+          continue;
+        }
+        if ( !vk_check_support_required_features_( current_physical_device ) )
+        {
+          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested swap chain adequate!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
+          continue;
+        }
+    
+        queue_family_index = vk_get_supported_queue_family_index_( current_physical_device, gpu->vk_surface, temporary_allocator ); 
+        if ( queue_family_index == -1 )
+        {
+          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested queue family indices!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
+          continue;
+        }
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "I don't fucking know why %s physical device doesn't supported!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
+    }
+
     return;
   }
 
@@ -3269,9 +3323,15 @@ vk_pick_physical_device_
 
     for ( size_t i = 0; i < available_extensions_count; ++i )
     {
-      if ( !strcmp( available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) )
+      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) == 0 )
       {
         gpu->mesh_shaders_extension_present = true;
+        continue;
+      }
+
+      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME ) == 0 )
+      {
+        gpu->shader_relaxed_extended_instruction_extension_present = true;
         continue;
       }
     }
@@ -3364,7 +3424,7 @@ vk_create_device_
     queue_create_infos[ 1 ].queueCount = 1;
     queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
   }
-  
+
   //shader_atomic_int64_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderAtomicInt64Features );
   //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
   //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
@@ -3411,15 +3471,23 @@ vk_create_device_
 
   bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
   
-  shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
-  shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
-  shader_relaxed_extended_instruction_features.pNext = &bit16_storage_features;
-  shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
-
   bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );
   bit_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
-  bit_storage_features.pNext = &shader_relaxed_extended_instruction_features;
   bit_storage_features.storageBuffer8BitAccess = VK_TRUE;
+
+  if ( gpu->shader_relaxed_extended_instruction_extension_present )
+  {
+    shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
+    shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+    shader_relaxed_extended_instruction_features.pNext = &bit16_storage_features;
+    shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
+
+    bit_storage_features.pNext = &shader_relaxed_extended_instruction_features;
+  }
+  else
+  {
+    bit_storage_features.pNext = &bit16_storage_features;
+  }
 
   synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );
   synchronization_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
@@ -3461,15 +3529,20 @@ vk_create_device_
   physical_features2.pNext = &indexing_features;
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
-
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( device_extensions, CRUDE_COUNTOF( vk_device_required_extensions ), temporary_allocator );
   for ( uint32 i = 0; i < CRUDE_COUNTOF( vk_device_required_extensions ); ++i )
   {
     CRUDE_ARRAY_PUSH( device_extensions, vk_device_required_extensions[ i ] );
   }
+  
   if ( gpu->mesh_shaders_extension_present )
   {
     CRUDE_ARRAY_PUSH( device_extensions, VK_EXT_MESH_SHADER_EXTENSION_NAME );
+  }
+
+  if ( gpu->shader_relaxed_extended_instruction_extension_present )
+  {
+    CRUDE_ARRAY_PUSH( device_extensions, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME );
   }
 
   device_create_info = CRUDE_COMPOUNT_EMPTY( VkDeviceCreateInfo );
@@ -3500,8 +3573,11 @@ vk_create_device_
   gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
   gpu->vkCmdPipelineBarrier2KHR = ( PFN_vkCmdPipelineBarrier2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdPipelineBarrier2KHR" );
   gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
+
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
   gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   gpu->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
@@ -3766,7 +3842,8 @@ bool
 vk_check_support_required_extensions_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device,
-  _In_ crude_allocator_container                           temporary_allocator
+  _In_ crude_allocator_container                           temporary_allocator,
+  _Out_opt_ char const                                   **not_supported_extension_name
 )
 {
   VkExtensionProperties                                   *available_extensions;
@@ -3796,6 +3873,10 @@ vk_check_support_required_extensions_
     }
     if ( !extension_found )
     {
+      if ( not_supported_extension_name )
+      {
+        *not_supported_extension_name = vk_device_required_extensions[ i ];
+      }
       support_required_extensions = false;
       break;
     }

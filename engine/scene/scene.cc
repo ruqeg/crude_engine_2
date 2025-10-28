@@ -6,6 +6,7 @@
 #include <core/array.h>
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
+#include <physics/physics_components.h>
 
 #include <scene/scene.h>
 
@@ -124,6 +125,42 @@ scene_load_hierarchy_
           .color = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "color" ) ),
           .intensity = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "intensity" ) ) ),
         } );
+      }
+      else if ( crude_string_cmp( component_type, "crude_physics_static_body" ) == 0 )
+      {
+        if ( cJSON_HasObjectItem( component_json, "crude_physics_box_collision_shape" ) )
+        {
+          cJSON *physics_box_collision_shape_json = cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" );
+          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, {
+            .box_shape = 
+            {
+              .half_extent = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( physics_box_collision_shape_json, "half_extent" ) ),
+            },
+            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX
+          } );
+        }
+        else
+        {
+          CRUDE_ASSERT( false );
+        }
+      }
+      else if ( crude_string_cmp( component_type, "crude_dynamic_body" ) == 0 )
+      {
+        if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
+        {
+          cJSON *physics_sphere_collision_shape_json = cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" );
+          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, {
+            .sphere_shape = 
+            {
+              .radius = CRUDE_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( physics_sphere_collision_shape_json, "radius" ) ) ),
+            },
+            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
+          } );
+        }
+        else
+        {
+          CRUDE_ASSERT( false );
+        }
       }
     }
 

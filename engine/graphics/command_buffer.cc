@@ -972,7 +972,7 @@ crude_gfx_cmd_push_marker
 {
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
-
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
   vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
   vk_label.pLabelName = name;
@@ -981,6 +981,7 @@ crude_gfx_cmd_push_marker
   vk_label.color[ 2 ] = 1.0f;
   vk_label.color[ 3 ] = 1.0f;
   cmd->gpu->vkCmdBeginDebugUtilsLabelEXT( cmd->vk_cmd_buffer, &vk_label );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 }
 
 void
@@ -991,8 +992,9 @@ crude_gfx_cmd_pop_marker
 {
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
-
+#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 }
 
 void

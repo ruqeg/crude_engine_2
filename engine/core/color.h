@@ -7,49 +7,49 @@ typedef uint32 crude_color;
 CRUDE_API crude_color
 crude_color_set
 (
-	_In_ float32																					   r,
-	_In_ float32																					   g,
-	_In_ float32																					   b,
-	_In_ float32																					   a
+  _In_ float32                                             r,
+  _In_ float32                                             g,
+  _In_ float32                                             b,
+  _In_ float32                                             a
 );
 
 CRUDE_API float32 
 crude_color_r
 (
-	_In_ crude_color																			   color
+  _In_ crude_color                                         color
 );
 
 CRUDE_API float32 
 crude_color_g
 (
-	_In_ crude_color																			   color
+  _In_ crude_color                                         color
 );
 
 CRUDE_API float32 
 crude_color_b
 (
-	_In_ crude_color																			   color
+  _In_ crude_color                                         color
 );
 
 CRUDE_API float32 
 crude_color_a
 (
-	_In_ crude_color																			   color
+  _In_ crude_color                                         color
 );
 
 CRUDE_API crude_color
 crude_color_from_u8
 (
-	_In_ uint8 r,
-	_In_ uint8 g,
-	_In_ uint8 b,
-	_In_ uint8 a
+  _In_ uint8 r,
+  _In_ uint8 g,
+  _In_ uint8 b,
+  _In_ uint8 a
 );
 
 CRUDE_API crude_color
 crude_color_get_distinct_color
 (
-	_In_ uint32																							 index
+  _In_ uint32                                               index
 );
 
 #define CRUDE_COLOR_RED 0xff0000ff
