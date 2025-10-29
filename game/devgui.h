@@ -24,6 +24,7 @@ typedef struct crude_devgui_node_inspector
 typedef struct crude_devgui_viewport
 {
   crude_gfx_device                                        *gpu;
+  crude_devgui_nodes_tree                                 *devgui_nodes_tree;
   crude_gfx_texture_handle                                 selected_texture;
 } crude_devgui_scene_node_viewport;
 

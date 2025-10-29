@@ -14,5 +14,4 @@ typedef struct crude_player_controller
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );
 
-
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_crude_player_controller_components );

@@ -1,4 +1,6 @@
 #include <nfd.h>
+#include <imgui/imgui.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 #include <core/hash_map.h>
 #include <graphics/renderer_resources_loader.h>
@@ -369,6 +371,22 @@ crude_devgui_node_inspector_draw
 /******************************
  * Dev Gui Viewport
  *******************************/
+static void
+crude_devgui_viewport_draw_viewport_texture
+(
+  _In_ crude_devgui_viewport                              *devgui_viewport,
+  _In_ crude_entity                                        camera_node,
+  _In_ crude_entity                                        selected_node
+);
+
+static void
+crude_devgui_viewport_draw_viewport_imguizmo
+(
+  _In_ crude_devgui_viewport                              *devgui_viewport,
+  _In_ crude_entity                                        camera_node,
+  _In_ crude_entity                                        selected_node
+);
+
 void
 crude_devgui_viewport_initialize
 (
@@ -388,11 +406,23 @@ crude_devgui_viewport_draw
   _In_ crude_entity                                        selected_node
 )
 {
-  crude_camera                                            *camera;
-  crude_transform                                         *camera_transform;
-  crude_transform                                         *selected_node_transform;
-  
   ImGui::Begin( "Viewport", NULL, window_flags_ );
+  crude_devgui_viewport_draw_viewport_texture( devgui_viewport, camera_node, selected_node );
+  crude_devgui_viewport_draw_viewport_imguizmo( devgui_viewport, camera_node, selected_node );
+  ImGui::End();
+}
+
+void
+crude_devgui_viewport_draw_viewport_texture
+(
+  _In_ crude_devgui_viewport                              *devgui_viewport,
+  _In_ crude_entity                                        camera_node,
+  _In_ crude_entity                                        selected_node
+)
+{
+  char const                                              *preview_texture_name;
+  uint32                                                   id;
+  
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
@@ -401,7 +431,6 @@ crude_devgui_viewport_draw
 
   ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
 
-  char const *preview_texture_name = "Unknown";
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
     crude_gfx_texture *selected_texture = crude_gfx_access_texture( devgui_viewport->gpu, devgui_viewport->selected_texture );
@@ -410,18 +439,24 @@ crude_devgui_viewport_draw
       preview_texture_name = selected_texture->name;
     };
   }
-  uint32 id = 0;
+
+  preview_texture_name = "Unknown";
+  id = 0;
   if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
   {
     for ( uint32 t = 0; t < devgui_viewport->gpu->textures.pool_size; ++t )
     {
-      crude_gfx_texture_handle texture_handle = CRUDE_CAST( crude_gfx_texture_handle, t );
+      crude_gfx_texture                                   *texture;
+      crude_gfx_texture_handle                             texture_handle;
+      bool                                                 is_selected;
+
+      texture_handle = CRUDE_CAST( crude_gfx_texture_handle, t );
       if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_handle ) )
       {
         continue;
       }
       
-      crude_gfx_texture *texture = crude_gfx_access_texture( devgui_viewport->gpu, texture_handle );
+      texture = crude_gfx_access_texture( devgui_viewport->gpu, texture_handle );
       if ( !texture || !texture->name )
       {
         continue;
@@ -429,7 +464,7 @@ crude_devgui_viewport_draw
       
       ImGui::PushID( id++ );
 
-      bool is_selected = ( devgui_viewport->selected_texture.index == texture_handle.index );
+      is_selected = ( devgui_viewport->selected_texture.index == texture_handle.index );
       if ( ImGui::Selectable( texture->name ) )
       {
         devgui_viewport->selected_texture = texture_handle;
@@ -443,7 +478,104 @@ crude_devgui_viewport_draw
     }
     ImGui::EndCombo();
   }
-  ImGui::End();
+}
+
+void
+crude_devgui_viewport_draw_viewport_imguizmo
+(
+  _In_ crude_devgui_viewport                              *devgui_viewport,
+  _In_ crude_entity                                        camera_node,
+  _In_ crude_entity                                        selected_node
+)
+{
+  static ImGuizmo::OPERATION                               selected_gizmo_operation = ImGuizmo::TRANSLATE;
+  static ImGuizmo::MODE                                    selected_gizmo_mode = ImGuizmo::WORLD;
+
+  crude_camera                                            *camera;
+  crude_transform                                         *camera_transform;
+  crude_transform                                         *selected_node_transform;
+  crude_transform                                         *selected_node_parent_transform;
+  crude_entity                                             selected_node_parent;
+  XMFLOAT4X4                                               camera_view_to_clip, selected_node_to_parent, selected_parent_to_camera_view;
+  XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
+  
+  if ( !crude_entity_valid( selected_node ) )
+  {
+    return;
+  }
+
+  selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( selected_node, crude_transform );
+  camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_camera  );
+  camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( camera_node, crude_transform  );
+  selected_node_parent = crude_entity_get_parent( selected_node );
+  
+  if ( selected_node_transform == NULL )
+  {
+    return;
+  }
+
+  if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
+  {
+    selected_gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+  
+  if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
+  {
+    selected_gizmo_operation = ImGuizmo::ROTATE;
+  }
+  if ( ImGui::IsKeyPressed( ImGuiKey_C ) ) // r Key
+  {
+    selected_gizmo_operation = ImGuizmo::SCALE;
+  }
+
+  if ( ImGui::RadioButton( "Translate", selected_gizmo_operation == ImGuizmo::TRANSLATE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+
+  ImGui::SameLine();
+
+  if ( ImGui::RadioButton( "Rotate", selected_gizmo_operation == ImGuizmo::ROTATE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::ROTATE;
+  }
+  ImGui::SameLine();
+  if ( ImGui::RadioButton( "Scale", selected_gizmo_operation == ImGuizmo::SCALE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::SCALE;
+  }
+
+  ImGui::InputFloat3( "Tr", &selected_node_transform->translation.x );
+  ImGui::InputFloat3( "Sc", &selected_node_transform->scale.x );
+
+  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
+  ImGuizmo::SetDrawlist( );
+  ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+  
+  selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( selected_node_parent, crude_transform  );
+
+  if ( selected_node_parent_transform )
+  {
+    XMStoreFloat4x4( &selected_parent_to_camera_view, DirectX::XMMatrixMultiply( crude_transform_node_to_world( selected_node_parent, selected_node_parent_transform ), XMMatrixInverse( NULL, crude_transform_node_to_world( camera_node, camera_transform ) ) ) );
+  }
+  else
+  {
+    XMStoreFloat4x4( &selected_parent_to_camera_view, XMMatrixIdentity( ) );
+  }
+
+  XMStoreFloat4x4( &camera_view_to_clip, crude_camera_view_to_clip( camera ) );
+  XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
+  
+  ImGuizmo::SetID( 0 );
+  ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL);
+
+  XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
+
+  XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
+  XMStoreFloat3( &selected_node_transform->scale, new_scale );
+  XMStoreFloat3( &selected_node_transform->translation, new_translation );
+
+  //ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
 }
 
 void

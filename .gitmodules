@@ -29,3 +29,6 @@
 [submodule "extlibs/nativefiledialog-extended"]
 	path = extlibs/nativefiledialog-extended
 	url = https://github.com/ruqeg/nativefiledialog-extended.git
+[submodule "extlibs/imguizmo_cmake/ImGuizmo"]
+	path = extlibs/imguizmo_cmake/ImGuizmo
+	url = https://github.com/ruqeg/ImGuizmo.git

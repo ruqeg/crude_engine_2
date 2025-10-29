@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(IMGUI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 set(IMGUI_BACKENDS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends")
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} STATIC
   ${IMGUI_SOURCE_DIR}/imgui.cpp
   ${IMGUI_SOURCE_DIR}/imgui_tables.cpp
   ${IMGUI_SOURCE_DIR}/imgui_widgets.cpp

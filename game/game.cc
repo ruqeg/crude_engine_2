@@ -1,6 +1,7 @@
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 #include <core/hash_map.h>
 #include <core/file.h>
@@ -288,8 +289,11 @@ game_graphics_system_
   
 
   ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
+  ImGuizmo::SetImGuiContext( ( ImGuiContext* ) game->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::SetOrthographic( false );
+  ImGuizmo::BeginFrame();
   ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
 
   if ( game->gpu.swapchain_resized_last_frame )
