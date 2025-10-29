@@ -8,6 +8,8 @@
 #include <devgui.h>
 
 #define CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID ( 1 )
+#define CRUDE_RESOURCES_PATH "\\..\\..\\resources\\"
+#define CRUDE_SHADERS_PATH "\\..\\..\\shaders\\"
 
 typedef struct game_t
 {
@@ -57,4 +59,18 @@ CRUDE_API void
 game_deinitialize
 (
   _In_ game_t                                             *game
+);
+
+CRUDE_API void
+game_create_scene
+(
+  _In_ game_t                                             *game,
+  _In_ char const                                         *filename
+);
+
+CRUDE_API void
+game_reload_scene
+(
+  _In_ game_t                                             *game,
+  _In_ char const                                         *filename
 );

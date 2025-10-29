@@ -228,18 +228,16 @@ crude_scene_initialize
   
   /* Parse json */
   {
-    char const                                            *json_path;
     uint8                                                 *json_buffer;
     uint32                                                 json_buffer_size;
 
-    json_path = crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, creation->filename );
-    if ( !crude_file_exist( json_path ) )
+    if ( !crude_file_exist( creation->filepath ) )
     {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
+      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", creation->filepath );
       return;
     }
 
-    crude_read_file( json_path, crude_stack_allocator_pack( scene->temporary_allocator ), &json_buffer, &json_buffer_size );
+    crude_read_file( creation->filepath, crude_stack_allocator_pack( scene->temporary_allocator ), &json_buffer, &json_buffer_size );
 
     scene_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, json_buffer ), json_buffer_size );
     if ( !scene_json )
@@ -276,4 +274,13 @@ crude_scene_deinitialize
   }
   CRUDE_ARRAY_DEINITIALIZE( scene->nodes );
   crude_string_buffer_deinitialize( &scene->path_bufffer );
+}
+
+void
+crude_scene_save_to_file
+(
+  _In_ crude_scene                                        *scene,
+  _In_ char const                                         *filename
+)
+{
 }

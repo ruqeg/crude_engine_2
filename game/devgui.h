@@ -93,6 +93,7 @@ typedef struct crude_devgui
   crude_devgui_scene_renderer                              dev_scene_renderer;
   crude_devgui_game_common                                 dev_game_common;
   bool                                                     should_reload_shaders;
+  char const                                              *should_reloaded_scene;
 } crude_devgui;
 
 /*********

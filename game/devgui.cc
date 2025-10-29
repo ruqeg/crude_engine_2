@@ -11,6 +11,13 @@
 
 ImGuiWindowFlags                                           window_flags_;
 
+
+nfdu8filteritem_t                                          scene_file_filters_[ 2 ] = 
+{ 
+  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Source code", "c,cpp,cc" } ),
+  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Headers", "h,hpp" } )
+};
+
 static void
 crude_devgui_reload_techniques_
 (
@@ -44,6 +51,7 @@ crude_devgui_initialize
   devgui->menubar_enabled = true;
   devgui->game = game;
   devgui->last_focused_menutab_name = "Graphics";
+  devgui->should_reloaded_scene = NULL;
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, game->scene_renderer.render_graph->builder->gpu );
@@ -124,20 +132,14 @@ crude_devgui_draw
         nfdopendialogu8args_t                              args;
         nfdresult_t                                        result;
 
-        nfdu8filteritem_t                                  filters[ 2 ] = 
-        { 
-          { "Source code", "c,cpp,cc" },
-          { "Headers", "h,hpp" }
-        };
-
         args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
-        args.filterList = filters;
-        args.filterCount = 2;
+        args.filterList = scene_file_filters_;
+        args.filterCount = CRUDE_COUNTOF( scene_file_filters_ );
         
         result = NFD_OpenDialogU8_With( &out_path, &args );
         if ( result == NFD_OKAY )
         {
-          NFD_FreePathU8( out_path );
+          devgui->should_reloaded_scene = out_path;
         }
       }
       if ( ImGui::MenuItem( "Node Tree", "Ctrl+S+T" ) )
@@ -211,6 +213,11 @@ crude_devgui_graphics_post_update
   {
     crude_devgui_reload_techniques_( devgui );
     devgui->should_reload_shaders = false;
+  }
+  if ( devgui->should_reloaded_scene )
+  {
+    game_reload_scene( devgui->game, devgui->should_reloaded_scene );
+    NFD_FreePathU8( ( nfdu8char_t* )devgui->should_reloaded_scene );
   }
 }
 

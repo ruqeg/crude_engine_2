@@ -8,7 +8,8 @@
 
 typedef struct crude_engine_creation
 {
-  uint8                                                    todo;
+  char const                                              *resource_path;
+  char const                                              *shader_path;
 } crude_engine_creation;
 
 typedef struct crude_engine

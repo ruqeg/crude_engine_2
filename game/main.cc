@@ -14,6 +14,8 @@ main
     crude_engine_creation                                  engine_creation;
     
     engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
+    engine_creation.resource_path = CRUDE_RESOURCES_PATH;
+    engine_creation.shader_path = CRUDE_SHADERS_PATH;
     crude_engine_initialize( &engine, &engine_creation );
     game_initialize( &game, &engine );
   }
