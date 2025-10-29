@@ -31,6 +31,7 @@ typedef struct game_t
   crude_scene                                              scene;
   /* Window & Input */
   crude_entity                                             platform_node;
+  XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
   crude_entity                                             character_controller_camera;

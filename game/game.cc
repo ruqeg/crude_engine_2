@@ -346,11 +346,13 @@ game_input_system_
 
     if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
+      SDL_GetMouseState( &game->last_unrelative_mouse_position.x, &game->last_unrelative_mouse_position.y );
       SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), true );
     }
     
     if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
+      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), game->last_unrelative_mouse_position.x, game->last_unrelative_mouse_position.y );
       SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
     }
   }
