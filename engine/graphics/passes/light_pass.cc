@@ -29,9 +29,9 @@ crude_gfx_light_pass_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->light_ds[ i ] );
+    crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->light_ds[ i ] );
   }
-  crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->light_cb );
+  crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->light_cb );
 }
 
 void
@@ -51,7 +51,7 @@ crude_gfx_light_pass_on_render_graph_registered
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->light_cb ) )
   {
-    crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->light_cb );
+    crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->light_cb );
   }
 
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
@@ -60,7 +60,7 @@ crude_gfx_light_pass_on_render_graph_registered
   buffer_creation.size = sizeof( crude_gfx_light_constant_gpu );
   buffer_creation.initial_data = &light_constant;
   buffer_creation.name = "light_constant";
-  pass->light_cb = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
+  pass->light_cb = crude_gfx_create_buffer( pass->scene_renderer->gpu, &buffer_creation );
 
   crude_gfx_light_pass_on_techniques_reloaded( pass );
 }
@@ -73,15 +73,15 @@ crude_gfx_light_pass_render
 )
 {
   crude_gfx_light_pass                                    *pass;
-  crude_gfx_renderer                                      *renderer;
+  crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_light_pass*, ctx );
-  renderer = pass->scene_renderer->renderer;
+  gpu = pass->scene_renderer->gpu;
 
-  pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "fullscreen", "light_pbr" )->pipeline;
+  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "fullscreen", "light_pbr" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->light_ds[ renderer->gpu->current_frame ] );
+  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->light_ds[ gpu->current_frame ] );
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
 }
 
@@ -92,21 +92,21 @@ crude_gfx_light_pass_on_techniques_reloaded
 )
 {
   crude_gfx_light_pass                                    *pass;
-  crude_gfx_renderer                                      *renderer;
-  crude_gfx_renderer_technique_pass                       *light_pass;
+  crude_gfx_device                                        *gpu;
+  crude_gfx_technique_pass                                *light_pass;
   crude_gfx_descriptor_set_layout_handle                   light_dsl;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_light_pass*, ctx );
-  renderer = pass->scene_renderer->renderer;
+  gpu = pass->scene_renderer->gpu;
 
-  light_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "fullscreen", "light_pbr" );
-  light_dsl = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, light_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  light_pass = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "fullscreen", "light_pbr" );
+  light_dsl = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, light_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->light_ds[ i ] ) )
     {
-      crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->light_ds[ i ] );
+      crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->light_ds[ i ] );
     }
   }
 
@@ -119,11 +119,11 @@ crude_gfx_light_pass_on_techniques_reloaded
     ds_creation.name = "light_pass_ds";
     
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ renderer->gpu->current_frame ], 1u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ gpu->current_frame ], 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 2u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ renderer->gpu->current_frame ], 3u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_indices_sb[ renderer->gpu->current_frame ], 4u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->pointlight_world_to_clip_sb[ renderer->gpu->current_frame ], 5u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ gpu->current_frame ], 3u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_indices_sb[ gpu->current_frame ], 4u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ], 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->light_cb, 6u );
     
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
@@ -135,7 +135,7 @@ crude_gfx_light_pass_on_techniques_reloaded
 
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
 
-    pass->light_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->renderer->gpu, &ds_creation );
+    pass->light_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->gpu, &ds_creation );
   }
 }
 

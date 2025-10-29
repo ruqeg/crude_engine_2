@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#include <threads.h>
 
 #include <core/string.h>
 #include <core/assert.h>
@@ -20,6 +21,20 @@ typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_man
  * 
  ***********************************************/
 
+typedef struct crude_gfx_resource_cache
+{
+  struct{ uint64 key; crude_gfx_technique *value; }       *techniques;
+  struct{ uint64 key; crude_gfx_material *value; }        *materials;
+} crude_gfx_resource_cache;
+
+typedef struct crude_gfx_gpu_thread_frame_pools
+{
+  VkCommandPool                                            vk_command_pool;
+  VkQueryPool                                              vk_timestamp_query_pool;
+  VkQueryPool                                              vk_pipeline_stats_query_pool;
+  crude_gfx_gpu_time_query_tree                           *time_queries;
+} crude_gfx_gpu_thread_frame_pools;
+
 typedef struct crude_gfx_device_creation
 {
   SDL_Window                                              *sdl_window;
@@ -30,14 +45,6 @@ typedef struct crude_gfx_device_creation
   uint16                                                   queries_per_frame;
   uint16                                                   num_threads;
 } crude_gfx_device_creation;
-
-typedef struct crude_gfx_gpu_thread_frame_pools
-{
-  VkCommandPool                                            vk_command_pool;
-  VkQueryPool                                              vk_timestamp_query_pool;
-  VkQueryPool                                              vk_pipeline_stats_query_pool;
-  crude_gfx_gpu_time_query_tree                           *time_queries;
-} crude_gfx_gpu_thread_frame_pools;
 
 typedef struct crude_gfx_device
 {
@@ -74,6 +81,15 @@ typedef struct crude_gfx_device
   crude_resource_pool                                      command_buffers;
   crude_resource_pool                                      shaders;
   crude_resource_pool                                      framebuffers;
+  crude_resource_pool                                      materials;
+  crude_resource_pool                                      techniques;
+  /**
+   * High Level resoruces managment (material, technique, textures updating) 
+   */
+  crude_gfx_texture_handle                                 textures_to_update[ 128 ];
+  uint32                                                   num_textures_to_update;
+  mtx_t                                                    texture_update_mutex;
+  crude_gfx_resource_cache                                 resource_cache;
   /**
    * Queue to remove or update bindless texture.
    */
@@ -370,6 +386,35 @@ crude_gfx_submit_immediate
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
+CRUDE_API void
+crude_gfx_add_texture_to_update
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_texture_handle                            texture
+);
+
+CRUDE_API void
+crude_gfx_add_texture_update_commands
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_cmd_buffer                               *cmd
+);
+
+CRUDE_API crude_gfx_technique*
+crude_gfx_access_technique_by_name
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *technique_name
+);
+
+CRUDE_API crude_gfx_technique_pass*
+crude_gfx_access_technique_pass_by_name
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *technique_name,
+  _In_ char const                                         *pass_name
+);
+
 /************************************************
  *
  * GPU Device Resources Functions
@@ -571,6 +616,34 @@ crude_gfx_destroy_framebuffer_instant
   _In_ crude_gfx_framebuffer_handle                        handle
 );
 
+CRUDE_API crude_gfx_material*
+crude_gfx_create_material
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_material_creation const                  *creation
+);
+
+CRUDE_API void
+crude_gfx_destroy_material_instant
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_material                                 *material
+);
+
+CRUDE_API crude_gfx_technique*
+crude_gfx_create_technique
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_technique_creation const                 *creation
+);
+
+CRUDE_API void
+crude_gfx_destroy_technique_instant
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_technique                                *technique
+);
+
 /************************************************
  *
  * GPU Device Resources Pools Functions
@@ -754,6 +827,46 @@ crude_gfx_release_framebuffer
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_framebuffer_handle                        handle
+);
+
+CRUDE_API crude_gfx_material_handle
+crude_gfx_obtain_material
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_material*
+crude_gfx_access_material
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_material_handle                           handle
+);
+
+CRUDE_API void
+crude_gfx_release_material
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_material_handle                           handle
+);
+
+CRUDE_API crude_gfx_technique_handle
+crude_gfx_obtain_technique
+(
+  _In_ crude_gfx_device                                   *gpu
+);
+
+CRUDE_API crude_gfx_technique*
+crude_gfx_access_technique
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_technique_handle                          handle
+);
+
+CRUDE_API void
+crude_gfx_release_technique
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_technique_handle                          handle
 );
 
 /************************************************

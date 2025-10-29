@@ -27,7 +27,7 @@ crude_gfx_depth_pyramid_pass_deinitialize
   _In_ crude_gfx_depth_pyramid_pass                       *pass
 )
 {
-  crude_gfx_device *gpu = pass->scene_renderer->renderer->gpu;
+  crude_gfx_device *gpu = pass->scene_renderer->gpu;
   crude_gfx_destroy_texture( gpu, pass->depth_pyramid_texture_handle );
   crude_gfx_destroy_sampler( gpu, pass->depth_pyramid_sampler );
 
@@ -53,7 +53,7 @@ crude_gfx_depth_pyramid_pass_on_render_graph_registered
   crude_gfx_device                                        *gpu;
   crude_gfx_sampler_creation                               sampler_creation;
   
-  gpu = pass->scene_renderer->renderer->gpu;
+  gpu = pass->scene_renderer->gpu;
 
   sampler_creation = crude_gfx_sampler_creation_empty();
   sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -87,11 +87,11 @@ crude_gfx_depth_pyramid_pass_render
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
 
-  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "depth_pyramid" )->pipeline;
+  depth_pyramid_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "depth_pyramid" )->pipeline;
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, depth_pyramid_pipeline );
   
-  gpu = pass->scene_renderer->renderer->gpu;
+  gpu = pass->scene_renderer->gpu;
   depth_pyramid_texture = crude_gfx_access_texture( gpu, pass->depth_pyramid_texture_handle );
   
   width = depth_pyramid_texture->width;
@@ -140,7 +140,7 @@ crude_gfx_depth_pyramid_pass_on_resize
   
   depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
   depth_texture_handle = depth_resource->resource_info.texture.handle;
-  depth_texture = crude_gfx_access_texture( pass->scene_renderer->renderer->gpu, depth_texture_handle );
+  depth_texture = crude_gfx_access_texture( pass->scene_renderer->gpu, depth_texture_handle );
 
   width = depth_texture->width / 2;
   height = depth_texture->height / 2;
@@ -156,7 +156,7 @@ crude_gfx_depth_pyramid_pass_on_resize
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->depth_pyramid_texture_handle ) )
   {
-    crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->depth_pyramid_texture_handle );
+    crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->depth_pyramid_texture_handle );
   }
   
   depth_hierarchy_creation = crude_gfx_texture_creation_empty();
@@ -168,9 +168,9 @@ crude_gfx_depth_pyramid_pass_on_resize
   depth_hierarchy_creation.subresource.mip_level_count = pass->depth_pyramid_levels;
   depth_hierarchy_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   depth_hierarchy_creation.name = "depth_hierarchy";
-  pass->depth_pyramid_texture_handle = crude_gfx_create_texture( pass->scene_renderer->renderer->gpu, &depth_hierarchy_creation );
+  pass->depth_pyramid_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &depth_hierarchy_creation );
 
-  crude_gfx_link_texture_sampler( pass->scene_renderer->renderer->gpu, pass->depth_pyramid_texture_handle, pass->depth_pyramid_sampler );
+  crude_gfx_link_texture_sampler( pass->scene_renderer->gpu, pass->depth_pyramid_texture_handle, pass->depth_pyramid_sampler );
 
   depth_pyramid_view_creation = crude_gfx_texture_view_creation_empty( );
   depth_pyramid_view_creation.view_type = VK_IMAGE_VIEW_TYPE_2D;
@@ -180,11 +180,11 @@ crude_gfx_depth_pyramid_pass_on_resize
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->depth_pyramid_views_handles[ i ] ) )
     {
-      crude_gfx_destroy_texture( pass->scene_renderer->renderer->gpu, pass->depth_pyramid_views_handles[ i ] );
+      crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->depth_pyramid_views_handles[ i ] );
     }
 
     depth_pyramid_view_creation.subresource.mip_base_level = i;
-    pass->depth_pyramid_views_handles[ i ] = crude_gfx_create_texture_view( pass->scene_renderer->renderer->gpu, &depth_pyramid_view_creation );
+    pass->depth_pyramid_views_handles[ i ] = crude_gfx_create_texture_view( pass->scene_renderer->gpu, &depth_pyramid_view_creation );
   }
   
   crude_gfx_depth_pyramid_pass_on_techniques_reloaded( ctx );
@@ -204,19 +204,19 @@ crude_gfx_depth_pyramid_pass_on_techniques_reloaded
   crude_gfx_pipeline_handle                                depth_pyramid_pipeline;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
-  gpu = pass->scene_renderer->renderer->gpu;
+  gpu = pass->scene_renderer->gpu;
 
   depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
   depth_texture_handle = depth_resource->resource_info.texture.handle;
 
-  depth_pyramid_pipeline = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "compute", "depth_pyramid" )->pipeline;
+  depth_pyramid_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "depth_pyramid" )->pipeline;
   depth_pyramid_dsl = crude_gfx_get_descriptor_set_layout( gpu, depth_pyramid_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->depth_hierarchy_ds[ i ] ) )
     {
-      crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->depth_hierarchy_ds[ i ] );
+      crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->depth_hierarchy_ds[ i ] );
     }
   }
 

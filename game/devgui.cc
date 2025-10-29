@@ -3,7 +3,7 @@
 #include <ImGuizmo/ImGuizmo.h>
 
 #include <core/hash_map.h>
-#include <graphics/renderer_resources_loader.h>
+#include <graphics/gpu_resources_loader.h>
 #include <scene/scripts_components.h>
 #include <game.h>
 
@@ -24,16 +24,16 @@ crude_devgui_reload_techniques_
   _In_ crude_devgui                                       *devgui
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->game->renderer.resource_cache.techniques ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->game->gpu.resource_cache.techniques ); ++i )
   {
-    if ( !devgui->game->renderer.resource_cache.techniques[ i ].key )
+    if ( !devgui->game->gpu.resource_cache.techniques[ i ].key )
     {
       continue;
     }
     
-    crude_gfx_renderer_technique *technique = devgui->game->renderer.resource_cache.techniques[ i ].value; 
-    crude_gfx_renderer_destroy_technique( &devgui->game->renderer, technique );
-    crude_gfx_renderer_technique_load_from_file( technique->json_name, &devgui->game->renderer, &devgui->game->render_graph, &devgui->game->temporary_allocator );
+    crude_gfx_technique *technique = devgui->game->gpu.resource_cache.techniques[ i ].value; 
+    crude_gfx_destroy_technique_instant( &devgui->game->gpu, technique );
+    crude_gfx_technique_load_from_file( technique->json_name, &devgui->game->gpu, &devgui->game->render_graph, &devgui->game->temporary_allocator );
   }
 
   crude_gfx_render_graph_on_techniques_reloaded( &devgui->game->render_graph );

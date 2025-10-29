@@ -21,7 +21,6 @@ typedef struct game_t
   crude_stack_allocator                                    temporary_allocator;
   /* Graphics */
   crude_gfx_device                                         gpu;
-  crude_gfx_renderer                                       renderer;
   crude_gfx_render_graph                                   render_graph;
   crude_gfx_render_graph_builder                           render_graph_builder;
   crude_gfx_asynchronous_loader                            async_loader;

@@ -12,7 +12,7 @@
 #include <scene/free_camera_system.h>
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
-#include <graphics/renderer_resources_loader.h>
+#include <graphics/gpu_resources_loader.h>
 #include <physics/physics_system.h>
 
 #include <game.h>
@@ -216,7 +216,7 @@ game_reload_scene
    /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.renderer = &game->renderer;
+    creation.gpu = &game->gpu;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
     creation.resources_allocator = &game->resources_allocator;
@@ -232,10 +232,10 @@ game_reload_scene
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
     // Yes, i block it, because i don't want to fuck with rtx AND MESHLETES (long story)
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( game->renderer.gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( &game->gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
     while ( CRUDE_ARRAY_LENGTH( game->async_loader.upload_requests ) || CRUDE_ARRAY_LENGTH( game->async_loader.file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( game->async_loader.texture_ready ) )
     {
-      crude_gfx_renderer_add_texture_update_commands( &game->renderer, cmd );
+      crude_gfx_add_texture_update_commands( &game->gpu, cmd );
     }
     crude_gfx_submit_immediate( cmd );
   }
@@ -265,21 +265,13 @@ game_graphics_initialize_
     crude_gfx_device_initialize( &game->gpu, &device_creation );
   }
   
-  /* Create Renderer */
-  {
-    crude_gfx_renderer_creation renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_creation );
-    renderer_creation.gpu                 = &game->gpu;
-    renderer_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-    crude_gfx_renderer_initialize( &game->renderer, &renderer_creation );
-  }    
-  
   /* Create Render Graph */
   crude_gfx_render_graph_builder_initialize( &game->render_graph_builder, &game->gpu );
   crude_gfx_render_graph_initialize( &game->render_graph, &game->render_graph_builder );
   
   /* Create Async Loader */
   {
-    crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->renderer );
+    crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
     crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
   }
   
@@ -298,21 +290,21 @@ game_graphics_initialize_
   }
   
   /* Create Render Tecnhique & Renderer Passes*/
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->renderer, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.renderer = &game->renderer;
+    creation.gpu = &game->gpu;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
     creation.resources_allocator = &game->resources_allocator;
@@ -328,10 +320,10 @@ game_graphics_initialize_
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
     // Yes, i block it, because i don't want to fuck with rtx AND MESHLETES (long story)
     
-    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( game->renderer.gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
+    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( &game->gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
     while ( CRUDE_ARRAY_LENGTH( game->async_loader.upload_requests ) || CRUDE_ARRAY_LENGTH( game->async_loader.file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( game->async_loader.texture_ready ) )
     {
-      crude_gfx_renderer_add_texture_update_commands( &game->renderer, cmd );
+      crude_gfx_add_texture_update_commands( &game->gpu, cmd );
     }
     crude_gfx_submit_immediate( cmd );
   }
@@ -399,7 +391,6 @@ game_graphics_deinitialize_
   crude_gfx_asynchronous_loader_deinitialize( &game->async_loader );
   crude_gfx_render_graph_builder_deinitialize( &game->render_graph_builder );
   crude_gfx_render_graph_deinitialize( &game->render_graph );
-  crude_gfx_renderer_deinitialize( &game->renderer );
   crude_gfx_device_deinitialize( &game->gpu );
 }
 

@@ -27,6 +27,7 @@
 #define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
 #define CRUDE_GFX_BINDLESS_IMAGE_BINDING                   11
 #define CRUDE_GFX_MAX_PUSH_CONSTANTS                       1u
+#define CRUDE_GFX_TEXTURE_INDEX_INVALID                    ~0u
 
 /************************************************
  *
@@ -79,6 +80,16 @@ typedef struct crude_gfx_framebuffer_handle
 {
   crude_gfx_resource_index                                 index;
 } crude_gfx_framebuffer_handle;
+
+typedef struct crude_gfx_material_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_material_handle;
+
+typedef struct crude_gfx_technique_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_technique_handle;
 
 /************************************************
  *
@@ -688,6 +699,49 @@ typedef struct crude_gfx_resource_update
   uint32                                                   current_frame;
 } crude_gfx_resource_update;
 
+typedef struct crude_gfx_technique_pass_creation
+{
+  crude_gfx_pipeline_handle                                pipeline;
+} crude_gfx_technique_pass_creation;
+
+typedef struct crude_gfx_technique_creation
+{
+  char const                                              *json_name;
+  crude_gfx_technique_pass_creation                        passes[ 8 ];
+  uint32                                                   passes_count;
+  char const                                              *name;
+} crude_gfx_technique_creation;
+
+typedef struct crude_gfx_technique_pass
+{
+  crude_gfx_pipeline_handle                                pipeline;
+  struct { uint64 key; uint16 value; }                    *name_hashed_to_descriptor_index;
+} crude_gfx_technique_pass;
+
+typedef struct crude_gfx_technique
+{
+  char const                                              *json_name;
+  char const                                              *name;
+  crude_gfx_technique_pass                                *passes;
+  uint32                                                   pool_index;
+  struct { uint64 key; uint16 value; }                    *name_hashed_to_pass_index;
+} crude_gfx_technique;
+
+typedef struct crude_gfx_material_creation
+{
+  crude_gfx_technique                                     *technique;
+  char const                                              *name;
+  uint32                                                   render_index;
+} crude_gfx_material_creation;
+
+typedef struct crude_gfx_material
+{
+  crude_gfx_technique                                     *technique;
+  uint32                                                   render_index;
+  uint32                                                   pool_index;
+  char const                                              *name;
+} crude_gfx_material;
+
 /************************************************
  *
  * GPU Resoruces Creation Empty Functions
@@ -821,6 +875,28 @@ crude_gfx_shader_state_creation_add_stage
   _In_ char const                                         *code,
   _In_ uint64                                              code_size,
   _In_ VkShaderStageFlagBits                               type
+);
+
+
+CRUDE_API uint32
+crude_gfx_technique_get_pass_index
+(
+  _In_ crude_gfx_technique                                *technique,
+  _In_ char const                                         *name
+);
+
+CRUDE_API uint16
+crude_gfx_technique_pass_get_binding_index
+(
+  _In_ crude_gfx_technique_pass                           *technique_pass,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_technique_creation_add_pass
+(
+  _In_ crude_gfx_technique_creation                       *creation,
+  _In_ crude_gfx_pipeline_handle                           pipeline
 );
 
 /************************************************

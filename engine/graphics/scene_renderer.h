@@ -21,7 +21,7 @@ typedef struct crude_gfx_scene_renderer_creation
 {
   crude_scene                                             *scene;
   void                                                    *imgui_context;
-  crude_gfx_renderer                                      *renderer;
+  crude_gfx_device                                        *gpu;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
   crude_heap_allocator                                    *allocator;
@@ -46,7 +46,7 @@ typedef struct crude_gfx_scene_renderer
   void                                                    *world;
   void                                                    *task_scheduler;
   void                                                    *imgui_context;
-  crude_gfx_renderer                                      *renderer;
+  crude_gfx_device                                        *gpu;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_scene                                             *scene;
@@ -63,9 +63,9 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Common CPU & GPU Data
    **********************/
-  crude_gfx_renderer_sampler                              *samplers;
-  crude_gfx_renderer_texture                              *images;
-  crude_gfx_renderer_buffer                               *buffers;
+  crude_gfx_sampler_handle                                *samplers;
+  crude_gfx_texture_handle                                *images;
+  crude_gfx_buffer_handle                                 *buffers;
   crude_gfx_buffer_handle                                  scene_cb;
   
   /***********************

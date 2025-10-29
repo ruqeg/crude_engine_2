@@ -2,7 +2,7 @@
 
 #include <core/ecs.h>
 #include <scene/scene_components.h>
-#include <graphics/renderer_resources.h>
+#include <graphics/gpu_resources.h>
 
 #define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
 #define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )

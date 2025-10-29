@@ -4,7 +4,7 @@
 #include <core/string.h>
 #include <core/hash_map.h>
 
-#include <graphics/renderer_resources_loader.h>
+#include <graphics/gpu_resources_loader.h>
 
 /************************************************
  *
@@ -65,17 +65,17 @@ get_blend_op_
  * 
  ***********************************************/
 void
-crude_gfx_renderer_technique_load_from_file
+crude_gfx_technique_load_from_file
 (
   _In_ char const                                         *json_name,
-  _In_ crude_gfx_renderer                                 *renderer,
+  _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
   char                                                     working_directory[ 512 ];
   char const                                              *json_path;
-  crude_gfx_renderer_technique_creation                    technique_creation;
+  crude_gfx_technique_creation                             technique_creation;
   shader_buffer_data_hashmap                              *name_hashed_to_buffer;
   cJSON                                                   *technique_json;
   cJSON const                                             *passes;
@@ -93,7 +93,7 @@ crude_gfx_renderer_technique_load_from_file
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  json_path = crude_string_buffer_append_use_f( &renderer->gpu->objects_names_string_buffer, "%s%s", working_directory, json_name );;
+  json_path = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s%s", working_directory, json_name );;
   if ( !crude_file_exist( json_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
@@ -109,7 +109,7 @@ crude_gfx_renderer_technique_load_from_file
     return;
   }
   
-  technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_renderer_technique_creation );
+  technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_technique_creation );
   
   technique_creation.json_name = json_name;
   {
@@ -118,7 +118,7 @@ crude_gfx_renderer_technique_load_from_file
     
     technique_name_json = cJSON_GetObjectItemCaseSensitive( technique_json, "name" );
     technique_name = cJSON_GetStringValue( technique_name_json );
-    technique_creation.name = crude_string_buffer_append_use_f( &renderer->gpu->objects_names_string_buffer, "%s", technique_name );
+    technique_creation.name = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", technique_name );
   }
 
   {
@@ -181,13 +181,13 @@ crude_gfx_renderer_technique_load_from_file
 
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline_( pipeline, &pipeline_creation, working_directory, name_hashed_to_buffer, renderer->gpu, render_graph, temporary_allocator );
-      crude_gfx_renderer_technique_creation_add_pass( &technique_creation, crude_gfx_create_pipeline( renderer->gpu, &pipeline_creation ) );
+      parse_gpu_pipeline_( pipeline, &pipeline_creation, working_directory, name_hashed_to_buffer, gpu, render_graph, temporary_allocator );
+      crude_gfx_technique_creation_add_pass( &technique_creation, crude_gfx_create_pipeline( gpu, &pipeline_creation ) );
     }
   }
 
   {
-    crude_gfx_renderer_technique *technique = crude_gfx_renderer_create_technique( renderer, &technique_creation );
+    crude_gfx_technique *technique = crude_gfx_create_technique( gpu, &technique_creation );
   }
   
   cJSON_Delete( technique_json );

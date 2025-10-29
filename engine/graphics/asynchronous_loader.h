@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/renderer.h>
+#include <graphics/gpu_device.h>
 
 /**
  * - Process load from file request
@@ -36,7 +36,7 @@ typedef struct crude_gfx_upload_request
 
 typedef struct crude_gfx_asynchronous_loader
 {
-  crude_gfx_renderer                                      *renderer;
+  crude_gfx_device                                        *gpu;
 
   crude_gfx_file_load_request                             *file_load_requests;
   crude_gfx_upload_request                                *upload_requests;
@@ -83,7 +83,7 @@ CRUDE_API void
 crude_gfx_asynchronous_loader_initialize
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
-  _In_ crude_gfx_renderer                                 *renderer
+  _In_ crude_gfx_device                                   *gpu
 );
 
 CRUDE_API void
