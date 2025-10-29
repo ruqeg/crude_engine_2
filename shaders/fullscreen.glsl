@@ -237,6 +237,8 @@ crude_calculate_lighting
   radiance.xyz += indirect_diffuse * ao;
 #endif /* CRUDE_RAYTRACED_DDGI */
 
+  radiance.xyz += albedo.xyz * scene.ambient_color * scene.ambient_intensity;
+
   return radiance;
 }
 

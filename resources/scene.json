@@ -1,5 +1,5 @@
 {
-  "name": "scene1",
+  "name": "scene",
   "hierarchy": {
     "node": {
       "name": "main",
@@ -50,55 +50,7 @@
             }
           ],
           "tags": [
-            "crude_main_camera"
-          ],
-          "transform": {
-            "translation": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0,
-              1
-            ],
-            "scale": [
-              1,
-              1,
-              1
-            ]
-          }
-        },
-        "children": []
-      },
-      {
-        "node": {
-          "name": "debug_camera",
-          "components": [
-            {
-              "type": "crude_camera",
-              "fov_radians": 1.0,
-              "near_z": 0.01,
-              "far_z": 1000,
-              "aspect_ratio": 1.3
-            },
-            {
-              "type": "crude_free_camera",
-              "moving_speed_multiplier": [
-                7.0,
-                7.0,
-                7.0
-              ],
-              "rotating_speed_multiplier": [
-                -0.25,
-                -0.25
-              ]
-            }
-          ],
-          "tags": [
-            "crude_debug_camera"
+            "crude_editor_camera"
           ],
           "transform": {
             "translation": [
@@ -128,6 +80,12 @@
             {
               "type": "crude_gltf",
               "path": "glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
+            },
+            {
+              "type": "crude_physics_static_body",
+              "crude_physics_box_collision_shape": {
+                "half_extent": [ 100, 1, 100 ]
+              }
             }
           ],
           "tags": [],
@@ -154,21 +112,25 @@
       },
       {
         "node": {
-          "name": "light",
+          "name": "player",
           "components": [
             {
-              "type": "crude_light",
-              "radius": 5,
-              "color": [ 1, 1, 1 ],
-              "intensity": 52
+              "type": "crude_gltf",
+              "path": "game\\redball_default.gltf"
+            },
+            {
+              "type": "crude_physics_dynamic_body",
+              "crude_physics_sphere_collision_shape": {
+                "radius": 1
+              }
             }
           ],
           "tags": [],
           "transform": {
             "translation": [
-              0,
-              1,
-              0
+              -2.100,
+              10.000,
+              0.700
             ],
             "rotation": [
               0,
@@ -177,13 +139,102 @@
               1
             ],
             "scale": [
-              1.0,
-              1.0,
-              1.0
+              1,
+              1,
+              1
             ]
           }
         },
-        "children": []
+        "children": [
+          {
+            "node": {
+              "name": "pivot1",
+              "components": [ ],
+              "tags": [],
+              "transform": {
+                "translation": [
+                  0.000,
+                  0.000,
+                  0.000
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            "children": [
+              {
+                "node": {
+                  "name": "pivot2",
+                  "components": [ ],
+                  "tags": [],
+                  "transform": {
+                    "translation": [
+                      0.000,
+                      0.000,
+                      0.000
+                    ],
+                    "rotation": [
+                      0,
+                      0,
+                      0,
+                      1
+                    ],
+                    "scale": [
+                      1,
+                      1,
+                      1
+                    ]
+                  }
+                },
+                "children": [
+                  {
+                    "node": {
+                      "name": "camera",
+                      "components": [
+                        {
+                          "type": "crude_camera",
+                          "fov_radians": 1.0,
+                          "near_z": 0.01,
+                          "far_z": 1000,
+                          "aspect_ratio": 1.8
+                        }
+                      ],
+                      "tags": [ ],
+                      "transform": {
+                        "translation": [
+                          0,
+                          0,
+                          0
+                        ],
+                        "rotation": [
+                          0,
+                          0,
+                          0,
+                          1
+                        ],
+                        "scale": [
+                          1,
+                          1,
+                          1
+                        ]
+                      }
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }

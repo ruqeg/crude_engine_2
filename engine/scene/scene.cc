@@ -144,7 +144,7 @@ scene_load_hierarchy_
           CRUDE_ASSERT( false );
         }
       }
-      else if ( crude_string_cmp( component_type, "crude_dynamic_body" ) == 0 )
+      else if ( crude_string_cmp( component_type, "crude_physics_dynamic_body" ) == 0 )
       {
         if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
         {
@@ -172,13 +172,9 @@ scene_load_hierarchy_
       tag_json = cJSON_GetArrayItem( node_tags_json, tag_index );
       tag = cJSON_GetStringValue( tag_json );
   
-      if ( crude_string_cmp( tag, "crude_main_camera" ) == 0 )
+      if ( crude_string_cmp( tag, "crude_editor_camera" ) == 0 )
       {
-        scene->main_camera = node;
-      }
-      if ( crude_string_cmp( tag, "crude_debug_camera" ) == 0 )
-      {
-        scene->debug_camera = node;
+        scene->editor_camera_node = node;
       }
     }
   
@@ -208,6 +204,10 @@ crude_scene_initialize
   _In_ crude_scene_creation const                         *creation
 )
 {
+  cJSON                                                   *scene_json;
+  size_t                                                   allocated_marker;
+  crude_string_buffer                                      temporary_path_buffer;
+
   scene->allocator_container = creation->allocator_container;
   scene->temporary_allocator = creation->temporary_allocator;
   scene->input_entity = creation->input_entity;
@@ -221,36 +221,6 @@ crude_scene_initialize
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     scene->resources_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", working_directory, creation->resources_path );
   }
-}
-
-void
-crude_scene_deinitialize
-(
-  _In_ crude_scene                                        *scene,
-  _In_ bool                                                destroy_nodes
-)
-{
-  if ( destroy_nodes )
-  {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->nodes ); ++i )
-    {
-      crude_entity_destroy( scene->nodes[ i ] );
-    }
-  }
-  CRUDE_ARRAY_DEINITIALIZE( scene->nodes );
-  crude_string_buffer_deinitialize( &scene->path_bufffer );
-}
-
-void
-crude_scene_load
-(
-  _In_ crude_scene                                        *scene,
-  _In_ char const                                         *json_name
-)
-{
-  cJSON                                                   *scene_json;
-  size_t                                                   allocated_marker;
-  crude_string_buffer                                      temporary_path_buffer;
 
   allocated_marker = crude_stack_allocator_get_marker( scene->temporary_allocator );
   
@@ -262,7 +232,7 @@ crude_scene_load
     uint8                                                 *json_buffer;
     uint32                                                 json_buffer_size;
 
-    json_path = crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, json_name );
+    json_path = crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, creation->filename );
     if ( !crude_file_exist( json_path ) )
     {
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
@@ -288,4 +258,22 @@ crude_scene_load
 
   cJSON_Delete( scene_json );
   crude_stack_allocator_free_marker( scene->temporary_allocator, allocated_marker );
+}
+
+void
+crude_scene_deinitialize
+(
+  _In_ crude_scene                                        *scene,
+  _In_ bool                                                destroy_nodes
+)
+{
+  if ( destroy_nodes )
+  {
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->nodes ); ++i )
+    {
+      crude_entity_destroy( scene->nodes[ i ] );
+    }
+  }
+  CRUDE_ARRAY_DEINITIALIZE( scene->nodes );
+  crude_string_buffer_deinitialize( &scene->path_bufffer );
 }

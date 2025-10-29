@@ -2,11 +2,12 @@
 
 #include <imgui.h>
 
-#include <core/color.h>
-#include <graphics/gpu_profiler.h>
-#include <graphics/render_graph.h>
-#include <graphics/renderer.h>
+#include <core/ecs.h>
 #include <platform/platform_components.h>
+#include <graphics/scene_renderer.h>
+#include <graphics/gpu_profiler.h>
+
+typedef struct game_t game_t;
 
 typedef struct crude_devgui_nodes_tree
 {
@@ -62,6 +63,13 @@ typedef struct crude_devgui_gpu_visual_profiler
   bool                                                     enabled;
 } crude_devgui_gpu_visual_profiler;
 
+typedef struct crude_devgui_game_common
+{
+  game_t                                                  *game;
+  bool                                                     editor_camera_controller;
+  bool                                                     enabled;
+} crude_devgui_game_common;
+
 typedef struct crude_devgui_scene_renderer
 {
   crude_gfx_scene_renderer                                *scene_renderer;
@@ -73,12 +81,7 @@ typedef struct crude_devgui_scene_renderer
 typedef struct crude_devgui
 {
   char const                                              *last_focused_menutab_name;
-  void                                                    *imgui_context;
-  crude_gfx_renderer                                      *renderer;
-  crude_gfx_render_graph                                  *render_graph;
-  crude_gfx_scene_renderer                                *scene_renderer;
-  crude_stack_allocator                                    temporary_allocator;
-  crude_heap_allocator                                    *allocator;
+  game_t                                                  *game;
   bool                                                     menubar_enabled;
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
@@ -87,6 +90,7 @@ typedef struct crude_devgui
   crude_devgui_gpu                                         dev_gpu;
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
   crude_devgui_scene_renderer                              dev_scene_renderer;
+  crude_devgui_game_common                                 dev_game_common;
   bool                                                     should_reload_shaders;
 } crude_devgui;
 
@@ -97,9 +101,7 @@ CRUDE_API void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_heap_allocator                               *allocator,
-  _In_ void                                               *imgui_context
+  _In_ game_t                                             *game
 );
 
 CRUDE_API void
@@ -286,4 +288,32 @@ CRUDE_API void
 crude_devgui_scene_renderer_draw
 (
   _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
+);
+
+/******************************
+ * Dev Gui Game Common
+ *******************************/
+CRUDE_API void
+crude_devgui_game_common_initialize
+(
+  _In_ crude_devgui_game_common                           *dev_game_common,
+  _In_ game_t                                             *game
+);
+
+CRUDE_API void
+crude_devgui_game_common_deinitialize
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
+);
+
+CRUDE_API void
+crude_devgui_game_common_update
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
+);
+
+CRUDE_API void
+crude_devgui_game_common_draw
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
 );

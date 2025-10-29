@@ -218,6 +218,8 @@ crude_gfx_scene_renderer_initialize
   
   scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
   scene_renderer->options.background_intensity = 1.f;
+  scene_renderer->options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
+  scene_renderer->options.ambient_intensity = 1.f;
 
   crude_heap_allocator_initialize( &scene_renderer->gltf_allocator, CRUDE_RMEGA( 512 ), "gltf_allocator" );
 
@@ -766,11 +768,9 @@ update_dynamic_buffers_
       *scene_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
       scene_constant->flags = 0u;
       scene_constant->camera_previous = scene_constant->camera;
-      scene_constant->camera_debug_previous = scene_constant->camera_debug;
       scene_constant->resolution.x = scene_renderer->renderer->gpu->vk_swapchain_width;
       scene_constant->resolution.y = scene_renderer->renderer->gpu->vk_swapchain_height;
-      crude_gfx_camera_to_camera_gpu( scene_renderer->scene->main_camera, &scene_constant->camera );
-      crude_gfx_camera_to_camera_gpu( scene_renderer->scene->debug_camera, &scene_constant->camera_debug );
+      crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene_constant->camera );
       scene_constant->mesh_instances_count = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
@@ -783,6 +783,8 @@ update_dynamic_buffers_
 #endif
       scene_constant->background_color = scene_renderer->options.background_color;
       scene_constant->background_intensity = scene_renderer->options.background_intensity;
+      scene_constant->ambient_color = scene_renderer->options.ambient_color;
+      scene_constant->ambient_intensity = scene_renderer->options.ambient_intensity;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }
@@ -903,10 +905,10 @@ update_dynamic_buffers_
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GFX_LIGHT_Z_BINS, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_gpu, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
 
-    camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_camera );
-    camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->scene->main_camera, crude_transform );
+    camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->options.camera_node, crude_camera );
+    camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->options.camera_node, crude_transform );
     
-    view_to_world = crude_transform_node_to_world( scene_renderer->scene->main_camera, camera_transform );
+    view_to_world = crude_transform_node_to_world( scene_renderer->options.camera_node, camera_transform );
     world_to_view = XMMatrixInverse( NULL, view_to_world );
     view_to_clip = crude_camera_view_to_clip( camera );
     clip_to_view = XMMatrixInverse( NULL, view_to_clip );

@@ -48,6 +48,21 @@ crude_ecs_progress
   _In_ float32                                             delta_time
 );
 
+CRUDE_API crude_entity
+crude_ecs_lookup_entity
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ char const                                         *path
+);
+
+CRUDE_API crude_entity
+crude_ecs_lookup_entity_from_parent
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ crude_entity                                        parent,
+  _In_ char const                                         *path
+);
+
 /************************************************
  *
  * ECS Entity Functions Declaration 

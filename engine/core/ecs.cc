@@ -43,6 +43,33 @@ crude_ecs_progress
   return ecs_progress( world, delta_time );
 }
 
+crude_entity
+crude_ecs_lookup_entity
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ char const                                         *path
+)
+{
+  crude_entity entity;
+  entity.world = world;
+  entity.handle = ecs_lookup( world, path );
+  return entity;
+}
+
+crude_entity
+crude_ecs_lookup_entity_from_parent
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ crude_entity                                        parent,
+  _In_ char const                                         *path
+)
+{
+  crude_entity entity;
+  entity.world = world;
+  entity.handle = ecs_lookup_from( world, parent.handle, path );
+  return entity;
+}
+
 /************************************************
  *
  * ECS Entity Functions Implementatino
@@ -56,7 +83,7 @@ crude_entity_create_empty
 )
 {
   crude_entity entity = CRUDE_COMPOUNT( crude_entity, { .handle = ecs_new( world ), .world = world } );
-  ecs_doc_set_name( world, entity.handle, name == NULL || name[0] == '\0' ? "entity" : name );
+  ecs_set_name( world, entity.handle, name == NULL || name[0] == '\0' ? "entity" : name );
   ecs_add( world, entity.handle, crude_entity_tag );
   return entity;
 }
@@ -105,5 +132,5 @@ crude_entity_get_name
   _In_ crude_entity                                        entity
 )
 {
-  return ecs_doc_get_name( entity.world, entity.handle );
+  return ecs_get_name( entity.world, entity.handle );
 }

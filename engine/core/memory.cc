@@ -101,13 +101,13 @@ crude_heap_allocator_allocate
   sizet                                                    actual_size;
   
   allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
-  CRUDE_ASSERT( allocated_memory );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocated_memory, "Failed to allocate %i bytes in \"%s\" allocator!", size, allocator->name ? allocator->name : "unknown allocator" );
   actual_size = tlsf_block_size( allocated_memory );
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
   return allocated_memory;
 }
 
-CRUDE_API void*
+void*
 crude_heap_allocator_allocate_align
 (
   _In_ crude_heap_allocator                               *allocator,

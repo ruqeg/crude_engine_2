@@ -368,32 +368,22 @@ crude_physics_static_body_destrotion_observer_
   ecs_iter_t *it
 )
 {
-  crude_physics_static_body *static_bodies_per_entity = ecs_field( it, crude_physics_static_body, 0 );
-  crude_physics_static_body_handle *static_bodies_values_per_entity = ecs_field( it, crude_physics_static_body_handle, 1 );
+  crude_physics_static_body_handle *static_bodies_values_per_entity = ecs_field( it, crude_physics_static_body_handle, 0 );
 
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_physics_static_body                             *static_body;
-    crude_physics_static_body_handle                       *static_body_value;
+    crude_physics_static_body_handle                      *static_body_value;
     ecs_world_t                                           *world;
     JPH::BodyID                                            body_id;
 
     world = it->world;
-    static_body = &static_bodies_per_entity[ i ];
     static_body_value = &static_bodies_values_per_entity[ i ];
 
-    if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-    {
-      body_id = JPH::BodyID{ static_body_value->static_body_index };
-      body_interface.RemoveBody( body_id );
-      body_interface.DestroyBody( body_id );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
-    }
+    body_id = JPH::BodyID{ static_body_value->static_body_index };
+    body_interface.RemoveBody( body_id );
+    body_interface.DestroyBody( body_id );
   }
 }
 
@@ -453,32 +443,22 @@ crude_physics_dynamic_body_destrotion_observer_
   ecs_iter_t *it
 )
 {
-  crude_physics_dynamic_body *dynamic_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body, 0 );
-  crude_physics_dynamic_body_handle *dynamic_bodies_values_per_entity = ecs_field( it, crude_physics_dynamic_body_handle, 1 );
+  crude_physics_dynamic_body_handle *dynamic_bodies_values_per_entity = ecs_field( it, crude_physics_dynamic_body_handle, 0 );
 
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_physics_dynamic_body                            *dynamic_body;
-    crude_physics_dynamic_body_handle                      *dynamic_body_value;
+    crude_physics_dynamic_body_handle                     *dynamic_body_value;
     ecs_world_t                                           *world;
     JPH::BodyID                                            body_id;
 
     world = it->world;
-    dynamic_body = &dynamic_bodies_per_entity[ i ];
     dynamic_body_value = &dynamic_bodies_values_per_entity[ i ];
 
-    if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-    {
-      body_id = JPH::BodyID{ dynamic_body_value->dynamic_body_index };
-      body_interface.RemoveBody( body_id );
-      body_interface.DestroyBody( body_id );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
-    }
+    body_id = JPH::BodyID{ dynamic_body_value->dynamic_body_index };
+    body_interface.RemoveBody( body_id );
+    body_interface.DestroyBody( body_id );
   }
 }
 
@@ -528,7 +508,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
   } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_destrotion_observer_, EcsOnRemove, { 
-    { .id = ecs_id( crude_physics_static_body_handle ) }
+    { .id = ecs_id( crude_physics_static_body_handle ) },
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_dynamic_body_creation_observer_, EcsOnSet, { 
@@ -537,7 +517,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
   } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_dynamic_body_destrotion_observer_, EcsOnRemove, { 
-    { .id = ecs_id( crude_physics_dynamic_body_handle ) }
+    { .id = ecs_id( crude_physics_dynamic_body_handle ) },
   } );
 }
 

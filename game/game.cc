@@ -16,7 +16,8 @@
 #include <game.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( game_graphics_system_ );
-CRUDE_ECS_SYSTEM_DECLARE( game_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( game_input_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( game_physics_system_ );
 
 static void
 game_graphics_system_
@@ -25,7 +26,13 @@ game_graphics_system_
 );
 
 static void
-game_update_system_
+game_input_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
+game_physics_system_
 (
   _In_ ecs_iter_t                                         *it
 );
@@ -67,6 +74,7 @@ game_initialize
   
   ECS_IMPORT( game->engine->world, crude_platform_system );
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
+  ECS_IMPORT( game->engine->world, crude_physics_system );
 
   {
     IMGUI_CHECKVERSION();
@@ -93,18 +101,21 @@ game_initialize
   
   crude_physics_creation physics_creation = crude_physics_creation_empty( );
   crude_physics_initialize( &physics_creation );
-
+  
+  //ecs_entity_t entity = crude_ecs_lookup_entity(world, "MyEntityName");
   /* Create scene */
   {
     crude_scene_creation creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
     creation.world = game->engine->world;
     creation.input_entity = game->platform_node;
+    creation.filename = "scene.json";
     creation.resources_path = "\\..\\..\\resources\\";
     creation.temporary_allocator = &game->temporary_allocator;
     creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
     crude_scene_initialize( &game->scene, &creation );
   }
-  crude_scene_load( &game->scene, "scene.json" );
+
+  game->focused_camera_node = game->scene.editor_camera_node;
 
   /* Create Graphics */
   {
@@ -116,14 +127,16 @@ game_initialize
     } );
   }
   
-  crude_devgui_initialize( &game->devgui, &game->scene_renderer, &game->allocator, game->imgui_context );
+  crude_devgui_initialize( &game->devgui, game );
   
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsOnUpdate, game, {
+  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },
     { .id = ecs_id( crude_window_handle ) },
   } );
-
-  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->scene.main_camera, crude_free_camera );
+  
+  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_physics_system_, EcsOnUpdate, game, { } );
+  
+  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->scene.editor_camera_node, crude_free_camera );
   free_camera->enabled = true;
 }
 
@@ -233,6 +246,10 @@ game_graphics_initialize_
     creation.imgui_context = game->imgui_context;
     creation.scene = &game->scene;
     crude_gfx_scene_renderer_initialize( &game->scene_renderer, &creation );
+
+    game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
+    game->scene_renderer.options.ambient_intensity = 0.2f;
+
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
     // Yes, i block it, because i don't want to fuck with rtx AND MESHLETES (long story)
     
@@ -263,10 +280,13 @@ game_graphics_system_
   }
   game->last_graphics_update_time = 0.f;
 
+  game->scene_renderer.options.camera_node = game->focused_camera_node;
+
   crude_devgui_graphics_pre_update( &game->devgui );
 
   crude_gfx_new_frame( &game->gpu );
   
+
   ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
@@ -278,8 +298,8 @@ game_graphics_system_
     crude_gfx_render_graph_on_resize( &game->render_graph, game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height );
     crude_devgui_on_resize( &game->devgui );
   }
-  
-  crude_devgui_draw( &game->devgui, game->scene.main_node, game->scene.main_camera );
+
+  crude_devgui_draw( &game->devgui, game->scene.main_node, game->focused_camera_node );
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
 
   {
@@ -307,7 +327,7 @@ game_graphics_deinitialize_
 }
 
 void
-game_update_system_
+game_input_system_
 (
   _In_ ecs_iter_t                                         *it
 )
@@ -334,6 +354,17 @@ game_update_system_
       SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
     }
   }
+}
+
+void
+game_physics_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  game_t *game = ( game_t* )it->ctx;
+
+  crude_physics_update( it->delta_time );
 }
 
 void

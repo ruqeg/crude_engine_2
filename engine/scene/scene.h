@@ -8,6 +8,7 @@ typedef struct crude_scene_creation
 {
   ecs_world_t                                             *world;
   crude_entity                                             input_entity;
+  char const                                              *filename;
   char const                                              *resources_path;
   crude_stack_allocator                                   *temporary_allocator;
   crude_allocator_container                                allocator_container;
@@ -17,9 +18,8 @@ typedef struct crude_scene
 {
   ecs_world_t                                             *world;
   crude_entity                                            *nodes;
+  crude_entity                                             editor_camera_node;
   crude_entity                                             main_node;
-  crude_entity                                             main_camera;
-  crude_entity                                             debug_camera;
   char                                                    *resources_path;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
@@ -39,11 +39,4 @@ crude_scene_deinitialize
 (
   _In_ crude_scene                                        *scene,
   _In_ bool                                                destroy_nodes
-);
-
-CRUDE_API void
-crude_scene_load
-(
-  _In_ crude_scene                                        *scene,
-  _In_ char const                                         *json_name
 );

@@ -1,9 +1,11 @@
+#include <nfd.h>
+
 #include <core/hash_map.h>
-#include <core/ecs.h>
-#include <scene/scene_components.h>
-#include <scene/scripts_components.h>
 #include <graphics/renderer_resources_loader.h>
-#include <develop/devgui.h>
+#include <scene/scripts_components.h>
+#include <game.h>
+
+#include <devgui.h>
 
 ImGuiWindowFlags                                           window_flags_;
 
@@ -13,47 +15,41 @@ crude_devgui_reload_techniques_
   _In_ crude_devgui                                       *devgui
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->renderer->resource_cache.techniques ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->game->renderer.resource_cache.techniques ); ++i )
   {
-    if ( !devgui->renderer->resource_cache.techniques[ i ].key )
+    if ( !devgui->game->renderer.resource_cache.techniques[ i ].key )
     {
       continue;
     }
     
-    crude_gfx_renderer_technique *technique = devgui->renderer->resource_cache.techniques[ i ].value; 
-    crude_gfx_renderer_destroy_technique( devgui->renderer, technique );
-    crude_gfx_renderer_technique_load_from_file( technique->json_name, devgui->renderer, devgui->render_graph, &devgui->temporary_allocator );
+    crude_gfx_renderer_technique *technique = devgui->game->renderer.resource_cache.techniques[ i ].value; 
+    crude_gfx_renderer_destroy_technique( &devgui->game->renderer, technique );
+    crude_gfx_renderer_technique_load_from_file( technique->json_name, &devgui->game->renderer, &devgui->game->render_graph, &devgui->game->temporary_allocator );
   }
 
-  crude_gfx_render_graph_on_techniques_reloaded( devgui->render_graph );
+  crude_gfx_render_graph_on_techniques_reloaded( &devgui->game->render_graph );
 }
 
 void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_heap_allocator                               *allocator,
-  _In_ void                                               *imgui_context
+  _In_ game_t                                             *game
 )
 {
   window_flags_ = 0;//ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
   devgui->should_reload_shaders = false;
   devgui->menubar_enabled = true;
-  devgui->scene_renderer = scene_renderer;
-  devgui->renderer = scene_renderer->renderer;
-  devgui->render_graph = scene_renderer->render_graph;
-  devgui->allocator = allocator;
-  devgui->imgui_context = imgui_context;
+  devgui->game = game;
   devgui->last_focused_menutab_name = "Graphics";
-  crude_stack_allocator_initialize( &devgui->temporary_allocator, CRUDE_RMEGA( 32 ), "devgui_temp_allocator" );
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
-  crude_devgui_viewport_initialize( &devgui->dev_viewport, scene_renderer->render_graph->builder->gpu );
-  crude_devgui_render_graph_initialize( &devgui->dev_render_graph, scene_renderer->render_graph );
-  crude_devgui_gpu_initialize( &devgui->dev_gpu, scene_renderer->render_graph->builder->gpu, &devgui->temporary_allocator );
-  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, scene_renderer->render_graph->builder->gpu, allocator );
-  crude_devgui_scene_renderer_initialize( &devgui->dev_scene_renderer, scene_renderer );
+  crude_devgui_viewport_initialize( &devgui->dev_viewport, game->scene_renderer.render_graph->builder->gpu );
+  crude_devgui_render_graph_initialize( &devgui->dev_render_graph, game->scene_renderer.render_graph );
+  crude_devgui_gpu_initialize( &devgui->dev_gpu, game->scene_renderer.render_graph->builder->gpu, &devgui->game->temporary_allocator );
+  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, game->scene_renderer.render_graph->builder->gpu, &game->allocator );
+  crude_devgui_scene_renderer_initialize( &devgui->dev_scene_renderer, &game->scene_renderer );
+  crude_devgui_game_common_initialize( &devgui->dev_game_common, game );
 }
 
 void
@@ -62,9 +58,9 @@ crude_devgui_deinitialize
   _In_ crude_devgui                                       *devgui
 )
 {
+  crude_devgui_game_common_deinitialize( &devgui->dev_game_common );
   crude_devgui_scene_renderer_deinitialize( &devgui->dev_scene_renderer );
   crude_devgui_gpu_visual_profiler_deinitialize( &devgui->dev_gpu_profiler );
-  crude_stack_allocator_deinitialize( &devgui->temporary_allocator );
 }
 
 void
@@ -75,7 +71,7 @@ crude_devgui_draw
   _In_ crude_entity                                        camera_node
 )
 {
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, devgui->imgui_context ) );
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, devgui->game->imgui_context ) );
 
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
   {
@@ -120,6 +116,28 @@ crude_devgui_draw
     if ( ImGui::BeginMenu( "Scene" ) )
     {
       devgui->last_focused_menutab_name = "Scene";
+      if ( ImGui::MenuItem( "Open Scene" ) )
+      {
+        nfdu8char_t                                       *out_path;
+        nfdopendialogu8args_t                              args;
+        nfdresult_t                                        result;
+
+        nfdu8filteritem_t                                  filters[ 2 ] = 
+        { 
+          { "Source code", "c,cpp,cc" },
+          { "Headers", "h,hpp" }
+        };
+
+        args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
+        args.filterList = filters;
+        args.filterCount = 2;
+        
+        result = NFD_OpenDialogU8_With( &out_path, &args );
+        if ( result == NFD_OKAY )
+        {
+          NFD_FreePathU8( out_path );
+        }
+      }
       if ( ImGui::MenuItem( "Node Tree", "Ctrl+S+T" ) )
       {
         devgui->dev_nodes_tree.enabled = !devgui->dev_nodes_tree.enabled;
@@ -127,6 +145,14 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "Node Inpsector", "Ctrl+S+I" ) )
       {
         devgui->dev_node_inspector.enabled = !devgui->dev_node_inspector.enabled;
+      }
+      ImGui::EndMenu( );
+    }
+    if ( ImGui::BeginMenu( "Game" ) )
+    {
+      if ( ImGui::MenuItem( "Common" ) )
+      {
+        devgui->dev_game_common.enabled = !devgui->dev_game_common.enabled;
       }
       ImGui::EndMenu( );
     }
@@ -140,6 +166,7 @@ crude_devgui_draw
   crude_devgui_gpu_draw( &devgui->dev_gpu );
   crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
   crude_devgui_scene_renderer_draw( &devgui->dev_scene_renderer );
+  crude_devgui_game_common_draw( &devgui->dev_game_common );
 
   //ImGui::ShowDemoWindow( );
 }
@@ -168,6 +195,7 @@ crude_devgui_graphics_pre_update
   _In_ crude_devgui                                       *devgui
 )
 {
+  crude_devgui_game_common_update( &devgui->dev_game_common );
   crude_devgui_gpu_visual_profiler_update( &devgui->dev_gpu_profiler );
 }
 
@@ -938,6 +966,8 @@ crude_devgui_scene_renderer_draw
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
+    ImGui::ColorEdit3( "Ambient Color", &dev_scene_renderer->scene_renderer->options.ambient_color.x );
+    ImGui::DragFloat( "Ambient Intensity", &dev_scene_renderer->scene_renderer->options.ambient_intensity, 0.1f, 0.f );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
     ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
@@ -954,5 +984,68 @@ crude_devgui_scene_renderer_draw
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   }
   
+  ImGui::End( );
+}
+
+/******************************
+ * Dev Gui Game Common
+ *******************************/
+void
+crude_devgui_game_common_initialize
+(
+  _In_ crude_devgui_game_common                           *dev_game_common,
+  _In_ game_t                                             *game
+)
+{
+  dev_game_common->game = game;
+  dev_game_common->enabled = true;
+  dev_game_common->editor_camera_controller = true;
+}
+
+void
+crude_devgui_game_common_deinitialize
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
+)
+{
+}
+
+void
+crude_devgui_game_common_update
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
+)
+{
+}
+
+void
+crude_devgui_game_common_draw
+(
+  _In_ crude_devgui_game_common                           *dev_game_common
+)
+{
+  if ( !dev_game_common->enabled )
+  {
+    return;
+  }
+  
+  ImGui::Begin( "Game Common", NULL, window_flags_ );
+  if ( ImGui::Checkbox( "Editor Camera Controller", &dev_game_common->editor_camera_controller ) )
+  {
+    if ( dev_game_common->editor_camera_controller )
+    {
+      dev_game_common->game->focused_camera_node = dev_game_common->game->scene.editor_camera_node;
+    }
+    else
+    { 
+      crude_entity camera = crude_ecs_lookup_entity_from_parent( dev_game_common->game->engine->world, dev_game_common->game->scene.main_node, "player.pivot1.pivot2.camera" );
+      dev_game_common->game->focused_camera_node = camera;
+    }
+  }
+  //if ( ImGui::CollapsingHeader( "Background" ) )
+  //{
+  //  ImGui::ColorEdit3( "Background Color", &dev_scene_renderer->scene_renderer->options.background_color.x );
+  //  ImGui::DragFloat( "Background Intensity", &dev_scene_renderer->scene_renderer->options.background_intensity, 1.f, 0.f );
+  //}
   ImGui::End( );
 }

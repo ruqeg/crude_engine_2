@@ -59,9 +59,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
 {
   crude_gfx_camera_gpu                                     camera;
-  crude_gfx_camera_gpu                                     camera_debug;
   crude_gfx_camera_gpu                                     camera_previous;
-  crude_gfx_camera_gpu                                     camera_debug_previous;
   XMFLOAT2                                                 resolution;
   uint32                                                   flags;
   uint32                                                   mesh_instances_count;
@@ -70,6 +68,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   XMFLOAT2                                                 inv_shadow_map_size;
   XMFLOAT3                                                 background_color;
   float32                                                  background_intensity;
+  XMFLOAT3                                                 ambient_color;
+  float32                                                  ambient_intensity;
   uint32                                                   indirect_light_texture_index;
 } crude_gfx_scene_constant_gpu;
 

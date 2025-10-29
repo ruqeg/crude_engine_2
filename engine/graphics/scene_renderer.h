@@ -31,8 +31,11 @@ typedef struct crude_gfx_scene_renderer_creation
 
 typedef struct crude_gfx_scene_renderer_options
 {
+  crude_entity                                             camera_node;
   XMFLOAT3                                                 background_color;
   float32                                                  background_intensity;
+  XMFLOAT3                                                 ambient_color;
+  float32                                                  ambient_intensity;
 } crude_gfx_scene_renderer_options;
 
 typedef struct crude_gfx_scene_renderer

@@ -1027,7 +1027,7 @@ crude_gfx_compile_shader
 {
   uint8                                                   *spirv_code;
   char const                                              *optimized_spirv_filename;
-  char                                                    working_directory[ 512 ];
+  char                                                     working_directory[ 512 ];
   crude_string_buffer                                      temporary_string_buffer;
   VkShaderModuleCreateInfo                                 shader_create_info;
   uint32                                                   spirv_codesize;

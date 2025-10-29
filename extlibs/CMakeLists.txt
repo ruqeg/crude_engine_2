@@ -8,6 +8,8 @@ add_subdirectory(spirv_reflect_cmake)
 add_subdirectory(cjson_cmake)
 add_subdirectory(imgui_cmake)
 add_subdirectory(renderdoc_api_cmake)
+add_subdirectory(SDL)
+add_subdirectory(nativefiledialog-extended)
 
 ######################
 #
@@ -15,7 +17,7 @@ add_subdirectory(renderdoc_api_cmake)
 #
 ######################
 FetchContent_Declare(
-  enkiTS
+	enkiTS
 	GIT_REPOSITORY https://github.com/ruqeg/enkiTS.git
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE
@@ -28,7 +30,7 @@ FetchContent_MakeAvailable(enkiTS)
 #
 ######################
 FetchContent_Declare(
-  miniaudio
+	miniaudio
 	GIT_REPOSITORY https://github.com/ruqeg/miniaudio.git
 	GIT_TAG 0.11.22
 	GIT_SHALLOW TRUE
@@ -42,7 +44,7 @@ FetchContent_MakeAvailable(miniaudio)
 #
 ######################
 FetchContent_Declare(
-  flecs
+	flecs
 	GIT_REPOSITORY https://github.com/ruqeg/flecs.git
 	GIT_TAG v4.1.0
 	GIT_SHALLOW TRUE
@@ -55,14 +57,14 @@ FetchContent_MakeAvailable(flecs)
 # SDL
 #
 ######################
-FetchContent_Declare(
-  SDL3
-	GIT_REPOSITORY https://github.com/ruqeg/SDL.git
-	GIT_TAG release-3.2.16
-	GIT_SHALLOW TRUE
-	GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(SDL3)
+#FetchContent_Declare(
+	#	SDL3
+	#	GIT_REPOSITORY https://github.com/ruqeg/SDL.git
+	#	GIT_TAG release-3.2.16
+	#	GIT_SHALLOW TRUE
+	#	GIT_PROGRESS TRUE
+	#)
+#FetchContent_MakeAvailable(SDL3)
 
 ######################
 #

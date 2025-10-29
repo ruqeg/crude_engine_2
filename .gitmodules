@@ -23,3 +23,9 @@
 [submodule "resources/glTF-Sample-Models"]
 	path = resources/glTF-Sample-Models
 	url = https://github.com/ruqeg/glTF-Sample-Models.git
+[submodule "extlibs/SDL"]
+	path = extlibs/SDL
+	url = https://github.com/ruqeg/SDL.git
+[submodule "extlibs/nativefiledialog-extended"]
+	path = extlibs/nativefiledialog-extended
+	url = https://github.com/ruqeg/nativefiledialog-extended.git

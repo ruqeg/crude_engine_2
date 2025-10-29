@@ -5,7 +5,7 @@
 #include <graphics/scene_renderer.h>
 #include <core/ecs.h>
 #include <platform/platform_components.h>
-#include <develop/devgui.h>
+#include <devgui.h>
 
 #define CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID ( 1 )
 
@@ -31,6 +31,9 @@ typedef struct game_t
   crude_scene                                              scene;
   /* Window & Input */
   crude_entity                                             platform_node;
+  /* Game */
+  crude_entity                                             focused_camera_node;
+  crude_entity                                             character_controller_camera;
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;

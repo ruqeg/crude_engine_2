@@ -43,7 +43,7 @@ crude_engine_initialize
 
   ECS_TAG_DEFINE( engine->world, crude_entity_tag );
 
-  engine->task_sheduler = enkiNewTaskScheduler();
+  engine->task_sheduler = enkiNewTaskScheduler( );
   config = enkiGetTaskSchedulerConfig( engine->task_sheduler );
   config.numTaskThreadsToCreate += 1;
   enkiInitTaskSchedulerWithConfig( engine->task_sheduler, config );
