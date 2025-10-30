@@ -56,14 +56,14 @@ CRUDE_API void
 crude_log_initialize
 ()
 {
-  //log_file_ = fopen( "crude_log.txt", "w" );
+  log_file_ = fopen( "crude_log.txt", "w" );
 }
 
 CRUDE_API void
 crude_log_deinitialize
 ()
 {
-  //fclose( log_file_ );
+  fclose( log_file_ );
 }
 
 void
@@ -102,6 +102,10 @@ crude_log_common_va
   if ( log_file_ )
   {
     fprintf( log_file_, message_buffer_ );
+    if ( verbosity == CRUDE_VERBOSITY_ERROR || verbosity == CRUDE_VERBOSITY_WARNING )
+    {
+      fflush( log_file_ );
+    }
   }
   printf( "%s", message_buffer_ );
 }
