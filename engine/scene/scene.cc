@@ -54,6 +54,50 @@ json_object_to_float4_
   return result;
 }
 
+static crude_physics_box_collision_shape
+json_object_to_crude_physics_box_collision_shape_
+(
+  _In_ cJSON const                                        *json
+)
+{
+  crude_physics_box_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_box_collision_shape );
+  shape.half_extent = json_object_to_float3_( cJSON_GetObjectItem( json, "half_extent" ) );
+  return shape;
+}
+
+static crude_physics_sphere_collision_shape
+json_object_to_crude_physics_sphere_collision_shape_
+(
+  _In_ cJSON const                                        *json
+)
+{
+  crude_physics_sphere_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_sphere_collision_shape );
+  shape.radius = cJSON_GetNumberValue( cJSON_GetObjectItem( json, "radius" ) );
+  return shape;
+}
+
+static cJSON*
+crude_physics_box_collision_shape_to_json_object_
+(
+  _In_ crude_physics_box_collision_shape const            *shape
+)
+{
+  cJSON *shape_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( shape_json, "half_extent", cJSON_CreateFloatArray( &shape->half_extent.x, 3  ) );
+  return shape_json;
+}
+
+static cJSON*
+crude_physics_sphere_collision_shape_to_json_object_
+(
+  _In_ crude_physics_sphere_collision_shape const         *shape
+)
+{
+  cJSON *shape_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( shape_json, "radius", cJSON_CreateNumber( shape->radius ) );
+  return shape_json;
+}
+
 static crude_entity
 scene_load_hierarchy_
 (
@@ -70,7 +114,7 @@ scene_load_hierarchy_
     cJSON const                                           *node_components_json;
     cJSON const                                           *node_tags_json;
   
-    node_json = cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ); 
+    node_json = hierarchy_json;//cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ); 
     node_name = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "name") );
     node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
@@ -130,13 +174,16 @@ scene_load_hierarchy_
       {
         if ( cJSON_HasObjectItem( component_json, "crude_physics_box_collision_shape" ) )
         {
-          cJSON *physics_box_collision_shape_json = cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" );
           CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, {
-            .box_shape = 
-            {
-              .half_extent = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( physics_box_collision_shape_json, "half_extent" ) ),
-            },
+            .box_shape = json_object_to_crude_physics_box_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" ) ),
             .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX
+          } );
+        }
+        else if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
+        {
+          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, {
+            .sphere_shape = json_object_to_crude_physics_sphere_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" ) ),
+            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
           } );
         }
         else
@@ -146,14 +193,17 @@ scene_load_hierarchy_
       }
       else if ( crude_string_cmp( component_type, "crude_physics_dynamic_body" ) == 0 )
       {
-        if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
+        if ( cJSON_HasObjectItem( component_json, "crude_physics_box_collision_shape" ) )
         {
-          cJSON *physics_sphere_collision_shape_json = cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" );
           CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, {
-            .sphere_shape = 
-            {
-              .radius = CRUDE_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( physics_sphere_collision_shape_json, "radius" ) ) ),
-            },
+            .box_shape = json_object_to_crude_physics_box_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" ) ),
+            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX
+          } );
+        }
+        else if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
+        {
+          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, {
+            .sphere_shape = json_object_to_crude_physics_sphere_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" ) ),
             .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
           } );
         }
@@ -161,20 +211,6 @@ scene_load_hierarchy_
         {
           CRUDE_ASSERT( false );
         }
-      }
-    }
-
-    for ( uint32 tag_index = 0; tag_index < cJSON_GetArraySize( node_tags_json ); ++tag_index )
-    {
-      cJSON const                                       *tag_json;
-      char const                                        *tag;
-  
-      tag_json = cJSON_GetArrayItem( node_tags_json, tag_index );
-      tag = cJSON_GetStringValue( tag_json );
-  
-      if ( crude_string_cmp( tag, "crude_editor_camera" ) == 0 )
-      {
-        scene->editor_camera_node = node;
       }
     }
   }
@@ -268,6 +304,179 @@ crude_scene_deinitialize
   crude_string_buffer_deinitialize( &scene->path_bufffer );
 }
 
+cJSON*
+node_to_json_hierarchy_
+(
+  _In_ crude_scene                                        *scene,
+  _In_ crude_entity                                        node
+)
+{
+  cJSON                                                   *node_json;
+
+  node_json = cJSON_CreateObject( );
+  
+  cJSON_AddItemToObject( node_json, "name", cJSON_CreateString( crude_entity_get_name( node ) ) );
+
+  {
+    crude_transform const                                 *node_transform;
+    node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform );
+
+    if ( node_transform )
+    {
+      cJSON                                               *node_transform_json;
+
+      node_transform_json = cJSON_CreateObject( );
+      cJSON_AddItemToObject( node_transform_json, "translation", cJSON_CreateFloatArray( &node_transform->translation.x, 3 ) );
+      cJSON_AddItemToObject( node_transform_json, "rotation", cJSON_CreateFloatArray( &node_transform->rotation.x, 4 ) );
+      cJSON_AddItemToObject( node_transform_json, "scale", cJSON_CreateFloatArray( &node_transform->scale.x, 3 ) );
+      cJSON_AddItemToObject( node_json, "transform", node_transform_json );
+    }
+  }
+  
+  {
+    cJSON                                                 *node_components_json;
+    crude_camera const                                    *node_camera;
+    crude_gltf const                                      *node_gltf;
+    crude_free_camera const                               *node_free_camera;
+    crude_light const                                     *node_light;
+    crude_physics_static_body const                       *static_body;
+    crude_physics_dynamic_body const                      *dynamic_body;
+
+    node_components_json = cJSON_AddArrayToObject( node_json, "components" );
+    
+    node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_camera );
+    if ( node_camera )
+    {
+      cJSON                                               *camera_json;
+
+      camera_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( camera_json, "type", cJSON_CreateString( "crude_camera" ) );
+      cJSON_AddItemToObject( camera_json, "fov_radians", cJSON_CreateNumber( node_camera->fov_radians ) );
+      cJSON_AddItemToObject( camera_json, "near_z", cJSON_CreateNumber( node_camera->near_z ) );
+      cJSON_AddItemToObject( camera_json, "far_z", cJSON_CreateNumber( node_camera->far_z ) );
+      cJSON_AddItemToObject( camera_json, "aspect_ratio", cJSON_CreateNumber( node_camera->aspect_ratio ) );
+      
+      cJSON_AddItemToArray( node_components_json, camera_json );
+    }
+    
+    node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
+    if ( node_gltf )
+    {
+      cJSON                                               *gltf_json;
+
+      gltf_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( gltf_json, "type", cJSON_CreateString( "crude_gltf" ) );
+      cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( node_gltf->path + strlen( scene->resources_path ) ) );
+
+      cJSON_AddItemToArray( node_components_json, gltf_json );
+    }
+    
+    node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_free_camera );
+    if ( node_free_camera )
+    {
+      cJSON                                               *node_free_camera_json;
+
+      node_free_camera_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( node_free_camera_json, "type", cJSON_CreateString( "crude_free_camera" ) );
+      cJSON_AddItemToObject( node_free_camera_json, "moving_speed_multiplier", cJSON_CreateFloatArray( &node_free_camera->moving_speed_multiplier.x, 3 ) );
+      cJSON_AddItemToObject( node_free_camera_json, "rotating_speed_multiplier", cJSON_CreateFloatArray( &node_free_camera->rotating_speed_multiplier.x, 2 ) );
+      
+      cJSON_AddItemToArray( node_components_json, node_free_camera_json );
+    }
+
+    node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_light );
+    if ( node_light )
+    {
+      cJSON                                               *node_light_json;
+
+      node_light_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( node_light_json, "type", cJSON_CreateString( "crude_light" ) );
+      cJSON_AddItemToObject( node_light_json, "radius", cJSON_CreateNumber( node_light->radius ) );
+      cJSON_AddItemToObject( node_light_json, "color", cJSON_CreateFloatArray( &node_light->color.x, 3 ) );
+      cJSON_AddItemToObject( node_light_json, "intensity", cJSON_CreateNumber( node_light->intensity ) );
+      
+      cJSON_AddItemToArray( node_components_json, node_light_json );
+    }
+
+    static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_static_body );
+    if ( static_body )
+    {
+      cJSON                                               *node_physics_static_body_json;
+
+      node_physics_static_body_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( node_physics_static_body_json, "type", cJSON_CreateString( "crude_physics_static_body" ) );
+
+      if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+      {
+        cJSON_AddItemToObject( node_physics_static_body_json, "crude_physics_box_collision_shape", crude_physics_box_collision_shape_to_json_object_( &static_body->box_shape  ) );
+      }
+      else if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+      {
+        cJSON_AddItemToObject( node_physics_static_body_json, "crude_physics_sphere_collision_shape", crude_physics_sphere_collision_shape_to_json_object_( &static_body->sphere_shape  ) );
+      }
+      else
+      {
+        CRUDE_ASSERT( false );
+      }
+      
+      cJSON_AddItemToArray( node_components_json, node_physics_static_body_json );
+    }
+
+    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_dynamic_body );
+    if ( dynamic_body )
+    {
+      cJSON                                               *node_physics_dynamic_body_json;
+
+      node_physics_dynamic_body_json = cJSON_CreateObject( );
+       
+      cJSON_AddItemToObject( node_physics_dynamic_body_json, "type", cJSON_CreateString( "crude_physics_dynamic_body" ) );
+
+      if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+      {
+        cJSON_AddItemToObject( node_physics_dynamic_body_json, "crude_physics_box_collision_shape", crude_physics_box_collision_shape_to_json_object_( &dynamic_body->box_shape  ) );
+      }
+      else if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+      {
+        cJSON_AddItemToObject( node_physics_dynamic_body_json, "crude_physics_sphere_collision_shape", crude_physics_sphere_collision_shape_to_json_object_( &dynamic_body->sphere_shape  ) );
+      }
+      else
+      {
+        CRUDE_ASSERT( false );
+      }
+      
+      cJSON_AddItemToArray( node_components_json, node_physics_dynamic_body_json );
+    }
+  }
+  
+  {
+    cJSON                                                 *children_json;
+
+    children_json = cJSON_AddArrayToObject( node_json, "children" );
+    
+    if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) )
+    {
+      ecs_iter_t it = ecs_children( node.world, node.handle );
+      while ( ecs_children_next( &it ) )
+      {
+        for ( size_t i = 0; i < it.count; ++i )
+        {
+          crude_entity                                       child;
+
+          child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
+          cJSON_AddItemToArray( children_json, node_to_json_hierarchy_( scene, child ) );
+        }
+      }
+    }
+  }
+
+  return node_json;
+}
+
 void
 crude_scene_save_to_file
 (
@@ -275,4 +484,14 @@ crude_scene_save_to_file
   _In_ char const                                         *filename
 )
 {
+  cJSON                                                   *scene_json;
+  char const                                              *scene_str;
+
+  scene_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( scene_json, "hierarchy", node_to_json_hierarchy_( scene, scene->main_node ) );
+  
+  scene_str = cJSON_Print( scene_json );
+  crude_write_file( filename, scene_str, strlen( scene_str ) ); // TODO
+  
+  cJSON_Delete( scene_json );
 }

@@ -124,7 +124,11 @@ game_initialize
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_physics_system_, EcsOnUpdate, game, { } );
   
-  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->scene.editor_camera_node, crude_free_camera );
+  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "editor_camera" );
+  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "player.pivot1.pivot2.camera" );
+  game->focused_camera_node = game->editor_camera_node;
+
+  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->enabled = true;
 }
 
@@ -179,7 +183,9 @@ game_reload_scene
     crude_scene_initialize( &game->scene, &creation );
   }
 
-  game->focused_camera_node = game->scene.editor_camera_node;
+  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "editor_camera" );
+  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "player.pivot1.pivot2.camera" );
+  game->focused_camera_node = game->editor_camera_node;
 
    /* Create Scene Renderer */
   {
@@ -404,13 +410,11 @@ game_initialize_scene_
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_PATH, "scene.json" );
+  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_PATH, "scene.crude_scene" );
   scene_creation.resources_path = CRUDE_RESOURCES_PATH;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   crude_scene_initialize( &game->scene, &scene_creation );
-
-  game->focused_camera_node = game->scene.editor_camera_node;
 
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
 }

@@ -1,0 +1,107 @@
+{
+	"hierarchy":	{
+		"name":	"main",
+		"transform":	{
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		},
+		"components":	[],
+		"children":	[{
+				"name":	"editor_camera",
+				"transform":	{
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				},
+				"components":	[{
+						"type":	"crude_camera",
+						"fov_radians":	1,
+						"near_z":	0.00999999977648258,
+						"far_z":	1000,
+						"aspect_ratio":	1.7999999523162842
+					}, {
+						"type":	"crude_free_camera",
+						"moving_speed_multiplier":	[7, 7, 7],
+						"rotating_speed_multiplier":	[-0.0010000000474974513, -0.0010000000474974513]
+					}],
+				"children":	[]
+			}, {
+				"name":	"model_sponza",
+				"transform":	{
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				},
+				"components":	[{
+						"type":	"crude_gltf",
+						"path":	"glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
+					}, {
+						"type":	"crude_physics_static_body",
+						"crude_physics_box_collision_shape":	{
+							"half_extent":	[100, 1, 100]
+						}
+					}],
+				"children":	[]
+			}, {
+				"name":	"player",
+				"transform":	{
+					"translation":	[-2.0999999046325684, 10, 0.699999988079071],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				},
+				"components":	[{
+						"type":	"crude_physics_dynamic_body",
+						"crude_physics_sphere_collision_shape":	{
+							"radius":	1
+						}
+					}],
+				"children":	[{
+						"name":	"redball_model",
+						"transform":	{
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						},
+						"components":	[{
+								"type":	"crude_gltf",
+								"path":	"game\\redball_default.gltf"
+							}],
+						"children":	[]
+					}, {
+						"name":	"pivot1",
+						"transform":	{
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						},
+						"components":	[],
+						"children":	[{
+								"name":	"pivot2",
+								"transform":	{
+									"translation":	[0, 0, 0],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								},
+								"components":	[],
+								"children":	[{
+										"name":	"camera",
+										"transform":	{
+											"translation":	[0, 0, 0],
+											"rotation":	[0, 0, 0, 1],
+											"scale":	[1, 1, 1]
+										},
+										"components":	[{
+												"type":	"crude_camera",
+												"fov_radians":	1,
+												"near_z":	0.00999999977648258,
+												"far_z":	1000,
+												"aspect_ratio":	1.7999999523162842
+											}],
+										"children":	[]
+									}]
+							}]
+					}]
+			}]
+	}
+}

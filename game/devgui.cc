@@ -5,6 +5,7 @@
 #include <core/hash_map.h>
 #include <graphics/gpu_resources_loader.h>
 #include <scene/scripts_components.h>
+#include <physics/physics_components.h>
 #include <game.h>
 
 #include <devgui.h>
@@ -12,10 +13,9 @@
 ImGuiWindowFlags                                           window_flags_;
 
 
-nfdu8filteritem_t                                          scene_file_filters_[ 2 ] = 
+nfdu8filteritem_t                                          scene_file_filters_[ ] = 
 { 
-  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Source code", "c,cpp,cc" } ),
-  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Headers", "h,hpp" } )
+  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Scene", "crude_scene" } )
 };
 
 static void
@@ -142,6 +142,23 @@ crude_devgui_draw
           devgui->should_reloaded_scene = out_path;
         }
       }
+      if ( ImGui::MenuItem( "Save Scene" ) )
+      {
+        nfdu8char_t                                       *out_path;
+        nfdsavedialogu8args_t                              args;
+        nfdresult_t                                        result;
+
+        args = CRUDE_COMPOUNT_EMPTY( nfdsavedialogu8args_t );
+        args.filterList = scene_file_filters_;
+        args.filterCount = CRUDE_COUNTOF( scene_file_filters_ );
+        
+        result = NFD_SaveDialogU8_With( &out_path, &args );
+        if ( result == NFD_OKAY )
+        {
+          crude_scene_save_to_file( &devgui->game->scene, out_path );
+          NFD_FreePathU8( out_path );
+        }
+      }
       if ( ImGui::MenuItem( "Node Tree", "Ctrl+S+T" ) )
       {
         devgui->dev_nodes_tree.enabled = !devgui->dev_nodes_tree.enabled;
@@ -241,7 +258,6 @@ crude_devgui_nodes_tree_initialize
 {
   devgui_nodes_tree->enabled = true;
   devgui_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  devgui_nodes_tree->selected_node_index = 0;
 }
 
 void
@@ -268,20 +284,40 @@ crude_devgui_nodes_tree_draw_internal_
   _In_ uint32                                             *current_node_index
 )
 {
-  ImGui::Begin( "Scene Node Tree", NULL, window_flags_ );
-
-  ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+  ImGuiTreeNodeFlags                                       tree_node_flags;
+  bool                                                     can_open_children_nodes, tree_node_opened;
   
-  if ( devgui_nodes_tree->selected_node_index == *current_node_index )
+  ImGui::Begin( "Scene Node Tree", NULL, window_flags_ );
+  
+  {
+    can_open_children_nodes = false;
+
+    ecs_iter_t it = ecs_children( node.world, node.handle );
+    if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) && ecs_children_next( &it ) )
+    {
+      if ( it.count )
+      {
+        can_open_children_nodes = true;
+      }
+    }
+  }
+
+  tree_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+  
+  if ( !can_open_children_nodes )
+  {
+    tree_node_flags |= ImGuiTreeNodeFlags_Leaf;
+  }
+
+  if ( devgui_nodes_tree->selected_node.handle == node.handle )
   {
     tree_node_flags |= ImGuiTreeNodeFlags_Selected;
   }
 
-  bool tree_node_open = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( node ) );
+  tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( node ) );
   if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
   {
     devgui_nodes_tree->selected_node = node;
-    devgui_nodes_tree->selected_node_index = *current_node_index;
   }
 
   if (ImGui::BeginDragDropSource( ) )
@@ -292,19 +328,23 @@ crude_devgui_nodes_tree_draw_internal_
   }
 
   ++( *current_node_index );
-  if ( tree_node_open )
+  if ( tree_node_opened )
   {
-    ecs_iter_t it = ecs_children( node.world, node.handle );
-    while ( ecs_children_next( &it ) )
+    if ( can_open_children_nodes )
     {
-      for (int i = 0; i < it.count; i ++)
+      ecs_iter_t it = ecs_children( node.world, node.handle );
+      while ( ecs_children_next( &it ) )
       {
-        crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
-        child.world = it.world;
-        child.handle = it.entities[ i ];
-        crude_devgui_nodes_tree_draw_internal_( devgui_nodes_tree, child, current_node_index );
+        for (int i = 0; i < it.count; i ++)
+        {
+          crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
+          child.world = it.world;
+          child.handle = it.entities[ i ];
+          crude_devgui_nodes_tree_draw_internal_( devgui_nodes_tree, child, current_node_index );
+        }
       }
     }
+    
     ImGui::TreePop( );
   }
 
@@ -372,6 +412,24 @@ crude_devgui_node_inspector_draw
     ImGui::ColorEdit3( "color", &light->color.x );
     ImGui::InputFloat( "intensity", &light->intensity );
     ImGui::InputFloat( "radius", &light->radius );
+  }
+  
+  crude_physics_dynamic_body *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body );
+  if ( dynamic_body && ImGui::CollapsingHeader( "crude_physics_dynamic_body" ) )
+  {
+    ImGui::Text( "TODO" );
+  }
+  
+  crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_gltf );
+  if ( gltf && ImGui::CollapsingHeader( "crude_gltf" ) )
+  {
+    ImGui::Text( "TODO" );
+  }
+  
+  crude_physics_static_body *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body );
+  if ( static_body && ImGui::CollapsingHeader( "crude_physics_static_body" ) )
+  {
+    ImGui::Text( "TODO" );
   }
   ImGui::End( );
 }
@@ -558,7 +616,14 @@ crude_devgui_viewport_draw_viewport_imguizmo
   ImGuizmo::SetDrawlist( );
   ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
   
-  selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( selected_node_parent, crude_transform  );
+  if ( crude_entity_valid( selected_node_parent ) )
+  {
+    selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( selected_node_parent, crude_transform  );
+  }
+  else
+  {
+    selected_node_parent_transform = NULL;
+  }
 
   if ( selected_node_parent_transform )
   {
@@ -1172,12 +1237,11 @@ crude_devgui_game_common_draw
   {
     if ( dev_game_common->editor_camera_controller )
     {
-      dev_game_common->game->focused_camera_node = dev_game_common->game->scene.editor_camera_node;
+      dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
     }
     else
     { 
-      crude_entity camera = crude_ecs_lookup_entity_from_parent( dev_game_common->game->engine->world, dev_game_common->game->scene.main_node, "player.pivot1.pivot2.camera" );
-      dev_game_common->game->focused_camera_node = camera;
+      dev_game_common->game->focused_camera_node = dev_game_common->game->character_controller_camera_node;
     }
   }
   //if ( ImGui::CollapsingHeader( "Background" ) )

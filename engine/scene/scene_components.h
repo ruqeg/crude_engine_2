@@ -29,7 +29,6 @@ typedef struct crude_light
 typedef struct crude_gltf
 {
   char                                                    *path;
-  char const                                              *resources_path;
 } crude_gltf;
 
 typedef struct crude_scene_handle

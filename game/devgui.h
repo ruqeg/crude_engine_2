@@ -12,7 +12,6 @@ typedef struct game_t game_t;
 typedef struct crude_devgui_nodes_tree
 {
   bool                                                     enabled;
-  uint32                                                   selected_node_index;
   crude_entity                                             selected_node;
 } crude_devgui_nodes_tree;
 
