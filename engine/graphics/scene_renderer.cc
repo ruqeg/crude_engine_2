@@ -214,13 +214,12 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->async_loader = creation->async_loader;
   scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
-  
+  scene_renderer->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;
+
   scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
   scene_renderer->options.background_intensity = 1.f;
   scene_renderer->options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
   scene_renderer->options.ambient_intensity = 1.f;
-
-  crude_heap_allocator_initialize( &scene_renderer->gltf_allocator, CRUDE_RMEGA( 512 ), "gltf_allocator" );
 
   /* Common resources arrays initialization */
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->images, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
@@ -617,8 +616,6 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_triangles_indices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets_vertices_indices );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->meshlets );
-
-  crude_heap_allocator_deinitialize( &scene_renderer->gltf_allocator );
 }
 
 void
@@ -1311,7 +1308,7 @@ register_gltf_
   temporary_allocator_mark = crude_stack_allocator_get_marker( temporary_allocator );
 
   /* Parse gltf */
-  gltf = parse_gltf_( &scene_renderer->gltf_allocator, gltf_path );
+  gltf = parse_gltf_( scene_renderer->cgltf_temporary_allocator, gltf_path );
   if ( !gltf )
   {
     crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_mark );
@@ -1505,16 +1502,14 @@ parse_gltf_
   result = cgltf_parse_file( &gltf_options, gltf_path, &gltf );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERT( false );
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", gltf_path );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", gltf_path );
     return NULL;
   }
 
   result = cgltf_load_buffers( &gltf_options, gltf, gltf_path );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERT( false );
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", gltf_path );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", gltf_path );
     return NULL;
   }
 

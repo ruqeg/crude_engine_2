@@ -438,6 +438,9 @@ crude_devgui_viewport_draw_viewport_texture
   }
 
   ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
+  
+  preview_texture_name = "Unknown";
+  id = 0;
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
@@ -448,8 +451,6 @@ crude_devgui_viewport_draw_viewport_texture
     };
   }
 
-  preview_texture_name = "Unknown";
-  id = 0;
   if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
   {
     for ( uint32 t = 0; t < devgui_viewport->gpu->textures.pool_size; ++t )
@@ -552,9 +553,6 @@ crude_devgui_viewport_draw_viewport_imguizmo
   {
     selected_gizmo_operation = ImGuizmo::SCALE;
   }
-
-  ImGui::InputFloat3( "Tr", &selected_node_transform->translation.x );
-  ImGui::InputFloat3( "Sc", &selected_node_transform->scale.x );
 
   ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
   ImGuizmo::SetDrawlist( );

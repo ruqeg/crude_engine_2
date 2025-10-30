@@ -148,6 +148,7 @@ game_deinitialize
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( );
+  crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
   crude_heap_allocator_deinitialize( &game->resources_allocator );
   crude_stack_allocator_deinitialize( &game->temporary_allocator );
@@ -329,9 +330,10 @@ game_initialize_allocators_
   _In_ game_t                                             *game
 )
 {
-  crude_heap_allocator_initialize( &game->allocator, CRUDE_RMEGA( 64 ), "common_allocator" );
-  crude_heap_allocator_initialize( &game->resources_allocator, CRUDE_RMEGA( 512 ), "resources_allocator" );
-  crude_stack_allocator_initialize( &game->temporary_allocator, CRUDE_RMEGA( 64 ), "temprorary_allocator" );
+  crude_heap_allocator_initialize( &game->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
+  crude_heap_allocator_initialize( &game->allocator, CRUDE_RMEGA( 16 ), "common_allocator" );
+  crude_heap_allocator_initialize( &game->resources_allocator, CRUDE_RMEGA( 16 ), "resources_allocator" );
+  crude_stack_allocator_initialize( &game->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
 }
 
 void
@@ -482,6 +484,7 @@ game_initialize_graphics_
     creation.allocator = &game->allocator;
     creation.resources_allocator = &game->resources_allocator;
     creation.temporary_allocator = &game->temporary_allocator;
+    creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
     creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
     creation.imgui_context = game->imgui_context;
     creation.scene = &game->scene;

@@ -36,6 +36,7 @@ crude_gfx_cmd_initialize
 {
   cmd->gpu = gpu;
 
+#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   VkDescriptorPoolSize pool_sizes[] =
   {
     { VK_DESCRIPTOR_TYPE_SAMPLER, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
@@ -63,7 +64,8 @@ crude_gfx_cmd_initialize
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( cmd->gpu->vk_device, &pool_info, cmd->gpu->vk_allocation_callbacks, &cmd->vk_descriptor_pool ), "Failed create descriptor pool" );
 
   crude_resource_pool_initialize( &cmd->frame_descriptor_sets, cmd->gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set ) );
-  
+#endif /* CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS */
+
   crude_gfx_cmd_reset( cmd );
 }
 
@@ -74,8 +76,10 @@ crude_gfx_cmd_deinitialize
 )
 {
   crude_gfx_cmd_reset( cmd );
+#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_resource_pool_deinitialize( &cmd->frame_descriptor_sets );
   vkDestroyDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, cmd->gpu->vk_allocation_callbacks );
+#endif /* CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS */
 }
 
 void
@@ -87,6 +91,7 @@ crude_gfx_cmd_reset
   cmd->is_recording = false;
   cmd->current_render_pass = NULL;
   
+#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   vkResetDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, 0 );
   
   uint32 resource_count = cmd->frame_descriptor_sets.free_indices_head;
@@ -94,6 +99,7 @@ crude_gfx_cmd_reset
   {
     crude_resource_pool_release_resource( &cmd->frame_descriptor_sets, i );
   }
+#endif /* CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS */
 }
 
 void
@@ -438,6 +444,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   _In_ crude_gfx_descriptor_set_handle                     handle
 )
 {
+#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_gfx_descriptor_set *descriptor_set = CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index ) );
   crude_gfx_descriptor_set *bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
   
@@ -456,6 +463,9 @@ crude_gfx_cmd_bind_local_descriptor_set
   }
   vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
   vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+#else 
+  CRUDE_ASSERT( false );
+#endif
 }
 
 void
@@ -582,6 +592,7 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_gfx_descriptor_set_creation const            *creation
 )
 {
+#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_gfx_descriptor_set                                *descriptor_set;
   crude_gfx_descriptor_set_layout                         *descriptor_set_layout;
   crude_gfx_descriptor_set_handle                          descriptor_set_handle;
@@ -677,6 +688,10 @@ crude_gfx_cmd_create_local_descriptor_set
 
   vkUpdateDescriptorSets( cmd->gpu->vk_device, num_resources, vk_descriptor_write, 0, NULL );
   return descriptor_set_handle;
+#else 
+  CRUDE_ASSERT( false );
+  return CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
+#endif 
 }
 
 void

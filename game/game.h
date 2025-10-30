@@ -18,6 +18,7 @@ typedef struct game_t
   /* Common */
   crude_heap_allocator                                     allocator;
   crude_heap_allocator                                     resources_allocator;
+  crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    temporary_allocator;
   /* Graphics */
   crude_gfx_device                                         gpu;
