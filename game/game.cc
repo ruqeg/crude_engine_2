@@ -187,6 +187,7 @@ game_reload_scene
     creation.gpu = &game->gpu;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
+    creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
     creation.resources_allocator = &game->resources_allocator;
     creation.temporary_allocator = &game->temporary_allocator;
     creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
