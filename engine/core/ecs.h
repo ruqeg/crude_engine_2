@@ -106,6 +106,12 @@ crude_entity_get_name
   _In_ crude_entity                                        entity
 );
 
+CRUDE_API void
+crude_entity_destroy_hierarchy
+(
+  _In_ crude_entity                                        entity
+);
+
 /************************************************
  *
  * ECS Macros

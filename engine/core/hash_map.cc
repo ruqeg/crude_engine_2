@@ -10,6 +10,13 @@ typedef struct hash_backet
   uint64                                                   key;
 } hash_backet;
 
+static uint64
+key_to_index_
+(
+  _In_ uint8                                              *h,
+  _In_ uint64                                              key
+);
+
 uint64
 crude_hash_bytes
 (
@@ -24,6 +31,12 @@ crude_hash_bytes
     hash ^= ( uint64 )( unsigned char )( p[ i ] );
     hash *= FNV_PRIME;
   }
+
+  if ( hash == CRUDE_HASHMAP_BACKET_STATE_EMPTY || hash == CRUDE_HASHMAP_BACKET_STATE_REMOVED )
+  {
+    hash = 1;
+  }
+
   return hash;
 }
 
@@ -63,14 +76,14 @@ crude_hashmap_growf
   CRUDE_HASHMAP_HEADER( nh )->capacity = cap;
   CRUDE_HASHMAP_HEADER( nh )->allocator = allocator;
   CRUDE_HASHMAP_HEADER( nh )->length = 0;
-  crude_memory_set( nh, 0, elemsize * cap );
+  crude_memory_set( nh, 0, elemsize * cap ); /* fill with CRUDE_HASHMAP_BACKET_STATE_EMPTY*/
 
   if ( h )
   {
     for ( size_t i = 0; i < CRUDE_HASHMAP_CAPACITY( h ); i++ )
     {
       hash_backet *backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + i * elemsize );
-      if ( backet->key )
+      if ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && backet->key != CRUDE_HASHMAP_BACKET_STATE_REMOVED )
       {
          /* Hashmap shouldn't be resizes here since it's already resized based on the previous hashmap */
         CRUDE_ASSERT( nh == crude_hashmap_set_index( nh, backet->key, elemsize ) );
@@ -95,21 +108,17 @@ crude_hashmap_get_index
   hash_backet                                             *backet;
   int64                                                    index;
 
-  index = ( size_t )( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( h ) - 1 ) );
+  index = key_to_index_( h, key );
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + elemsize * index );
-  while ( backet->key )
+  while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY )
   {
     if ( key == backet->key )
     {
       CRUDE_HASHMAP_HEADER( h )->temp = index;
       return index;
     }
-
-    ++index;
-    if ( index >= CRUDE_HASHMAP_CAPACITY( h ) )
-    {
-      index = 0;
-    }
+    
+    index = ( index + 1 ) % CRUDE_HASHMAP_CAPACITY( h );
     backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + elemsize * index );
   }
   
@@ -140,25 +149,31 @@ crude_hashmap_set_index
     
   ++CRUDE_HASHMAP_HEADER( nh )->length;
 
-  index = (size_t)( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( nh ) - 1 ) );
+  index = key_to_index_( nh, key );
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
-  while ( backet->key )
+  while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY )
   {
-    if ( key == backet->key )
+    if ( key == backet->key || backet->key == CRUDE_HASHMAP_BACKET_STATE_REMOVED ) /* fuck "removed" backet, loser backet will be replaced by MY HAND HAHAHAH 0W0 */
     {
       CRUDE_HASHMAP_HEADER( nh )->temp = index;
       return nh;
     }
 
-    ++index;
-    if ( index >= CRUDE_HASHMAP_CAPACITY( nh ) )
-    {
-      index = 0;
-    }
+    index = ( index + 1 ) % CRUDE_HASHMAP_CAPACITY( nh );
     backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   }
   
   backet->key = key;
   CRUDE_HASHMAP_HEADER( nh )->temp = index;
   return nh;
+}
+
+uint64
+key_to_index_
+(
+  _In_ uint8                                              *h,
+  _In_ uint64                                              key
+)
+{
+  return ( uint64 )( key & ( uint64 )( CRUDE_HASHMAP_CAPACITY( h ) - 1 ) );
 }

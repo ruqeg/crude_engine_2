@@ -83,7 +83,7 @@ crude_entity_create_empty
 )
 {
   crude_entity entity = CRUDE_COMPOUNT( crude_entity, { .handle = ecs_new( world ), .world = world } );
-  ecs_set_name( world, entity.handle, name == NULL || name[0] == '\0' ? "entity" : name );
+  entity.handle = ecs_set_name( world, entity.handle, name == NULL || name[0] == '\0' ? "entity" : name );
   ecs_add( world, entity.handle, crude_entity_tag );
   return entity;
 }
@@ -133,4 +133,23 @@ crude_entity_get_name
 )
 {
   return ecs_get_name( entity.world, entity.handle );
+}
+
+void
+crude_entity_destroy_hierarchy
+(
+  _In_ crude_entity                                        entity
+)
+{
+  ecs_iter_t it = ecs_children( entity.world, entity.handle );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = entity.world } );
+      crude_entity_destroy_hierarchy( child );
+    }
+  }
+  crude_entity_destroy( entity );
 }

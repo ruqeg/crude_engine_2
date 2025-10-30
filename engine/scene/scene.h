@@ -17,7 +17,6 @@ typedef struct crude_scene_creation
 typedef struct crude_scene
 {
   ecs_world_t                                             *world;
-  crude_entity                                            *nodes;
   crude_entity                                             editor_camera_node;
   crude_entity                                             main_node;
   char                                                    *resources_path;

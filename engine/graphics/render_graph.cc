@@ -921,6 +921,17 @@ crude_gfx_render_graph_builder_register_render_pass
   node->render_graph_pass_container = render_pass;
 }
 
+void
+crude_gfx_render_graph_builder_unregister_render_pass
+(
+  _In_ crude_gfx_render_graph_builder                     *builder,
+  _In_ char const                                         *name
+)
+{
+  uint64 key = crude_hash_string( name, 0 );
+  CRUDE_HASHMAP_REMOVE( builder->render_pass_cache.render_pass_map, key );
+}
+
 crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_create_node
 (

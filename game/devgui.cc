@@ -218,6 +218,7 @@ crude_devgui_graphics_post_update
   {
     game_reload_scene( devgui->game, devgui->should_reloaded_scene );
     NFD_FreePathU8( ( nfdu8char_t* )devgui->should_reloaded_scene );
+    devgui->should_reloaded_scene = NULL;
   }
 }
 

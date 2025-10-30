@@ -1,5 +1,7 @@
 #pragma once
 
+/* yes, it's not optimized, bud it works, and i don't have any plans to fix it the near future */
+
 #include <core/memory.h>
 #include <core/assert.h>
 
@@ -12,6 +14,12 @@ typedef struct crude_hashmap_header
   crude_allocator_container                                allocator;
   uint64                                                   temp;
 } crude_hashmap_header;
+
+typedef enum crude_hashmap_backet_state
+{
+  CRUDE_HASHMAP_BACKET_STATE_EMPTY = 0,
+  CRUDE_HASHMAP_BACKET_STATE_REMOVED = -1,
+} crude_hashmap_backet_state;
 
 CRUDE_API uint64
 crude_hash_bytes
@@ -65,4 +73,4 @@ crude_hashmap_set_index
 #define CRUDE_HASHMAP_GET_INDEX( h, k ) ( crude_hashmap_get_index( CRUDE_REINTERPRET_CAST( uint8*, h ), k, sizeof*( h ) ) )
 #define CRUDE_HASHMAP_GET( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? NULL : &( h )[ CRUDE_HASHMAP_TEMP( h ) ] )
 #define CRUDE_HASHMAP_SET( h, k, v ) ( ( h ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( h ), crude_hashmap_set_index( CRUDE_REINTERPRET_CAST( uint8*, h ), k, sizeof*( h ) ) ), ( h )[ CRUDE_HASHMAP_TEMP( h ) ].value = v )
-#define CRUDE_HASHMAP_REMOVE( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? 0 : ( h )[ CRUDE_HASHMAP_TEMP( h ) ].key = 0 )
+#define CRUDE_HASHMAP_REMOVE( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? ( 0 ) : ( ( h )[ CRUDE_HASHMAP_TEMP( h ) ].key = CRUDE_HASHMAP_BACKET_STATE_REMOVED, CRUDE_HASHMAP_HEADER( h )->length-- ) )

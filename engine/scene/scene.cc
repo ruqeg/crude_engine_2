@@ -77,7 +77,7 @@ scene_load_hierarchy_
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
   
     node = crude_entity_create_empty( scene->world, node_name );
-    
+
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
       .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
       .rotation    = json_object_to_float4_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "rotation" ) ),
@@ -177,8 +177,6 @@ scene_load_hierarchy_
         scene->editor_camera_node = node;
       }
     }
-  
-    CRUDE_ARRAY_PUSH( scene->nodes, node );
   }
   
   {
@@ -213,8 +211,6 @@ crude_scene_initialize
   scene->input_entity = creation->input_entity;
   scene->world = creation->world;
   crude_string_buffer_initialize( &scene->path_bufffer, 512, scene->allocator_container );
-
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene->nodes, 4, scene->allocator_container );
 
   {
     char working_directory[ 512 ];
@@ -267,12 +263,8 @@ crude_scene_deinitialize
 {
   if ( destroy_nodes )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene->nodes ); ++i )
-    {
-      crude_entity_destroy( scene->nodes[ i ] );
-    }
+    crude_entity_destroy_hierarchy( scene->main_node );
   }
-  CRUDE_ARRAY_DEINITIALIZE( scene->nodes );
   crude_string_buffer_deinitialize( &scene->path_bufffer );
 }
 

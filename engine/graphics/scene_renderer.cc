@@ -514,6 +514,23 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "gbuffer_early_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "gbuffer_late_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "imgui_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "depth_pyramid_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "culling_early_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "culling_late_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "debug_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "light_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "postprocessing_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "point_shadows_pass" );
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
+#endif
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
   crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
   crude_gfx_gbuffer_early_pass_deinitialize( &scene_renderer->gbuffer_early_pass );
   crude_gfx_gbuffer_late_pass_deinitialize( &scene_renderer->gbuffer_late_pass );

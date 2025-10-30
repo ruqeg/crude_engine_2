@@ -61,13 +61,6 @@ game_deinitialize
 );
 
 CRUDE_API void
-game_create_scene
-(
-  _In_ game_t                                             *game,
-  _In_ char const                                         *filename
-);
-
-CRUDE_API void
 game_reload_scene
 (
   _In_ game_t                                             *game,
