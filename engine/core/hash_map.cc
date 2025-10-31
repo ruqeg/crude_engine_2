@@ -18,6 +18,15 @@ key_to_index_
 );
 
 uint64
+crude_hashmap_backet_key_valid
+(
+  _In_ uint64                                              key
+)
+{
+  return key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && key != CRUDE_HASHMAP_BACKET_STATE_REMOVED;
+}
+
+uint64
 crude_hash_bytes
 (
   _In_ uint8 const                                        *p,
@@ -32,7 +41,7 @@ crude_hash_bytes
     hash *= FNV_PRIME;
   }
 
-  if ( hash == CRUDE_HASHMAP_BACKET_STATE_EMPTY || hash == CRUDE_HASHMAP_BACKET_STATE_REMOVED )
+  if ( !crude_hashmap_backet_key_valid( hash ) )
   {
     hash = 1;
   }
@@ -83,7 +92,7 @@ crude_hashmap_growf
     for ( size_t i = 0; i < CRUDE_HASHMAP_CAPACITY( h ); i++ )
     {
       hash_backet *backet = CRUDE_REINTERPRET_CAST( hash_backet*, h + i * elemsize );
-      if ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && backet->key != CRUDE_HASHMAP_BACKET_STATE_REMOVED )
+      if ( crude_hashmap_backet_key_valid( backet->key ) )
       {
          /* Hashmap shouldn't be resizes here since it's already resized based on the previous hashmap */
         CRUDE_ASSERT( nh == crude_hashmap_set_index( nh, backet->key, elemsize ) );
@@ -153,7 +162,7 @@ crude_hashmap_set_index
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY )
   {
-    if ( key == backet->key || backet->key == CRUDE_HASHMAP_BACKET_STATE_REMOVED ) /* fuck "removed" backet, loser backet will be replaced by MY HAND HAHAHAH 0W0 */
+    if ( key == backet->key ) /* fuck "removed" backet, loser backet will be replaced by MY HAND HAHAHAH 0W0 */
     {
       CRUDE_HASHMAP_HEADER( nh )->temp = index;
       return nh;

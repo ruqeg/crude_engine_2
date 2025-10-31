@@ -22,6 +22,12 @@ typedef enum crude_hashmap_backet_state
 } crude_hashmap_backet_state;
 
 CRUDE_API uint64
+crude_hashmap_backet_key_valid
+(
+  _In_ uint64                                              key
+);
+
+CRUDE_API uint64
 crude_hash_bytes
 (
   _In_ uint8 const                                        *p,

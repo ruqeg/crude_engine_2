@@ -1147,7 +1147,7 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
 {
   for ( int32 i = 0; i < CRUDE_HASHMAP_CAPACITY( builder->resource_cache.resource_map ); ++i )
   {
-    if ( !builder->resource_cache.resource_map[ i ].key )
+    if ( !crude_hashmap_backet_key_valid( builder->resource_cache.resource_map[ i ].key ) )
     {
       continue;
     }

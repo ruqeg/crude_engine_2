@@ -438,7 +438,7 @@ crude_gfx_device_deinitialize
   
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( gpu->resource_cache.techniques ); ++i )
   {
-    if ( gpu->resource_cache.techniques[ i ].key )
+    if ( crude_hashmap_backet_key_valid( gpu->resource_cache.techniques[ i ].key ) )
     {
       crude_gfx_destroy_technique_instant( gpu, gpu->resource_cache.techniques[ i ].value );
     }
@@ -447,7 +447,7 @@ crude_gfx_device_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( gpu->resource_cache.materials ); ++i )
   {
-    if ( gpu->resource_cache.materials[ i ].key )
+    if ( crude_hashmap_backet_key_valid( gpu->resource_cache.materials[ i ].key ) )
     {
       crude_gfx_destroy_material_instant( gpu, gpu->resource_cache.materials[ i ].value );
     }

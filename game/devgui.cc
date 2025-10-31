@@ -26,7 +26,7 @@ crude_devgui_reload_techniques_
 {
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->game->gpu.resource_cache.techniques ); ++i )
   {
-    if ( !devgui->game->gpu.resource_cache.techniques[ i ].key )
+    if ( !crude_hashmap_backet_key_valid( devgui->game->gpu.resource_cache.techniques[ i ].key ) )
     {
       continue;
     }
