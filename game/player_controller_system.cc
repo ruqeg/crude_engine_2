@@ -73,7 +73,6 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )
   ECS_IMPORT( world, crude_crude_player_controller_components );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system, EcsOnUpdate, NULL, {
-    { .id = ecs_id( crude_transform ) },
-    { .id = ecs_id( crude_camera ) },
+    { .id = ecs_id( crude_player_controller ) },
   } );
 }

@@ -88,6 +88,25 @@ game_input_callback_
   _In_ void                                               *sdl_event
 );
 
+static bool
+game_parse_json_to_component_
+( 
+  _In_ crude_entity                                        node, 
+  _In_ cJSON const                                        *component_json,
+  _In_ char const                                         *component_name
+)
+{
+  return true;
+}
+
+static void game_parse_all_components_to_json_
+( 
+  _In_ crude_entity                                        node, 
+  _In_ void                                               *node_components_json 
+)
+{
+}
+
 void
 game_initialize
 (
@@ -180,6 +199,8 @@ game_reload_scene
     creation.resources_path = CRUDE_RESOURCES_PATH;
     creation.temporary_allocator = &game->temporary_allocator;
     creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
+    creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
+    creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
     crude_scene_initialize( &game->scene, &creation );
   }
 
@@ -414,6 +435,8 @@ game_initialize_scene_
   scene_creation.resources_path = CRUDE_RESOURCES_PATH;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
+  scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
+  scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
   crude_scene_initialize( &game->scene, &scene_creation );
 
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );

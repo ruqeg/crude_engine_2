@@ -10,50 +10,6 @@
 
 #include <scene/scene.h>
 
-static XMFLOAT2
-json_object_to_float2_
-(
-  cJSON                                                 *json
-)
-{
-  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 2 );
-
-  XMFLOAT2 result;
-  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
-  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
-  return result;
-}
-
-static XMFLOAT3
-json_object_to_float3_
-(
-  cJSON                                                 *json
-)
-{
-  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 3 );
-  
-  XMFLOAT3 result;
-  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
-  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
-  result.z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) );
-  return result;
-}
-
-static XMFLOAT4
-json_object_to_float4_
-(
-  cJSON                                                 *json
-)
-{
-  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 4 );
-  XMFLOAT4 result;
-  result.x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 0 ) ) );
-  result.y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 1 ) ) );
-  result.z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 2 ) ) );
-  result.w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json , 3 ) ) );
-  return result;
-}
-
 static crude_physics_box_collision_shape
 json_object_to_crude_physics_box_collision_shape_
 (
@@ -61,7 +17,7 @@ json_object_to_crude_physics_box_collision_shape_
 )
 {
   crude_physics_box_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_box_collision_shape );
-  shape.half_extent = json_object_to_float3_( cJSON_GetObjectItem( json, "half_extent" ) );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &shape.half_extent, cJSON_GetObjectItem( json, "half_extent" ) );
   return shape;
 }
 
@@ -113,6 +69,7 @@ scene_load_hierarchy_
     cJSON const                                           *node_transform_json;
     cJSON const                                           *node_components_json;
     cJSON const                                           *node_tags_json;
+    crude_transform                                        transform;
   
     node_json = hierarchy_json;//cJSON_GetObjectItemCaseSensitive( hierarchy_json, "node" ); 
     node_name = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "name") );
@@ -122,11 +79,8 @@ scene_load_hierarchy_
   
     node = crude_entity_create_empty( scene->world, node_name );
 
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
-      .translation = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "translation" ) ),
-      .rotation    = json_object_to_float4_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "rotation" ) ),
-      .scale       = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( node_transform_json, "scale" ) ),
-    } );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, { transform } );
   
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
     {
@@ -138,37 +92,33 @@ scene_load_hierarchy_
       component_type_json = cJSON_GetObjectItemCaseSensitive( component_json, "type" );
       component_type = cJSON_GetStringValue( component_type_json );
   
-      if ( crude_string_cmp( component_type, "crude_gltf" ) == 0 )
+      if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_gltf ) ) == 0 )
       {
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, {
-          .path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) )
-        } );
+        crude_gltf                                         gltf;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json );
+        gltf.original_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s", gltf.original_path );
+        gltf.path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, gltf.original_path );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, { gltf } );
       }
-      else if ( crude_string_cmp( component_type, "crude_camera" ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_camera ) ) == 0 )
       {
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, {
-          .fov_radians = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ) ),
-          .near_z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "near_z" ) ) ),
-          .far_z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "far_z" ) ) ),
-          .aspect_ratio = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "aspect_ratio" ) ) ),
-        } );
+        crude_camera                                       camera;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, { camera } );
       }
-      else if ( crude_string_cmp( component_type, "crude_free_camera" ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_free_camera ) ) == 0 )
       {
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, {
-          .moving_speed_multiplier   = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) ),
-          .rotating_speed_multiplier = json_object_to_float2_( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) ),
-          .entity_input              = scene->input_entity,
-          .enabled                   = false
-        } );
+        crude_free_camera                                  free_camera;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json );
+        free_camera.entity_input = scene->input_entity;
+        free_camera.enabled = false;
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, { free_camera } );
       }
-      else if ( crude_string_cmp( component_type, "crude_light" ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_light ) ) == 0 )
       {
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_light, {
-          .radius = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) ) ),
-          .color = json_object_to_float3_( cJSON_GetObjectItemCaseSensitive( component_json, "color" ) ),
-          .intensity = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "intensity" ) ) ),
-        } );
+        crude_light                                        light;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_light, { light } );
       }
       else if ( crude_string_cmp( component_type, "crude_physics_static_body" ) == 0 )
       {
@@ -212,6 +162,10 @@ scene_load_hierarchy_
           CRUDE_ASSERT( false );
         }
       }
+      else
+      {
+        scene->additional_parse_json_to_component_func( node, component_json, component_type );
+      }
     }
   }
   
@@ -246,6 +200,9 @@ crude_scene_initialize
   scene->temporary_allocator = creation->temporary_allocator;
   scene->input_entity = creation->input_entity;
   scene->world = creation->world;
+  scene->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
+  scene->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
+
   crude_string_buffer_initialize( &scene->path_bufffer, 512, scene->allocator_container );
 
   {
@@ -335,9 +292,9 @@ node_to_json_hierarchy_
   
   {
     cJSON                                                 *node_components_json;
+    crude_free_camera const                               *node_free_camera;
     crude_camera const                                    *node_camera;
     crude_gltf const                                      *node_gltf;
-    crude_free_camera const                               *node_free_camera;
     crude_light const                                     *node_light;
     crude_physics_static_body const                       *static_body;
     crude_physics_dynamic_body const                      *dynamic_body;
@@ -347,59 +304,25 @@ node_to_json_hierarchy_
     node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_camera );
     if ( node_camera )
     {
-      cJSON                                               *camera_json;
-
-      camera_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( camera_json, "type", cJSON_CreateString( "crude_camera" ) );
-      cJSON_AddItemToObject( camera_json, "fov_radians", cJSON_CreateNumber( node_camera->fov_radians ) );
-      cJSON_AddItemToObject( camera_json, "near_z", cJSON_CreateNumber( node_camera->near_z ) );
-      cJSON_AddItemToObject( camera_json, "far_z", cJSON_CreateNumber( node_camera->far_z ) );
-      cJSON_AddItemToObject( camera_json, "aspect_ratio", cJSON_CreateNumber( node_camera->aspect_ratio ) );
-      
-      cJSON_AddItemToArray( node_components_json, camera_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_camera )( node_camera ) );
     }
     
     node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
     if ( node_gltf )
     {
-      cJSON                                               *gltf_json;
-
-      gltf_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( gltf_json, "type", cJSON_CreateString( "crude_gltf" ) );
-      cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( node_gltf->path + strlen( scene->resources_path ) ) );
-
-      cJSON_AddItemToArray( node_components_json, gltf_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_gltf )( node_gltf ) );
     }
     
     node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_free_camera );
     if ( node_free_camera )
     {
-      cJSON                                               *node_free_camera_json;
-
-      node_free_camera_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( node_free_camera_json, "type", cJSON_CreateString( "crude_free_camera" ) );
-      cJSON_AddItemToObject( node_free_camera_json, "moving_speed_multiplier", cJSON_CreateFloatArray( &node_free_camera->moving_speed_multiplier.x, 3 ) );
-      cJSON_AddItemToObject( node_free_camera_json, "rotating_speed_multiplier", cJSON_CreateFloatArray( &node_free_camera->rotating_speed_multiplier.x, 2 ) );
-      
-      cJSON_AddItemToArray( node_components_json, node_free_camera_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_free_camera )( node_free_camera ) );
     }
 
     node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_light );
     if ( node_light )
     {
-      cJSON                                               *node_light_json;
-
-      node_light_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( node_light_json, "type", cJSON_CreateString( "crude_light" ) );
-      cJSON_AddItemToObject( node_light_json, "radius", cJSON_CreateNumber( node_light->radius ) );
-      cJSON_AddItemToObject( node_light_json, "color", cJSON_CreateFloatArray( &node_light->color.x, 3 ) );
-      cJSON_AddItemToObject( node_light_json, "intensity", cJSON_CreateNumber( node_light->intensity ) );
-      
-      cJSON_AddItemToArray( node_components_json, node_light_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light ) );
     }
 
     static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_static_body );
@@ -451,6 +374,8 @@ node_to_json_hierarchy_
       
       cJSON_AddItemToArray( node_components_json, node_physics_dynamic_body_json );
     }
+
+    scene->additional_parse_all_components_to_json_func( node, node_components_json );
   }
   
   {

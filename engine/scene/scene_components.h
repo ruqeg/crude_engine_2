@@ -29,6 +29,7 @@ typedef struct crude_light
 typedef struct crude_gltf
 {
   char                                                    *path;
+  char                                                    *original_path;
 } crude_gltf;
 
 typedef struct crude_scene_handle
@@ -37,12 +38,26 @@ typedef struct crude_scene_handle
 } crude_scene_handle;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_creation );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
+
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera );
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform );
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf );
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light );
+
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_camera, "crude_camera" );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform, "crude_transform" );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf, "crude_gltf" );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light, "crude_light" );
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip

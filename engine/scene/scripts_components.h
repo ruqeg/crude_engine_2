@@ -2,6 +2,7 @@
 
 #include <core/math.h>
 #include <core/ecs.h>
+#include <core/components_serialization.h>
 
 typedef struct crude_free_camera
 {
@@ -10,6 +11,10 @@ typedef struct crude_free_camera
   crude_entity                                             entity_input;
   bool                                                     enabled;
 } crude_free_camera;
+
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_free_camera );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_free_camera );
 
