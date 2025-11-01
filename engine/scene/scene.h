@@ -15,7 +15,7 @@ typedef bool (*crude_scene_parse_json_to_component_func)
 typedef void (*crude_scene_parse_all_components_to_json_func)
 ( 
   _In_ crude_entity                                        node, 
-  _In_ void                                               *node_components_json 
+  _In_ cJSON                                              *node_components_json 
 );
 
 typedef struct crude_scene_creation

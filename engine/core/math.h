@@ -12,10 +12,21 @@ using namespace DirectX;
 #define CRUDE_MAX( a, b ) fmaxf( a, b )
 #define CRUDE_MIN( a, b ) fminf( a, b )
 #define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )
+#define CRUDE_DEG_TO_RAD( x ) ( XMConvertToRadians( x ) ) 
+#define CRUDE_RAD_TO_DEG( x ) ( XMConvertToDegrees( x ) ) 
+#define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )
 
 CRUDE_API float32
 crude_random_unit_f32
 (
+);
+
+CRUDE_API float32
+crude_lerp_angle
+(
+  _In_ float32                                             from,
+  _In_ float32                                             to,
+  _In_ float32                                             weight
 );
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT2 );

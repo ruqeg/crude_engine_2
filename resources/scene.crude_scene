@@ -10,8 +10,8 @@
 		"children":	[{
 				"name":	"editor_camera",
 				"transform":	{
-					"translation":	[0, 0, 0],
-					"rotation":	[0, 0, 0, 1],
+					"translation":	[5.237149715423584, 12.474850654602051, 0.12529444694519043],
+					"rotation":	[0.0195324644446373, -0.748986303806305, 0.022102179005742073, 0.66195219755172729],
 					"scale":	[1, 1, 1]
 				},
 				"components":	[{
@@ -46,7 +46,7 @@
 			}, {
 				"name":	"player",
 				"transform":	{
-					"translation":	[-2.0999999046325684, 10, 0.699999988079071],
+					"translation":	[-2.0999999046325684, 12.081685066223145, 0.010904788970947266],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				},
@@ -55,6 +55,10 @@
 						"crude_physics_sphere_collision_shape":	{
 							"radius":	1
 						}
+					}, {
+						"type":	"crude_player_controller",
+						"rotation_speed": 0.01,
+						"camera_following_speed": 1
 					}],
 				"children":	[{
 						"name":	"redball_model",
@@ -87,7 +91,7 @@
 								"children":	[{
 										"name":	"camera",
 										"transform":	{
-											"translation":	[0, 0, 0],
+											"translation":	[0, 1, -5],
 											"rotation":	[0, 0, 0, 1],
 											"scale":	[1, 1, 1]
 										},

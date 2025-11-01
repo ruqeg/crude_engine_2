@@ -6,6 +6,7 @@
 #include <graphics/gpu_resources_loader.h>
 #include <scene/scripts_components.h>
 #include <physics/physics_components.h>
+#include <player_controller_components.h>
 #include <game.h>
 
 #include <devgui.h>
@@ -430,6 +431,12 @@ crude_devgui_node_inspector_draw
   if ( static_body && ImGui::CollapsingHeader( "crude_physics_static_body" ) )
   {
     ImGui::Text( "TODO" );
+  }
+  
+  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_player_controller );
+  if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( player_controller );
   }
   ImGui::End( );
 }
@@ -1237,11 +1244,21 @@ crude_devgui_game_common_draw
   {
     if ( dev_game_common->editor_camera_controller )
     {
+      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
+      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
+      
       dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
+      player_controller->enabled = false;
+      free_camera->enabled = true;
     }
     else
     { 
+      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
+      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
+      
       dev_game_common->game->focused_camera_node = dev_game_common->game->character_controller_camera_node;
+      player_controller->enabled = true;
+      free_camera->enabled = false;
     }
   }
   //if ( ImGui::CollapsingHeader( "Background" ) )

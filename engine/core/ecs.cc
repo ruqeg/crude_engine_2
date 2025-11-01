@@ -59,14 +59,13 @@ crude_ecs_lookup_entity
 crude_entity
 crude_ecs_lookup_entity_from_parent
 (
-  _In_ ecs_world_t                                        *world,
   _In_ crude_entity                                        parent,
   _In_ char const                                         *path
 )
 {
   crude_entity entity;
-  entity.world = world;
-  entity.handle = ecs_lookup_from( world, parent.handle, path );
+  entity.world = parent.world;
+  entity.handle = ecs_lookup_from( parent.world, parent.handle, path );
   return entity;
 }
 

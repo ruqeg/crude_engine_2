@@ -58,7 +58,6 @@ crude_ecs_lookup_entity
 CRUDE_API crude_entity
 crude_ecs_lookup_entity_from_parent
 (
-  _In_ ecs_world_t                                        *world,
   _In_ crude_entity                                        parent,
   _In_ char const                                         *path
 );

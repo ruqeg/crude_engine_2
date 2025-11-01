@@ -14,6 +14,8 @@
 #include <scene/scripts_components.h>
 #include <graphics/gpu_resources_loader.h>
 #include <physics/physics_system.h>
+#include <player_controller_components.h>
+#include <player_controller_system.h>
 
 #include <game.h>
 
@@ -96,15 +98,29 @@ game_parse_json_to_component_
   _In_ char const                                         *component_name
 )
 {
+  if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
+  {
+    crude_player_controller                                player_controller;
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
+  }
   return true;
 }
 
-static void game_parse_all_components_to_json_
+static void
+game_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
-  _In_ void                                               *node_components_json 
+  _In_ cJSON                                               *node_components_json 
 )
 {
+  crude_player_controller const                           *player_component;
+  
+  player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
+  if ( player_component )
+  {
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component ) );
+  }
 }
 
 void
@@ -121,6 +137,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_platform_system );
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_physics_system );
+  ECS_IMPORT( game->engine->world, crude_player_controller_system );
 
   game_initialize_allocators_( game );
   game_initialize_imgui_( game );
@@ -143,10 +160,13 @@ game_initialize
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_physics_system_, EcsOnUpdate, game, { } );
   
-  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "editor_camera" );
-  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "player.pivot1.pivot2.camera" );
+  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
+  game->character_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
+  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot1.pivot2.camera" );
   game->focused_camera_node = game->editor_camera_node;
 
+  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->character_controller_node, crude_player_controller );
+  player_controller->entity_input = game->scene.input_entity;
   crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->enabled = true;
 }
@@ -204,8 +224,8 @@ game_reload_scene
     crude_scene_initialize( &game->scene, &creation );
   }
 
-  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "editor_camera" );
-  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->engine->world, game->scene.main_node, "player.pivot1.pivot2.camera" );
+  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
+  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
   game->focused_camera_node = game->editor_camera_node;
 
    /* Create Scene Renderer */

@@ -18,15 +18,24 @@ crude_parse_json_to_component_func##component_type
 #define CRUDE_PARSE_COMPONENT_TO_JSON( component_type )\
 crude_parse_component_to_json_func##component_type
 
+#define CRUDE_PARSE_COMPONENT_TO_IMGUI( component_type )\
+crude_parse_component_to_imgui_func##component_type
+
 #define CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( component_type )\
 bool crude_parse_json_to_component_func##component_type\
 (\
-  _Out_ component_type*                                    component,\
+  _Out_ component_type                                    *component,\
   _In_ cJSON const                                        *component_json\
 )
 
 #define CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( component_type )\
 cJSON* crude_parse_component_to_json_func##component_type\
 (\
-  _In_ component_type const*                               component\
+  _In_ component_type const                               *component\
+)
+
+#define CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( component_type )\
+void crude_parse_component_to_imgui_func##component_type\
+(\
+  _In_ component_type                                     *component\
 )

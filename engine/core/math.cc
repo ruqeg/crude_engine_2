@@ -16,6 +16,19 @@ crude_random_unit_f32
   return CRUDE_CAST( float32, ( rand( ) - RAND_MAX / 2 ) ) / ( RAND_MAX / 2 );
 }
 
+float32
+crude_lerp_angle
+(
+  _In_ float32                                             from,
+  _In_ float32                                             to,
+  _In_ float32                                             weight
+)
+{
+  float32 difference = fmod( to - from, XM_2PI );
+  float32 distance = fmod( 2.0 * difference, XM_2PI ) - difference;
+  return from + distance * weight;
+}
+
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT2 )
 {
   CRUDE_ASSERT( cJSON_GetArraySize( component_json ) == 2 );
