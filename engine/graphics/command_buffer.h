@@ -354,7 +354,8 @@ crude_gfx_cmd_upload_buffer_data
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_buffer_handle                             src_buffer,
-  _In_ crude_gfx_buffer_handle                             dst_buffer
+  _In_ crude_gfx_buffer_handle                             dst_buffer,
+  _In_ uint64                                              dst_buffer_offset
 );
 
 CRUDE_API void

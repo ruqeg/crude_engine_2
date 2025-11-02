@@ -31,6 +31,7 @@ typedef struct crude_gfx_upload_request
   crude_gfx_texture_handle                                 texture;
   crude_gfx_buffer_handle                                  cpu_buffer;
   crude_gfx_buffer_handle                                  gpu_buffer;
+  crude_gfx_buffer_handle                                  gpu_old_buffer;
 } crude_gfx_upload_request;
 
 
@@ -49,6 +50,7 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_texture_handle                                 texture_ready;
   crude_gfx_buffer_handle                                  cpu_buffer_ready;
   crude_gfx_buffer_handle                                  gpu_buffer_ready;
+  crude_gfx_buffer_handle                                  gpu_old_buffer_ready;
 
   VkCommandPool                                            vk_cmd_pools[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -106,6 +108,15 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
   _In_ crude_gfx_buffer_handle                             cpu_buffer,
   _In_ crude_gfx_buffer_handle                             gpu_buffer
+);
+
+CRUDE_API void
+crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_buffer_handle                             cpu_buffer,
+  _In_ crude_gfx_buffer_handle                             gpu_buffer,
+  _In_ crude_gfx_buffer_handle                             old_gpu_buffer
 );
 
 CRUDE_API void

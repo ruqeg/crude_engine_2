@@ -133,14 +133,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_gpu
   uint64                                                   normal_buffer;
 } crude_gfx_mesh_draw_gpu;
 
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
-{
-  XMFLOAT4X4                                               model_to_world;
-  XMFLOAT4X4                                               world_to_model;
-  uint32                                                   mesh_draw_index;
-  XMFLOAT3A                                                padding;
-} crude_gfx_mesh_darw_gpu;
-
 typedef struct crude_gfx_meshlet_vertex_gpu
 {
   XMFLOAT3A                                                position;

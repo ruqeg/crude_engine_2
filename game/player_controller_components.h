@@ -5,10 +5,11 @@
 
 typedef struct crude_player_controller
 {
+  float32                                                  weight;
   float32                                                  rotation_speed;
 
   crude_entity                                             entity_input;
-  bool                                                     enabled;
+  bool                                                     input_enabled;
 } crude_player_controller;
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller );

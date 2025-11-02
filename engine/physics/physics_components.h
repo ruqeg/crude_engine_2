@@ -27,12 +27,8 @@ typedef struct crude_physics_static_body
     crude_physics_sphere_collision_shape                   sphere_shape;            
   };
   crude_physics_collision_shape_type                       collision_shape_type;
-} crude_physics_static_body;
-
-typedef struct crude_physics_static_body_handle
-{
   uint32                                                   static_body_index;
-} crude_physics_static_body_handle;
+} crude_physics_static_body;
 
 typedef struct crude_physics_dynamic_body
 {
@@ -42,12 +38,8 @@ typedef struct crude_physics_dynamic_body
     crude_physics_sphere_collision_shape                   sphere_shape;     
   };
   crude_physics_collision_shape_type                       collision_shape_type;
-} crude_physics_dynamic_body;
-
-typedef struct crude_physics_dynamic_body_handle
-{
   uint32                                                   dynamic_body_index;
-} crude_physics_dynamic_body_handle;
+} crude_physics_dynamic_body;
 
 /************************************************
  *
@@ -55,9 +47,7 @@ typedef struct crude_physics_dynamic_body_handle
  * 
  ***********************************************/
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_physics_static_body );
-CRUDE_API extern ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
 CRUDE_API extern ECS_COMPONENT_DECLARE( crude_physics_dynamic_body );
-CRUDE_API extern ECS_COMPONENT_DECLARE( crude_physics_dynamic_body_handle );
 
 /************************************************
  *

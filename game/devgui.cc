@@ -1248,7 +1248,7 @@ crude_devgui_game_common_draw
       crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
       
       dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
-      player_controller->enabled = false;
+      player_controller->input_enabled = false;
       free_camera->enabled = true;
     }
     else
@@ -1257,7 +1257,7 @@ crude_devgui_game_common_draw
       crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
       
       dev_game_common->game->focused_camera_node = dev_game_common->game->character_controller_camera_node;
-      player_controller->enabled = true;
+      player_controller->input_enabled = true;
       free_camera->enabled = false;
     }
   }

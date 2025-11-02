@@ -309,7 +309,6 @@ crude_physics_static_body_creation_observer_
     ecs_world_t                                           *world;
     crude_physics_static_body                             *static_body;
     crude_transform                                       *transform;
-    crude_physics_static_body_handle                       *static_body_handle;
     JPH::ShapeSettings::ShapeResult                        shape_result;
     crude_entity                                           entity;
 
@@ -320,8 +319,6 @@ crude_physics_static_body_creation_observer_
     CRUDE_ASSERT( CRUDE_ENTITY_HAS_COMPONENT( entity, crude_transform ) );
     transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, crude_transform );
     CRUDE_ASSERT( transform );
-
-    static_body_handle = ecs_ensure( world, entity.handle, crude_physics_static_body_handle );
 
     // Next we can create a rigid body to serve as the floor, we make a large box
     // Create the settings for the collision volume (the shape).
@@ -353,7 +350,7 @@ crude_physics_static_body_creation_observer_
       // Add it to the world
       body_interface.AddBody( body->GetID( ), JPH::EActivation::DontActivate );
 
-      static_body_handle->static_body_index = body->GetID( ).GetIndexAndSequenceNumber( );
+      static_body->static_body_index = body->GetID( ).GetIndexAndSequenceNumber( );
     }
     else
     {
@@ -368,20 +365,20 @@ crude_physics_static_body_destrotion_observer_
   ecs_iter_t *it
 )
 {
-  crude_physics_static_body_handle *static_bodies_values_per_entity = ecs_field( it, crude_physics_static_body_handle, 0 );
+  crude_physics_static_body *static_bodies_per_entity = ecs_field( it, crude_physics_static_body, 0 );
 
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_physics_static_body_handle                      *static_body_value;
+    crude_physics_static_body                             *static_body;
     ecs_world_t                                           *world;
     JPH::BodyID                                            body_id;
 
     world = it->world;
-    static_body_value = &static_bodies_values_per_entity[ i ];
+    static_body = &static_bodies_per_entity[ i ];
 
-    body_id = JPH::BodyID{ static_body_value->static_body_index };
+    body_id = JPH::BodyID{ static_body->static_body_index };
     body_interface.RemoveBody( body_id );
     body_interface.DestroyBody( body_id );
   }
@@ -404,7 +401,6 @@ crude_physics_dynamic_body_creation_observer_
     ecs_world_t                                           *world;
     crude_physics_dynamic_body                            *dynamic_body;
     crude_transform                                       *transform;
-    crude_physics_dynamic_body_handle                      *dynamic_body_handle;
     JPH::ShapeSettings::ShapeResult                        shape_result;
     crude_entity                                           entity;
 
@@ -416,8 +412,6 @@ crude_physics_dynamic_body_creation_observer_
     transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, crude_transform );
     CRUDE_ASSERT( transform );
 
-    dynamic_body_handle = ecs_ensure( world, entity.handle, crude_physics_dynamic_body_handle );
-
     // Next we can create a rigid body to serve as the floor, we make a large box
     // Create the settings for the collision volume (the shape).
     // Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
@@ -428,7 +422,7 @@ crude_physics_dynamic_body_creation_observer_
       
       sphere_settings = JPH::BodyCreationSettings( new JPH::SphereShape( dynamic_body->sphere_shape.radius ), JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ), JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ), JPH::EMotionType::Dynamic, moving_object_layer_ );
       sphere_id = body_interface.CreateAndAddBody( sphere_settings, JPH::EActivation::Activate );
-      dynamic_body_handle->dynamic_body_index = sphere_id.GetIndexAndSequenceNumber( );
+      dynamic_body->dynamic_body_index = sphere_id.GetIndexAndSequenceNumber( );
     }
     else
     {
@@ -443,20 +437,20 @@ crude_physics_dynamic_body_destrotion_observer_
   ecs_iter_t *it
 )
 {
-  crude_physics_dynamic_body_handle *dynamic_bodies_values_per_entity = ecs_field( it, crude_physics_dynamic_body_handle, 0 );
+  crude_physics_dynamic_body *dynamic_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body, 0 );
 
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_physics_dynamic_body_handle                     *dynamic_body_value;
+    crude_physics_dynamic_body                            *dynamic_body;
     ecs_world_t                                           *world;
     JPH::BodyID                                            body_id;
 
     world = it->world;
-    dynamic_body_value = &dynamic_bodies_values_per_entity[ i ];
+    dynamic_body = &dynamic_bodies_per_entity[ i ];
 
-    body_id = JPH::BodyID{ dynamic_body_value->dynamic_body_index };
+    body_id = JPH::BodyID{ dynamic_body->dynamic_body_index };
     body_interface.RemoveBody( body_id );
     body_interface.DestroyBody( body_id );
   }
@@ -476,6 +470,8 @@ crude_physics_update
   // Now you can interact with the dynamic body, in this case we're going to give it a velocity.
   // (note that if we had used CreateBody then we could have set the velocity straight on the body before adding it to the physics system)
   //body_interface.SetLinearVelocity(sphere_id, JPH::Vec3(0.0f, -5.0f, 0.0f));
+  //JPH::RVec3 position = body_interface.GetCenterOfMassPosition( sphere_id );
+  //JPH::Vec3 velocity = body_interface.GetLinearVelocity( sphere_id );
 
   // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
   //const float cDeltaTime = 1.0f / 60.0f;
@@ -501,23 +497,22 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
 {
   ECS_MODULE( world, crude_physics_system );
   ECS_IMPORT( world, crude_physics_components );
+  ECS_IMPORT( world, crude_scene_components );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_creation_observer_, EcsOnSet, { 
-    { .id = ecs_id( crude_physics_static_body ) },
-    { .id = ecs_id( crude_physics_static_body_handle ), .oper = EcsNot }
+    { .id = ecs_id( crude_physics_static_body ) }
   } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_destrotion_observer_, EcsOnRemove, { 
-    { .id = ecs_id( crude_physics_static_body_handle ) },
+    { .id = ecs_id( crude_physics_static_body ) },
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_dynamic_body_creation_observer_, EcsOnSet, { 
-    { .id = ecs_id( crude_physics_dynamic_body ) },
-    { .id = ecs_id( crude_physics_dynamic_body_handle ), .oper = EcsNot }
+    { .id = ecs_id( crude_physics_dynamic_body ) }
   } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_dynamic_body_destrotion_observer_, EcsOnRemove, { 
-    { .id = ecs_id( crude_physics_dynamic_body_handle ) },
+    { .id = ecs_id( crude_physics_dynamic_body ) },
   } );
 }
 
@@ -578,4 +573,77 @@ crude_physics_creation_empty
   creation.max_contact_constraints = 1024;
   creation.temporary_allocator_size = 10u * 1024u * 1024u;
   return creation;
+}
+
+XMVECTOR
+crude_physics_dynamic_body_get_center_of_mass_position
+(
+  _In_ crude_physics_dynamic_body const                   *dynamic_body
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  JPH::RVec3                                               jph_position;
+
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_position = jph_body_interface->GetCenterOfMassPosition( JPH::BodyID( dynamic_body->dynamic_body_index ) );
+  return XMVectorSet( jph_position.GetX( ), jph_position.GetY( ), jph_position.GetZ( ), 1 );
+}
+
+void
+crude_physics_dynamic_body_set_position
+(
+  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ XMVECTOR                                            position
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  XMFLOAT3                                                 position_f;
+
+  XMStoreFloat3( &position_f, position );
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_body_interface->SetPosition( JPH::BodyID( dynamic_body->dynamic_body_index ), JPH::Vec3( position_f.x, position_f.y, position_f.z ), JPH::EActivation::Activate );
+}
+
+void
+crude_physics_dynamic_body_set_linear_velocity
+(
+  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ XMVECTOR                                            velocity
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  XMFLOAT3                                                 velocity_f;
+
+  XMStoreFloat3( &velocity_f, velocity );
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_body_interface->SetLinearVelocity( JPH::BodyID( dynamic_body->dynamic_body_index ), JPH::Vec3( velocity_f.x, velocity_f.y, velocity_f.z ) );
+}
+
+void
+crude_physics_dynamic_body_add_linear_velocity
+(
+  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ XMVECTOR                                            velocity
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  XMFLOAT3                                                 velocity_f;
+
+  XMStoreFloat3( &velocity_f, velocity );
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_body_interface->AddLinearVelocity( JPH::BodyID( dynamic_body->dynamic_body_index ), JPH::Vec3( velocity_f.x, velocity_f.y, velocity_f.z ) );
+}
+
+XMVECTOR
+crude_physics_dynamic_body_get_linear_velocity
+(
+  _In_ crude_physics_dynamic_body const                   *dynamic_body
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  JPH::RVec3                                               jph_position;
+
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_position = jph_body_interface->GetLinearVelocity( JPH::BodyID( dynamic_body->dynamic_body_index ) );
+  return XMVectorSet( jph_position.GetX( ), jph_position.GetY( ), jph_position.GetZ( ), 1 );
 }

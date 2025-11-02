@@ -3,6 +3,8 @@
 #include <scene/scripts_components.h>
 #include <scene/scene_components.h>
 #include <platform/platform_components.h>
+#include <physics/physics_components.h>
+#include <physics/physics_system.h>
 #include <player_controller_components.h>
 
 #include <player_controller_system.h>
@@ -33,23 +35,22 @@ crude_player_controller_update_system_
 {
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player_controller *player_controllere_per_entity = ecs_field( it, crude_player_controller, 1 );
-  
+  crude_physics_dynamic_body *phyics_dynamics_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body, 2 );
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_transform                                       *transform, *pivot1_node_transform, *pivot2_node_transform;
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
+    crude_physics_dynamic_body                            *physics_dynamic_body;
     crude_entity                                           node, pivot1_node, pivot2_node;
+    XMVECTOR                                               velocity;
 
     transform = &transforms_per_entity[ i ];
     player_controller = &player_controllere_per_entity[ i ];
-    
-    node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    physics_dynamic_body = &phyics_dynamics_bodies_per_entity[ i ];
 
-    if ( !player_controller->enabled )
-    {
-      continue;
-    }
+    node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( player_controller->entity_input, crude_input );
     
@@ -58,6 +59,10 @@ crude_player_controller_update_system_
 
     pivot1_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot1_node, crude_transform );
     pivot2_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot2_node, crude_transform );
+    
+    //crude_physics_dynamic_body_add_linear_velocity( physics_dynamic_body, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+    //crude_physics_dynamic_body_set_linear_velocity( physics_dynamic_body, XMVectorScale( XMVectorSet( 0, -0.4, 0, 1 ), it->delta_time * player_controller->weight ) );
+    //XMStoreFloat3( &transform->translation, crude_physics_dynamic_body_get_center_of_mass_position( physics_dynamic_body ) );
 
     //XMQuaternionMultiply( );
     //XMStoreFloat4( &pivot1_node_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &pivot1_node_transform->rotation ), XMQuaternionRotationRollPitchYaw( ) ) );
@@ -90,34 +95,21 @@ crude_player_controller_update_system_
     //}
     //XMStoreFloat3( &transforms[ i ].translation, translation );
     
-
-    if ( input->mouse.right.current )
+    if ( player_controller->input_enabled )
     {
-      XMVECTOR                                             pivot1_rotation, pivot2_rotation;
+      if ( input->mouse.right.current )
+      {
+        XMVECTOR                                             pivot1_rotation, pivot2_rotation;
 		  
-      pivot1_rotation = XMLoadFloat4( &pivot1_node_transform->rotation );
-      pivot2_rotation = XMLoadFloat4( &pivot2_node_transform->rotation );
+        pivot1_rotation = XMLoadFloat4( &pivot1_node_transform->rotation );
+        pivot2_rotation = XMLoadFloat4( &pivot2_node_transform->rotation );
 
-      pivot1_rotation = XMQuaternionMultiply( pivot1_rotation, XMQuaternionRotationAxis( g_XMIdentityR1, player_controller->rotation_speed * input->mouse.rel.x )  );
-      pivot2_rotation = XMQuaternionMultiply( pivot2_rotation, XMQuaternionRotationAxis( g_XMIdentityR0, player_controller->rotation_speed * input->mouse.rel.y )  );
+        pivot1_rotation = XMQuaternionMultiply( pivot1_rotation, XMQuaternionRotationAxis( g_XMIdentityR1, player_controller->rotation_speed * input->mouse.rel.x )  );
+        pivot2_rotation = XMQuaternionMultiply( pivot2_rotation, XMQuaternionRotationAxis( g_XMIdentityR0, player_controller->rotation_speed * input->mouse.rel.y )  );
 
-      //pivot2_rotation = XMQuaternionMultiply( pivot2_rotation, );
-
-      XMStoreFloat4( &pivot1_node_transform->rotation, pivot1_rotation );
-      XMStoreFloat4( &pivot2_node_transform->rotation, pivot2_rotation );
-
-		 // rotating_angle.x = -input->mouse.rel.y * player_controller->rotation_speed;
-     // rotating_angle.y = -input->mouse.rel.x * player_controller->rotation_speed;
-     //
-     // XMVECTOR rotation = XMLoadFloat4( &transforms[ i ].rotation );
-     // XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
-     //
-     // rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier.y * input->mouse.rel.y ) );
-     // rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier.x * input->mouse.rel.x ) );
-     //
-     //
-     //
-		 // player_controller->new_angle.x = CRUDE_CLAMP( player_controller->new_angle.x, CRUDE_DEG_TO_RAD( -46 ), CRUDE_DEG_TO_RAD( 46 ) );
+        XMStoreFloat4( &pivot1_node_transform->rotation, pivot1_rotation );
+        XMStoreFloat4( &pivot2_node_transform->rotation, pivot2_rotation );
+      }
     }
   }
 }
@@ -127,11 +119,13 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )
   ECS_MODULE( world, crude_player_controller_system );
   
   ECS_IMPORT( world, crude_scene_components );
+  ECS_IMPORT( world, crude_physics_components );
   ECS_IMPORT( world, crude_player_controller_components );
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, EcsOnUpdate, NULL, {
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_player_controller ) },
+    { .id = ecs_id( crude_physics_dynamic_body ) },
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_creation_observer_, EcsOnSet, { 

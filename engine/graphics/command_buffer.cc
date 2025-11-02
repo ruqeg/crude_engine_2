@@ -963,19 +963,24 @@ crude_gfx_cmd_upload_buffer_data
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_buffer_handle                             src_buffer,
-  _In_ crude_gfx_buffer_handle                             dst_buffer
+  _In_ crude_gfx_buffer_handle                             dst_buffer,
+  _In_ uint64                                              dst_buffer_offset
 )
 {
-  crude_gfx_buffer* src = crude_gfx_access_buffer( cmd->gpu, src_buffer );
-  crude_gfx_buffer* dst = crude_gfx_access_buffer( cmd->gpu, dst_buffer );
+  crude_gfx_buffer                                        *src;
+  crude_gfx_buffer                                        *dst;
+  VkBufferCopy                                             vk_region;
   
   CRUDE_ASSERT( src->size == dst->size );
+
+  src = crude_gfx_access_buffer( cmd->gpu, src_buffer );
+  dst = crude_gfx_access_buffer( cmd->gpu, dst_buffer );
   
-  VkBufferCopy region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );
-  region.srcOffset = 0;
-  region.dstOffset = 0;
-  region.size = src->size;
-  vkCmdCopyBuffer( cmd->vk_cmd_buffer, src->vk_buffer, dst->vk_buffer, 1, &region );
+  vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );
+  vk_region.srcOffset = 0;
+  vk_region.dstOffset = dst_buffer_offset;
+  vk_region.size = src->size;
+  vkCmdCopyBuffer( cmd->vk_cmd_buffer, src->vk_buffer, dst->vk_buffer, 1, &vk_region );
 }
 
 void
