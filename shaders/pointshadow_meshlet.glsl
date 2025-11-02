@@ -300,7 +300,7 @@ void main()
   const crude_light light = lights[ light_index ];
 
   uint mesh_instance_index = gl_GlobalInvocationID.x / scene.active_lights_count;
-  if ( mesh_instance_index >= scene.mesh_instances_count )
+  if ( mesh_instance_index >= scene.meshes_instances_count )
   {
     return;
   }

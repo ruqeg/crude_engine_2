@@ -34,6 +34,43 @@ sorting_light_
   _In_ const void                                         *b
 );
 
+void
+crude_scene_renderer_register_nodes_instances_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        node
+)
+{
+  ecs_iter_t it = ecs_children( node.world, node.handle );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
+      {
+        crude_gltf const                                  *child_gltf;
+        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+
+        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
+
+        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
+        model_renderer_resources_instant.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+      }
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
+      {
+        crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
+        light_gpu.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
+      }
+
+      crude_scene_renderer_register_nodes_instances_( scene_renderer, child );
+    }
+  }
+}
 /**
  *
  * Renderer Scene Function
@@ -66,6 +103,58 @@ crude_gfx_scene_renderer_initialize
 
   /* Common lights arrays initialization */
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
+  
+
+  /* Common gpu data */
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.size = sizeof( crude_gfx_scene_constant_gpu );
+  buffer_creation.name = "scene_cb";
+  scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
+    buffer_creation.name = "mesh_count_early_sb";
+    scene_renderer->mesh_task_indirect_count_early_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
+    buffer_creation.name = "mesh_count_late_sb";
+    scene_renderer->mesh_task_indirect_count_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  }
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+    buffer_creation.size = sizeof( crude_gfx_debug_draw_command_gpu );
+    buffer_creation.name = "debug_line_commands";
+    scene_renderer->debug_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+    
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
+    buffer_creation.device_only = true;
+    buffer_creation.name = "debug_line_vertices";
+    scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_MAX_DEBUG_CUBES;
+    buffer_creation.device_only = true;
+    buffer_creation.name = "debug_cubes_sb";
+    scene_renderer->debug_cubes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
@@ -91,21 +180,51 @@ crude_gfx_scene_renderer_initialize
 }
 
 void
-crude_gfx_scene_renderer_proccess_node
+crude_gfx_scene_renderer_rebuild_main_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        main_node
 )
 {
-  /* Common gpu data */
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_scene_constant_gpu );
-  buffer_creation.name = "scene_cb";
-  scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  crude_gfx_buffer_creation                                buffer_creation;
 
-  /* Common lights gpu data */
+  CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
+  crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node );
+  
+  scene_renderer->meshes_instances_count = 0u;
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
+  {
+    scene_renderer->meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
+  }
+
+  /* Recreate buffers related to meshes */
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->meshes_instances_count;
+  buffer_creation.name = "meshes_instances_draws_sb";
+  scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = scene_renderer->meshes_instances_count * sizeof( crude_gfx_mesh_draw_command_gpu );
+    buffer_creation.name = "draw_commands_early_sb";
+    buffer_creation.device_only = true;
+    scene_renderer->mesh_task_indirect_commands_early_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+
+    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
+    buffer_creation.size = scene_renderer->meshes_instances_count * sizeof( crude_gfx_mesh_draw_command_gpu );
+    buffer_creation.device_only = true;
+    buffer_creation.name = "draw_commands_late_sb";
+    scene_renderer->mesh_task_indirect_commands_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  }
+
+  /* Recreate data related to light */
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -140,77 +259,6 @@ crude_gfx_scene_renderer_proccess_node
     buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
     buffer_creation.name = "lights_bins_sb";
     scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
-
-  /* Common mesh & meshlets gpu data */
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
-  buffer_creation.name = "meshes_instances_draws_sb";
-  scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-    buffer_creation.name = "mesh_count_early_sb";
-    scene_renderer->mesh_task_indirect_count_early_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-    buffer_creation.name = "mesh_count_late_sb";
-    scene_renderer->mesh_task_indirect_count_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
-  
-  /* Create device only buffers */
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ) * sizeof( crude_gfx_mesh_draw_command_gpu );
-    buffer_creation.name = "draw_commands_early_sb";
-    buffer_creation.device_only = true;
-    scene_renderer->mesh_task_indirect_commands_early_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ) * sizeof( crude_gfx_mesh_draw_command_gpu );
-    buffer_creation.device_only = true;
-    buffer_creation.name = "draw_commands_late_sb";
-    scene_renderer->mesh_task_indirect_commands_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_debug_draw_command_gpu );
-    buffer_creation.name = "debug_line_commands";
-    scene_renderer->debug_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-    
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
-    buffer_creation.device_only = true;
-    buffer_creation.name = "debug_line_vertices";
-    scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_MAX_DEBUG_CUBES;
-    buffer_creation.device_only = true;
-    buffer_creation.name = "debug_cubes_sb";
-    scene_renderer->debug_cubes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
 }
 
@@ -369,16 +417,6 @@ crude_gfx_scene_renderer_on_resize
   }
 }
 
-crude_gfx_mesh_cpu*
-crude_gfx_scene_renderer_get_mesh_cpu
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_mesh_instance_cpu const                  *mesh_instance_cpu
-)
-{
-  return &scene_renderer->meshes[ mesh_instance_cpu->mesh_cpu_index ];
-}
-
 /**
  *
  * Renderer Scene Utils
@@ -429,7 +467,7 @@ update_dynamic_buffers_
       scene_constant->resolution.x = scene_renderer->gpu->vk_swapchain_width;
       scene_constant->resolution.y = scene_renderer->gpu->vk_swapchain_height;
       crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene_constant->camera );
-      scene_constant->mesh_instances_count = CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
+      scene_constant->meshes_instances_count = scene_renderer->meshes_instances_count;
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
@@ -454,32 +492,37 @@ update_dynamic_buffers_
     buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
     buffer_map.buffer = scene_renderer->meshes_instances_draws_sb;
     buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances );
+    buffer_map.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->meshes_instances_count;
     meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
   
     if ( meshes_instances_draws )
     {
       scene_renderer->total_meshes_instances_count = 0u;
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->meshes_instances ); ++i )
+      for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
       {
-        crude_gfx_mesh_cpu *mesh_cpu = crude_gfx_scene_renderer_get_mesh_cpu( scene_renderer, &scene_renderer->meshes_instances[ i ] );
-        
-        bool mesh_textures_ready = ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->albedo_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->albedo_texture_handle ) )
-          && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->normal_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->normal_texture_handle ) )
-          && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->occlusion_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->occlusion_texture_handle ) )
-          && ( CRUDE_RESOURCE_HANDLE_IS_INVALID( mesh_cpu->metallic_roughness_texture_handle ) || crude_gfx_texture_ready( gpu, mesh_cpu->metallic_roughness_texture_handle ) );
+        crude_gfx_model_renderer_resources_instance       *model_renderer_resources_instance;
 
-        if ( mesh_textures_ready && !crude_gfx_mesh_is_transparent( mesh_cpu ) )
+        model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
+
+        for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
         {
-          crude_transform const                             *transform;
-          XMMATRIX                                           model_to_world;
+          crude_transform const                             *mesh_transform, *model_transform;
+          XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+          crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
+          
+          mesh_instance_cpu = &model_renderer_resources_instance->model_renderer_resources.meshes_instances[ model_mesh_instance_index ];
+          
+          mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
+          mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
 
-          transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( scene_renderer->meshes_instances[ i ].node, crude_transform );
-          model_to_world = crude_transform_node_to_world( scene_renderer->meshes_instances[ i ].node, transform );
+          model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_transform );
+          model_to_world = crude_transform_node_to_world( model_renderer_resources_instance->node, model_transform );
 
-          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].model_to_world, model_to_world );
-          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].world_to_model, XMMatrixInverse( NULL, model_to_world ) );
-          meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_draw_index = crude_gfx_scene_renderer_get_mesh_cpu( scene_renderer, &scene_renderer->meshes_instances[ i ] )->gpu_mesh_index;
+          mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
+
+          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_to_world, mesh_to_world );
+          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
+          meshes_instances_draws[ scene_renderer->total_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
 
           ++scene_renderer->total_meshes_instances_count;
         }

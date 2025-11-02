@@ -331,7 +331,7 @@ void main()
     vec2_array_type                                        texcoord_buffer;
     float_array_type                                       normal_buffer;
     crude_mesh_draw                                        mesh_draw;
-    mat4                                                   model_to_world, world_to_model;
+    mat4                                                   mesh_to_world, world_to_mesh;
     vec3                                                   normal, p0_model, p1_model, p2_model, n0_model, n1_model, n2_model, model_position, world_position, diffuse, albedo;
     vec2                                                   texcoord, texcoord0, texcoord1, texcoord2;
     float                                                  a, b, c, ndotl, attenuation;
@@ -341,8 +341,8 @@ void main()
     mesh_index = mesh_instance_draws[ gl_GeometryIndexEXT ].mesh_draw_index;
     mesh_draw = mesh_draws[ mesh_index ];
 
-    world_to_model = mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_model;
-    model_to_world = mesh_instance_draws[ gl_GeometryIndexEXT ].model_to_world;
+    world_to_mesh = mesh_instance_draws[ gl_GeometryIndexEXT ].world_to_mesh;
+    mesh_to_world = mesh_instance_draws[ gl_GeometryIndexEXT ].mesh_to_world;
 
     index_buffer = int_array_type( mesh_draw.index_buffer );
     i0 = index_buffer[ gl_PrimitiveID * 3 ].v;
@@ -376,7 +376,7 @@ void main()
     a = 1 - b - c;
   
     model_position = a * p0_model + b * p1_model + c * p2_model;
-    world_position = vec3( vec4( model_position, 1 ) * model_to_world );
+    world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
     texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
 
     albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;

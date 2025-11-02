@@ -14,8 +14,15 @@
 #include <graphics/passes/postprocessing_pass.h>
 #include <graphics/passes/ray_tracing_solid_pass.h>
 #include <graphics/passes/indirect_light_pass.h>
+#include <graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_scene crude_scene;
+
+typedef struct crude_gfx_model_renderer_resources_instance
+{
+  crude_gfx_model_renderer_resources                       model_renderer_resources;
+  crude_entity                                             node;
+} crude_gfx_model_renderer_resources_instance;
 
 typedef struct crude_gfx_scene_renderer_creation
 {
@@ -55,17 +62,20 @@ typedef struct crude_gfx_scene_renderer
   crude_heap_allocator                                    *resources_allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;
+	crude_gfx_model_renderer_resources_manager					    *model_renderer_resources_manager;
   
   /***********************
    * Base
    **********************/
   crude_gfx_scene_renderer_options                         options;
   
+  uint32                                                   meshes_instances_count;
   crude_gfx_buffer_handle                                  scene_cb;
 
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
+  crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -142,7 +152,7 @@ crude_gfx_scene_renderer_initialize
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_proccess_node
+crude_gfx_scene_renderer_rebuild_main_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        main_node
@@ -172,13 +182,6 @@ CRUDE_API void
 crude_gfx_scene_renderer_on_resize
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
-);
-
-CRUDE_API crude_gfx_mesh_cpu*
-crude_gfx_scene_renderer_get_mesh_cpu
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_mesh_instance_cpu const                  *mesh_instance_cpu
 );
 
 /**

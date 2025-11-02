@@ -63,8 +63,8 @@ struct crude_mesh_draw
 
 struct crude_mesh_instance_draw
 {
-  mat4                                                     model_to_world;
-  mat4                                                     world_to_model;
+  mat4                                                     mesh_to_world;
+  mat4                                                     world_to_mesh;
   uint                                                     mesh_draw_index;
   vec3                                                     padding1;
 };
@@ -114,7 +114,7 @@ struct crude_scene
   crude_camera                                             camera_previous;
   vec2                                                     resolution;
   uint                                                     flags;
-  uint                                                     mesh_instances_count;
+  uint                                                     meshes_instances_count;
 
   uint                                                     active_lights_count;
   uint                                                     tiled_shadowmap_texture_index;
