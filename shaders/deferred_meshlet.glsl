@@ -99,15 +99,15 @@ void main()
     return;
   }
 
-  mat4 model_to_world = mesh_instance_draws[ draw_id ].model_to_world;
-  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
-  float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+  mat4 mesh_to_world = mesh_instance_draws[ draw_id ].mesh_to_world;
+  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
+  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
 
   vec3 cone_axis = vec3(
     int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
     int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
-    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( model_to_world );
+    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( mesh_to_world );
   float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
   
   bool accept = true;
@@ -180,7 +180,7 @@ void main()
   uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
   uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
 
-  mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
 
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
@@ -189,13 +189,13 @@ void main()
   {
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
-    vec4 world_position = model_position * model_to_world;
+    vec4 world_position = model_position * mesh_to_world;
     vec4 view_position = world_position * scene.camera.world_to_view;
     
     vec4 tangent = vec4( int( vertices[ vertex_index ].tx ), int( vertices[ vertex_index ].ty ), int( vertices[ vertex_index ].tz ),  int( vertices[ vertex_index ].tw ) ) * i8_inverse - 1.0;
     vec3 normal = vec3( int( vertices[ vertex_index ].nx ), int( vertices[ vertex_index ].ny ), int( vertices[ vertex_index ].nz ) ) * i8_inverse - 1.0;
-    normal = normal * mat3( model_to_world );
-    tangent.xyz = tangent.xyz * mat3( model_to_world );
+    normal = normal * mat3( mesh_to_world );
+    tangent.xyz = tangent.xyz * mat3( mesh_to_world );
     vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
 
     vec3 view_normal = normal * mat3( scene.camera.world_to_view );

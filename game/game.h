@@ -26,6 +26,7 @@ typedef struct game_t
   crude_gfx_render_graph_builder                           render_graph_builder;
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
+  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   void                                                    *imgui_context;
   /* Dev */
   crude_devgui                                             devgui;

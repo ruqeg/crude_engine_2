@@ -4,6 +4,7 @@
 
 #include <core/file.h>
 #include <core/hash_map.h>
+#include <core/memory.h>
 
 #include <graphics/model_renderer_resources_manager.h>
 
@@ -77,7 +78,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   _In_ uint32                                            **gltf_mesh_index_to_mesh_primitive_index,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory,
-  _In_ crude_entity                                        node,
   _Out_ crude_gfx_mesh_cpu                               **meshes,
   _In_ uint32                                              buffers_offset,
   _In_ uint32                                              images_offset,
@@ -127,6 +127,25 @@ crude_gfx_model_renderer_resources_manager_intialize
 	_In_ crude_gfx_model_renderer_resources_manager_creation const *creation
 )
 {
+  manager->world = creation->world;
+  manager->async_loader = creation->async_loader;
+  manager->allocator = creation->allocator;
+  manager->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;
+  manager->temporary_allocator = creation->temporary_allocator;
+  manager->gpu = creation->async_loader->gpu;
+  
+  manager->meshlets_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_vertices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_vertices_indices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_triangles_indices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshes_draws_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshes_bounds_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->buffers, 0u, crude_heap_allocator_pack( manager->allocator ) );
+  
+  CRUDE_HASHMAP_INITIALIZE( manager->model_hashed_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
 }
 
 crude_gfx_model_renderer_resources
@@ -137,12 +156,14 @@ crude_gfx_model_renderer_resources_manager_add_gltf_model
 )
 {
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
+  int64                                                    model_renderer_resouces_index;
   uint64                                                   filename_hashed;
 
   filename_hashed = crude_hash_string( filepath, 0 );
-  if ( CRUDE_HASHMAP_GET( manager->model_hashed_name_to_model_renderer_resource, filename_hashed ) != NULL )
+  model_renderer_resouces_index = CRUDE_HASHMAP_GET_INDEX( manager->model_hashed_name_to_model_renderer_resource, filename_hashed );
+  if ( model_renderer_resouces_index != -1 )
   {
-    return;
+    return manager->model_hashed_name_to_model_renderer_resource[ model_renderer_resouces_index ].value;
   }
 
   model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, filepath );
@@ -150,8 +171,22 @@ crude_gfx_model_renderer_resources_manager_add_gltf_model
   return model_renderer_resouces;
 }
 
+void
+crude_gfx_model_renderer_resources_manager_wait_till_uploaded
+(
+	_In_ crude_gfx_model_renderer_resources_manager					*manager
+)
+{
+  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GRAPHICS_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
+  while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
+  {
+    crude_gfx_add_texture_update_commands( manager->gpu, cmd );
+  }
+  crude_gfx_submit_immediate( cmd );
+}
+
 /**
- * Register Nodes & Gltf & Lights
+ * Register Nodes
  */
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_load_gltf_
@@ -166,9 +201,11 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
   crude_string_buffer                                      temporary_string_buffer;
   char                                                     gltf_directory[ 512 ];
-  uint64                                                   temporary_allocator_mark, images_offset, samplers_offset, buffers_offset, meshes_offset;
+  uint64                                                   temporary_allocator_marker, images_offset, samplers_offset, buffers_offset, meshes_offset;
 
-  temporary_allocator_mark = crude_stack_allocator_get_marker( manager->temporary_allocator );
+  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
+
+  model_renderer_resouces = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gltf_mesh_index_to_mesh_primitive_index, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( manager->temporary_allocator ) );
@@ -191,6 +228,8 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   model_renderer_resouces = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
   model_renderer_resouces.main_node = crude_entity_create_empty( CRUDE_CAST( ecs_world_t*, manager->world ), gltf_path );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( model_renderer_resouces.meshes_instances, 0u, crude_heap_allocator_pack( manager->allocator ) );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshes, 0u, crude_heap_allocator_pack( temporary_allocator_marker ) );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" images", gltf_path );
   crude_gfx_model_renderer_resources_manager_gltf_load_images_( manager, gltf, &temporary_string_buffer, gltf_directory );
@@ -217,7 +256,8 @@ cleanup:
   {
     cgltf_free( gltf );
   }
-  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_mark );
+  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
+  return model_renderer_resouces;
 }
 
 
@@ -627,7 +667,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   crude_gfx_buffer_handle                                  buffer_cpu;
   uint64                                                   temporary_allocator_marker, meshes_count;
 
-  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator )
+  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
 
   CRUDE_ARRAY_SET_LENGTH( *gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count );
   

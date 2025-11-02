@@ -94,12 +94,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
   XMFLOAT3A                                                padding;
 } crude_gfx_mesh_instance_draw_gpu;
 
-CRUDE_API bool
-crude_gfx_mesh_is_transparent
-(
-  _In_ crude_gfx_mesh_cpu                                 *mesh
-);
-
 CRUDE_API void
 crude_gfx_mesh_cpu_to_mesh_draw_gpu
 (

@@ -106,6 +106,15 @@ crude_gfx_debug_pass_post_render
 }
 
 void
+crude_gfx_debug_pass_on_model_renderer_resources_updated
+(
+  _In_ void                                               *ctx
+)
+{
+  crude_gfx_debug_pass_on_techniques_reloaded( ctx );
+}
+
+void
 crude_gfx_debug_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx

@@ -28,49 +28,19 @@ update_dynamic_buffers_
  * Scene Renderer Utils
  */
 static int
-sorting_light_
+crude_scene_renderer_sorting_light_fun_
 (
   _In_ const void                                         *a,
   _In_ const void                                         *b
 );
 
-void
+static void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        node
-)
-{
-  ecs_iter_t it = ecs_children( node.world, node.handle );
+);
 
-  while ( ecs_children_next( &it ) )
-  {
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
-      {
-        crude_gltf const                                  *child_gltf;
-        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
-
-        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
-
-        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
-        model_renderer_resources_instant.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
-      }
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
-      {
-        crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
-        light_gpu.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
-      }
-
-      crude_scene_renderer_register_nodes_instances_( scene_renderer, child );
-    }
-  }
-}
 /**
  *
  * Renderer Scene Function
@@ -86,26 +56,23 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_buffer_creation                                buffer_creation;
   
   /* Context */
-  scene_renderer->scene = creation->scene;
   scene_renderer->allocator = creation->allocator;
-  scene_renderer->resources_allocator = creation->resources_allocator;
   scene_renderer->temporary_allocator = creation->temporary_allocator;
-  scene_renderer->gpu = creation->gpu;
+  scene_renderer->gpu = creation->async_loader->gpu;
   scene_renderer->async_loader = creation->async_loader;
   scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
-  scene_renderer->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;
+  scene_renderer->model_renderer_resources_manager = creation->model_renderer_resources_manager;
 
+  scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
   scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
   scene_renderer->options.background_intensity = 1.f;
   scene_renderer->options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
   scene_renderer->options.ambient_intensity = 1.f;
 
-  /* Common lights arrays initialization */
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->resources_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
-
-  /* Common gpu data */
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -128,10 +95,7 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
     buffer_creation.name = "mesh_count_late_sb";
     scene_renderer->mesh_task_indirect_count_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -157,26 +121,6 @@ crude_gfx_scene_renderer_initialize
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
-
-  scene_renderer->ray_trace_shadows = true;
-
-  /* Initialize render graph passes */
-  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
-  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
-  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
-  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
-  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
-  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
-  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
-  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
-  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
-  crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
-  crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
-#endif
-  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -186,8 +130,6 @@ crude_gfx_scene_renderer_rebuild_main_node
   _In_ crude_entity                                        main_node
 )
 {
-  crude_gfx_buffer_creation                                buffer_creation;
-
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node );
   
@@ -196,6 +138,15 @@ crude_gfx_scene_renderer_rebuild_main_node
   {
     scene_renderer->meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
   }
+}
+
+void
+crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_buffer_creation                                buffer_creation;
 
   /* Recreate buffers related to meshes */
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
@@ -260,6 +211,31 @@ crude_gfx_scene_renderer_rebuild_main_node
     buffer_creation.name = "lights_bins_sb";
     scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
+}
+
+
+void
+crude_gfx_scene_renderer_initialize_pases
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
+  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
+  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
+  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
+  crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
+  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
+  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
+  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
+  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
+  crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
+#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
+#endif
+  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -655,7 +631,7 @@ update_dynamic_buffers_
       sorted_light->projected_z_max = ( ( XMVectorGetZ( view_pos_max ) - znear ) / ( zfar - znear ) );
     }
     
-    qsort( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), sizeof( crude_gfx_sorted_light ), sorting_light_ );
+    qsort( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), sizeof( crude_gfx_sorted_light ), crude_scene_renderer_sorting_light_fun_ );
 
     /* Upload light to gpu */
     {
@@ -946,7 +922,7 @@ update_dynamic_buffers_
  * Scene Renderer Utils
  */
 int
-sorting_light_
+crude_scene_renderer_sorting_light_fun_
 (
   _In_ const void                                         *a,
   _In_ const void                                         *b
@@ -964,4 +940,42 @@ sorting_light_
     return 1;
   }
   return 0;
+}
+
+void
+crude_scene_renderer_register_nodes_instances_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_entity                                        node
+)
+{
+  ecs_iter_t it = ecs_children( node.world, node.handle );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
+      {
+        crude_gltf const                                  *child_gltf;
+        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+
+        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
+
+        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
+        model_renderer_resources_instant.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+      }
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
+      {
+        crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
+        light_gpu.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
+      }
+
+      crude_scene_renderer_register_nodes_instances_( scene_renderer, child );
+    }
+  }
 }

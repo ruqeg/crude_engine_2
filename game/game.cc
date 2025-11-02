@@ -206,6 +206,7 @@ game_reload_scene
   _In_ char const                                         *filename
 )
 {
+  CRUDE_ASSERT( false );
   vkDeviceWaitIdle( game->gpu.vk_device );
   crude_gfx_scene_renderer_deinitialize( &game->scene_renderer );
   crude_scene_deinitialize( &game->scene, true );
@@ -231,11 +232,8 @@ game_reload_scene
    /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.gpu = &game->gpu;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
-    creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
-    creation.resources_allocator = &game->resources_allocator;
     creation.temporary_allocator = &game->temporary_allocator;
     creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
     creation.imgui_context = game->imgui_context;
@@ -524,32 +522,37 @@ game_initialize_graphics_
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
+  crude_gfx_model_renderer_resources_manager_creation model_renderer_resources_manager_creation;
+
+  model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
+  model_renderer_resources_manager_creation.allocator = &game->allocator;
+  model_renderer_resources_manager_creation.async_loader = &game->async_loader;
+  model_renderer_resources_manager_creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
+  model_renderer_resources_manager_creation.temporary_allocator = &game->temporary_allocator;
+  model_renderer_resources_manager_creation.world = game->engine->world ;
+  crude_gfx_model_renderer_resources_manager_intialize( &game->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
+
   /* Create Scene Renderer */
   {
     crude_gfx_scene_renderer_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-    creation.gpu = &game->gpu;
     creation.async_loader = &game->async_loader;
     creation.allocator = &game->allocator;
-    creation.resources_allocator = &game->resources_allocator;
     creation.temporary_allocator = &game->temporary_allocator;
-    creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
     creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
     creation.imgui_context = game->imgui_context;
     creation.scene = &game->scene;
+	  creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
     crude_gfx_scene_renderer_initialize( &game->scene_renderer, &creation );
 
     game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
     game->scene_renderer.options.ambient_intensity = 0.2f;
 
+    crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
+    crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
+
+    crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers(  &game->scene_renderer );
+    crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
     crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
-    // Yes, i block it, because i don't want to fuck with rtx AND MESHLETES (long story)
-    
-    crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( &game->gpu, CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
-    while ( CRUDE_ARRAY_LENGTH( game->async_loader.upload_requests ) || CRUDE_ARRAY_LENGTH( game->async_loader.file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( game->async_loader.texture_ready ) )
-    {
-      crude_gfx_add_texture_update_commands( &game->gpu, cmd );
-    }
-    crude_gfx_submit_immediate( cmd );
   }
 
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );

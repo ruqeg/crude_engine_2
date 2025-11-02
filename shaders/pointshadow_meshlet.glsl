@@ -102,14 +102,14 @@ void main()
 
   uint face_index = ( packed_light_index_face_index & 0xf );
 
-  mat4 model_to_world = mesh_instance_draws[ mesh_instance_index ].model_to_world;
-  vec4 world_center = vec4( meshlets[ global_meshlet_index ].center, 1 ) * model_to_world;
-  float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_index ].mesh_to_world;
+  vec4 world_center = vec4( meshlets[ global_meshlet_index ].center, 1 ) * mesh_to_world;
+  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
   float radius = meshlets[ global_meshlet_index ].radius * scale * 1.1;
   vec3 cone_axis = vec3(
     int( meshlets[ global_meshlet_index ].cone_axis[ 0 ] ) / 127.f,
     int( meshlets[ global_meshlet_index ].cone_axis[ 1 ] ) / 127.f,
-    int( meshlets[ global_meshlet_index ].cone_axis[ 2 ] ) / 127.f ) * mat3( model_to_world );
+    int( meshlets[ global_meshlet_index ].cone_axis[ 2 ] ) / 127.f ) * mat3( mesh_to_world );
   float cone_cutoff = int( meshlets[ global_meshlet_index ].cone_cutoff ) / 127.f;
 
   const vec4 camera_sphere = pointlight_spheres[ light_index ];
@@ -214,7 +214,7 @@ void main()
   uint face_index = ( shared_data.light_index_face_index & 0xf );
   int layer_index = int( 4 * light_index + face_index );
 
-  mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
 
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
@@ -223,7 +223,7 @@ void main()
     uint vertex_index = vertices_indices[ i + vertices_offset ];
     vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
     
-    vec4 world_position = model_position * model_to_world;
+    vec4 world_position = model_position * mesh_to_world;
     gl_MeshVerticesEXT[ i ].gl_Position = world_position * pointlight_world_to_clip[ layer_index ];
     
     float clip_distances[ 3 ];
@@ -310,11 +310,11 @@ void main()
   crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
 
   vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
-  mat4 model_to_world = mesh_instance_draws[ mesh_instance_index ].model_to_world;
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_index ].mesh_to_world;
 
-  vec4 mesh_world_bounding_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
+  vec4 mesh_world_bounding_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
 
-  float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
   float mesh_radius = bounding_sphere.w * scale * 1.1;
 
   const bool mesh_intersects_sphere = crude_sphere_intersect( mesh_world_bounding_center.xyz, mesh_radius, light.world_position, light.radius );
@@ -328,7 +328,7 @@ void main()
   {
     uint meshlet_index = mesh_draw.meshletes_offset + i;
     float meshlet_radius = meshlets[ meshlet_index ].radius * scale * 1.1;
-    vec4 meshlet_world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * model_to_world;
+    vec4 meshlet_world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
 
     if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
     {

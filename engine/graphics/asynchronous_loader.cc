@@ -143,7 +143,7 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
   _In_ crude_gfx_buffer_handle                             cpu_buffer,
   _In_ crude_gfx_buffer_handle                             gpu_buffer,
-  _In_ crude_gfx_buffer_handle                             old_gpu_buffer
+  _In_ crude_gfx_buffer_handle                             gpu_old_buffer
 )
 {
   crude_gfx_buffer                                        *buffer;
@@ -153,7 +153,7 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
   request.texture    = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   request.cpu_buffer = cpu_buffer;
   request.gpu_buffer = gpu_buffer;
-  request.old_gpu_buffer = old_gpu_buffer;
+  request.gpu_old_buffer = gpu_old_buffer;
   CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_buffer );
@@ -298,6 +298,15 @@ crude_gfx_asynchronous_loader_update
   }
 
   asynloader->staging_buffer_offset = 0;
+}
+
+bool
+crude_gfx_asynchronous_loader_has_requests
+(
+  _In_ crude_gfx_asynchronous_loader const                *asynloader
+)
+{
+  return CRUDE_ARRAY_LENGTH( asynloader->upload_requests ) || CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready );
 }
 
 /************************************************

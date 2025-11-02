@@ -26,14 +26,12 @@ typedef struct crude_gfx_model_renderer_resources_instance
 
 typedef struct crude_gfx_scene_renderer_creation
 {
+	crude_gfx_model_renderer_resources_manager					    *model_renderer_resources_manager;
   crude_scene                                             *scene;
   void                                                    *imgui_context;
-  crude_gfx_device                                        *gpu;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;
   crude_heap_allocator                                    *allocator;
-  crude_heap_allocator                                    *cgltf_temporary_allocator;
-  crude_heap_allocator                                    *resources_allocator;
   crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_scene_renderer_creation;
 
@@ -57,10 +55,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_device                                        *gpu;
   crude_gfx_render_graph                                  *render_graph;
   crude_gfx_asynchronous_loader                           *async_loader;
-  crude_scene                                             *scene;
   crude_heap_allocator                                    *allocator;
-  crude_heap_allocator                                    *resources_allocator;
-  crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;
 	crude_gfx_model_renderer_resources_manager					    *model_renderer_resources_manager;
   
@@ -69,13 +64,12 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   
-  uint32                                                   meshes_instances_count;
-  crude_gfx_buffer_handle                                  scene_cb;
-
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
+  uint32                                                   meshes_instances_count;
+  crude_gfx_buffer_handle                                  scene_cb;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
@@ -99,11 +93,6 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  
-  /***********************
-   * Common Settings Data
-   **********************/
-  bool                                                     ray_trace_shadows;
 
   /***********************
    * Ray Tracing CPU & GPU Data
@@ -156,6 +145,18 @@ crude_gfx_scene_renderer_rebuild_main_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        main_node
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_initialize_pases
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
 CRUDE_API void

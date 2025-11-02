@@ -14,6 +14,11 @@ typedef struct crude_gfx_model_renderer_resources
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
+  void                                                    *world;
+  crude_gfx_asynchronous_loader                           *async_loader;
+  crude_heap_allocator                                    *allocator;
+  crude_heap_allocator                                    *cgltf_temporary_allocator;
+  crude_stack_allocator                                   *temporary_allocator;
 } crude_gfx_model_renderer_resources_manager_creation;
 
 typedef struct crude_gfx_model_renderer_resources_manager
@@ -60,4 +65,10 @@ crude_gfx_model_renderer_resources_manager_add_gltf_model
 (
 	_In_ crude_gfx_model_renderer_resources_manager					*manager,
 	_In_ char const																					*filepath
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_manager_wait_till_uploaded
+(
+	_In_ crude_gfx_model_renderer_resources_manager					*manager
 );

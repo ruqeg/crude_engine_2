@@ -116,13 +116,19 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
   _In_ crude_gfx_buffer_handle                             cpu_buffer,
   _In_ crude_gfx_buffer_handle                             gpu_buffer,
-  _In_ crude_gfx_buffer_handle                             old_gpu_buffer
+  _In_ crude_gfx_buffer_handle                             gpu_old_buffer
 );
 
 CRUDE_API void
 crude_gfx_asynchronous_loader_update
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
+);
+
+CRUDE_API bool
+crude_gfx_asynchronous_loader_has_requests
+(
+  _In_ crude_gfx_asynchronous_loader const                *asynloader
 );
 
 /************************************************

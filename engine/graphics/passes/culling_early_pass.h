@@ -34,6 +34,12 @@ crude_gfx_culling_early_pass_render
 );
 
 CRUDE_API void
+crude_gfx_culling_early_pass_on_model_renderer_resources_updated
+(
+  _In_ void                                               *ctx
+);
+
+CRUDE_API void
 crude_gfx_culling_early_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx

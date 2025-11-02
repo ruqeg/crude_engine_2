@@ -47,6 +47,12 @@ crude_gfx_debug_pass_post_render
 );
 
 CRUDE_API void
+crude_gfx_debug_pass_on_model_renderer_resources_updated
+(
+  _In_ void                                               *ctx
+);
+
+CRUDE_API void
 crude_gfx_debug_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx

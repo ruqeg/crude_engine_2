@@ -66,6 +66,15 @@ crude_gfx_culling_early_pass_render
 }
 
 void
+crude_gfx_culling_early_pass_on_model_renderer_resources_updated
+(
+  _In_ void                                               *ctx
+)
+{
+  crude_gfx_culling_early_pass_on_techniques_reloaded( ctx );
+}
+
+void
 crude_gfx_culling_early_pass_on_techniques_reloaded
 (
   _In_ void                                               *ctx
@@ -97,9 +106,9 @@ crude_gfx_culling_early_pass_on_techniques_reloaded
     ds_creation.name = "meshlet_descriptor_set";
   
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_draws_sb, 1u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshes_draws_sb, 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_instances_draws_sb, 2u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_bounds_sb, 3u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshes_bounds_sb, 3u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 4u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_late_sb[ i ], 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_late_sb[ i ], 6u );

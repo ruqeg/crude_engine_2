@@ -74,7 +74,7 @@ crude_hashmap_set_index
 #define CRUDE_HASHMAP_TEMP( h )  ( CRUDE_HASHMAP_HEADER( h )->temp )
 
 #define CRUDE_HASHMAP_INITIALIZE( h, l ) ( ( h ) = NULL, ( h ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( h ), crude_hashmap_growf( NULL, sizeof*( h ), CRUDE_HASHMAP_INITIAL_CAPACITY, ( l ) ) ) )
-#define CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( h, l, c ) ( ( h ) = NULL, ( h ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( h ), crude_hashmap_growf( NULL, sizeof*( h ), c, ( l ) ) ) )
+#define CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( h, c, l ) ( ( h ) = NULL, ( h ) = CRUDE_REINTERPRET_CAST( CRUDE_TYPE( h ), crude_hashmap_growf( NULL, sizeof*( h ), c, ( l ) ) ) )
 #define CRUDE_HASHMAP_DEINITIALIZE( h ) ( CRUDE_DEALLOCATE( CRUDE_HASHMAP_ALLOCATOR( h ), CRUDE_HASHMAP_HEADER( h ) ) )
 #define CRUDE_HASHMAP_GET_INDEX( h, k ) ( crude_hashmap_get_index( CRUDE_REINTERPRET_CAST( uint8*, h ), k, sizeof*( h ) ) )
 #define CRUDE_HASHMAP_GET( h, k ) ( (void)CRUDE_HASHMAP_GET_INDEX( h, k ), ( CRUDE_HASHMAP_TEMP( h ) == -1 ) ? NULL : &( h )[ CRUDE_HASHMAP_TEMP( h ) ] )

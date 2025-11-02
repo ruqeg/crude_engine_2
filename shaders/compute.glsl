@@ -90,10 +90,10 @@ void main()
       mesh_instance_draw_index = late_mesh_draw_commands[ mesh_instance_draw_index ].draw_id;
     }
     uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
-    mat4 model_to_world = mesh_instance_draws[ mesh_instance_draw_index ].model_to_world;
+    mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
     vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
-    vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * model_to_world;
-    float scale = max( model_to_world[ 0 ][ 0 ], max( model_to_world[ 1 ][ 1 ], model_to_world[ 2 ][ 2 ] ) );
+    vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
+    float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
     float radius = bounding_sphere.w * scale * 1.1;
 
     vec4 view_center = world_center * scene.camera.world_to_view;
