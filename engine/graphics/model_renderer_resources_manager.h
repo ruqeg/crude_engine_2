@@ -43,6 +43,9 @@ typedef struct crude_gfx_model_renderer_resources_manager
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
+  uint64                                                   total_meshes_count;
+  uint64                                                   total_meshlets_count;
+
   struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
 
   crude_gfx_buffer_handle                                  meshlets_sb;

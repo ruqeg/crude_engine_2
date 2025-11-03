@@ -49,7 +49,6 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Context 
    **********************/
-  void                                                    *world;
   void                                                    *task_scheduler;
   void                                                    *imgui_context;
   crude_gfx_device                                        *gpu;

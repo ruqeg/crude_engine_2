@@ -2364,7 +2364,7 @@ crude_gfx_create_buffer
   VkBufferCreateInfo buffer_info = CRUDE_COMPOUNT_EMPTY( VkBufferCreateInfo );
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = creation->size > 0 ? creation->size : 1;
-  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | creation->type_flags;
+  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | creation->type_flags;
   
   VmaAllocationCreateInfo allocation_create_info = {
     .flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT
