@@ -86,6 +86,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   _In_ char const                                         *gltf_directory,
   _In_ crude_gfx_mesh_cpu                                 *meshes,
   _In_ uint64                                              meshes_count,
+  _In_ uint64                                              total_meshes_offset,
   _In_ uint32                                              buffers_offset,
   _In_ uint32                                              images_offset,
   _In_ uint32                                              samplers_offset
@@ -96,7 +97,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_data                                         *gltf,
-  _Out_ crude_gfx_mesh_cpu                                *meshes
+  _In_ crude_gfx_mesh_cpu                                 *meshes,
+  _In_ uint64                                              total_meshes_offset
 );
 
 void
@@ -115,7 +117,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ uint64                                              total_meshes_offset
 );
 
 static void
@@ -217,7 +220,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
   crude_string_buffer                                      temporary_string_buffer;
   char                                                     gltf_directory[ 512 ];
-  uint64                                                   temporary_allocator_marker, meshes_count, images_offset, samplers_offset, buffers_offset;
+  uint64                                                   temporary_allocator_marker, total_meshes_offset, meshes_count, images_offset, samplers_offset, buffers_offset;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
 
@@ -240,6 +243,8 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_file_directory_from_path( gltf_directory );
   
   meshes_count = crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_( gltf );
+  total_meshes_offset = manager->total_meshes_count;
+  manager->total_meshes_count += meshes_count;
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes, meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
@@ -257,20 +262,18 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" bufferse", gltf_path );
   crude_gfx_model_renderer_resources_manager_gltf_load_buffers_( manager, gltf, &temporary_string_buffer, gltf_directory );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" meshes", gltf_path );
-  crude_gfx_model_renderer_resources_manager_gltf_load_meshes_( manager, gltf, gltf_mesh_index_to_mesh_primitive_index, &temporary_string_buffer, gltf_directory, meshes, meshes_count, buffers_offset, images_offset, samplers_offset );
+  crude_gfx_model_renderer_resources_manager_gltf_load_meshes_( manager, gltf, gltf_mesh_index_to_mesh_primitive_index, &temporary_string_buffer, gltf_directory, meshes, meshes_count, total_meshes_offset, buffers_offset, images_offset, samplers_offset );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create \"%s\" meshlets", gltf_path );
-  crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes );
+  crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes, total_meshes_offset );
   
   crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_( manager, meshes );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" nodes", gltf_path );
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, model_renderer_resouces.main_node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, model_renderer_resouces.main_node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, total_meshes_offset );
   }
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "\"%s\" loading finished", gltf_path );
-  
-  manager->total_meshes_count += meshes_count;
 
 cleanup:
   if ( gltf )
@@ -674,7 +677,7 @@ crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_
   _In_ cgltf_data                                         *gltf
 )
 {
-  uint64  meshes_count = 0;
+  uint64 meshes_count = 0;
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   { 
     cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
@@ -696,7 +699,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   _In_ char const                                         *gltf_directory,
   _In_ crude_gfx_mesh_cpu                                 *meshes,
   _In_ uint64                                              meshes_count,
-  _In_ uint32                                              buffers_offset,
+  _In_ uint64                                              total_meshes_offset,
+  _In_ uint32                                              buffers_offset, 
   _In_ uint32                                              images_offset,
   _In_ uint32                                              samplers_offset
 )
@@ -797,7 +801,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       mesh_draw.index_buffer = indices_buffer_gpu;
       mesh_draw.index_offset = indices_accessor->offset + indices_accessor->buffer_view->offset;
       mesh_draw.primitive_count = indices_accessor->count;
-      mesh_draw.gpu_mesh_index = mesh_primitive_index + manager->total_meshes_count;
+      mesh_draw.gpu_mesh_index = mesh_primitive_index + total_meshes_offset;
 
       mesh_draw.bounding_sphere.x = XMVectorGetX( bounding_center );
       mesh_draw.bounding_sphere.y = XMVectorGetY( bounding_center );
@@ -816,7 +820,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
 	_In_ crude_gfx_model_renderer_resources_manager					*manager,
   _In_ cgltf_data                                         *gltf,
-  _Out_ crude_gfx_mesh_cpu                                *meshes
+  _In_ crude_gfx_mesh_cpu                                 *meshes,
+  _In_ uint64                                              total_meshes_offset
 )
 {
   crude_gfx_meshlet_gpu                                   *meshlets;
@@ -832,18 +837,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_triangles_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_triangles_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_vertices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_vertices_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_triangles_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
 
   mesh_index = 0u;
-
   for ( uint32 i = 0; i < gltf->meshes_count; ++i )
   {
     cgltf_mesh *mesh = &gltf->meshes[ i ];
@@ -884,7 +883,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES, CRUDE_GRAPHICS_CONSTANT_MESHLET_CONE_WEIGHT
       );
       
-      manager->total_meshlets_count += CRUDE_ARRAY_LENGTH( meshlets );
       meshlets_offset = CRUDE_ARRAY_LENGTH( meshlets );
       CRUDE_ARRAY_SET_CAPACITY( meshlets, meshlets_offset + local_meshletes_count );
 
@@ -917,7 +915,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         new_meshlet.triangles_offset = CRUDE_ARRAY_LENGTH( meshlets_triangles_indices ) + local_meshlet->triangle_offset;
         new_meshlet.vertices_count = local_meshlet->vertex_count;
         new_meshlet.triangles_count = local_meshlet->triangle_count;
-        new_meshlet.mesh_index = mesh_index + manager->total_meshes_count;
+        new_meshlet.mesh_index = mesh_index + total_meshes_offset;
 
         new_meshlet.center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
         new_meshlet.radius = meshlet_bounds.radius;
@@ -936,10 +934,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       CRUDE_ARRAY_SET_LENGTH( meshlets_triangles_indices, last_meshlet->triangles_offset + 3u * last_meshlet->triangles_count );
       
       meshes[ mesh_index ].meshlets_count = local_meshletes_count;
-      meshes[ mesh_index ].meshlets_offset = manager->total_meshlets_count;
+      meshes[ mesh_index ].meshlets_offset = meshlets_offset + manager->total_meshlets_count;
       ++mesh_index;
     }
   }
+
+  manager->total_meshlets_count += CRUDE_ARRAY_LENGTH( meshlets );
 
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -1119,7 +1119,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ uint64                                              total_meshes_offset
 )
 { 
   for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
@@ -1184,13 +1185,13 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       for ( uint32 pi = 0; pi < gltf_nodes[ i ]->mesh->primitives_count; ++pi )
       {
         crude_gfx_mesh_instance_cpu mesh_instance;
-        mesh_instance.mesh_gpu_index = mesh_index_offset + pi;
+        mesh_instance.mesh_gpu_index = mesh_index_offset + pi + total_meshes_offset;
         mesh_instance.node = node;
         CRUDE_ARRAY_PUSH( model_renderer_resources->meshes_instances, mesh_instance );
       }
     }
 
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index, total_meshes_offset );
   }
 }
 

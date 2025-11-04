@@ -67,7 +67,6 @@ typedef struct crude_gfx_scene_renderer
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
-  uint32                                                   meshes_instances_count;
   crude_gfx_buffer_handle                                  scene_cb;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
