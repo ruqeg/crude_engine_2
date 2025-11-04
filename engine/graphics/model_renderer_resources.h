@@ -94,6 +94,12 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
   XMFLOAT3A                                                padding;
 } crude_gfx_mesh_instance_draw_gpu;
 
+typedef struct crude_gfx_model_renderer_resources
+{
+  crude_entity                                             main_node;
+  crude_gfx_mesh_instance_cpu                             *meshes_instances;
+} crude_gfx_model_renderer_resources;
+
 CRUDE_API void
 crude_gfx_mesh_cpu_to_mesh_draw_gpu
 (

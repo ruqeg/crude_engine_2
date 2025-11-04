@@ -140,6 +140,11 @@ crude_entity_destroy_hierarchy
   _In_ crude_entity                                        entity
 )
 {
+  if ( !crude_entity_valid( entity ) )
+  {
+    return;
+  }
+
   ecs_iter_t it = ecs_children( entity.world, entity.handle );
 
   while ( ecs_children_next( &it ) )

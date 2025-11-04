@@ -6,12 +6,6 @@
 #include <graphics/model_renderer_resources.h>
 #include <graphics/asynchronous_loader.h>
 
-typedef struct crude_gfx_model_renderer_resources
-{
-  crude_entity                                             main_node;
-  crude_gfx_mesh_instance_cpu                             *meshes_instances;
-} crude_gfx_model_renderer_resources;
-
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
   void                                                    *world;
@@ -64,6 +58,12 @@ crude_gfx_model_renderer_resources_manager_intialize
 (
 	_In_ crude_gfx_model_renderer_resources_manager					*manager,
 	_In_ crude_gfx_model_renderer_resources_manager_creation const *creation
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_manager_deintialize
+(
+	_In_ crude_gfx_model_renderer_resources_manager					*manager
 );
 
 CRUDE_API crude_gfx_model_renderer_resources

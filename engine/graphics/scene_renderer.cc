@@ -311,6 +311,7 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_late_sb[ i ] );
   }
   
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
 }
 

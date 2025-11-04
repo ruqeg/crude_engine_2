@@ -187,10 +187,10 @@ game_deinitialize
 )
 {
   // crude_entity_destroy( game->platform_node );
-  crude_scene_deinitialize( &game->scene, false /* should be destroyd with world */ );
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( );
+  crude_scene_deinitialize( &game->scene );
   crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
   crude_heap_allocator_deinitialize( &game->resources_allocator );
@@ -210,7 +210,7 @@ game_reload_scene
   CRUDE_ASSERT( false );
   vkDeviceWaitIdle( game->gpu.vk_device );
   crude_gfx_scene_renderer_deinitialize( &game->scene_renderer );
-  crude_scene_deinitialize( &game->scene, true );
+  crude_scene_deinitialize( &game->scene );
   
   /* Create scene */
   {
@@ -312,6 +312,7 @@ game_graphics_deinitialize_
   vkDeviceWaitIdle( game->gpu.vk_device );
   crude_gfx_scene_renderer_deinitialize( &game->scene_renderer );
   crude_gfx_asynchronous_loader_deinitialize( &game->async_loader );
+  crude_gfx_model_renderer_resources_manager_deintialize( &game->model_renderer_resources_manager );
   crude_gfx_render_graph_builder_deinitialize( &game->render_graph_builder );
   crude_gfx_render_graph_deinitialize( &game->render_graph );
   crude_gfx_device_deinitialize( &game->gpu );
@@ -531,7 +532,7 @@ game_initialize_graphics_
   model_renderer_resources_manager_creation.async_loader = &game->async_loader;
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &game->model_renderer_resources_manager_temporary_allocator;
-  model_renderer_resources_manager_creation.world = game->engine->world ;
+  model_renderer_resources_manager_creation.world = game->engine->world;
   crude_gfx_model_renderer_resources_manager_intialize( &game->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
 
   /* Create Scene Renderer */

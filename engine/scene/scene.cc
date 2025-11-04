@@ -250,14 +250,9 @@ crude_scene_initialize
 void
 crude_scene_deinitialize
 (
-  _In_ crude_scene                                        *scene,
-  _In_ bool                                                destroy_nodes
+  _In_ crude_scene                                        *scene
 )
 {
-  if ( destroy_nodes )
-  {
-    crude_entity_destroy_hierarchy( scene->main_node );
-  }
   crude_string_buffer_deinitialize( &scene->path_bufffer );
 }
 

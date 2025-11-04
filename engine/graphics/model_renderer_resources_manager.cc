@@ -167,6 +167,49 @@ crude_gfx_model_renderer_resources_manager_intialize
   CRUDE_HASHMAP_INITIALIZE( manager->model_hashed_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
 }
 
+void
+crude_gfx_model_renderer_resources_manager_deintialize
+(
+	_In_ crude_gfx_model_renderer_resources_manager					*manager
+)
+{
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->model_hashed_name_to_model_renderer_resource ); ++i )
+  {
+    if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
+    {
+      crude_gfx_model_renderer_resources resource = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      //crude_entity_destroy_hierarchy( resource.main_node );
+      CRUDE_ARRAY_DEINITIALIZE( resource.meshes_instances );
+    }
+  }
+  CRUDE_HASHMAP_DEINITIALIZE( manager->model_hashed_name_to_model_renderer_resource );
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
+  {
+    crude_gfx_destroy_sampler( manager->gpu, manager->samplers[ i ] );
+  }
+  CRUDE_ARRAY_DEINITIALIZE( manager->samplers );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->images ); ++i )
+  {
+    crude_gfx_destroy_texture( manager->gpu, manager->images[ i ] );
+  }
+  CRUDE_ARRAY_DEINITIALIZE( manager->images );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->buffers ); ++i )
+  {
+    crude_gfx_destroy_buffer( manager->gpu, manager->buffers[ i ] );
+  }
+  CRUDE_ARRAY_DEINITIALIZE( manager->buffers );
+
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_vertices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_vertices_indices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_triangles_indices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshes_draws_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshes_bounds_sb );
+}
+
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_add_gltf_model
 (
