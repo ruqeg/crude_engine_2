@@ -39,11 +39,15 @@ typedef struct crude_gfx_asynchronous_loader
 {
   crude_gfx_device                                        *gpu;
 
-  crude_gfx_file_load_request                             *file_load_requests;
-  crude_gfx_upload_request                                *upload_requests;
+  crude_gfx_file_load_request                              file_load_requests[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT ];
+  crude_gfx_upload_request                                 upload_requests[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT ];
   
   crude_gfx_buffer                                        *staging_buffer;
   uint32                                                   staging_buffer_offset;
+  int32                                                    file_load_requests_lpos;
+  int32                                                    upload_requests_lpos;
+  int32                                                    file_load_requests_rpos;
+  int32                                                    upload_requests_rpos;
 
   VkFence                                                  vk_transfer_completed_fence;
 

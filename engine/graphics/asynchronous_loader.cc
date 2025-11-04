@@ -7,6 +7,32 @@
 
 #include <graphics/asynchronous_loader.h>
 
+static void
+crude_gfx_asynchronous_loader_push_upload_requests_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_upload_request                            upload_request
+);
+
+static void
+crude_gfx_asynchronous_loader_push_file_load_request_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_file_load_request                         file_load_request
+);
+
+static crude_gfx_upload_request
+crude_gfx_asynchronous_loader_pop_upload_requests_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
+);
+
+static crude_gfx_file_load_request
+crude_gfx_asynchronous_loader_pop_file_load_request_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
+);
+
 /************************************************
  *
  * Asynchronous Functions Implementation
@@ -26,29 +52,28 @@ crude_gfx_asynchronous_loader_initialize
   asynloader->texture_ready = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   asynloader->cpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   asynloader->gpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  asynloader->gpu_old_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( asynloader->file_load_requests, 16, gpu->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( asynloader->upload_requests, 16, gpu->allocator_container );
+  asynloader->file_load_requests_lpos = asynloader->file_load_requests_rpos = 0;
+  asynloader->upload_requests_lpos = asynloader->upload_requests_rpos = 0;
 
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    VkCommandPoolCreateInfo                                cmd_pool_info;
-    VkCommandBufferAllocateInfo                            cmd;
+    VkCommandPoolCreateInfo                                vk_cmd_pool_info;
+    VkCommandBufferAllocateInfo                            vk_cmd_info;
 
-    cmd_pool_info = CRUDE_COMPOUNT( VkCommandPoolCreateInfo, {
-      .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-      .queueFamilyIndex = gpu->vk_transfer_queue_family,
-    } );
-    vkCreateCommandPool( gpu->vk_device, &cmd_pool_info, gpu->vk_allocation_callbacks, &asynloader->vk_cmd_pools[ i ] );
+    vk_cmd_pool_info = CRUDE_COMPOUNT_EMPTY( VkCommandPoolCreateInfo );
+    vk_cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    vk_cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    vk_cmd_pool_info.queueFamilyIndex = gpu->vk_transfer_queue_family;
+    vkCreateCommandPool( gpu->vk_device, &vk_cmd_pool_info, gpu->vk_allocation_callbacks, &asynloader->vk_cmd_pools[ i ] );
     
-    cmd = CRUDE_COMPOUNT( VkCommandBufferAllocateInfo, {
-      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool = asynloader->vk_cmd_pools[ i ],
-      .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 1,
-    } );
-    vkAllocateCommandBuffers( gpu->vk_device, &cmd, &asynloader->cmd_buffers[ i ].vk_cmd_buffer );
+    vk_cmd_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferAllocateInfo );
+    vk_cmd_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    vk_cmd_info.commandPool = asynloader->vk_cmd_pools[ i ];
+    vk_cmd_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    vk_cmd_info.commandBufferCount = 1;
+    vkAllocateCommandBuffers( gpu->vk_device, &vk_cmd_info, &asynloader->cmd_buffers[ i ].vk_cmd_buffer );
 
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )asynloader->cmd_buffers[ i ].vk_cmd_buffer, "asynchronous_loader_cmd" );
     
@@ -93,9 +118,6 @@ crude_gfx_asynchronous_loader_deinitialize
   {
     vkDestroyCommandPool( asynloader->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->gpu->vk_allocation_callbacks );  
   }
-
-  CRUDE_ARRAY_DEINITIALIZE( asynloader->file_load_requests );
-  CRUDE_ARRAY_DEINITIALIZE( asynloader->upload_requests );
 }
 
 void
@@ -110,8 +132,9 @@ crude_gfx_asynchronous_loader_request_texture_data
   strcpy( request.path, filename );
   request.texture = texture_handle;
   request.buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-  CRUDE_ARRAY_PUSH( asynloader->file_load_requests, request );
-  
+
+  crude_gfx_asynchronous_loader_push_file_load_request_( asynloader, request );
+
   crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->gpu, texture_handle );
   texture->ready = false;
 }
@@ -132,7 +155,8 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   request.cpu_buffer = cpu_buffer;
   request.gpu_buffer = gpu_buffer;
   request.gpu_old_buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-  CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
+  
+  crude_gfx_asynchronous_loader_push_upload_requests_( asynloader, request );
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_buffer );
   buffer->ready = false;
@@ -155,7 +179,8 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
   request.cpu_buffer = cpu_buffer;
   request.gpu_buffer = gpu_buffer;
   request.gpu_old_buffer = gpu_old_buffer;
-  CRUDE_ARRAY_PUSH( asynloader->upload_requests, request );
+  
+  crude_gfx_asynchronous_loader_push_upload_requests_( asynloader, request );
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_buffer );
   buffer->ready = false;
@@ -191,14 +216,15 @@ crude_gfx_asynchronous_loader_update
     asynloader->gpu_old_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   }
   
-  if ( CRUDE_ARRAY_LENGTH( asynloader->upload_requests ) )
+  if ( asynloader->upload_requests_lpos != asynloader->upload_requests_rpos )
   {
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
-
-    request = CRUDE_ARRAY_POP( asynloader->upload_requests );
-
+    
     cmd = &asynloader->cmd_buffers[ asynloader->gpu->current_frame ];
+    
+    request = crude_gfx_asynchronous_loader_pop_upload_requests_( asynloader );
+    
     crude_gfx_cmd_begin_primary( cmd );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
@@ -267,22 +293,23 @@ crude_gfx_asynchronous_loader_update
       asynloader->cpu_buffer_ready = request.cpu_buffer;
       asynloader->gpu_buffer_ready = request.gpu_buffer;
       
-      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->gpu_old_buffer_ready ) )
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.gpu_old_buffer ) )
       {
+        CRUDE_ASSERT( CRUDE_RESOURCE_HANDLE_IS_INVALID( asynloader->gpu_old_buffer_ready ) );
         asynloader->gpu_old_buffer_ready = request.gpu_old_buffer;
       }
     }
   }
 
-  if ( CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ) )
+  if ( asynloader->file_load_requests_lpos != asynloader->file_load_requests_rpos )
   {
     crude_gfx_file_load_request                            load_request;
     uint8                                                 *texture_data;
     int64                                                  start_reading_file;
     int32                                                  x, y, comp;
 
-    load_request = CRUDE_ARRAY_POP( asynloader->file_load_requests );
-    
+    load_request = crude_gfx_asynchronous_loader_pop_file_load_request_( asynloader );
+
     start_reading_file = crude_time_now();
     texture_data = stbi_load( load_request.path, &x, &y, &comp, 4 );
     if ( texture_data )
@@ -293,7 +320,7 @@ crude_gfx_asynchronous_loader_update
       upload_request.data = texture_data;
       upload_request.texture = load_request.texture;
       upload_request.cpu_buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-      CRUDE_ARRAY_PUSH( asynloader->upload_requests, upload_request );
+      crude_gfx_asynchronous_loader_push_upload_requests_( asynloader, upload_request );
     }
     else
     {
@@ -310,7 +337,7 @@ crude_gfx_asynchronous_loader_has_requests
   _In_ crude_gfx_asynchronous_loader const                *asynloader
 )
 {
-  return CRUDE_ARRAY_LENGTH( asynloader->upload_requests ) || CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ) || CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready );
+  return ( asynloader->upload_requests_lpos != asynloader->upload_requests_rpos ) || ( asynloader->file_load_requests_lpos != asynloader->file_load_requests_rpos ) || CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready );
 }
 
 /************************************************
@@ -396,4 +423,52 @@ crude_gfx_asynchronous_loader_manager_deintiailize
   manager->async_loaders_valid = false;
   CRUDE_ARRAY_DEINITIALIZE( manager->async_loaders );
   mtx_destroy( &manager->task_mutex );
+}
+
+void
+crude_gfx_asynchronous_loader_push_upload_requests_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_upload_request                            upload_request
+)
+{
+  asynloader->upload_requests[ asynloader->upload_requests_rpos ] = upload_request;
+  asynloader->upload_requests_rpos = ( asynloader->upload_requests_rpos + 1 ) % CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT;
+
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, asynloader->upload_requests_rpos != asynloader->upload_requests_lpos, "Limit of upload requests in asynchronous loader!" );
+}
+
+void
+crude_gfx_asynchronous_loader_push_file_load_request_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader,
+  _In_ crude_gfx_file_load_request                         file_load_request
+)
+{
+  asynloader->file_load_requests[ asynloader->file_load_requests_rpos ] = file_load_request;
+  asynloader->file_load_requests_rpos = ( asynloader->file_load_requests_rpos + 1 ) % CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT;
+  
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, asynloader->file_load_requests_rpos != asynloader->file_load_requests_lpos, "Limit of upload requests in asynchronous loader!" );
+}
+
+crude_gfx_upload_request
+crude_gfx_asynchronous_loader_pop_upload_requests_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
+)
+{
+  int32 front_position = asynloader->upload_requests_lpos;
+  asynloader->upload_requests_lpos = ( asynloader->upload_requests_lpos + 1 ) % CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT;
+  return asynloader->upload_requests[ front_position ];
+}
+
+crude_gfx_file_load_request
+crude_gfx_asynchronous_loader_pop_file_load_request_
+(
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
+)
+{
+  int32 front_position = asynloader->file_load_requests_lpos;
+  asynloader->file_load_requests_lpos = ( asynloader->file_load_requests_lpos + 1 ) % CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT;
+  return asynloader->file_load_requests[ front_position ];
 }
