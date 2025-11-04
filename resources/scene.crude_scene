@@ -68,7 +68,10 @@
 							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
 						},
-						"components":	[],
+						"components":	[{
+								"type":	"crude_gltf",
+								"path":	"game\\redball_default.gltf"
+							}],
 						"children":	[]
 					}, {
 						"name":	"pivot1",

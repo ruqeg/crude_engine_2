@@ -45,6 +45,9 @@ typedef struct crude_gfx_model_renderer_resources_manager
    **********************/
   uint64                                                   total_meshes_count;
   uint64                                                   total_meshlets_count;
+  uint64                                                   total_meshlets_vertices_count;
+  uint64                                                   total_meshlets_vertices_indices_count;
+  uint64                                                   total_meshlets_triangles_indices_count;
 
   struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
 

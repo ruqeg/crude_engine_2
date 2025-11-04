@@ -132,7 +132,7 @@ void main()
       world_center.xyz, scene.camera.position, scene.camera.world_to_clip
     );
   }
-  accept = true;//accept && occlusion_visible;
+  accept = accept && occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );
   

@@ -118,7 +118,7 @@ void main()
       );
     }
 
-    if ( true )//frustum_visible && occlusion_visible )
+    if ( frustum_visible && occlusion_visible )
     {
       uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
       mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
