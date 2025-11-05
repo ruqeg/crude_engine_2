@@ -36,11 +36,6 @@
 				"components":	[{
 						"type":	"crude_gltf",
 						"path":	"glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
-					}, {
-						"type":	"crude_physics_static_body",
-						"crude_physics_box_collision_shape":	{
-							"half_extent":	[100, 1, 100]
-						}
 					}],
 				"children":	[]
 			}, {
@@ -51,11 +46,6 @@
 					"scale":	[1, 1, 1]
 				},
 				"components":	[{
-						"type":	"crude_physics_dynamic_body",
-						"crude_physics_sphere_collision_shape":	{
-							"radius":	1
-						}
-					}, {
 						"type":	"crude_player_controller",
 						"rotation_speed": 0.01,
 						"weight": 1,

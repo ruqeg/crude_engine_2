@@ -13,6 +13,7 @@
 
 #include <graphics/gpu_profiler.h>
 #include <graphics/scene_renderer.h>
+#include <physics/physics_components.h>
 
 /**
  * Scene Renderer Other
@@ -77,7 +78,8 @@ crude_gfx_scene_renderer_initialize
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
-  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->collision_model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -137,7 +139,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
-
+  
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
@@ -154,6 +156,7 @@ crude_gfx_scene_renderer_deinitialize
   }
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->collision_model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
 }
 
@@ -164,6 +167,7 @@ crude_gfx_scene_renderer_rebuild_main_node
   _In_ crude_entity                                        main_node
 )
 {
+  CRUDE_ARRAY_SET_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node );
   
@@ -171,6 +175,12 @@ crude_gfx_scene_renderer_rebuild_main_node
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
   {
     scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
+  }
+
+  scene_renderer->collision_total_meshes_instances_count = 0u;
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances ); ++i )
+  {
+    scene_renderer->collision_total_meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
   }
 }
 

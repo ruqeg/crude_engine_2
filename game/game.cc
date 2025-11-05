@@ -199,7 +199,7 @@ game_reload_scene
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
   scene_creation.filepath = filename;
-  scene_creation.resources_path = CRUDE_RESOURCES_PATH;
+  scene_creation.resources_path = CRUDE_GAME_RESOURCES_PATH;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
@@ -450,8 +450,8 @@ game_initialize_scene_
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_PATH, "scene.crude_scene" );
-  scene_creation.resources_path = CRUDE_RESOURCES_PATH;
+  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_GAME_RESOURCES_PATH, "scene.crude_scene" );
+  scene_creation.resources_path = CRUDE_GAME_RESOURCES_PATH;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;

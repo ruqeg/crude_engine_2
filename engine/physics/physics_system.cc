@@ -22,7 +22,6 @@
 /* Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state */
 JPH_SUPPRESS_WARNINGS
 
-// Callback for traces, connect this to your own trace function if you have one
 static void
 jolt_trace_implementation_
 (
@@ -37,7 +36,6 @@ jolt_trace_implementation_
 }
 
 #ifdef JPH_ENABLE_ASSERTS
-/* Callback for asserts, connect this to your own assert handler if you have one */
 static bool
 jolt_assert_failed_impl
 (
@@ -48,7 +46,6 @@ jolt_assert_failed_impl
 )
 {
   CRUDE_LOG_ERROR( CRUDE_CHANNEL_PHYSICS, "%s:%s: (%s) %s", file, line, expression, message ? message : "" );
-  /* Breakpoint */
   return true;
 };
 #endif /* JPH_ENABLE_ASSERTS */
@@ -121,7 +118,6 @@ public:
   (
   )
   {
-    /* Create a mapping table from object to broad phase layer */
     mObjectToBroadPhase[ non_moving_object_layer_ ] = non_moving_broad_phase_layer_;
     mObjectToBroadPhase[ moving_object_layer_ ] = moving_broad_phase_layer_;
   }
@@ -194,7 +190,6 @@ public:
   }
 };
 
-/* An example contact listener */
 class MyContactListener
   : public JPH::ContactListener
 {
@@ -231,7 +226,6 @@ public:
   }
 };
 
-// An example activation listener
 class MyBodyActivationListener 
   : public JPH::BodyActivationListener
 {
@@ -300,61 +294,62 @@ crude_physics_static_body_creation_observer_
 {
   crude_physics_static_body *static_bodies_per_entity = ecs_field( it, crude_physics_static_body, 0 );
 
-  // The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-  // variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     ecs_world_t                                           *world;
     crude_physics_static_body                             *static_body;
-    crude_transform                                       *transform;
-    JPH::ShapeSettings::ShapeResult                        shape_result;
+    crude_transform const                                 *transform;
     crude_entity                                           entity;
+    ecs_iter_t                                             child_it;
 
     world = it->world;
     static_body = &static_bodies_per_entity[ i ];
     entity = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], world } );
-
+    
     CRUDE_ASSERT( CRUDE_ENTITY_HAS_COMPONENT( entity, crude_transform ) );
-    transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, crude_transform );
-    CRUDE_ASSERT( transform );
+    transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( entity, crude_transform );
 
-    // Next we can create a rigid body to serve as the floor, we make a large box
-    // Create the settings for the collision volume (the shape).
-    // Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
-    if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+    child_it = ecs_children( entity.world, entity.handle );
+    while ( ecs_children_next( &child_it ) )
     {
-      crude_physics_box_collision_shape                   *collision_shape;
-      JPH::Body                                           *body;
-      JPH::BoxShapeSettings                                jph_shape_settings;
-      JPH::ShapeSettings::ShapeResult                      shape_result;
-      JPH::ShapeRefC                                       shape_ref;
-      JPH::BodyCreationSettings                            settings;
+      for ( size_t i = 0; i < child_it.count; ++i )
+      {
+        crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = child_it.entities[ i ], .world = world } );
+        if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_collision_shape ) )
+        {
+          crude_collision_shape                           *collision_shape;
+          JPH::ShapeSettings::ShapeResult                  shape_result;
+          
+          collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( child, crude_collision_shape );
 
-      collision_shape = &static_body->box_shape;
+          if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
+          {
+            JPH::Body                                           *body;
+            JPH::BoxShapeSettings                                jph_shape_settings;
+            JPH::ShapeSettings::ShapeResult                      shape_result;
+            JPH::ShapeRefC                                       shape_ref;
+            JPH::BodyCreationSettings                            settings;
 
-      jph_shape_settings = JPH::BoxShapeSettings( JPH::Vec3( collision_shape->half_extent.x, collision_shape->half_extent.y, collision_shape->half_extent.z ) );
-      jph_shape_settings.SetEmbedded( ); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
-      
-      // Create the shape
-      shape_result = jph_shape_settings.Create( );
-      shape_ref = shape_result.Get( ); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
+            jph_shape_settings = JPH::BoxShapeSettings( JPH::Vec3( collision_shape->box.half_extent.x, collision_shape->box.half_extent.y, collision_shape->box.half_extent.z ) );
+            jph_shape_settings.SetEmbedded( );
+            
+            shape_result = jph_shape_settings.Create( );
+            shape_ref = shape_result.Get( );
 
-      // Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-      settings = JPH::BodyCreationSettings( shape_ref, JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ), JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ), JPH::EMotionType::Static, non_moving_object_layer_ );
+            settings = JPH::BodyCreationSettings( shape_ref, JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ), JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ), JPH::EMotionType::Static, non_moving_object_layer_ );
 
-      // Create the actual rigid body
-      body = body_interface.CreateBody( settings ); // Note that if we run out of bodies this can return nullptr
-
-      // Add it to the world
-      body_interface.AddBody( body->GetID( ), JPH::EActivation::DontActivate );
-
-      static_body->static_body_index = body->GetID( ).GetIndexAndSequenceNumber( );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
+            body = body_interface.CreateBody( settings );
+            body_interface.AddBody( body->GetID( ), JPH::EActivation::DontActivate );
+            static_body->static_body_index = body->GetID( ).GetIndexAndSequenceNumber( );
+          }
+          else
+          {
+            CRUDE_ASSERT( false );
+          }
+        }
+      }
     }
   }
 }
@@ -392,8 +387,6 @@ crude_physics_dynamic_body_creation_observer_
 {
   crude_physics_dynamic_body *dynamic_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body, 0 );
 
-  // The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-  // variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface();
 
   for ( uint32 i = 0; i < it->count; ++i )
@@ -403,6 +396,7 @@ crude_physics_dynamic_body_creation_observer_
     crude_transform                                       *transform;
     JPH::ShapeSettings::ShapeResult                        shape_result;
     crude_entity                                           entity;
+    ecs_iter_t                                             child_it;
 
     world = it->world;
     dynamic_body = &dynamic_bodies_per_entity[ i ];
@@ -411,22 +405,35 @@ crude_physics_dynamic_body_creation_observer_
     CRUDE_ASSERT( CRUDE_ENTITY_HAS_COMPONENT( entity, crude_transform ) );
     transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, crude_transform );
     CRUDE_ASSERT( transform );
-
-    // Next we can create a rigid body to serve as the floor, we make a large box
-    // Create the settings for the collision volume (the shape).
-    // Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
-    if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+    
+    child_it = ecs_children( entity.world, entity.handle );
+    while ( ecs_children_next( &child_it ) )
     {
-      JPH::BodyCreationSettings                            sphere_settings;
-      JPH::BodyID                                          sphere_id;
-      
-      sphere_settings = JPH::BodyCreationSettings( new JPH::SphereShape( dynamic_body->sphere_shape.radius ), JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ), JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ), JPH::EMotionType::Dynamic, moving_object_layer_ );
-      sphere_id = body_interface.CreateAndAddBody( sphere_settings, JPH::EActivation::Activate );
-      dynamic_body->dynamic_body_index = sphere_id.GetIndexAndSequenceNumber( );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
+      for ( size_t i = 0; i < child_it.count; ++i )
+      {
+        crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = child_it.entities[ i ], .world = world } );
+        if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_collision_shape ) )
+        {
+          crude_collision_shape                           *collision_shape;
+          JPH::ShapeSettings::ShapeResult                  shape_result;
+          
+          collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( child, crude_collision_shape );
+          
+          if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
+          {
+            JPH::BodyCreationSettings                            sphere_settings;
+            JPH::BodyID                                          sphere_id;
+            
+            sphere_settings = JPH::BodyCreationSettings( new JPH::SphereShape( collision_shape->sphere.radius ), JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ), JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ), JPH::EMotionType::Dynamic, moving_object_layer_ );
+            sphere_id = body_interface.CreateAndAddBody( sphere_settings, JPH::EActivation::Activate );
+            dynamic_body->dynamic_body_index = sphere_id.GetIndexAndSequenceNumber( );
+          }
+          else
+          {
+            CRUDE_ASSERT( false );
+          }
+        }
+      }
     }
   }
 }
@@ -462,31 +469,12 @@ crude_physics_update
   _In_ float32                                             delta_time
 )
 {
-  // The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-  // variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
   JPH::BodyInterface &body_interface = jph_physics_system_.GetBodyInterface( );
-
-
-  // Now you can interact with the dynamic body, in this case we're going to give it a velocity.
-  // (note that if we had used CreateBody then we could have set the velocity straight on the body before adding it to the physics system)
-  //body_interface.SetLinearVelocity(sphere_id, JPH::Vec3(0.0f, -5.0f, 0.0f));
-  //JPH::RVec3 position = body_interface.GetCenterOfMassPosition( sphere_id );
-  //JPH::Vec3 velocity = body_interface.GetLinearVelocity( sphere_id );
-
-  // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
-  //const float cDeltaTime = 1.0f / 60.0f;
 
   // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
   // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
   // Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
   //jph_physics_system_.OptimizeBroadPhase( );
-
-  // Now we're ready to simulate the body, keep simulating until it goes to sleep
-
-  // Output current position and velocity of the sphere
-  //JPH::RVec3 position = body_interface.GetCenterOfMassPosition( sphere_id );
-  //JPH::Vec3 velocity = body_interface.GetLinearVelocity( sphere_id );
-  //cout << "Step " << step << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
 
   // If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
   const int cCollisionSteps = 1;
@@ -522,21 +510,13 @@ crude_physics_initialize
   _In_ crude_physics_creation const                                                *creation
 )
 {
-  // Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
-  // This needs to be done before any other Jolt function is called.
   JPH::RegisterDefaultAllocator( );
 
-  // Install trace and assert callbacks
   JPH::Trace = jolt_trace_implementation_;
   JPH_IF_ENABLE_ASSERTS( JPH::AssertFailed = jolt_assert_failed_impl; )
 
-  // Create a factory, this class is responsible for creating instances of classes based on their name or hash and is mainly used for deserialization of saved data.
-  // It is not directly used in this example but still required.
   JPH::Factory::sInstance = new JPH::Factory( );
 
-  // Register all physics types with the factory and install their collision handlers with the CollisionDispatch class.
-  // If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
-  // If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
   JPH::RegisterTypes( );
 
   jph_temp_allocator_ = new JPH::TempAllocatorImpl( creation->temporary_allocator_size );
@@ -553,10 +533,8 @@ crude_physics_deinitialize
 {
   delete jph_temp_allocator_;
 
-  // Unregisters all types with the factory and cleans up the default material
   JPH::UnregisterTypes();
 
-  // Destroy the factory
   delete JPH::Factory::sInstance;
   JPH::Factory::sInstance = nullptr;
 }

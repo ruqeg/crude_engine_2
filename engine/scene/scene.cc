@@ -10,50 +10,6 @@
 
 #include <scene/scene.h>
 
-static crude_physics_box_collision_shape
-json_object_to_crude_physics_box_collision_shape_
-(
-  _In_ cJSON const                                        *json
-)
-{
-  crude_physics_box_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_box_collision_shape );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &shape.half_extent, cJSON_GetObjectItem( json, "half_extent" ) );
-  return shape;
-}
-
-static crude_physics_sphere_collision_shape
-json_object_to_crude_physics_sphere_collision_shape_
-(
-  _In_ cJSON const                                        *json
-)
-{
-  crude_physics_sphere_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_sphere_collision_shape );
-  shape.radius = cJSON_GetNumberValue( cJSON_GetObjectItem( json, "radius" ) );
-  return shape;
-}
-
-static cJSON*
-crude_physics_box_collision_shape_to_json_object_
-(
-  _In_ crude_physics_box_collision_shape const            *shape
-)
-{
-  cJSON *shape_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( shape_json, "half_extent", cJSON_CreateFloatArray( &shape->half_extent.x, 3  ) );
-  return shape_json;
-}
-
-static cJSON*
-crude_physics_sphere_collision_shape_to_json_object_
-(
-  _In_ crude_physics_sphere_collision_shape const         *shape
-)
-{
-  cJSON *shape_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( shape_json, "radius", cJSON_CreateNumber( shape->radius ) );
-  return shape_json;
-}
-
 static crude_entity
 scene_load_hierarchy_
 (
@@ -120,47 +76,23 @@ scene_load_hierarchy_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_light, { light } );
       }
-      else if ( crude_string_cmp( component_type, "crude_physics_static_body" ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) == 0 )
       {
-        if ( cJSON_HasObjectItem( component_json, "crude_physics_box_collision_shape" ) )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, {
-            .box_shape = json_object_to_crude_physics_box_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" ) ),
-            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX
-          } );
-        }
-        else if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, {
-            .sphere_shape = json_object_to_crude_physics_sphere_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" ) ),
-            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
-          } );
-        }
-        else
-        {
-          CRUDE_ASSERT( false );
-        }
+        crude_physics_static_body                          static_body;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body )( &static_body, component_json );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body, { static_body } );
       }
-      else if ( crude_string_cmp( component_type, "crude_physics_dynamic_body" ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) == 0 )
       {
-        if ( cJSON_HasObjectItem( component_json, "crude_physics_box_collision_shape" ) )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, {
-            .box_shape = json_object_to_crude_physics_box_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_box_collision_shape" ) ),
-            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX
-          } );
-        }
-        else if ( cJSON_HasObjectItem( component_json, "crude_physics_sphere_collision_shape" ) )
-        {
-          CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, {
-            .sphere_shape = json_object_to_crude_physics_sphere_collision_shape_( cJSON_GetObjectItemCaseSensitive( component_json, "crude_physics_sphere_collision_shape" ) ),
-            .collision_shape_type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
-          } );
-        }
-        else
-        {
-          CRUDE_ASSERT( false );
-        }
+        crude_physics_dynamic_body                         dynamic_body;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_dynamic_body )( &dynamic_body, component_json );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body, { dynamic_body } );
+      }
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_collision_shape ) ) == 0 )
+      {
+        crude_collision_shape                              collision_shape;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_collision_shape )( &collision_shape, component_json );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_collision_shape, { collision_shape } );
       }
       else
       {
@@ -293,6 +225,7 @@ node_to_json_hierarchy_
     crude_light const                                     *node_light;
     crude_physics_static_body const                       *static_body;
     crude_physics_dynamic_body const                      *dynamic_body;
+    crude_collision_shape const                           *collision_shape;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
@@ -319,57 +252,25 @@ node_to_json_hierarchy_
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light ) );
     }
-
+    
     static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_static_body );
     if ( static_body )
     {
-      cJSON                                               *node_physics_static_body_json;
-
-      node_physics_static_body_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( node_physics_static_body_json, "type", cJSON_CreateString( "crude_physics_static_body" ) );
-
-      if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-      {
-        cJSON_AddItemToObject( node_physics_static_body_json, "crude_physics_box_collision_shape", crude_physics_box_collision_shape_to_json_object_( &static_body->box_shape  ) );
-      }
-      else if ( static_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-      {
-        cJSON_AddItemToObject( node_physics_static_body_json, "crude_physics_sphere_collision_shape", crude_physics_sphere_collision_shape_to_json_object_( &static_body->sphere_shape  ) );
-      }
-      else
-      {
-        CRUDE_ASSERT( false );
-      }
-      
-      cJSON_AddItemToArray( node_components_json, node_physics_static_body_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body )( static_body ) );
     }
-
+    
     dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_dynamic_body );
     if ( dynamic_body )
     {
-      cJSON                                               *node_physics_dynamic_body_json;
-
-      node_physics_dynamic_body_json = cJSON_CreateObject( );
-       
-      cJSON_AddItemToObject( node_physics_dynamic_body_json, "type", cJSON_CreateString( "crude_physics_dynamic_body" ) );
-
-      if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-      {
-        cJSON_AddItemToObject( node_physics_dynamic_body_json, "crude_physics_box_collision_shape", crude_physics_box_collision_shape_to_json_object_( &dynamic_body->box_shape  ) );
-      }
-      else if ( dynamic_body->collision_shape_type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-      {
-        cJSON_AddItemToObject( node_physics_dynamic_body_json, "crude_physics_sphere_collision_shape", crude_physics_sphere_collision_shape_to_json_object_( &dynamic_body->sphere_shape  ) );
-      }
-      else
-      {
-        CRUDE_ASSERT( false );
-      }
-      
-      cJSON_AddItemToArray( node_components_json, node_physics_dynamic_body_json );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_dynamic_body )( dynamic_body ) );
     }
-
+    
+    collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_collision_shape );
+    if ( collision_shape )
+    {
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_collision_shape )( collision_shape ) );
+    }
+    
     scene->additional_parse_all_components_to_json_func( node, node_components_json );
   }
   

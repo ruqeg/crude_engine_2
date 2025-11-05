@@ -7,9 +7,8 @@
 #include <platform/platform_components.h>
 #include <devgui.h>
 
-#define CRUDE_RENDERER_ADD_TEXTURE_UPDATE_COMMANDS_THREAD_ID ( 1 )
-#define CRUDE_RESOURCES_PATH "\\..\\..\\resources\\"
-#define CRUDE_SHADERS_PATH "\\..\\..\\shaders\\"
+#define CRUDE_GAME_RESOURCES_PATH "\\..\\..\\resources\\"
+#define CRUDE_GAME_SHADERS_PATH "\\..\\..\\shaders\\"
 
 typedef struct game_t
 {

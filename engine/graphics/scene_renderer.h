@@ -66,14 +66,19 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
-  crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   crude_gfx_buffer_handle                                  scene_cb;
+  
+  crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  
+  crude_gfx_model_renderer_resources_instance             *collision_model_renderer_resoruces_instances;
+  uint32                                                   collision_total_meshes_instances_count;
+  crude_gfx_buffer_handle                                  collision_meshes_instances_draws_sb;
 
   /***********************
    * Common Debug CPU & GPU Data
