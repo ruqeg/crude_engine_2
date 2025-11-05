@@ -139,6 +139,12 @@ crude_gfx_scene_renderer_initialize
 );
 
 CRUDE_API void
+crude_gfx_scene_renderer_deinitialize
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
 crude_gfx_scene_renderer_rebuild_main_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -158,7 +164,7 @@ crude_gfx_scene_renderer_initialize_pases
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_deinitialize
+crude_gfx_scene_renderer_deinitialize_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );

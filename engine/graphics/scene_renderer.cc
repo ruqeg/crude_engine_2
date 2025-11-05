@@ -129,6 +129,35 @@ crude_gfx_scene_renderer_initialize
 }
 
 void
+crude_gfx_scene_renderer_deinitialize
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
+  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
+  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
+
+  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  {
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_cubes_instances_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_commands_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_early_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_late_sb[ i ] );
+  }
+  
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
+}
+
+void
 crude_gfx_scene_renderer_rebuild_main_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -153,6 +182,16 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
 {
   crude_gfx_buffer_creation                                buffer_creation;
 
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->meshes_instances_draws_sb ) )
+  {
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
+  }
+
+  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_sb ) )
+  {
+    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
+  }
+
   /* Recreate buffers related to meshes */
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -161,8 +200,41 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
   buffer_creation.name = "meshes_instances_draws_sb";
   scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   
+  /* Recreate data related to light */
+  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
+  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
+  buffer_creation.size = sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+  buffer_creation.name = "lights_sb";
+  scene_renderer->lights_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  
   for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
   {
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_early_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
+    }
+
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_late_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
+    }
+
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->pointlight_world_to_clip_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
+    }
+
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_indices_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
+    }
+
+    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_bins_sb[ i ] ) )
+    {
+      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
+    }
+
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -178,18 +250,7 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
     buffer_creation.device_only = true;
     buffer_creation.name = "draw_commands_late_sb";
     scene_renderer->mesh_task_indirect_commands_late_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
 
-  /* Recreate data related to light */
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
-  buffer_creation.name = "lights_sb";
-  scene_renderer->lights_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -212,7 +273,6 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
     scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
 }
-
 
 void
 crude_gfx_scene_renderer_initialize_pases
@@ -239,7 +299,7 @@ crude_gfx_scene_renderer_initialize_pases
 }
 
 void
-crude_gfx_scene_renderer_deinitialize
+crude_gfx_scene_renderer_deinitialize_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
@@ -292,27 +352,6 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_instances_buffer_handle );
 #endif
 
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
-
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_cubes_instances_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_commands_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_early_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_early_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_late_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_late_sb[ i ] );
-  }
-  
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
 }
 
 void
