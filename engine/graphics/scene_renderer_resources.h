@@ -4,15 +4,7 @@
 #include <scene/scene_components.h>
 #include <graphics/gpu_resources.h>
 
-#define CRUDE_GFX_MAX_RENDERER_SCENE_PATH_LEN              ( 512 )
-#define CRUDE_GFX_DEBUG_LINE_2D_OFFSET                     ( 1000 )
-#define CRUDE_GFX_MAX_DEBUG_LINES                          ( 640000 )
-#define CRUDE_GFX_MAX_DEBUG_CUBES                          ( 60000 )
-#define CRUDE_GFX_LIGHT_Z_BINS                             ( 16 )
-#define CRUDE_GFX_LIGHTS_MAX_COUNT                         ( 256 )
-#define CRUDE_GFX_LIGHT_TILE_SIZE                          ( 8 )
-#define CRUDE_GFX_LIGHT_WORDS_COUNT                        ( ( CRUDE_GFX_LIGHTS_MAX_COUNT + 31 ) / 32 )
-#define CRUDE_GFX_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
+#define CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT ( ( CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 31 ) / 32 )
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_cube_instance_gpu
 {

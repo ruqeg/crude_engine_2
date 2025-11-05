@@ -56,8 +56,8 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_buffer_handle                                  gpu_buffer_ready;
   crude_gfx_buffer_handle                                  gpu_old_buffer_ready;
 
-  VkCommandPool                                            vk_cmd_pools[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkCommandPool                                            vk_cmd_pools[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_asynchronous_loader;
 
 /************************************************

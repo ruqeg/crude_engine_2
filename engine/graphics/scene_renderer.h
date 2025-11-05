@@ -70,27 +70,27 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  scene_cb;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 
   /***********************
    * Common Debug CPU & GPU Data
    **********************/
-  crude_gfx_buffer_handle                                  debug_cubes_instances_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_commands_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_cubes_instances_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  debug_commands_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   
   /***********************
    * Common Lights & Shadows CPU & GPU Data
    **********************/
   crude_gfx_light_cpu                                     *lights;
   crude_gfx_buffer_handle                                  lights_sb;
-  crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 
   /***********************
    * Ray Tracing CPU & GPU Data

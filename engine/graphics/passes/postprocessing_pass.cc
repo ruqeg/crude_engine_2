@@ -44,12 +44,12 @@ crude_gfx_postprocessing_pass_initialize
   luminance_average_texture_creation.depth = 1u;
   luminance_average_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   luminance_average_texture_creation.name = "luminance_average_texture";
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->luminance_average_texture_handle[ i ] = crude_gfx_create_texture( pass->scene_renderer->gpu, &luminance_average_texture_creation ); 
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_buffer_creation buffer_creation = crude_gfx_buffer_creation_empty( );
     buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -60,7 +60,7 @@ crude_gfx_postprocessing_pass_initialize
     pass->packed_data_sb_handle[ i ] = crude_gfx_create_buffer( pass->scene_renderer->gpu, &buffer_creation );
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->luminance_histogram_generation_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->luminance_average_calculation_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
@@ -79,17 +79,17 @@ crude_gfx_postprocessing_pass_deinitialize
 {
   crude_gfx_device *gpu = pass->scene_renderer->gpu;
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_texture( gpu, pass->luminance_average_texture_handle[ i ] );
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->packed_data_sb_handle[ i ] );
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->luminance_histogram_generation_ds[ i ] ) )
     {
@@ -243,7 +243,7 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->luminance_histogram_generation_ds[ i ] ) )
     {
@@ -256,9 +256,9 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
   }
 
   luminance_histogram_generation_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "luminance_histogram_generation" )->pipeline;
-  luminance_histogram_generation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_histogram_generation_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  luminance_histogram_generation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_histogram_generation_pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                      ds_creation;
 
@@ -272,9 +272,9 @@ crude_gfx_postprocessing_pass_on_techniques_reloaded
   }
 
   luminance_average_calculation_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "luminance_average_calculation" )->pipeline;
-  luminance_average_calculation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_average_calculation_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  luminance_average_calculation_dsl = crude_gfx_get_descriptor_set_layout( gpu, luminance_average_calculation_pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                      ds_creation;
 

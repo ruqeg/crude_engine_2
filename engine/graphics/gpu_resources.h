@@ -11,26 +11,6 @@
 
 /************************************************
  *
- * GPU Resoruces Constants
- * 
- ***********************************************/
-#define CRUDE_GFX_MAX_SWAPCHAIN_IMAGES                     3
-#define CRUDE_GFX_MAX_IMAGE_OUTPUTS                        8
-#define CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS               8
-#define CRUDE_GFX_MAX_SHADER_STAGES                        5      
-#define CRUDE_GFX_MAX_DESCRIPTORS_PER_SET                  64
-#define CRUDE_GFX_UBO_ALIGNMENT                            256
-#define CRUDE_GFX_MAX_SET_COUNT                            32
-#define CRUDE_GFX_MAX_BINDLESS_RESOURCES                   1024
-#define CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX            0u
-#define CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX            1u
-#define CRUDE_GFX_BINDLESS_TEXTURE_BINDING                 10
-#define CRUDE_GFX_BINDLESS_IMAGE_BINDING                   11
-#define CRUDE_GFX_MAX_PUSH_CONSTANTS                       1u
-#define CRUDE_GFX_TEXTURE_INDEX_INVALID                    ~0u
-
-/************************************************
- *
  * GPU Resoruces Handles
  * 
  ***********************************************/
@@ -330,9 +310,9 @@ typedef struct crude_gfx_render_pass_creation
 {
   uint16                                                   num_render_targets;
   
-  VkFormat                                                 color_formats[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  VkFormat                                                 color_formats[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
   
   VkFormat                                                 depth_stencil_format;
   VkImageLayout                                            depth_stencil_final_layout;
@@ -347,7 +327,7 @@ typedef struct crude_gfx_framebuffer_creation
 {
   crude_gfx_render_pass_handle                             render_pass;
   char const                                              *name;
-  crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_texture_handle                                 output_textures[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
   crude_gfx_texture_handle                                 depth_stencil_texture;
   uint32                                                   num_render_targets;
   bool                                                     manual_resources_free;
@@ -369,7 +349,7 @@ typedef struct crude_gfx_depth_stencil_creation
 
 typedef struct crude_gfx_blend_state_creation
 {
-  crude_gfx_blend_state                                    blend_states[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_blend_state                                    blend_states[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
   uint32                                                   active_states;
 } crude_gfx_blend_state_creation;
 
@@ -412,9 +392,9 @@ typedef struct crude_gfx_texture_view_creation
 
 typedef struct crude_gfx_render_pass_output
 {
-  VkFormat                                                 color_formats[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  VkFormat                                                 color_formats[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
 
   VkFormat                                                 depth_stencil_format;
   VkImageLayout                                            depth_stencil_final_layout;
@@ -449,7 +429,7 @@ typedef struct crude_gfx_shader_stage
 
 typedef struct crude_gfx_shader_state_creation
 {
-  crude_gfx_shader_stage                                   stages[ CRUDE_GFX_MAX_SHADER_STAGES ];
+  crude_gfx_shader_stage                                   stages[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
   char const                                              *name;
   uint32                                                   stages_count;
   uint32                                                   spv_input;
@@ -472,7 +452,7 @@ typedef struct crude_gfx_descriptor_set_layout_binding
 
 typedef struct crude_gfx_descriptor_set_layout_creation
 {
-  crude_gfx_descriptor_set_layout_binding                  bindings[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_descriptor_set_layout_binding                  bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
   uint32                                                   num_bindings;
   uint32                                                   set_index;
   char const                                              *name;
@@ -498,9 +478,9 @@ typedef struct crude_gfx_pipeline_creation
 
 typedef struct crude_gfx_descriptor_set_creation
 {
-  crude_gfx_resource_index                                 resources[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  crude_gfx_sampler_handle                                 samplers[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  uint16                                                   bindings[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_resource_index                                 resources[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_sampler_handle                                 samplers[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  uint16                                                   bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
   crude_gfx_descriptor_set_layout_handle                   layout;
   uint32                                                   num_resources;
   char const                                              *name;
@@ -512,7 +492,7 @@ typedef struct crude_gfx_descriptor_set_creation
 typedef struct crude_gfx_shader_descriptor_reflect
 {
   uint32                                                   sets_count;
-  crude_gfx_descriptor_set_layout_creation                 sets[ CRUDE_GFX_MAX_SET_COUNT ];
+  crude_gfx_descriptor_set_layout_creation                 sets[ CRUDE_GRAPHICS_MAX_SET_COUNT ];
 } crude_gfx_shader_descriptor_reflect;
 
 typedef struct crude_gfx_shader_input_reflect
@@ -597,7 +577,7 @@ typedef struct crude_gfx_descriptor_set_layout
   VkDescriptorSetLayout                                    vk_descriptor_set_layout;
   VkDescriptorSetLayoutBinding                            *vk_binding;
   crude_gfx_descriptor_binding                            *bindings;
-  uint8                                                    binding_to_index[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  uint8                                                    binding_to_index[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
   uint16                                                   num_bindings;
   uint16                                                   set_index;
   crude_gfx_descriptor_set_layout_handle                   handle;
@@ -607,9 +587,9 @@ typedef struct crude_gfx_descriptor_set_layout
 typedef struct crude_gfx_descriptor_set
 {
   VkDescriptorSet                                          vk_descriptor_set;
-  crude_gfx_resource_index                                 resources[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  crude_gfx_sampler_handle                                 samplers[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  uint16                                                   bindings[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_resource_index                                 resources[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_sampler_handle                                 samplers[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  uint16                                                   bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
   char const                                              *name;
@@ -624,8 +604,8 @@ typedef struct crude_gfx_pipeline
   VkPipelineLayout                                         vk_pipeline_layout;
   VkPipelineBindPoint                                      vk_bind_point;
   crude_gfx_shader_state_handle                            shader_state;
-  crude_gfx_descriptor_set_layout const                   *descriptor_set_layout[ CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS ];
-  crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout_handle[ CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  crude_gfx_descriptor_set_layout const                   *descriptor_set_layout[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout_handle[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
   uint32                                                   num_active_layouts;
   crude_gfx_depth_stencil_creation                         depth_stencil;
   crude_gfx_blend_state_creation                           blend_state;
@@ -655,7 +635,7 @@ typedef struct crude_gfx_framebuffer
   uint32                                                   height;
   float32                                                  scale_x;
   float32                                                  scale_y;
-  crude_gfx_texture_handle                                 color_attachments[ CRUDE_GFX_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_texture_handle                                 color_attachments[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
   crude_gfx_texture_handle                                 depth_stencil_attachment;
   uint32                                                   num_color_attachments;
   uint8                                                    resize;
@@ -665,9 +645,9 @@ typedef struct crude_gfx_framebuffer
 
 typedef struct crude_gfx_shader_state
 {
-  VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GFX_MAX_SHADER_STAGES ];
+  VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GFX_MAX_SHADER_STAGES ];
+  VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
   const char                                              *name;
   uint32                                                   active_shaders;

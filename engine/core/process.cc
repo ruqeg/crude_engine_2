@@ -5,9 +5,8 @@
 
 #include <core/process.h>
 
-#define CRUDE_PROCESS_LOG_BUFFER_SIZE 256
-char                s_process_log_buffer[ CRUDE_PROCESS_LOG_BUFFER_SIZE ];
-static char         k_process_output_buffer[ 1025 ];
+char                s_process_log_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];
+static char         k_process_output_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];
 
 void
 win32_get_error_
@@ -83,7 +82,7 @@ crude_process_execute
     }
     else
     {
-      win32_get_error_( &s_process_log_buffer[0], CRUDE_PROCESS_LOG_BUFFER_SIZE );
+      win32_get_error_( &s_process_log_buffer[ 0 ], sizeof( s_process_log_buffer ) );
       
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Execute process error.\n Exe: \"%s\" - Args: \"%s\" - Work_dir: \"%s\"", process_fullpath, arguments, working_directory );
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Message: %s\n", s_process_log_buffer );

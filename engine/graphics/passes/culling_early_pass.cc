@@ -12,7 +12,7 @@ crude_gfx_culling_early_pass_initialize
 )
 {
   pass->scene_renderer = scene_renderer;
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->culling_early_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
@@ -26,7 +26,7 @@ crude_gfx_culling_early_pass_deinitialize
   _In_ crude_gfx_culling_early_pass                       *pass
 )
 {
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->culling_early_ds[ i ] );
   }
@@ -87,9 +87,9 @@ crude_gfx_culling_early_pass_on_techniques_reloaded
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_culling_early_pass*, ctx );
 
   culling_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "culling" )->pipeline;
-  culling_descriptor_sets_layout_handle = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, culling_pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  culling_descriptor_sets_layout_handle = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, culling_pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->culling_early_ds[ i ] ) )
     {
@@ -97,7 +97,7 @@ crude_gfx_culling_early_pass_on_techniques_reloaded
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
     

@@ -296,7 +296,7 @@ crude_gfx_cmd_bind_render_pass
     vk_depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
     vk_depth_attachment_info.loadOp = depth_op;
     vk_depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   vk_rendering_info = CRUDE_COMPOUNT_EMPTY( VkRenderingInfoKHR );
@@ -406,8 +406,8 @@ crude_gfx_cmd_set_clear_depth_and_stencil
   _In_ float32                                             stencil
 )
 {
-  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
-  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
+  cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
+  cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
 }
 
 void
@@ -461,8 +461,8 @@ crude_gfx_cmd_bind_local_descriptor_set
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
     }
   }
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
 #else 
   CRUDE_ASSERT( false );
 #endif
@@ -704,7 +704,7 @@ crude_gfx_cmd_bind_descriptor_set
   crude_gfx_descriptor_set                                *bindless_descriptor_set;
 
   bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( handle ) )
   {
@@ -728,7 +728,7 @@ crude_gfx_cmd_bind_descriptor_set
         offsets_cache[ num_offsets++ ] = buffer->global_offset;
       }
     }
-    vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
+    vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
   }
 }
 
@@ -1122,7 +1122,7 @@ crude_gfx_cmd_manager_initialize
 
   temporary_allocator_container = crude_stack_allocator_pack( gpu->temporary_allocator );
 
-  total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
+  total_pools = cmd_manager->num_pools_per_frame * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );

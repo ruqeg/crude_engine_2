@@ -11,7 +11,7 @@ crude_gfx_debug_pass_initialize
 {
   pass->scene_renderer = scene_renderer;
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->depth_lines3d_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->depth_cube_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
@@ -28,7 +28,7 @@ crude_gfx_debug_pass_deinitialize
 {
   crude_gfx_device *gpu = pass->scene_renderer->gpu;
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_descriptor_set( gpu, pass->depth_lines3d_ds[ i ] );
     crude_gfx_destroy_descriptor_set( gpu, pass->depth_cube_ds[ i ] );
@@ -79,7 +79,7 @@ crude_gfx_debug_pass_render
   crude_gfx_cmd_draw_inderect( primary_cmd, pass->scene_renderer->debug_commands_sb[ gpu->current_frame ], 0u, 1u, sizeof( crude_gfx_debug_draw_command_gpu ) );
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, debug_line2d_pipeline );
-  crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->scene_renderer->debug_line_vertices_sb[ gpu->current_frame ], 0u, CRUDE_GFX_DEBUG_LINE_2D_OFFSET * sizeof( crude_gfx_debug_line_vertex_gpu ) );
+  crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->scene_renderer->debug_line_vertices_sb[ gpu->current_frame ], 0u, CRUDE_GRAPHICS_SCENE_RENDERER_DEBUG_LINE_2D_OFFSET * sizeof( crude_gfx_debug_line_vertex_gpu ) );
   crude_gfx_cmd_draw_inderect( primary_cmd, pass->scene_renderer->debug_commands_sb[ gpu->current_frame ], CRUDE_OFFSETOF( crude_gfx_debug_draw_command_gpu, draw_indirect_2dline ), 1u, sizeof( crude_gfx_debug_draw_command_gpu ) );
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, debug_cube_pipeline );
@@ -129,12 +129,12 @@ crude_gfx_debug_pass_on_techniques_reloaded
 
   gpu = pass->scene_renderer->gpu;
   pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "debug", "debug_line3d" )->pipeline;
-  debug_line3d_dsl = crude_gfx_get_descriptor_set_layout( gpu, pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  debug_line3d_dsl = crude_gfx_get_descriptor_set_layout( gpu, pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
 
   pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "debug", "debug_cube" )->pipeline;
-  debug_cube_dsl = crude_gfx_get_descriptor_set_layout( gpu, pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  debug_cube_dsl = crude_gfx_get_descriptor_set_layout( gpu, pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->depth_lines3d_ds[ i ] ) )
     {
@@ -146,7 +146,7 @@ crude_gfx_debug_pass_on_techniques_reloaded
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                      ds_creation;
 
@@ -159,7 +159,7 @@ crude_gfx_debug_pass_on_techniques_reloaded
     pass->depth_lines3d_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                      ds_creation;
 

@@ -3,14 +3,14 @@
 #include <graphics/render_graph.h>
 #include <graphics/scene_renderer_resources.h>
 
-#define CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ( 16 )
+#define CRUDE_GRAPHICS_DEPTH_PYRAMID_PASS_MAX_LEVELS ( 16 )
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_culling_early_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          culling_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          culling_early_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_culling_early_pass;
 
 CRUDE_API void

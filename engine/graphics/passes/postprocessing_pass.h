@@ -8,10 +8,10 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_postprocessing_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_texture_handle                                 luminance_average_texture_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          luminance_histogram_generation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          luminance_average_calculation_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  packed_data_sb_handle[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_texture_handle                                 luminance_average_texture_handle[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          luminance_histogram_generation_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          luminance_average_calculation_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  packed_data_sb_handle[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   int64                                                    luminance_avarge_last_update_time;
   float32                                                  min_log_lum;
   float32                                                  max_log_lum;

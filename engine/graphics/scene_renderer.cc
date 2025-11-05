@@ -70,7 +70,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
   scene_renderer->options.ambient_intensity = 1.f;
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   }
@@ -85,7 +85,7 @@ crude_gfx_scene_renderer_initialize
   buffer_creation.name = "scene_cb";
   scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -111,7 +111,7 @@ crude_gfx_scene_renderer_initialize
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
+    buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
     buffer_creation.device_only = true;
     buffer_creation.name = "debug_line_vertices";
     scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
@@ -119,7 +119,7 @@ crude_gfx_scene_renderer_initialize
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_MAX_DEBUG_CUBES;
+    buffer_creation.size = sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES;
     buffer_creation.device_only = true;
     buffer_creation.name = "debug_cubes_sb";
     scene_renderer->debug_cubes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
@@ -138,7 +138,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
@@ -208,7 +208,7 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
   buffer_creation.name = "lights_sb";
   scene_renderer->lights_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_early_sb[ i ] ) )
     {
@@ -254,7 +254,7 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GFX_LIGHTS_MAX_COUNT * 4u;
+    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u;
     buffer_creation.name = "pointlight_world_to_clip_sb";
     scene_renderer->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
@@ -268,7 +268,7 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
+    buffer_creation.size = sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
     buffer_creation.name = "lights_bins_sb";
     scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
@@ -411,7 +411,7 @@ crude_gfx_scene_renderer_on_resize
   crude_gfx_buffer_creation                                buffer_creation;
   
   /* Reinitialize light gpu data */
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_tiles_sb[ i ] ) )
     {
@@ -419,11 +419,11 @@ crude_gfx_scene_renderer_on_resize
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    uint32 tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
-    uint32 tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GFX_LIGHT_TILE_SIZE;
-    uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
+    uint32 tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    uint32 tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
@@ -486,8 +486,8 @@ update_dynamic_buffers_
       scene_constant->meshes_instances_count = scene_renderer->total_meshes_instances_count;
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
-      scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_WIDTH;
-      scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_HEIGHT;
+      scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
+      scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
       scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
 #else
@@ -619,7 +619,7 @@ update_dynamic_buffers_
     temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( bin_range_per_light, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GFX_LIGHT_Z_BINS, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_gpu, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
 
     camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( scene_renderer->options.camera_node, crude_camera );
@@ -690,7 +690,7 @@ update_dynamic_buffers_
     }
     
     /* Calculate lights clusters */
-    bin_size = 1.f / CRUDE_GFX_LIGHT_Z_BINS;
+    bin_size = 1.f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
     
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
     {
@@ -704,17 +704,17 @@ update_dynamic_buffers_
         bin_range_per_light[ i ] = UINT32_MAX;
         continue;
       }
-      min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( light->projected_z_min * CRUDE_GFX_LIGHT_Z_BINS ) );
-      max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( light->projected_z_max * CRUDE_GFX_LIGHT_Z_BINS ) );
+      min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( light->projected_z_min * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
+      max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( light->projected_z_max * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
       bin_range_per_light[ i ] = ( min_bin & 0xffff ) | ( ( max_bin & 0xffff ) << 16 );
     }
   
-    for ( uint32 bin = 0; bin < CRUDE_GFX_LIGHT_Z_BINS; ++bin )
+    for ( uint32 bin = 0; bin < CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS; ++bin )
     {
       float32                                              bin_min, bin_max;
       uint32                                               min_light_id, max_light_id;
   
-      min_light_id = CRUDE_GFX_LIGHTS_MAX_COUNT + 1;
+      min_light_id = CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 1;
       max_light_id = 0;
   
       bin_min = bin_size * bin;
@@ -777,7 +777,7 @@ update_dynamic_buffers_
       buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
       buffer_map.buffer = scene_renderer->lights_bins_sb[ gpu->current_frame ];
       buffer_map.offset = 0;
-      buffer_map.size = sizeof( uint32 ) * CRUDE_GFX_LIGHT_Z_BINS;
+      buffer_map.size = sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
       lights_luts_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
       if ( lights_luts_mapped )
       {
@@ -791,17 +791,17 @@ update_dynamic_buffers_
       float32                                              tile_size_inv;
       uint32                                               tile_x_count, tile_y_count, tiles_entry_count, buffer_size, tile_stride;
 
-      tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GFX_LIGHT_TILE_SIZE;
-      tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GFX_LIGHT_TILE_SIZE;
-      tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
+      tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+      tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+      tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
       buffer_size = tiles_entry_count * sizeof( uint32 );
   
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( light_tiles_bits, tiles_entry_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
       memset( light_tiles_bits, 0, buffer_size );
 
       znear = camera->near_z;
-      tile_size_inv = 1.0f / CRUDE_GFX_LIGHT_TILE_SIZE;
-      tile_stride = tile_x_count * CRUDE_GFX_LIGHT_WORDS_COUNT;
+      tile_size_inv = 1.0f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+      tile_stride = tile_x_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
   
       for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
       {
@@ -927,7 +927,7 @@ update_dynamic_buffers_
             {
               uint32                                       array_index, word_index, bit_index;
 
-              array_index = y * tile_stride + x * CRUDE_GFX_LIGHT_WORDS_COUNT;
+              array_index = y * tile_stride + x * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
 
               word_index = i / 32;
               bit_index = i % 32;

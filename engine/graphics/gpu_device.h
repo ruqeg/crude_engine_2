@@ -12,9 +12,6 @@ typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
 
-#define CRUDE_GFX_SWAPCHAIN_BARRIER_CMD_THREAD_ID ( 0 )
-#define CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID ( 0 )
-
 /************************************************
  *
  * GPU Device Structs
@@ -110,9 +107,9 @@ typedef struct crude_gfx_device
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
   VkSemaphore                                              vk_graphics_semaphore;
-  VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   VkDescriptorPool                                         vk_descriptor_pool;
   /**
    * Vulkan queues
@@ -124,7 +121,7 @@ typedef struct crude_gfx_device
   /**
    * Additional data related to the swapchain.
    */
-  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  VkImage                                                  vk_swapchain_images[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   uint32                                                   vk_swapchain_images_count;
   uint16                                                   vk_swapchain_width;
   uint16                                                   vk_swapchain_height;

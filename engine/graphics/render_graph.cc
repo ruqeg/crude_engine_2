@@ -34,7 +34,7 @@ crude_gfx_render_graph_initialize
   crude_linear_allocator_initialize( &render_graph->linear_allocator, CRUDE_RMEGA( 1u ), "render_graph_linear_allocator" );
   render_graph->builder = builder;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, crude_linear_allocator_pack( &render_graph->linear_allocator ) ); 
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( render_graph->nodes, CRUDE_GRAPHICS_RENDER_GRAPH_MAX_NODES_COUNT, crude_linear_allocator_pack( &render_graph->linear_allocator ) ); 
 }
 
 void
@@ -1114,7 +1114,7 @@ crude_gfx_render_graph_builder_resource_cache_initialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_resource ) );
+  crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GRAPHICS_RENDER_GRAPH_MAX_RESOURCES_COUNT, sizeof( crude_gfx_render_graph_resource ) );
   builder->resource_cache.resource_map = NULL;
   CRUDE_HASHMAP_INITIALIZE( builder->resource_cache.resource_map, builder->allocator_container );
 }
@@ -1125,7 +1125,7 @@ crude_gfx_render_graph_builder_node_cache_initialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT, sizeof( crude_gfx_render_graph_node ) );
+  crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GRAPHICS_RENDER_GRAPH_MAX_NODES_COUNT, sizeof( crude_gfx_render_graph_node ) );
   builder->node_cache.node_map = NULL;
   CRUDE_HASHMAP_INITIALIZE( builder->node_cache.node_map, builder->allocator_container );
 }

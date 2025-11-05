@@ -10,8 +10,8 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_ray_tracing_solid_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          ray_tracing_solid_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  uniform_buffer[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          ray_tracing_solid_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  uniform_buffer[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_ray_tracing_solid_pass;
 
 CRUDE_API void

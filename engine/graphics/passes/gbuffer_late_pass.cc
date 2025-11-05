@@ -14,7 +14,7 @@ crude_gfx_gbuffer_late_pass_initialize
 {
   pass->scene_renderer = scene_renderer;
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->meshlet_late_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
@@ -28,7 +28,7 @@ crude_gfx_gbuffer_late_pass_deinitialize
   _In_ crude_gfx_gbuffer_late_pass                        *pass
 )
 {
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->meshlet_late_ds[ i ] );
   }
@@ -76,9 +76,9 @@ crude_gfx_gbuffer_late_pass_on_techniques_reloaded
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_late_pass*, ctx );
 
   meshlet_pass = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "deferred_meshlet", "deferred_meshlet" );
-  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, meshlet_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, meshlet_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->meshlet_late_ds[ i ] ) )
     {
@@ -86,7 +86,7 @@ crude_gfx_gbuffer_late_pass_on_techniques_reloaded
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 

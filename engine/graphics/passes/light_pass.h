@@ -13,7 +13,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_light_constant_gpu
 typedef struct crude_gfx_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          light_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          light_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  light_cb;
 } crude_gfx_light_pass;
 

@@ -256,12 +256,12 @@ crude_gfx_device_initialize
     gpu->gpu_timestamp_frequency = vk_physical_properties.limits.timestampPeriod / ( 1000 * 1000 );
 
     uint32 gpu_time_queries_per_frame = 32;
-    uint32 num_pools = creation->num_threads * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
+    uint32 num_pools = creation->num_threads * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
     gpu->num_threads = creation->num_threads;
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gpu->thread_frame_pools, num_pools, gpu->allocator_container );
     
     gpu->gpu_time_queries_manager = CRUDE_STATIC_CAST( crude_gfx_gpu_time_queries_manager*, CRUDE_ALLOCATE( gpu->allocator_container, sizeof( crude_gfx_gpu_time_queries_manager ) ) );
-    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, gpu->allocator_container, gpu_time_queries_per_frame, creation->num_threads , CRUDE_GFX_MAX_SWAPCHAIN_IMAGES );
+    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, gpu->allocator_container, gpu_time_queries_per_frame, creation->num_threads , CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES );
     
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->thread_frame_pools ); ++i )
     {
@@ -319,7 +319,7 @@ crude_gfx_device_initialize
 
     semaphore_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreCreateInfo );
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+    for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
     {
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_updated_semaphore[ i ] );
@@ -379,7 +379,7 @@ crude_gfx_device_initialize
     dynamic_buffer_creation.type_flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
     dynamic_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GFX_MAX_SWAPCHAIN_IMAGES;
+    dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
     gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
     
     buffer_map = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { .buffer = gpu->dynamic_buffer } );
@@ -480,7 +480,7 @@ crude_gfx_device_deinitialize
   
   vkDestroyFence( gpu->vk_device, gpu->vk_immediate_fence, gpu->vk_allocation_callbacks );
   vkDestroySemaphore( gpu->vk_device, gpu->vk_graphics_semaphore, gpu->vk_allocation_callbacks );
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     vkDestroySemaphore( gpu->vk_device, gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_swapchain_updated_semaphore[ i ], gpu->vk_allocation_callbacks );
@@ -534,9 +534,9 @@ crude_gfx_new_frame
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  if ( gpu->absolute_frame >= CRUDE_GFX_MAX_SWAPCHAIN_IMAGES )
+  if ( gpu->absolute_frame >= CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES )
   {
-    uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GFX_MAX_SWAPCHAIN_IMAGES - 1 );
+    uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES - 1 );
     uint64 wait_values[ ] = { graphics_timeline_value };
   
     VkSemaphore semaphores[] = { gpu->vk_graphics_semaphore };
@@ -593,8 +593,8 @@ crude_gfx_present
   }
 
   {
-    VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
-    VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GFX_MAX_BINDLESS_RESOURCES ];
+    VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES ];
+    VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES ];
     uint32                                                 current_write_index;
 
     current_write_index = 0;
@@ -622,7 +622,7 @@ crude_gfx_present
       descriptor_write->dstArrayElement = texture_to_update->handle;
       descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       descriptor_write->dstSet = bindless_descriptor_set->vk_descriptor_set;
-      descriptor_write->dstBinding = CRUDE_GFX_BINDLESS_TEXTURE_BINDING;
+      descriptor_write->dstBinding = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING;
       
       descriptor_image_info = &bindless_image_info[ current_write_index ];    
       if ( texture->sampler )
@@ -657,7 +657,7 @@ crude_gfx_present
 
         descriptor_image_info_compute->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-        descriptor_write_image->dstBinding = CRUDE_GFX_BINDLESS_IMAGE_BINDING;
+        descriptor_write_image->dstBinding = CRUDE_GRAPHICS_BINDLESS_IMAGE_BINDING;
         descriptor_write_image->descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         descriptor_write_image->pImageInfo = descriptor_image_info_compute;
 
@@ -673,7 +673,7 @@ crude_gfx_present
   
   {
     VkSemaphoreSubmitInfo wait_semaphores[] = {
-      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame - ( CRUDE_GFX_MAX_SWAPCHAIN_IMAGES - 1 ), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0 }
+      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame - ( CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES - 1 ), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0 }
     };
       
     VkSemaphoreSubmitInfo signal_semaphores[] = {
@@ -688,7 +688,7 @@ crude_gfx_present
     
     VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
     submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
-    submit_info.waitSemaphoreInfoCount   = ( gpu->absolute_frame >= CRUDE_GFX_MAX_SWAPCHAIN_IMAGES );
+    submit_info.waitSemaphoreInfoCount   = ( gpu->absolute_frame >= CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES );
     submit_info.pWaitSemaphoreInfos      = wait_semaphores;
     submit_info.commandBufferInfoCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers );
     submit_info.pCommandBufferInfos      = command_buffers;
@@ -954,7 +954,7 @@ crude_gfx_dynamic_allocate
 )
 {
   void *mapped_memory = gpu->dynamic_mapped_memory + gpu->dynamic_allocated_size;
-  gpu->dynamic_allocated_size += crude_memory_align( size, CRUDE_GFX_UBO_ALIGNMENT );
+  gpu->dynamic_allocated_size += crude_memory_align( size, CRUDE_GRAPHICS_UBO_ALIGNMENT );
   return mapped_memory;
 }
 
@@ -1559,7 +1559,7 @@ crude_gfx_create_texture
     memcpy( destination_data, creation->initial_data, image_size );
     vmaUnmapMemory( gpu->vma_allocator, vma_staging_allocation );
     
-    cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID, true );
+    cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GRAPHICS_TEXTURE_COPY_FROM_BUFFER_THREAD_ID, true );
 
     vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferImageCopy );
     vk_region.bufferOffset = 0;
@@ -1927,7 +1927,7 @@ crude_gfx_create_pipeline
 {
   crude_gfx_pipeline                                      *pipeline;
   crude_gfx_shader_state                                  *shader_state;
-  VkDescriptorSetLayout                                    vk_layouts[ CRUDE_GFX_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  VkDescriptorSetLayout                                    vk_layouts[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
   VkPipelineLayoutCreateInfo                               vk_pipeline_layout_info;
   crude_gfx_pipeline_handle                                pipeline_handle;
   crude_gfx_shader_state_handle                            shader_state_handle;
@@ -1956,7 +1956,7 @@ crude_gfx_create_pipeline
   for ( uint32 i = 0; i < shader_state->reflect.descriptor.sets_count; ++i )
   {
     /* First set for bindless */
-    if ( i == CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX )
+    if ( i == CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
     {
       crude_gfx_descriptor_set_layout *bindless_descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
       vk_layouts[ i ] = bindless_descriptor_set_layout->vk_descriptor_set_layout;
@@ -2309,7 +2309,7 @@ crude_gfx_destroy_pipeline_instant
   {
     for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
     {
-      if ( i != CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX )
+      if ( i != CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
       {
         crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
       }
@@ -2603,7 +2603,7 @@ crude_gfx_create_descriptor_set
 
   if ( descriptor_set_layout->bindless )
   {
-    uint32 max_binding = CRUDE_GFX_MAX_BINDLESS_RESOURCES - 1;
+    uint32 max_binding = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES - 1;
     VkDescriptorSetVariableDescriptorCountAllocateInfoEXT count_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetVariableDescriptorCountAllocateInfoEXT );
     count_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
     count_info.descriptorSetCount = 1;
@@ -2616,9 +2616,9 @@ crude_gfx_create_descriptor_set
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
   }
 
-  VkWriteDescriptorSet descriptor_write[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  VkDescriptorBufferInfo buffer_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
-  VkDescriptorImageInfo image_info[ CRUDE_GFX_MAX_DESCRIPTORS_PER_SET ];
+  VkWriteDescriptorSet descriptor_write[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  VkDescriptorBufferInfo buffer_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  VkDescriptorImageInfo image_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
 
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkWriteDescriptorSetAccelerationStructureKHR vk_acceleration_structure_info;
@@ -2632,7 +2632,7 @@ crude_gfx_create_descriptor_set
   {
     crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ descriptor_set_layout->binding_to_index[ creation->bindings[ i ] ] ];
     
-    if ( binding->set == CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
+    if ( binding->set == CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
     {
       continue;
     }
@@ -4022,7 +4022,7 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
-  cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_SWAPCHAIN_BARRIER_CMD_THREAD_ID, true );
+  cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GRAPHICS_SWAPCHAIN_BARRIER_COMMAND_BUFFER_THREAD_ID, true );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
@@ -4086,13 +4086,13 @@ vk_create_descriptor_pool_
     }
     {
       VkDescriptorPoolSize pool_sizes_bindless[] = {
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_MAX_BINDLESS_RESOURCES },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_MAX_BINDLESS_RESOURCES }
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES }
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
       pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      pool_info.maxSets       = CRUDE_GFX_MAX_BINDLESS_RESOURCES * CRUDE_COUNTOF( pool_sizes_bindless );
+      pool_info.maxSets       = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES * CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.pPoolSizes    = pool_sizes_bindless;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
@@ -4105,13 +4105,13 @@ vk_create_descriptor_pool_
     creation.set_index = 0u;
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      .start = CRUDE_GFX_BINDLESS_TEXTURE_BINDING,
-      .count = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
+      .start = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING,
+      .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
     } ) );
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-      .start = CRUDE_GFX_BINDLESS_TEXTURE_BINDING + 1,
-      .count = CRUDE_GFX_MAX_BINDLESS_RESOURCES,
+      .start = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING + 1,
+      .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
     } ) );
     gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &creation );
   }
@@ -4507,7 +4507,7 @@ vk_reflect_shader_
 
       spv_binding = spv_descriptor_set->bindings[ binding_index ];
 
-      if ( set_index != CRUDE_GFX_BINDLESS_DESCRIPTOR_SET_INDEX )
+      if ( set_index != CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
       {
         //CRUDE_ASSERT( spv_binding->accessed );
         //if ( !spv_binding->accessed )

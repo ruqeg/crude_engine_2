@@ -8,7 +8,7 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_gbuffer_early_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          meshlet_early_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          meshlet_early_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_gbuffer_early_pass;
 
 CRUDE_API void

@@ -32,12 +32,12 @@ crude_gfx_ray_tracing_solid_pass_initialize
   buffer_creation.size = sizeof ( crude_gfx_ray_tracing_solid_gpu_data );
   buffer_creation.name = "ray_tracing_uniform_buffer";
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->uniform_buffer[ i ] = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
   }
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     pass->ray_tracing_solid_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   }
@@ -51,7 +51,7 @@ crude_gfx_ray_tracing_solid_pass_deinitialize
   _In_ crude_gfx_ray_tracing_solid_pass                   *pass
 )
 {
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->ray_tracing_solid_ds[ i ] );
     crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->uniform_buffer[ i ] );
@@ -112,9 +112,9 @@ crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
 
   pass = CRUDE_CAST( crude_gfx_ray_tracing_solid_pass*, ctx );
   ray_tracing_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "ray_tracing", "ray_tracing_solid" );
-  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_GFX_MATERIAL_DESCRIPTOR_SET_INDEX );
+  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->ray_tracing_solid_ds[ i ] ) )
     {
@@ -122,7 +122,7 @@ crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 

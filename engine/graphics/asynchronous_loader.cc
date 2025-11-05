@@ -57,7 +57,7 @@ crude_gfx_asynchronous_loader_initialize
   asynloader->file_load_requests_lpos = asynloader->file_load_requests_rpos = 0;
   asynloader->upload_requests_lpos = asynloader->upload_requests_rpos = 0;
 
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     VkCommandPoolCreateInfo                                vk_cmd_pool_info;
     VkCommandBufferAllocateInfo                            vk_cmd_info;
@@ -114,7 +114,7 @@ crude_gfx_asynchronous_loader_deinitialize
   
   crude_gfx_destroy_buffer( asynloader->gpu, asynloader->staging_buffer->handle );
   
-  for ( uint32 i = 0; i < CRUDE_GFX_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     vkDestroyCommandPool( asynloader->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->gpu->vk_allocation_callbacks );  
   }

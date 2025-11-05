@@ -59,12 +59,12 @@ typedef struct crude_gfx_indirect_light_pass_options
 typedef struct crude_gfx_indirect_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          probe_raytrace_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          probe_debug_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          calculate_probe_offsets_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          probe_update_irradiance_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          probe_update_visibility_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_descriptor_set_handle                          sample_irradiance_ds[ CRUDE_GFX_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          probe_raytrace_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          probe_debug_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          calculate_probe_offsets_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          probe_update_irradiance_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          probe_update_visibility_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_descriptor_set_handle                          sample_irradiance_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_texture_handle                                 probe_grid_irradiance_texture_handle;
   crude_gfx_texture_handle                                 probe_grid_visibility_texture_handle;
   crude_gfx_texture_handle                                 probe_offsets_texture_handle;

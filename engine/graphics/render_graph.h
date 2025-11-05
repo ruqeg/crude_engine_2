@@ -29,10 +29,6 @@ typedef struct crude_gfx_render_graph_node_handle
 #define CRUDE_GFX_RENDER_GRAPH_RESOURCE_HANDLE_INVALID ( CRUDE_COMPOUNT( crude_gfx_render_graph_resource_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID ( CRUDE_COMPOUNT( crude_gfx_render_graph_node_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 
-#define CRUDE_GFX_RENDER_GRAPH_MAX_RENDER_PASS_COUNT 256
-#define CRUDE_GFX_RENDER_GRAPH_MAX_RESOURCES_COUNT   1024
-#define CRUDE_GFX_RENDER_GRAPH_MAX_NODES_COUNT       1024
-
 /************************************************
  *
  * Render Graph Resource
