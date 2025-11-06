@@ -310,63 +310,26 @@ CRUDE_RBUFFER( VerticesIndices, 6 )
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
 {
-  uint                                                     meshlet_indices[ 128 ];
-  uint                                                     mesh_instance_draw_indices[ 128 ];
+  uint                                                     mesh_instance_draw_index;
+  uint                                                     meshletes_offset;
 } shared_data;
 #endif
 
 #if defined( CRUDE_STAGE_TASK )
 
-layout(local_size_x=32) in;
+layout(local_size_x=1) in;
 
 void main()
 {
   uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
   uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
-  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset;
-
-  if ( meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
-  {
-    return;
-  }
-
-  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
-  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
-  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
-  float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
-
-  vec3 cone_axis = vec3(
-    int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
-    int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
-    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( mesh_to_world );
-  float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
   
-  bool accept = true;
-/*
-  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.camera.position );
-  
-  vec4 view_center = world_center * scene.camera.world_to_view;
+  shared_data.meshletes_offset = mesh_draws[ mesh_draw_index ].meshletes_offset;
+  shared_data.mesh_instance_draw_index = mesh_instance_draw_index;
 
-  bool frustum_visible = true;
-  for ( uint i = 0; i < 6; ++i )
-  {
-    frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
-  }
-  accept = accept && frustum_visible;*/
-
-  uvec4 ballot = subgroupBallot( accept );
-  
-  uint previous_visible_meshlet_index = subgroupBallotExclusiveBitCount( ballot );
-  if ( accept )
-  {
-    shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
-    shared_data.mesh_instance_draw_indices[ previous_visible_meshlet_index ] = mesh_instance_draw_index;
-  }
-  
-  uint visible_meslets_count = subgroupBallotBitCount( ballot );
   if ( gl_LocalInvocationID.x == 0 )
   {
-    EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
+    EmitMeshTasksEXT( mesh_draws[ mesh_draw_index ].meshletes_count, 1, 1 );
   }
 }
 
@@ -391,8 +354,8 @@ void main()
 {
   uint task_index = gl_LocalInvocationID.x;
   uint local_meshlet_index = gl_WorkGroupID.x;
-  uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
-  uint mesh_instance_draw_index = shared_data.mesh_instance_draw_indices[ local_meshlet_index ];
+  uint global_meshlet_index = local_meshlet_index + shared_data.meshletes_offset;
+  uint mesh_instance_draw_index = shared_data.mesh_instance_draw_index;
   uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
   
   uint mesh_index = meshlets[ global_meshlet_index ].mesh_index;

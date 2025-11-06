@@ -49,7 +49,7 @@ crude_gfx_collision_visualizer_pass_render
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred_meshlet", "collision_visualizer" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->collision_visualizer_ds[ gpu->current_frame ] );
-  crude_gfx_cmd_draw_mesh_task( primary_cmd, ( pass->scene_renderer->total_collision_meshes_instances_count + 31 ) / 32, 1, 1 );
+  crude_gfx_cmd_draw_mesh_task( primary_cmd, pass->scene_renderer->total_collision_meshes_instances_count, 1, 1 );
 }
 
 void
