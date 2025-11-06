@@ -36,25 +36,26 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 	"--glsl-version",
 	"460",
 	"-DCRUDE_VALIDATOR_LINTING"
+    "-e"
+    "GL_GOOGLE_include_directive"
 ],
 ```
 
 ## Dependencies
-- [cgltf](https://github.com/jkuhlmann/cgltf)
-- [cJSON](https://github.com/DaveGamble/cJSON)
-- [cr](https://github.com/fungos/cr)
-- [imgui](https://github.com/ocornut/imgui)
-- [SPIRV-Reflect](https://github.com/KhronosGroup/SPIRV-Reflect)
-- [stb](https://github.com/nothings/stb)
-- [tlsf](https://github.com/mattconte/tlsf)
-- [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-- [enkiTS](https://github.com/dougbinks/enkiTS)
-- [miniaudio](https://github.com/mackron/miniaudio)
-- [flecs](https://github.com/ruqeg/flecs)
-- [SDL3](https://github.com/ruqeg/SDL)
-- [tracy](https://github.com/ruqeg/tracy)
-- [meshoptimizer](https://github.com/ruqeg/meshoptimizer)
-- [flecs](https://github.com/SanderMertens/flecs)
+[cgltf](https://github.com/jkuhlmann/cgltf), 
+[cJSON](https://github.com/DaveGamble/cJSON),
+[imgui](https://github.com/ocornut/imgui),
+[SPIRV-Reflect](https://github.com/KhronosGroup/SPIRV-Reflect),
+[stb](https://github.com/nothings/stb),
+[tlsf](https://github.com/mattconte/tlsf)
+[VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator),
+[enkiTS](https://github.com/dougbinks/enkiTS),
+[miniaudio](https://github.com/mackron/miniaudio),
+[flecs](https://github.com/ruqeg/flecs),
+[SDL3](https://github.com/ruqeg/SDL),
+[tracy](https://github.com/ruqeg/tracy),
+[meshoptimizer](https://github.com/ruqeg/meshoptimizer),
+[flecs](https://github.com/SanderMertens/flecs)
 
 
 ## TODO
