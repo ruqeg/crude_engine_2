@@ -247,7 +247,7 @@ crude_collision_shape_to_model_filename
   }
   else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
   {
-    return "editor\\models\\crude_physics_box_collision_shape.gltf";
+    return "editor\\models\\crude_physics_sphere_collision_shape.gltf";
   }
   else
   {

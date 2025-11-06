@@ -614,7 +614,7 @@ crude_gfx_present
       {
         continue;
       }
-      
+
       descriptor_write = &bindless_descriptor_writes[ current_write_index ];
       memset( descriptor_write, 0, sizeof( VkWriteDescriptorSet ) );
       descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1100,7 +1100,7 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" ); 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s" CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
 

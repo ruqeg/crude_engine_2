@@ -72,9 +72,16 @@ crude_gfx_scene_renderer_initialize
   
   scene_renderer->meshes_instances_draws_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   scene_renderer->collision_meshes_instances_draws_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-
+  scene_renderer->lights_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
+    scene_renderer->mesh_task_indirect_commands_early_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    scene_renderer->mesh_task_indirect_commands_late_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    scene_renderer->pointlight_world_to_clip_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    scene_renderer->lights_indices_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    scene_renderer->lights_bins_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+    scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
     scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   }
 
@@ -227,10 +234,10 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+  buffer_creation.size = sizeof( crude_gfx_light_gpu ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 );
   buffer_creation.name = "lights_sb";
   scene_renderer->lights_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  
+
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_early_sb[ i ] ) )
@@ -284,7 +291,7 @@ crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( uint32 ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    buffer_creation.size = sizeof( uint32 ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 );
     buffer_creation.name = "lights_indices_sb";
     scene_renderer->lights_indices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
@@ -684,6 +691,7 @@ update_dynamic_buffers_
   }
   
   /* Update lights buffers */
+  if ( CRUDE_ARRAY_LENGTH( scene_renderer->lights ) )
   {
     crude_camera const                                    *camera;
     crude_transform const                                 *camera_transform;

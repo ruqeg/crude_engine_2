@@ -236,13 +236,13 @@ void main()
   crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
 
   vec4 albedo = mesh_draw.albedo_color_factor;
-  if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
+  if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
   {
     albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
   }
 
   vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
-  if ( mesh_draw.textures.y != CRUDE_TEXTURE_INVALID )
+  if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
   {
     roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
   }
@@ -253,7 +253,7 @@ void main()
 
   crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
 
-  if ( mesh_draw.textures.z != CRUDE_TEXTURE_INVALID )
+  if ( mesh_draw.textures.z != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
   {
     const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
     const mat3 tbn = mat3( tangent, bitangent, normal );
@@ -342,7 +342,7 @@ void main()
   float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
   
   bool accept = true;
-
+/*
   accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.camera.position );
   
   vec4 view_center = world_center * scene.camera.world_to_view;
@@ -352,7 +352,7 @@ void main()
   {
     frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
-  accept = accept && frustum_visible;
+  accept = accept && frustum_visible;*/
 
   uvec4 ballot = subgroupBallot( accept );
   

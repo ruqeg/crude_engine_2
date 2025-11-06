@@ -54,6 +54,8 @@ crude_gfx_asynchronous_loader_initialize
   asynloader->gpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   asynloader->gpu_old_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 
+  asynloader->total_requests_count = 0;
+
   asynloader->file_load_requests_lpos = asynloader->file_load_requests_rpos = 0;
   asynloader->upload_requests_lpos = asynloader->upload_requests_rpos = 0;
 
@@ -137,6 +139,8 @@ crude_gfx_asynchronous_loader_request_texture_data
 
   crude_gfx_texture *texture = crude_gfx_access_texture( asynloader->gpu, texture_handle );
   texture->ready = false;
+
+  ++asynloader->total_requests_count;
 }
 
 void
@@ -160,6 +164,8 @@ crude_gfx_asynchronous_loader_request_buffer_copy
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_buffer );
   buffer->ready = false;
+
+  ++asynloader->total_requests_count;
 }
 
 CRUDE_API void
@@ -184,6 +190,8 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_buffer );
   buffer->ready = false;
+
+  ++asynloader->total_requests_count;
 }
 
 void
@@ -197,6 +205,8 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_add_texture_to_update( asynloader->gpu, asynloader->texture_ready );
 
     asynloader->texture_ready = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+
+    --asynloader->total_requests_count;
   }
   
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->cpu_buffer_ready ) && CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->gpu_buffer_ready ) )
@@ -214,6 +224,8 @@ crude_gfx_asynchronous_loader_update
     asynloader->cpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
     asynloader->gpu_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
     asynloader->gpu_old_buffer_ready = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+
+    --asynloader->total_requests_count;
   }
   
   if ( asynloader->upload_requests_lpos != asynloader->upload_requests_rpos )
@@ -309,7 +321,7 @@ crude_gfx_asynchronous_loader_update
     int32                                                  x, y, comp;
 
     load_request = crude_gfx_asynchronous_loader_pop_file_load_request_( asynloader );
-
+    
     start_reading_file = crude_time_now();
     texture_data = stbi_load( load_request.path, &x, &y, &comp, 4 );
     if ( texture_data )
@@ -337,7 +349,8 @@ crude_gfx_asynchronous_loader_has_requests
   _In_ crude_gfx_asynchronous_loader const                *asynloader
 )
 {
-  return ( asynloader->upload_requests_lpos != asynloader->upload_requests_rpos ) || ( asynloader->file_load_requests_lpos != asynloader->file_load_requests_rpos ) || CRUDE_RESOURCE_HANDLE_IS_VALID( asynloader->texture_ready );
+  return asynloader->total_requests_count;
+;
 }
 
 /************************************************

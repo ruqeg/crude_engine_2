@@ -145,6 +145,11 @@ crude_gfx_pointlight_shadow_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_pointlight_shadow_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
+  if ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) == 0 )
+  {
+    return;
+  }
+
   pointshadow_culling_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "pointshadow_meshlet", "pointshadow_culling" )->pipeline;
   pointshadow_commands_generation_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "pointshadow_meshlet", "pointshadow_commands_generation" )->pipeline;
   pointshadow_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "pointshadow_meshlet", "pointshadow" )->pipeline;
