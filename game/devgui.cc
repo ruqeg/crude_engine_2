@@ -463,10 +463,16 @@ crude_devgui_node_inspector_draw
     ImGui::Text( "TODO" );
   }
   
+  crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
+  if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_collision_shape ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_collision_shape )( node, collision_shape );
+  }
+  
   crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( player_controller );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( node, player_controller );
   }
   ImGui::End( );
 }

@@ -510,6 +510,18 @@ crude_gfx_cmd_draw_indexed
 }
 
 void
+crude_gfx_cmd_draw_mesh_task
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ uint32                                              group_count_x,
+  _In_ uint32                                              group_count_y,
+  _In_ uint32                                              group_count_z
+)
+{
+  cmd->gpu->vkCmdDrawMeshTasksEXT( cmd->vk_cmd_buffer, group_count_x, group_count_y, group_count_z );
+}
+
+void
 crude_gfx_cmd_draw_mesh_task_indirect_count
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

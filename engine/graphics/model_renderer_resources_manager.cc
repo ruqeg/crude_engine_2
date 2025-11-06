@@ -461,22 +461,21 @@ crude_gfx_model_renderer_resources_manager_gltf_parse_
   result = cgltf_parse_file( &gltf_options, gltf_path, &gltf );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, "Failed to parse gltf file: %s", gltf_path );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Failed to parse gltf file: %s", gltf_path );
     return NULL;
   }
 
   result = cgltf_load_buffers( &gltf_options, gltf, gltf_path );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, "Failed to load buffers from gltf file: %s", gltf_path );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Failed to load buffers from gltf file: %s", gltf_path );
     return NULL;
   }
 
   result = cgltf_validate( gltf );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERT( false );
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Failed to validate gltf file: %s", gltf_path );
+    CRUDE_ASSERT( CRUDE_CHANNEL_GRAPHICS, false, "Failed to validate gltf file: %s", gltf_path );
     return NULL;
   }
 

@@ -23,7 +23,6 @@ typedef struct crude_scene_creation
   ecs_world_t                                             *world;
   crude_entity                                             input_entity;
   char const                                              *filepath;
-  char const                                              *resources_path;
   crude_stack_allocator                                   *temporary_allocator;
   crude_allocator_container                                allocator_container;
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;

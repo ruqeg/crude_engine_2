@@ -75,25 +75,23 @@ CRUDE_RBUFFER( MeshDrawCommands, 8 )
 };
 
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
+#if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_instance_draw_indices[ 128 ];
 } shared_data;
-#endif /* CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )*/
+#endif
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_TASK )
+#if defined( CRUDE_STAGE_TASK )
 
 layout(local_size_x=32) in;
 
 void main()
 {
-  uint thread_index = gl_LocalInvocationID.x;
-  uint group_index = gl_WorkGroupID.x;
   uint draw_id = mesh_draw_commands[ gl_DrawIDARB ].draw_id;
   uint mesh_draw_index = mesh_instance_draws[ draw_id ].mesh_draw_index;
-  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
+  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
 
   if ( meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
   {
@@ -145,7 +143,7 @@ void main()
   }
   
   uint visible_meslets_count = subgroupBallotBitCount( ballot );
-  if ( thread_index == 0 )
+  if ( gl_LocalInvocationID.x == 0 )
   {
     EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
   }
@@ -221,7 +219,7 @@ void main()
 #endif /* CRUDE_STAGE_MESH */
 
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_FRAGMENT )
+#if defined( CRUDE_STAGE_FRAGMENT )
 layout(location = 0) out vec4 out_abledo;
 layout(location = 1) out vec2 out_normal;
 layout(location = 2) out vec2 out_roughness_metalness;
@@ -309,38 +307,30 @@ CRUDE_RBUFFER( VerticesIndices, 6 )
   uint                                                     vertices_indices[];
 };
 
-CRUDE_RBUFFER( MeshDrawCommands, 8 )
-{
-  crude_mesh_draw_command                                  mesh_draw_commands[];
-};
-
-
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
 {
   uint                                                     meshlet_indices[ 128 ];
   uint                                                     mesh_instance_draw_indices[ 128 ];
 } shared_data;
-#endif defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )*/
+#endif
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_TASK )
+#if defined( CRUDE_STAGE_TASK )
 
 layout(local_size_x=32) in;
 
 void main()
 {
-  uint thread_index = gl_LocalInvocationID.x;
-  uint group_index = gl_WorkGroupID.x;
-  uint draw_id = mesh_draw_commands[ gl_DrawIDARB ].draw_id;
-  uint mesh_draw_index = mesh_instance_draws[ draw_id ].mesh_draw_index;
-  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset + group_index * gl_WorkGroupSize.x + thread_index;
+  uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
+  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
+  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset;
 
   if ( meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
   {
     return;
   }
 
-  mat4 mesh_to_world = mesh_instance_draws[ draw_id ].mesh_to_world;
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
   float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
@@ -363,17 +353,6 @@ void main()
     frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
   accept = accept && frustum_visible;
-  
-  bool occlusion_visible = false;
-  if ( frustum_visible )
-  {
-    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.camera.znear,
-      scene.camera.view_to_clip[ 0 ][ 0 ], scene.camera.view_to_clip[ 1 ][ 1 ],
-      depth_pyramid_texture_index,
-      world_center.xyz, scene.camera.position, scene.camera.world_to_clip
-    );
-  }
-  accept = accept && occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );
   
@@ -381,18 +360,20 @@ void main()
   if ( accept )
   {
     shared_data.meshlet_indices[ previous_visible_meshlet_index ] = meshlet_index;
-    shared_data.mesh_instance_draw_indices[ previous_visible_meshlet_index ] = draw_id;
+    shared_data.mesh_instance_draw_indices[ previous_visible_meshlet_index ] = mesh_instance_draw_index;
   }
   
   uint visible_meslets_count = subgroupBallotBitCount( ballot );
-  if ( thread_index == 0 )
+  if ( gl_LocalInvocationID.x == 0 )
   {
     EmitMeshTasksEXT( visible_meslets_count, 1, 1 );
   }
 }
+
 #endif /* CRUDE_STAGE_TASK */
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_MESH )
+#if defined( CRUDE_STAGE_MESH )
+
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
@@ -461,10 +442,8 @@ void main()
 #endif /* CRUDE_STAGE_MESH */
 
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_FRAGMENT )
-layout(location = 0) out vec4 out_abledo;
-layout(location = 1) out vec2 out_normal;
-layout(location = 2) out vec2 out_roughness_metalness;
+#if defined( CRUDE_STAGE_FRAGMENT )
+layout(location = 0) out vec4 out_color;
 
 layout(location=0) in vec2 in_texcoord0;
 layout(location=1) in flat uint in_mesh_draw_index;
@@ -475,36 +454,7 @@ layout(location=5) in vec3 in_world_position;
 
 void main()
 {
-  crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
-
-  vec4 albedo = mesh_draw.albedo_color_factor;
-  if ( mesh_draw.textures.x != CRUDE_TEXTURE_INVALID )
-  {
-    albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
-  }
-
-  vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
-  if ( mesh_draw.textures.y != CRUDE_TEXTURE_INVALID )
-  {
-    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
-  }
-  
-  vec3 normal = normalize( in_normal );
-  vec3 tangent = normalize( in_tangent );
-  vec3 bitangent = normalize( in_bitangent );
-
-  crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
-
-  if ( mesh_draw.textures.z != CRUDE_TEXTURE_INVALID )
-  {
-    const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
-    const mat3 tbn = mat3( tangent, bitangent, normal );
-    normal = normalize( tbn * normalize( bump_normal ) );
-  }
-
-  out_abledo = albedo;
-  out_normal = crude_octahedral_encode( normal );
-  out_roughness_metalness = roughness_metalness;
+  out_color = vec4( 0, 1, 1, 0.3 );
 }
 #endif /* CRUDE_STAGE_FRAGMENT */
-#endif /* DEFERRED_MESHLET */
+#endif /* COLLISION_VISUALIZER */

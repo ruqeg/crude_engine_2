@@ -37,7 +37,8 @@
 						"type":	"crude_gltf",
 						"path":	"glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
 					}],
-				"children":	[
+				"children":	[]
+			}, 
 					{
 				"name":	"model_sponza_collision",
 				"transform":	{
@@ -53,9 +54,8 @@
 						"half_extent": [ 100, 100, 0.5 ]
 					}],
 					"children":	[]
-					}
-				]
-			}, {
+					},
+					{
 				"name":	"player",
 				"transform":	{
 					"translation":	[-2.0999999046325684, 12.081685066223145, 0.010904788970947266],

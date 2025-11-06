@@ -140,7 +140,7 @@ crude_scene_initialize
   {
     char working_directory[ 512 ];
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-    scene->resources_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", working_directory, creation->resources_path );
+    scene->resources_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", working_directory, CRUDE_RESOURCES_DIR );
   }
 
   allocated_marker = crude_stack_allocator_get_marker( scene->temporary_allocator );

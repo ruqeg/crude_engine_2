@@ -67,32 +67,32 @@ crude_physics_creation_empty
 CRUDE_API XMVECTOR
 crude_physics_dynamic_body_get_center_of_mass_position
 (
-  _In_ crude_physics_dynamic_body const                   *dynamic_body
+  _In_ crude_physics_body_handle const                    *dynamic_body
 );
 
 CRUDE_API void
 crude_physics_dynamic_body_set_position
 (
-  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            position
 );
 
 CRUDE_API void
 crude_physics_dynamic_body_set_linear_velocity
 (
-  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            velocity
 );
 
 CRUDE_API void
 crude_physics_dynamic_body_add_linear_velocity
 (
-  _In_ crude_physics_dynamic_body const                   *dynamic_body,
+  _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            velocity
 );
 
 CRUDE_API XMVECTOR
 crude_physics_dynamic_body_get_linear_velocity
 (
-  _In_ crude_physics_dynamic_body const                   *dynamic_body
+  _In_ crude_physics_body_handle const                    *dynamic_body
 );

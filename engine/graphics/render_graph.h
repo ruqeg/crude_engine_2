@@ -275,6 +275,12 @@ crude_gfx_render_graph_builder_unregister_render_pass
   _In_ char const                                         *name
 );
 
+CRUDE_API void
+crude_gfx_render_graph_builder_unregister_all_render_passes
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+);
+
 CRUDE_API crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_create_node
 (

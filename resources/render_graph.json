@@ -261,11 +261,34 @@
       ]
     },
     {
+      "name": "collision_visualizer_pass",
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "final"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "marker",
+          "name": "collision_visualizer_marker"
+        }
+      ]
+    },
+    {
       "name": "debug_pass",
       "inputs": [
         {
           "type": "attachment",
           "name": "final"
+        },
+        {
+          "type": "reference",
+          "name": "collision_visualizer_marker"
         }
       ],
       "outputs": [

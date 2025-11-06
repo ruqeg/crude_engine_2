@@ -37,5 +37,6 @@ cJSON* crude_parse_component_to_json_func##component_type\
 #define CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( component_type )\
 void crude_parse_component_to_imgui_func##component_type\
 (\
+  _In_ crude_entity                                        node,\
   _In_ component_type                                     *component\
 )

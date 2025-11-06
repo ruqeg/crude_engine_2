@@ -199,7 +199,6 @@ game_reload_scene
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
   scene_creation.filepath = filename;
-  scene_creation.resources_path = CRUDE_GAME_RESOURCES_PATH;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
@@ -450,8 +449,7 @@ game_initialize_scene_
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_GAME_RESOURCES_PATH, "scene.crude_scene" );
-  scene_creation.resources_path = CRUDE_GAME_RESOURCES_PATH;
+  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, "scene.crude_scene" );
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
@@ -533,7 +531,7 @@ game_initialize_graphics_
   crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
 
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  game->scene_renderer.options.ambient_intensity = 0.2f;
+  game->scene_renderer.options.ambient_intensity = 1.5f;
 
   crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );

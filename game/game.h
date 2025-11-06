@@ -7,9 +7,6 @@
 #include <platform/platform_components.h>
 #include <devgui.h>
 
-#define CRUDE_GAME_RESOURCES_PATH "\\..\\..\\resources\\"
-#define CRUDE_GAME_SHADERS_PATH "\\..\\..\\shaders\\"
-
 typedef struct game_t
 {
   /* Context */

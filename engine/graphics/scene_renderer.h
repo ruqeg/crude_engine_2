@@ -14,6 +14,7 @@
 #include <graphics/passes/postprocessing_pass.h>
 #include <graphics/passes/ray_tracing_solid_pass.h>
 #include <graphics/passes/indirect_light_pass.h>
+#include <graphics/passes/collision_visualizer_pass.h>
 #include <graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_scene crude_scene;
@@ -122,6 +123,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
+  crude_gfx_collision_visualizer_pass                      collision_visualizer_pass;
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;

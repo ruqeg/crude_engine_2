@@ -1,4 +1,5 @@
 #include <core/assert.h>
+#include <imgui/imgui.h>
 
 #include <scene/scene_components.h>
 
@@ -142,6 +143,18 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_collision_shape )
   return collision_shape_json;
 }
 
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_collision_shape )
+{
+  if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
+  {
+    ImGui::Text( "Type: Box" );
+    if ( ImGui::DragFloat3( "Half Extent", &component->box.half_extent.x, 0.01 ) )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
+    }
+  }
+}
+
 XMMATRIX
 crude_camera_view_to_clip
 (
@@ -230,11 +243,11 @@ crude_collision_shape_to_model_filename
 {
   if ( type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
   {
-    return "editor//models//crude_physics_box_collision_shape.gltf";
+    return "editor\\models\\crude_physics_box_collision_shape.gltf";
   }
   else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
   {
-    return "editor//models//crude_physicssphere_collision_shape.gltf";
+    return "editor\\models\\crude_physicssphere_collision_shape.gltf";
   }
   else
   {

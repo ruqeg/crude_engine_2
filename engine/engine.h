@@ -8,8 +8,6 @@
 
 typedef struct crude_engine_creation
 {
-  char const                                              *resource_path;
-  char const                                              *shader_path;
 } crude_engine_creation;
 
 typedef struct crude_engine
@@ -20,8 +18,6 @@ typedef struct crude_engine
   enkiPinnedTask                                          *pinned_task_loop;
   crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
   crude_heap_allocator                                     asynchronous_loader_manager_allocator;
-  char const                                              *resources_path;
-  char const                                              *shaders_path;
   int64                                                    last_update_time;
 } crude_engine;
 

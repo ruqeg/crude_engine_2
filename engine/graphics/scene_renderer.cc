@@ -313,6 +313,7 @@ crude_gfx_scene_renderer_initialize_pases
   crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
   crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
+  crude_gfx_collision_visualizer_pass_initialize( &scene_renderer->collision_visualizer_pass, scene_renderer );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
@@ -327,16 +328,7 @@ crude_gfx_scene_renderer_deinitialize_passes
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "gbuffer_early_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "gbuffer_late_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "imgui_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "depth_pyramid_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "culling_early_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "culling_late_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "debug_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "light_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "postprocessing_pass" );
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "point_shadows_pass" );
+  crude_gfx_render_graph_builder_unregister_all_render_passes( scene_renderer->render_graph->builder );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
@@ -354,6 +346,7 @@ crude_gfx_scene_renderer_deinitialize_passes
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
+  crude_gfx_collision_visualizer_pass_deinitialize( &scene_renderer->collision_visualizer_pass );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
@@ -412,6 +405,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "collision_visualizer_pass", crude_gfx_collision_visualizer_pass_pack( &scene_renderer->collision_visualizer_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
@@ -588,13 +582,25 @@ update_dynamic_buffers_
       for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances ); ++model_instance_index )
       {
         crude_gfx_model_renderer_resources_instance       *collision_model_renderer_resources_instance;
+        crude_collision_shape const                       *collision_shape;
+        XMMATRIX                                           collision_transform_matrix;
 
         collision_model_renderer_resources_instance = &scene_renderer->collision_model_renderer_resoruces_instances[ model_instance_index ];
+        collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_collision_shape );
+
+        collision_transform_matrix = XMMatrixIdentity( );
+        if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
+        {
+          collision_transform_matrix = XMMatrixScaling( 2.f * collision_shape->box.half_extent.x, 2.f * collision_shape->box.half_extent.y, 2.f * collision_shape->box.half_extent.z );
+        }
+        else
+        {
+          CRUDE_ASSERT( false );
+        }
 
         for ( uint32 collision_model_mesh_instance_index = 0; collision_model_mesh_instance_index < CRUDE_ARRAY_LENGTH( collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++collision_model_mesh_instance_index )
         {
           crude_transform const                             *mesh_transform, *model_transform;
-          crude_collision_shape const                       *collision_shape;
           XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
           crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
           
@@ -602,16 +608,7 @@ update_dynamic_buffers_
 
           mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
           mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
-          
-          collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_collision_shape );
-          if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-          {
-            mesh_to_model = XMMatrixMultiply( mesh_to_model, XMMatrixScaling( 2.f * collision_shape->box.half_extent.x, 2.f * collision_shape->box.half_extent.y, 2.f * collision_shape->box.half_extent.z ) );
-          }
-          else
-          {
-            CRUDE_ASSERT( false );
-          }
+          mesh_to_model = XMMatrixMultiply( collision_transform_matrix, mesh_to_model );
 
           model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_transform );
           model_to_world = crude_transform_node_to_world( collision_model_renderer_resources_instance->node, model_transform );
@@ -1094,14 +1091,27 @@ crude_scene_renderer_register_nodes_instances_
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_collision_shape ) )
       {
         crude_collision_shape const                       *child_collision_shape;
+        char                                              *model_filepath;
+        char                                               working_directory[ 512 ];
+        crude_string_buffer                                temporary_string_buffer;
+        uint64                                             temporary_allocator_marker;
         crude_gfx_model_renderer_resources_instance        collision_model_renderer_resources_instant;
 
+        temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
+
+        crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
         child_collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_collision_shape );
+        crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+
+        model_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, crude_collision_shape_to_model_filename( child_collision_shape->type ) );
 
         collision_model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, crude_collision_shape_to_model_filename( child_collision_shape->type ) );
+        collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
         collision_model_renderer_resources_instant.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->collision_model_renderer_resoruces_instances, collision_model_renderer_resources_instant );
+
+        
+        crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
       }
 
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )

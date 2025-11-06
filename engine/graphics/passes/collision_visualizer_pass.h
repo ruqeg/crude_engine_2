@@ -10,6 +10,7 @@ typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 typedef struct crude_gfx_collision_visualizer_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
+  crude_gfx_descriptor_set_handle                          collision_visualizer_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
 } crude_gfx_collision_visualizer_pass;
 
 CRUDE_API void

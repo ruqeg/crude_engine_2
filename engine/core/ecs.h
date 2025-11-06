@@ -154,6 +154,11 @@ crude_entity_destroy_hierarchy
   ecs_remove( entity.world, entity.handle, component )\
 )
 
+#define CRUDE_ENTITY_COMPONENT_MODIFIED( entity, component )\
+{\
+  ecs_modified_id( entity.world, entity.handle, ecs_id( component ) );\
+}
+
 #define CRUDE_ECS_SYSTEM_DECLARE( id )\
   ecs_entity_t ecs_id( id )
 

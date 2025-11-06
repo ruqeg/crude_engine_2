@@ -932,6 +932,21 @@ crude_gfx_render_graph_builder_unregister_render_pass
   CRUDE_HASHMAP_REMOVE( builder->render_pass_cache.render_pass_map, key );
 }
 
+void
+crude_gfx_render_graph_builder_unregister_all_render_passes
+(
+  _In_ crude_gfx_render_graph_builder                     *builder
+)
+{
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( builder->render_pass_cache.render_pass_map ); ++i )
+  {
+    if ( crude_hashmap_backet_key_valid( builder->render_pass_cache.render_pass_map[ i ].key ) )
+    {
+      builder->render_pass_cache.render_pass_map[ i ].key = CRUDE_HASHMAP_BACKET_STATE_EMPTY;
+    }
+  }
+}
+
 crude_gfx_render_graph_node_handle
 crude_gfx_render_graph_builder_create_node
 (
