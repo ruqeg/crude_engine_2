@@ -208,13 +208,33 @@ crude_collision_shape_str_to_type
   _In_ char const*                                         type_str
 )
 {
-  if ( crude_string_cmp( type_str, "box" ) )
+  if ( crude_string_cmp( type_str, "box" ) == 0 )
   {
     return CRUDE_COLLISION_SHAPE_TYPE_BOX;
   }
-  else if ( crude_string_cmp( type_str, "sphere" ) )
+  else if ( crude_string_cmp( type_str, "sphere" ) == 0 )
   {
     return CRUDE_COLLISION_SHAPE_TYPE_SPHERE;
+  }
+  else
+  {
+    CRUDE_ASSERT( false );
+  }
+}
+
+char const*
+crude_collision_shape_to_model_filename
+(
+  _In_ crude_collision_shape_type                          type
+)
+{
+  if ( type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
+  {
+    return "editor//models//crude_physics_box_collision_shape.gltf";
+  }
+  else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
+  {
+    return "editor//models//crude_physicssphere_collision_shape.gltf";
   }
   else
   {

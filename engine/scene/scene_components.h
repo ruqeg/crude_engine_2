@@ -116,4 +116,10 @@ crude_collision_shape_str_to_type
   _In_ char const*                                         type_str
 );
 
+CRUDE_API char const*
+crude_collision_shape_to_model_filename
+(
+  _In_ crude_collision_shape_type                          type
+);
+
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );

@@ -259,6 +259,7 @@ crude_devgui_nodes_tree_initialize
 {
   devgui_nodes_tree->enabled = true;
   devgui_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  devgui_nodes_tree->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
 }
 
 void
@@ -275,6 +276,17 @@ crude_devgui_nodes_tree_draw
 
   uint32 current_node_index = 0u;
   crude_devgui_nodes_tree_draw_internal_( devgui_nodes_tree, node, &current_node_index );
+
+  if ( crude_entity_valid( devgui_nodes_tree->node_to_add ) )
+  {
+    CRUDE_ASSERT( false );
+    ImGui::Begin( "Create New Node" );
+
+    if ( ImGui::Button( "GLTF Model" ) )
+    {
+    }
+    ImGui::End( );
+  }
 }
 
 void
@@ -319,6 +331,24 @@ crude_devgui_nodes_tree_draw_internal_
   if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
   {
     devgui_nodes_tree->selected_node = node;
+  }
+
+  if ( ImGui::IsItemClicked( 1 ) && !ImGui::IsItemToggledOpen( ) )
+  {
+    ImGui::OpenPopup( crude_entity_get_name( node ) );
+  }
+
+  if (ImGui::BeginPopup( crude_entity_get_name( node ) ) )
+  {
+    // Add component
+    if ( ImGui::Button( "Add Child Note" ) )
+    {
+      devgui_nodes_tree->node_to_add = node;
+    }
+    if ( ImGui::Button( "Remove Note" ) )
+    {
+    }
+    ImGui::EndPopup( );
   }
 
   if (ImGui::BeginDragDropSource( ) )

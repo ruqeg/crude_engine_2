@@ -77,7 +77,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   
   crude_gfx_model_renderer_resources_instance             *collision_model_renderer_resoruces_instances;
-  uint32                                                   collision_total_meshes_instances_count;
+  uint32                                                   total_collision_meshes_instances_count;
   crude_gfx_buffer_handle                                  collision_meshes_instances_draws_sb;
 
   /***********************

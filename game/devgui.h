@@ -13,6 +13,7 @@ typedef struct crude_devgui_nodes_tree
 {
   bool                                                     enabled;
   crude_entity                                             selected_node;
+  crude_entity                                             node_to_add;
 } crude_devgui_nodes_tree;
 
 typedef struct crude_devgui_node_inspector
