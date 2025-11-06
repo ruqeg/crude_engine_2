@@ -65,34 +65,48 @@ crude_physics_creation_empty
 );
 
 CRUDE_API XMVECTOR
-crude_physics_dynamic_body_get_center_of_mass_position
+crude_physics_body_get_center_of_mass_position
 (
   _In_ crude_physics_body_handle const                    *dynamic_body
 );
 
 CRUDE_API void
-crude_physics_dynamic_body_set_position
+crude_physics_body_set_translation
 (
   _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            position
 );
 
 CRUDE_API void
-crude_physics_dynamic_body_set_linear_velocity
+crude_physics_body_set_rotation
+(
+  _In_ crude_physics_body_handle const                    *dynamic_body,
+  _In_ XMVECTOR                                            rotation
+);
+
+CRUDE_API void
+crude_physics_body_set_linear_velocity
 (
   _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            velocity
 );
 
 CRUDE_API void
-crude_physics_dynamic_body_add_linear_velocity
+crude_physics_body_add_linear_velocity
 (
   _In_ crude_physics_body_handle const                    *dynamic_body,
   _In_ XMVECTOR                                            velocity
 );
 
 CRUDE_API XMVECTOR
-crude_physics_dynamic_body_get_linear_velocity
+crude_physics_body_get_linear_velocity
 (
   _In_ crude_physics_body_handle const                    *dynamic_body
+);
+
+CRUDE_API void
+crude_physics_body_set_scale
+(
+  _In_ crude_physics_body_handle const                    *body,
+  _In_ XMVECTOR                                            scale
 );

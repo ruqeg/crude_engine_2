@@ -591,11 +591,11 @@ update_dynamic_buffers_
         collision_transform_matrix = XMMatrixIdentity( );
         if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
         {
-          collision_transform_matrix = XMMatrixScaling( 2.f * collision_shape->box.half_extent.x, 2.f * collision_shape->box.half_extent.y, 2.f * collision_shape->box.half_extent.z );
+          collision_transform_matrix = XMMatrixScaling( collision_shape->box.extent.x, collision_shape->box.extent.y, collision_shape->box.extent.z );
         }
         else
         {
-          CRUDE_ASSERT( false );
+          collision_transform_matrix = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
         }
 
         for ( uint32 collision_model_mesh_instance_index = 0; collision_model_mesh_instance_index < CRUDE_ARRAY_LENGTH( collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++collision_model_mesh_instance_index )

@@ -50,7 +50,7 @@ typedef struct crude_collision_shape
   {
     struct
     {
-      XMFLOAT3                                             half_extent;
+      XMFLOAT3                                             extent;
     } box;
     struct
     {

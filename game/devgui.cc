@@ -417,8 +417,13 @@ crude_devgui_node_inspector_draw
   crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_transform );
   if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
   {
-    ImGui::DragFloat3( "Translation", &transform->translation.x, .1f );
-    ImGui::DragFloat3( "Scale", &transform->scale.x, .1f );
+    bool transform_edited = false;
+    transform_edited |= ImGui::DragFloat3( "Translation", &transform->translation.x, .1f );
+    transform_edited |= ImGui::DragFloat3( "Scale", &transform->scale.x, .1f );
+    if ( transform_edited )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_transform );
+    }
   }
   
   crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_free_camera );
@@ -681,13 +686,16 @@ crude_devgui_viewport_draw_viewport_imguizmo
   XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
   
   ImGuizmo::SetID( 0 );
-  ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL);
+  if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL ) )
+  {
+    XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
 
-  XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
+    XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
+    XMStoreFloat3( &selected_node_transform->scale, new_scale );
+    XMStoreFloat3( &selected_node_transform->translation, new_translation );
 
-  XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
-  XMStoreFloat3( &selected_node_transform->scale, new_scale );
-  XMStoreFloat3( &selected_node_transform->translation, new_translation );
+    CRUDE_ENTITY_COMPONENT_MODIFIED( selected_node, crude_transform );
+  }
 
   //ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
 }

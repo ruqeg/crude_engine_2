@@ -10,8 +10,8 @@
 		"children":	[{
 				"name":	"editor_camera",
 				"transform":	{
-					"translation":	[5.237149715423584, 12.474850654602051, 0.12529444694519043],
-					"rotation":	[0.0195324644446373, -0.748986303806305, 0.022102179005742073, 0.66195219755172729],
+					"translation":	[4.5088787078857422, 7.1261134147644043, -0.050549976527690887],
+					"rotation":	[0.18202292919158936, -0.62647128105163574, 0.15364214777946472, 0.742235779762268],
 					"scale":	[1, 1, 1]
 				},
 				"components":	[{
@@ -38,24 +38,22 @@
 						"path":	"glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
 					}],
 				"children":	[]
-			}, 
-					{
+			}, {
 				"name":	"model_sponza_collision",
 				"transform":	{
-					"translation":	[0, 0, 0],
+					"translation":	[0, -0.74672204256057739, 0],
 					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
+					"scale":	[14.623908996582031, 0.76713567972183228, 11.332857131958008]
 				},
 				"components":	[{
 						"type":	"crude_physics_static_body"
-					},{
+					}, {
 						"type":	"crude_collision_shape",
-						"shape_type": "box",
-						"half_extent": [ 100, 100, 0.5 ]
+						"shape_type":	"box",
+						"extent":	[1, 1, 1]
 					}],
-					"children":	[]
-					},
-					{
+				"children":	[]
+			}, {
 				"name":	"player",
 				"transform":	{
 					"translation":	[-2.0999999046325684, 12.081685066223145, 0.010904788970947266],
@@ -64,9 +62,8 @@
 				},
 				"components":	[{
 						"type":	"crude_player_controller",
-						"rotation_speed": 0.01,
-						"weight": 1,
-						"camera_following_speed": 1
+						"rotation_speed":	0.00999999977648258,
+						"weight":	1
 					}],
 				"children":	[{
 						"name":	"redball_model",
@@ -81,6 +78,21 @@
 							}],
 						"children":	[]
 					}, {
+				"name":	"player_collision",
+				"transform":	{
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1.0, 1, 1]
+				},
+				"components":	[{
+						"type":	"crude_physics_dynamic_body"
+					}, {
+						"type":	"crude_collision_shape",
+						"shape_type":	"sphere",
+						"radius":	1
+					}],
+				"children":	[]
+			}, {
 						"name":	"pivot1",
 						"transform":	{
 							"translation":	[0, 0, 0],

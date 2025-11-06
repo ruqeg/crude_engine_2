@@ -110,7 +110,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_collision_shape )
   component->type = crude_collision_shape_str_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
   if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
   {
-    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.half_extent, cJSON_GetObjectItemCaseSensitive( component_json, "half_extent" ) );
+    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.extent, cJSON_GetObjectItemCaseSensitive( component_json, "extent" ) );
   }
   else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
   {
@@ -130,7 +130,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_collision_shape )
   cJSON_AddItemToObject( collision_shape_json, "shape_type", cJSON_CreateString( crude_collision_shape_type_to_str( component->type ) ) );
   if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
   {
-    cJSON_AddItemToObject( collision_shape_json, "half_extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.half_extent ) );
+    cJSON_AddItemToObject( collision_shape_json, "extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.extent ) );
   }
   else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
   {
@@ -148,7 +148,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_collision_shape )
   if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
   {
     ImGui::Text( "Type: Box" );
-    if ( ImGui::DragFloat3( "Half Extent", &component->box.half_extent.x, 0.01 ) )
+    if ( ImGui::DragFloat3( "Extent", &component->box.extent.x, 0.01 ) )
     {
       CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
     }
@@ -247,7 +247,7 @@ crude_collision_shape_to_model_filename
   }
   else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
   {
-    return "editor\\models\\crude_physicssphere_collision_shape.gltf";
+    return "editor\\models\\crude_physics_box_collision_shape.gltf";
   }
   else
   {
