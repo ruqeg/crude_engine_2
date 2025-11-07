@@ -246,6 +246,7 @@ CRUDE_ECS_OBSERVER_DECLARE( crude_physics_dynamic_body_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_body_destrotion_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_body_transform_set_observer_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_physics_body_update_transform_system_ );
 
 // We need a temp allocator for temporary allocations during the physics update. We're
 // pre-allocating 10 MB to avoid having to do allocations during the physics update.
@@ -453,6 +454,7 @@ crude_physics_body_transform_set_observer_
     crude_physics_body_set_scale( body, XMLoadFloat3( &transform->scale ) );
     crude_physics_body_set_translation( body, XMLoadFloat3( &transform->translation ) );
     crude_physics_body_set_rotation( body, XMLoadFloat4( &transform->rotation ) );
+    crude_physics_body_set_linear_velocity( body, XMVectorZero( ) );
   }
 }
 
@@ -472,6 +474,48 @@ crude_physics_update
   // If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
   const int cCollisionSteps = 1;
   jph_physics_system_.Update( delta_time, cCollisionSteps, jph_temp_allocator_, jph_job_system_ );
+}
+
+
+
+static void
+crude_physics_body_update_transform_system_
+(
+  ecs_iter_t *it
+)
+{
+  crude_physics_body_handle                               *bodies_per_entity;
+  crude_collision_shape                                   *collision_shape_per_entity;
+  crude_transform                                         *transform_per_entity;
+
+  bodies_per_entity = ecs_field( it, crude_physics_body_handle, 0 );
+  collision_shape_per_entity = ecs_field( it, crude_collision_shape, 1 );
+  transform_per_entity = ecs_field( it, crude_transform, 2 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_body_handle                             *body;
+    crude_transform                                       *transform;
+    crude_collision_shape                                 *collision_shape;
+
+    body = &bodies_per_entity[ i ];
+    transform = &transform_per_entity[ i ];
+    collision_shape = &collision_shape_per_entity[ i ];
+
+    if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
+    {
+      XMStoreFloat3( &transform->translation, crude_physics_body_get_center_of_mass_translation( body ) );
+    }
+    else if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
+    {
+      XMStoreFloat3( &transform->translation, crude_physics_body_get_center_of_mass_translation( body ) );
+    }
+    else
+    {
+      CRUDE_ASSERT( false );
+    }
+    XMStoreFloat4( &transform->rotation, crude_physics_body_get_rotation( body ) );
+  }
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
@@ -499,6 +543,12 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_body_destrotion_observer_, EcsOnRemove, { 
     { .id = ecs_id( crude_physics_body_handle ) },
+  } );
+  
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_body_update_transform_system_, EcsOnUpdate, NULL, {
+    { .id = ecs_id( crude_physics_body_handle ) },
+    { .id = ecs_id( crude_collision_shape ) },
+    { .id = ecs_id( crude_transform ) }
   } );
 }
 
@@ -552,7 +602,7 @@ crude_physics_creation_empty
 }
 
 XMVECTOR
-crude_physics_body_get_center_of_mass_position
+crude_physics_body_get_center_of_mass_translation
 (
   _In_ crude_physics_body_handle const                    *dynamic_body
 )
@@ -591,7 +641,6 @@ crude_physics_body_set_rotation
 
   jph_body_interface = &jph_physics_system_.GetBodyInterface( );
   jph_body_interface->SetRotation( JPH::BodyID( dynamic_body->body_index ), JPH::Quat( XMVectorGetX( rotation ), XMVectorGetY( rotation ), XMVectorGetZ( rotation ), XMVectorGetW( rotation ) ), JPH::EActivation::Activate );
-
 }
 
 void
@@ -653,4 +702,18 @@ crude_physics_body_set_scale
   jph_body_interface = &jph_physics_system_.GetBodyInterface( );
   jph_shape_ref = jph_body_interface->GetShape( jph_body_id );
   jph_shape_ref->ScaleShape( JPH::Vec3( XMVectorGetX( scale ), XMVectorGetY( scale ), XMVectorGetZ( scale ) ) );
+}
+
+XMVECTOR
+crude_physics_body_get_rotation
+(
+  _In_ crude_physics_body_handle const                    *body
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  JPH::Quat                                                jph_rotation;
+
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_rotation = jph_body_interface->GetRotation( JPH::BodyID( body->body_index ) );
+  return XMVectorSet( jph_rotation.GetX( ), jph_rotation.GetY( ), jph_rotation.GetZ( ), jph_rotation.GetW( ) );
 }

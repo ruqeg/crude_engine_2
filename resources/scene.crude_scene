@@ -64,6 +64,12 @@
 						"type":	"crude_player_controller",
 						"rotation_speed":	0.00999999977648258,
 						"weight":	1
+					},{
+						"type":	"crude_physics_dynamic_body"
+					}, {
+						"type":	"crude_collision_shape",
+						"shape_type":	"sphere",
+						"radius":	1
 					}],
 				"children":	[{
 						"name":	"redball_model",
@@ -78,21 +84,6 @@
 							}],
 						"children":	[]
 					}, {
-				"name":	"player_collision",
-				"transform":	{
-					"translation":	[0, 0, 0],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1.0, 1, 1]
-				},
-				"components":	[{
-						"type":	"crude_physics_dynamic_body"
-					}, {
-						"type":	"crude_collision_shape",
-						"shape_type":	"sphere",
-						"radius":	1
-					}],
-				"children":	[]
-			}, {
 						"name":	"pivot1",
 						"transform":	{
 							"translation":	[0, 0, 0],

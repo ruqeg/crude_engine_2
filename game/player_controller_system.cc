@@ -42,7 +42,7 @@ crude_player_controller_update_system_
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
     crude_physics_body_handle                             *physics_body;
-    crude_entity                                           node, physics_dynamic_node, pivot1_node, pivot2_node;
+    crude_entity                                           node, pivot1_node, pivot2_node;
     XMVECTOR                                               velocity;
 
     transform = &transforms_per_entity[ i ];
@@ -54,17 +54,14 @@ crude_player_controller_update_system_
     
     pivot1_node = crude_ecs_lookup_entity_from_parent( node, "pivot1" );
     pivot2_node = crude_ecs_lookup_entity_from_parent( node, "pivot1.pivot2" );
-    physics_dynamic_node = crude_ecs_lookup_entity_from_parent( node, "player_collision" );
-    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( physics_dynamic_node, crude_physics_body_handle );
+    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
 
     pivot1_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot1_node, crude_transform );
     pivot2_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot2_node, crude_transform );
     
     crude_physics_body_add_linear_velocity( physics_body, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
-
-    XMStoreFloat3( &transform->translation, crude_physics_body_get_center_of_mass_position( physics_body ) );
     //crude_physics_body_set_linear_velocity( physics_dynamic_body, XMVectorScale( XMVectorSet( 0, -0.4, 0, 1 ), it->delta_time * player_controller->weight ) );
-    //XMStoreFloat3( &transform->translation, crude_physics_body_get_center_of_mass_position( physics_dynamic_body ) );
+    //XMStoreFloat3( &transform->translation, crude_physics_body_get_center_of_mass_translation( physics_dynamic_body ) );
 
     //XMQuaternionMultiply( );
     //XMStoreFloat4( &pivot1_node_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &pivot1_node_transform->rotation ), XMQuaternionRotationRollPitchYaw( ) ) );

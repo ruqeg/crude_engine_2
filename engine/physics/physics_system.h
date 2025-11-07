@@ -65,7 +65,7 @@ crude_physics_creation_empty
 );
 
 CRUDE_API XMVECTOR
-crude_physics_body_get_center_of_mass_position
+crude_physics_body_get_center_of_mass_translation
 (
   _In_ crude_physics_body_handle const                    *dynamic_body
 );
@@ -109,4 +109,10 @@ crude_physics_body_set_scale
 (
   _In_ crude_physics_body_handle const                    *body,
   _In_ XMVECTOR                                            scale
+);
+
+CRUDE_API XMVECTOR
+crude_physics_body_get_rotation
+(
+  _In_ crude_physics_body_handle const                    *body
 );
