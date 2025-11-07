@@ -598,7 +598,7 @@ update_dynamic_buffers_
         collision_transform_matrix = XMMatrixIdentity( );
         if ( collision_shape->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
         {
-          collision_transform_matrix = XMMatrixScaling( collision_shape->box.extent.x, collision_shape->box.extent.y, collision_shape->box.extent.z );
+          collision_transform_matrix = XMMatrixScalingFromVector( XMVectorScale( XMLoadFloat3( &collision_shape->box.extent ), 0.5f ) );
         }
         else
         {
@@ -608,14 +608,15 @@ update_dynamic_buffers_
         for ( uint32 collision_model_mesh_instance_index = 0; collision_model_mesh_instance_index < CRUDE_ARRAY_LENGTH( collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++collision_model_mesh_instance_index )
         {
           crude_transform const                             *mesh_transform, *model_transform;
-          XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+          XMMATRIX                                           mesh_to_model, mesh_to_model_without_rotation, model_to_world, mesh_to_world;
           crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
           
           mesh_instance_cpu = &collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances[ collision_model_mesh_instance_index ];
 
           mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
           mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
-          mesh_to_model = XMMatrixMultiply( collision_transform_matrix, mesh_to_model );
+          mesh_to_model_without_rotation = XMMATRIX( XMVector3Normalize( mesh_to_model.r[ 0 ] ), XMVector3Normalize( mesh_to_model.r[ 1 ] ), XMVector3Normalize( mesh_to_model.r[ 2 ] ), mesh_to_model.r[ 3 ] );
+          mesh_to_model = XMMatrixMultiply( collision_transform_matrix, mesh_to_model_without_rotation );
 
           model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_transform );
           model_to_world = crude_transform_node_to_world( collision_model_renderer_resources_instance->node, model_transform );

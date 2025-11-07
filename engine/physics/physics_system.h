@@ -104,15 +104,15 @@ crude_physics_body_get_linear_velocity
   _In_ crude_physics_body_handle const                    *dynamic_body
 );
 
-CRUDE_API void
-crude_physics_body_set_scale
-(
-  _In_ crude_physics_body_handle const                    *body,
-  _In_ XMVECTOR                                            scale
-);
-
 CRUDE_API XMVECTOR
 crude_physics_body_get_rotation
 (
   _In_ crude_physics_body_handle const                    *body
+);
+
+CRUDE_API void
+crude_physics_body_set_collision
+(
+  _In_ crude_physics_body_handle const                    *body,
+  _In_ crude_collision_shape const                        *shape
 );

@@ -1,3 +1,6 @@
+#include <imgui/imgui.h>
+#include <physics/physics_system.h>
+
 #include <physics/physics_components.h>
 
 ECS_COMPONENT_DECLARE( crude_physics_static_body );
@@ -39,4 +42,26 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_body )
   cJSON *dynamic_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) );
   return dynamic_body_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body )
+{
+  ImGui::Text( "Type: Dynamic Body" );
+  if ( ImGui::Button( "Rebuild" ) )
+  {
+    crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
+    crude_physics_body_handle *physics_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
+    crude_physics_body_set_collision( physics_body_handle, collision_shape );
+  }
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body )
+{
+  ImGui::Text( "Type: Static Body" );
+  if ( ImGui::Button( "Rebuild" ) )
+  {
+    crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
+    crude_physics_body_handle *physics_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
+    crude_physics_body_set_collision( physics_body_handle, collision_shape );
+  }
 }

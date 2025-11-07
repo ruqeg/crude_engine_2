@@ -18,7 +18,7 @@ typedef struct crude_physics_body_handle
 
 /************************************************
  *
- * ECS Components Declaration
+ * ECS Components Declaration?
  * 
  ***********************************************/
 CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_static_body );
@@ -32,6 +32,9 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_
 
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_static_body );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_dynamic_body );
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body );
 
 /************************************************
  *

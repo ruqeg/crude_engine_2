@@ -2,6 +2,7 @@
 #include <imgui/imgui.h>
 
 #include <scene/scene_components.h>
+#include <physics/physics_components.h>
 
 ECS_COMPONENT_DECLARE( crude_transform );
 ECS_COMPONENT_DECLARE( crude_light );
