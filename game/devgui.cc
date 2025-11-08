@@ -260,6 +260,7 @@ crude_devgui_nodes_tree_initialize
   devgui_nodes_tree->enabled = true;
   devgui_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   devgui_nodes_tree->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  devgui_nodes_tree->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
 }
 
 void
@@ -286,6 +287,11 @@ crude_devgui_nodes_tree_draw
     {
     }
     ImGui::End( );
+  }
+  if ( crude_entity_valid( devgui_nodes_tree->node_to_remove ) )
+  {
+    crude_entity_destroy_hierarchy( devgui_nodes_tree->node_to_remove );
+    devgui_nodes_tree->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
   }
 }
 
@@ -347,6 +353,7 @@ crude_devgui_nodes_tree_draw_internal_
     }
     if ( ImGui::Button( "Remove Note" ) )
     {
+      devgui_nodes_tree->node_to_remove = node;
     }
     ImGui::EndPopup( );
   }
@@ -420,6 +427,7 @@ crude_devgui_node_inspector_draw
     bool transform_edited = false;
     transform_edited |= ImGui::DragFloat3( "Translation", &transform->translation.x, .1f );
     transform_edited |= ImGui::DragFloat3( "Scale", &transform->scale.x, .1f );
+    transform_edited |= ImGui::DragFloat4( "Rotation", &transform->rotation.x, .1f );
     if ( transform_edited )
     {
       CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_transform );
@@ -1289,7 +1297,7 @@ crude_devgui_game_common_draw
     if ( dev_game_common->editor_camera_controller )
     {
       crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
+      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
       
       dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
       player_controller->input_enabled = false;
@@ -1298,9 +1306,9 @@ crude_devgui_game_common_draw
     else
     { 
       crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->character_controller_node, crude_player_controller );
+      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
       
-      dev_game_common->game->focused_camera_node = dev_game_common->game->character_controller_camera_node;
+      dev_game_common->game->focused_camera_node = dev_game_common->game->game_camera_node;
       player_controller->input_enabled = true;
       free_camera->enabled = false;
     }

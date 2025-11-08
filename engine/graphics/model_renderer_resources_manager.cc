@@ -1174,7 +1174,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 
     if ( gltf_nodes[ i ]->has_rotation )
     {
-      CRUDE_ASSERT( false );
+      XMStoreFloat4( &transform.rotation, XMVectorSet( gltf_nodes[ i ]->rotation[ 0 ], gltf_nodes[ i ]->rotation[ 1 ], gltf_nodes[ i ]->rotation[ 2 ], gltf_nodes[ i ]->rotation[ 3 ] ) );
     }
     else
     {

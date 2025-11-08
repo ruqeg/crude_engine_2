@@ -206,7 +206,7 @@ game_reload_scene
   crude_scene_initialize( &game->scene, &scene_creation );
 
   game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
-  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
+  game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
   game->focused_camera_node = game->editor_camera_node;
 
   crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
@@ -553,11 +553,11 @@ game_setup_custom_nodes_to_scene_
   crude_free_camera                                        *free_camera;
 
   game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
-  game->character_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
-  game->character_controller_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot1.pivot2.camera" );
+  game->game_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
+  game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot.camera" );
   game->focused_camera_node = game->editor_camera_node;
 
-  player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->character_controller_node, crude_player_controller );
+  player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->game_controller_node, crude_player_controller );
   player_controller->entity_input = game->scene.input_entity;
   free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->enabled = true;

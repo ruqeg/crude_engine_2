@@ -285,9 +285,9 @@ void main()
   float luminance_average = CRUDE_TEXTURE_FETCH( luminance_average_texture_index, ivec2( 0, 0 ), 0 ).r;
   
   float luminance = crude_rgb_to_luminance( color.xyz );
-  color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );
-  color.xyz = crude_aces_fitted2( color.xyz );
-  color.xyz = pow( color.xyz, vec3( 1 / 2.2 ) );
+  //color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );
+  //color.xyz = crude_aces_fitted2( color.xyz );
+  //color.xyz = pow( color.xyz, vec3( 1 / 2.2 ) );
   out_color = color;
 }
 #endif /* POSTPROCESSING && CRUDE_STAGE_FRAGMENT */

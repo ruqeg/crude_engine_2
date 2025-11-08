@@ -10,8 +10,8 @@
 		"children":	[{
 				"name":	"editor_camera",
 				"transform":	{
-					"translation":	[4.5088787078857422, 7.1261134147644043, -0.050549976527690887],
-					"rotation":	[0.18202292919158936, -0.62647128105163574, 0.15364214777946472, 0.742235779762268],
+					"translation":	[10.551037788391113, 2.7355928421020508, 6.1275763511657715],
+					"rotation":	[0.0081277536228299141, -0.81547415256500244, 0.01138906367123127, 0.578864097595215],
 					"scale":	[1, 1, 1]
 				},
 				"components":	[{
@@ -27,49 +27,50 @@
 					}],
 				"children":	[]
 			}, {
-				"name":	"model_sponza",
+				"name":	"0_hall",
 				"transform":	{
 					"translation":	[0, 0, 0],
 					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
+					"scale":	[0.05000000074505806, 0.05000000074505806, 0.05000000074505806]
 				},
 				"components":	[{
 						"type":	"crude_gltf",
-						"path":	"glTF-Sample-Models\\2.0\\Sponza\\glTF\\Sponza.gltf"
+						"path":	"game\\0_hall.gltf"
 					}],
 				"children":	[]
 			}, {
 				"name":	"model_sponza_collision",
 				"transform":	{
-					"translation":	[0, -0.74672204256057739, 0],
+					"translation":	[0, 0.95547151565551758, 0],
 					"rotation":	[0, 0, 0, 1],
-					"scale":	[14.623908996582031, 0.76713567972183228, 11.332857131958008]
+					"scale":	[1, 1, 1]
 				},
 				"components":	[{
 						"type":	"crude_physics_static_body"
 					}, {
 						"type":	"crude_collision_shape",
 						"shape_type":	"box",
-						"extent":	[1, 1, 1]
+						"extent":	[5, 1, 5]
 					}],
 				"children":	[]
 			}, {
 				"name":	"player",
 				"transform":	{
-					"translation":	[-2.0999999046325684, 12.081685066223145, 0.010904788970947266],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
+					"translation":	[0.2728973925113678, 2.4554705619812012, -0.13017606735229492],
+					"rotation":	[0.0, 0, 0, 1],
+					"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 				},
 				"components":	[{
-						"type":	"crude_player_controller",
-						"rotation_speed":	0.00999999977648258,
-						"weight":	1
-					},{
 						"type":	"crude_physics_dynamic_body"
 					}, {
 						"type":	"crude_collision_shape",
 						"shape_type":	"sphere",
 						"radius":	1
+					}, {
+						"type":	"crude_player_controller",
+						"rotation_speed": -0.0010000000474974513,
+						"moving_speed": [1,1],
+						"weight":	1
 					}],
 				"children":	[{
 						"name":	"redball_model",
@@ -84,7 +85,7 @@
 							}],
 						"children":	[]
 					}, {
-						"name":	"pivot1",
+						"name":	"pivot",
 						"transform":	{
 							"translation":	[0, 0, 0],
 							"rotation":	[0, 0, 0, 1],
@@ -92,17 +93,9 @@
 						},
 						"components":	[],
 						"children":	[{
-								"name":	"pivot2",
-								"transform":	{
-									"translation":	[0, 0, 0],
-									"rotation":	[0, 0, 0, 1],
-									"scale":	[1, 1, 1]
-								},
-								"components":	[],
-								"children":	[{
 										"name":	"camera",
 										"transform":	{
-											"translation":	[0, 1, -5],
+											"translation":	[0, 0, 0],
 											"rotation":	[0, 0, 0, 1],
 											"scale":	[1, 1, 1]
 										},
@@ -115,7 +108,6 @@
 											}],
 										"children":	[]
 									}]
-							}]
 					}]
 			}]
 	}
