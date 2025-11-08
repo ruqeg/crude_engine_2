@@ -15,6 +15,7 @@ using namespace DirectX;
 #define CRUDE_DEG_TO_RAD( x ) ( XMConvertToRadians( x ) ) 
 #define CRUDE_RAD_TO_DEG( x ) ( XMConvertToDegrees( x ) ) 
 #define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )
+#define CRUDE_LERP( a, b, c ) ( a * ( 1.f - c ) + b * c )
 
 CRUDE_API float32
 crude_random_unit_f32

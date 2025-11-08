@@ -9,6 +9,7 @@ typedef struct crude_physics_static_body
 
 typedef struct crude_physics_dynamic_body
 {
+  bool                                                   lock_rotation;
 } crude_physics_dynamic_body;
 
 typedef struct crude_physics_body_handle
@@ -32,6 +33,7 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_
 
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_static_body );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_dynamic_body );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_character );
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body );

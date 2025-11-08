@@ -43,6 +43,7 @@ crude_player_controller_update_system_
     crude_input const                                     *input;
     crude_physics_body_handle                             *physics_body;
     crude_entity                                           node;
+    XMVECTOR                                               velocity;
 
     transform = &transforms_per_entity[ i ];
     player_controller = &player_controllere_per_entity[ i ];
@@ -53,40 +54,35 @@ crude_player_controller_update_system_
     
     physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
     
-    crude_physics_body_add_linear_velocity( physics_body, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
-    
+    velocity = crude_physics_body_get_linear_velocity( physics_body );
+    velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+
     if ( player_controller->input_enabled )
     {
       crude_transform                                     *pivot_node_transform;
       crude_entity                                         pivot_node;
-      XMMATRIX                                             node_to_world, pivot_to_world;
-      XMVECTOR                                             new_translation, basis_pivot_up, basis_pivot_right, basis_node_right, basis_node_up, basis_node_forward;
-      int32                                                moving_forward, moving_right;
+      XMMATRIX                                             pivot_to_world;
+      XMVECTOR                                             direction, input_dir, basis_pivot_up, basis_pivot_right, basis_node_right, basis_node_up, basis_node_forward;
       
       pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
       pivot_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot_node, crude_transform );
       pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
       basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
 
-      moving_forward = input->keys[ 'w' ].current - input->keys[ 's' ].current;
-      moving_right = input->keys[ 'd' ].current - input->keys[ 'a' ].current;
-
-      new_translation = XMLoadFloat3( &transform[ i ].translation );
-      node_to_world = crude_transform_node_to_world( node, transform );
-
-      basis_node_right = XMVector3Normalize( node_to_world.r[ 0 ] );
-      basis_node_up = XMVector3Normalize( node_to_world.r[ 1 ] );
-      basis_node_forward = XMVector3Normalize( node_to_world.r[ 2 ] );
-
-      if ( moving_right )
+      input_dir = XMVectorSet( input->keys[ 'd' ].current - input->keys[ 'a' ].current, 0, input->keys[ 'w' ].current - input->keys[ 's' ].current, 0 );
+      
+	    direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
+      
+      if ( XMVectorGetX( XMVector3Length( direction ) ) > 0.001f )
       {
-        new_translation = XMVectorAdd( new_translation, XMVectorScale( basis_node_right, player_controller->moving_speed.x * moving_right * it->delta_time ) );
+        velocity = XMVectorSetX( velocity, XMVectorGetX( direction ) * player_controller->moving_speed.x );
+        velocity = XMVectorSetZ( velocity, XMVectorGetZ( direction ) * player_controller->moving_speed.y );
       }
-      if ( moving_forward )
+      else
       {
-        new_translation = XMVectorAdd( new_translation, XMVectorScale( basis_node_forward, player_controller->moving_speed.y * moving_forward * it->delta_time ) );
+        velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), 0.f, CRUDE_MIN( player_controller->moving_speed.x * it->delta_time, 1.f ) ) );
+        velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), 0.f, CRUDE_MIN( player_controller->moving_speed.y * it->delta_time, 1.f ) ) );
       }
-      XMStoreFloat3( &transform->translation, new_translation );
 
       if ( input->mouse.right.current )
       {
@@ -98,6 +94,8 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_node_transform->rotation, rotation );
       }
     }
+
+    crude_physics_body_set_linear_velocity( physics_body, velocity );
   }
 }
 

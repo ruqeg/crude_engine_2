@@ -11,6 +11,10 @@
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Jolt/Physics/Character/Character.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 #include <core/log.h>
 #include <core/assert.h>
@@ -309,7 +313,6 @@ crude_physics_static_body_creation_observer_
     crude_collision_shape                                 *collision_shape;
     crude_transform const                                 *transform;
     crude_physics_body_handle                             *body_handle;
-    JPH::ShapeSettings::ShapeResult                        shape_result;
     crude_entity                                           entity;
     
     world = it->world;
@@ -391,7 +394,14 @@ crude_physics_dynamic_body_creation_observer_
         JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ),
         JPH::EMotionType::Dynamic, moving_object_layer_
       );
+
+      if ( dynamic_body->lock_rotation )
+      {
+        jph_body_creation_settings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
+      }
+
       jph_sphere_id = body_interface->CreateAndAddBody( jph_body_creation_settings, JPH::EActivation::Activate );
+
       body_handle->body_index = jph_sphere_id.GetIndexAndSequenceNumber( );
     }
     else
@@ -512,7 +522,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
     { .id = ecs_id( crude_collision_shape ) },
     { .id = ecs_id( crude_physics_body_handle ), .oper = EcsNot }
   } );
-
+  
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_dynamic_body_creation_observer_, EcsOnSet, { 
     { .id = ecs_id( crude_physics_dynamic_body ) },
     { .id = ecs_id( crude_collision_shape ) },

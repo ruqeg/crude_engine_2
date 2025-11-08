@@ -65,6 +65,7 @@
 					}, {
 						"type":	"crude_collision_shape",
 						"shape_type":	"sphere",
+						"lock_rotation": 1,
 						"radius":	1
 					}, {
 						"type":	"crude_player_controller",

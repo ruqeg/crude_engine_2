@@ -34,6 +34,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_dynamic_body )
 {
   crude_memory_set( component, 0, sizeof( crude_physics_dynamic_body ) );
+  component->lock_rotation = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "lock_rotation" ) );
   return true;
 }
 
@@ -41,12 +42,14 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_body )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) );
+  cJSON_AddItemToObject( dynamic_body_json, "lock_rotation", cJSON_CreateNumber( component->lock_rotation ) );
   return dynamic_body_json;
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body )
 {
   ImGui::Text( "Type: Dynamic Body" );
+  ImGui::Text( component->lock_rotation ? "Rotation Locked" : "Rotation Allowed" );
   if ( ImGui::Button( "Rebuild" ) )
   {
     crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
