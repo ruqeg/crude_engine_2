@@ -1,0 +1,59 @@
+{
+	"name":	"main",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[],
+	"children":	[{
+			"name":	"0_hall",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[0.019999999552965164, 0.019999999552965164, 0.019999999552965164]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\0_hall.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"model_sponza_collision",
+			"transform":	{
+				"translation":	[0, 0.054999999701976776, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body"
+				}, {
+					"type":	"crude_collision_shape",
+					"shape_type":	"box",
+					"extent":	[5, 1, 5]
+				}],
+			"children":	[]
+		}, {
+			"name":	"player",
+			"external":	"nodes\\player.crude_node",
+			"transform":	{
+				"translation":	[0, 1.0549999475479126, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_dynamic_body",
+					"lock_rotation":	1
+				}, {
+					"type":	"crude_collision_shape",
+					"shape_type":	"sphere",
+					"radius":	0.5
+				}, {
+					"type":	"crude_player_controller",
+					"rotation_speed":	-0.0010000000474974513,
+					"moving_speed":	[5, 5],
+					"weight":	1
+				}],
+			"children":	[]
+		}]
+}

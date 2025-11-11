@@ -122,6 +122,8 @@ game_initialize
   game->framerate = 60;
   game->last_graphics_update_time = 0.f;
   
+  game->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+
   ECS_IMPORT( game->engine->world, crude_platform_system );
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_physics_system );
@@ -204,10 +206,6 @@ game_reload_scene
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
   scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
   crude_scene_initialize( &game->scene, &scene_creation );
-
-  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
-  game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
-  game->focused_camera_node = game->editor_camera_node;
 
   crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
@@ -449,7 +447,7 @@ game_initialize_scene_
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, "scene.crude_scene" );
+  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, "nodes\\test_level.crude_node" );
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
@@ -552,6 +550,37 @@ game_setup_custom_nodes_to_scene_
   crude_player_controller                                  *player_controller;
   crude_free_camera                                        *free_camera;
 
+  {
+    crude_transform                                        editor_camera_node_transform;
+    crude_camera                                           editor_camera_node_camera;
+    crude_free_camera                                      editor_camera_node_crude_free_camera;
+
+    if ( crude_entity_valid( game->editor_camera_node ) )
+    {
+      crude_entity_destroy( game->editor_camera_node );
+    }
+
+    editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+    XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
+    XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
+    XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
+
+    editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+    editor_camera_node_camera.fov_radians = 1;
+    editor_camera_node_camera.aspect_ratio = 1.8;
+    editor_camera_node_camera.near_z = 0.001;
+    editor_camera_node_camera.far_z = 1000;
+
+    editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
+    XMStoreFloat3( &editor_camera_node_crude_free_camera.moving_speed_multiplier, XMVectorReplicate( 7 ) );
+    XMStoreFloat2( &editor_camera_node_crude_free_camera.rotating_speed_multiplier, XMVectorReplicate( -0.001 ) );
+
+    game->editor_camera_node = crude_entity_create_empty( game->scene.world, "editor_camera" );
+    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_transform, { editor_camera_node_transform } );
+    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_camera, { editor_camera_node_camera } );
+    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
+  }
+
   game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
   game->game_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
   game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot.camera" );
@@ -560,5 +589,6 @@ game_setup_custom_nodes_to_scene_
   player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->game_controller_node, crude_player_controller );
   player_controller->entity_input = game->scene.input_entity;
   free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
+  free_camera->entity_input = game->scene.input_entity;
   free_camera->enabled = true;
 }

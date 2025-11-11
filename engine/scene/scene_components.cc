@@ -12,6 +12,7 @@ ECS_COMPONENT_DECLARE( crude_scene_creation );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_collision_shape );
+ECS_COMPONENT_DECLARE( crude_node_external );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
@@ -30,6 +31,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_scene_creation );
   ECS_COMPONENT_DEFINE( world, crude_scene_handle );
   ECS_COMPONENT_DEFINE( world, crude_collision_shape );
+  ECS_COMPONENT_DEFINE( world, crude_node_external );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
@@ -150,6 +152,14 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_collision_shape )
   {
     ImGui::Text( "Type: Box" );
     if ( ImGui::DragFloat3( "Extent", &component->box.extent.x, 0.01 ) )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
+    }
+  }
+  else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
+  {
+    ImGui::Text( "Type: Sphere" );
+    if ( ImGui::DragFloat( "Radius", &component->sphere.radius, 0.01 ) )
     {
       CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
     }

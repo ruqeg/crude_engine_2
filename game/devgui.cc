@@ -16,7 +16,7 @@ ImGuiWindowFlags                                           window_flags_;
 
 nfdu8filteritem_t                                          scene_file_filters_[ ] = 
 { 
-  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Scene", "crude_scene" } )
+  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Node", "crude_node" } )
 };
 
 static void

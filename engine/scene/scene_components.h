@@ -4,6 +4,11 @@
 #include <core/ecs.h>
 #include <scene/scene.h>
 
+typedef struct crude_node_external
+{
+  char const                                              *path;
+} crude_node_external;
+
 typedef struct crude_transform
 {
   XMFLOAT3                                                 translation;
@@ -67,6 +72,7 @@ CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_collision_shape );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_node_external );
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera );
