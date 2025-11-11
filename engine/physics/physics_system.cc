@@ -1,4 +1,5 @@
 
+#include <flecs.h>
 #include <stdarg.h>
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
@@ -23,21 +24,22 @@
 
 #include <physics/physics_system.h>
 
-/* Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state */
 JPH_SUPPRESS_WARNINGS
+
+#define CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC 1
+#define CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC 2
+
+constexpr static JPH::BroadPhaseLayer jph_non_moving_broad_phase_layer_ { 0 };
+constexpr static JPH::BroadPhaseLayer jph_moving_broad_phase_layer_ { 1 };
+constexpr static JPH::BroadPhaseLayer jph_sensor_broad_phase_layer_ { 2 };
+constexpr static uint32 jph_broad_phase_layers_count_ = 3;
 
 static void
 jolt_trace_implementation_
 (
   _In_ char const                                           *fmt,
   ...
-)
-{
-  va_list list;
-  va_start( list, fmt );
-  crude_log_common_va( __FILE__, __LINE__, CRUDE_CHANNEL_PHYSICS, CRUDE_VERBOSITY_ALL, fmt, list );
-  va_end( list );
-}
+);
 
 #ifdef JPH_ENABLE_ASSERTS
 static bool
@@ -47,202 +49,137 @@ jolt_assert_failed_impl
   _In_ char const                                           *message,
   _In_ char const                                           *file,
   _In_ uint32                                                line
-)
-{
-  CRUDE_LOG_ERROR( CRUDE_CHANNEL_PHYSICS, "%s:%s: (%s) %s", file, line, expression, message ? message : "" );
-  return true;
-};
+);
 #endif /* JPH_ENABLE_ASSERTS */
 
-/**
- * Layer that objects can be in, determines which other objects it can collide with
- * Typically you at least want to have 1 layer for moving bodies and 1 layer for static bodies, but you can have more
- * layers if you want. E.g. you could have a layer for high detail collision (which is not used by the physics simulation
- * but only if you do collision testing).
- */
-constexpr JPH::ObjectLayer non_moving_object_layer_ = 0;
-constexpr JPH::ObjectLayer moving_object_layer_ = 1;
-constexpr uint32 num_layers_ = 2;
-
-/**
- * Class that determines if two object layers can collide
- */
-class ObjectLayerPairFilterImpl
-  : public JPH::ObjectLayerPairFilter
+struct ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
 {
-public:
-  virtual bool
-  ShouldCollide
-  (
-    _In_ JPH::ObjectLayer                                    in_object1, 
-    _In_ JPH::ObjectLayer                                    in_object2
-  ) const override
-  {
-    switch ( in_object1 )
-    {
-    case non_moving_object_layer_:
-    {
-      /* Non moving only collides with moving */
-      return in_object2 == moving_object_layer_;
-    }
-    case moving_object_layer_:
-    {
-      /* Moving collides with everything */
-      return true;
-    }
-    default:
-    {
-      JPH_ASSERT( false );
-      return false;
-    }
-    }
-  }
+virtual bool
+ShouldCollide
+(
+  _In_ JPH::ObjectLayer                                    in_object1, 
+  _In_ JPH::ObjectLayer                                    in_object2
+) const override;
 };
 
-/**
- * Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
- * a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
- * You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
- * many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
- * your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
- * */
-constexpr static JPH::BroadPhaseLayer non_moving_broad_phase_layer_ { 0 };
-constexpr static JPH::BroadPhaseLayer moving_broad_phase_layer_ { 1 };
-constexpr static uint32 num_broad_phase_layers_ = 2;
+struct ContactListenerImpl : public JPH::ContactListener
+{
+virtual JPH::ValidateResult
+OnContactValidate
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::RVec3Arg                                     in_base_offset,
+  _In_ JPH::CollideShapeResult const                    &in_collision_result
+) override;
 
-/**
- * BroadPhaseLayerInterface implementation
- * This defines a mapping between object and broadphase layers.
- **/
-class BPLayerInterfaceImpl final
-  : public JPH::BroadPhaseLayerInterface
+virtual void
+OnContactAdded
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::ContactManifold const                       &in_manifold,
+  _In_ JPH::ContactSettings                             &io_settings
+) override;
+
+virtual void
+OnContactPersisted
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::ContactManifold const                       &in_manifold,
+  _In_ JPH::ContactSettings                             &io_settings
+) override;
+
+virtual void
+OnContactRemoved
+(
+  _In_ JPH::SubShapeIDPair const                        &in_sub_shape_pair
+) override;
+};
+
+struct BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
 {
 public:
-  BPLayerInterfaceImpl
-  (
-  )
+virtual JPH::uint
+GetNumBroadPhaseLayers
+(
+) const override
+{
+  return jph_broad_phase_layers_count_;
+}
+
+virtual JPH::BroadPhaseLayer
+GetBroadPhaseLayer
+(
+  _In_ JPH::ObjectLayer                                    in_layer
+) const override
+{
+  if ( in_layer & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC )
   {
-    mObjectToBroadPhase[ non_moving_object_layer_ ] = non_moving_broad_phase_layer_;
-    mObjectToBroadPhase[ moving_object_layer_ ] = moving_broad_phase_layer_;
+    return jph_moving_broad_phase_layer_;
+  }
+  else if ( in_layer & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC )
+  {
+    return jph_non_moving_broad_phase_layer_;
   }
 
-  virtual JPH::uint
-  GetNumBroadPhaseLayers
-  (
-  ) const override
-  {
-    return num_broad_phase_layers_;
-  }
-
-  virtual JPH::BroadPhaseLayer
-  GetBroadPhaseLayer
-  (
-    _In_ JPH::ObjectLayer                                    in_layer
-  ) const override
-  {
-    JPH_ASSERT( in_layer < num_layers_ );
-    return mObjectToBroadPhase[ in_layer ];
-  }
+  return jph_sensor_broad_phase_layer_;
+}
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined( JPH_PROFILE_ENABLED )
-  virtual char const*
-  GetBroadPhaseLayerName
-  (
-    _In_ JPH::BroadPhaseLayer                                in_layer
-  ) const override
+virtual char const*
+GetBroadPhaseLayerName
+(
+  _In_ JPH::BroadPhaseLayer                                in_layer
+) const override
+{
+  switch ( ( JPH::BroadPhaseLayer::Type )in_layer )
   {
-    switch ( ( JPH::BroadPhaseLayer::Type )in_layer )
-    {
-    case ( JPH::BroadPhaseLayer::Type ) non_moving_broad_phase_layer_:  return "NON_MOVING";
-    case ( JPH::BroadPhaseLayer::Type ) moving_broad_phase_layer_:      return "MOVING";
-    default:                          JPH_ASSERT(false); return "INVALID";
-    }
+  case ( JPH::BroadPhaseLayer::Type ) jph_non_moving_broad_phase_layer_:
+  {
+    return "NON_MOVING";
   }
+  case ( JPH::BroadPhaseLayer::Type ) jph_moving_broad_phase_layer_:
+  {
+    return "MOVING";
+  }
+  case ( JPH::BroadPhaseLayer::Type ) jph_sensor_broad_phase_layer_:
+  {
+    return "SENSOR";
+  }
+  default:
+  {
+    CRUDE_ASSERT( false ); 
+    return "INVALID";
+  }
+  };
+}
 #endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
-private:
-  JPH::BroadPhaseLayer          mObjectToBroadPhase[ num_layers_ ];
 };
 
-/* Class that determines if an object layer can collide with a broadphase layer */
-class ObjectVsBroadPhaseLayerFilterImpl
-  : public JPH::ObjectVsBroadPhaseLayerFilter
+struct ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter
 {
 public:
-  virtual bool
-  ShouldCollide
-  (
-    _In_ JPH::ObjectLayer                                                                       in_layer1,
-    _In_ JPH::BroadPhaseLayer                                                                   in_layer2
-  ) const override
-  {
-    switch ( in_layer1 )
-    {
-    case non_moving_object_layer_:
-    {
-      return in_layer2 == moving_broad_phase_layer_;
-    }
-    case moving_object_layer_:
-    {
-      return true;
-    }
-    default:
-    {
-      JPH_ASSERT( false );
-      return false;
-    }
-    }
-  }
-};
-
-class MyContactListener
-  : public JPH::ContactListener
+virtual bool
+ShouldCollide
+(
+  _In_ JPH::ObjectLayer                                                                       in_layer1,
+  _In_ JPH::BroadPhaseLayer                                                                   in_layer2
+) const override
 {
-public:
-  virtual JPH::ValidateResult
-  OnContactValidate
-  (
-    _In_ JPH::Body const                                  &in_body1,
-    _In_ JPH::Body const                                  &in_body2,
-    _In_ JPH::RVec3Arg                                     in_base_offset,
-    _In_ JPH::CollideShapeResult const                    &in_collision_result
-  ) override
+  if ( in_layer1 & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC )
   {
-    //cout << "Contact validate callback" << endl;
-
-    // Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
-    return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+    return in_layer2 == jph_moving_broad_phase_layer_;
   }
-
-  virtual void
-  OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override
+  
+  if ( in_layer1 & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC )
   {
-    //cout << "A contact was added" << endl;
+    return true;
   }
-
-  virtual void      OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override
-  {
-    //cout << "A contact was persisted" << endl;
-  }
-
-  virtual void      OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override
-  {
-    //cout << "A contact was removed" << endl;
-  }
-};
-
-class MyBodyActivationListener 
-  : public JPH::BodyActivationListener
-{
-public:
-  virtual void    OnBodyActivated(const JPH::BodyID &inBodyID, uint64 inBodyUserData) override
-  {
-    //cout << "A body got activated" << endl;
-  }
-
-  virtual void    OnBodyDeactivated(const JPH::BodyID &inBodyID, uint64 inBodyUserData) override
-  {
-    //cout << "A body went to sleep" << endl;
-  }
+  
+  return false;
+}
 };
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_process_physics_system_ );
@@ -250,46 +187,16 @@ CRUDE_ECS_OBSERVER_DECLARE( crude_physics_dynamic_body_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_body_destrotion_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_body_transform_set_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_body_collision_shape_set_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_body_update_transform_system_ );
 
-// We need a temp allocator for temporary allocations during the physics update. We're
-// pre-allocating 10 MB to avoid having to do allocations during the physics update.
-// B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
-// If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
-// malloc / free.
 JPH::TempAllocatorImpl                                    *jph_temp_allocator_;
-
-// We need a job system that will execute physics jobs on multiple threads. Typically
-// you would implement the JobSystem interface yourself and let Jolt Physics run on top
-// of your own job scheduler. JobSystemThreadPool is an example implementation.
 JPH::JobSystemThreadPool                                  *jph_job_system_;
-
-// Create mapping table from object layer to broadphase layer
-// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-// Also have a look at BroadPhaseLayerInterfaceTable or BroadPhaseLayerInterfaceMask for a simpler interface.
-BPLayerInterfaceImpl                                       jph_broad_phase_layer_interface_;
-
-// Create class that filters object vs broadphase layers
-// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-// Also have a look at ObjectVsBroadPhaseLayerFilterTable or ObjectVsBroadPhaseLayerFilterMask for a simpler interface.
-ObjectVsBroadPhaseLayerFilterImpl                          jph_object_vs_broadphase_layer_filter_;
-
-// Create class that filters object vs object layers
-// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-// Also have a look at ObjectLayerPairFilterTable or ObjectLayerPairFilterMask for a simpler interface.
-ObjectLayerPairFilterImpl                                  jph_object_vs_object_layer_filter_;
-
 JPH::PhysicsSystem                                         jph_physics_system_;
-
-// A body activation listener gets notified when bodies activate and go to sleep
-// Note that this is called from a job so whatever you do here needs to be thread safe.
-// Registering one is entirely optional.
-MyBodyActivationListener                                   jph_body_activation_listener_;
-
-// A contact listener gets notified when bodies (are about to) collide, and when they separate again.
-// Note that this is called from a job so whatever you do here needs to be thread safe.
-// Registering one is entirely optional.
-MyContactListener                                          jph_contact_listener_;
+ObjectLayerPairFilterImpl                                  jph_object_vs_object_layer_filter_;
+BPLayerInterfaceImpl                                       jph_broad_phase_layer_interface_;
+ObjectVsBroadPhaseLayerFilterImpl                          jph_object_vs_broadphase_layer_filter_;
+ContactListenerImpl                                        jph_contact_listener_;
 
 static void
 crude_physics_static_body_creation_observer_
@@ -329,13 +236,20 @@ crude_physics_static_body_creation_observer_
     {
       JPH::BodyID                                          jph_body_id;
       JPH::BodyCreationSettings                            jph_box_creation_settings;
-      
+      JPH::ObjectLayer                                     jph_object_layer;
+
+      jph_object_layer = static_body->layers;
+      if ( jph_object_layer & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING )
+      {
+        jph_object_layer = jph_object_layer | CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC;
+      }
+
       jph_box_creation_settings = JPH::BodyCreationSettings( 
         new JPH::BoxShape( JPH::Vec3( collision_shape->box.extent.x * 0.5f, collision_shape->box.extent.y * 0.5f, collision_shape->box.extent.z  * 0.5f ) ), 
         JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ),
         JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ),
         JPH::EMotionType::Static,
-        non_moving_object_layer_
+        jph_object_layer
       );
       jph_body_id = body_interface->CreateAndAddBody( jph_box_creation_settings, JPH::EActivation::DontActivate );
       body_handle->body_index = jph_body_id.GetIndexAndSequenceNumber( );
@@ -387,12 +301,19 @@ crude_physics_dynamic_body_creation_observer_
     {
       JPH::BodyID                                          jph_sphere_id;
       JPH::BodyCreationSettings                            jph_body_creation_settings;
+      JPH::ObjectLayer                                     jph_object_layer;
+
+      jph_object_layer = dynamic_body->layers;
+      if ( jph_object_layer & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING )
+      {
+        jph_object_layer = jph_object_layer | CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC;
+      }
 
       jph_body_creation_settings = JPH::BodyCreationSettings( 
         new JPH::SphereShape( collision_shape->sphere.radius ), 
         JPH::RVec3( transform->translation.x, transform->translation.y, transform->translation.z ),
         JPH::Quat( transform->rotation.x, transform->rotation.y, transform->rotation.z, transform->rotation.w ),
-        JPH::EMotionType::Dynamic, moving_object_layer_
+        JPH::EMotionType::Dynamic, jph_object_layer
       );
 
       if ( dynamic_body->lock_rotation )
@@ -466,6 +387,35 @@ crude_physics_body_transform_set_observer_
   }
 }
 
+static void
+crude_physics_body_collision_shape_set_observer_
+(
+  ecs_iter_t *it
+)
+{
+  crude_physics_body_handle                               *bodies_per_entity;
+  crude_collision_shape                                   *collision_shapes_per_entity;
+  JPH::BodyInterface                                      *body_interface;
+
+  bodies_per_entity = ecs_field( it, crude_physics_body_handle, 0 );
+  collision_shapes_per_entity = ecs_field( it, crude_collision_shape, 1 );
+
+  body_interface = &jph_physics_system_.GetBodyInterface();
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_body_handle                             *physics_body_handle;
+    crude_collision_shape                                 *collision_shape;
+    JPH::BodyID                                            jph_body_id;
+    JPH::ShapeRefC                                         jph_shape;
+
+    physics_body_handle = &bodies_per_entity[ i ];
+    collision_shape = &collision_shapes_per_entity[ i ];
+    
+    crude_physics_body_set_collision( physics_body_handle, collision_shape );
+  }
+}
+
 void
 crude_physics_update
 (
@@ -483,8 +433,6 @@ crude_physics_update
   const int cCollisionSteps = 1;
   jph_physics_system_.Update( delta_time, cCollisionSteps, jph_temp_allocator_, jph_job_system_ );
 }
-
-
 
 static void
 crude_physics_body_update_transform_system_
@@ -542,6 +490,11 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
     { .id = ecs_id( crude_physics_body_handle ) },
     { .id = ecs_id( crude_transform ) }
   } );
+  
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_body_collision_shape_set_observer_, EcsOnSet, NULL, {
+    { .id = ecs_id( crude_physics_body_handle ) },
+    { .id = ecs_id( crude_collision_shape ) }
+  } );
 }
 
 void
@@ -562,7 +515,6 @@ crude_physics_initialize
   jph_temp_allocator_ = new JPH::TempAllocatorImpl( creation->temporary_allocator_size );
   jph_job_system_ = new JPH::JobSystemThreadPool( JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, creation->num_threads );
   jph_physics_system_.Init( creation->max_rigid_bodies, creation->num_body_mutexes, creation->max_body_pairs, creation->max_contact_constraints, jph_broad_phase_layer_interface_, jph_object_vs_broadphase_layer_filter_, jph_object_vs_object_layer_filter_ );
-  jph_physics_system_.SetBodyActivationListener( &jph_body_activation_listener_ );
   jph_physics_system_.SetContactListener( &jph_contact_listener_ );
 }
 
@@ -714,4 +666,134 @@ crude_physics_body_set_collision
   {
     jph_body_interface->SetShape( jph_body_id, new JPH::SphereShape( shape->sphere.radius ), false, JPH::EActivation::DontActivate );
   }
+}
+
+void
+crude_physics_body_set_body_layer
+(
+  _In_ crude_physics_body_handle const                    *body,
+  _In_ uint32                                              layers
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface;
+  JPH::BodyID                                              jph_body_id;
+
+  jph_body_interface = &jph_physics_system_.GetBodyInterface( );
+  jph_body_id = CRUDE_COMPOUNT( JPH::BodyID, { body->body_index } );
+  
+  if ( layers & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING )
+  {
+    switch ( jph_body_interface->GetMotionType( jph_body_id ) )
+    {
+    case JPH::EMotionType::Static:
+    {
+      layers = layers | CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC;
+      break;
+    }
+    case JPH::EMotionType::Dynamic:
+    {
+      layers = layers | CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC;
+      break;
+    }
+    }
+  }
+
+  jph_body_interface->SetObjectLayer( jph_body_id, layers );
+}
+
+void
+jolt_trace_implementation_
+(
+  _In_ char const                                           *fmt,
+  ...
+)
+{
+  va_list list;
+  va_start( list, fmt );
+  crude_log_common_va( __FILE__, __LINE__, CRUDE_CHANNEL_PHYSICS, CRUDE_VERBOSITY_ALL, fmt, list );
+  va_end( list );
+}
+
+#ifdef JPH_ENABLE_ASSERTS
+bool
+jolt_assert_failed_impl
+(
+  _In_ char const                                           *expression,
+  _In_ char const                                           *message,
+  _In_ char const                                           *file,
+  _In_ uint32                                                line
+)
+{
+  CRUDE_LOG_ERROR( CRUDE_CHANNEL_PHYSICS, "%s:%s: (%s) %s", file, line, expression, message ? message : "" );
+  return true;
+}
+#endif /* JPH_ENABLE_ASSERTS */
+
+bool
+ObjectLayerPairFilterImpl::ShouldCollide
+(
+  _In_ JPH::ObjectLayer                                    in_object1, 
+  _In_ JPH::ObjectLayer                                    in_object2
+) const
+{
+  if ( in_object1 & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC )
+  {
+    return true;
+  }
+
+  if ( in_object1 & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_STATIC )
+  {
+    in_object2 & CRUDE_PHYSICS_BODY_LAYERS_COLLIDING_DYNAMIC;
+  }
+
+  return false;
+}
+
+JPH::ValidateResult
+ContactListenerImpl::OnContactValidate
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::RVec3Arg                                     in_base_offset,
+  _In_ JPH::CollideShapeResult const                    &in_collision_result
+)
+{
+  //cout << "Contact validate callback" << endl;
+
+  // Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
+  return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
+
+void
+ContactListenerImpl::OnContactAdded
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::ContactManifold const                       &in_manifold,
+  _In_ JPH::ContactSettings                             &io_settings
+) 
+{
+  //cout << "A contact was added" << endl;
+}
+
+void
+ContactListenerImpl::OnContactPersisted
+(
+  _In_ JPH::Body const                                  &in_body1,
+  _In_ JPH::Body const                                  &in_body2,
+  _In_ JPH::ContactManifold const                       &in_manifold,
+  _In_ JPH::ContactSettings                             &io_settings
+)
+{
+  //cout << "A contact was persisted" << endl;
+}
+
+void
+ContactListenerImpl::OnContactRemoved
+(
+  _In_ JPH::SubShapeIDPair const                        &in_sub_shape_pair
+)
+{
+  //cout << "A contact was removed" << endl;
 }

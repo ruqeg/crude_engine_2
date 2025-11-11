@@ -44,6 +44,7 @@ crude_enemy_update_system_
     crude_enemy                                           *enemy;
     crude_transform                                       *enemy_transform;
     crude_transform const                                 *player_transform;
+    crude_physics_body_handle                             *enemy_physics_body;
     XMVECTOR                                               enemy_translation;
     XMVECTOR                                               enemy_to_player;
     XMVECTOR                                               enemy_to_player_normalized;
@@ -52,6 +53,8 @@ crude_enemy_update_system_
     enemy = &enemies_per_entity[ i ];
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
     
+    enemy_physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( enemy_node, crude_physics_body_handle );
+
     enemy->player_node = crude_ecs_lookup_entity( it->world, "main.player" ); // !TODO
     CRUDE_ASSERT( crude_entity_valid( enemy->player_node ) );
     
@@ -63,9 +66,7 @@ crude_enemy_update_system_
     enemy_to_player = XMVectorSubtract( XMLoadFloat3( &player_transform->translation ), enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
     
-    XMStoreFloat3( &enemy_transform->translation, XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed ) ) );
-    
-    CRUDE_ENTITY_COMPONENT_MODIFIED( enemy_node, crude_transform );
+    crude_physics_body_set_linear_velocity( enemy_physics_body, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed ) );
   }
 }
 

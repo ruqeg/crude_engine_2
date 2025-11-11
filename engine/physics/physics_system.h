@@ -116,3 +116,10 @@ crude_physics_body_set_collision
   _In_ crude_physics_body_handle const                    *body,
   _In_ crude_collision_shape const                        *shape
 );
+
+CRUDE_API void
+crude_physics_body_set_body_layer
+(
+  _In_ crude_physics_body_handle const                    *body,
+  _In_ uint32                                              layers
+);

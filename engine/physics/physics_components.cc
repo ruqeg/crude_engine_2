@@ -28,6 +28,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) );
+  cJSON_AddItemToObject( static_body_json, "layers", cJSON_CreateNumber( component->layers ) );
   return static_body_json;
 }
 
@@ -43,28 +44,44 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_body )
   cJSON *dynamic_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) );
   cJSON_AddItemToObject( dynamic_body_json, "lock_rotation", cJSON_CreateNumber( component->lock_rotation ) );
+  cJSON_AddItemToObject( dynamic_body_json, "layers", cJSON_CreateNumber( component->layers ) );
   return dynamic_body_json;
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body )
 {
+  bool                                                     layers_updated;
+  
+  layers_updated = false;
+
   ImGui::Text( "Type: Dynamic Body" );
   ImGui::Text( component->lock_rotation ? "Rotation Locked" : "Rotation Allowed" );
-  if ( ImGui::Button( "Rebuild" ) )
+  
+  ImGui::Text( "Layers" ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "C", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_COLLIDING ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "1", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_1 ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "2", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_2 ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "3", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_3 );
+  if ( layers_updated )
   {
-    crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
-    crude_physics_body_handle *physics_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
-    crude_physics_body_set_collision( physics_body_handle, collision_shape );
+    crude_physics_body_set_body_layer( CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle ), component->layers );
   }
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body )
 {
+  bool                                                     layers_updated;
+  
+  layers_updated = false;
+
   ImGui::Text( "Type: Static Body" );
-  if ( ImGui::Button( "Rebuild" ) )
+  ImGui::Text( "Layers" ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "C", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_COLLIDING ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "1", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_1 ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "2", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_2 ); ImGui::SameLine( );
+  layers_updated |= ImGui::CheckboxFlags( "3", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_3 );
+  if ( layers_updated )
   {
-    crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
-    crude_physics_body_handle *physics_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
-    crude_physics_body_set_collision( physics_body_handle, collision_shape );
+    crude_physics_body_set_body_layer( CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle ), component->layers );
   }
 }
