@@ -37,7 +37,7 @@
 			"name":	"player",
 			"external":	"nodes\\player.crude_node",
 			"transform":	{
-				"translation":	[0, 1.0549999475479126, 0],
+				"translation":	[0, 1.0549999475479126, -1.1546638011932373],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},

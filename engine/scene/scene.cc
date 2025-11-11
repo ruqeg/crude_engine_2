@@ -257,17 +257,16 @@ scene_load_node_
     node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
-  
 
     CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, { transform } );
-  
+
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
     {
       cJSON const                                       *component_json;
       cJSON const                                       *component_type_json;
       char const                                        *component_type;
-  
+
       component_json = cJSON_GetArrayItem( node_components_json, component_index );
       component_type_json = cJSON_GetObjectItemCaseSensitive( component_json, "type" );
       component_type = cJSON_GetStringValue( component_type_json );

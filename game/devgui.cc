@@ -420,6 +420,12 @@ crude_devgui_node_inspector_draw
 
   ImGui::Begin( "Node Inspector", NULL, window_flags_ );
   ImGui::Text( "Node: \"%s\"", crude_entity_get_name( node ) );
+
+  crude_node_external *node_external = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_node_external );
+  if ( node_external )
+  {
+    ImGui::Text( "External \"%s\"", node_external->path );
+  }
   
   crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_transform );
   if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
@@ -1292,6 +1298,8 @@ crude_devgui_game_common_draw
   }
   
   ImGui::Begin( "Game Common", NULL, window_flags_ );
+
+  ImGui::Checkbox( "Simulate Physics", &dev_game_common->game->simulate_physics );
   if ( ImGui::Checkbox( "Editor Camera Controller", &dev_game_common->editor_camera_controller ) )
   {
     if ( dev_game_common->editor_camera_controller )

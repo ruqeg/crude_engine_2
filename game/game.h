@@ -39,6 +39,7 @@ typedef struct game_t
   crude_entity                                             game_controller_node;
 
   /* Other */
+  bool                                                     simulate_physics;
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
 } game_t;
