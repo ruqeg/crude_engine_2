@@ -7,6 +7,7 @@
 #include <scene/scripts_components.h>
 #include <physics/physics_components.h>
 #include <player_controller_components.h>
+#include <enemy_components.h>
 #include <game.h>
 
 #include <devgui.h>
@@ -492,6 +493,12 @@ crude_devgui_node_inspector_draw
   if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
   {
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( node, player_controller );
+  }
+  
+  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_enemy );
+  if ( enemy && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_enemy ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( node, enemy );
   }
   ImGui::End( );
 }

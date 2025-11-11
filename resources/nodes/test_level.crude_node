@@ -30,7 +30,7 @@
 				}, {
 					"type":	"crude_collision_shape",
 					"shape_type":	"box",
-					"extent":	[5, 1, 5]
+					"extent":	[25, 1, 25]
 				}],
 			"children":	[]
 		}, {
@@ -53,6 +53,23 @@
 					"rotation_speed":	-0.0010000000474974513,
 					"moving_speed":	[5, 5],
 					"weight":	1
+				}],
+			"children":	[]
+		}, {
+			"name":	"enemy",
+			"external":	"nodes\\enemy.crude_node",
+			"transform":	{
+				"translation":	[-5.5, 2.8550000190734863, -1.1549999713897705],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_dynamic_body",
+					"lock_rotation":	1
+				}, {
+					"type":	"crude_collision_shape",
+					"shape_type":	"sphere",
+					"radius":	0.5
 				}],
 			"children":	[]
 		}]

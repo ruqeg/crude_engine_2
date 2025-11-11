@@ -16,6 +16,8 @@
 #include <physics/physics_system.h>
 #include <player_controller_components.h>
 #include <player_controller_system.h>
+#include <enemy_components.h>
+#include <enemy_system.h>
 
 #include <game.h>
 
@@ -129,6 +131,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_physics_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
+  ECS_IMPORT( game->engine->world, crude_enemy_system );
 
   game_initialize_allocators_( game );
   game_initialize_imgui_( game );
@@ -352,6 +355,12 @@ game_parse_json_to_component_
     CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
   }
+  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
+  {
+    crude_enemy                                enemy;
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
+  }
   return true;
 }
 
@@ -363,11 +372,18 @@ game_parse_all_components_to_json_
 )
 {
   crude_player_controller const                           *player_component;
+  crude_enemy const                                       *enemy;
   
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
   {
     cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component ) );
+  }
+  
+  enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
+  if ( enemy )
+  {
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy ) );
   }
 }
 
