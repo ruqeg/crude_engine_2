@@ -69,8 +69,6 @@ crude_physics_dynamic_body_update_system_
     
     translation = XMVectorAdd( translation, velocity * it->delta_time );
 
-    XMStoreFloat3( &transform->translation, translation );
-
     for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( crude_physics_instance( )->static_bodies ); ++s )
     {
       crude_physics_static_body *second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ i ] );
@@ -89,9 +87,12 @@ crude_physics_dynamic_body_update_system_
         if ( crude_physics_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius  ) )
         {
           crude_physics_dynamic_body_set_velocity( crude_physics_instance( ), dynamic_body_handle, XMVectorZero( ) );
+          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( XMVectorSubtract( translation, closest_point ) ), collision_shape->sphere.radius ) );
         }
       }
     }
+
+    XMStoreFloat3( &transform->translation, translation );
   }
 }
 

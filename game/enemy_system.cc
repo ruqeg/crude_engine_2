@@ -61,6 +61,8 @@ crude_enemy_update_system_
     enemy_translation = XMLoadFloat3( &enemy_transform->translation );
     enemy_to_player = XMVectorSubtract( XMLoadFloat3( &player_transform->translation ), enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
+
+    XMStoreFloat3( &enemy_transform->translation, XMVectorScale( XMVectorAdd( enemy_translation, enemy_to_player_normalized ), enemy->moving_speed ) );
   }
 }
 

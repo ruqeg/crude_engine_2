@@ -15,7 +15,7 @@
 		},
 		{
 			"type": "crude_enemy",
-			"moving_speed": 0.1
+			"moving_speed": 0.05
 		}],
 	"children":	[{
 			"name":	"pivot",
