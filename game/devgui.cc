@@ -6,6 +6,7 @@
 #include <graphics/gpu_resources_loader.h>
 #include <scene/scripts_components.h>
 #include <physics/physics_components.h>
+#include <physics/physics.h>
 #include <player_controller_components.h>
 #include <enemy_components.h>
 #include <game.h>
@@ -1306,7 +1307,7 @@ crude_devgui_game_common_draw
   
   ImGui::Begin( "Game Common", NULL, window_flags_ );
 
-  ImGui::Checkbox( "Simulate Physics", &dev_game_common->game->simulate_physics );
+  ImGui::Checkbox( "Simulate Physics", &crude_physics_instance( )->simulation_enabled );
   if ( ImGui::Checkbox( "Editor Camera Controller", &dev_game_common->editor_camera_controller ) )
   {
     if ( dev_game_common->editor_camera_controller )

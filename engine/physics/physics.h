@@ -17,6 +17,7 @@ typedef struct crude_physics
   crude_physics_static_body_handle                        *static_bodies;
   crude_resource_pool                                      dynamic_bodies_resource_pool;
   crude_resource_pool                                      static_bodies_resource_pool;
+  bool                                                     simulation_enabled;
 } crude_physics;
 
 CRUDE_API void
@@ -30,13 +31,6 @@ CRUDE_API void
 crude_physics_deinitialize
 (
   _In_ crude_physics                                      *physics
-);
-
-CRUDE_API void
-crude_physics_update
-(
-  _In_ crude_physics                                      *physics,
-  _In_ float32                                             delta_time
 );
 
 CRUDE_API crude_physics_dynamic_body_handle
@@ -78,6 +72,13 @@ crude_physics_dynamic_body_set_velocity
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_dynamic_body_handle                   handle,
   _In_ XMVECTOR                                            velocity
+);
+
+CRUDE_API void
+crude_physics_enable_simulation
+(
+  _In_ crude_physics                                      *physics,
+  _In_ bool                                                enable
 );
 
 /* We want to access physics in systems without extra nonsense, maybe rework in the future if it will be broken */

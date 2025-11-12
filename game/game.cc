@@ -124,7 +124,6 @@ game_initialize
   game->engine = engine;
   game->framerate = 60;
   game->last_graphics_update_time = 0.f;
-  game->simulate_physics = false;
 
   game->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 
@@ -325,11 +324,6 @@ game_physics_system_
 )
 {
   game_t *game = ( game_t* )it->ctx;
-  
-  if ( game->simulate_physics )
-  {
-    crude_physics_update( crude_physics_instance( ), it->delta_time );
-  }
 }
 
 void
@@ -611,7 +605,7 @@ game_setup_custom_nodes_to_scene_
   game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot.camera" );
   game->focused_camera_node = game->editor_camera_node;
 
-  game->simulate_physics = false;
+  crude_physics_enable_simulation( crude_physics_instance( ), false );
 
   player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->game_controller_node, crude_player_controller );
   player_controller->entity_input = game->scene.input_entity;

@@ -20,6 +20,8 @@ crude_physics_initialize
 {
   physics->allocator = creation->allocator;
 
+  physics->simulation_enabled = false;
+
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( physics->dynamic_bodies, 0, crude_heap_allocator_pack( physics->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( physics->static_bodies, 0, crude_heap_allocator_pack( physics->allocator ) );
 
@@ -38,15 +40,6 @@ crude_physics_deinitialize
 
   crude_resource_pool_deinitialize( &physics->dynamic_bodies_resource_pool );
   crude_resource_pool_deinitialize( &physics->static_bodies_resource_pool );
-}
-
-void
-crude_physics_update
-(
-  _In_ crude_physics                                      *physics,
-  _In_ float32                                             delta_time
-)
-{
 }
 
 crude_physics_dynamic_body_handle
@@ -112,6 +105,16 @@ crude_physics_dynamic_body_set_velocity
 {
   crude_physics_dynamic_body *body = CRUDE_CAST( crude_physics_dynamic_body*, crude_resource_pool_access_resource( &physics->dynamic_bodies_resource_pool, handle.index ) );
   XMStoreFloat3( &body->velocity, velocity );
+}
+
+void
+crude_physics_enable_simulation
+(
+  _In_ crude_physics                                      *physics,
+  _In_ bool                                                enable
+)
+{
+  physics->simulation_enabled = enable;
 }
 
 void
