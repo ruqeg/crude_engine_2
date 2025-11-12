@@ -99,20 +99,3 @@ FetchContent_Declare(
 	GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(meshoptimizer)
-
-######################
-#
-# JOLT
-#
-######################
-# Include Jolt
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
-FetchContent_Declare(
-	JoltPhysics
-	GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-	GIT_TAG "v5.4.0"
-	SOURCE_SUBDIR "Build"
-	GIT_SHALLOW TRUE
-	GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(JoltPhysics)
