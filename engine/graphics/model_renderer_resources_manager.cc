@@ -102,7 +102,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 void
 crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _Out_ crude_gfx_mesh_cpu                                *meshes
 );
 
@@ -136,8 +136,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
 void
 crude_gfx_model_renderer_resources_manager_intialize
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
-	_In_ crude_gfx_model_renderer_resources_manager_creation const *creation
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager_creation const *creation
 )
 {
   manager->world = creation->world;
@@ -170,7 +170,7 @@ crude_gfx_model_renderer_resources_manager_intialize
 void
 crude_gfx_model_renderer_resources_manager_deintialize
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager
+  _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->model_hashed_name_to_model_renderer_resource ); ++i )
@@ -213,8 +213,8 @@ crude_gfx_model_renderer_resources_manager_deintialize
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_add_gltf_model
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
-	_In_ char const																					*filepath
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ char const                                          *filepath
 )
 {
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
@@ -236,7 +236,7 @@ crude_gfx_model_renderer_resources_manager_add_gltf_model
 void
 crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager
+  _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GRAPHICS_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
@@ -253,7 +253,7 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_load_gltf_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ char const                                         *gltf_path
 )
 {
@@ -485,7 +485,7 @@ crude_gfx_model_renderer_resources_manager_gltf_parse_
 static void
 crude_gfx_model_renderer_resources_manager_gltf_load_images_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory
@@ -526,7 +526,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_images_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_samplers_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory
@@ -607,7 +607,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_samplers_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_textures_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ cgltf_data                                         *gltf
 )
 {
@@ -622,7 +622,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_textures_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_buffers_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_string_buffer                                *temporary_string_buffer,
   _In_ char const                                         *gltf_directory
@@ -857,7 +857,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_gfx_mesh_cpu                                 *meshes
 )
@@ -1071,7 +1071,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 void
 crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _Out_ crude_gfx_mesh_cpu                                *meshes
 )
 {
@@ -1137,7 +1137,7 @@ crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 (
-	_In_ crude_gfx_model_renderer_resources_manager					*manager,
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_entity                                        parent_node,

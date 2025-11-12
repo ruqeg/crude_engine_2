@@ -71,7 +71,7 @@ crude_player_controller_update_system_
 
       input_dir = XMVectorSet( input->keys[ 'd' ].current - input->keys[ 'a' ].current, 0, input->keys[ 'w' ].current - input->keys[ 's' ].current, 0 );
       
-	    direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
+      direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
       
       if ( XMVectorGetX( XMVector3Length( direction ) ) > 0.001f )
       {

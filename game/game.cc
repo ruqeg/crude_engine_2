@@ -348,13 +348,13 @@ game_parse_json_to_component_
   if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
   {
     crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
   {
     crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
   }
   return true;
@@ -544,7 +544,7 @@ game_initialize_graphics_
   scene_renderer_creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
   scene_renderer_creation.imgui_context = game->imgui_context;
   scene_renderer_creation.scene = &game->scene;
-	scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
+  scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
   crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
 
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );

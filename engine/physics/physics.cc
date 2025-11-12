@@ -45,23 +45,31 @@ crude_physics_deinitialize
 crude_physics_dynamic_body_handle
 crude_physics_create_dynamic_body
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ crude_entity                                        node
 )
 {
-  crude_physics_dynamic_body_handle handle = CRUDE_COMPOUNT( crude_physics_dynamic_body_handle, { crude_resource_pool_obtain_resource( &physics->dynamic_bodies_resource_pool ) } );
-  CRUDE_ARRAY_PUSH( physics->dynamic_bodies, handle ); 
-  return handle;
+  crude_physics_dynamic_body_handle dynamic_body_handle = CRUDE_COMPOUNT( crude_physics_dynamic_body_handle, { crude_resource_pool_obtain_resource( &physics->dynamic_bodies_resource_pool ) } );
+  crude_physics_dynamic_body *dynamic_body = crude_physics_access_dynamic_body( physics, dynamic_body_handle );
+  dynamic_body->node = node;
+
+  CRUDE_ARRAY_PUSH( physics->dynamic_bodies, dynamic_body_handle ); 
+  return dynamic_body_handle;
 }
 
 CRUDE_API crude_physics_static_body_handle
 crude_physics_create_static_body
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ crude_entity                                        node
 )
 {
-  crude_physics_static_body_handle handle = CRUDE_COMPOUNT( crude_physics_static_body_handle, { crude_resource_pool_obtain_resource( &physics->static_bodies_resource_pool ) } );
-  CRUDE_ARRAY_PUSH( physics->static_bodies, handle ); 
-  return handle;
+  crude_physics_static_body_handle static_body_handle = CRUDE_COMPOUNT( crude_physics_static_body_handle, { crude_resource_pool_obtain_resource( &physics->static_bodies_resource_pool ) } );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( physics, static_body_handle );
+  static_body->node = node;
+
+  CRUDE_ARRAY_PUSH( physics->static_bodies, static_body_handle ); 
+  return static_body_handle;
 }
 
 void
@@ -82,6 +90,26 @@ crude_physics_destroy_static_body
 )
 {
   crude_resource_pool_release_resource( &physics->static_bodies_resource_pool, handle.index );
+}
+
+crude_physics_dynamic_body*
+crude_physics_access_dynamic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_dynamic_body_handle                   handle
+)
+{
+  return CRUDE_CAST( crude_physics_dynamic_body*, crude_resource_pool_access_resource( &physics->dynamic_bodies_resource_pool, handle.index ) );
+}
+
+crude_physics_static_body*
+crude_physics_access_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
+)
+{
+  return CRUDE_CAST( crude_physics_static_body*, crude_resource_pool_access_resource( &physics->static_bodies_resource_pool, handle.index ) );
 }
 
 XMVECTOR

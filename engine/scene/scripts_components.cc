@@ -16,8 +16,8 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scripts_components )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )
 {
   crude_memory_set( component, 0, sizeof( crude_free_camera ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->moving_speed_multiplier, cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT2 )( &component->rotating_speed_multiplier, cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->moving_speed_multiplier, cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ), node );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT2 )( &component->rotating_speed_multiplier, cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ), node );
   return true;
 }
 

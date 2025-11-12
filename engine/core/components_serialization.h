@@ -25,7 +25,8 @@ crude_parse_component_to_imgui_func##component_type
 bool crude_parse_json_to_component_func##component_type\
 (\
   _Out_ component_type                                    *component,\
-  _In_ cJSON const                                        *component_json\
+  _In_ cJSON const                                        *component_json,\
+  _In_ crude_entity                                        node\
 )
 
 #define CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( component_type )\

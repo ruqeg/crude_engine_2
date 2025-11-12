@@ -30,7 +30,7 @@
 				}, {
 					"type":	"crude_physics_collision_shape",
 					"shape_type":	"box",
-					"extent":	[25, 1, 25]
+					"half_extent":	[25, 0.5, 25]
 				}],
 			"children":	[]
 		}, {

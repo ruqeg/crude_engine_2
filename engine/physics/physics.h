@@ -36,13 +36,15 @@ crude_physics_deinitialize
 CRUDE_API crude_physics_dynamic_body_handle
 crude_physics_create_dynamic_body
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ crude_entity                                        node
 );
 
 CRUDE_API crude_physics_static_body_handle
 crude_physics_create_static_body
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ crude_entity                                        node
 );
 
 CRUDE_API void
@@ -54,6 +56,20 @@ crude_physics_destroy_dynamic_body
 
 CRUDE_API void
 crude_physics_destroy_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
+);
+
+CRUDE_API crude_physics_dynamic_body*
+crude_physics_access_dynamic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_dynamic_body_handle                   handle
+);
+
+CRUDE_API crude_physics_static_body*
+crude_physics_access_static_body
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_static_body_handle                    handle
@@ -83,19 +99,19 @@ crude_physics_enable_simulation
 
 /* We want to access physics in systems without extra nonsense, maybe rework in the future if it will be broken */
 /* btw, first time i use instance in this engine... a bit sad because of this to be honest */
-void
+CRUDE_API void
 crude_physics_instance_allocate
 (
   _In_ crude_allocator_container                           allocator_container
 );
 
-void
+CRUDE_API void
 crude_physics_instance_deallocate
 (
   _In_ crude_allocator_container                           allocator_container
 );
 
-crude_physics*
+CRUDE_API crude_physics*
 crude_physics_instance
 (
 );

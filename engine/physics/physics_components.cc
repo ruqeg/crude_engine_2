@@ -24,7 +24,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_components )
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  *component = crude_physics_create_static_body( crude_physics_instance( ) );
+  *component = crude_physics_create_static_body( crude_physics_instance( ), node );
   return true;
 }
 
@@ -37,7 +37,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_dynamic_body_handle )
 {
-  *component = crude_physics_create_dynamic_body( crude_physics_instance( ) );
+  *component = crude_physics_create_dynamic_body( crude_physics_instance( ), node );
   return true;
 }
 
@@ -65,7 +65,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   component->type = crude_physics_collision_shape_string_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
-    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.extent, cJSON_GetObjectItemCaseSensitive( component_json, "extent" ) );
+    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.half_extent, cJSON_GetObjectItemCaseSensitive( component_json, "half_extent" ), node );
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
   {
@@ -85,7 +85,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
   cJSON_AddItemToObject( collision_shape_json, "shape_type", cJSON_CreateString( crude_physics_collision_shape_type_to_string( component->type ) ) );
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
-    cJSON_AddItemToObject( collision_shape_json, "extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.extent ) );
+    cJSON_AddItemToObject( collision_shape_json, "half_extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.half_extent ) );
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
   {
@@ -103,7 +103,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape )
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
     ImGui::Text( "Type: Box" );
-    if ( ImGui::DragFloat3( "Extent", &component->box.extent.x, 0.01 ) )
+    if ( ImGui::DragFloat3( "Half Extent", &component->box.half_extent.x, 0.01 ) )
     {
       CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_physics_collision_shape );
     }

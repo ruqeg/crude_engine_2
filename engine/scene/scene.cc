@@ -259,7 +259,7 @@ scene_load_node_
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
 
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, node );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, { transform } );
 
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
@@ -275,7 +275,7 @@ scene_load_node_
       if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_gltf ) ) == 0 )
       {
         crude_gltf                                         gltf;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, node );
         gltf.original_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s", gltf.original_path );
         gltf.path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, gltf.original_path );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, { gltf } );
@@ -283,13 +283,13 @@ scene_load_node_
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_camera ) ) == 0 )
       {
         crude_camera                                       camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, node );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, { camera } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_free_camera ) ) == 0 )
       {
         crude_free_camera                                  free_camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, node );
         free_camera.entity_input = scene->input_entity;
         free_camera.enabled = false;
         CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, { free_camera } );
@@ -297,27 +297,27 @@ scene_load_node_
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_light ) ) == 0 )
       {
         crude_light                                        light;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, node );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_light, { light } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) == 0 )
       {
         crude_physics_static_body_handle                   static_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, node );
         CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_static_body_handle );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body_handle, { static_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_dynamic_body_handle ) ) == 0 )
       {
         crude_physics_dynamic_body_handle                  dynamic_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_dynamic_body_handle )( &dynamic_body, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_dynamic_body_handle )( &dynamic_body, component_json, node );
         CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_dynamic_body_handle );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body_handle, { dynamic_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) == 0 )
       {
         crude_physics_collision_shape                      collision_shape;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, node );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_collision_shape, { collision_shape } );
       }
       else

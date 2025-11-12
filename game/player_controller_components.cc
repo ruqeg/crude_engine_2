@@ -18,7 +18,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotation_speed = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "rotation_speed" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT2 )( &component->moving_speed, cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed" ) );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT2 )( &component->moving_speed, cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed" ), node );
   component->weight = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "weight" ) );
   return true;
 }

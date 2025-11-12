@@ -55,9 +55,9 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform )
 {
   crude_memory_set( component, 0, sizeof( crude_camera ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->translation, cJSON_GetObjectItemCaseSensitive( component_json, "translation" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT4 )( &component->rotation, cJSON_GetObjectItemCaseSensitive( component_json, "rotation" ) ),
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ) );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->translation, cJSON_GetObjectItemCaseSensitive( component_json, "translation" ), node );
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT4 )( &component->rotation, cJSON_GetObjectItemCaseSensitive( component_json, "rotation" ), node ),
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ), node );
   return true;
 }
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform )
@@ -88,7 +88,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )
 {
   crude_memory_set( component, 0, sizeof( crude_light ) );
   component->radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->color, cJSON_GetObjectItemCaseSensitive( component_json, "color" ) ),
+  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->color, cJSON_GetObjectItemCaseSensitive( component_json, "color" ), node ),
   component->intensity = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "intensity" ) );
   return true;
 }

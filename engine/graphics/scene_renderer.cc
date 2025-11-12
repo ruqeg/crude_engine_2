@@ -599,7 +599,7 @@ update_dynamic_buffers_
         collision_transform_matrix = XMMatrixIdentity( );
         if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
         {
-          collision_transform_matrix = XMMatrixScalingFromVector( XMVectorScale( XMLoadFloat3( &collision_shape->box.extent ), 0.5f ) );
+          collision_transform_matrix = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
         }
         else
         {
