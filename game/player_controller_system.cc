@@ -4,7 +4,7 @@
 #include <scene/scene_components.h>
 #include <platform/platform_components.h>
 #include <physics/physics_components.h>
-#include <physics/physics_system.h>
+#include <physics/physics.h>
 #include <player_controller_components.h>
 
 #include <player_controller_system.h>
@@ -41,7 +41,7 @@ crude_player_controller_update_system_
     crude_transform                                       *transform;
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
-    crude_physics_body_handle                             *physics_body;
+    crude_physics_dynamic_body_handle                     *physics_body;
     crude_entity                                           node;
     XMVECTOR                                               velocity;
 
@@ -52,9 +52,9 @@ crude_player_controller_update_system_
 
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( player_controller->entity_input, crude_input );
     
-    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle );
+    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body_handle );
     
-    velocity = crude_physics_body_get_linear_velocity( physics_body );
+    velocity = crude_physics_dynamic_body_get_velocity( crude_physics_instance( ), *physics_body );
     velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
 
     if ( player_controller->input_enabled )
@@ -95,7 +95,7 @@ crude_player_controller_update_system_
       }
     }
 
-    crude_physics_body_set_linear_velocity( physics_body, velocity );
+    crude_physics_dynamic_body_set_velocity( crude_physics_instance( ), *physics_body, velocity );
   }
 }
 

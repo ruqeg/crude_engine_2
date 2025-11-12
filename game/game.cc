@@ -13,6 +13,7 @@
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/gpu_resources_loader.h>
+#include <physics/physics.h>
 #include <physics/physics_system.h>
 #include <player_controller_components.h>
 #include <player_controller_system.h>
@@ -128,8 +129,8 @@ game_initialize
   game->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 
   ECS_IMPORT( game->engine->world, crude_platform_system );
-  ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_physics_system );
+  ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
 
@@ -174,7 +175,8 @@ game_deinitialize
 {
   crude_devgui_deinitialize( &game->devgui );
   game_graphics_deinitialize_( game );
-  crude_physics_deinitialize( );
+  crude_physics_deinitialize( crude_physics_instance( ) );
+  crude_physics_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   crude_scene_deinitialize( &game->scene );
   crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
@@ -326,7 +328,7 @@ game_physics_system_
   
   if ( game->simulate_physics )
   {
-    crude_physics_update( it->delta_time );
+    crude_physics_update( crude_physics_instance( ), it->delta_time );
   }
 }
 
@@ -443,8 +445,11 @@ game_initialize_physics_
   _In_ game_t                                             *game
 )
 {
-  crude_physics_creation physics_creation = crude_physics_creation_empty( );
-  crude_physics_initialize( &physics_creation );
+  crude_physics_creation physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
+  physics_creation.allocator = &game->allocator;
+
+  crude_physics_instance_allocate( crude_heap_allocator_pack( &game->allocator ) );
+  crude_physics_initialize( crude_physics_instance( ), &physics_creation );
 }
 
 void

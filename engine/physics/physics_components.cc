@@ -1,87 +1,119 @@
 #include <imgui/imgui.h>
-#include <physics/physics_system.h>
+
+#include <core/memory.h>
+#include <core/assert.h>
+#include <physics/physics.h>
 
 #include <physics/physics_components.h>
 
-ECS_COMPONENT_DECLARE( crude_physics_static_body );
-ECS_COMPONENT_DECLARE( crude_physics_dynamic_body );
-ECS_COMPONENT_DECLARE( crude_physics_body_handle );
+ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
+ECS_COMPONENT_DECLARE( crude_physics_dynamic_body_handle );
+ECS_COMPONENT_DECLARE( crude_physics_collision_shape );
 
-CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body, "crude_physics_static_body" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_physics_dynamic_body, "crude_physics_dynamic_body" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body_handle, "crude_physics_static_body_handle" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_dynamic_body_handle, "crude_physics_dynamic_body_handle" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_collision_shape, "crude_physics_collision_shape" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_components )
 {
   ECS_MODULE( world, crude_physics_components );
-  ECS_COMPONENT_DEFINE( world, crude_physics_static_body );
-  ECS_COMPONENT_DEFINE( world, crude_physics_dynamic_body );
-  ECS_COMPONENT_DEFINE( world, crude_physics_body_handle );
+  ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
+  ECS_COMPONENT_DEFINE( world, crude_physics_dynamic_body_handle );
+  ECS_COMPONENT_DEFINE( world, crude_physics_collision_shape );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  crude_memory_set( component, 0, sizeof( crude_physics_static_body ) );
+  *component = crude_physics_create_static_body( crude_physics_instance( ) );
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) );
-  cJSON_AddItemToObject( static_body_json, "layers", cJSON_CreateNumber( component->layers ) );
+  cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) );
   return static_body_json;
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_dynamic_body )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_dynamic_body_handle )
 {
-  crude_memory_set( component, 0, sizeof( crude_physics_dynamic_body ) );
-  component->lock_rotation = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "lock_rotation" ) );
+  *component = crude_physics_create_dynamic_body( crude_physics_instance( ) );
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_body )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_dynamic_body_handle )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) );
-  cJSON_AddItemToObject( dynamic_body_json, "lock_rotation", cJSON_CreateNumber( component->lock_rotation ) );
-  cJSON_AddItemToObject( dynamic_body_json, "layers", cJSON_CreateNumber( component->layers ) );
+  cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body_handle ) ) );
   return dynamic_body_json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_dynamic_body_handle )
 {
-  bool                                                     layers_updated;
-  
-  layers_updated = false;
-
   ImGui::Text( "Type: Dynamic Body" );
-  ImGui::Text( component->lock_rotation ? "Rotation Locked" : "Rotation Allowed" );
-  
-  ImGui::Text( "Layers" ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "C", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_COLLIDING ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "1", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_1 ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "2", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_2 ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "3", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_3 );
-  if ( layers_updated )
-  {
-    crude_physics_body_set_body_layer( CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle ), component->layers );
-  }
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  bool                                                     layers_updated;
-  
-  layers_updated = false;
-
   ImGui::Text( "Type: Static Body" );
-  ImGui::Text( "Layers" ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "C", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_COLLIDING ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "1", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_1 ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "2", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_2 ); ImGui::SameLine( );
-  layers_updated |= ImGui::CheckboxFlags( "3", &component->layers, CRUDE_PHYSICS_BODY_LAYERS_SENSOR_3 );
-  if ( layers_updated )
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
+{
+  crude_memory_set( component, 0, sizeof( crude_physics_collision_shape ) );
+
+  component->type = crude_physics_collision_shape_string_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
+  if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
-    crude_physics_body_set_body_layer( CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_body_handle ), component->layers );
+    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.extent, cJSON_GetObjectItemCaseSensitive( component_json, "extent" ) );
+  }
+  else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+  {
+    component->sphere.radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
+  }
+  else
+  {
+    CRUDE_ASSERT( false );
+  }
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
+{
+  cJSON *collision_shape_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( collision_shape_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) );
+  cJSON_AddItemToObject( collision_shape_json, "shape_type", cJSON_CreateString( crude_physics_collision_shape_type_to_string( component->type ) ) );
+  if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+  {
+    cJSON_AddItemToObject( collision_shape_json, "extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.extent ) );
+  }
+  else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+  {
+    cJSON_AddItemToObject( collision_shape_json, "radius", cJSON_CreateNumber( component->sphere.radius ) );
+  }
+  else
+  {
+    CRUDE_ASSERT( false );
+  }
+  return collision_shape_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape )
+{
+  if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+  {
+    ImGui::Text( "Type: Box" );
+    if ( ImGui::DragFloat3( "Extent", &component->box.extent.x, 0.01 ) )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_physics_collision_shape );
+    }
+  }
+  else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+  {
+    ImGui::Text( "Type: Sphere" );
+    if ( ImGui::DragFloat( "Radius", &component->sphere.radius, 0.01 ) )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_physics_collision_shape );
+    }
   }
 }

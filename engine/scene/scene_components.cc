@@ -11,14 +11,12 @@ ECS_COMPONENT_DECLARE( crude_scene );
 ECS_COMPONENT_DECLARE( crude_scene_creation );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
-ECS_COMPONENT_DECLARE( crude_collision_shape );
 ECS_COMPONENT_DECLARE( crude_node_external );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_collision_shape, "crude_collision_shape" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
 {
@@ -30,7 +28,6 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_gltf );
   ECS_COMPONENT_DEFINE( world, crude_scene_creation );
   ECS_COMPONENT_DEFINE( world, crude_scene_handle );
-  ECS_COMPONENT_DEFINE( world, crude_collision_shape );
   ECS_COMPONENT_DEFINE( world, crude_node_external );
 }
 
@@ -106,66 +103,6 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
   return light_json;
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_collision_shape )
-{
-  crude_memory_set( component, 0, sizeof( crude_collision_shape ) );
-
-  component->type = crude_collision_shape_str_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
-  if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-  {
-    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.extent, cJSON_GetObjectItemCaseSensitive( component_json, "extent" ) );
-  }
-  else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    component->sphere.radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_collision_shape )
-{
-  cJSON *collision_shape_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( collision_shape_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_collision_shape ) ) );
-  cJSON_AddItemToObject( collision_shape_json, "shape_type", cJSON_CreateString( crude_collision_shape_type_to_str( component->type ) ) );
-  if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-  {
-    cJSON_AddItemToObject( collision_shape_json, "extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.extent ) );
-  }
-  else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    cJSON_AddItemToObject( collision_shape_json, "radius", cJSON_CreateNumber( component->sphere.radius ) );
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-  return collision_shape_json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_collision_shape )
-{
-  if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-  {
-    ImGui::Text( "Type: Box" );
-    if ( ImGui::DragFloat3( "Extent", &component->box.extent.x, 0.01 ) )
-    {
-      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
-    }
-  }
-  else if ( component->type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    ImGui::Text( "Type: Sphere" );
-    if ( ImGui::DragFloat( "Radius", &component->sphere.radius, 0.01 ) )
-    {
-      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_collision_shape );
-    }
-  }
-}
-
 XMMATRIX
 crude_camera_view_to_clip
 (
@@ -204,64 +141,4 @@ crude_transform_node_to_parent
 )
 { 
   return XMMatrixAffineTransformation( XMLoadFloat3( &transform->scale ), XMVectorZero( ), XMLoadFloat4( &transform->rotation ), XMLoadFloat3( &transform->translation ) );
-}
-
-char const*
-crude_collision_shape_type_to_str
-(
-  _In_ crude_collision_shape_type                          type
-)
-{
-  if ( type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-  {
-    return "box";
-  }
-  else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    return "sphere";
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-}
-
-crude_collision_shape_type
-crude_collision_shape_str_to_type
-(
-  _In_ char const*                                         type_str
-)
-{
-  if ( crude_string_cmp( type_str, "box" ) == 0 )
-  {
-    return CRUDE_COLLISION_SHAPE_TYPE_BOX;
-  }
-  else if ( crude_string_cmp( type_str, "sphere" ) == 0 )
-  {
-    return CRUDE_COLLISION_SHAPE_TYPE_SPHERE;
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-}
-
-char const*
-crude_collision_shape_to_model_filename
-(
-  _In_ crude_collision_shape_type                          type
-)
-{
-  if ( type == CRUDE_COLLISION_SHAPE_TYPE_BOX )
-  {
-    return "editor\\models\\crude_physics_box_collision_shape.gltf";
-  }
-  else if ( type == CRUDE_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    return "editor\\models\\crude_physics_sphere_collision_shape.gltf";
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
 }

@@ -471,22 +471,22 @@ crude_devgui_node_inspector_draw
     ImGui::Text( "TODO" );
   }
   
-  crude_physics_dynamic_body *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body );
-  if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body ) ) )
+  crude_physics_dynamic_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body_handle );
+  if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_dynamic_body )( node, dynamic_body );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_dynamic_body_handle )( node, dynamic_body );
   }
   
-  crude_physics_static_body *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body );
-  if ( static_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) )
+  crude_physics_static_body_handle *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
+  if ( static_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body )( node, static_body );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( node, static_body );
   }
   
-  crude_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_collision_shape );
-  if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_collision_shape ) ) )
+  crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_collision_shape );
+  if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_collision_shape )( node, collision_shape );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( node, collision_shape );
   }
   
   crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_player_controller );

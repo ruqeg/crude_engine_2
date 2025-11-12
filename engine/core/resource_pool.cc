@@ -78,6 +78,7 @@ crude_resource_pool_release_resource
   _In_ uint32                                              handle
 )
 {
+  CRUDE_ASSERT( resource_pool->free_indices_head );
   resource_pool->free_indices[ --resource_pool->free_indices_head ] = handle;
   --resource_pool->used_indices;
 }

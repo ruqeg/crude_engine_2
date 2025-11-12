@@ -1,0 +1,75 @@
+#pragma once
+
+#include <core/ecs.h>
+#include <core/math.h>
+
+typedef uint32 crude_physics_resource_index;
+
+typedef enum crude_physics_collision_shape_type
+{
+  CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX,
+  CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
+} crude_physics_collision_shape_type;
+
+typedef struct crude_physics_static_body_handle
+{
+  crude_physics_resource_index                             index;
+} crude_physics_static_body_handle;
+
+typedef struct crude_physics_dynamic_body_handle
+{
+  crude_physics_resource_index                             index;
+} crude_physics_dynamic_body_handle;
+
+typedef struct crude_physics_dynamic_body
+{
+  crude_entity                                             node;
+  XMFLOAT3                                                 velocity;
+} crude_physics_dynamic_body;
+
+typedef struct crude_physics_static_body
+{
+  crude_entity                                             node;
+} crude_physics_static_body;
+
+typedef struct crude_physics_collision_shape
+{
+  crude_physics_collision_shape_type                       type;
+  union
+  {
+    struct
+    {
+      XMFLOAT3                                             extent;
+    } box;
+    struct
+    {
+      float32                                              radius;
+    } sphere;
+    struct
+    {
+      XMFLOAT3                                             direction;
+    } ray;
+    struct
+    {
+      XMFLOAT3                                             normal;
+    } plane;
+  };
+} crude_physics_collision_shape;
+
+CRUDE_API char const*
+crude_physics_collision_shape_type_to_string
+(
+  _In_ crude_physics_collision_shape_type                  type
+);
+
+CRUDE_API crude_physics_collision_shape_type
+crude_physics_collision_shape_string_to_type
+(
+  _In_ char const*                                         type_str
+);
+
+CRUDE_API char const*
+crude_physics_collision_shape_get_debug_model_filename
+(
+  _In_ crude_physics_collision_shape_type                  type
+);

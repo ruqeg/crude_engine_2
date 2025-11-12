@@ -42,28 +42,6 @@ typedef struct crude_scene_handle
   void                                                    *value;
 } crude_scene_handle;
 
-typedef enum crude_collision_shape_type
-{
-  CRUDE_COLLISION_SHAPE_TYPE_BOX,
-  CRUDE_COLLISION_SHAPE_TYPE_SPHERE,
-} crude_collision_shape_type;
-
-typedef struct crude_collision_shape
-{
-  crude_collision_shape_type                               type;
-  union
-  {
-    struct
-    {
-      XMFLOAT3                                             extent;
-    } box;
-    struct
-    {
-      float32                                              radius;
-    } sphere;
-  };
-} crude_collision_shape;
-
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene );
@@ -82,16 +60,11 @@ CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light );
-CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_collision_shape );
-CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_collision_shape );
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_collision_shape );
 
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_camera );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light );
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_collision_shape );
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip
@@ -110,24 +83,6 @@ CRUDE_API XMMATRIX
 crude_transform_node_to_parent
 (
   _In_ crude_transform const                              *transform
-);
-
-CRUDE_API char const*
-crude_collision_shape_type_to_str
-(
-  _In_ crude_collision_shape_type                          type
-);
-
-CRUDE_API crude_collision_shape_type
-crude_collision_shape_str_to_type
-(
-  _In_ char const*                                         type_str
-);
-
-CRUDE_API char const*
-crude_collision_shape_to_model_filename
-(
-  _In_ crude_collision_shape_type                          type
 );
 
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );
