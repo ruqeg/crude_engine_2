@@ -366,7 +366,7 @@ crude_process_events_system_
             focused_window_handle = &windows_handles_per_entity[ i ];
           }
         }
-
+        
         if ( focused_input && focused_window && focused_window_handle )
         {
           if ( sdl_event.type == SDL_EVENT_KEY_DOWN )

@@ -8,7 +8,9 @@ typedef struct crude_player_controller
   float32                                                  weight;
   float32                                                  rotation_speed;
 
-  XMFLOAT2                                                 moving_speed;
+  float32                                                  walk_speed;
+  float32                                                  run_speed;
+  float32                                                  jump_velocity;
 
   crude_entity                                             entity_input;
   bool                                                     input_enabled;

@@ -135,6 +135,17 @@ crude_physics_dynamic_body_set_velocity
   XMStoreFloat3( &body->velocity, velocity );
 }
 
+bool
+crude_physics_dynamic_body_on_floor
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_dynamic_body_handle                   handle
+)
+{
+  crude_physics_dynamic_body *body = CRUDE_CAST( crude_physics_dynamic_body*, crude_resource_pool_access_resource( &physics->dynamic_bodies_resource_pool, handle.index ) );
+  return body->on_floor;
+}
+
 void
 crude_physics_enable_simulation
 (
@@ -143,6 +154,16 @@ crude_physics_enable_simulation
 )
 {
   physics->simulation_enabled = enable;
+
+  if ( enable )
+  {
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->dynamic_bodies ); ++i )
+    {
+      crude_physics_dynamic_body *dynamic_body = crude_physics_access_dynamic_body( physics, physics->dynamic_bodies[ i ] );
+      XMStoreFloat3( &dynamic_body->velocity, XMVectorZero( ) );
+      dynamic_body->on_floor = false;
+    }
+  }
 }
 
 void

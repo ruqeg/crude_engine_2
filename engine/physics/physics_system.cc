@@ -43,18 +43,24 @@ crude_physics_dynamic_body_update_system_
   ecs_iter_t *it
 )
 {
+  crude_physics_dynamic_body_handle                       *dynamic_bodies_per_entity;
+  crude_physics_collision_shape                           *collision_shapes_per_entity;
+  crude_transform                                         *transforms_per_entity;
+
   if ( !crude_physics_instance( )->simulation_enabled )
   {
     return;
   }
-  crude_physics_dynamic_body_handle *dynamic_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body_handle, 0 );
-  crude_physics_collision_shape *collision_shapes_per_entity = ecs_field( it, crude_physics_collision_shape, 1 );
-  crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 2 );
+
+  dynamic_bodies_per_entity = ecs_field( it, crude_physics_dynamic_body_handle, 0 );
+  collision_shapes_per_entity = ecs_field( it, crude_physics_collision_shape, 1 );
+  transforms_per_entity = ecs_field( it, crude_transform, 2 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_transform                                       *transform;
     crude_physics_collision_shape                         *collision_shape;
+    crude_physics_dynamic_body                            *dynamic_body;
     crude_physics_dynamic_body_handle                      dynamic_body_handle;
     XMVECTOR                                               translation;
     XMVECTOR                                               velocity;
@@ -63,31 +69,49 @@ crude_physics_dynamic_body_update_system_
     transform = &transforms_per_entity[ i ];
     collision_shape = &collision_shapes_per_entity[ i ];
 
+    dynamic_body = crude_physics_access_dynamic_body( crude_physics_instance( ), dynamic_body_handle );
+
     velocity = crude_physics_dynamic_body_get_velocity( crude_physics_instance( ), dynamic_body_handle );
 
     translation = XMLoadFloat3( &transform->translation );
     
     translation = XMVectorAdd( translation, velocity * it->delta_time );
 
+    dynamic_body->on_floor = false;
+
     for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( crude_physics_instance( )->static_bodies ); ++s )
     {
-      crude_physics_static_body *second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ i ] );
-      crude_physics_collision_shape *second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
-      crude_transform *second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
-      XMMATRIX second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
+      crude_physics_static_body                           *second_body;
+      crude_physics_collision_shape                       *second_collision_shape;
+      crude_transform                                     *second_transform;
+      XMMATRIX                                             second_transform_mesh_to_world;
+      XMVECTOR                                             second_translation;
+
+      second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ i ] );
+      second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
+      second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
+      second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
+      second_translation = XMLoadFloat3( &second_transform->translation );
 
       if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
       {
-        XMVECTOR closest_point = crude_physics_closest_point_to_obb(
-          translation,
-          XMLoadFloat3( &second_transform->translation ),
-          XMLoadFloat3( &second_collision_shape->box.half_extent ),
-          second_transform_mesh_to_world );
+        XMVECTOR                                           second_box_half_extent, closest_point, closest_point_to_translation;
+        float32                                            translation_to_closest_point_projected_length;
+
+        second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
+        closest_point = crude_physics_closest_point_to_obb( translation, second_translation, second_box_half_extent, second_transform_mesh_to_world );
         
         if ( crude_physics_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius  ) )
         {
-          crude_physics_dynamic_body_set_velocity( crude_physics_instance( ), dynamic_body_handle, XMVectorZero( ) );
-          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( XMVectorSubtract( translation, closest_point ) ), collision_shape->sphere.radius ) );
+          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
+          
+          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+          translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
+          if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
+          {
+            dynamic_body->on_floor = true;
+          }
         }
       }
     }

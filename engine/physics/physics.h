@@ -90,6 +90,13 @@ crude_physics_dynamic_body_set_velocity
   _In_ XMVECTOR                                            velocity
 );
 
+CRUDE_API bool
+crude_physics_dynamic_body_on_floor
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_dynamic_body_handle                   handle
+);
+
 CRUDE_API void
 crude_physics_enable_simulation
 (

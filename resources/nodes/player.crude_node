@@ -15,8 +15,10 @@
 		}, {
 			"type":	"crude_player_controller",
 			"rotation_speed":	-0.0010000000474974513,
-			"moving_speed":	[5, 5],
-			"weight":	1
+			"walk_speed":	5,
+			"run_speed":	10,
+			"weight":	1,
+			"jump_velocity": 5
 		}],
 	"children":	[{
 			"name":	"pivot",

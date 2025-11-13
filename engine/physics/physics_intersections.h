@@ -19,3 +19,13 @@ crude_physics_intersection_sphere_obb
   _In_ XMVECTOR                                             sphere_position,
   _In_ float32                                              sphere_radius
 );
+
+CRUDE_API float32
+crude_physics_raycast_obb
+(
+  _In_ XMVECTOR                                             ray_origin,
+  _In_ XMVECTOR                                             ray_direction,
+  _In_ XMVECTOR                                             obb_position,
+  _In_ XMVECTOR                                             obb_size,
+  _In_ XMMATRIX                                             obb_orientation
+);

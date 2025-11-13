@@ -18,7 +18,9 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotation_speed = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "rotation_speed" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT2 )( &component->moving_speed, cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed" ), node );
+  component->jump_velocity = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "jump_velocity" ) );
+  component->walk_speed = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "walk_speed" ) );
+  component->run_speed = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "run_speed" ) );
   component->weight = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "weight" ) );
   return true;
 }
@@ -28,7 +30,9 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player_controller )
   cJSON *json = cJSON_CreateObject( );
   cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_player_controller ) ) );
   cJSON_AddItemToObject( json, "rotation_speed", cJSON_CreateNumber( component->rotation_speed ) );
-  cJSON_AddItemToObject( json, "moving_speed", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT2 )( &component->moving_speed ) );
+  cJSON_AddItemToObject( json, "jump_velocity", cJSON_CreateNumber( component->jump_velocity ) );
+  cJSON_AddItemToObject( json, "walk_speed", cJSON_CreateNumber( component->walk_speed ) );
+  cJSON_AddItemToObject( json, "run_speed", cJSON_CreateNumber( component->run_speed ) );
   cJSON_AddItemToObject( json, "weight", cJSON_CreateNumber( component->weight ) );
   return json;
 }
@@ -36,6 +40,8 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player_controller )
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controller )
 {
   ImGui::DragFloat( "Rotation Speed", &component->rotation_speed, 0.01 );
-  ImGui::DragFloat2( "Moving Speed", &component->moving_speed.x, 0.01 );
+  ImGui::DragFloat( "Jump Velocity", &component->jump_velocity, 0.01 );
+  ImGui::DragFloat2( "Walk Speed", &component->walk_speed, 0.01 );
+  ImGui::DragFloat2( "Run Speed", &component->run_speed, 0.01 );
   ImGui::DragFloat( "Weight", &component->weight, 0.01 );
 }

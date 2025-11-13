@@ -25,6 +25,7 @@ typedef struct crude_physics_dynamic_body
 {
   crude_entity                                             node;
   XMFLOAT3                                                 velocity;
+  bool                                                     on_floor;
 } crude_physics_dynamic_body;
 
 typedef struct crude_physics_static_body
