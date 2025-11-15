@@ -112,6 +112,18 @@ crude_camera_view_to_clip
   return XMMatrixPerspectiveFovLH( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
 }
 
+crude_transform
+crude_transform_empty
+(
+)
+{
+  crude_transform transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+  XMStoreFloat3( &transform.translation, XMVectorZero( ) );
+  XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
+  XMStoreFloat3( &transform.scale, XMVectorSplatOne( ) );
+  return transform;
+}
+
 XMMATRIX
 crude_transform_node_to_world
 (

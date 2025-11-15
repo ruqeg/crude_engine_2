@@ -131,6 +131,7 @@ void main()
       world_center.xyz, scene.camera.position, scene.camera.world_to_clip
     );
   }
+  occlusion_visible = true; //!TODO fix
   accept = accept && occlusion_visible;
 
   uvec4 ballot = subgroupBallot( accept );

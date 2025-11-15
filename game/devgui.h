@@ -8,13 +8,18 @@
 #include <graphics/gpu_profiler.h>
 
 typedef struct game_t game_t;
+typedef struct crude_devgui crude_devgui;
+
+typedef struct crude_devgui_added_node_data
+{
+  char                                                     buffer[ 128 ];
+} crude_devgui_added_node_data;
 
 typedef struct crude_devgui_nodes_tree
 {
   bool                                                     enabled;
   crude_entity                                             selected_node;
-  crude_entity                                             node_to_add;
-  crude_entity                                             node_to_remove;
+  crude_devgui                                            *devgui;
 } crude_devgui_nodes_tree;
 
 typedef struct crude_devgui_node_inspector
@@ -93,6 +98,9 @@ typedef struct crude_devgui
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
   crude_devgui_scene_renderer                              dev_scene_renderer;
   crude_devgui_game_common                                 dev_game_common;
+  crude_devgui_added_node_data                             added_node_data;
+  crude_entity                                             node_to_add;
+  crude_entity                                             node_to_remove;
   bool                                                     should_reload_shaders;
   char const                                              *should_reloaded_scene;
 } crude_devgui;
@@ -152,7 +160,8 @@ crude_devgui_graphics_post_update
 CRUDE_API void
 crude_devgui_nodes_tree_initialize
 (
-  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
+  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree,
+  _In_ crude_devgui                                       *devgui
 );
 
 CRUDE_API void

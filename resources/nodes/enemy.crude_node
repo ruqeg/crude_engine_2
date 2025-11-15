@@ -5,14 +5,7 @@
 		"rotation":	[0, 0, 0, 1],
 		"scale":	[1, 1, 1]
 	},
-	"components":	[{
-			"type":	"crude_physics_dynamic_body_handle",
-			"lock_rotation":	1
-		}, {
-			"type":	"crude_physics_collision_shape",
-			"shape_type":	"sphere",
-			"radius":	0.5
-		},
+	"components":	[
 		{
 			"type": "crude_enemy",
 			"moving_speed": 0.05

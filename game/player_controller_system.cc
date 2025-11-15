@@ -41,23 +41,34 @@ crude_player_controller_update_system_
     crude_transform                                       *transform;
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
-    crude_physics_dynamic_body_handle                     *physics_body;
+    crude_physics_character_body_handle                     *physics_body;
     crude_entity                                           node;
     XMVECTOR                                               velocity;
-    float32                                                move_speed;
+    float32                                                moving_limit;
+    bool                                                   on_floor;
 
     transform = &transforms_per_entity[ i ];
     player_controller = &player_controllere_per_entity[ i ];
 
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( player_controller->entity_input, crude_input );
+    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( player_controller->_entity_input, crude_input );
     
-    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body_handle );
+    physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     
-    velocity = crude_physics_dynamic_body_get_velocity( crude_physics_instance( ), *physics_body );
+    velocity = crude_physics_character_body_get_velocity( crude_physics_instance( ), *physics_body );
  
-    if ( crude_physics_dynamic_body_on_floor( crude_physics_instance( ), *physics_body ) )
+    if ( input->keys[ 83 /* shift */ ].current )
+    {
+      moving_limit = player_controller->run_speed;
+    }
+    else
+    {
+      moving_limit = player_controller->walk_speed;
+    }
+
+    on_floor = crude_physics_character_body_on_floor( crude_physics_instance( ), *physics_body );
+    if ( on_floor )
     {
       velocity = XMVectorSetY( velocity, 0.f );
     }
@@ -66,16 +77,7 @@ crude_player_controller_update_system_
       velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
     }
 
-    if ( input->keys[ 83 /* shift */ ].current )
-    {
-      move_speed = player_controller->run_speed;
-    }
-    else
-    {
-      move_speed = player_controller->walk_speed;
-    }
-
-    if ( player_controller->input_enabled )
+    if ( player_controller->_input_enabled )
     {
       crude_transform                                     *pivot_node_transform;
       crude_entity                                         pivot_node;
@@ -91,15 +93,18 @@ crude_player_controller_update_system_
       
       direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
       
-      if ( XMVectorGetX( XMVector3Length( direction ) ) > 0.001f )
+      if ( on_floor )
       {
-        velocity = XMVectorSetX( velocity, XMVectorGetX( direction ) * move_speed  );
-        velocity = XMVectorSetZ( velocity, XMVectorGetZ( direction ) * move_speed );
-      }
-      else
-      {
-        velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), 0.f, CRUDE_MIN( move_speed * it->delta_time, 1.f ) ) );
-        velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), 0.f, CRUDE_MIN( move_speed * it->delta_time, 1.f ) ) );
+        if ( XMVectorGetX( XMVector3Length( direction ) ) > 0.001f )
+        {
+          velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), XMVectorGetX( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
+          velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), XMVectorGetZ( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
+        }
+        else
+        {
+          velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), 0.f, CRUDE_MIN( player_controller->stop_change_coeff * it->delta_time, 1.f ) ) );
+          velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), 0.f, CRUDE_MIN( player_controller->stop_change_coeff * it->delta_time, 1.f ) ) );
+        }
       }
 
       if ( input->mouse.right.current )
@@ -112,13 +117,13 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_node_transform->rotation, rotation );
       }
       
-      if ( input->keys[ 32 /* space */ ].current && crude_physics_dynamic_body_on_floor( crude_physics_instance( ), *physics_body ) )
+      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( crude_physics_instance( ), *physics_body ) )
       {
         velocity = XMVectorSetY( velocity, player_controller->jump_velocity );
       }
     }
 
-    crude_physics_dynamic_body_set_velocity( crude_physics_instance( ), *physics_body, velocity );
+    crude_physics_character_body_set_velocity( crude_physics_instance( ), *physics_body, velocity );
   }
 }
 

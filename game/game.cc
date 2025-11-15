@@ -199,8 +199,6 @@ game_reload_scene
   vkDeviceWaitIdle( game->gpu.vk_device );
   crude_entity_destroy_hierarchy( game->scene.main_node );
   crude_scene_deinitialize( &game->scene );
-  
-  crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
 
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
@@ -212,12 +210,15 @@ game_reload_scene
   scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
   crude_scene_initialize( &game->scene, &scene_creation );
 
-  crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
+  bool buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 
-  crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers(  &game->scene_renderer );
-  crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
-  crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+  if ( buffer_recreated )
+  {
+    crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
+    crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
+    crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+  }
 
   game_setup_custom_nodes_to_scene_( game );
 }
@@ -266,6 +267,9 @@ game_graphics_system_
     crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
     crude_gfx_present( &game->gpu, final_render_texture );
   }
+  
+  CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node ) );
+  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 }
 
 void
@@ -550,10 +554,10 @@ game_initialize_graphics_
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
 
-  crude_gfx_scene_renderer_rebuild_main_node( &game->scene_renderer, game->scene.main_node );
+  crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
+  crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 
-  crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers(  &game->scene_renderer );
   crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
   crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
 
@@ -608,7 +612,7 @@ game_setup_custom_nodes_to_scene_
   crude_physics_enable_simulation( crude_physics_instance( ), false );
 
   player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->game_controller_node, crude_player_controller );
-  player_controller->entity_input = game->scene.input_entity;
+  player_controller->_entity_input = game->scene.input_entity;
   free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->entity_input = game->scene.input_entity;
   free_camera->enabled = true;

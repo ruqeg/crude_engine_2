@@ -7,13 +7,14 @@ typedef struct crude_player_controller
 {
   float32                                                  weight;
   float32                                                  rotation_speed;
-
   float32                                                  walk_speed;
   float32                                                  run_speed;
+  float32                                                  move_change_coeff;
+  float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
 
-  crude_entity                                             entity_input;
-  bool                                                     input_enabled;
+  crude_entity                                             _entity_input;
+  bool                                                     _input_enabled;
 } crude_player_controller;
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller );

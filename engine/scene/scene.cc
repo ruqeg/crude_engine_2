@@ -117,7 +117,7 @@ node_to_json_hierarchy_
     crude_gltf const                                      *node_gltf;
     crude_light const                                     *node_light;
     crude_physics_static_body_handle const                *static_body;
-    crude_physics_dynamic_body_handle const               *dynamic_body;
+    crude_physics_character_body_handle const               *dynamic_body;
     crude_physics_collision_shape const                   *collision_shape;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
@@ -153,10 +153,10 @@ node_to_json_hierarchy_
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body_handle )( static_body ) );
     }
     
-    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_dynamic_body_handle );
+    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     if ( dynamic_body )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_dynamic_body_handle )( dynamic_body ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_character_body_handle )( dynamic_body ) );
     }
     
     collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_collision_shape );
@@ -307,12 +307,12 @@ scene_load_node_
         CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_static_body_handle );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body_handle, { static_body } );
       }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_dynamic_body_handle ) ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) == 0 )
       {
-        crude_physics_dynamic_body_handle                  dynamic_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_dynamic_body_handle )( &dynamic_body, component_json, node );
-        CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_dynamic_body_handle );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_dynamic_body_handle, { dynamic_body } );
+        crude_physics_character_body_handle                  dynamic_body;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, node );
+        CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_character_body_handle );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_character_body_handle, { dynamic_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) == 0 )
       {

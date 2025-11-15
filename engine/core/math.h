@@ -30,6 +30,75 @@ crude_lerp_angle
   _In_ float32                                             weight
 );
 
+CRUDE_API XMVECTOR
+crude_closest_point_to_obb
+(
+  _In_ XMVECTOR                                             point,
+  _In_ XMVECTOR                                             obb_position,
+  _In_ XMVECTOR                                             obb_size,
+  _In_ XMMATRIX                                             obb_orientation
+);
+
+CRUDE_API bool
+crude_intersection_sphere_obb
+(
+  _In_ XMVECTOR                                             closest_point,
+  _In_ XMVECTOR                                             sphere_position,
+  _In_ float32                                              sphere_radius
+);
+
+CRUDE_API float32
+crude_raycast_obb
+(
+  _In_ XMVECTOR                                             ray_origin,
+  _In_ XMVECTOR                                             ray_direction,
+  _In_ XMVECTOR                                             obb_position,
+  _In_ XMVECTOR                                             obb_size,
+  _In_ XMMATRIX                                             obb_orientation
+);
+
+
+CRUDE_API XMVECTOR
+crude_closest_point_to_plane
+(
+  _In_ XMVECTOR                                            plane,
+  _In_ XMVECTOR                                            point
+);
+
+CRUDE_API bool
+crude_point_in_triangle
+(
+  _In_ XMVECTOR                                             t0,
+  _In_ XMVECTOR                                             t1,
+  _In_ XMVECTOR                                             t2,
+  _In_ XMVECTOR                                             p
+);
+
+CRUDE_API XMVECTOR
+crude_closest_point_to_line
+(
+  _In_ XMVECTOR                                             lstart,
+  _In_ XMVECTOR                                             lend,
+  _In_ XMVECTOR                                             p
+);
+
+CRUDE_API XMVECTOR
+crude_closest_point_to_triangle
+(
+  _In_ XMVECTOR                                             t0,
+  _In_ XMVECTOR                                             t1,
+  _In_ XMVECTOR                                             t2,
+  _In_ XMVECTOR                                             p
+);
+
+CRUDE_API bool
+crude_intersection_sphere_triangle
+(
+  _In_ XMVECTOR                                             closest_point,
+  _In_ XMVECTOR                                             sphere_position,
+  _In_ float32                                              sphere_radius
+);
+
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT2 );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT3 );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT4 );

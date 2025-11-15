@@ -80,6 +80,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_model_renderer_resources_instance             *collision_model_renderer_resoruces_instances;
   uint32                                                   total_collision_meshes_instances_count;
   crude_gfx_buffer_handle                                  collision_meshes_instances_draws_sb;
+  
+  uint32                                                   total_meshes_instances_buffer_capacity;
+  uint32                                                   total_collision_meshes_instances_buffer_capacity;
 
   /***********************
    * Common Debug CPU & GPU Data
@@ -151,15 +154,15 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
-CRUDE_API void
-crude_gfx_scene_renderer_rebuild_main_node
+CRUDE_API bool
+crude_gfx_scene_renderer_update_instances_from_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_entity                                        main_node
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_rebuild_meshes_gpu_buffers
+crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );

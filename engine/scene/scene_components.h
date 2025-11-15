@@ -72,6 +72,11 @@ crude_camera_view_to_clip
   _In_ crude_camera const                                 *camera
 );
 
+CRUDE_API crude_transform
+crude_transform_empty
+(
+);
+
 CRUDE_API XMMATRIX
 crude_transform_node_to_world
 (

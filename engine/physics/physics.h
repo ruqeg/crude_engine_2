@@ -13,7 +13,7 @@ typedef struct crude_physics_creation
 typedef struct crude_physics
 {
   crude_heap_allocator                                    *allocator;
-  crude_physics_dynamic_body_handle                       *dynamic_bodies;
+  crude_physics_character_body_handle                       *dynamic_bodies;
   crude_physics_static_body_handle                        *static_bodies;
   crude_resource_pool                                      dynamic_bodies_resource_pool;
   crude_resource_pool                                      static_bodies_resource_pool;
@@ -33,7 +33,7 @@ crude_physics_deinitialize
   _In_ crude_physics                                      *physics
 );
 
-CRUDE_API crude_physics_dynamic_body_handle
+CRUDE_API crude_physics_character_body_handle
 crude_physics_create_dynamic_body
 (
   _In_ crude_physics                                      *physics,
@@ -51,7 +51,7 @@ CRUDE_API void
 crude_physics_destroy_dynamic_body
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_dynamic_body_handle                   handle
+  _In_ crude_physics_character_body_handle                   handle
 );
 
 CRUDE_API void
@@ -61,11 +61,11 @@ crude_physics_destroy_static_body
   _In_ crude_physics_static_body_handle                    handle
 );
 
-CRUDE_API crude_physics_dynamic_body*
+CRUDE_API crude_physics_character_body*
 crude_physics_access_dynamic_body
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_dynamic_body_handle                   handle
+  _In_ crude_physics_character_body_handle                   handle
 );
 
 CRUDE_API crude_physics_static_body*
@@ -76,25 +76,25 @@ crude_physics_access_static_body
 );
 
 CRUDE_API XMVECTOR
-crude_physics_dynamic_body_get_velocity
+crude_physics_character_body_get_velocity
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_dynamic_body_handle                   handle
+  _In_ crude_physics_character_body_handle                 handle
 );
 
 CRUDE_API void
-crude_physics_dynamic_body_set_velocity
+crude_physics_character_body_set_velocity
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_dynamic_body_handle                   handle,
+  _In_ crude_physics_character_body_handle                 handle,
   _In_ XMVECTOR                                            velocity
 );
 
 CRUDE_API bool
-crude_physics_dynamic_body_on_floor
+crude_physics_character_body_on_floor
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_dynamic_body_handle                   handle
+  _In_ crude_physics_character_body_handle                 handle
 );
 
 CRUDE_API void

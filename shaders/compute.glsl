@@ -117,6 +117,7 @@ void main()
         scene.camera.world_to_clip
       );
     }
+    occlusion_visible = true; //!TODO fix
 
     if ( frustum_visible && occlusion_visible )
     {

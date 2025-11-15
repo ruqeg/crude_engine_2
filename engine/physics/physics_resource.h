@@ -2,13 +2,15 @@
 
 #include <core/ecs.h>
 #include <core/math.h>
+#include <core/octree.h>
 
 typedef uint32 crude_physics_resource_index;
 
 typedef enum crude_physics_collision_shape_type
 {
   CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX,
-  CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE
+  CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE,
+  CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH
 } crude_physics_collision_shape_type;
 
 typedef struct crude_physics_static_body_handle
@@ -16,17 +18,17 @@ typedef struct crude_physics_static_body_handle
   crude_physics_resource_index                             index;
 } crude_physics_static_body_handle;
 
-typedef struct crude_physics_dynamic_body_handle
+typedef struct crude_physics_character_body_handle
 {
   crude_physics_resource_index                             index;
-} crude_physics_dynamic_body_handle;
+} crude_physics_character_body_handle;
 
-typedef struct crude_physics_dynamic_body
+typedef struct crude_physics_character_body
 {
   crude_entity                                             node;
   XMFLOAT3                                                 velocity;
   bool                                                     on_floor;
-} crude_physics_dynamic_body;
+} crude_physics_character_body;
 
 typedef struct crude_physics_static_body
 {
@@ -48,12 +50,8 @@ typedef struct crude_physics_collision_shape
     } sphere;
     struct
     {
-      XMFLOAT3                                             direction;
-    } ray;
-    struct
-    {
-      XMFLOAT3                                             normal;
-    } plane;
+      crude_octree                                        *octree;
+    } mesh;
   };
 } crude_physics_collision_shape;
 

@@ -6,7 +6,7 @@
 		"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 	},
 	"components":	[{
-			"type":	"crude_physics_dynamic_body_handle",
+			"type":	"crude_physics_character_body_handle",
 			"lock_rotation":	1
 		}, {
 			"type":	"crude_physics_collision_shape",
@@ -16,7 +16,9 @@
 			"type":	"crude_player_controller",
 			"rotation_speed":	-0.0010000000474974513,
 			"walk_speed":	5,
-			"run_speed":	10,
+			"run_speed":	5,
+			"stop_change_coeff":	5,
+			"move_change_coeff":	5,
 			"weight":	1,
 			"jump_velocity": 5
 		}],

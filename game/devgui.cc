@@ -55,7 +55,11 @@ crude_devgui_initialize
   devgui->game = game;
   devgui->last_focused_menutab_name = "Graphics";
   devgui->should_reloaded_scene = NULL;
-  crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
+  devgui->added_node_data = CRUDE_COMPOUNT_EMPTY( crude_devgui_added_node_data );
+  devgui->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  devgui->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
+
+  crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree, devgui );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, game->scene_renderer.render_graph->builder->gpu );
   crude_devgui_render_graph_initialize( &devgui->dev_render_graph, game->scene_renderer.render_graph );
@@ -191,6 +195,39 @@ crude_devgui_draw
   crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
   crude_devgui_scene_renderer_draw( &devgui->dev_scene_renderer );
   crude_devgui_game_common_draw( &devgui->dev_game_common );
+  
+  if ( crude_entity_valid( devgui->node_to_add ) )
+  {
+    ImGui::Begin( "Create New Node" );
+    ImGui::InputText( "Name", devgui->added_node_data.buffer, sizeof( devgui->added_node_data.buffer ) );
+    if ( ImGui::Button( "Node3d" ) )
+    {
+      crude_entity new_node = crude_entity_create_empty( camera_node.world, devgui->added_node_data.buffer );
+      CRUDE_ENTITY_SET_COMPONENT( new_node, crude_transform, { crude_transform_empty( ) } );
+      crude_entity_set_parent( new_node, devgui->node_to_add );
+      devgui->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
+    }
+    if ( ImGui::Button( "Physics Static Collision Box" ) )
+    {
+      crude_entity new_node = crude_entity_create_empty( camera_node.world, devgui->added_node_data.buffer );
+      CRUDE_ENTITY_SET_COMPONENT( new_node, crude_transform, { crude_transform_empty( ) } );
+      CRUDE_ENTITY_SET_COMPONENT( new_node, crude_physics_collision_shape, {
+        .type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX,
+        .box = { .half_extent = { 1, 1, 1 } }
+      } );
+      crude_physics_static_body_handle new_static_body_handle = crude_physics_create_static_body( crude_physics_instance( ), new_node );
+      CRUDE_ENTITY_SET_COMPONENT( new_node, crude_physics_static_body_handle, { new_static_body_handle } );
+      crude_entity_set_parent( new_node, devgui->node_to_add );
+      
+      devgui->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
+    }
+    ImGui::End( );
+  }
+  if ( crude_entity_valid( devgui->node_to_remove ) )
+  {
+    crude_entity_destroy_hierarchy( devgui->node_to_remove );
+    devgui->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  }
 
   //ImGui::ShowDemoWindow( );
 }
@@ -256,13 +293,13 @@ crude_devgui_nodes_tree_draw_internal_
 void
 crude_devgui_nodes_tree_initialize
 (
-  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
+  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree,
+  _In_ crude_devgui                                       *devgui
 )
 {
   devgui_nodes_tree->enabled = true;
   devgui_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  devgui_nodes_tree->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  devgui_nodes_tree->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  devgui_nodes_tree->devgui = devgui;
 }
 
 void
@@ -279,22 +316,6 @@ crude_devgui_nodes_tree_draw
 
   uint32 current_node_index = 0u;
   crude_devgui_nodes_tree_draw_internal_( devgui_nodes_tree, node, &current_node_index );
-
-  if ( crude_entity_valid( devgui_nodes_tree->node_to_add ) )
-  {
-    CRUDE_ASSERT( false );
-    ImGui::Begin( "Create New Node" );
-
-    if ( ImGui::Button( "GLTF Model" ) )
-    {
-    }
-    ImGui::End( );
-  }
-  if ( crude_entity_valid( devgui_nodes_tree->node_to_remove ) )
-  {
-    crude_entity_destroy_hierarchy( devgui_nodes_tree->node_to_remove );
-    devgui_nodes_tree->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  }
 }
 
 void
@@ -351,11 +372,11 @@ crude_devgui_nodes_tree_draw_internal_
     // Add component
     if ( ImGui::Button( "Add Child Note" ) )
     {
-      devgui_nodes_tree->node_to_add = node;
+      devgui_nodes_tree->devgui->node_to_add = node;
     }
     if ( ImGui::Button( "Remove Note" ) )
     {
-      devgui_nodes_tree->node_to_remove = node;
+      devgui_nodes_tree->devgui->node_to_remove = node;
     }
     ImGui::EndPopup( );
   }
@@ -472,10 +493,10 @@ crude_devgui_node_inspector_draw
     ImGui::Text( "TODO" );
   }
   
-  crude_physics_dynamic_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_dynamic_body_handle );
-  if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_dynamic_body_handle ) ) )
+  crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
+  if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_dynamic_body_handle )( node, dynamic_body );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( node, dynamic_body );
   }
   
   crude_physics_static_body_handle *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
@@ -1316,7 +1337,7 @@ crude_devgui_game_common_draw
       crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
       
       dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
-      player_controller->input_enabled = false;
+      player_controller->_input_enabled = false;
       free_camera->enabled = true;
     }
     else
@@ -1325,7 +1346,7 @@ crude_devgui_game_common_draw
       crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
       
       dev_game_common->game->focused_camera_node = dev_game_common->game->game_camera_node;
-      player_controller->input_enabled = true;
+      player_controller->_input_enabled = true;
       free_camera->enabled = false;
     }
   }
