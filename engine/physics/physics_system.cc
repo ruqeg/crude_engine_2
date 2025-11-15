@@ -1,3 +1,4 @@
+#include <core/assert.h>
 #include <core/log.h>
 #include <core/array.h>
 #include <scene/scene_components.h>
@@ -7,9 +8,34 @@
 #include <physics/physics_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_character_body_update_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_collision_shape_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_destrotion_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_body_destrotion_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_body_transform_set_observer_ );
+
+static void
+crude_physics_collision_shape_creation_observer_
+(
+  ecs_iter_t *it
+)
+{
+  crude_physics_collision_shape *collision_shapes_per_entity = ecs_field( it, crude_physics_collision_shape, 0 );
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+    {
+      collision_shapes_per_entity[ i ].debug_model_filename = "editor\\models\\crude_physics_box_collision_shape.gltf";
+    }
+    else if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+    {
+      collision_shapes_per_entity[ i ].debug_model_filename = "editor\\models\\crude_physics_sphere_collision_shape.gltf";
+    }
+    else
+    {
+      CRUDE_ASSERT( false );
+    }
+  }
+}
 
 static void
 crude_physics_static_body_destrotion_observer_
@@ -140,6 +166,10 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
   ECS_MODULE( world, crude_physics_system );
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_physics_components );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_collision_shape_creation_observer_, EcsOnSet, { 
+    { .id = ecs_id( crude_physics_collision_shape ) },
+  } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_character_body_destrotion_observer_, EcsOnRemove, { 
     { .id = ecs_id( crude_physics_character_body_handle ) },

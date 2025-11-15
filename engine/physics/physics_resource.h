@@ -38,6 +38,7 @@ typedef struct crude_physics_static_body
 typedef struct crude_physics_collision_shape
 {
   crude_physics_collision_shape_type                       type;
+  char const                                              *debug_model_filename;
   union
   {
     struct
@@ -65,10 +66,4 @@ CRUDE_API crude_physics_collision_shape_type
 crude_physics_collision_shape_string_to_type
 (
   _In_ char const*                                         type_str
-);
-
-CRUDE_API char const*
-crude_physics_collision_shape_get_debug_model_filename
-(
-  _In_ crude_physics_collision_shape_type                  type
 );

@@ -95,6 +95,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
   {
     CRUDE_ASSERT( false );
   }
+
   return collision_shape_json;
 }
 

@@ -42,23 +42,3 @@ crude_physics_collision_shape_string_to_type
     CRUDE_ASSERT( false );
   }
 }
-
-char const*
-crude_physics_collision_shape_get_debug_model_filename
-(
-  _In_ crude_physics_collision_shape_type                  type
-)
-{
-  if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-  {
-    return "editor\\models\\crude_physics_box_collision_shape.gltf";
-  }
-  else if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    return "editor\\models\\crude_physics_sphere_collision_shape.gltf";
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-}
