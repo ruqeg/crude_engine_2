@@ -1,6 +1,7 @@
 #pragma once
 
 #include <physics/physics_resource.h>
+#include <scene/components_serialization.h>
 
 /************************************************
  *

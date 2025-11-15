@@ -13,9 +13,9 @@ typedef struct crude_physics_creation
 typedef struct crude_physics
 {
   crude_heap_allocator                                    *allocator;
-  crude_physics_character_body_handle                       *dynamic_bodies;
+  crude_physics_character_body_handle                     *character_bodies;
   crude_physics_static_body_handle                        *static_bodies;
-  crude_resource_pool                                      dynamic_bodies_resource_pool;
+  crude_resource_pool                                      character_bodies_resource_pool;
   crude_resource_pool                                      static_bodies_resource_pool;
   bool                                                     simulation_enabled;
 } crude_physics;
@@ -34,7 +34,7 @@ crude_physics_deinitialize
 );
 
 CRUDE_API crude_physics_character_body_handle
-crude_physics_create_dynamic_body
+crude_physics_create_character_body
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_entity                                        node
@@ -48,7 +48,7 @@ crude_physics_create_static_body
 );
 
 CRUDE_API void
-crude_physics_destroy_dynamic_body
+crude_physics_destroy_character_body
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_character_body_handle                   handle

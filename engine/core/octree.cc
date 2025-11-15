@@ -22,9 +22,11 @@ crude_octree_add_triangle
   _In_ XMVECTOR                                            t2
 )
 {
-  CRUDE_ARRAY_PUSH( octree->points, t0 );
-  CRUDE_ARRAY_PUSH( octree->points, t1 );
-  CRUDE_ARRAY_PUSH( octree->points, t2 );
+  uint32 points_count = CRUDE_ARRAY_LENGTH( octree->points );
+  CRUDE_ARRAY_SET_LENGTH( octree->points, points_count + 3 );
+  XMStoreFloat3( &octree->points[ points_count + 0 ], t0 );
+  XMStoreFloat3( &octree->points[ points_count + 1 ], t1 );
+  XMStoreFloat3( &octree->points[ points_count + 2 ], t2 );
 }
 
 XMVECTOR
@@ -44,14 +46,17 @@ crude_octree_closest_point
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( octree->points ); i += 3 )
   {
-    XMVECTOR                                               closest_point;
+    XMVECTOR                                               t0, t1, t2, closest_point;
     float32                                                closest_point_distance_sq;
 
-    closest_point = crude_closest_point_to_triangle( octree->points[ i ], octree->points[ i + 1 ], octree->points[ i + 2 ], point );
+    t0 = XMLoadFloat3( &octree->points[ i ] );
+    t1 = XMLoadFloat3( &octree->points[ i + 1 ] );
+    t2 = XMLoadFloat3( &octree->points[ i + 2 ] );
+    closest_point = crude_closest_point_to_triangle( t0, t1, t2, point );
 
     closest_point_distance_sq = XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( closest_point, point ) ) );
 
-    if ( min_closest_point_distance_sq > closest_point_distance_sq )
+    if ( closest_point_distance_sq < min_closest_point_distance_sq )
     {
       min_closest_point_distance_sq = closest_point_distance_sq; 
       min_closest_point = closest_point;

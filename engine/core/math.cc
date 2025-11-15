@@ -5,10 +5,6 @@
 #include <core/math.h>
 #include <core/assert.h>
 
-CRUDE_COMPONENT_STRING_DEFINE( XMFLOAT2, "float2" );
-CRUDE_COMPONENT_STRING_DEFINE( XMFLOAT3, "float3" );
-CRUDE_COMPONENT_STRING_DEFINE( XMFLOAT4, "float4" );
-
 float32
 crude_random_unit_f32
 (
@@ -166,11 +162,11 @@ crude_point_in_triangle
   XMVECTOR norm_pca = XMVector3Cross( c, a );
   XMVECTOR norm_pab = XMVector3Cross( a, b );
   
-  if ( XMVectorGetX( XMVector3Cross( norm_pbc, norm_pca ) ) < 0.f )
+  if ( XMVectorGetX( XMVector3Dot( norm_pbc, norm_pca ) ) < 0.f )
   {
     return false;
   }
-  else if ( XMVectorGetX( XMVector3Cross( norm_pbc, norm_pab ) ) < 0.f )
+  else if ( XMVectorGetX( XMVector3Dot( norm_pbc, norm_pab ) ) < 0.f )
   {
     return false;
   }
@@ -194,6 +190,19 @@ crude_closest_point_to_line
 }
 
 XMVECTOR
+crude_plane_from_points
+(
+  _In_ XMVECTOR                                             p0,
+  _In_ XMVECTOR                                             p1,
+  _In_ XMVECTOR                                             p2
+)
+{
+  XMVECTOR n = XMVector3Normalize( XMVector3Cross( XMVectorSubtract( p1, p0 ), XMVectorSubtract( p2, p0 ) ) );
+  XMVECTOR d = XMVector3Dot( n, p0 );
+  return XMVectorSelect( d, n, g_XMSelect1110.v);
+}
+
+XMVECTOR
 crude_closest_point_to_triangle
 (
   _In_ XMVECTOR                                             t0,
@@ -202,7 +211,7 @@ crude_closest_point_to_triangle
   _In_ XMVECTOR                                             p
 )
 {
-  XMVECTOR plane = XMPlaneFromPoints( t0, t1, t2 );
+  XMVECTOR plane = crude_plane_from_points( t0, t1, t2 );
   XMVECTOR closest = crude_closest_point_to_plane( plane, p );
   
   if ( crude_point_in_triangle( t0, t1, t2, p ) )
@@ -241,45 +250,44 @@ crude_intersection_sphere_triangle
   return XMVectorGetX( XMVector3LengthSq( sphere_position - closest_point ) ) < sphere_radius * sphere_radius;
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT2 )
+void
+crude_parse_json_to_float2
+(
+  _Out_ XMFLOAT2                                          *float2,
+  _In_ cJSON                                              *json
+)
 {
-  CRUDE_ASSERT( cJSON_GetArraySize( component_json ) == 2 );
+  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 2 );
 
-  component->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 0 ) ) );
-  component->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 1 ) ) );
-  return true;
+  float2->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 0 ) ) );
+  float2->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 1 ) ) );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT3 )
+void
+crude_parse_json_to_float3
+(
+  _Out_ XMFLOAT3                                          *float3,
+  _In_ cJSON                                              *json
+)
 {
-  CRUDE_ASSERT( cJSON_GetArraySize( component_json ) == 3 );
-  component->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 0 ) ) );
-  component->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 1 ) ) );
-  component->z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 2 ) ) );
-  return true;
+  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 3 );
+
+  float3->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 0 ) ) );
+  float3->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 1 ) ) );
+  float3->z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 2 ) ) );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT4 )
+void
+crude_parse_json_to_float4
+(
+  _Out_ XMFLOAT4                                          *float4,
+  _In_ cJSON                                              *json
+)
 {
-  CRUDE_ASSERT( cJSON_GetArraySize( component_json ) == 4 );
-  component->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 0 ) ) );
-  component->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 1 ) ) );
-  component->z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 2 ) ) );
-  component->w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( component_json , 3 ) ) );
-  return true;
-}
+  CRUDE_ASSERT( cJSON_GetArraySize( json ) == 4 );
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT2 )
-{
-  return cJSON_CreateFloatArray( &component->x, 2 );
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT3 )
-{
-  return cJSON_CreateFloatArray( &component->x, 3 );
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT4 )
-{
-  return cJSON_CreateFloatArray( &component->x, 4 );
+  float4->x = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 0 ) ) );
+  float4->y = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 1 ) ) );
+  float4->z = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 2 ) ) );
+  float4->w = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetArrayItem( json, 3 ) ) );
 }

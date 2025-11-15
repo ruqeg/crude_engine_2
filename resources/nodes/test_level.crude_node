@@ -9,7 +9,7 @@
 	"children":	[{
 			"name":	"0_hall",
 			"transform":	{
-				"translation":	[0, 0.00999999977648258, 0],
+				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -22,7 +22,7 @@
 			"name":	"player",
 			"external":	"nodes\\player.crude_node",
 			"transform":	{
-				"translation":	[1.4871854782104492, 3.8721520900726318, 1.0219027996063232],
+				"translation":	[2, 2.1000032424926758, 2],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -47,7 +47,7 @@
 			"name":	"enemy",
 			"external":	"nodes\\enemy.crude_node",
 			"transform":	{
-				"translation":	[0.018322521820664406, 0.047705944627523422, 0.012590114958584309],
+				"translation":	[0.029880663380026817, 0.0313747487962246, 0.029880663380026817],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -65,9 +65,9 @@
 			},
 			"components":	[],
 			"children":	[{
-					"name":	"1",
+					"name":	"0_hall",
 					"transform":	{
-						"translation":	[0, -2, 0],
+						"translation":	[0, 0, 0],
 						"rotation":	[0, 0, 0, 1],
 						"scale":	[1, 1, 1]
 					},
@@ -75,8 +75,8 @@
 							"type":	"crude_physics_static_body_handle"
 						}, {
 							"type":	"crude_physics_collision_shape",
-							"shape_type":	"box",
-							"half_extent":	[1000, 2, 1000]
+							"shape_type":	"mesh",
+							"path":	"game\\0_hall.gltf"
 						}],
 					"children":	[]
 				}]

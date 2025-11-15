@@ -17,6 +17,10 @@ crude_physics_collision_shape_type_to_string
   {
     return "sphere";
   }
+  else if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+  {
+    return "mesh";
+  }
   else
   {
     CRUDE_ASSERT( false );
@@ -36,6 +40,10 @@ crude_physics_collision_shape_string_to_type
   else if ( crude_string_cmp( type_str, "sphere" ) == 0 )
   {
     return CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE;
+  }
+  else if ( crude_string_cmp( type_str, "mesh" ) == 0 )
+  {
+    return CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH;
   }
   else
   {

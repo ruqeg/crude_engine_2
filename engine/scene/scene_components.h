@@ -3,6 +3,7 @@
 #include <core/math.h>
 #include <core/ecs.h>
 #include <scene/scene.h>
+#include <scene/components_serialization.h>
 
 typedef struct crude_node_external
 {

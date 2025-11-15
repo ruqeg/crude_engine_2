@@ -1,15 +1,18 @@
 #pragma once
 
 #include <core/ecs.h>
+#include <core/octree.h>
 #include <core/memory.h>
 #include <core/string.h>
-#include <core/components_serialization.h>
+
+typedef struct crude_scene crude_scene;
 
 typedef bool (*crude_scene_parse_json_to_component_func)
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name
+  _In_ char const                                         *component_name,
+  _In_ crude_scene                                        *scene
 );
 
 typedef void (*crude_scene_parse_all_components_to_json_func)
@@ -35,8 +38,9 @@ typedef struct crude_scene
   crude_entity                                             main_node;
   char                                                    *resources_path;
   crude_allocator_container                                allocator_container;
+  crude_linear_allocator                                   string_linear_allocator;
+  crude_string_buffer                                      string_bufffer;
   crude_stack_allocator                                   *temporary_allocator;
-  crude_string_buffer                                      path_bufffer;
   crude_entity                                             input_entity;
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
   crude_scene_parse_all_components_to_json_func            additional_parse_all_components_to_json_func;

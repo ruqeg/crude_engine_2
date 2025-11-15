@@ -3,6 +3,7 @@
 #include <core/ecs.h>
 #include <core/math.h>
 #include <core/octree.h>
+#include <scene/collisions_resources_manager.h>
 
 typedef uint32 crude_physics_resource_index;
 
@@ -51,7 +52,8 @@ typedef struct crude_physics_collision_shape
     } sphere;
     struct
     {
-      crude_octree                                        *octree;
+      char const                                          *model_filename;
+      crude_octree_handle                                  octree_handle;
     } mesh;
   };
 } crude_physics_collision_shape;

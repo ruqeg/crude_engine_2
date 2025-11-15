@@ -6,7 +6,7 @@
 // !TODO implemente later, i'm too lazy for now 
 typedef struct crude_octree
 {
-  XMVECTOR                                                *points;
+  XMFLOAT3                                                *points;
 } crude_octree;
 
 CRUDE_API void

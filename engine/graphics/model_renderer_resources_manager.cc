@@ -253,7 +253,7 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_load_gltf_
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ char const                                         *gltf_path
 )
 {
@@ -857,7 +857,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_data                                         *gltf,
   _In_ crude_gfx_mesh_cpu                                 *meshes
 )

@@ -97,8 +97,10 @@ crude_player_controller_update_system_
       {
         if ( XMVectorGetX( XMVector3Length( direction ) ) > 0.001f )
         {
-          velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), XMVectorGetX( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
-          velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), XMVectorGetZ( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
+          velocity = XMVectorSetX( velocity, XMVectorGetX( direction ) * moving_limit );
+          velocity = XMVectorSetZ( velocity, XMVectorGetZ( direction ) * moving_limit );
+          //velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), XMVectorGetX( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
+          //velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), XMVectorGetZ( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
         }
         else
         {

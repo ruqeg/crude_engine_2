@@ -43,14 +43,15 @@ crude_scene_initialize
   scene->world = creation->world;
   scene->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
   scene->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
+  crude_linear_allocator_initialize( &scene->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );
   
   temporary_allocated_marker = crude_stack_allocator_get_marker( scene->temporary_allocator );
 
-  crude_string_buffer_initialize( &scene->path_bufffer, 512, scene->allocator_container );
+  crude_string_buffer_initialize( &scene->string_bufffer, 512, crude_linear_allocator_pack( &scene->string_linear_allocator ) );
   crude_string_buffer_initialize( &temporary_path_buffer, 1024, crude_stack_allocator_pack( scene->temporary_allocator ) );
  
   crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  scene->resources_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", working_directory, CRUDE_RESOURCES_DIR );
+  scene->resources_path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", working_directory, CRUDE_RESOURCES_DIR );
 
   scene_json = scene_parse_json_( scene, creation->filepath );
   if ( scene_json == NULL )
@@ -69,7 +70,8 @@ crude_scene_deinitialize
   _In_ crude_scene                                        *scene
 )
 {
-  crude_string_buffer_deinitialize( &scene->path_bufffer );
+  crude_string_buffer_deinitialize( &scene->string_bufffer );
+  crude_linear_allocator_deinitialize( &scene->string_linear_allocator );
 }
 
 cJSON*
@@ -117,7 +119,7 @@ node_to_json_hierarchy_
     crude_gltf const                                      *node_gltf;
     crude_light const                                     *node_light;
     crude_physics_static_body_handle const                *static_body;
-    crude_physics_character_body_handle const               *dynamic_body;
+    crude_physics_character_body_handle const             *dynamic_body;
     crude_physics_collision_shape const                   *collision_shape;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
@@ -240,7 +242,7 @@ scene_load_node_
     node_external_json = scene_parse_json_( scene, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, node_external_json_filepath ) );
     node = scene_load_node_( scene, node_external_json );
 
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_node_external, { crude_string_buffer_append_use_f( &scene->path_bufffer, "%s", node_external_json_filepath ) } );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_node_external, { crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", node_external_json_filepath ) } );
 
     crude_stack_allocator_free_marker( scene->temporary_allocator, temporary_allocator_marker );
   }
@@ -259,7 +261,7 @@ scene_load_node_
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
 
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, node );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, node, scene );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, { transform } );
 
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
@@ -275,54 +277,48 @@ scene_load_node_
       if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_gltf ) ) == 0 )
       {
         crude_gltf                                         gltf;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, node );
-        gltf.original_path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s", gltf.original_path );
-        gltf.path = crude_string_buffer_append_use_f( &scene->path_bufffer, "%s%s", scene->resources_path, gltf.original_path );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, { gltf } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_camera ) ) == 0 )
       {
         crude_camera                                       camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, node );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, { camera } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_free_camera ) ) == 0 )
       {
         crude_free_camera                                  free_camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, node );
-        free_camera.entity_input = scene->input_entity;
-        free_camera.enabled = false;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, { free_camera } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_light ) ) == 0 )
       {
         crude_light                                        light;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, node );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_light, { light } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) == 0 )
       {
         crude_physics_static_body_handle                   static_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, node );
-        CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_static_body_handle );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body_handle, { static_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) == 0 )
       {
         crude_physics_character_body_handle                  dynamic_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, node );
-        CRUDE_ENTITY_REMOVE_COMPONENT( node, crude_physics_character_body_handle );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_character_body_handle, { dynamic_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) == 0 )
       {
         crude_physics_collision_shape                      collision_shape;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, node );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, node, scene );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_collision_shape, { collision_shape } );
       }
       else
       {
-        scene->additional_parse_json_to_component_func( node, component_json, component_type );
+        scene->additional_parse_json_to_component_func( node, component_json, component_type, scene );
       }
     }
   }

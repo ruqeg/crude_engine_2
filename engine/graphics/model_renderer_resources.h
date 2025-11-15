@@ -1,6 +1,7 @@
 #pragma once
 
 #include <graphics/gpu_device.h>
+#include <core/ecs.h>
 
 typedef enum crude_gfx_mesh_draw_flags
 {

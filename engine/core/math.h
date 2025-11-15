@@ -1,9 +1,9 @@
-/* okay I give up... directxmath is too good not to use */
+/* okay I give up... directxmath is too good to not to use */
 #include <DirectXMath.h>
 #include <math.h>
+#include <cJSON.h>
 
 #include <core/alias.h>
-#include <core/components_serialization.h>
 
 using namespace DirectX;
 
@@ -83,6 +83,14 @@ crude_closest_point_to_line
 );
 
 CRUDE_API XMVECTOR
+crude_plane_from_points
+(
+  _In_ XMVECTOR                                             p0,
+  _In_ XMVECTOR                                             p1,
+  _In_ XMVECTOR                                             p2
+);
+
+CRUDE_API XMVECTOR
 crude_closest_point_to_triangle
 (
   _In_ XMVECTOR                                             t0,
@@ -99,14 +107,23 @@ crude_intersection_sphere_triangle
   _In_ float32                                              sphere_radius
 );
 
-CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT2 );
-CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT3 );
-CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( XMFLOAT4 );
+CRUDE_API void
+crude_parse_json_to_float2
+(
+  _Out_ XMFLOAT2                                          *float2,
+  _In_ cJSON                                              *json
+);
 
-CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT2 );
-CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT3 );
-CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( XMFLOAT4 );
+CRUDE_API void
+crude_parse_json_to_float3
+(
+  _Out_ XMFLOAT3                                          *float3,
+  _In_ cJSON                                              *json
+);
 
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( XMFLOAT2, "float2" );
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( XMFLOAT3, "float3" );
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( XMFLOAT4, "float4" );
+CRUDE_API void
+crude_parse_json_to_float4
+(
+  _Out_ XMFLOAT4                                          *float4,
+  _In_ cJSON                                              *json
+);

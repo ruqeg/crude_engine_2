@@ -5,6 +5,7 @@
 #include <graphics/scene_renderer.h>
 #include <core/ecs.h>
 #include <platform/platform_components.h>
+#include <scene/collisions_resources_manager.h>
 #include <devgui.h>
 
 typedef struct game_t

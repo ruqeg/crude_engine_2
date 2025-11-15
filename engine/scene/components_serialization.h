@@ -1,7 +1,10 @@
 #pragma once
 
 #include <core/ecs.h>
+#include <core/memory.h>
 #include <cJSON.h>
+
+typedef struct crude_scene crude_scene;
 
 #define CRUDE_COMPONENT_STRING_DECLARE( component_type)\
 char const *crude_component_string##component_type;
@@ -26,7 +29,8 @@ bool crude_parse_json_to_component_func##component_type\
 (\
   _Out_ component_type                                    *component,\
   _In_ cJSON const                                        *component_json,\
-  _In_ crude_entity                                        node\
+  _In_ crude_entity                                        node,\
+  _In_ crude_scene                                        *scene\
 )
 
 #define CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( component_type )\

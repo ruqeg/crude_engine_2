@@ -98,7 +98,8 @@ game_parse_json_to_component_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name
+  _In_ char const                                         *component_name,
+  _In_ crude_scene                                        *scene
 );
 
 static void
@@ -137,6 +138,8 @@ game_initialize
   game_initialize_imgui_( game );
   game_initialize_platform_( game );
   game_initialize_physics_( game );
+  crude_collisions_resources_manager_instance_allocate( crude_heap_allocator_pack( &game->allocator ) );
+  crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
   
@@ -173,6 +176,9 @@ game_deinitialize
 )
 {
   crude_devgui_deinitialize( &game->devgui );
+  
+  crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
+  crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( crude_physics_instance( ) );
   crude_physics_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
@@ -346,19 +352,20 @@ game_parse_json_to_component_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name
+  _In_ char const                                         *component_name,
+  _In_ crude_scene                                        *scene
 )
 {
   if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
   {
     crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, scene );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
   {
     crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, scene );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
   }
   return true;

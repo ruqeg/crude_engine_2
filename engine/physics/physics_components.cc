@@ -1,8 +1,10 @@
 #include <imgui/imgui.h>
 
+#include <core/string.h>
 #include <core/memory.h>
 #include <core/assert.h>
 #include <physics/physics.h>
+#include <scene/scene.h>
 
 #include <physics/physics_components.h>
 
@@ -24,6 +26,12 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_components )
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
+  crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
+  if ( previous_handle )
+  {
+    crude_physics_destroy_static_body( crude_physics_instance( ), *previous_handle );
+  }
+
   *component = crude_physics_create_static_body( crude_physics_instance( ), node );
   return true;
 }
@@ -37,7 +45,12 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
-  *component = crude_physics_create_dynamic_body( crude_physics_instance( ), node );
+  crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
+  if ( previous_handle )
+  {
+    crude_physics_destroy_character_body( crude_physics_instance( ), *previous_handle );
+  }
+  *component = crude_physics_create_character_body( crude_physics_instance( ), node );
   return true;
 }
 
@@ -65,11 +78,16 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   component->type = crude_physics_collision_shape_string_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
-    CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->box.half_extent, cJSON_GetObjectItemCaseSensitive( component_json, "half_extent" ), node );
+    crude_parse_json_to_float3( &component->box.half_extent, cJSON_GetObjectItemCaseSensitive( component_json, "half_extent" ) );
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
   {
     component->sphere.radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
+  }
+  else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+  {
+    component->mesh.model_filename = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) );
+    component->mesh.octree_handle = crude_collisions_resources_manager_get_octree_handle( crude_collisions_resources_manager_instance( ), crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_path, component->mesh.model_filename ) );
   }
   else
   {
@@ -85,11 +103,15 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
   cJSON_AddItemToObject( collision_shape_json, "shape_type", cJSON_CreateString( crude_physics_collision_shape_type_to_string( component->type ) ) );
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
-    cJSON_AddItemToObject( collision_shape_json, "half_extent", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->box.half_extent ) );
+    cJSON_AddItemToObject( collision_shape_json, "half_extent", cJSON_CreateFloatArray( &component->box.half_extent.x, 3 ) );
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
   {
     cJSON_AddItemToObject( collision_shape_json, "radius", cJSON_CreateNumber( component->sphere.radius ) );
+  }
+  else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+  {
+    cJSON_AddItemToObject( collision_shape_json, "path", cJSON_CreateString( component->mesh.model_filename ) );
   }
   else
   {

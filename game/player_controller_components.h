@@ -2,6 +2,7 @@
 
 #include <core/ecs.h>
 #include <core/math.h>
+#include <scene/components_serialization.h>
 
 typedef struct crude_player_controller
 {

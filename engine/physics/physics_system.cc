@@ -30,6 +30,10 @@ crude_physics_collision_shape_creation_observer_
     {
       collision_shapes_per_entity[ i ].debug_model_filename = "editor\\models\\crude_physics_sphere_collision_shape.gltf";
     }
+    else if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+    {
+      collision_shapes_per_entity[ i ].debug_model_filename = collision_shapes_per_entity[ i ].mesh.model_filename;
+    }
     else
     {
       CRUDE_ASSERT( false );
@@ -59,7 +63,7 @@ crude_physics_character_body_destrotion_observer_
   crude_physics_character_body_handle *dynamic_bodies_per_entity = ecs_field( it, crude_physics_character_body_handle, 0 );
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    crude_physics_destroy_dynamic_body( crude_physics_instance( ), dynamic_bodies_per_entity[ i ] );
+    crude_physics_destroy_character_body( crude_physics_instance( ), dynamic_bodies_per_entity[ i ] );
   }
 }
 
@@ -111,7 +115,8 @@ crude_physics_character_body_update_system_
       crude_physics_collision_shape                       *second_collision_shape;
       crude_transform                                     *second_transform;
       XMMATRIX                                             second_transform_mesh_to_world;
-      XMVECTOR                                             second_translation;
+      XMVECTOR                                             second_translation, closest_point;
+      bool                                                 intersected;
 
       second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ s ] );
       second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
@@ -121,23 +126,36 @@ crude_physics_character_body_update_system_
 
       if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
       {
-        XMVECTOR                                           second_box_half_extent, closest_point, closest_point_to_translation;
-        float32                                            translation_to_closest_point_projected_length;
+        XMVECTOR                                           second_box_half_extent;
 
         second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
         closest_point = crude_closest_point_to_obb( translation, second_translation, second_box_half_extent, second_transform_mesh_to_world );
+        intersected = crude_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius );
+      }
+      else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+      {
+        crude_octree *octree = crude_collisions_resources_manager_access_octree( crude_collisions_resources_manager_instance( ), second_collision_shape->mesh.octree_handle );
+        closest_point = crude_octree_closest_point( octree, translation );
+        intersected = crude_intersection_sphere_triangle( closest_point, translation, collision_shape->sphere.radius );
+      }
+      else
+      {
+        CRUDE_ASSERT( false );
+      }
+      
+      if ( intersected )
+      {
+        XMVECTOR                                           closest_point_to_translation;
+        float32                                            translation_to_closest_point_projected_length;
+
+        closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+        translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
         
-        if ( crude_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius  ) )
+        closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+        translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
+        if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
         {
-          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
-          
-          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-          translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
-          if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
-          {
-            dynamic_body->on_floor = true;
-          }
+          dynamic_body->on_floor = true;
         }
       }
     }

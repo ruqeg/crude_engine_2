@@ -2,7 +2,7 @@
 
 #include <core/math.h>
 #include <core/ecs.h>
-#include <core/components_serialization.h>
+#include <scene/components_serialization.h>
 
 typedef struct crude_free_camera
 {

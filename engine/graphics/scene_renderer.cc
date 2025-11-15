@@ -657,9 +657,17 @@ update_dynamic_buffers_
         {
           collision_transform_matrix = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
         }
-        else
+        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
         {
           collision_transform_matrix = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
+        }
+        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+        {
+          collision_transform_matrix = XMMatrixIdentity( );
+        }
+        else
+        {
+          CRUDE_ASSERT( false );
         }
 
         for ( uint32 collision_model_mesh_instance_index = 0; collision_model_mesh_instance_index < CRUDE_ARRAY_LENGTH( collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++collision_model_mesh_instance_index )
@@ -672,7 +680,7 @@ update_dynamic_buffers_
 
           mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
           mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
-          mesh_to_model_without_rotation = XMMATRIX( XMVector3Normalize( mesh_to_model.r[ 0 ] ), XMVector3Normalize( mesh_to_model.r[ 1 ] ), XMVector3Normalize( mesh_to_model.r[ 2 ] ), mesh_to_model.r[ 3 ] );
+          mesh_to_model_without_rotation = mesh_to_model; // !TODO nope
           mesh_to_model = XMMatrixMultiply( collision_transform_matrix, mesh_to_model_without_rotation );
 
           model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_transform );

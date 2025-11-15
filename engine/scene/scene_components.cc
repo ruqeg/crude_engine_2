@@ -55,24 +55,29 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform )
 {
   crude_memory_set( component, 0, sizeof( crude_camera ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->translation, cJSON_GetObjectItemCaseSensitive( component_json, "translation" ), node );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT4 )( &component->rotation, cJSON_GetObjectItemCaseSensitive( component_json, "rotation" ), node ),
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ), node );
+  crude_parse_json_to_float3( &component->translation, cJSON_GetObjectItemCaseSensitive( component_json, "translation" ) );
+  crude_parse_json_to_float4( &component->rotation, cJSON_GetObjectItemCaseSensitive( component_json, "rotation" ) );
+  crude_parse_json_to_float3( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ) );
   return true;
 }
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform )
 {
   cJSON *transform_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( transform_json, "translation", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->translation ) );
-  cJSON_AddItemToObject( transform_json, "rotation", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT4 )( &component->rotation ) );
-  cJSON_AddItemToObject( transform_json, "scale", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->scale ) );
+  cJSON_AddItemToObject( transform_json, "translation", cJSON_CreateFloatArray( &component->translation.x, 3 ) );
+  cJSON_AddItemToObject( transform_json, "rotation", cJSON_CreateFloatArray( &component->rotation.x, 4 ) );
+  cJSON_AddItemToObject( transform_json, "scale", cJSON_CreateFloatArray( &component->scale.x, 3 ) );
   return transform_json;
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
 {
+  char const                                              *gltf_path;
+
+  gltf_path = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
+
   crude_memory_set( component, 0, sizeof( crude_gltf ) );
-  component->original_path = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
+  component->original_path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", gltf_path );
+  component->path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_path, gltf_path );
   return true;
 }
 
@@ -88,7 +93,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )
 {
   crude_memory_set( component, 0, sizeof( crude_light ) );
   component->radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
-  CRUDE_PARSE_JSON_TO_COMPONENT( XMFLOAT3 )( &component->color, cJSON_GetObjectItemCaseSensitive( component_json, "color" ), node ),
+  crude_parse_json_to_float3( &component->color, cJSON_GetObjectItemCaseSensitive( component_json, "color" ) );
   component->intensity = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "intensity" ) );
   return true;
 }
@@ -98,7 +103,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
   cJSON *light_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( light_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_light ) ) );
   cJSON_AddItemToObject( light_json, "radius", cJSON_CreateNumber( component->radius ) );
-  cJSON_AddItemToObject( light_json, "color", CRUDE_PARSE_COMPONENT_TO_JSON( XMFLOAT3 )( &component->color ) );
+  cJSON_AddItemToObject( light_json, "color", cJSON_CreateFloatArray( &component->color.x, 3 ) );
   cJSON_AddItemToObject( light_json, "intensity", cJSON_CreateNumber( component->intensity ) );
   return light_json;
 }
