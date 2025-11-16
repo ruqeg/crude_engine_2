@@ -72,8 +72,6 @@ typedef struct crude_devgui_gpu_visual_profiler
 
 typedef struct crude_devgui_game_common
 {
-  game_t                                                  *game;
-  bool                                                     editor_camera_controller;
   bool                                                     enabled;
 } crude_devgui_game_common;
 

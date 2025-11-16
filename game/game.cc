@@ -19,8 +19,12 @@
 #include <player_controller_system.h>
 #include <enemy_components.h>
 #include <enemy_system.h>
+#include <level_01_components.h>
+#include <level_01_system.h>
 
 #include <game.h>
+
+game_t                                                    *game_instance_;
 
 CRUDE_ECS_SYSTEM_DECLARE( game_graphics_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_input_system_ );
@@ -133,6 +137,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
+  ECS_IMPORT( game->engine->world, crude_level_01_system );
 
   game_initialize_allocators_( game );
   game_initialize_imgui_( game );
@@ -227,6 +232,25 @@ game_reload_scene
   }
 
   game_setup_custom_nodes_to_scene_( game );
+}
+
+void
+game_set_focused_camera_node
+(
+  _In_ game_t                                             *game,
+  _In_ crude_entity                                        focused_camera_node
+)
+{
+  game->focused_camera_node = focused_camera_node;
+}
+
+crude_scene*
+game_get_scene
+(
+  _In_ game_t                                             *game
+)
+{
+  return &game->scene;
 }
 
 void
@@ -368,6 +392,12 @@ game_parse_json_to_component_
     CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, scene );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
   }
+  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
+  {
+    crude_level_01                                         level01;
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, scene );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
+  }
   return true;
 }
 
@@ -380,6 +410,7 @@ game_parse_all_components_to_json_
 {
   crude_player_controller const                           *player_component;
   crude_enemy const                                       *enemy;
+  crude_level_01 const                                    *level01;
   
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
@@ -391,6 +422,12 @@ game_parse_all_components_to_json_
   if ( enemy )
   {
     cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy ) );
+  }
+  
+  level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
+  if ( level01 )
+  {
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01 ) );
   }
 }
 
@@ -612,15 +649,35 @@ game_setup_custom_nodes_to_scene_
   }
 
   game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
-  game->game_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
-  game->game_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player.pivot.camera" );
   game->focused_camera_node = game->editor_camera_node;
 
   crude_physics_enable_simulation( crude_physics_instance( ), false );
-
-  player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->game_controller_node, crude_player_controller );
-  player_controller->_entity_input = game->scene.input_entity;
+  
   free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->entity_input = game->scene.input_entity;
   free_camera->enabled = true;
+}
+
+void
+game_instance_intialize
+(
+)
+{
+  game_instance_ = CRUDE_CAST( game_t*, malloc( sizeof( game_t ) ) );
+}
+
+void
+game_instance_deintialize
+(
+)
+{
+  free( game_instance_ );
+}
+
+game_t*
+game_instance
+(
+)
+{
+  return game_instance_;
 }

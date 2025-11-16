@@ -6,7 +6,6 @@ main
 )
 {
   crude_engine                                             engine;
-  game_t                                                   game;
 
   /* Initialization */
   {
@@ -15,18 +14,20 @@ main
     
     engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
     crude_engine_initialize( &engine, &engine_creation );
-    game_initialize( &game, &engine );
+    game_instance_intialize( );
+    game_initialize( game_instance( ), &engine );
   }
 
   while ( engine.running )
   {
     crude_engine_update( &engine );
-    game_update( &game );
+    game_update( game_instance( ) );
   }
   
   /* Deinitialization */
   {
-    game_deinitialize( &game );
+    game_deinitialize( game_instance( ) );
+    game_instance_deintialize( );
     crude_engine_deinitialize( &engine );
   }
 

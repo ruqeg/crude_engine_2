@@ -52,17 +52,19 @@ crude_enemy_update_system_
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     enemy->player_node = crude_ecs_lookup_entity( it->world, "main.player" ); // !TODO
-    CRUDE_ASSERT( crude_entity_valid( enemy->player_node ) );
+    if ( !crude_entity_valid( enemy->player_node ) )
+    {
+      continue;
+    }
     
     enemy_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( enemy_node, crude_transform );
-    
     player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( enemy->player_node, crude_transform );
     
     enemy_translation = XMLoadFloat3( &enemy_transform->translation );
     enemy_to_player = XMVectorSubtract( XMLoadFloat3( &player_transform->translation ), enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
 
-    XMStoreFloat3( &enemy_transform->translation, XMVectorScale( XMVectorAdd( enemy_translation, enemy_to_player_normalized ), enemy->moving_speed ) );
+    XMStoreFloat3( &enemy_transform->translation, XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed * it->delta_time ) ) );
   }
 }
 

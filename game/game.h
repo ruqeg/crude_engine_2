@@ -35,9 +35,7 @@ typedef struct game_t
   XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
-  crude_entity                                             game_camera_node;
   crude_entity                                             editor_camera_node;
-  crude_entity                                             game_controller_node;
 
   /* Other */
   uint32                                                   framerate;
@@ -68,4 +66,32 @@ game_reload_scene
 (
   _In_ game_t                                             *game,
   _In_ char const                                         *filename
+);
+
+CRUDE_API void
+game_set_focused_camera_node
+(
+  _In_ game_t                                             *game,
+  _In_ crude_entity                                        focused_camera_node
+);
+
+CRUDE_API crude_scene*
+game_get_scene
+(
+  _In_ game_t                                             *game
+);
+
+CRUDE_API void
+game_instance_intialize
+(
+);
+
+CRUDE_API void
+game_instance_deintialize
+(
+);
+
+CRUDE_API game_t*
+game_instance
+(
 );

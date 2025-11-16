@@ -14,7 +14,6 @@ typedef struct crude_player_controller
   float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
 
-  crude_entity                                             _entity_input;
   bool                                                     _input_enabled;
 } crude_player_controller;
 

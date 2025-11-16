@@ -8,6 +8,7 @@
 #include <physics/physics_components.h>
 #include <physics/physics.h>
 #include <player_controller_components.h>
+#include <level_01_components.h>
 #include <enemy_components.h>
 #include <game.h>
 
@@ -491,6 +492,12 @@ crude_devgui_node_inspector_draw
   if ( gltf && ImGui::CollapsingHeader( "crude_gltf" ) )
   {
     ImGui::Text( "TODO" );
+  }
+  
+  crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_level_01 );
+  if ( level_01 && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_01 ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( node, level_01 );
   }
   
   crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
@@ -1294,9 +1301,7 @@ crude_devgui_game_common_initialize
   _In_ game_t                                             *game
 )
 {
-  dev_game_common->game = game;
   dev_game_common->enabled = true;
-  dev_game_common->editor_camera_controller = true;
 }
 
 void
@@ -1328,27 +1333,9 @@ crude_devgui_game_common_draw
   
   ImGui::Begin( "Game Common", NULL, window_flags_ );
 
-  ImGui::Checkbox( "Simulate Physics", &crude_physics_instance( )->simulation_enabled );
-  if ( ImGui::Checkbox( "Editor Camera Controller", &dev_game_common->editor_camera_controller ) )
+  if ( ImGui::Checkbox( "Simulate Physics", &crude_physics_instance( )->simulation_enabled ) )
   {
-    if ( dev_game_common->editor_camera_controller )
-    {
-      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
-      
-      dev_game_common->game->focused_camera_node = dev_game_common->game->editor_camera_node;
-      player_controller->_input_enabled = false;
-      free_camera->enabled = true;
-    }
-    else
-    { 
-      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( dev_game_common->game->game_controller_node, crude_player_controller );
-      
-      dev_game_common->game->focused_camera_node = dev_game_common->game->game_camera_node;
-      player_controller->_input_enabled = true;
-      free_camera->enabled = false;
-    }
+    crude_physics_enable_simulation( crude_physics_instance( ), crude_physics_instance( )->simulation_enabled );
   }
   //if ( ImGui::CollapsingHeader( "Background" ) )
   //{

@@ -149,8 +149,9 @@ crude_physics_character_body_update_system_
         float32                                            translation_to_closest_point_projected_length;
 
         closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+
         translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
-        
+          
         closest_point_to_translation = XMVectorSubtract( translation, closest_point );
         translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
         if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )

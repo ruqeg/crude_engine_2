@@ -6,6 +6,7 @@
 #include <physics/physics_components.h>
 #include <physics/physics.h>
 #include <player_controller_components.h>
+#include <game.h>
 
 #include <player_controller_system.h>
 
@@ -52,7 +53,7 @@ crude_player_controller_update_system_
 
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( player_controller->_entity_input, crude_input );
+    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game_get_scene( game_instance( ) )->input_entity, crude_input );
     
     physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     
@@ -99,8 +100,6 @@ crude_player_controller_update_system_
         {
           velocity = XMVectorSetX( velocity, XMVectorGetX( direction ) * moving_limit );
           velocity = XMVectorSetZ( velocity, XMVectorGetZ( direction ) * moving_limit );
-          //velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), XMVectorGetX( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
-          //velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), XMVectorGetZ( direction ) * moving_limit, player_controller->move_change_coeff * it->delta_time ) );
         }
         else
         {
