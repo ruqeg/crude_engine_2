@@ -62,7 +62,7 @@ crude_physics_destroy_static_body
 );
 
 CRUDE_API crude_physics_character_body*
-crude_physics_access_dynamic_body
+crude_physics_access_character_body
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_character_body_handle                   handle

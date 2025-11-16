@@ -51,7 +51,7 @@ crude_physics_create_character_body
 )
 {
   crude_physics_character_body_handle dynamic_body_handle = CRUDE_COMPOUNT( crude_physics_character_body_handle, { crude_resource_pool_obtain_resource( &physics->character_bodies_resource_pool ) } );
-  crude_physics_character_body *dynamic_body = crude_physics_access_dynamic_body( physics, dynamic_body_handle );
+  crude_physics_character_body *dynamic_body = crude_physics_access_character_body( physics, dynamic_body_handle );
   dynamic_body->node = node;
 
   CRUDE_ARRAY_PUSH( physics->character_bodies, dynamic_body_handle ); 
@@ -112,7 +112,7 @@ crude_physics_destroy_static_body
 }
 
 crude_physics_character_body*
-crude_physics_access_dynamic_body
+crude_physics_access_character_body
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_character_body_handle                 handle
@@ -178,7 +178,7 @@ crude_physics_enable_simulation
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->character_bodies ); ++i )
     {
-      crude_physics_character_body *dynamic_body = crude_physics_access_dynamic_body( physics, physics->character_bodies[ i ] );
+      crude_physics_character_body *dynamic_body = crude_physics_access_character_body( physics, physics->character_bodies[ i ] );
       XMStoreFloat3( &dynamic_body->velocity, XMVectorZero( ) );
       dynamic_body->on_floor = false;
     }

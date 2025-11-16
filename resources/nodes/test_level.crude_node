@@ -5,11 +5,9 @@
 		"rotation":	[0, 0, 0, 1],
 		"scale":	[1, 1, 1]
 	},
-	"components":	[
-		{
-			"type": "crude_level_01"
-		}
-	],
+	"components":	[{
+			"type":	"crude_level_01"
+		}],
 	"children":	[{
 			"name":	"0_hall",
 			"transform":	{
@@ -26,12 +24,13 @@
 			"name":	"player",
 			"external":	"nodes\\player.crude_node",
 			"transform":	{
-				"translation":	[0, 6.7528729438781738, 0],
+				"translation":	[-0.38816648721694946, 0.5, -0.37470367550849915],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
 			"components":	[{
-					"type":	"crude_physics_character_body_handle"
+					"type":	"crude_physics_character_body_handle",
+					"mask":	1
 				}, {
 					"type":	"crude_physics_collision_shape",
 					"shape_type":	"sphere",
@@ -51,11 +50,18 @@
 			"name":	"enemy",
 			"external":	"nodes\\enemy.crude_node",
 			"transform":	{
-				"translation":	[0, 0.05263158306479454, 0],
+				"translation":	[4.6135311126708984, 1.1637641191482544, 19.480710983276367],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
 			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	0
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[0.5, 0.5, 0.5]
+				}, {
 					"type":	"crude_enemy",
 					"moving_speed":	0.05000000074505806
 				}],
@@ -76,7 +82,8 @@
 						"scale":	[1, 1, 1]
 					},
 					"components":	[{
-							"type":	"crude_physics_static_body_handle"
+							"type":	"crude_physics_static_body_handle",
+							"layer":	1
 						}, {
 							"type":	"crude_physics_collision_shape",
 							"shape_type":	"mesh",

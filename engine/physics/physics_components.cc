@@ -33,13 +33,19 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle
   }
 
   *component = crude_physics_create_static_body( crude_physics_instance( ), node );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( crude_physics_instance( ), *component );
+  static_body->layer = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "layer" ) );
   return true;
 }
 
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
+
+  crude_physics_static_body *static_body = crude_physics_access_static_body( crude_physics_instance( ), *component );
+
   cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) );
+  cJSON_AddItemToObject( static_body_json, "layer", cJSON_CreateNumber( static_body->layer ) );
   return static_body_json;
 }
 
@@ -51,24 +57,51 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_han
     crude_physics_destroy_character_body( crude_physics_instance( ), *previous_handle );
   }
   *component = crude_physics_create_character_body( crude_physics_instance( ), node );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( crude_physics_instance( ), *component );
+  character_body->mask = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "mask" ) );
   return true;
 }
 
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( crude_physics_instance( ), *component );
   cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) );
+  cJSON_AddItemToObject( dynamic_body_json, "mask", cJSON_CreateNumber( character_body->mask ) );
   return dynamic_body_json;
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
-  ImGui::Text( "Type: Dynamic Body" );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( crude_physics_instance( ), *component );
+  ImGui::Text( "Mask" );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "0", &character_body->mask, 1 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "1", &character_body->mask, 1 << 2 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "2", &character_body->mask, 1 << 3 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "3", &character_body->mask, 1 << 4 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "4", &character_body->mask, 1 << 5 );
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  ImGui::Text( "Type: Static Body" );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( crude_physics_instance( ), *component );
+  ImGui::Text( "Layer" );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "0", &static_body->layer, 1 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "1", &static_body->layer, 1 << 2 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "2", &static_body->layer, 1 << 3 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "3", &static_body->layer, 1 << 4 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "4", &static_body->layer, 1 << 5 );
+  
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )

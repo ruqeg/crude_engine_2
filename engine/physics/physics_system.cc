@@ -8,6 +8,7 @@
 #include <physics/physics_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_character_body_update_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_body_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_collision_shape_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_destrotion_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_body_destrotion_observer_ );
@@ -38,6 +39,20 @@ crude_physics_collision_shape_creation_observer_
     {
       CRUDE_ASSERT( false );
     }
+  }
+}
+
+static void
+crude_physics_character_body_creation_observer_
+(
+  ecs_iter_t *it
+)
+{
+  crude_physics_character_body_handle *character_bodies_per_entity = ecs_field( it, crude_physics_character_body_handle, 0 );
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_character_body *character_body = crude_physics_access_character_body( crude_physics_instance( ), character_bodies_per_entity[ i ] );
+    character_body->callback_container = crude_physics_collision_callback_container_empty( );
   }
 }
 
@@ -99,7 +114,7 @@ crude_physics_character_body_update_system_
     transform = &transforms_per_entity[ i ];
     collision_shape = &collision_shapes_per_entity[ i ];
 
-    dynamic_body = crude_physics_access_dynamic_body( crude_physics_instance( ), dynamic_body_handle );
+    dynamic_body = crude_physics_access_character_body( crude_physics_instance( ), dynamic_body_handle );
 
     velocity = crude_physics_character_body_get_velocity( crude_physics_instance( ), dynamic_body_handle );
 
@@ -119,6 +134,14 @@ crude_physics_character_body_update_system_
       bool                                                 intersected;
 
       second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ s ] );
+
+      crude_physics_collision_callback_container_fun( dynamic_body->callback_container );
+
+      if ( !( dynamic_body->mask & second_body->layer ) )
+      {
+        continue;
+      }
+
       second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
       second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
       second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
@@ -145,18 +168,23 @@ crude_physics_character_body_update_system_
       
       if ( intersected )
       {
-        XMVECTOR                                           closest_point_to_translation;
-        float32                                            translation_to_closest_point_projected_length;
+        //dynamic_body->callback_container.fun( dynamic_body->callback_container.ctx );
 
-        closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-
-        translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
-          
-        closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-        translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
-        if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
+        if ( dynamic_body->mask & 1 )
         {
-          dynamic_body->on_floor = true;
+          XMVECTOR                                         closest_point_to_translation;
+          float32                                          translation_to_closest_point_projected_length;
+
+          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+
+          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
+            
+          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+          translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
+          if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
+          {
+            dynamic_body->on_floor = true;
+          }
         }
       }
     }
@@ -186,6 +214,10 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_system )
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_physics_components );
   
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_character_body_creation_observer_, EcsOnSet, { 
+    { .id = ecs_id( crude_physics_character_body_handle ) },
+  } );
+
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_collision_shape_creation_observer_, EcsOnSet, { 
     { .id = ecs_id( crude_physics_collision_shape ) },
   } );

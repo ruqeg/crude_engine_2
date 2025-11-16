@@ -7,6 +7,14 @@
 
 typedef uint32 crude_physics_resource_index;
 
+typedef void* (*crude_physics_collision_callback_fun)( void *ctx );
+
+typedef struct crude_physics_collision_callback_container
+{
+  crude_physics_collision_callback_fun                     fun;
+  void                                                    *ctx;
+} crude_physics_collision_callback_container;
+
 typedef enum crude_physics_collision_shape_type
 {
   CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX,
@@ -29,11 +37,14 @@ typedef struct crude_physics_character_body
   crude_entity                                             node;
   XMFLOAT3                                                 velocity;
   bool                                                     on_floor;
+  uint32                                                   mask;
+  crude_physics_collision_callback_container               callback_container;
 } crude_physics_character_body;
 
 typedef struct crude_physics_static_body
 {
   crude_entity                                             node;
+  uint32                                                   layer;
 } crude_physics_static_body;
 
 typedef struct crude_physics_collision_shape
@@ -68,4 +79,15 @@ CRUDE_API crude_physics_collision_shape_type
 crude_physics_collision_shape_string_to_type
 (
   _In_ char const*                                         type_str
+);
+
+CRUDE_API crude_physics_collision_callback_container
+crude_physics_collision_callback_container_empty
+(
+);
+
+CRUDE_API void
+crude_physics_collision_callback_container_fun
+(
+  _In_ crude_physics_collision_callback_container          container
 );

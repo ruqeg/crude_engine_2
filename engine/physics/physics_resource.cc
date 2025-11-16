@@ -50,3 +50,24 @@ crude_physics_collision_shape_string_to_type
     CRUDE_ASSERT( false );
   }
 }
+
+crude_physics_collision_callback_container
+crude_physics_collision_callback_container_empty
+(
+)
+{
+  crude_physics_collision_callback_container container = CRUDE_COMPOUNT_EMPTY( crude_physics_collision_callback_container );
+  return container;
+}
+
+void
+crude_physics_collision_callback_container_fun
+(
+  _In_ crude_physics_collision_callback_container          container
+)
+{
+  if ( container.ctx )
+  {
+    container.fun( container.ctx );
+  }
+}
