@@ -149,6 +149,8 @@ game_initialize
   game_initialize_graphics_( game );
   
   crude_devgui_initialize( &game->devgui, game );
+
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, {
     { .id = ecs_id( crude_transform ) },
@@ -166,12 +168,71 @@ game_initialize
 }
 
 void
-game_update
+game_postupdate
 (
   _In_ game_t                                             *game
 )
 {
-  crude_devgui_graphics_post_update( &game->devgui );
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
+  {
+    switch ( game->commands_queue[ i ].type )
+    {
+    case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
+    {
+      crude_scene_creation                                 scene_creation;
+      crude_gfx_scene_renderer_creation                    scene_renderer_creation;
+      bool                                                 buffer_recreated;
+
+      vkDeviceWaitIdle( game->gpu.vk_device );
+      crude_entity_destroy_hierarchy( game->scene.main_node );
+      crude_scene_deinitialize( &game->scene );
+
+      scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
+      scene_creation.world = game->engine->world;
+      scene_creation.input_entity = game->platform_node;
+      scene_creation.filepath = game->commands_queue[ i ].reload_scene.filepath;
+      scene_creation.temporary_allocator = &game->temporary_allocator;
+      scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
+      scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
+      scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
+      crude_scene_initialize( &game->scene, &scene_creation );
+
+      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
+      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
+
+      if ( buffer_recreated )
+      {
+        crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
+        crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
+        crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+      }
+
+      game_setup_custom_nodes_to_scene_( game );
+
+      NFD_FreePathU8( game->commands_queue[ i ].reload_scene.filepath );
+      break;
+    }
+    case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
+    {
+      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( game->gpu.resource_cache.techniques ); ++i )
+      {
+        if ( !crude_hashmap_backet_key_valid( game->gpu.resource_cache.techniques[ i ].key ) )
+        {
+          continue;
+        }
+        
+        crude_gfx_technique *technique = game->gpu.resource_cache.techniques[ i ].value; 
+        crude_gfx_destroy_technique_instant( &game->gpu, technique );
+        crude_gfx_technique_load_from_file( technique->json_name, &game->gpu, &game->render_graph, &game->temporary_allocator );
+      }
+
+      crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
+      break;
+    }
+    }
+  }
+
+  CRUDE_ARRAY_SET_LENGTH( game->commands_queue, 0u );
 }
 
 void
@@ -182,6 +243,8 @@ game_deinitialize
 {
   crude_devgui_deinitialize( &game->devgui );
   
+  CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
+
   crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
@@ -198,40 +261,27 @@ game_deinitialize
 }
 
 void
-game_reload_scene
+game_push_reload_scene_command
 (
   _In_ game_t                                             *game,
-  _In_ char const                                         *filename
+  _In_ nfdu8char_t                                        *filepath
 )
 {
-  crude_scene_creation                                     scene_creation;
-  crude_gfx_scene_renderer_creation                        scene_renderer_creation;
+  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
+  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE;
+  command.reload_scene.filepath = filepath;
+  CRUDE_ARRAY_PUSH( game->commands_queue, command );
+}
 
-  vkDeviceWaitIdle( game->gpu.vk_device );
-  crude_entity_destroy_hierarchy( game->scene.main_node );
-  crude_scene_deinitialize( &game->scene );
-
-  scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
-  scene_creation.world = game->engine->world;
-  scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = filename;
-  scene_creation.temporary_allocator = &game->temporary_allocator;
-  scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-  scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
-  scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
-  crude_scene_initialize( &game->scene, &scene_creation );
-
-  bool buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
-  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
-
-  if ( buffer_recreated )
-  {
-    crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
-    crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
-    crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
-  }
-
-  game_setup_custom_nodes_to_scene_( game );
+void
+game_push_reload_techniques_command
+(
+  _In_ game_t                                             *game
+)
+{
+  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
+  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
+  CRUDE_ARRAY_PUSH( game->commands_queue, command );
 }
 
 void

@@ -40,6 +40,8 @@ crude_player_controller_creation_observer_
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
     crude_physics_character_body *hitbox_body = crude_physics_access_character_body( crude_physics_instance( ), *hitbox_body_handle );
     hitbox_body->callback_container.fun = crude_hitbox_callback;
+
+    player_controller->withdrawal = 1;
   }
 }
 
@@ -57,7 +59,7 @@ crude_player_controller_update_system_
     crude_transform                                       *transform;
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
-    crude_physics_character_body_handle                     *physics_body;
+    crude_physics_character_body_handle                   *physics_body;
     crude_entity                                           node;
     XMVECTOR                                               velocity;
     float32                                                moving_limit;
@@ -140,6 +142,19 @@ crude_player_controller_update_system_
     }
 
     crude_physics_character_body_set_velocity( crude_physics_instance( ), *physics_body, velocity );
+    
+    if ( player_controller->_input_enabled )
+    {
+      player_controller->withdrawal -= 0.0001 * it->delta_time;
+
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_GAMEPLAY, "withdrawal %f", player_controller->withdrawal );
+      
+      if ( player_controller->withdrawal < 0 )
+      {
+        static int b =0;
+        b++;
+      }
+    }
   }
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nfd.h>
+
 #include <engine.h>
 #include <scene/scene.h>
 #include <graphics/scene_renderer.h>
@@ -7,6 +9,25 @@
 #include <platform/platform_components.h>
 #include <scene/collisions_resources_manager.h>
 #include <devgui.h>
+
+typedef enum crude_game_queue_command_type
+{
+  CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
+  CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
+  CRUDE_GAME_QUEUE_COMMAND_TYPE_COUNT,
+} crude_game_queue_command_type;
+
+typedef struct crude_game_queue_command
+{
+  crude_game_queue_command_type                            type;
+  union
+  {
+    struct 
+    {
+      nfdu8char_t                                         *filepath;
+    } reload_scene;
+  };
+} crude_game_queue_command;
 
 typedef struct game_t
 {
@@ -40,6 +61,8 @@ typedef struct game_t
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
+
+  crude_game_queue_command                                *commands_queue;
 } game_t;
 
 CRUDE_API void
@@ -50,7 +73,7 @@ game_initialize
 );
 
 CRUDE_API void
-game_update
+game_postupdate
 (
   _In_ game_t                                             *game
 );
@@ -62,10 +85,16 @@ game_deinitialize
 );
 
 CRUDE_API void
-game_reload_scene
+game_push_reload_scene_command
 (
   _In_ game_t                                             *game,
-  _In_ char const                                         *filename
+  _In_ nfdu8char_t                                        *filepath
+);
+
+CRUDE_API void
+game_push_reload_techniques_command
+(
+  _In_ game_t                                             *game
 );
 
 CRUDE_API void

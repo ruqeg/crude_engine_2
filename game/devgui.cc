@@ -22,27 +22,6 @@ nfdu8filteritem_t                                          scene_file_filters_[ 
   CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Node", "crude_node" } )
 };
 
-static void
-crude_devgui_reload_techniques_
-(
-  _In_ crude_devgui                                       *devgui
-)
-{
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( devgui->game->gpu.resource_cache.techniques ); ++i )
-  {
-    if ( !crude_hashmap_backet_key_valid( devgui->game->gpu.resource_cache.techniques[ i ].key ) )
-    {
-      continue;
-    }
-    
-    crude_gfx_technique *technique = devgui->game->gpu.resource_cache.techniques[ i ].value; 
-    crude_gfx_destroy_technique_instant( &devgui->game->gpu, technique );
-    crude_gfx_technique_load_from_file( technique->json_name, &devgui->game->gpu, &devgui->game->render_graph, &devgui->game->temporary_allocator );
-  }
-
-  crude_gfx_render_graph_on_techniques_reloaded( &devgui->game->render_graph );
-}
-
 void
 crude_devgui_initialize
 (
@@ -51,11 +30,9 @@ crude_devgui_initialize
 )
 {
   window_flags_ = 0;//ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
-  devgui->should_reload_shaders = false;
   devgui->menubar_enabled = true;
   devgui->game = game;
   devgui->last_focused_menutab_name = "Graphics";
-  devgui->should_reloaded_scene = NULL;
   devgui->added_node_data = CRUDE_COMPOUNT_EMPTY( crude_devgui_added_node_data );
   devgui->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
   devgui->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
@@ -99,7 +76,7 @@ crude_devgui_draw
     }
     if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_R, false ) )
     {
-      devgui->should_reload_shaders = true;
+        game_push_reload_techniques_command( game_instance( ) );
     }
     if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_F, false ) )
     {
@@ -111,7 +88,7 @@ crude_devgui_draw
       devgui->last_focused_menutab_name = "Graphics";
       if ( ImGui::MenuItem( "Reload Techniques", "Ctrl+G+R" ) )
       {
-        devgui->should_reload_shaders = true;
+        game_push_reload_techniques_command( game_instance( ) );
       }
       if ( ImGui::MenuItem( "Render Graph", "Ctrl+G+R" ) )
       {
@@ -147,7 +124,7 @@ crude_devgui_draw
         result = NFD_OpenDialogU8_With( &out_path, &args );
         if ( result == NFD_OKAY )
         {
-          devgui->should_reloaded_scene = out_path;
+          game_push_reload_scene_command( game_instance( ), out_path );
         }
       }
       if ( ImGui::MenuItem( "Save Scene" ) )
@@ -259,25 +236,6 @@ crude_devgui_graphics_pre_update
 {
   crude_devgui_game_common_update( &devgui->dev_game_common );
   crude_devgui_gpu_visual_profiler_update( &devgui->dev_gpu_profiler );
-}
-
-void
-crude_devgui_graphics_post_update
-(
-  _In_ crude_devgui                                       *devgui
-)
-{
-  if ( devgui->should_reload_shaders )
-  {
-    crude_devgui_reload_techniques_( devgui );
-    devgui->should_reload_shaders = false;
-  }
-  if ( devgui->should_reloaded_scene )
-  {
-    game_reload_scene( devgui->game, devgui->should_reloaded_scene );
-    NFD_FreePathU8( ( nfdu8char_t* )devgui->should_reloaded_scene );
-    devgui->should_reloaded_scene = NULL;
-  }
 }
 
 /******************************

@@ -99,8 +99,6 @@ typedef struct crude_devgui
   crude_devgui_added_node_data                             added_node_data;
   crude_entity                                             node_to_add;
   crude_entity                                             node_to_remove;
-  bool                                                     should_reload_shaders;
-  char const                                              *should_reloaded_scene;
 } crude_devgui;
 
 /*********
@@ -142,12 +140,6 @@ crude_devgui_on_resize
 
 CRUDE_API void
 crude_devgui_graphics_pre_update
-(
-  _In_ crude_devgui                                       *devgui
-);
-
-CRUDE_API void
-crude_devgui_graphics_post_update
 (
   _In_ crude_devgui                                       *devgui
 );

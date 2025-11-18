@@ -13,6 +13,8 @@ typedef struct crude_player_controller
   float32                                                  move_change_coeff;
   float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
+  
+  float32                                                  withdrawal;
 
   bool                                                     _input_enabled;
 } crude_player_controller;

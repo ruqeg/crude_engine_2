@@ -21,7 +21,7 @@ main
   while ( engine.running )
   {
     crude_engine_update( &engine );
-    game_update( game_instance( ) );
+    game_postupdate( game_instance( ) );
   }
   
   /* Deinitialization */
