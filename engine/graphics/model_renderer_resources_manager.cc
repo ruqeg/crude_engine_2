@@ -977,7 +977,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
     }
   }
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( meshlets_vertices ); ++i )
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++i )
   {
     meshlets_vertices_indices[ i ] += manager->total_meshlets_vertices_count; /* Yes, there are better solutions, but who gives a fuck */
   }
