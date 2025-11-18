@@ -159,3 +159,20 @@ crude_transform_node_to_parent
 { 
   return XMMatrixAffineTransformation( XMLoadFloat3( &transform->scale ), XMVectorZero( ), XMLoadFloat4( &transform->rotation ), XMLoadFloat3( &transform->translation ) );
 }
+
+XMMATRIX
+crude_transform_parent_to_world
+(
+  _In_ crude_entity                                        node
+)
+{
+  crude_entity parent = crude_entity_get_parent( node );
+  
+  if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
+  {
+    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
+    return crude_transform_node_to_world( parent, parent_transform );
+  }
+
+  return XMMatrixIdentity( ) ;
+}

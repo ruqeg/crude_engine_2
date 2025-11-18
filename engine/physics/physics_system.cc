@@ -88,7 +88,7 @@ crude_physics_character_body_update_system_
   ecs_iter_t *it
 )
 {
-  crude_physics_character_body_handle                       *dynamic_bodies_per_entity;
+  crude_physics_character_body_handle                     *dynamic_bodies_per_entity;
   crude_physics_collision_shape                           *collision_shapes_per_entity;
   crude_transform                                         *transforms_per_entity;
 
@@ -107,8 +107,14 @@ crude_physics_character_body_update_system_
     crude_physics_collision_shape                         *collision_shape;
     crude_physics_character_body                          *dynamic_body;
     crude_physics_character_body_handle                    dynamic_body_handle;
+    XMMATRIX                                               node_to_parent;
+    XMMATRIX                                               parent_to_world;
+    XMMATRIX                                               node_to_world;
     XMVECTOR                                               translation;
     XMVECTOR                                               velocity;
+    crude_entity                                           node;
+
+    node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     dynamic_body_handle = dynamic_bodies_per_entity[ i ];
     transform = &transforms_per_entity[ i ];
@@ -117,10 +123,12 @@ crude_physics_character_body_update_system_
     dynamic_body = crude_physics_access_character_body( crude_physics_instance( ), dynamic_body_handle );
 
     velocity = crude_physics_character_body_get_velocity( crude_physics_instance( ), dynamic_body_handle );
-
-    translation = XMLoadFloat3( &transform->translation );
     
-    translation = XMVectorAdd( translation, velocity * CRUDE_MIN( it->delta_time, 1.f ) );
+    parent_to_world = crude_transform_parent_to_world( node );
+    node_to_parent = crude_transform_node_to_parent( transform );
+    node_to_world = XMMatrixMultiply( node_to_parent, parent_to_world );
+
+    translation = XMVectorAdd( node_to_world.r[ 3 ], velocity * CRUDE_MIN( it->delta_time, 1.f ) );
 
     dynamic_body->on_floor = false;
 
@@ -135,8 +143,6 @@ crude_physics_character_body_update_system_
 
       second_body = crude_physics_access_static_body( crude_physics_instance( ), crude_physics_instance( )->static_bodies[ s ] );
 
-      crude_physics_collision_callback_container_fun( dynamic_body->callback_container );
-
       if ( !( dynamic_body->mask & second_body->layer ) )
       {
         continue;
@@ -145,7 +151,7 @@ crude_physics_character_body_update_system_
       second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
       second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
       second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
-      second_translation = XMLoadFloat3( &second_transform->translation );
+      second_translation = second_transform_mesh_to_world.r[ 3 ];
 
       if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
       {
@@ -168,7 +174,7 @@ crude_physics_character_body_update_system_
       
       if ( intersected )
       {
-        //dynamic_body->callback_container.fun( dynamic_body->callback_container.ctx );
+        crude_physics_collision_callback_container_fun( dynamic_body->callback_container );
 
         if ( dynamic_body->mask & 1 )
         {
@@ -189,7 +195,7 @@ crude_physics_character_body_update_system_
       }
     }
 
-    XMStoreFloat3( &transform->translation, translation );
+    XMStoreFloat3( &transform->translation, XMVectorSubtract( translation, parent_to_world.r[ 3 ] ) );
   }
 }
 

@@ -7,7 +7,7 @@
 
 typedef uint32 crude_physics_resource_index;
 
-typedef void* (*crude_physics_collision_callback_fun)( void *ctx );
+typedef void (*crude_physics_collision_callback_fun)( void *ctx );
 
 typedef struct crude_physics_collision_callback_container
 {

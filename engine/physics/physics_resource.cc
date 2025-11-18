@@ -66,7 +66,7 @@ crude_physics_collision_callback_container_fun
   _In_ crude_physics_collision_callback_container          container
 )
 {
-  if ( container.ctx )
+  if ( container.fun )
   {
     container.fun( container.ctx );
   }

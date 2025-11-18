@@ -14,6 +14,16 @@ CRUDE_ECS_OBSERVER_DECLARE( crude_player_controller_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_update_system_ );
 
 static void
+crude_hitbox_callback
+(
+  _In_ void                                               *ctx
+)
+{
+  static int b =0;
+  b++;
+}
+
+static void
 crude_player_controller_creation_observer_
 (
   _In_ ecs_iter_t *it
@@ -25,6 +35,11 @@ crude_player_controller_creation_observer_
   {
     crude_player_controller *player_controller = &player_controllers_per_entity[ i ];
     crude_entity entity = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( entity, "hitbox" );
+    crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
+    crude_physics_character_body *hitbox_body = crude_physics_access_character_body( crude_physics_instance( ), *hitbox_body_handle );
+    hitbox_body->callback_container.fun = crude_hitbox_callback;
   }
 }
 

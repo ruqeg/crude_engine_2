@@ -91,4 +91,10 @@ crude_transform_node_to_parent
   _In_ crude_transform const                              *transform
 );
 
+CRUDE_API XMMATRIX
+crude_transform_parent_to_world
+(
+  _In_ crude_entity                                        node
+);
+
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );

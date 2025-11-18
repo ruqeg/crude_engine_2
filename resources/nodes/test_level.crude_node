@@ -22,11 +22,10 @@
 			"children":	[]
 		}, {
 			"name":	"player",
-			"external":	"nodes\\player.crude_node",
 			"transform":	{
-				"translation":	[-0.38816648721694946, 0.5, -0.37470367550849915],
+				"translation":	[0.90196388959884644, 10.972282409667969, 31.713375091552734],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[1, 1, 1]
+				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 			},
 			"components":	[{
 					"type":	"crude_physics_character_body_handle",
@@ -45,18 +44,69 @@
 					"move_change_coeff":	4,
 					"weight":	1
 				}],
-			"children":	[]
+			"children":	[{
+					"name":	"pivot",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[-0.027104591950774193, 0.01219832431524992, 0.00038018618943169713, -0.99981200695037842],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[{
+							"name":	"camera",
+							"transform":	{
+								"translation":	[0, 0.10000000149011612, 0.5],
+								"rotation":	[0, 0, 0, 1],
+								"scale":	[1, 1, 1]
+							},
+							"components":	[{
+									"type":	"crude_camera",
+									"fov_radians":	1,
+									"near_z":	0.00999999977648258,
+									"far_z":	1000,
+									"aspect_ratio":	1.7999999523162842
+								}],
+							"children":	[]
+						}, {
+							"name":	"redball_model",
+							"transform":	{
+								"translation":	[0, 0, 0],
+								"rotation":	[0, 0, 0, 1],
+								"scale":	[0.5, 0.5, 0.5]
+							},
+							"components":	[{
+									"type":	"crude_gltf",
+									"path":	"game\\redball_default.gltf"
+								}],
+							"children":	[]
+						}]
+				}, {
+					"name":	"hitbox",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+					"type":	"crude_physics_character_body_handle",
+					"mask":	4
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"sphere",
+					"radius":	0.5
+				}],
+					"children":	[]
+				}]
 		}, {
 			"name":	"enemy",
-			"external":	"nodes\\enemy.crude_node",
 			"transform":	{
-				"translation":	[4.6135311126708984, 1.1637641191482544, 19.480710983276367],
+				"translation":	[-0.31563049554824829, 1.90116012096405, 7.5416040420532227],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
 			"components":	[{
 					"type":	"crude_physics_static_body_handle",
-					"layer":	0
+					"layer":	4
 				}, {
 					"type":	"crude_physics_collision_shape",
 					"shape_type":	"box",
@@ -65,7 +115,28 @@
 					"type":	"crude_enemy",
 					"moving_speed":	0.05000000074505806
 				}],
-			"children":	[]
+			"children":	[{
+					"name":	"pivot",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[{
+							"name":	"redball_ghost_model",
+							"transform":	{
+								"translation":	[0, 0, 0],
+								"rotation":	[0, 0, 0, 1],
+								"scale":	[0.5, 0.5, 0.5]
+							},
+							"components":	[{
+									"type":	"crude_gltf",
+									"path":	"game\\redball_ghost.gltf"
+								}],
+							"children":	[]
+						}]
+				}]
 		}, {
 			"name":	"collisions",
 			"transform":	{

@@ -250,6 +250,19 @@ scene_load_node_
   {
     node = crude_entity_create_empty( scene->world, node_name );
   }
+  
+  if ( !is_node_external )
+  {
+    cJSON                                                 *children_json;
+    cJSON                                                 *child_json;
+  
+    children_json = cJSON_GetObjectItemCaseSensitive( node_json, "children" );
+    for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( children_json ); ++child_index )
+    {
+      child_json = cJSON_GetArrayItem( children_json, child_index );
+      crude_entity child_node = scene_load_node_( scene, child_json );
+      crude_entity_set_parent( child_node, node );
+    }
 
   {
     cJSON const                                           *node_transform_json;
@@ -322,19 +335,6 @@ scene_load_node_
       }
     }
   }
-  
-  if ( !is_node_external )
-  {
-    cJSON                                                 *children_json;
-    cJSON                                                 *child_json;
-  
-    children_json = cJSON_GetObjectItemCaseSensitive( node_json, "children" );
-    for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( children_json ); ++child_index )
-    {
-      child_json = cJSON_GetArrayItem( children_json, child_index );
-      crude_entity child_node = scene_load_node_( scene, child_json );
-      crude_entity_set_parent( child_node, node );
-    }
   }
 
   return node;
