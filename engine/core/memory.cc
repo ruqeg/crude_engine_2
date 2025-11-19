@@ -197,7 +197,7 @@ crude_stack_allocator_allocate
   
   if ( allocator->occupied + size > allocator->capacity )
   {
-    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator!" );
+    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator! %i occupied, %i requested size, %i capacity", allocator->occupied, size, allocator->capacity );
   }
   memory_block = ( int8* )( allocator->memory ) + allocator->occupied;
   allocator->occupied += size;
@@ -267,7 +267,7 @@ crude_linear_allocator_allocate
   
   if ( allocator->occupied + size > allocator->capacity )
   {
-    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current stack allocator!" );
+    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "New memory block is too big for current linear allocator! %i occupied, %i requested size, %i capacity", allocator->occupied, size, allocator->capacity );
   }
   memory_block = ( int8* )( allocator->memory ) + allocator->occupied;
   allocator->occupied += size;

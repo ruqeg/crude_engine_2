@@ -986,6 +986,8 @@ crude_gfx_cmd_upload_buffer_data
   src = crude_gfx_access_buffer( cmd->gpu, src_buffer );
   dst = crude_gfx_access_buffer( cmd->gpu, dst_buffer );
 
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, dst->size, "%s dst buffer size == 0", dst->name ? dst->name : "unknown" )
+
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src->size <= dst->size, "%s src buffer size > %s dst buffer size", src->name ? src->name : "unknown", dst->name ? dst->name : "unknown" )
   
   vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );

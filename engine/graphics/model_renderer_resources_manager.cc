@@ -889,13 +889,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       local_meshlets_vertices_count += mesh->primitives[ primitive_index ].attributes[ 0 ].data->count;
     }
   }
-
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_vertices_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_triangles_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices, local_meshlets_vertices_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
-
+  
   local_meshlets_vertices_offset = 0u;
   mesh_index = 0u;
   for ( uint32 i = 0; i < gltf->meshes_count; ++i )
@@ -906,7 +905,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       cgltf_primitive                                     *mesh_primitive;
       uint32                                              *primitive_indices;
       meshopt_Meshlet                                     *primitive_meshlets;
-      size_t                                               local_max_meshlets, local_meshletes_count;
+      size_t                                               local_max_meshlets, local_meshletes_count, local_meshletes_offset;
       uint32                                               primitive_vertices_count, primitive_indices_count, local_meshlets_offset, local_meshlets_vertices_indices_offset, local_meshlets_triangles_indices_offset;
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
@@ -919,10 +918,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       local_meshlets_vertices_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_vertices_indices );
       local_meshlets_triangles_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
       local_meshlets_offset = CRUDE_ARRAY_LENGTH( meshlets );
-
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset );
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, primitive_indices );
       
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset );
+
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, primitive_indices );
       /* Build meshlets*/
       local_max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( primitive_indices ), CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES );
       
@@ -940,7 +939,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES, CRUDE_GRAPHICS_CONSTANT_MESHLET_CONE_WEIGHT
       );
       
-      CRUDE_ARRAY_SET_CAPACITY( meshlets, local_meshlets_offset + local_meshletes_count );
+      local_meshletes_offset = CRUDE_ARRAY_LENGTH( meshlets );
+      CRUDE_ARRAY_SET_LENGTH( meshlets, local_meshlets_offset + local_meshletes_count );
 
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
@@ -966,23 +966,21 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
           local_meshlet->triangle_count, &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_meshlet_vertex_gpu )
         );;
 
-        crude_gfx_meshlet_gpu new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet_gpu );
-        new_meshlet.vertices_offset = local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset + manager->total_meshlets_vertices_indices_count;
-        new_meshlet.triangles_offset = local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset + manager->total_meshlets_triangles_indices_count;
-        new_meshlet.vertices_count = local_meshlet->vertex_count;
-        new_meshlet.triangles_count = local_meshlet->triangle_count;
-        new_meshlet.mesh_index = mesh_index + manager->total_meshes_count;
+        crude_gfx_meshlet_gpu *new_meshlet = &meshlets[ meshlet_index + local_meshletes_offset ];
 
-        new_meshlet.center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
-        new_meshlet.radius = meshlet_bounds.radius;
-        
-        new_meshlet.cone_axis[ 0 ] = meshlet_bounds.cone_axis_s8[ 0 ];
-        new_meshlet.cone_axis[ 1 ] = meshlet_bounds.cone_axis_s8[ 1 ];
-        new_meshlet.cone_axis[ 2 ] = meshlet_bounds.cone_axis_s8[ 2 ];
+        new_meshlet->vertices_offset = local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset + manager->total_meshlets_vertices_indices_count;
+        new_meshlet->triangles_offset = local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset + manager->total_meshlets_triangles_indices_count;
+        new_meshlet->vertices_count = local_meshlet->vertex_count;
+        new_meshlet->triangles_count = local_meshlet->triangle_count;
+        new_meshlet->mesh_index = mesh_index + manager->total_meshes_count;
 
-        new_meshlet.cone_cutoff = meshlet_bounds.cone_cutoff_s8;
+        new_meshlet->center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
 
-        CRUDE_ARRAY_PUSH( meshlets, new_meshlet );
+        new_meshlet->radius = meshlet_bounds.radius;
+        new_meshlet->cone_axis[ 0 ] = meshlet_bounds.cone_axis_s8[ 0 ];
+        new_meshlet->cone_axis[ 1 ] = meshlet_bounds.cone_axis_s8[ 1 ];
+        new_meshlet->cone_axis[ 2 ] = meshlet_bounds.cone_axis_s8[ 2 ];
+        new_meshlet->cone_cutoff = meshlet_bounds.cone_cutoff_s8;
       }
       
       crude_gfx_meshlet_gpu const *last_meshlet = &CRUDE_ARRAY_BACK( meshlets );
@@ -993,15 +991,15 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       meshes[ mesh_index ].meshlets_offset = local_meshlets_offset + manager->total_meshlets_count;
       ++mesh_index;
       
-      for ( uint32 i = local_meshlets_vertices_indices_offset; i < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++i )
+      for ( uint32 meshlet_vertex_index = local_meshlets_vertices_indices_offset; meshlet_vertex_index < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++meshlet_vertex_index )
       {
-        meshlets_vertices_indices[ i ] += local_meshlets_vertices_offset;
+        meshlets_vertices_indices[ meshlet_vertex_index ] += local_meshlets_vertices_offset;
       }
 
       local_meshlets_vertices_offset += primitive_vertices_count;
     }
   }
-
+  
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++i )
   {
     meshlets_vertices_indices[ i ] += manager->total_meshlets_vertices_count; /* Yes, there are better solutions, but who gives a fuck */
@@ -1011,7 +1009,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   manager->total_meshlets_vertices_count += CRUDE_ARRAY_LENGTH( meshlets_vertices );
   manager->total_meshlets_vertices_indices_count += CRUDE_ARRAY_LENGTH( meshlets_vertices_indices );
   manager->total_meshlets_triangles_indices_count += CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
-
+  
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -1031,7 +1029,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   manager->meshlets_triangles_indices_sb = crude_gfx_create_buffer( manager->gpu, &buffer_creation );
 
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, buffer_cpu, manager->meshlets_triangles_indices_sb, old_buffer_gpu_handle );
-
+  
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -1040,7 +1038,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   buffer_cpu = crude_gfx_create_buffer( manager->gpu, &buffer_creation );
 
   old_buffer_gpu_handle = manager->meshlets_sb;
-
+  
   buffer_creation = crude_gfx_buffer_creation_empty();
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -1070,7 +1068,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   manager->meshlets_vertices_sb = crude_gfx_create_buffer( manager->gpu, &buffer_creation );
 
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, buffer_cpu, manager->meshlets_vertices_sb, old_buffer_gpu_handle );
-
+  
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -1079,7 +1077,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   buffer_cpu = crude_gfx_create_buffer( manager->gpu, &buffer_creation );
 
   old_buffer_gpu_handle = manager->meshlets_vertices_indices_sb;
-
+  
   buffer_creation = crude_gfx_buffer_creation_empty( );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -1089,7 +1087,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   manager->meshlets_vertices_indices_sb = crude_gfx_create_buffer( manager->gpu, &buffer_creation );
 
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, buffer_cpu, manager->meshlets_vertices_indices_sb, old_buffer_gpu_handle );
-
+  
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
 }
 
@@ -1306,33 +1304,32 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   {
     CRUDE_ASSERT( primitive_positions );
     
-    crude_gfx_meshlet_vertex_gpu new_meshlet_vertex = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet_vertex_gpu );
+    crude_gfx_meshlet_vertex_gpu *vertex = &vertices[ i + vertices_offset];
 
-    new_meshlet_vertex.position.x = primitive_positions[ i ].x;
-    new_meshlet_vertex.position.y = primitive_positions[ i ].y;
-    new_meshlet_vertex.position.z = primitive_positions[ i ].z;
+    vertex->position.x = primitive_positions[ i ].x;
+    vertex->position.y = primitive_positions[ i ].y;
+    vertex->position.z = primitive_positions[ i ].z;
 
     if ( primitive_normals )
     {
-      new_meshlet_vertex.normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
-      new_meshlet_vertex.normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
-      new_meshlet_vertex.normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
+      vertex->normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
+      vertex->normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
+      vertex->normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
     }
 
     if ( primitive_tangents  )
     {
-      new_meshlet_vertex.tangent[ 0 ] = ( primitive_tangents[ i ].x + 1.0f ) * 127.0f;
-      new_meshlet_vertex.tangent[ 1 ] = ( primitive_tangents[ i ].y + 1.0f ) * 127.0f;
-      new_meshlet_vertex.tangent[ 2 ] = ( primitive_tangents[ i ].z + 1.0f ) * 127.0f;
-      new_meshlet_vertex.tangent[ 3 ] = ( primitive_tangents[ i ].w + 1.0f ) * 127.0f;
+      vertex->tangent[ 0 ] = ( primitive_tangents[ i ].x + 1.0f ) * 127.0f;
+      vertex->tangent[ 1 ] = ( primitive_tangents[ i ].y + 1.0f ) * 127.0f;
+      vertex->tangent[ 2 ] = ( primitive_tangents[ i ].z + 1.0f ) * 127.0f;
+      vertex->tangent[ 3 ] = ( primitive_tangents[ i ].w + 1.0f ) * 127.0f;
     }
 
     if ( primitive_texcoords )
     {
-      new_meshlet_vertex.texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
-      new_meshlet_vertex.texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
+      vertex->texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
+      vertex->texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
     }
-    vertices[ i + vertices_offset] = new_meshlet_vertex;
   }
 }
 
