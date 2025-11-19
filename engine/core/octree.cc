@@ -66,6 +66,56 @@ crude_octree_closest_point
   return min_closest_point;
 }
 
+bool
+crude_octree_cast_ray
+(
+  _In_ crude_octree                                       *octree,
+  _In_ XMVECTOR                                            ray_origin,
+  _In_ XMVECTOR                                            ray_direction,
+  _Out_opt_ crude_raycast_result                          *result
+)
+{
+  float32                                                  nearest_t;
+
+  CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( octree->points ) );
+
+  if ( result )
+  {
+    *result = crude_raycast_result_empty( );
+  }
+
+  nearest_t = FLT_MAX;
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( octree->points ); i += 3 )
+  {
+    XMVECTOR                                               t0, t1, t2, closest_point;
+    float32                                                closest_point_distance_sq;
+    crude_raycast_result                                   current_triangle_result;
+    bool                                                   intersected;
+
+    t0 = XMLoadFloat3( &octree->points[ i ] );
+    t1 = XMLoadFloat3( &octree->points[ i + 1 ] );
+    t2 = XMLoadFloat3( &octree->points[ i + 2 ] );
+    
+    intersected = crude_raycast_triangle( ray_origin, ray_direction, t0, t1, t2, &current_triangle_result ); // !TODO it can be optimized (and i'm not even about actual octree :D, length to triangle < t to raycast but i'm too lazy)
+
+    if ( intersected )
+    {
+      if ( current_triangle_result.t < nearest_t )
+      {
+        nearest_t = current_triangle_result.t;
+
+        if ( result )
+        {
+          *result = current_triangle_result;
+        }
+      }
+    }
+  }
+
+  return nearest_t != FLT_MAX;
+}
+
 void
 crude_octree_deinitialize
 (

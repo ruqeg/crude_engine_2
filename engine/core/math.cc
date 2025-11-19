@@ -82,13 +82,19 @@ crude_raycast_obb
   _In_ XMVECTOR                                             ray_direction,
   _In_ XMVECTOR                                             obb_position,
   _In_ XMVECTOR                                             obb_size,
-  _In_ XMMATRIX                                             obb_orientation
+  _In_ XMMATRIX                                             obb_orientation,
+  _Out_opt_ crude_raycast_result                           *result
 )
 {
   float32                                                  t[ 6 ];
   XMVECTOR                                                 x_axis, y_axis, z_axis, p, f, e;
   float32                                                  tmin, tmax;
   
+  if ( result )
+  {
+    *result = crude_raycast_result_empty( );
+  }
+
   crude_memory_set( t, 0, sizeof( t ) );
 
   x_axis = XMVector3Normalize( obb_orientation.r[ 0 ] );
@@ -104,7 +110,7 @@ crude_raycast_obb
     {
       if ( -XMVectorGetByIndex( e, i ) - XMVectorGetByIndex( obb_size, i ) > 0 || -XMVectorGetByIndex( e, i ) + XMVectorGetByIndex( obb_size, i ) < 0 )
       {
-        return -1;
+        return false;
       }
       XMVectorSetByIndex( f, 0.00001f, i );
     }
@@ -118,22 +124,60 @@ crude_raycast_obb
 
   if ( tmax < 0 )
   {
-    return -1.0f;
+    return false;
   }
 
   if ( tmin > tmax )
   {
-    return -1.0f;
+    return false;
   }
-
+  
+  float32 t_result = tmin;
   if ( tmin < 0.0f )
   {
-    return tmax;
+    t_result = tmax;
+  }
+
+  if ( result )
+  {
+    result->hit = true;
+    result->t = t_result;
+    result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t_result ) );
+
+    XMVECTOR normals[ ] =
+    {
+      g_XMIdentityR0,
+      g_XMIdentityR0 * -1.0f,
+      g_XMIdentityR1,
+      g_XMIdentityR1 * -1.0f,
+      g_XMIdentityR2,
+      g_XMIdentityR2 * -1.0f
+    };
+
+    for ( uint32 i = 0; i < 6; ++i )
+    {
+      if ( fabsf( t_result - t[ i ] ) < 0.0001f )
+      {
+        result->normal = XMVector3Normalize( normals[ i ] );
+      }
+    }
   }
 
   return tmin;
 }
-/*
+
+XMVECTOR
+crude_project_vector3
+(
+  _In_ XMVECTOR                                            length,
+  _In_ XMVECTOR                                            direction
+)
+{
+  float32 dot = XMVectorGetX( XMVector3Dot( length, direction ) );
+  float32 mag_sq = XMVectorGetX( XMVector3LengthSq( direction ) );
+  return direction * ( dot / mag_sq );
+}
+
 XMVECTOR
 crude_barycentric
 (
@@ -154,91 +198,98 @@ crude_barycentric
   XMVECTOR cb = XMVectorSubtract( tb, tc );
   XMVECTOR ca = XMVectorSubtract( ta, tc );
   
-  XMVECTOR v = XMVectorSubtract( ab, Project(ab, cb);
-    float a = 1.0f - (Dot(v, ap) / Dot(v, ab));
- 6. Here, the vector v will be perpendicular to edge BC. The test point is projected onto 
-this perpendicular vector:
-    v = bc - Project(bc, ac);
-    float b = 1.0f - (Dot(v, bp) / Dot(v, bc));
- 7. 
-Here, the vector v will be perpendicular to edge CA. The test point is projected onto 
-this perpendicular vector:
-    v = ca - Project(ca, ab);
-    float c = 1.0f - (Dot(v, cp) / Dot(v, ca));
-    return vec3(a, b, c);
+  XMVECTOR v = XMVectorSubtract( ab, crude_project_vector3( ab, cb ) );
+  float32 a = 1.0f - ( XMVectorGetX( XMVector3Dot( v, ap ) ) / XMVectorGetX( XMVector3Dot( v, ab ) ) );
+
+  v = XMVectorSubtract( bc, crude_project_vector3( bc, ac ) );
+  float32 b = 1.0f - ( XMVectorGetX( XMVector3Dot( v, bp ) / XMVectorGetX( XMVector3Dot( v, bc ) ) ) );
+
+  v = XMVectorSubtract( ca, crude_project_vector3( ca, ab ) );
+  float32 c = 1.0f - ( XMVectorGetX( XMVector3Dot( v, cp ) / XMVectorGetX( XMVector3Dot( v, ca ) ) ) );
+
+  return XMVectorSet( a, b, c, 0 );
 }
 
- vec3 Barycentric(const Point& p, const Triangle& t);
- float Raycast(const Triangle& triangle, const Ray& ray)
- 2. Implement the Barycentric function in Geometry3D.cpp:
- vec3 Barycentric(const Point& p, const Triangle& t) {
- 3. Find vectors from the test point to each point of the triangle:
-    vec3 ap = p - t.a;
-    vec3 bp = p - t.b;
-    vec3 cp = p - t.c;
- 4. Find and store the edges of the triangle. We store these edges as vectors because  
-we will be projecting other vectors onto them:
-    vec3 ab = t.b - t.a;
-    vec3 ac = t.c - t.a;
- 244
-    vec3 bc = t.c - t.b;
-    vec3 cb = t.b - t.c;
-    vec3 ca = t.a - t.c;
- Chapter 11
- 5. Here, the vector v will be perpendicular to edge AB. The test point is projected onto 
-this perpendicular vector. The value of a is 0 if the projected point is on line AB. The 
-value of a is 1 if the projected point is at point C of the triangle:
-    vec3 v = ab - Project(ab, cb);
-    float a = 1.0f - (Dot(v, ap) / Dot(v, ab));
- 6. Here, the vector v will be perpendicular to edge BC. The test point is projected onto 
-this perpendicular vector:
-    v = bc - Project(bc, ac);
-    float b = 1.0f - (Dot(v, bp) / Dot(v, bc));
- 7. 
-Here, the vector v will be perpendicular to edge CA. The test point is projected onto 
-this perpendicular vector:
-    v = ca - Project(ca, ab);
-    float c = 1.0f - (Dot(v, cp) / Dot(v, ca));
-    return vec3(a, b, c);
- }
- 8. Implement the Raycast function in Geometry3D.cpp:
- float Raycast(const Triangle& triangle, const Ray& ray) {
- 9. First, create a plane from the triangle and cast the ray against the plane. If the ray 
-does not hit the plane, the ray will not hit the triangle:
-    Plane plane = FromTriangle(triangle);
-    float t = Raycast(plane, ray);
-    if (t < 0.0f) {
-        return t;
-    }
- 10. Next, find the point on the plane where the ray hit:
-    Point result = ray.origin + ray.direction * t;
- 11. Find the barycentric coordinates of the Raycast on the plane. If this point is within  
-the triangle, the ray hit the triangle:
-    vec3 barycentric = Barycentric(result, triangle);
-    if (barycentric.x >= 0.0f && barycentric.x <= 1.0f &&
-        barycentric.y >= 0.0f && barycentric.y <= 1.0f &&
-        barycentric.z >= 0.0f && barycentric.z <= 1.0f) {
- 245
-Triangles and Meshes
-        return t;
-    }
-    return -1;
- }
+bool
+crude_raycast_plane
+(
+  _In_ XMVECTOR                                             ray_origin,
+  _In_ XMVECTOR                                             ray_direction,
+  _In_ XMVECTOR                                             plane,
+  _Out_opt_ crude_raycast_result                           *result
+)
+{
+  float32 nd = XMVectorGetX( XMVector3Dot( ray_direction, plane ) );
+  float32 pn = XMVectorGetX( XMVector3Dot( ray_origin, plane ) );
 
-remove text, only code
+  if ( result )
+  {
+    *result = crude_raycast_result_empty( );
+  }
 
-float32
+  if ( nd >= 0.f )
+  {
+    return false;
+  }
+
+  float32 t = ( XMVectorGetW( plane ) - pn ) / nd;
+
+  if ( t >= 0.0f )
+  {
+		if ( result )
+    {
+			result->t = t;
+			result->hit = true;
+			result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t ) );
+			result->normal = XMVector3Normalize( plane );
+		}
+    return true;
+  }
+
+  return false;
+}
+
+bool
 crude_raycast_triangle
 (
   _In_ XMVECTOR                                             ray_origin,
   _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             p0,
-  _In_ XMVECTOR                                             p1,
-  _In_ XMVECTOR                                             p2
+  _In_ XMVECTOR                                             t0,
+  _In_ XMVECTOR                                             t1,
+  _In_ XMVECTOR                                             t2,
+  _Out_opt_ crude_raycast_result                           *result
 )
 {
-  
-}*/
+  XMVECTOR plane = crude_plane_from_points( t0, t1, t2 );
+
+  if ( !crude_raycast_plane( ray_origin, ray_direction, plane, result ) )
+  {
+    return false;
+  }
+
+  XMVECTOR result_point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
+ 
+  XMVECTOR barycentric = crude_barycentric( result_point, t0, t1, t2 );
+
+  if
+  (
+    XMVectorGetX( barycentric ) >= 0.f && XMVectorGetX( barycentric ) <= 1.f &&
+    XMVectorGetY( barycentric ) >= 0.f && XMVectorGetY( barycentric ) <= 1.f &&
+    XMVectorGetZ( barycentric ) >= 0.f && XMVectorGetZ( barycentric ) <= 1.f
+  )
+  {
+    if ( result )
+    {
+			result->t = result->t;
+			result->hit = true;
+			result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
+			result->normal = XMVector3Normalize( plane );
+    }
+    return true;
+  }
+
+  return false;
+}
 
 XMVECTOR
 crude_closest_point_to_plane
@@ -354,6 +405,19 @@ crude_intersection_sphere_triangle
 )
 {
   return XMVectorGetX( XMVector3LengthSq( sphere_position - closest_point ) ) < sphere_radius * sphere_radius;
+}
+
+crude_raycast_result
+crude_raycast_result_empty
+(
+)
+{
+  crude_raycast_result result = CRUDE_COMPOUNT_EMPTY( crude_raycast_result );
+  result.t = -1.f;
+  result.hit = false;
+  result.normal = g_XMIdentityR1;
+  result.point = XMVectorZero( );
+  return result;
 }
 
 void

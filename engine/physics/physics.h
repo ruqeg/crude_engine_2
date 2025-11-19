@@ -5,6 +5,12 @@
 #include <core/resource_pool.h>
 #include <physics/physics_resource.h>
 
+typedef struct crude_physics_raycast_result
+{
+  crude_raycast_result                                     raycast_result;
+  crude_entity                                             node;
+} crude_physics_raycast_result;
+
 typedef struct crude_physics_creation
 {
   crude_heap_allocator                                    *allocator;
@@ -104,12 +110,14 @@ crude_physics_enable_simulation
   _In_ bool                                                enable
 );
 
-CRUDE_API float32
+CRUDE_API bool
 crude_physics_cast_ray
 (
   _In_ crude_physics                                      *physics,
   _In_ XMVECTOR                                            ray_origin,
-  _In_ XMVECTOR                                            ray_direction
+  _In_ XMVECTOR                                            ray_direction,
+  _In_ uint32                                              mask,
+  _Out_opt_ crude_physics_raycast_result                  *result
 );
 
 /* We want to access physics in systems without extra nonsense, maybe rework in the future if it will be broken */

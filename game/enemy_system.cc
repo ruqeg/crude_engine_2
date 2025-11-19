@@ -6,6 +6,7 @@
 #include <platform/platform_components.h>
 #include <physics/physics_components.h>
 #include <enemy_components.h>
+#include <physics/physics.h>
 
 #include <enemy_system.h>
 
@@ -43,11 +44,13 @@ crude_enemy_update_system_
     crude_enemy                                           *enemy;
     crude_transform                                       *enemy_transform;
     crude_transform const                                 *player_transform;
+    XMVECTOR                                               player_translation;
     XMVECTOR                                               enemy_translation;
     XMVECTOR                                               enemy_new_translation;
     XMVECTOR                                               enemy_to_player;
     XMVECTOR                                               enemy_to_player_normalized;
     crude_entity                                           enemy_node;
+    crude_physics_raycast_result                           raycast_result;
 
     enemy = &enemies_per_entity[ i ];
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
@@ -61,14 +64,20 @@ crude_enemy_update_system_
     enemy_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( enemy_node, crude_transform );
     player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( enemy->player_node, crude_transform );
     
+    player_translation = XMLoadFloat3( &player_transform->translation );
     enemy_translation = XMLoadFloat3( &enemy_transform->translation );
-    enemy_to_player = XMVectorSubtract( XMLoadFloat3( &player_transform->translation ), enemy_translation );
+    enemy_to_player = XMVectorSubtract( player_translation, enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
-
-    enemy_new_translation = XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed * it->delta_time ) );
-    enemy_new_translation = XMVectorSetY( enemy_new_translation, XMVectorGetY( enemy_translation ) );
-
-    XMStoreFloat3( &enemy_transform->translation, enemy_new_translation );
+    
+    if ( crude_physics_cast_ray( crude_physics_instance( ), enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
+    {
+      if ( XMVectorGetX( XMVector3LengthSq( enemy_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( enemy_translation, raycast_result.raycast_result.point ) ) ) )
+      {
+        enemy_new_translation = XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed * it->delta_time ) );
+        enemy_new_translation = XMVectorSetY( enemy_new_translation, XMVectorGetY( enemy_translation ) );
+        XMStoreFloat3( &enemy_transform->translation, enemy_new_translation );
+      }
+    }
   }
 }
 

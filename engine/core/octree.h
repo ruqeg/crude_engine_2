@@ -32,6 +32,15 @@ crude_octree_closest_point
   _In_ XMVECTOR                                            point
 );
 
+CRUDE_API bool
+crude_octree_cast_ray
+(
+  _In_ crude_octree                                       *octree,
+  _In_ XMVECTOR                                            ray_origin,
+  _In_ XMVECTOR                                            ray_direction,
+  _Out_opt_ crude_raycast_result                          *result
+);
+
 CRUDE_API void
 crude_octree_deinitialize
 (

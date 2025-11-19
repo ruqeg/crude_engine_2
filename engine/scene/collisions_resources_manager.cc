@@ -242,6 +242,7 @@ crude_collisions_resources_manager_deinitialize
     {
       crude_octree *octree = CRUDE_CAST( crude_octree*, crude_resource_pool_access_resource( &manager->octree_resource_pool, manager->name_hashed_to_octree_resource_hadle[ i ].value.index ) );
       crude_octree_deinitialize( octree );
+      crude_resource_pool_release_resource( &manager->octree_resource_pool, manager->name_hashed_to_octree_resource_hadle[ i ].value.index );
     }
   }
   CRUDE_HASHMAP_DEINITIALIZE( manager->name_hashed_to_octree_resource_hadle );
