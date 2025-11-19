@@ -963,7 +963,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         meshopt_Bounds meshlet_bounds = meshopt_computeMeshletBounds(
           meshlets_vertices_indices + local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset,
           meshlets_triangles_indices + local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset,
-          local_meshlet->triangle_count, &meshlets_vertices[ 0 ].position.x, CRUDE_ARRAY_LENGTH( meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex_gpu )
+          local_meshlet->triangle_count, &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_meshlet_vertex_gpu )
         );;
 
         crude_gfx_meshlet_gpu new_meshlet = CRUDE_COMPOUNT_EMPTY( crude_gfx_meshlet_gpu );
