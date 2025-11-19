@@ -23,7 +23,7 @@
 		}, {
 			"name":	"player",
 			"transform":	{
-				"translation":	[0.90196388959884644, 10.972282409667969, 31.713375091552734],
+				"translation":	[0.90196388959884644, 8.0307092666626, 31.713375091552734],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 			},
@@ -88,19 +88,35 @@
 						"scale":	[1, 1, 1]
 					},
 					"components":	[{
-					"type":	"crude_physics_character_body_handle",
-					"mask":	4
+							"type":	"crude_physics_character_body_handle",
+							"mask":	4
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"sphere",
+							"radius":	0.5
+						}],
+					"children":	[]
 				}, {
-					"type":	"crude_physics_collision_shape",
-					"shape_type":	"sphere",
-					"radius":	0.5
-				}],
+					"name":	"syringe_collision",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_character_body_handle",
+							"mask":	8
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"sphere",
+							"radius":	0.5
+						}],
 					"children":	[]
 				}]
 		}, {
 			"name":	"enemy",
 			"transform":	{
-				"translation":	[-0.31563049554824829, 1.90116012096405, 7.5416040420532227],
+				"translation":	[0.32537162303924561, 2, 0.040188159793615341],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -160,6 +176,58 @@
 							"shape_type":	"mesh",
 							"path":	"game\\0_hall.gltf"
 						}],
+					"children":	[]
+				}]
+		}, {
+			"name":	"syringe",
+			"transform":	{
+				"translation":	[0, 1.1844382286071777, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"collision",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	8
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[1, 1, 1]
+						}],
+					"children":	[]
+				}]
+		}, {
+			"name":	"syringes_spawnes",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"0",
+					"transform":	{
+						"translation":	[-5.7832956314086914, 0, 29.735862731933594],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"1",
+					"transform":	{
+						"translation":	[-7.5168042182922363, 0, 77.015777587890625],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
 					"children":	[]
 				}]
 		}]

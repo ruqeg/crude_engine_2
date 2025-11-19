@@ -133,6 +133,112 @@ crude_raycast_obb
 
   return tmin;
 }
+/*
+XMVECTOR
+crude_barycentric
+(
+  _In_ XMVECTOR                                             p,
+  _In_ XMVECTOR                                             ta,
+  _In_ XMVECTOR                                             tb,
+  _In_ XMVECTOR                                             tc
+)
+{ 
+  XMVECTOR ap = XMVectorSubtract( p, ta );
+  XMVECTOR bp = XMVectorSubtract( p, tb );
+  XMVECTOR cp = XMVectorSubtract( p, tc );
+
+  XMVECTOR ab = XMVectorSubtract( tb, ta );
+  XMVECTOR ac = XMVectorSubtract( tc, ta );
+
+  XMVECTOR bc = XMVectorSubtract( tc, tb );
+  XMVECTOR cb = XMVectorSubtract( tb, tc );
+  XMVECTOR ca = XMVectorSubtract( ta, tc );
+  
+  XMVECTOR v = XMVectorSubtract( ab, Project(ab, cb);
+    float a = 1.0f - (Dot(v, ap) / Dot(v, ab));
+ 6. Here, the vector v will be perpendicular to edge BC. The test point is projected onto 
+this perpendicular vector:
+    v = bc - Project(bc, ac);
+    float b = 1.0f - (Dot(v, bp) / Dot(v, bc));
+ 7. 
+Here, the vector v will be perpendicular to edge CA. The test point is projected onto 
+this perpendicular vector:
+    v = ca - Project(ca, ab);
+    float c = 1.0f - (Dot(v, cp) / Dot(v, ca));
+    return vec3(a, b, c);
+}
+
+ vec3 Barycentric(const Point& p, const Triangle& t);
+ float Raycast(const Triangle& triangle, const Ray& ray)
+ 2. Implement the Barycentric function in Geometry3D.cpp:
+ vec3 Barycentric(const Point& p, const Triangle& t) {
+ 3. Find vectors from the test point to each point of the triangle:
+    vec3 ap = p - t.a;
+    vec3 bp = p - t.b;
+    vec3 cp = p - t.c;
+ 4. Find and store the edges of the triangle. We store these edges as vectors because  
+we will be projecting other vectors onto them:
+    vec3 ab = t.b - t.a;
+    vec3 ac = t.c - t.a;
+ 244
+    vec3 bc = t.c - t.b;
+    vec3 cb = t.b - t.c;
+    vec3 ca = t.a - t.c;
+ Chapter 11
+ 5. Here, the vector v will be perpendicular to edge AB. The test point is projected onto 
+this perpendicular vector. The value of a is 0 if the projected point is on line AB. The 
+value of a is 1 if the projected point is at point C of the triangle:
+    vec3 v = ab - Project(ab, cb);
+    float a = 1.0f - (Dot(v, ap) / Dot(v, ab));
+ 6. Here, the vector v will be perpendicular to edge BC. The test point is projected onto 
+this perpendicular vector:
+    v = bc - Project(bc, ac);
+    float b = 1.0f - (Dot(v, bp) / Dot(v, bc));
+ 7. 
+Here, the vector v will be perpendicular to edge CA. The test point is projected onto 
+this perpendicular vector:
+    v = ca - Project(ca, ab);
+    float c = 1.0f - (Dot(v, cp) / Dot(v, ca));
+    return vec3(a, b, c);
+ }
+ 8. Implement the Raycast function in Geometry3D.cpp:
+ float Raycast(const Triangle& triangle, const Ray& ray) {
+ 9. First, create a plane from the triangle and cast the ray against the plane. If the ray 
+does not hit the plane, the ray will not hit the triangle:
+    Plane plane = FromTriangle(triangle);
+    float t = Raycast(plane, ray);
+    if (t < 0.0f) {
+        return t;
+    }
+ 10. Next, find the point on the plane where the ray hit:
+    Point result = ray.origin + ray.direction * t;
+ 11. Find the barycentric coordinates of the Raycast on the plane. If this point is within  
+the triangle, the ray hit the triangle:
+    vec3 barycentric = Barycentric(result, triangle);
+    if (barycentric.x >= 0.0f && barycentric.x <= 1.0f &&
+        barycentric.y >= 0.0f && barycentric.y <= 1.0f &&
+        barycentric.z >= 0.0f && barycentric.z <= 1.0f) {
+ 245
+Triangles and Meshes
+        return t;
+    }
+    return -1;
+ }
+
+remove text, only code
+
+float32
+crude_raycast_triangle
+(
+  _In_ XMVECTOR                                             ray_origin,
+  _In_ XMVECTOR                                             ray_direction,
+  _In_ XMVECTOR                                             p0,
+  _In_ XMVECTOR                                             p1,
+  _In_ XMVECTOR                                             p2
+)
+{
+  
+}*/
 
 XMVECTOR
 crude_closest_point_to_plane

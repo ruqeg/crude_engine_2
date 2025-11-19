@@ -332,10 +332,10 @@ static void crude_heap_deallocate_raw( void *ctx, void *pointer ) { crude_heap_a
 static void* crude_heap_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { return crude_heap_allocator_allocate_align( CRUDE_REINTERPRET_CAST( crude_heap_allocator*, ctx ), size, alignment ); }
 static void* crude_stack_allocate_raw( void *ctx, sizet size ) { return crude_stack_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_stack_allocator*, ctx ), size ); }
 static void crude_stack_deallocate_raw( void *ctx, void *pointer ) {}
-static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
+static void* crude_stack_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO crude_stack_allocate_align_raw" ); return NULL; }
 static void* crude_linear_allocate_raw( void *ctx, sizet size ) { return crude_linear_allocator_allocate( CRUDE_REINTERPRET_CAST( crude_linear_allocator*, ctx ), size ); }
 static void crude_linear_deallocate_raw( void *ctx, void *pointer ) {}
-static void* crude_linear_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO" ); return NULL; }
+static void* crude_linear_allocate_align_raw( void *ctx, sizet size, sizet alignment ) { CRUDE_ABORT( CRUDE_CHANNEL_CORE, "TODO crude_linear_allocate_align_raw" ); return NULL; }
 
 crude_allocator_container 
 crude_heap_allocator_pack

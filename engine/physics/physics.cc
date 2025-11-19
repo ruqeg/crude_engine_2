@@ -184,7 +184,79 @@ crude_physics_enable_simulation
     }
   }
 }
+/*
+float32
+crude_physics_cast_ray
+(
+  _In_ crude_physics                                      *physics,
+  _In_ XMVECTOR                                            ray_origin,
+  _In_ XMVECTOR                                            ray_direction
+)
+{
+  float32 nearest_distance = FLT_MAX;c
 
+  for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->static_bodies ); ++s )
+  {
+    crude_physics_static_body                           *second_body;
+    crude_physics_collision_shape                       *second_collision_shape;
+    crude_transform                                     *second_transform;
+    XMMATRIX                                             second_transform_mesh_to_world;
+    XMVECTOR                                             second_translation, closest_point;
+
+    second_body = crude_physics_access_static_body( physics, physics->static_bodies[ s ] );
+
+    if ( !second_body->layer )
+    {
+      continue;
+    }
+
+    second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
+    second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
+    second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
+    second_translation = second_transform_mesh_to_world.r[ 3 ];
+
+  if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+  {
+    XMVECTOR                                           second_box_half_extent;
+  
+    second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
+    closest_point = crude_closest_point_to_obb( translation, second_translation, second_box_half_extent, second_transform_mesh_to_world );
+    intersected = crude_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius );
+  }
+  else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+  {
+    crude_octree *octree = crude_collisions_resources_manager_access_octree( crude_collisions_resources_manager_instance( ), second_collision_shape->mesh.octree_handle );
+    closest_point = crude_octree_closest_point( octree, translation );
+    intersected = crude_intersection_sphere_triangle( closest_point, translation, collision_shape->sphere.radius );
+  }
+  else
+  {
+    CRUDE_ASSERT( false );
+  }
+  
+  if ( intersected )
+  {
+    crude_physics_collision_callback_container_fun( dynamic_body->callback_container );
+  
+    if ( dynamic_body->mask & 1 )
+    {
+      XMVECTOR                                         closest_point_to_translation;
+      float32                                          translation_to_closest_point_projected_length;
+  
+      closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+  
+      translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
+        
+      closest_point_to_translation = XMVectorSubtract( translation, closest_point );
+      translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
+      if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
+      {
+        dynamic_body->on_floor = true;
+      }
+    }
+  }
+}
+  */
 void
 crude_physics_instance_allocate
 (

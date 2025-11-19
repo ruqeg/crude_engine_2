@@ -75,6 +75,8 @@ crude_gfx_render_graph_parse_from_file
   uint8                                                   *render_graph_json_buffer;
   uint32                                                   render_graph_json_buffer_size, temporary_allocator_maker;
   
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Parse render graph \"%s\"", file_path );
+
   if ( !crude_file_exist( file_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", file_path );
@@ -268,6 +270,8 @@ crude_gfx_render_graph_compile
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Compile render graph \"%i\"", render_graph->name );
+
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
     crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );

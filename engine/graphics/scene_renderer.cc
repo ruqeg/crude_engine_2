@@ -55,7 +55,9 @@ crude_gfx_scene_renderer_initialize
 )
 {
   crude_gfx_buffer_creation                                buffer_creation;
-  
+ 
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer." );
+
   /* Context */
   scene_renderer->allocator = creation->allocator;
   scene_renderer->temporary_allocator = creation->temporary_allocator;
@@ -209,6 +211,8 @@ crude_gfx_scene_renderer_update_instances_from_node
 {
   bool                                                     buffers_recrteated;
   crude_gfx_buffer_creation                                buffer_creation;
+ 
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Update scene renderer instances from node \"%s\".", crude_entity_get_name( main_node ) ? crude_entity_get_name( main_node ) : "Unknown" );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
@@ -308,6 +312,8 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 )
 {
   crude_gfx_buffer_creation                                buffer_creation;
+  
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Rebuild light GPU buffers" );
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_sb ) )
   {
@@ -367,6 +373,8 @@ crude_gfx_scene_renderer_initialize_pases
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
+
   crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
   crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
@@ -458,6 +466,8 @@ crude_gfx_scene_renderer_register_passes
   _In_ crude_gfx_render_graph                             *render_graph
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Register scene renderer passes." );
+
   scene_renderer->render_graph = render_graph;
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );

@@ -122,15 +122,15 @@ static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
+  _In_ crude_gfx_meshlet_vertex_gpu                       *vertices,
+  _In_ uint32                                              vertices_offset
 );
 
 static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ uint32                                            **indices,
-  _In_ uint32                                              vertices_offset
+  _In_ uint32                                             *indices
 );
 
 void
@@ -140,6 +140,8 @@ crude_gfx_model_renderer_resources_manager_intialize
   _In_ crude_gfx_model_renderer_resources_manager_creation const *creation
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize model resources manager." );
+
   manager->world = creation->world;
   manager->async_loader = creation->async_loader;
   manager->allocator = creation->allocator;
@@ -239,6 +241,8 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Wait till uploaded model resources manager updated." );
+
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GRAPHICS_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {
@@ -870,16 +874,29 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   crude_gfx_buffer_handle                                  old_buffer_gpu_handle;
   crude_gfx_buffer_creation                                buffer_creation;
   crude_gfx_buffer_handle                                  buffer_cpu;
-  uint64                                                   temporary_allocator_marker;
+  uint64                                                   local_meshlets_vertices_offset, local_meshlets_vertices_count, temporary_allocator_marker;
   uint32                                                   mesh_index;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
+  
+  local_meshlets_vertices_count = 0u;
+  
+  for ( uint32 i = 0; i < gltf->meshes_count; ++i )
+  {
+    cgltf_mesh *mesh = &gltf->meshes[ i ];
+    for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
+    {
+      local_meshlets_vertices_count += mesh->primitives[ primitive_index ].attributes[ 0 ].data->count;
+    }
+  }
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_vertices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_vertices_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( meshlets_triangles_indices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshlets_vertices, local_meshlets_vertices_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
 
+  local_meshlets_vertices_offset = 0u;
   mesh_index = 0u;
   for ( uint32 i = 0; i < gltf->meshes_count; ++i )
   {
@@ -887,38 +904,39 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
     for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
     {
       cgltf_primitive                                     *mesh_primitive;
-      uint32                                              *local_indices;
-      meshopt_Meshlet                                     *local_meshlets;
+      uint32                                              *primitive_indices;
+      meshopt_Meshlet                                     *primitive_meshlets;
       size_t                                               local_max_meshlets, local_meshletes_count;
-      uint32                                               local_meshlets_vertices_offset, local_meshlets_offset, local_meshlets_vertices_indices_offset, local_meshlets_triangles_indices_offset;
+      uint32                                               primitive_vertices_count, primitive_indices_count, local_meshlets_offset, local_meshlets_vertices_indices_offset, local_meshlets_triangles_indices_offset;
       
       mesh_primitive = &mesh->primitives[ primitive_index ];
 
-      CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( local_indices, 0u, crude_stack_allocator_pack( manager->temporary_allocator ) );
+      primitive_vertices_count = mesh->primitives[ primitive_index ].attributes[ 0 ].data->count;
+      primitive_indices_count = mesh->primitives[ primitive_index ].indices->count;
 
-      local_meshlets_vertices_offset = CRUDE_ARRAY_LENGTH( meshlets_vertices );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( primitive_indices, primitive_indices_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
+
       local_meshlets_vertices_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_vertices_indices );
       local_meshlets_triangles_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
       local_meshlets_offset = CRUDE_ARRAY_LENGTH( meshlets );
 
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( mesh_primitive, &meshlets_vertices );
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, &local_indices, local_meshlets_vertices_offset );
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset );
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, primitive_indices );
       
       /* Build meshlets*/
-      local_max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( local_indices ), CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES );
+      local_max_meshlets = meshopt_buildMeshletsBound( CRUDE_ARRAY_LENGTH( primitive_indices ), CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES );
       
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( local_meshlets, local_max_meshlets, crude_stack_allocator_pack( manager->temporary_allocator ) );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( primitive_meshlets, local_max_meshlets, crude_stack_allocator_pack( manager->temporary_allocator ) );
 
       /* Increase capacity to have acces to the previous offset, than set lenght based on the last meshlet */
       CRUDE_ARRAY_SET_CAPACITY( meshlets_vertices_indices, local_meshlets_vertices_indices_offset + local_max_meshlets * CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES );
       CRUDE_ARRAY_SET_CAPACITY( meshlets_triangles_indices, local_meshlets_triangles_indices_offset + local_max_meshlets * CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES * 3 );
-      uint32 length = CRUDE_ARRAY_LENGTH( meshlets_vertices_indices);
       local_meshletes_count = meshopt_buildMeshlets(
-        local_meshlets,
+        primitive_meshlets,
         meshlets_vertices_indices + local_meshlets_vertices_indices_offset,
         meshlets_triangles_indices + local_meshlets_triangles_indices_offset,
-        local_indices, CRUDE_ARRAY_LENGTH( local_indices ), 
-        &meshlets_vertices[ 0 ].position.x, CRUDE_ARRAY_LENGTH( meshlets_vertices ), sizeof( crude_gfx_meshlet_vertex_gpu ),
+        primitive_indices, primitive_indices_count, 
+        &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_meshlet_vertex_gpu ),
         CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES, CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES, CRUDE_GRAPHICS_CONSTANT_MESHLET_CONE_WEIGHT
       );
       
@@ -926,7 +944,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
-        meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+        meshopt_Meshlet const *local_meshlet = &primitive_meshlets[ meshlet_index ];
 
         CRUDE_ASSERT( local_meshlet->vertex_count <= CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_VERTICES );
         CRUDE_ASSERT( local_meshlet->triangle_count <= CRUDE_GRAPHICS_CONSTANT_MESHLET_MAX_TRIANGLES );
@@ -940,7 +958,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 
       for ( uint32 meshlet_index = 0; meshlet_index < local_meshletes_count; ++meshlet_index )
       {
-        meshopt_Meshlet const *local_meshlet = &local_meshlets[ meshlet_index ];
+        meshopt_Meshlet const *local_meshlet = &primitive_meshlets[ meshlet_index ];
 
         meshopt_Bounds meshlet_bounds = meshopt_computeMeshletBounds(
           meshlets_vertices_indices + local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset,
@@ -974,6 +992,13 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       meshes[ mesh_index ].meshlets_count = local_meshletes_count;
       meshes[ mesh_index ].meshlets_offset = local_meshlets_offset + manager->total_meshlets_count;
       ++mesh_index;
+      
+      for ( uint32 i = local_meshlets_vertices_indices_offset; i < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++i )
+      {
+        meshlets_vertices_indices[ i ] += local_meshlets_vertices_offset;
+      }
+
+      local_meshlets_vertices_offset += primitive_vertices_count;
     }
   }
 
@@ -1222,7 +1247,8 @@ void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex_gpu                      **vertices
+  _In_ crude_gfx_meshlet_vertex_gpu                       *vertices,
+  _In_ uint32                                              vertices_offset
 )
 {
   XMFLOAT4                                                *primitive_tangents;
@@ -1276,9 +1302,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
     }
   }
 
-  uint32 old_length = CRUDE_ARRAY_LENGTH( *vertices );
-  uint32 new_cap = CRUDE_ARRAY_LENGTH( *vertices ) + meshlet_vertices_count;
-  CRUDE_ARRAY_SET_CAPACITY( *vertices, CRUDE_ARRAY_LENGTH( *vertices ) + meshlet_vertices_count );
   for ( uint32 i = 0; i < meshlet_vertices_count; ++i )
   {
     CRUDE_ASSERT( primitive_positions );
@@ -1309,7 +1332,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
       new_meshlet_vertex.texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
       new_meshlet_vertex.texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
     }
-    CRUDE_ARRAY_PUSH( *vertices, new_meshlet_vertex );
+    vertices[ i + vertices_offset] = new_meshlet_vertex;
   }
 }
 
@@ -1317,8 +1340,7 @@ static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
 (
   _In_ cgltf_primitive                                    *primitive,
-  _In_ uint32                                            **indices,
-  _In_ uint32                                              vertices_offset
+  _In_ uint32                                             *indices
 )
 {
   uint32                                                   meshlet_vertices_indices_count;
@@ -1326,7 +1348,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
 
   meshlet_vertices_indices_count = primitive->indices->count;
   buffer_data = CRUDE_CAST( uint8*, primitive->indices->buffer_view->buffer->data ) + primitive->indices->buffer_view->offset + primitive->indices->offset;
-  CRUDE_ARRAY_SET_LENGTH( *indices, meshlet_vertices_indices_count );
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
   CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u ); // change ray tracing index property in geometry 
@@ -1336,7 +1357,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
     uint16 *primitive_indices = CRUDE_CAST( uint16*, buffer_data );
     for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
     {
-      ( *indices )[ i ] = primitive_indices[ i ] + vertices_offset;
+      indices[ i ] = primitive_indices[ i ];
     }
   }
   else if ( primitive->indices->component_type == cgltf_component_type_r_32u )
@@ -1344,7 +1365,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
     uint32 *primitive_indices = CRUDE_CAST( uint32*, buffer_data );
     for ( uint32 i = 0; i < meshlet_vertices_indices_count; ++i )
     {
-      ( *indices )[ i ] = primitive_indices[ i ] + vertices_offset;
+      indices[ i ] = primitive_indices[ i ];
     }
   }
   else

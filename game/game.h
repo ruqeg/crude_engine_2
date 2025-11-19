@@ -26,6 +26,9 @@ typedef struct crude_game_queue_command
     {
       nfdu8char_t                                         *filepath;
     } reload_scene;
+    struct 
+    {
+    } reload_techniques;
   };
 } crude_game_queue_command;
 

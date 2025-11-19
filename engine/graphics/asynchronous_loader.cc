@@ -45,6 +45,8 @@ crude_gfx_asynchronous_loader_initialize
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Intiailize asynchronous loader" );
+
   asynloader->gpu = gpu;
 
   asynloader->staging_buffer_offset = 0u;

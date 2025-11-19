@@ -222,6 +222,8 @@ crude_gfx_device_initialize
   crude_allocator_container                                temporary_allocator;
   uint32                                                   temporary_allocator_mark;
   
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize Device" );
+
   temporary_allocator = crude_stack_allocator_pack( creation->temporary_allocator );
   temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
 
@@ -2129,7 +2131,7 @@ crude_gfx_create_pipeline
     
     if ( creation->depth_stencil.stencil_enable )
     {
-      CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO" );
+      CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO creation->depth_stencil.stencil_enable" );
     }
     
     vk_multisampling = CRUDE_COMPOUNT_EMPTY( VkPipelineMultisampleStateCreateInfo );

@@ -1,3 +1,5 @@
+#pragma once
+
 /* okay I give up... directxmath is too good to not to use */
 #include <DirectXMath.h>
 #include <math.h>
@@ -56,8 +58,37 @@ crude_raycast_obb
   _In_ XMVECTOR                                             obb_size,
   _In_ XMMATRIX                                             obb_orientation
 );
+/*
+CRUDE_API XMVECTOR
+crude_project_vector3
+(
+  const vec3& length, const vec3& direction
+)
+{
+	float32 dot = XMVector3Dot(length, direction);
+	float32 mag_sq = MagnitudeSq(direction);
+	return direction * (dot / magSq);
+}
 
+CRUDE_API XMVECTOR
+crude_barycentric
+(
+  _In_ XMVECTOR                                             p,
+  _In_ XMVECTOR                                             ta,
+  _In_ XMVECTOR                                             tb,
+  _In_ XMVECTOR                                             tc
+);
 
+CRUDE_API float32
+crude_raycast_triangle
+(
+  _In_ XMVECTOR                                             ray_origin,
+  _In_ XMVECTOR                                             ray_direction,
+  _In_ XMVECTOR                                             p0,
+  _In_ XMVECTOR                                             p1,
+  _In_ XMVECTOR                                             p2
+);
+*/
 CRUDE_API XMVECTOR
 crude_closest_point_to_plane
 (

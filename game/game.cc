@@ -149,14 +149,14 @@ game_initialize
   game_initialize_graphics_( game );
   
   crude_devgui_initialize( &game->devgui, game );
-
+  
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, {
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_free_camera ) },
   } );
-
+  
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },
     { .id = ecs_id( crude_window_handle ) },
@@ -615,7 +615,7 @@ game_initialize_graphics_
   render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
-  
+
   crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );

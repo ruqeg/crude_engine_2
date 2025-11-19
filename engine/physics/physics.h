@@ -104,6 +104,14 @@ crude_physics_enable_simulation
   _In_ bool                                                enable
 );
 
+CRUDE_API float32
+crude_physics_cast_ray
+(
+  _In_ crude_physics                                      *physics,
+  _In_ XMVECTOR                                            ray_origin,
+  _In_ XMVECTOR                                            ray_direction
+);
+
 /* We want to access physics in systems without extra nonsense, maybe rework in the future if it will be broken */
 /* btw, first time i use instance in this engine... a bit sad because of this to be honest */
 CRUDE_API void

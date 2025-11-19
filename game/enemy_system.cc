@@ -44,6 +44,7 @@ crude_enemy_update_system_
     crude_transform                                       *enemy_transform;
     crude_transform const                                 *player_transform;
     XMVECTOR                                               enemy_translation;
+    XMVECTOR                                               enemy_new_translation;
     XMVECTOR                                               enemy_to_player;
     XMVECTOR                                               enemy_to_player_normalized;
     crude_entity                                           enemy_node;
@@ -64,7 +65,10 @@ crude_enemy_update_system_
     enemy_to_player = XMVectorSubtract( XMLoadFloat3( &player_transform->translation ), enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
 
-    XMStoreFloat3( &enemy_transform->translation, XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed * it->delta_time ) ) );
+    enemy_new_translation = XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_player_normalized, enemy->moving_speed * it->delta_time ) );
+    enemy_new_translation = XMVectorSetY( enemy_new_translation, XMVectorGetY( enemy_translation ) );
+
+    XMStoreFloat3( &enemy_transform->translation, enemy_new_translation );
   }
 }
 

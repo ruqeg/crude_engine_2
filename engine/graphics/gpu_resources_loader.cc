@@ -84,6 +84,8 @@ crude_gfx_technique_load_from_file
   crude_string_buffer                                      path_buffer;
   size_t                                                   allocated_marker;
   uint32                                                   technique_json_buffer_size;
+  
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Load technique load from file %s", json_name );
 
   allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
