@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(crude_game)
+project(crude_editor)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)

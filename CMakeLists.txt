@@ -14,5 +14,6 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_subdirectory(extlibs)
 add_subdirectory(engine)
 add_subdirectory(game)
+add_subdirectory(editor)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
+#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
