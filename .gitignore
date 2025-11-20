@@ -4,4 +4,4 @@ shaders/include/crude_shaders/*
 *.vscode
 compiled_shaders/
 resources/game/sources/trenchboom/autosave/
-#resources/game/
+resources/game/
