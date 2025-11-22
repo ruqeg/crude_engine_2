@@ -9,7 +9,6 @@
 #include <core/hash_map.h>
 
 #include <scene/scene_components.h>
-#include <scene/scene.h>
 #include <physics/physics_components.h>
 
 #include <graphics/gpu_profiler.h>
@@ -1178,7 +1177,7 @@ crude_scene_renderer_register_nodes_instances_
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
         model_renderer_resources_instant.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
@@ -1202,7 +1201,7 @@ crude_scene_renderer_register_nodes_instances_
       //  model_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, child_collision_shape->debug_model_filename );
       //
       //  collision_model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-      //  collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
+      //  collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
       //  collision_model_renderer_resources_instant.node = child;
       //  CRUDE_ARRAY_PUSH( scene_renderer->collision_model_renderer_resoruces_instances, collision_model_renderer_resources_instant );
       //

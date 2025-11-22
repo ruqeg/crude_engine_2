@@ -42,9 +42,9 @@ crude_player_controller_creation_observer_
     crude_physics_character_body *hitbox_body = crude_physics_access_character_body( &game_instance( )->physics, *hitbox_body_handle );
     hitbox_body->callback_container.fun = crude_hitbox_callback;
 
-    player_controller->withdrawal = 1;
-  
+    player_controller->fly_mode = false;
     player_controller->input_enabled = true;
+    player_controller->fly_speed_scale = 5;
     game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
   }
 }
@@ -65,8 +65,10 @@ crude_player_controller_update_system_
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
     crude_physics_character_body_handle                   *physics_body;
-    crude_entity                                           node;
-    XMVECTOR                                               velocity;
+    crude_transform                                       *pivot_node_transform;
+    crude_entity                                           node, pivot_node;
+    XMMATRIX                                               pivot_to_world;
+    XMVECTOR                                               basis_pivot_right, input_dir, direction, basis_pivot_up, velocity;
     float32                                                moving_limit;
     bool                                                   on_floor;
 
@@ -75,7 +77,7 @@ crude_player_controller_update_system_
 
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game_get_scene( game )->input_entity, crude_input );
+    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
     
     physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     
@@ -89,6 +91,33 @@ crude_player_controller_update_system_
     {
       moving_limit = player_controller->walk_speed;
     }
+    
+    pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
+    pivot_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot_node, crude_transform );
+    pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
+    basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
+
+    if ( player_controller->fly_mode )
+    {
+      input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, input->keys[ SDL_SCANCODE_SPACE ].current - input->keys[ SDL_SCANCODE_LCTRL ].current, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
+      
+      direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
+
+      XMStoreFloat3( &transform->translation, XMVectorAdd( XMLoadFloat3( &transform->translation ), XMVectorScale( direction, player_controller->fly_speed_scale * moving_limit * it->delta_time ) ) );
+
+      
+      XMVECTOR rotation = XMLoadFloat4( &pivot_node_transform->rotation );
+      XMVECTOR camera_up = g_XMIdentityR1;
+      
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_pivot_right, -player_controller->rotation_speed * input->mouse.rel.y ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -player_controller->rotation_speed * input->mouse.rel.x ) );
+      XMStoreFloat4( &pivot_node_transform->rotation, rotation );
+      continue;
+    }
+
+    input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, 0, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
+    
+    direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
 
     on_floor = crude_physics_character_body_on_floor( &game->physics, *physics_body );
     if ( on_floor )
@@ -102,19 +131,7 @@ crude_player_controller_update_system_
 
     if ( player_controller->input_enabled )
     {
-      crude_transform                                     *pivot_node_transform;
-      crude_entity                                         pivot_node;
-      XMMATRIX                                             pivot_to_world;
-      XMVECTOR                                             direction, input_dir, basis_pivot_up, basis_pivot_right, basis_node_right, basis_node_up, basis_node_forward;
-      
-      pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
-      pivot_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot_node, crude_transform );
-      pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
-      basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
-
-      input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, 0, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
-      
-      direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
+      XMVECTOR                                             basis_node_right, basis_node_up, basis_node_forward;
       
       if ( on_floor )
       {
@@ -151,19 +168,6 @@ crude_player_controller_update_system_
     }
 
     crude_physics_character_body_set_velocity( &game->physics, *physics_body, velocity );
-    
-    if ( player_controller->input_enabled )
-    {
-      player_controller->withdrawal -= 0.0001 * it->delta_time;
-
-      CRUDE_LOG_INFO( CRUDE_CHANNEL_GAMEPLAY, "withdrawal %f", player_controller->withdrawal );
-      
-      if ( player_controller->withdrawal < 0 )
-      {
-        static int b =0;
-        b++;
-      }
-    }
   }
 }
 

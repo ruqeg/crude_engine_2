@@ -20,16 +20,16 @@ crude_free_camera_update_system
   CRUDE_PROFILER_ZONE_NAME( "UpdateFreeCameras" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
-    if ( !free_cameras[ i ].enabled )
+    if ( !free_cameras[ i ].input_enabled )
     {
       continue;
     }
 
-    crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].entity_input, crude_input );
+    crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].input_node, crude_input );
 
-    int32 moving_forward = input->keys[ 'w' ].current - input->keys[ 's' ].current;
-    int32 moving_up = input->keys[ 'e' ].current - input->keys[ 'q' ].current;
-    int32 moving_right = input->keys[ 'd' ].current - input->keys[ 'a' ].current;
+    int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
+    int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
+    int32 moving_right = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
 
     XMVECTOR translation = XMLoadFloat3( &transforms[ i ].translation );
     XMMATRIX node_to_world = crude_transform_node_to_world( CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } ), &transforms[ i ] );

@@ -213,7 +213,7 @@ crude_gfx_model_renderer_resources_manager_deintialize
 }
 
 crude_gfx_model_renderer_resources
-crude_gfx_model_renderer_resources_manager_add_gltf_model
+crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
   _In_ char const                                          *filepath

@@ -10,7 +10,6 @@
 #include <core/process.h>
 #include <platform/platform_system.h>
 #include <platform/platform_components.h>
-#include <scene/free_camera_system.h>
 #include <scene/scene_components.h>
 #include <scene/scripts_components.h>
 #include <graphics/gpu_resources_loader.h>
@@ -115,7 +114,7 @@ game_parse_json_to_component_
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
   _In_ char const                                         *component_name,
-  _In_ crude_scene                                        *scene
+  _In_ crude_node_manager                                 *manager
 );
 
 static void
@@ -123,7 +122,7 @@ game_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON                                               *node_components_json,
-  _In_ crude_scene                                         *scene
+  _In_ crude_node_manager                                 *manager
 );
 
 #if CRUDE_DEVELOP
@@ -147,7 +146,6 @@ game_initialize
   game->last_graphics_update_time = 0.f;
 
   ECS_IMPORT( game->engine->world, crude_platform_system );
-  //ECS_IMPORT( game->engine->world, crude_physics_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
   ECS_IMPORT( game->engine->world, crude_level_01_system );
@@ -191,25 +189,14 @@ game_postupdate
     {
     case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
     {
-      crude_scene_creation                                 scene_creation;
       bool                                                 buffer_recreated;
 
       vkDeviceWaitIdle( game->gpu.vk_device );
-      crude_entity_destroy_hierarchy( game->scene.main_node );
-      crude_scene_deinitialize( &game->scene );
 
-      scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
-      scene_creation.world = game->engine->world;
-      scene_creation.input_entity = game->platform_node;
-      scene_creation.scene_absolute_filepath = game->commands_queue[ i ].reload_scene.filepath;
-      scene_creation.temporary_allocator = &game->temporary_allocator;
-      scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-      scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
-      scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
-      scene_creation.physics = &game->physics;
-      crude_scene_initialize( &game->scene, &scene_creation );
+      crude_node_manager_clear( &game->node_manager );
+      crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].reload_scene.filepath );
 
-      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
+      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 
       if ( buffer_recreated )
@@ -258,7 +245,7 @@ game_deinitialize
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( &game->physics );
-  crude_scene_deinitialize( &game->scene );
+  crude_node_manager_deinitialize( &game->node_manager );
   game_deinitialize_constant_strings_( game );
   crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
@@ -291,25 +278,6 @@ game_push_reload_techniques_command
   crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
   command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
   CRUDE_ARRAY_PUSH( game->commands_queue, command );
-}
-
-void
-game_set_focused_camera_node
-(
-  _In_ game_t                                             *game,
-  _In_ crude_entity                                        focused_camera_node
-)
-{
-  game->focused_camera_node = focused_camera_node;
-}
-
-crude_scene*
-game_get_scene
-(
-  _In_ game_t                                             *game
-)
-{
-  return &game->scene;
 }
 
 void
@@ -370,7 +338,7 @@ game_graphics_system_
   crude_gfx_present( &game->gpu, final_render_texture );
 #endif
   
-  CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node ) );
+  CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 }
 
@@ -442,25 +410,25 @@ game_parse_json_to_component_
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
   _In_ char const                                         *component_name,
-  _In_ crude_scene                                        *scene
+  _In_ crude_node_manager                                 *manager
 )
 {
   if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
   {
     crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
   {
     crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
   {
     crude_level_01                                         level01;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
   }
   return true;
@@ -471,7 +439,7 @@ game_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON                                               *node_components_json,
-  _In_ crude_scene                                         *scene
+  _In_ crude_node_manager                                 *manager
 )
 {
   crude_player_controller const                           *player_component;
@@ -481,19 +449,19 @@ game_parse_all_components_to_json_
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, scene ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
   }
   
   enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
   if ( enemy )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, scene ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
   }
   
   level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
   if ( level01 )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, scene ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
   }
 }
 
@@ -628,24 +596,24 @@ game_initialize_scene_
   _In_ game_t                                             *game
 )
 {
-  crude_scene_creation                                     scene_creation;
-  scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
-  scene_creation.world = game->engine->world;
-  scene_creation.input_entity = game->platform_node;
-  scene_creation.scene_absolute_filepath = game->scene_absolute_filepath;
-  scene_creation.resources_absolute_directory = game->resources_absolute_directory;
-  scene_creation.temporary_allocator = &game->temporary_allocator;
-  scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-  scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
-  scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
-  scene_creation.physics = &game->physics;
-  crude_scene_initialize( &game->scene, &scene_creation );
+  crude_node_manager_creation                              node_manager_creation;
+  node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
+  node_manager_creation.world = game->engine->world;
+  node_manager_creation.resources_absolute_directory = game->resources_absolute_directory;
+  node_manager_creation.temporary_allocator = &game->temporary_allocator;
+  node_manager_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
+  node_manager_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
+  node_manager_creation.physics = &game->physics;
+  node_manager_creation.allocator = &game->allocator;
+  crude_node_manager_initialize( &game->node_manager, &node_manager_creation );
+
+  game->main_node = crude_node_manager_get_node( &game->node_manager, game->scene_absolute_filepath );
 }
 
 void
 game_initialize_graphics_
 (
-  _In_ game_t                                             *game
+  _In_ game_t                                            *game
 )
 {
   crude_window_handle                                     *window_handle;
@@ -714,7 +682,6 @@ game_initialize_graphics_
   scene_renderer_creation.allocator = &game->allocator;
   scene_renderer_creation.temporary_allocator = &game->temporary_allocator;
   scene_renderer_creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
-  scene_renderer_creation.scene = &game->scene;
   scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
 #if CRUDE_DEVELOP
   scene_renderer_creation.imgui_pass_enalbed = true;
@@ -725,7 +692,7 @@ game_initialize_graphics_
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
 
-  crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
+  crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 

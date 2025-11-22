@@ -4,7 +4,7 @@
 #include <core/memory.h>
 #include <cJSON.h>
 
-typedef struct crude_scene crude_scene;
+typedef struct crude_node_manager crude_node_manager;
 typedef struct crude_physics crude_physics;
 
 #define CRUDE_COMPONENT_STRING_DECLARE( component_type)\
@@ -31,14 +31,14 @@ bool crude_parse_json_to_component_func##component_type\
   _Out_ component_type                                    *component,\
   _In_ cJSON const                                        *component_json,\
   _In_ crude_entity                                        node,\
-  _In_ crude_scene                                        *scene\
+  _In_ crude_node_manager                                 *manager\
 )
 
 #define CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( component_type )\
 cJSON* crude_parse_component_to_json_func##component_type\
 (\
   _In_ component_type const                               *component,\
-  _In_ crude_scene                                        *scene\
+  _In_ crude_node_manager                                 *manager\
 )
 
 #define CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( component_type )\
@@ -46,5 +46,5 @@ void crude_parse_component_to_imgui_func##component_type\
 (\
   _In_ crude_entity                                        node,\
   _In_ component_type                                     *component,\
-  _In_ crude_scene                                        *scene\
+  _In_ crude_node_manager                                 *manager\
 )

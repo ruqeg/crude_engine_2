@@ -48,6 +48,10 @@ crude_physics_update
   _In_ float64                                             delta_time
 )
 {
+  if ( !physics->simulation_enabled )
+  {
+    return;
+  }
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->character_bodies ); ++i )
   {
     crude_transform                                       *transform;

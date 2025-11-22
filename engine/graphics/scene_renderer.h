@@ -28,7 +28,6 @@ typedef struct crude_gfx_model_renderer_resources_instance
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
-  crude_scene                                             *scene;
   void                                                    *imgui_context;
   crude_gfx_asynchronous_loader                           *async_loader;
   void                                                    *task_scheduler;

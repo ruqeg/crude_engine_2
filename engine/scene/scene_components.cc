@@ -3,12 +3,11 @@
 
 #include <scene/scene_components.h>
 #include <physics/physics_components.h>
+#include <scene/node_manager.h>
 
 ECS_COMPONENT_DECLARE( crude_transform );
 ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
-ECS_COMPONENT_DECLARE( crude_scene );
-ECS_COMPONENT_DECLARE( crude_scene_creation );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
@@ -24,9 +23,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_transform );
   ECS_COMPONENT_DEFINE( world, crude_light );
   ECS_COMPONENT_DEFINE( world, crude_camera );
-  ECS_COMPONENT_DEFINE( world, crude_scene );
   ECS_COMPONENT_DEFINE( world, crude_gltf );
-  ECS_COMPONENT_DEFINE( world, crude_scene_creation );
   ECS_COMPONENT_DEFINE( world, crude_scene_handle );
   ECS_COMPONENT_DEFINE( world, crude_node_external );
 }
@@ -76,8 +73,8 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
   gltf_path = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
 
   crude_memory_set( component, 0, sizeof( crude_gltf ) );
-  component->original_path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", gltf_path );
-  component->path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_absolute_directory, gltf_path );
+  component->original_path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", gltf_path );
+  component->path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s%s", manager->resources_absolute_directory, gltf_path );
   return true;
 }
 

@@ -2,7 +2,7 @@
 
 #include <core/string.h>
 #include <scene/scripts_components.h>
-#include <scene/scene.h>
+#include <scene/node_manager.h>
 
 ECS_COMPONENT_DECLARE( crude_free_camera );
 

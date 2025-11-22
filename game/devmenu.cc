@@ -6,6 +6,7 @@
 #include <core/hash_map.h>
 #include <platform/platform.h>
 #include <game.h>
+#include <scene/scripts_components.h>
 #include <game_components.h>
 
 #include <devmenu.h>
@@ -65,11 +66,11 @@ crude_devmenu_draw
         devmenu->selected_option = i;
         if ( i == 0 )
         {
-          devmenu->gpu_visual_profiler.enabled = true;
+          devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
         }
         else if ( i == 1 )
         {
-          devmenu->texture_inspector.enabled = true;
+          devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
         }
       }
       ImGui::SameLine( );
@@ -103,13 +104,20 @@ crude_devmenu_handle_input
   game_t                                                  *game;
 
   game = game_instance( );
-
+  
+	if ( input->keys[ SDL_SCANCODE_F1 ].pressed )
+	{
+    crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
+    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
+    player_controller->fly_mode = !player_controller->fly_mode;
+    crude_physics_enable_simulation( &game->physics, !game->physics.simulation_enabled );
+  }
 	if ( input->keys[ SDL_SCANCODE_F4 ].pressed )
 	{
 		devmenu->enabled = !devmenu->enabled;
     
     crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "player" );
+    crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
     crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
     if ( devmenu->enabled )
     {

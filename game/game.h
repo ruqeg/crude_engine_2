@@ -3,7 +3,7 @@
 #include <nfd.h>
 
 #include <engine.h>
-#include <scene/scene.h>
+#include <scene/node_manager.h>
 #include <graphics/scene_renderer.h>
 #include <core/ecs.h>
 #include <platform/platform_components.h>
@@ -69,6 +69,7 @@ typedef struct game_t
   crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
+  crude_entity                                             main_node;
 
   /* Graphics */
   crude_gfx_device                                         gpu;
@@ -83,7 +84,7 @@ typedef struct game_t
   /* Physics */
   crude_physics                                            physics;
   /* Scene */
-  crude_scene                                              scene;
+  crude_node_manager                                       node_manager;
   /* Window & Input */
   crude_entity                                             platform_node;
   XMFLOAT2                                                 last_unrelative_mouse_position;
@@ -124,19 +125,6 @@ game_push_reload_scene_command
 
 CRUDE_API void
 game_push_reload_techniques_command
-(
-  _In_ game_t                                             *game
-);
-
-CRUDE_API void
-game_set_focused_camera_node
-(
-  _In_ game_t                                             *game,
-  _In_ crude_entity                                        focused_camera_node
-);
-
-CRUDE_API crude_scene*
-game_get_scene
 (
   _In_ game_t                                             *game
 );

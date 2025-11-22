@@ -4,7 +4,7 @@
 #include <core/memory.h>
 #include <core/assert.h>
 #include <physics/physics.h>
-#include <scene/scene.h>
+#include <scene/node_manager.h>
 
 #include <physics/physics_components.h>
 
@@ -29,11 +29,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle
   crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
   if ( previous_handle )
   {
-    crude_physics_destroy_static_body( scene->physics, *previous_handle );
+    crude_physics_destroy_static_body( manager->physics, *previous_handle );
   }
 
-  *component = crude_physics_create_static_body( scene->physics, node );
-  crude_physics_static_body *static_body = crude_physics_access_static_body( scene->physics, *component );
+  *component = crude_physics_create_static_body( manager->physics, node );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( manager->physics, *component );
   static_body->layer = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "layer" ) );
   return true;
 }
@@ -42,7 +42,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle
 {
   cJSON *static_body_json = cJSON_CreateObject( );
 
-  crude_physics_static_body *static_body = crude_physics_access_static_body( scene->physics, *component );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( manager->physics, *component );
 
   cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) );
   cJSON_AddItemToObject( static_body_json, "layer", cJSON_CreateNumber( static_body->layer ) );
@@ -54,10 +54,10 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_han
   crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
   if ( previous_handle )
   {
-    crude_physics_destroy_character_body( scene->physics, *previous_handle );
+    crude_physics_destroy_character_body( manager->physics, *previous_handle );
   }
-  *component = crude_physics_create_character_body( scene->physics, node );
-  crude_physics_character_body *character_body = crude_physics_access_character_body( scene->physics, *component );
+  *component = crude_physics_create_character_body( manager->physics, node );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( manager->physics, *component );
   character_body->mask = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "mask" ) );
   return true;
 }
@@ -65,7 +65,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_han
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
-  crude_physics_character_body *character_body = crude_physics_access_character_body( scene->physics, *component );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( manager->physics, *component );
   cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) );
   cJSON_AddItemToObject( dynamic_body_json, "mask", cJSON_CreateNumber( character_body->mask ) );
   return dynamic_body_json;
@@ -73,7 +73,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character_body_han
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
-  crude_physics_character_body *character_body = crude_physics_access_character_body( scene->physics, *component );
+  crude_physics_character_body *character_body = crude_physics_access_character_body( manager->physics, *component );
   ImGui::Text( "Mask" );
   ImGui::SameLine( );
   ImGui::CheckboxFlags( "0", &character_body->mask, 1 );
@@ -89,7 +89,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_ha
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  crude_physics_static_body *static_body = crude_physics_access_static_body( scene->physics, *component );
+  crude_physics_static_body *static_body = crude_physics_access_static_body( manager->physics, *component );
   ImGui::Text( "Layer" );
   ImGui::SameLine( );
   ImGui::CheckboxFlags( "0", &static_body->layer, 1 );
@@ -119,8 +119,8 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
   {
-    component->mesh.model_filename = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) );
-    component->mesh.octree_handle = crude_collisions_resources_manager_get_octree_handle( crude_collisions_resources_manager_instance( ), crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_absolute_directory, component->mesh.model_filename ) );
+    component->mesh.model_filename = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) );
+    component->mesh.octree_handle = crude_collisions_resources_manager_get_octree_handle( crude_collisions_resources_manager_instance( ), crude_string_buffer_append_use_f( &manager->string_bufffer, "%s%s", manager->resources_absolute_directory, component->mesh.model_filename ) );
   }
   else
   {

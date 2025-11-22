@@ -25,10 +25,13 @@ typedef struct crude_player_controller
   float32                                                  move_change_coeff;
   float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
-  
-  float32                                                  withdrawal;
 
   bool                                                     input_enabled;
+
+#if CRUDE_DEVELOP
+  bool                                                     fly_mode;
+  float32                                                  fly_speed_scale;
+#endif
 } crude_player_controller;
 
 

@@ -2,7 +2,6 @@
 
 #include <core/math.h>
 #include <core/ecs.h>
-#include <scene/scene.h>
 #include <scene/components_serialization.h>
 
 typedef struct crude_node_external
@@ -45,12 +44,9 @@ typedef struct crude_scene_handle
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_scene );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_creation );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_collision_shape );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_node_external );
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera );
