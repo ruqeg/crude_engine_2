@@ -1,3 +1,9 @@
+#if CRUDE_DEVELOP
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_sdl3.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#endif
+
 #include <core/hash_map.h>
 #include <core/file.h>
 #include <core/memory.h>
@@ -27,6 +33,14 @@ game_initialize_allocators_
 (
   _In_ game_t                                             *game
 );
+
+#if CRUDE_DEVELOP
+static void
+game_initialize_imgui_
+(
+  _In_ game_t                                             *game
+);
+#endif
 
 static void
 game_initialize_constant_strings_
@@ -112,6 +126,15 @@ game_parse_all_components_to_json_
   _In_ crude_scene                                         *scene
 );
 
+#if CRUDE_DEVELOP
+static void
+game_input_callback_
+(
+  _In_ void                                               *ctx,
+  _In_ void                                               *sdl_event
+);
+#endif
+
 void
 game_initialize
 (
@@ -130,6 +153,9 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_01_system );
 
   game_initialize_allocators_( game );
+#if CRUDE_DEVELOP
+  game_initialize_imgui_( game );
+#endif
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   game_initialize_platform_( game );
   game_initialize_physics_( game );
@@ -137,6 +163,7 @@ game_initialize
   crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
+  crude_devmenu_initialize( &game->devmenu );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -156,6 +183,8 @@ game_postupdate
   _In_ game_t                                             *game
 )
 {
+  crude_devmenu_update( &game->devmenu );
+
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
   {
     switch ( game->commands_queue[ i ].type )
@@ -163,7 +192,6 @@ game_postupdate
     case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
     {
       crude_scene_creation                                 scene_creation;
-      crude_gfx_scene_renderer_creation                    scene_renderer_creation;
       bool                                                 buffer_recreated;
 
       vkDeviceWaitIdle( game->gpu.vk_device );
@@ -224,7 +252,8 @@ game_deinitialize
 )
 {
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
-
+  
+  crude_devmenu_deinitialize( &game->devmenu );
   crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
@@ -236,6 +265,8 @@ game_deinitialize
   crude_heap_allocator_deinitialize( &game->resources_allocator );
   crude_stack_allocator_deinitialize( &game->model_renderer_resources_manager_temporary_allocator );
   crude_stack_allocator_deinitialize( &game->temporary_allocator );
+
+  ImGui::DestroyContext( ( ImGuiContext* )game->imgui_context );
 }
 
 void
@@ -289,10 +320,17 @@ game_graphics_system_
 {
   game_t                                                  *game;
   crude_gfx_texture                                       *final_render_texture;
+#if CRUDE_DEVELOP
+  crude_gfx_texture                                       *imgui_render_texture;
+#endif
 
   game = ( game_t* )it->ctx;
-  final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
   
+  final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
+#if CRUDE_DEVELOP
+  imgui_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
+#endif
+
   game->last_graphics_update_time += it->delta_time;
 
   if ( game->last_graphics_update_time < 1.f / game->framerate )
@@ -305,6 +343,18 @@ game_graphics_system_
   game->scene_renderer.options.camera_node = game->focused_camera_node;
 
   crude_gfx_new_frame( &game->gpu );
+ 
+#if CRUDE_DEVELOP
+  ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
+  ImGui_ImplSDL3_NewFrame( );
+  ImGui::NewFrame( );
+
+  crude_devmenu_draw( &game->devmenu );
+  ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height ) );
+  ImGui::Begin( "Background", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing );
+  ImGui::Image( CRUDE_CAST( ImTextureRef, &final_render_texture->handle.index ), ImGui::GetContentRegionAvail( ) );
+  ImGui::End( );
+#endif
 
   if ( game->gpu.swapchain_resized_last_frame )
   {
@@ -314,7 +364,11 @@ game_graphics_system_
 
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
   
+#if CRUDE_DEVELOP
+  crude_gfx_present( &game->gpu, imgui_render_texture );
+#else
   crude_gfx_present( &game->gpu, final_render_texture );
+#endif
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
@@ -346,6 +400,30 @@ game_input_system_
   game_t *game = ( game_t* )it->ctx;
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
+  
+#if CRUDE_DEVELOP
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input *input = &input_per_entity[ i ];
+    crude_window_handle *window_handle = &window_handle_per_entity[ i ];
+
+    crude_devmenu_handle_input( &game->devmenu, input );
+    //crude_devgui_handle_input( &editor->devgui, input );
+
+    //if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
+    //{
+    //  SDL_GetMouseState( &game->last_unrelative_mouse_position.x, &game->last_unrelative_mouse_position.y );
+    //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), true );
+    //}
+    //
+    //if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
+    //{
+    //  SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), editor->last_unrelative_mouse_position.x, editor->last_unrelative_mouse_position.y );
+    //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
+    //}
+  }
+#endif /* CRUDE_DEVELOP */
 }
 
 void
@@ -419,6 +497,24 @@ game_parse_all_components_to_json_
   }
 }
 
+#if CRUDE_DEVELOP
+void
+game_input_callback_
+(
+  _In_ void                                               *ctx,
+  _In_ void                                               *sdl_event
+)
+{
+  game_t *game = CRUDE_CAST( game_t*, ctx );
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
+
+  if ( game->devmenu.enabled )
+  {
+    ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  }
+}
+#endif
+
 void
 game_initialize_allocators_
 (
@@ -431,6 +527,26 @@ game_initialize_allocators_
   crude_stack_allocator_initialize( &game->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
   crude_stack_allocator_initialize( &game->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
 }
+
+#if CRUDE_DEVELOP
+void
+game_initialize_imgui_
+(
+  _In_ game_t                                             *game
+)
+{
+  ImGuiIO                                                 *imgui_io;
+
+  IMGUI_CHECKVERSION();
+  game->imgui_context = ImGui::CreateContext();
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
+  ImGui::StyleColorsDark();
+  imgui_io = &ImGui::GetIO();
+  imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  imgui_io->ConfigWindowsResizeFromEdges = true;
+  imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
+}
+#endif
 
 void
 game_initialize_constant_strings_
@@ -490,8 +606,8 @@ game_initialize_platform_
   });
 
   CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_input, {
-    .callback = NULL,
-    .ctx = game->imgui_context
+    .callback = game_input_callback_,
+    .ctx = game
   } );
 }
 
@@ -564,8 +680,11 @@ game_initialize_graphics_
   
   crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
   crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
-  
+#if CRUDE_DEVELOP
+  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_develop.json" );
+#else
   render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph.json" );
+#endif
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
 
@@ -574,8 +693,11 @@ game_initialize_graphics_
   crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+#if CRUDE_DEVELOP
+  crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+#endif
   
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
@@ -592,9 +714,12 @@ game_initialize_graphics_
   scene_renderer_creation.allocator = &game->allocator;
   scene_renderer_creation.temporary_allocator = &game->temporary_allocator;
   scene_renderer_creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
-  scene_renderer_creation.imgui_context = game->imgui_context;
   scene_renderer_creation.scene = &game->scene;
   scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
+#if CRUDE_DEVELOP
+  scene_renderer_creation.imgui_pass_enalbed = true;
+  scene_renderer_creation.imgui_context = game->imgui_context;
+#endif
   crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
 
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );

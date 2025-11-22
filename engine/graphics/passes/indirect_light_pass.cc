@@ -5,7 +5,7 @@
 
 #include <graphics/passes/indirect_light_pass.h>
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 
 void
 crude_gfx_indirect_light_pass_initialize
@@ -372,7 +372,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_draws_sb, 1u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->meshes_instances_draws_sb, 2u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 3u );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 5u );
 #endif
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ddgi_cb, 10u );

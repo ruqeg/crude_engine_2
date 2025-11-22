@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL3/SDL.h>
 #include <core/ecs.h>
 
 typedef void ( *crude_input_callback_function )
@@ -51,9 +52,9 @@ typedef struct crude_window_handle
 
 typedef struct crude_input
 {
-  crude_key_state                                          keys[ 128 ];
+  crude_key_state                                          keys[ SDL_SCANCODE_COUNT ];
   crude_mouse_state                                        mouse;
-  crude_key_state                                          prev_keys[ 128 ];
+  crude_key_state                                          prev_keys[ SDL_SCANCODE_COUNT ];
   crude_mouse_state                                        prev_mouse;
   bool                                                     should_close_window;
   crude_input_callback_function                            callback;

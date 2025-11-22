@@ -55,5 +55,5 @@ crude_platform_show_cursor
 	_In_ crude_window_handle																window_handle
 )
 {
-  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), true );
+  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), false );
 }

@@ -24,12 +24,6 @@ source_group(sound REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/sound/*")
 source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
 source_group(engine FILES engine.cc engine.h)
 
-if(NOT CMAKE_BUILD_TYPE)
-set(CMAKE_BUILD_TYPE Release)
-endif()
-
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
   ## !MAIN
   CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1

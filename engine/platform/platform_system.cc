@@ -203,7 +203,7 @@ crude_process_events_system_
     crude_input *input = &inputs_per_entity[ i ];
     
     input->prev_mouse = input->mouse;
-    for ( uint32 k = 0; k < 128; k++ )
+    for ( uint32 k = 0; k < SDL_SCANCODE_COUNT; k++ )
     {
       input->prev_keys[ k ] = input->keys[ k ];
     }
@@ -213,7 +213,7 @@ crude_process_events_system_
   {
     crude_input *input = &inputs_per_entity[ i ];
 
-    for ( uint32 k = 0; k < 128; k++ )
+    for ( uint32 k = 0; k < SDL_SCANCODE_COUNT; k++ )
     {
       key_reset_( &input->keys[ k ] );
     }
@@ -378,12 +378,12 @@ crude_process_events_system_
         {
           if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
           {
-            uint32 sym = key_sym_( sdl_event.key.key );
+            uint32 sym = key_sym_( sdl_event.key.scancode );
             key_down_( &focused_input->keys[ sym ] );
           }
           else if ( sdl_event.type == SDL_EVENT_KEY_UP )
           {
-            uint32 sym = key_sym_( sdl_event.key.key );
+            uint32 sym = key_sym_( sdl_event.key.scancode );
             key_up_( &focused_input->keys[ sym ] );
           }
 

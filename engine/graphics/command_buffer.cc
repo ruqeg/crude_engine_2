@@ -36,7 +36,7 @@ crude_gfx_cmd_initialize
 {
   cmd->gpu = gpu;
 
-#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
+#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   VkDescriptorPoolSize pool_sizes[] =
   {
     { VK_DESCRIPTOR_TYPE_SAMPLER, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
@@ -50,7 +50,7 @@ crude_gfx_cmd_initialize
     { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
     { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, CRUDE_GFX_CMD_GLOBAL_POOL_ELEMENTS_COUNT },
 #endif
   };
@@ -76,7 +76,7 @@ crude_gfx_cmd_deinitialize
 )
 {
   crude_gfx_cmd_reset( cmd );
-#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
+#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_resource_pool_deinitialize( &cmd->frame_descriptor_sets );
   vkDestroyDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, cmd->gpu->vk_allocation_callbacks );
 #endif /* CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS */
@@ -91,7 +91,7 @@ crude_gfx_cmd_reset
   cmd->is_recording = false;
   cmd->current_render_pass = NULL;
   
-#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
+#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   vkResetDescriptorPool( cmd->gpu->vk_device, cmd->vk_descriptor_pool, 0 );
   
   uint32 resource_count = cmd->frame_descriptor_sets.free_indices_head;
@@ -444,7 +444,7 @@ crude_gfx_cmd_bind_local_descriptor_set
   _In_ crude_gfx_descriptor_set_handle                     handle
 )
 {
-#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
+#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_gfx_descriptor_set *descriptor_set = CRUDE_REINTERPRET_CAST( crude_gfx_descriptor_set*, crude_resource_pool_access_resource( &cmd->frame_descriptor_sets, handle.index ) );
   crude_gfx_descriptor_set *bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
   
@@ -604,7 +604,7 @@ crude_gfx_cmd_create_local_descriptor_set
   _In_ crude_gfx_descriptor_set_creation const            *creation
 )
 {
-#ifdef CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
+#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
   crude_gfx_descriptor_set                                *descriptor_set;
   crude_gfx_descriptor_set_layout                         *descriptor_set_layout;
   crude_gfx_descriptor_set_handle                          descriptor_set_handle;
@@ -1006,7 +1006,7 @@ crude_gfx_cmd_push_marker
 {
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
   vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
   vk_label.pLabelName = name;
@@ -1026,7 +1026,7 @@ crude_gfx_cmd_pop_marker
 {
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 }
@@ -1078,7 +1078,7 @@ crude_gfx_cmd_trace_rays
   _In_ uint32                                              depth
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_pipeline                                      *pipeline;
   VkStridedDeviceAddressRegionKHR                          raygen_table, hit_table, miss_table, callable_table;
   uint32                                                   shader_group_handle_size;

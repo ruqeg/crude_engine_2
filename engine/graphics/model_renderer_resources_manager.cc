@@ -632,7 +632,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_buffers_
   _In_ char const                                         *gltf_directory
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   for ( uint32 buffer_index = 0; buffer_index < gltf->buffers_count; ++buffer_index )
   {
     cgltf_buffer const                                    *buffer;
@@ -1377,7 +1377,7 @@ create_bottom_level_acceleration_structure_
   _In_ uint64                                              meshes_offset
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_cmd_buffer                                    *cmd;
   crude_gfx_buffer_handle                                 *blas_scratch_buffers_handle;
   VkAccelerationStructureBuildRangeInfoKHR               **vk_acceleration_structure_build_range_infos;
@@ -1519,7 +1519,7 @@ create_top_level_acceleration_structure_
   _In_ crude_gfx_model_renderer_resources_manager         *manager
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer                                        *tlas_buffer;
   crude_gfx_cmd_buffer                                    *cmd;
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
@@ -1665,7 +1665,7 @@ update_top_level_acceleration_structure_
   _In_ crude_gfx_model_renderer_resources_manager         *manager
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer                                        *tlas_buffer;
   crude_gfx_cmd_buffer                                    *cmd;
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;

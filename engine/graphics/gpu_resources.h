@@ -484,7 +484,7 @@ typedef struct crude_gfx_descriptor_set_creation
   crude_gfx_descriptor_set_layout_handle                   layout;
   uint32                                                   num_resources;
   char const                                              *name;
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                               vk_acceleration_structure;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set_creation;
@@ -593,7 +593,7 @@ typedef struct crude_gfx_descriptor_set
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
   char const                                              *name;
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                               vk_acceleration_structure;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set;
@@ -614,7 +614,7 @@ typedef struct crude_gfx_pipeline
   bool                                                     graphics_pipeline;
   char const                                               *name;
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer_handle                                  shader_binding_table_raygen;
   crude_gfx_buffer_handle                                  shader_binding_table_hit;
   crude_gfx_buffer_handle                                  shader_binding_table_miss;
@@ -646,7 +646,7 @@ typedef struct crude_gfx_framebuffer
 typedef struct crude_gfx_shader_state
 {
   VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
   const char                                              *name;

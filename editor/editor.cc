@@ -575,7 +575,7 @@ crude_editor_initialize_graphics_
   crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 

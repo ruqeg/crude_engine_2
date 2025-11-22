@@ -47,29 +47,6 @@ typedef struct crude_devgui_gpu
   bool                                                     enabled;
 } crude_devgui_gpu;
 
-typedef struct crude_devgui_gpu_visual_profiler
-{
-  crude_gfx_device                                        *gpu;
-  float32                                                  max_duration;
-  uint32                                                   max_frames;
-  uint32                                                   max_queries_per_frame;
-  uint32                                                   current_frame;
-  int32                                                    max_visible_depth;
-  float32                                                  average_time;
-  float32                                                  max_time;
-  float32                                                  min_time;
-  float32                                                  new_average;
-  uint32                                                   framebuffer_pixel_count;
-  uint16                                                  *per_frame_active;
-  crude_gfx_gpu_time_query                                *timestamps;
-  crude_gfx_gpu_pipeline_statistics                       *pipeline_statistics;
-  crude_heap_allocator                                    *allocator;
-  struct { uint64 key; uint32 value; }                    *name_hashed_to_color_index;
-  uint32                                                   initial_frames_paused;
-  bool                                                     paused;
-  bool                                                     enabled;
-} crude_devgui_gpu_visual_profiler;
-
 typedef struct crude_devgui_scene_renderer
 {
   crude_gfx_scene_renderer                                *scene_renderer;
@@ -88,7 +65,6 @@ typedef struct crude_devgui
   crude_devgui_viewport                                    dev_viewport;
   crude_devgui_render_graph                                dev_render_graph;
   crude_devgui_gpu                                         dev_gpu;
-  crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
   crude_devgui_scene_renderer                              dev_scene_renderer;
   crude_devgui_added_node_data                             added_node_data;
   crude_entity                                             node_to_add;

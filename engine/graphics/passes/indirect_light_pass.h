@@ -3,7 +3,7 @@
 #include <graphics/render_graph.h>
 #include <graphics/scene_renderer_resources.h>
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 

@@ -81,7 +81,7 @@ crude_player_controller_update_system_
     
     velocity = crude_physics_character_body_get_velocity( &game->physics, *physics_body );
  
-    if ( input->keys[ 83 /* shift */ ].current )
+    if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
     {
       moving_limit = player_controller->run_speed;
     }
@@ -112,7 +112,7 @@ crude_player_controller_update_system_
       pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
       basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
 
-      input_dir = XMVectorSet( input->keys[ 'd' ].current - input->keys[ 'a' ].current, 0, input->keys[ 'w' ].current - input->keys[ 's' ].current, 0 );
+      input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, 0, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
       
       direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
       
@@ -139,10 +139,15 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_node_transform->rotation, rotation );
       }
       
-      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( &game->physics, *physics_body ) )
+      if ( input->keys[ SDL_SCANCODE_SPACE ].current && crude_physics_character_body_on_floor( &game->physics, *physics_body ) )
       {
         velocity = XMVectorSetY( velocity, player_controller->jump_velocity );
       }
+    }
+    else
+    {
+      velocity = XMVectorSetX( velocity, CRUDE_LERP( XMVectorGetX( velocity ), 0.f, CRUDE_MIN( player_controller->stop_change_coeff * it->delta_time, 1.f ) ) );
+      velocity = XMVectorSetZ( velocity, CRUDE_LERP( XMVectorGetZ( velocity ), 0.f, CRUDE_MIN( player_controller->stop_change_coeff * it->delta_time, 1.f ) ) );
     }
 
     crude_physics_character_body_set_velocity( &game->physics, *physics_body, velocity );

@@ -186,12 +186,12 @@ typedef struct crude_gfx_device
   PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
 
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
   PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
 
   PFN_vkGetAccelerationStructureBuildSizesKHR              vkGetAccelerationStructureBuildSizesKHR;

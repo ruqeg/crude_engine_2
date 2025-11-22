@@ -390,8 +390,8 @@ crude_gfx_scene_renderer_initialize_pases
   crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_collision_visualizer_pass_initialize( &scene_renderer->collision_visualizer_pass, scene_renderer );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
 #endif
   crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
@@ -405,8 +405,8 @@ crude_gfx_scene_renderer_deinitialize_passes
 )
 {
   crude_gfx_render_graph_builder_unregister_all_render_passes( scene_renderer->render_graph->builder );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
 #endif
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
@@ -426,8 +426,8 @@ crude_gfx_scene_renderer_deinitialize_passes
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
   crude_gfx_collision_visualizer_pass_deinitialize( &scene_renderer->collision_visualizer_pass );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
 #endif
   crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
@@ -492,8 +492,8 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "collision_visualizer_pass", crude_gfx_collision_visualizer_pass_pack( &scene_renderer->collision_visualizer_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
 #endif
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
@@ -590,7 +590,7 @@ update_dynamic_buffers_
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
       scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
       scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
 #else
       scene_constant->indirect_light_texture_index = -1;

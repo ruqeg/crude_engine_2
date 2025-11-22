@@ -5,7 +5,7 @@
 
 #include <graphics/passes/ray_tracing_solid_pass.h>
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ray_tracing_solid_gpu_data
 {

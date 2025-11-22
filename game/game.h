@@ -9,6 +9,7 @@
 #include <platform/platform_components.h>
 #include <scene/collisions_resources_manager.h>
 #include <physics/physics.h>
+#include <devmenu.h>
 
 typedef enum crude_game_queue_command_type
 {
@@ -60,6 +61,8 @@ typedef struct game_t
 
   crude_string_buffer                                      constant_strings_buffer;
 
+  crude_devmenu                                            devmenu;
+
   /* Common */
   crude_heap_allocator                                     allocator;
   crude_heap_allocator                                     resources_allocator;
@@ -74,7 +77,9 @@ typedef struct game_t
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
+#if CRUDE_DEVELOP
   void                                                    *imgui_context;
+#endif
   /* Physics */
   crude_physics                                            physics;
   /* Scene */

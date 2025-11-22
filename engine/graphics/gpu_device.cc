@@ -17,7 +17,7 @@
  * Constants
  * 
  ***********************************************/
-#ifdef CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
+#if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
 #define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS ""
 #else
 #define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS"
@@ -36,20 +36,20 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
   VK_KHR_RAY_QUERY_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME,
-#ifdef  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
+#if  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
   //VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 };
 
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
 static char const *const vk_instance_required_debug_extensions[] =
 {
   VK_EXT_DEBUG_UTILS_EXTENSION_NAME
@@ -258,7 +258,7 @@ crude_gfx_device_initialize
   crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
 
   vk_create_instance_( gpu, creation->vk_application_name, creation->vk_application_version, temporary_allocator );
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   vk_create_debug_utils_messsenger_( gpu );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
   vk_create_surface_( gpu );
@@ -391,7 +391,7 @@ crude_gfx_device_initialize
     dynamic_buffer_creation = crude_gfx_buffer_creation_empty();
     dynamic_buffer_creation.name = "dynamic_persistent_buffer";
     dynamic_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     dynamic_buffer_creation.type_flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
     dynamic_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -408,7 +408,7 @@ crude_gfx_device_initialize
     physical_device_properties_2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceProperties2 );
     physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     gpu->ray_tracing_pipeline_properties = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelinePropertiesKHR );
     gpu->ray_tracing_pipeline_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 
@@ -531,7 +531,7 @@ crude_gfx_device_deinitialize
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
   vkDestroySurfaceKHR( gpu->vk_instance, gpu->vk_surface, gpu->vk_allocation_callbacks );
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   gpu->vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
@@ -1031,7 +1031,7 @@ crude_gfx_set_resource_name
   _In_ char const                                         *name
 )
 {
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsObjectNameInfoEXT name_info = {
     .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
     .objectType   = type,
@@ -1088,7 +1088,7 @@ crude_gfx_compile_shader
   
   optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
 
-#ifdef CRUDE_PRODUCTION
+#if CRUDE_PRODUCTION
   crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 #else
   char const                                              *temp_filename;
@@ -1119,7 +1119,7 @@ crude_gfx_compile_shader
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
 
-#ifdef CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
+#if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
     char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vulkan_binaries_path );
     char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe --preserve-bindings -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
 
@@ -1312,7 +1312,7 @@ crude_gfx_get_buffer_device_address
   _In_ crude_gfx_buffer_handle                             handle
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   CRUDE_ASSERT( buffer );
 
@@ -1743,7 +1743,7 @@ crude_gfx_create_shader_state
       break;
     }
     
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     switch ( stage->type )
     {
       case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
@@ -2239,7 +2239,7 @@ crude_gfx_create_pipeline
   }
   else if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING )
   {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     uint8                                                 *shader_binding_table_data;
     VkRayTracingPipelineCreateInfoKHR                      vk_pipeline_info;
     crude_gfx_buffer_creation                              shader_binding_table_creation;
@@ -2333,7 +2333,7 @@ crude_gfx_destroy_pipeline_instant
       }
     }
     
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     if ( pipeline->vk_bind_point == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR )
     {
       crude_gfx_destroy_buffer( gpu, pipeline->shader_binding_table_raygen );
@@ -2638,7 +2638,7 @@ crude_gfx_create_descriptor_set
   VkDescriptorBufferInfo buffer_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
   VkDescriptorImageInfo image_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkWriteDescriptorSetAccelerationStructureKHR vk_acceleration_structure_info;
   
   vk_acceleration_structure_info = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSetAccelerationStructureKHR );
@@ -2753,7 +2753,7 @@ crude_gfx_create_descriptor_set
     }
     case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
     {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
       descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
       vk_acceleration_structure_info.accelerationStructureCount = 1;
@@ -2774,7 +2774,7 @@ crude_gfx_create_descriptor_set
     descriptor_set->samplers[ i ] = creation->samplers[ i ];
     descriptor_set->bindings[ i ] = creation->bindings[ i ];
   }
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   descriptor_set->vk_acceleration_structure = creation->vk_acceleration_structure;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
@@ -3429,7 +3429,7 @@ vk_create_instance_
     CRUDE_ARRAY_PUSH( instance_enabled_extensions, surface_extensions_array[ i ] );
   }
   
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   {
     uint32 debug_extensions_count = CRUDE_COUNTOF( vk_instance_required_debug_extensions );
     for ( uint32 i = 0; i < debug_extensions_count; ++i )
@@ -3455,10 +3455,10 @@ vk_create_instance_
   instance_create_info.flags                    = 0u;
   instance_create_info.ppEnabledExtensionNames  = instance_enabled_extensions;
   instance_create_info.enabledExtensionCount    = CRUDE_ARRAY_LENGTH( instance_enabled_extensions );
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   instance_create_info.ppEnabledLayerNames     = vk_required_debug_layers;
   instance_create_info.enabledLayerCount       = CRUDE_COUNTOF( vk_required_debug_layers );
-#ifdef VK_EXT_debug_utils
+#if VK_EXT_debug_utils
   debug_create_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsMessengerCreateInfoEXT );
   memset( &debug_create_info, 0u, sizeof( debug_create_info ) );
   debug_create_info.sType            = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -3494,7 +3494,7 @@ vk_create_instance_
   
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateInstance( &instance_create_info, gpu->vk_allocation_callbacks, &gpu->vk_instance ), "failed to create instance" );
   
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   gpu->vkCreateDebugUtilsMessengerEXT = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( gpu->vk_instance, "vkCreateDebugUtilsMessengerEXT" );
   gpu->vkDestroyDebugUtilsMessengerEXT = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( gpu->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -3688,8 +3688,8 @@ vk_create_device_
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkPhysicalDeviceRayTracingValidationFeaturesNV           physical_device_ray_tracing_validation_features_nv;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
   VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR       physical_device_ray_tracing_position_fetch_features;
@@ -3773,7 +3773,7 @@ vk_create_device_
   bit16_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice16BitStorageFeatures );
   bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
   physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
   physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = true;
@@ -3798,7 +3798,7 @@ vk_create_device_
   physical_device_buffer_defice_address_features.pNext = &physical_device_acceleration_structure_features;
   physical_device_buffer_defice_address_features.bufferDeviceAddress = true;
   
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
   physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
   physical_device_ray_tracing_validation_features_nv.pNext = &physical_device_buffer_defice_address_features;
@@ -3892,7 +3892,7 @@ vk_create_device_
   device_create_info.flags                    = 0;
   device_create_info.queueCreateInfoCount     = CRUDE_STATIC_CAST( uint32, transfer_queue_index < queue_family_count ? 2 : 1 );
   device_create_info.pQueueCreateInfos        = queue_create_infos;
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   device_create_info.enabledLayerCount        = CRUDE_COUNTOF( vk_required_debug_layers );
   device_create_info.ppEnabledLayerNames      = vk_required_debug_layers;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -3915,12 +3915,12 @@ vk_create_device_
   gpu->vkCmdPipelineBarrier2KHR = ( PFN_vkCmdPipelineBarrier2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdPipelineBarrier2KHR" );
   gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
 
-#ifdef CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
   gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   gpu->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
   gpu->vkCreateAccelerationStructureKHR = ( PFN_vkCreateAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateAccelerationStructureKHR" );
   gpu->vkCmdBuildAccelerationStructuresKHR = ( PFN_vkCmdBuildAccelerationStructuresKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBuildAccelerationStructuresKHR" );
@@ -4058,7 +4058,7 @@ vk_create_vma_allocator_
   allocator_info.physicalDevice   = gpu->vk_physical_device;
   allocator_info.device           = gpu->vk_device;
   allocator_info.instance         = gpu->vk_instance;
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   allocator_info.flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   CRUDE_GFX_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &allocator_info, &gpu->vma_allocator ), "Failed to create vma allocator" );
@@ -4090,7 +4090,7 @@ vk_create_descriptor_pool_
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
         { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
 #endif
       };
@@ -4571,11 +4571,11 @@ vk_reflect_shader_
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
         {
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
           binding->type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
           ++set_layout->num_bindings;
-#endif /* #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif
           break;
         }
       }
