@@ -102,7 +102,3 @@ typedef size_t        sizet;
  * 
  ***********************************************/
 #define CRUDE_COUNTOF( a ) ( sizeof( a ) / sizeof( a[ 0 ] ) )
-
-/* Should be in cmake, but cmake doesn't support \\ in define, so... :D */
-#define CRUDE_RESOURCES_DIR "\\..\\..\\resources\\"
-#define CRUDE_SHADERS_DIR "\\..\\..\\shaders\\"

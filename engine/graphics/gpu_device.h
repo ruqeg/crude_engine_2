@@ -41,10 +41,20 @@ typedef struct crude_gfx_device_creation
   crude_stack_allocator                                   *temporary_allocator;
   uint16                                                   queries_per_frame;
   uint16                                                   num_threads;
+  
+  char const                                              *working_absolute_directory;
+  char const                                              *techniques_absolute_directory;
+  char const                                              *compiled_shaders_absolute_directory;
+  char const                                              *shaders_absolute_directory;
 } crude_gfx_device_creation;
 
 typedef struct crude_gfx_device
 {
+  char const                                              *working_absolute_directory;
+  char const                                              *techniques_absolute_directory;
+  char const                                              *compiled_shaders_absolute_directory;
+  char const                                              *shaders_absolute_directory;
+
   SDL_Window                                              *sdl_window;
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
@@ -324,6 +334,7 @@ crude_gfx_texture_ready
 CRUDE_API VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
+  _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
   _In_ VkShaderStageFlagBits                               stage,

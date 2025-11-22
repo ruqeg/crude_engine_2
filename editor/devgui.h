@@ -7,7 +7,7 @@
 #include <graphics/scene_renderer.h>
 #include <graphics/gpu_profiler.h>
 
-typedef struct game_t game_t;
+typedef struct crude_editor crude_editor;
 typedef struct crude_devgui crude_devgui;
 
 typedef struct crude_devgui_added_node_data
@@ -70,11 +70,6 @@ typedef struct crude_devgui_gpu_visual_profiler
   bool                                                     enabled;
 } crude_devgui_gpu_visual_profiler;
 
-typedef struct crude_devgui_game_common
-{
-  bool                                                     enabled;
-} crude_devgui_game_common;
-
 typedef struct crude_devgui_scene_renderer
 {
   crude_gfx_scene_renderer                                *scene_renderer;
@@ -86,7 +81,7 @@ typedef struct crude_devgui_scene_renderer
 typedef struct crude_devgui
 {
   char const                                              *last_focused_menutab_name;
-  game_t                                                  *game;
+  crude_editor                                            *editor;
   bool                                                     menubar_enabled;
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
@@ -95,7 +90,6 @@ typedef struct crude_devgui
   crude_devgui_gpu                                         dev_gpu;
   crude_devgui_gpu_visual_profiler                         dev_gpu_profiler;
   crude_devgui_scene_renderer                              dev_scene_renderer;
-  crude_devgui_game_common                                 dev_game_common;
   crude_devgui_added_node_data                             added_node_data;
   crude_entity                                             node_to_add;
   crude_entity                                             node_to_remove;
@@ -108,7 +102,7 @@ CRUDE_API void
 crude_devgui_initialize
 (
   _In_ crude_devgui                                       *devgui,
-  _In_ game_t                                             *game
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
@@ -290,32 +284,4 @@ CRUDE_API void
 crude_devgui_scene_renderer_draw
 (
   _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-);
-
-/******************************
- * Dev Gui Game Common
- *******************************/
-CRUDE_API void
-crude_devgui_game_common_initialize
-(
-  _In_ crude_devgui_game_common                           *dev_game_common,
-  _In_ game_t                                             *game
-);
-
-CRUDE_API void
-crude_devgui_game_common_deinitialize
-(
-  _In_ crude_devgui_game_common                           *dev_game_common
-);
-
-CRUDE_API void
-crude_devgui_game_common_update
-(
-  _In_ crude_devgui_game_common                           *dev_game_common
-);
-
-CRUDE_API void
-crude_devgui_game_common_draw
-(
-  _In_ crude_devgui_game_common                           *dev_game_common
 );

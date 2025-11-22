@@ -1,8 +1,3 @@
-#include <imgui/imgui.h>
-#include <imgui/backends/imgui_impl_sdl3.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <ImGuizmo/ImGuizmo.h>
-
 #include <core/hash_map.h>
 #include <core/file.h>
 #include <core/memory.h>
@@ -15,11 +10,9 @@
 #include <graphics/gpu_resources_loader.h>
 #include <physics/physics.h>
 #include <physics/physics_system.h>
-#include <player_controller_components.h>
+#include <game_components.h>
 #include <player_controller_system.h>
-#include <enemy_components.h>
 #include <enemy_system.h>
-#include <level_01_components.h>
 #include <level_01_system.h>
 
 #include <game.h>
@@ -37,7 +30,20 @@ game_initialize_allocators_
 );
 
 static void
-game_initialize_imgui_
+game_initialize_constant_strings_
+(
+  _In_ game_t                                             *game,
+  _In_ char const                                         *scene_relative_filepath,
+  _In_ char const                                         *render_graph_relative_directory,
+  _In_ char const                                         *resources_relative_directory,
+  _In_ char const                                         *shaders_relative_directory,
+  _In_ char const                                         *techniques_relative_directory,
+  _In_ char const                                         *compiled_shaders_relative_directory,
+  _In_ char const                                         *working_absolute_directory
+);
+
+static void
+game_deinitialize_constant_strings_
 (
   _In_ game_t                                             *game
 );
@@ -90,13 +96,6 @@ game_graphics_deinitialize_
   _In_ game_t                                             *game
 );
 
-static void
-game_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
-);
-
 static bool
 game_parse_json_to_component_
 ( 
@@ -110,7 +109,8 @@ static void
 game_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json 
+  _In_ cJSON                                               *node_components_json,
+  _In_ crude_scene                                         *scene
 );
 
 static void
@@ -123,32 +123,29 @@ void
 game_initialize
 (
   _In_ game_t                                             *game,
-  _In_ crude_engine                                       *engine
+  _In_ crude_game_creation const                          *creation
 )
 {
-  game->engine = engine;
-  game->framerate = 60;
+  game->engine = creation->engine;
+  game->framerate = creation->framerate;
   game->last_graphics_update_time = 0.f;
-
   game->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 
   ECS_IMPORT( game->engine->world, crude_platform_system );
-  ECS_IMPORT( game->engine->world, crude_physics_system );
+  //ECS_IMPORT( game->engine->world, crude_physics_system );
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
   ECS_IMPORT( game->engine->world, crude_level_01_system );
 
   game_initialize_allocators_( game );
-  game_initialize_imgui_( game );
+  game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   game_initialize_platform_( game );
   game_initialize_physics_( game );
   crude_collisions_resources_manager_instance_allocate( crude_heap_allocator_pack( &game->allocator ) );
   crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
-  
-  crude_devgui_initialize( &game->devgui, game );
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -190,11 +187,12 @@ game_postupdate
       scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
       scene_creation.world = game->engine->world;
       scene_creation.input_entity = game->platform_node;
-      scene_creation.filepath = game->commands_queue[ i ].reload_scene.filepath;
+      scene_creation.scene_absolute_filepath = game->commands_queue[ i ].reload_scene.filepath;
       scene_creation.temporary_allocator = &game->temporary_allocator;
       scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
       scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
       scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
+      scene_creation.physics = &game->physics;
       crude_scene_initialize( &game->scene, &scene_creation );
 
       buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node );
@@ -223,7 +221,7 @@ game_postupdate
         
         crude_gfx_technique *technique = game->gpu.resource_cache.techniques[ i ].value; 
         crude_gfx_destroy_technique_instant( &game->gpu, technique );
-        crude_gfx_technique_load_from_file( technique->json_name, &game->gpu, &game->render_graph, &game->temporary_allocator );
+        crude_gfx_technique_load_from_file( technique->technique_relative_filepath, &game->gpu, &game->render_graph, &game->temporary_allocator );
       }
 
       crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
@@ -241,23 +239,19 @@ game_deinitialize
   _In_ game_t                                             *game
 )
 {
-  crude_devgui_deinitialize( &game->devgui );
-  
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
 
   crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
-  crude_physics_deinitialize( crude_physics_instance( ) );
-  crude_physics_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
+  crude_physics_deinitialize( &game->physics );
   crude_scene_deinitialize( &game->scene );
+  game_deinitialize_constant_strings_( game );
   crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
   crude_heap_allocator_deinitialize( &game->resources_allocator );
   crude_stack_allocator_deinitialize( &game->model_renderer_resources_manager_temporary_allocator );
   crude_stack_allocator_deinitialize( &game->temporary_allocator );
-
-  ImGui::DestroyContext( ( ImGuiContext* )game->imgui_context );
 }
 
 void
@@ -321,26 +315,14 @@ game_graphics_system_
 
   game->scene_renderer.options.camera_node = game->focused_camera_node;
 
-  crude_devgui_graphics_pre_update( &game->devgui );
-
   crude_gfx_new_frame( &game->gpu );
-  
-  ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
-  ImGuizmo::SetImGuiContext( ( ImGuiContext* ) game->imgui_context );
-  ImGui_ImplSDL3_NewFrame();
-  ImGui::NewFrame();
-  ImGuizmo::SetOrthographic( false );
-  ImGuizmo::BeginFrame();
-  ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
 
   if ( game->gpu.swapchain_resized_last_frame )
   {
     crude_gfx_scene_renderer_on_resize( &game->scene_renderer );
     crude_gfx_render_graph_on_resize( &game->render_graph, game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height );
-    crude_devgui_on_resize( &game->devgui );
   }
 
-  crude_devgui_draw( &game->devgui, game->scene.main_node, game->focused_camera_node );
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
 
   {
@@ -379,13 +361,10 @@ game_input_system_
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
 
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input *input = &input_per_entity[ i ];
     crude_window_handle *window_handle = &window_handle_per_entity[ i ];
-
-    crude_devgui_handle_input( &game->devgui, input );
 
     if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
     {
@@ -408,17 +387,6 @@ game_physics_system_
 )
 {
   game_t *game = ( game_t* )it->ctx;
-}
-
-void
-game_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
-)
-{
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
-  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }
 
 bool
@@ -455,7 +423,8 @@ void
 game_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json 
+  _In_ cJSON                                               *node_components_json,
+  _In_ crude_scene                                         *scene
 )
 {
   crude_player_controller const                           *player_component;
@@ -465,19 +434,19 @@ game_parse_all_components_to_json_
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, scene ) );
   }
   
   enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
   if ( enemy )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, scene ) );
   }
   
   level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
   if ( level01 )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01 ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, scene ) );
   }
 }
 
@@ -495,21 +464,45 @@ game_initialize_allocators_
 }
 
 void
-game_initialize_imgui_
+game_initialize_constant_strings_
+(
+  _In_ game_t                                             *game,
+  _In_ char const                                         *scene_relative_filepath,
+  _In_ char const                                         *render_graph_relative_directory,
+  _In_ char const                                         *resources_relative_directory,
+  _In_ char const                                         *shaders_relative_directory,
+  _In_ char const                                         *techniques_relative_directory,
+  _In_ char const                                         *compiled_shaders_relative_directory,
+  _In_ char const                                         *working_absolute_directory
+)
+{
+  uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
+  uint64 resources_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
+  uint64 shaders_directory_length = working_directory_length + crude_string_length( shaders_relative_directory );
+  uint64 render_graph_directory_length = working_directory_length + crude_string_length( render_graph_relative_directory );
+  uint64 scene_filepath_length = working_directory_length + crude_string_length( scene_relative_filepath );
+  uint64 techniques_relative_directory_length = working_directory_length + crude_string_length( techniques_relative_directory );
+  uint64 compiled_shaders_relative_directory_length = working_directory_length + crude_string_length( compiled_shaders_relative_directory );
+
+  uint64 constant_string_buffer_size = working_directory_length + resources_directory_length + shaders_directory_length + render_graph_directory_length + scene_filepath_length + techniques_relative_directory_length + compiled_shaders_relative_directory_length;
+
+  crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
+  game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
+  game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
+  game->shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, shaders_relative_directory );
+  game->scene_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, scene_relative_filepath );
+  game->render_graph_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, render_graph_relative_directory );
+  game->techniques_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, techniques_relative_directory );
+  game->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, compiled_shaders_relative_directory );
+}
+
+void
+game_deinitialize_constant_strings_
 (
   _In_ game_t                                             *game
 )
 {
-  ImGuiIO                                                 *imgui_io;
-
-  IMGUI_CHECKVERSION();
-  game->imgui_context = ImGui::CreateContext();
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
-  ImGui::StyleColorsDark();
-  imgui_io = &ImGui::GetIO();
-  imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
-  imgui_io->ConfigWindowsResizeFromEdges = true;
-  imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
+  crude_string_buffer_deinitialize( &game->constant_strings_buffer );
 }
 
 void
@@ -519,14 +512,16 @@ game_initialize_platform_
 )
 {
   game->platform_node = crude_entity_create_empty( game->engine->world, "game" );
+
   CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_window, { 
     .width     = 800,
     .height    = 600,
     .maximized = false,
     .flags     = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
   });
+
   CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_input, {
-    .callback = game_input_callback_,
+    .callback = NULL,
     .ctx = game->imgui_context
   } );
 }
@@ -539,9 +534,7 @@ game_initialize_physics_
 {
   crude_physics_creation physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.allocator = &game->allocator;
-
-  crude_physics_instance_allocate( crude_heap_allocator_pack( &game->allocator ) );
-  crude_physics_initialize( crude_physics_instance( ), &physics_creation );
+  crude_physics_initialize( &game->physics, &physics_creation );
 }
 
 void
@@ -550,28 +543,18 @@ game_initialize_scene_
   _In_ game_t                                             *game
 )
 {
-  uint32                                                   temporary_allocator_marker;
   crude_scene_creation                                     scene_creation;
-  crude_string_buffer                                      temporary_string_buffer;
-  char                                                     working_directory[ 512 ];
-
-  temporary_allocator_marker = crude_stack_allocator_get_marker( &game->temporary_allocator );
-
-  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
-
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-
   scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
   scene_creation.world = game->engine->world;
   scene_creation.input_entity = game->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, "nodes\\test_level.crude_node" );
+  scene_creation.scene_absolute_filepath = game->scene_absolute_filepath;
+  scene_creation.resources_absolute_directory = game->resources_absolute_directory;
   scene_creation.temporary_allocator = &game->temporary_allocator;
   scene_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
   scene_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
   scene_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
+  scene_creation.physics = &game->physics;
   crude_scene_initialize( &game->scene, &scene_creation );
-
-  crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
 }
 
 void
@@ -583,7 +566,6 @@ game_initialize_graphics_
   crude_window_handle                                     *window_handle;
   char const                                              *render_graph_file_path;
   crude_string_buffer                                      temporary_name_buffer;
-  char                                                     working_directory[ 512 ];
   crude_gfx_model_renderer_resources_manager_creation      model_renderer_resources_manager_creation;
   crude_gfx_device_creation                                device_creation;
   crude_gfx_scene_renderer_creation                        scene_renderer_creation;
@@ -591,19 +573,21 @@ game_initialize_graphics_
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( &game->temporary_allocator );
   
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
   crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
 
   window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
 
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
-  device_creation.vk_application_name    = "CrudeEngine";
+  device_creation.sdl_window = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
+  device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container    = crude_heap_allocator_pack( &game->allocator );
-  device_creation.temporary_allocator    = &game->temporary_allocator;
-  device_creation.queries_per_frame      = 1u;
-  device_creation.num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, game->engine->asynchronous_loader_manager.task_sheduler ) ) );
+  device_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
+  device_creation.temporary_allocator = &game->temporary_allocator;
+  device_creation.queries_per_frame = 1u;
+  device_creation.num_threads = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, game->engine->asynchronous_loader_manager.task_sheduler ) ) );
+  device_creation.shaders_absolute_directory = game->shaders_absolute_directory;
+  device_creation.techniques_absolute_directory = game->techniques_absolute_directory;
+  device_creation.compiled_shaders_absolute_directory = game->compiled_shaders_absolute_directory;
   crude_gfx_device_initialize( &game->gpu, &device_creation );
   
   crude_gfx_render_graph_builder_initialize( &game->render_graph_builder, &game->gpu );
@@ -612,19 +596,19 @@ game_initialize_graphics_
   crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
   crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
   
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
+  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph.json" );
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
 
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
@@ -701,7 +685,7 @@ game_setup_custom_nodes_to_scene_
   game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
   game->focused_camera_node = game->editor_camera_node;
 
-  crude_physics_enable_simulation( crude_physics_instance( ), false );
+  crude_physics_enable_simulation( &game->physics, false );
   
   free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
   free_camera->entity_input = game->scene.input_entity;

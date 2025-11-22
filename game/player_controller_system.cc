@@ -5,7 +5,7 @@
 #include <platform/platform_components.h>
 #include <physics/physics_components.h>
 #include <physics/physics.h>
-#include <player_controller_components.h>
+#include <game_components.h>
 #include <game.h>
 
 #include <player_controller_system.h>
@@ -38,7 +38,7 @@ crude_player_controller_creation_observer_
 
     crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( entity, "hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
-    crude_physics_character_body *hitbox_body = crude_physics_access_character_body( crude_physics_instance( ), *hitbox_body_handle );
+    crude_physics_character_body *hitbox_body = crude_physics_access_character_body( &game_instance( )->physics, *hitbox_body_handle );
     hitbox_body->callback_container.fun = crude_hitbox_callback;
 
     player_controller->withdrawal = 1;
@@ -74,7 +74,7 @@ crude_player_controller_update_system_
     
     physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     
-    velocity = crude_physics_character_body_get_velocity( crude_physics_instance( ), *physics_body );
+    velocity = crude_physics_character_body_get_velocity( &game_instance( )->physics, *physics_body );
  
     if ( input->keys[ 83 /* shift */ ].current )
     {
@@ -85,7 +85,7 @@ crude_player_controller_update_system_
       moving_limit = player_controller->walk_speed;
     }
 
-    on_floor = crude_physics_character_body_on_floor( crude_physics_instance( ), *physics_body );
+    on_floor = crude_physics_character_body_on_floor( &game_instance( )->physics, *physics_body );
     if ( on_floor )
     {
       velocity = XMVectorSetY( velocity, 0.f );
@@ -135,13 +135,13 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_node_transform->rotation, rotation );
       }
       
-      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( crude_physics_instance( ), *physics_body ) )
+      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( &game_instance( )->physics, *physics_body ) )
       {
         velocity = XMVectorSetY( velocity, player_controller->jump_velocity );
       }
     }
 
-    crude_physics_character_body_set_velocity( crude_physics_instance( ), *physics_body, velocity );
+    crude_physics_character_body_set_velocity( &game_instance( )->physics, *physics_body, velocity );
     
     if ( player_controller->_input_enabled )
     {
@@ -164,7 +164,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )
   
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_physics_components );
-  ECS_IMPORT( world, crude_player_controller_components );
+  ECS_IMPORT( world, crude_game_components );
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, EcsOnUpdate, NULL, {
     { .id = ecs_id( crude_transform ) },

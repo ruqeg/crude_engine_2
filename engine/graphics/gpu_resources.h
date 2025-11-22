@@ -686,7 +686,7 @@ typedef struct crude_gfx_technique_pass_creation
 
 typedef struct crude_gfx_technique_creation
 {
-  char const                                              *json_name;
+  char const                                              *technique_relative_filepath;
   crude_gfx_technique_pass_creation                        passes[ 8 ];
   uint32                                                   passes_count;
   char const                                              *name;
@@ -700,7 +700,7 @@ typedef struct crude_gfx_technique_pass
 
 typedef struct crude_gfx_technique
 {
-  char const                                              *json_name;
+  char const                                              *technique_relative_filepath;
   char const                                              *name;
   crude_gfx_technique_pass                                *passes;
   uint32                                                   pool_index;

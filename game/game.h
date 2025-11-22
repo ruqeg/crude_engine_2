@@ -8,7 +8,7 @@
 #include <core/ecs.h>
 #include <platform/platform_components.h>
 #include <scene/collisions_resources_manager.h>
-#include <devgui.h>
+#include <physics/physics.h>
 
 typedef enum crude_game_queue_command_type
 {
@@ -32,16 +32,41 @@ typedef struct crude_game_queue_command
   };
 } crude_game_queue_command;
 
+typedef struct crude_game_creation
+{
+  char const                                              *scene_relative_filepath;
+  char const                                              *render_graph_relative_directory;
+  char const                                              *resources_relative_directory;
+  char const                                              *techniques_relative_directory;
+  char const                                              *shaders_relative_directory;
+  char const                                              *compiled_shaders_relative_directory;
+  char const                                              *working_absolute_directory;
+  crude_engine                                            *engine;
+  uint32                                                   framerate;
+} crude_game_creation;
+
 typedef struct game_t
 {
   /* Context */
   crude_engine                                            *engine;
+  
+  char const                                              *scene_absolute_filepath;
+  char const                                              *render_graph_absolute_directory;
+  char const                                              *techniques_absolute_directory;
+  char const                                              *resources_absolute_directory;
+  char const                                              *shaders_absolute_directory;
+  char const                                              *compiled_shaders_absolute_directory;
+  char const                                              *working_absolute_directory;
+
+  crude_string_buffer                                      constant_strings_buffer;
+
   /* Common */
   crude_heap_allocator                                     allocator;
   crude_heap_allocator                                     resources_allocator;
   crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
+
   /* Graphics */
   crude_gfx_device                                         gpu;
   crude_gfx_render_graph                                   render_graph;
@@ -50,8 +75,8 @@ typedef struct game_t
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   void                                                    *imgui_context;
-  /* Dev */
-  crude_devgui                                             devgui;
+  /* Physics */
+  crude_physics                                            physics;
   /* Scene */
   crude_scene                                              scene;
   /* Window & Input */
@@ -72,7 +97,7 @@ CRUDE_API void
 game_initialize
 (
   _In_ game_t                                             *game,
-  _In_ crude_engine                                       *engine
+  _In_ crude_game_creation const                          *creation
 );
 
 CRUDE_API void

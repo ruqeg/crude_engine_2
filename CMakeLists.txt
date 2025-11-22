@@ -11,6 +11,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+set(CRUDE_GAME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/game)
+
 add_subdirectory(extlibs)
 add_subdirectory(engine)
 add_subdirectory(game)

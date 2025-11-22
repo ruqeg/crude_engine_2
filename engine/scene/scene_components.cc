@@ -77,7 +77,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
 
   crude_memory_set( component, 0, sizeof( crude_gltf ) );
   component->original_path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", gltf_path );
-  component->path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_path, gltf_path );
+  component->path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", scene->resources_absolute_directory, gltf_path );
   return true;
 }
 

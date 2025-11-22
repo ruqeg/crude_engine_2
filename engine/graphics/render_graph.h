@@ -210,7 +210,7 @@ CRUDE_API void
 crude_gfx_render_graph_parse_from_file
 (
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ char const                                         *file_path,
+  _In_ char const                                         *render_graph_absolute_filepath,
   _In_ crude_stack_allocator                              *temp_allocator
 );
 

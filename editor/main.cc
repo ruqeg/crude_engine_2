@@ -14,20 +14,20 @@ main
     
     engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
     crude_engine_initialize( &engine, &engine_creation );
-    game_instance_intialize( );
-    game_initialize( game_instance( ), &engine );
+    crude_editor_instance_intialize( );
+    crude_editor_initialize( crude_editor_instance( ), &engine );
   }
 
    while ( engine.running )
    {
      crude_engine_update( &engine );
-     game_postupdate( game_instance( ) );
+     crude_editor_postupdate( crude_editor_instance( ) );
    }
    
   /* Deinitialization */
   {
-    game_deinitialize( game_instance( ) );
-    game_instance_deintialize( );
+    crude_editor_deinitialize( crude_editor_instance( ) );
+    crude_editor_instance_deintialize( );
     crude_engine_deinitialize( &engine );
   }
 

@@ -17,7 +17,7 @@
 			},
 			"components":	[{
 					"type":	"crude_gltf",
-					"path":	"game\\0_hall.gltf"
+					"path":	"game\\models\\0_hall.gltf"
 				}],
 			"children":	[]
 		}, {
@@ -76,7 +76,7 @@
 							},
 							"components":	[{
 									"type":	"crude_gltf",
-									"path":	"game\\redball_default.gltf"
+									"path":	"game\\models\\redball_default.gltf"
 								}],
 							"children":	[]
 						}]
@@ -148,7 +148,7 @@
 							},
 							"components":	[{
 									"type":	"crude_gltf",
-									"path":	"game\\redball_ghost.gltf"
+									"path":	"game\\models\\redball_ghost.gltf"
 								}],
 							"children":	[]
 						}]
@@ -174,7 +174,7 @@
 						}, {
 							"type":	"crude_physics_collision_shape",
 							"shape_type":	"mesh",
-							"path":	"game\\0_hall.gltf"
+							"path":	"game\\models\\0_hall.gltf"
 						}],
 					"children":	[]
 				}]

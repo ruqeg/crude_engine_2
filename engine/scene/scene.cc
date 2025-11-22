@@ -33,7 +33,6 @@ crude_scene_initialize
 )
 {
   cJSON                                                   *scene_json;
-  char                                                     working_directory[ 512 ];
   size_t                                                   temporary_allocated_marker;
   crude_string_buffer                                      temporary_path_buffer;
 
@@ -43,6 +42,8 @@ crude_scene_initialize
   scene->world = creation->world;
   scene->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
   scene->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
+  scene->physics = creation->physics;
+
   crude_linear_allocator_initialize( &scene->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );
   
   temporary_allocated_marker = crude_stack_allocator_get_marker( scene->temporary_allocator );
@@ -50,10 +51,9 @@ crude_scene_initialize
   crude_string_buffer_initialize( &scene->string_bufffer, 512, crude_linear_allocator_pack( &scene->string_linear_allocator ) );
   crude_string_buffer_initialize( &temporary_path_buffer, 1024, crude_stack_allocator_pack( scene->temporary_allocator ) );
  
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  scene->resources_path = crude_string_buffer_append_use_f( &scene->string_bufffer, "%s%s", working_directory, CRUDE_RESOURCES_DIR );
+  scene->resources_absolute_directory = creation->resources_absolute_directory;
 
-  scene_json = scene_parse_json_( scene, creation->filepath );
+  scene_json = scene_parse_json_( scene, creation->scene_absolute_filepath );
   if ( scene_json == NULL )
   {
     return;
@@ -127,47 +127,47 @@ node_to_json_hierarchy_
     node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_camera );
     if ( node_camera )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_camera )( node_camera ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_camera )( node_camera, scene ) );
     }
     
     node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
     if ( node_gltf )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_gltf )( node_gltf ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_gltf )( node_gltf, scene ) );
       is_gltf_node = true;
     }
     
     node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_free_camera );
     if ( node_free_camera )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_free_camera )( node_free_camera ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_free_camera )( node_free_camera, scene ) );
     }
 
     node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_light );
     if ( node_light )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light, scene ) );
     }
     
     static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_static_body_handle );
     if ( static_body )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body_handle )( static_body ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body_handle )( static_body, scene ) );
     }
     
     dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     if ( dynamic_body )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_character_body_handle )( dynamic_body ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_character_body_handle )( dynamic_body, scene ) );
     }
     
     collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_collision_shape );
     if ( collision_shape )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_collision_shape )( collision_shape ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_collision_shape )( collision_shape, scene ) );
     }
     
-    scene->additional_parse_all_components_to_json_func( node, node_components_json );
+    scene->additional_parse_all_components_to_json_func( node, node_components_json, scene );
   }
   
   {
@@ -239,7 +239,7 @@ scene_load_node_
 
     node_external_json_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     
-    node_external_json = scene_parse_json_( scene, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_path, node_external_json_filepath ) );
+    node_external_json = scene_parse_json_( scene, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", scene->resources_absolute_directory, node_external_json_filepath ) );
     node = scene_load_node_( scene, node_external_json );
 
     CRUDE_ENTITY_SET_COMPONENT( node, crude_node_external, { crude_string_buffer_append_use_f( &scene->string_bufffer, "%s", node_external_json_filepath ) } );

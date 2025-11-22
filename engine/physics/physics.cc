@@ -10,8 +10,6 @@
 
 #include <physics/physics.h>
 
-crude_physics                                             *physics_instance_;
-
 void
 crude_physics_initialize
 (
@@ -246,31 +244,4 @@ crude_physics_cast_ray
   }
 
   return nearest_t != FLT_MAX;
-}
-
-void
-crude_physics_instance_allocate
-(
-  _In_ crude_allocator_container                           allocator_container
-)
-{
-  physics_instance_ = CRUDE_CAST( crude_physics*, CRUDE_ALLOCATE( allocator_container, sizeof( crude_physics ) ) );
-  *physics_instance_ = CRUDE_COMPOUNT_EMPTY( crude_physics );
-}
-
-void
-crude_physics_instance_deallocate
-(
-  _In_ crude_allocator_container                           allocator_container
-)
-{
-  CRUDE_DEALLOCATE( allocator_container, physics_instance_ );
-}
-
-crude_physics*
-crude_physics_instance
-(
-)
-{
-  return physics_instance_;
 }

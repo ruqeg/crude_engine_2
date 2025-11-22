@@ -1172,31 +1172,31 @@ crude_scene_renderer_register_nodes_instances_
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
 
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_physics_collision_shape ) )
-      {
-        crude_physics_collision_shape const               *child_collision_shape;
-        char                                              *model_filepath;
-        char                                               working_directory[ 512 ];
-        crude_string_buffer                                temporary_string_buffer;
-        uint64                                             temporary_allocator_marker;
-        crude_gfx_model_renderer_resources_instance        collision_model_renderer_resources_instant;
-
-        temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
-
-        crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-        child_collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_physics_collision_shape );
-        crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-        
-        model_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, child_collision_shape->debug_model_filename );
-
-        collision_model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
-        collision_model_renderer_resources_instant.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->collision_model_renderer_resoruces_instances, collision_model_renderer_resources_instant );
-
-        
-        crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
-      }
+      // !TODO
+      //if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_physics_collision_shape ) )
+      //{
+      //  crude_physics_collision_shape const               *child_collision_shape;
+      //  char                                              *model_filepath;
+      //  char                                               working_directory[ 512 ];
+      //  crude_string_buffer                                temporary_string_buffer;
+      //  uint64                                             temporary_allocator_marker;
+      //  crude_gfx_model_renderer_resources_instance        collision_model_renderer_resources_instant;
+      //
+      //  temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
+      //
+      //  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+      //  child_collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_physics_collision_shape );
+      //  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+      //  
+      //  model_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, child_collision_shape->debug_model_filename );
+      //
+      //  collision_model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+      //  collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_add_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
+      //  collision_model_renderer_resources_instant.node = child;
+      //  CRUDE_ARRAY_PUSH( scene_renderer->collision_model_renderer_resoruces_instances, collision_model_renderer_resources_instant );
+      //
+      //  crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
+      //}
 
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
       {

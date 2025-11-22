@@ -1,6 +1,6 @@
 #include <core/memory.h>
 
-#include <level_01_components.h>
+#include <game_components.h>
 
 #include <level_01_system.h>
 
@@ -49,7 +49,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_level_01_system )
 {
   ECS_MODULE( world, crude_level_01_system );
   
-  ECS_IMPORT( world, crude_level_01_components );
+  ECS_IMPORT( world, crude_game_components );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, { 
     { .id = ecs_id( crude_level_01 ) }

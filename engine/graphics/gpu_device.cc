@@ -74,6 +74,7 @@ vk_debug_callback_
   _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
   _In_ void                                               *pUserData
 );
+
 static void
 vk_create_instance_
 (
@@ -82,44 +83,52 @@ vk_create_instance_
   _In_ uint32                                              vk_application_version,
   _In_ crude_allocator_container                           temporary_allocator
 );
+
 static void
 vk_create_debug_utils_messsenger_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static void
 vk_create_surface_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static void
 vk_pick_physical_device_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_  crude_allocator_container                          temporary_allocator
 );
+
 static void
 vk_create_device_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_allocator_container                           temporary_allocator
 );
+
 static void
 vk_create_swapchain_
 ( 
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_allocator_container                           temporary_allocator
 );
+
 static void
 vk_create_vma_allocator_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static void
 vk_create_descriptor_pool_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static int32
 vk_get_supported_queue_family_index_
 (
@@ -127,6 +136,7 @@ vk_get_supported_queue_family_index_
   _In_ VkSurfaceKHR                                        vk_surface,
   _In_ crude_allocator_container                           temporary_allocator
 );
+
 static bool
 vk_check_support_required_extensions_
 (
@@ -134,22 +144,26 @@ vk_check_support_required_extensions_
   _In_ crude_allocator_container                           temporary_allocator,
   _Out_opt_ char const                                   **not_supported_extension_name
 );
+
 static bool
 vk_check_swap_chain_adequate_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device,
   _In_ VkSurfaceKHR                                        vk_surface
 );
+
 static bool
 vk_check_support_required_features_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device
 );
+
 static void
 vk_destroy_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static void
 vk_create_texture_
 (
@@ -158,6 +172,7 @@ vk_create_texture_
   _In_ crude_gfx_texture_handle                            handle,
   _In_ crude_gfx_texture                                  *texture
 );
+
 static void
 vk_create_texture_view_
 (
@@ -165,16 +180,19 @@ vk_create_texture_view_
   _In_ crude_gfx_texture_view_creation const              *creation,
   _In_ crude_gfx_texture                                  *texture
 );
+
 static void
 vk_resize_swapchain_
 (
   _In_ crude_gfx_device                                   *gpu
 );
+
 static crude_gfx_vertex_component_format
 reflect_format_to_vk_format_
 (
   _In_ SpvReflectFormat                                    format
 );
+
 static void
 vk_reflect_shader_
 (
@@ -183,22 +201,13 @@ vk_reflect_shader_
   _In_ uint32                                              code_size,
   _In_ crude_gfx_shader_reflect                           *reflect
 );
+
 static void
 vk_destroy_resources_instant_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_resource_deletion_type                    type,
   _In_ crude_gfx_resource_index                            handle
-);
-
-VkShaderModuleCreateInfo
-crude_gfx_compile_shader
-(
-  _In_ char const                                         *code,
-  _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
-  _In_ char const                                         *name,
-  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 void
@@ -239,6 +248,11 @@ crude_gfx_device_initialize
   gpu->mesh_shaders_extension_present = false;
   gpu->shader_relaxed_extended_instruction_extension_present = false;
   gpu->timestamps_enabled = false;
+
+  gpu->working_absolute_directory = creation->working_absolute_directory;
+  gpu->techniques_absolute_directory = creation->techniques_absolute_directory;
+  gpu->compiled_shaders_absolute_directory = creation->compiled_shaders_absolute_directory;
+  gpu->shaders_absolute_directory = creation->shaders_absolute_directory;
   
   // !TODO
   crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
@@ -1053,6 +1067,7 @@ crude_gfx_texture_ready
 VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
+  _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
   _In_ VkShaderStageFlagBits                               stage,
@@ -1062,7 +1077,6 @@ crude_gfx_compile_shader
 {
   uint8                                                   *spirv_code;
   char const                                              *optimized_spirv_filename;
-  char                                                     working_directory[ 512 ];
   crude_string_buffer                                      temporary_string_buffer;
   VkShaderModuleCreateInfo                                 shader_create_info;
   uint32                                                   spirv_codesize;
@@ -1072,8 +1086,7 @@ crude_gfx_compile_shader
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
   
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\..\\..\\compiled_shaders\\%s.%s.shader_opt.spv", working_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
+  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
 
 #ifdef CRUDE_PRODUCTION
   crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
@@ -1706,7 +1719,7 @@ crude_gfx_create_shader_state
     }
     else
     {
-      shader_create_info = crude_gfx_compile_shader( stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
+      shader_create_info = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
     }
   
     CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode && shader_create_info.codeSize, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
@@ -2943,7 +2956,7 @@ crude_gfx_create_technique
 
   technique = crude_gfx_access_technique( gpu, technique_handle );
   
-  technique->json_name = creation->json_name;
+  technique->technique_relative_filepath = creation->technique_relative_filepath;
   technique->name = creation->name;
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, gpu->allocator_container );

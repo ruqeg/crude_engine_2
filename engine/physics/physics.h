@@ -57,7 +57,7 @@ CRUDE_API void
 crude_physics_destroy_character_body
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                   handle
+  _In_ crude_physics_character_body_handle                 handle
 );
 
 CRUDE_API void
@@ -71,7 +71,7 @@ CRUDE_API crude_physics_character_body*
 crude_physics_access_character_body
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                   handle
+  _In_ crude_physics_character_body_handle                 handle
 );
 
 CRUDE_API crude_physics_static_body*
@@ -118,23 +118,4 @@ crude_physics_cast_ray
   _In_ XMVECTOR                                            ray_direction,
   _In_ uint32                                              mask,
   _Out_opt_ crude_physics_raycast_result                  *result
-);
-
-/* We want to access physics in systems without extra nonsense, maybe rework in the future if it will be broken */
-/* btw, first time i use instance in this engine... a bit sad because of this to be honest */
-CRUDE_API void
-crude_physics_instance_allocate
-(
-  _In_ crude_allocator_container                           allocator_container
-);
-
-CRUDE_API void
-crude_physics_instance_deallocate
-(
-  _In_ crude_allocator_container                           allocator_container
-);
-
-CRUDE_API crude_physics*
-crude_physics_instance
-(
 );

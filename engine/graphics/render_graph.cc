@@ -64,7 +64,7 @@ void
 crude_gfx_render_graph_parse_from_file
 (
   _In_ crude_gfx_render_graph                             *render_graph,
-  _In_ char const                                         *file_path,
+  _In_ char const                                         *render_graph_absolute_filepath,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
@@ -75,24 +75,24 @@ crude_gfx_render_graph_parse_from_file
   uint8                                                   *render_graph_json_buffer;
   uint32                                                   render_graph_json_buffer_size, temporary_allocator_maker;
   
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Parse render graph \"%s\"", file_path );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Parse render graph \"%s\"", render_graph_absolute_filepath );
 
-  if ( !crude_file_exist( file_path ) )
+  if ( !crude_file_exist( render_graph_absolute_filepath ) )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", file_path );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", render_graph_absolute_filepath );
     return;
   }
 
   crude_string_buffer_initialize( &string_buffer, CRUDE_RKILO( 2 ), crude_linear_allocator_pack( &render_graph->linear_allocator ) );
 
   temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
-  crude_read_file( file_path, crude_stack_allocator_pack( temporary_allocator ), &render_graph_json_buffer, &render_graph_json_buffer_size );
+  crude_read_file( render_graph_absolute_filepath, crude_stack_allocator_pack( temporary_allocator ), &render_graph_json_buffer, &render_graph_json_buffer_size );
   render_graph_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, render_graph_json_buffer ), render_graph_json_buffer_size );
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_maker );
     
   if ( !render_graph_json )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file \"%s\" for render graph... Error %s", file_path, cJSON_GetErrorPtr() );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file \"%s\" for render graph... Error %s", render_graph_absolute_filepath, cJSON_GetErrorPtr() );
     return;
   }
 

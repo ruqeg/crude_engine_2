@@ -5,8 +5,9 @@
 #include <scene/scene_components.h>
 #include <platform/platform_components.h>
 #include <physics/physics_components.h>
-#include <enemy_components.h>
+#include <game_components.h>
 #include <physics/physics.h>
+#include <game.h>
 
 #include <enemy_system.h>
 
@@ -69,7 +70,7 @@ crude_enemy_update_system_
     enemy_to_player = XMVectorSubtract( player_translation, enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
     
-    if ( crude_physics_cast_ray( crude_physics_instance( ), enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
+    if ( crude_physics_cast_ray( &game_instance( )->physics, enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
     {
       if ( XMVectorGetX( XMVector3LengthSq( enemy_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( enemy_translation, raycast_result.raycast_result.point ) ) ) )
       {
@@ -87,7 +88,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )
   
   ECS_IMPORT( world, crude_scene_components );
   ECS_IMPORT( world, crude_physics_components );
-  ECS_IMPORT( world, crude_enemy_components );
+  ECS_IMPORT( world, crude_game_components );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_enemy_creation_observer_, EcsOnSet, { 
     { .id = ecs_id( crude_enemy ) }
