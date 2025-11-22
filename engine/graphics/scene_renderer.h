@@ -34,6 +34,7 @@ typedef struct crude_gfx_scene_renderer_creation
   void                                                    *task_scheduler;
   crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
+  bool                                                     imgui_pass_enalbed;
 } crude_gfx_scene_renderer_creation;
 
 typedef struct crude_gfx_scene_renderer_options
@@ -63,6 +64,7 @@ typedef struct crude_gfx_scene_renderer
    * Base
    **********************/
   crude_gfx_scene_renderer_options                         options;
+  bool                                                     imgui_pass_enalbed;
   
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data

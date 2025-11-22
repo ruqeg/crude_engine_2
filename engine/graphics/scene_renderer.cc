@@ -66,6 +66,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
   scene_renderer->model_renderer_resources_manager = creation->model_renderer_resources_manager;
+  scene_renderer->imgui_pass_enalbed = creation->imgui_pass_enalbed;
 
   scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
   scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
@@ -375,7 +376,10 @@ crude_gfx_scene_renderer_initialize_pases
 {
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
 
-  crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
+  if ( scene_renderer->imgui_pass_enalbed )
+  {
+    crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
+  }
   crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
   crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
   crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
@@ -407,8 +411,11 @@ crude_gfx_scene_renderer_deinitialize_passes
 #endif
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-
-  crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  
+  if ( scene_renderer->imgui_pass_enalbed )
+  {
+    crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  }
   crude_gfx_gbuffer_early_pass_deinitialize( &scene_renderer->gbuffer_early_pass );
   crude_gfx_gbuffer_late_pass_deinitialize( &scene_renderer->gbuffer_late_pass );
   crude_gfx_depth_pyramid_pass_deinitialize( &scene_renderer->depth_pyramid_pass );
@@ -469,10 +476,14 @@ crude_gfx_scene_renderer_register_passes
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Register scene renderer passes." );
 
   scene_renderer->render_graph = render_graph;
+  
+  if ( scene_renderer->imgui_pass_enalbed )
+  {
+    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+  }
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_late_pass", crude_gfx_gbuffer_late_pass_pack( &scene_renderer->gbuffer_late_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );

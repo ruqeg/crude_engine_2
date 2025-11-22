@@ -50,7 +50,7 @@ typedef struct crude_physics_static_body
 typedef struct crude_physics_collision_shape
 {
   crude_physics_collision_shape_type                       type;
-  char const                                              *debug_model_filename;
+  //char const                                              *debug_model_filename;
   union
   {
     struct

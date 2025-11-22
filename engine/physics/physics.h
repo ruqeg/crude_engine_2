@@ -39,6 +39,13 @@ crude_physics_deinitialize
   _In_ crude_physics                                      *physics
 );
 
+CRUDE_API void
+crude_physics_update
+(
+  _In_ crude_physics                                      *physics,
+  _In_ float64                                             delta_time
+);
+
 CRUDE_API crude_physics_character_body_handle
 crude_physics_create_character_body
 (

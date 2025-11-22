@@ -274,7 +274,11 @@ crude_process_events_system_
           {
             focused_input->should_close_window = true;
           }
-          focused_input->callback( focused_input->ctx, &sdl_event );
+
+          if ( focused_input->callback )
+          {
+            focused_input->callback( focused_input->ctx, &sdl_event );
+          }
         }
       }
     }
@@ -339,7 +343,10 @@ crude_process_events_system_
             focused_input->mouse.scroll.x = sdl_event.wheel.x;
             focused_input->mouse.scroll.y = sdl_event.wheel.y;
           }
-          focused_input->callback( focused_input->ctx, &sdl_event );
+          if ( focused_input->callback )
+          {
+            focused_input->callback( focused_input->ctx, &sdl_event );
+          }
         }
       }
     }
@@ -379,7 +386,11 @@ crude_process_events_system_
             uint32 sym = key_sym_( sdl_event.key.key );
             key_up_( &focused_input->keys[ sym ] );
           }
-          focused_input->callback( focused_input->ctx, &sdl_event );
+
+          if ( focused_input->callback )
+          {
+            focused_input->callback( focused_input->ctx, &sdl_event );
+          }
         }
       }
     }

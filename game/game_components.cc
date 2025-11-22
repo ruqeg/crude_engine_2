@@ -58,31 +58,31 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_01 )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_01 )
 {
-  crude_entity editor_camera_node = crude_ecs_lookup_entity_from_parent( node, "editor_camera" );
-  crude_entity game_controller_node = crude_ecs_lookup_entity_from_parent( node, "player" );
-  crude_entity game_camera_node = crude_ecs_lookup_entity_from_parent( node, "player.pivot.camera" );
-
-  if ( ImGui::Checkbox( "Editor Camera Controller", &component->editor_camera_controller_enabled ) )
-  {
-    if ( component->editor_camera_controller_enabled )
-    {
-      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
-      
-      game_set_focused_camera_node( game_instance( ), editor_camera_node );
-      player_controller->_input_enabled = false;
-      free_camera->enabled = true;
-    }
-    else
-    { 
-      crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
-      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
-      
-      game_set_focused_camera_node( game_instance( ), game_camera_node );
-      player_controller->_input_enabled = true;
-      free_camera->enabled = false;
-    }
-  }
+  //crude_entity editor_camera_node = crude_ecs_lookup_entity_from_parent( node, "editor_camera" );
+  //crude_entity game_controller_node = crude_ecs_lookup_entity_from_parent( node, "player" );
+  //crude_entity game_camera_node = crude_ecs_lookup_entity_from_parent( node, "player.pivot.camera" );
+  //
+  //if ( ImGui::Checkbox( "Editor Camera Controller", &component->editor_camera_controller_enabled ) )
+  //{
+  //  if ( component->editor_camera_controller_enabled )
+  //  {
+  //    crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
+  //    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
+  //    
+  //    game_set_focused_camera_node( game_instance( ), editor_camera_node );
+  //    player_controller->input_enabled = false;
+  //    free_camera->enabled = true;
+  //  }
+  //  else
+  //  { 
+  //    crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
+  //    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
+  //    
+  //    game_set_focused_camera_node( game_instance( ), game_camera_node );
+  //    player_controller->input_enabled = true;
+  //    free_camera->enabled = false;
+  //  }
+  //}
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )

@@ -22,6 +22,7 @@ main
     
     game_creation = CRUDE_COMPOUNT_EMPTY( crude_game_creation );
     game_creation.engine = &engine;
+    game_creation.framerate = 60;
     game_creation.resources_relative_directory = "\\..\\..\\resources\\";
     game_creation.render_graph_relative_directory = "\\..\\..\\resources\\";
     game_creation.scene_relative_filepath = "\\..\\..\\resources\\game\\nodes\\level0.crude_node";

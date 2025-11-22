@@ -9,7 +9,6 @@
 #include <scene/scripts_components.h>
 #include <graphics/gpu_resources_loader.h>
 #include <physics/physics.h>
-#include <physics/physics_system.h>
 #include <game_components.h>
 #include <player_controller_system.h>
 #include <enemy_system.h>
@@ -113,12 +112,6 @@ game_parse_all_components_to_json_
   _In_ crude_scene                                         *scene
 );
 
-static void
-game_setup_custom_nodes_to_scene_
-( 
-  _In_ game_t                                             *game
-);
-
 void
 game_initialize
 (
@@ -129,11 +122,9 @@ game_initialize
   game->engine = creation->engine;
   game->framerate = creation->framerate;
   game->last_graphics_update_time = 0.f;
-  game->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 
   ECS_IMPORT( game->engine->world, crude_platform_system );
   //ECS_IMPORT( game->engine->world, crude_physics_system );
-  ECS_IMPORT( game->engine->world, crude_free_camera_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
   ECS_IMPORT( game->engine->world, crude_level_01_system );
@@ -146,13 +137,10 @@ game_initialize
   crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
-  
+
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, {
-    { .id = ecs_id( crude_transform ) },
-    { .id = ecs_id( crude_free_camera ) },
-  } );
+  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },
@@ -160,8 +148,6 @@ game_initialize
   } );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_physics_system_, EcsOnUpdate, game, { } );
-  
-  game_setup_custom_nodes_to_scene_( game );
 }
 
 void
@@ -204,8 +190,6 @@ game_postupdate
         crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
         crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
       }
-
-      game_setup_custom_nodes_to_scene_( game );
 
       NFD_FreePathU8( game->commands_queue[ i ].reload_scene.filepath );
       break;
@@ -303,14 +287,19 @@ game_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
-  game_t *game = ( game_t* )it->ctx;
+  game_t                                                  *game;
+  crude_gfx_texture                                       *final_render_texture;
 
+  game = ( game_t* )it->ctx;
+  final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
+  
   game->last_graphics_update_time += it->delta_time;
 
   if ( game->last_graphics_update_time < 1.f / game->framerate )
   {
     return;
   }
+
   game->last_graphics_update_time = 0.f;
 
   game->scene_renderer.options.camera_node = game->focused_camera_node;
@@ -324,11 +313,8 @@ game_graphics_system_
   }
 
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
-
-  {
-    crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
-    crude_gfx_present( &game->gpu, final_render_texture );
-  }
+  
+  crude_gfx_present( &game->gpu, final_render_texture );
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->scene.main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
@@ -360,24 +346,6 @@ game_input_system_
   game_t *game = ( game_t* )it->ctx;
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
-
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-    crude_input *input = &input_per_entity[ i ];
-    crude_window_handle *window_handle = &window_handle_per_entity[ i ];
-
-    if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
-    {
-      SDL_GetMouseState( &game->last_unrelative_mouse_position.x, &game->last_unrelative_mouse_position.y );
-      SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), true );
-    }
-    
-    if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
-    {
-      SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), game->last_unrelative_mouse_position.x, game->last_unrelative_mouse_position.y );
-      SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
-    }
-  }
 }
 
 void
@@ -387,6 +355,7 @@ game_physics_system_
 )
 {
   game_t *game = ( game_t* )it->ctx;
+  crude_physics_update( &game->physics, CRUDE_MIN( it->delta_time, 0.016f ) );
 }
 
 bool
@@ -605,7 +574,6 @@ game_initialize_graphics_
   crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   
 #ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
@@ -640,56 +608,6 @@ game_initialize_graphics_
   crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
 
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
-}
-
-void
-game_setup_custom_nodes_to_scene_
-( 
-  _In_ game_t                                             *game
-)
-{
-  crude_player_controller                                  *player_controller;
-  crude_free_camera                                        *free_camera;
-
-  {
-    crude_transform                                        editor_camera_node_transform;
-    crude_camera                                           editor_camera_node_camera;
-    crude_free_camera                                      editor_camera_node_crude_free_camera;
-
-    if ( crude_entity_valid( game->editor_camera_node ) )
-    {
-      crude_entity_destroy( game->editor_camera_node );
-    }
-
-    editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
-    XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
-    XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
-    XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
-
-    editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
-    editor_camera_node_camera.fov_radians = 1;
-    editor_camera_node_camera.aspect_ratio = 1.8;
-    editor_camera_node_camera.near_z = 0.001;
-    editor_camera_node_camera.far_z = 1000;
-
-    editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
-    XMStoreFloat3( &editor_camera_node_crude_free_camera.moving_speed_multiplier, XMVectorReplicate( 7 ) );
-    XMStoreFloat2( &editor_camera_node_crude_free_camera.rotating_speed_multiplier, XMVectorReplicate( -0.001 ) );
-
-    game->editor_camera_node = crude_entity_create_empty( game->scene.world, "editor_camera" );
-    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_transform, { editor_camera_node_transform } );
-    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_camera, { editor_camera_node_camera } );
-    CRUDE_ENTITY_SET_COMPONENT( game->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
-  }
-
-  game->editor_camera_node = crude_ecs_lookup_entity_from_parent( game->scene.main_node, "editor_camera" );
-  game->focused_camera_node = game->editor_camera_node;
-
-  crude_physics_enable_simulation( &game->physics, false );
-  
-  free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->editor_camera_node, crude_free_camera );
-  free_camera->entity_input = game->scene.input_entity;
-  free_camera->enabled = true;
 }
 
 void

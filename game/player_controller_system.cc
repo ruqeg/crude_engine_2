@@ -29,19 +29,23 @@ crude_player_controller_creation_observer_
   _In_ ecs_iter_t *it
 )
 {
+  game_t *game = game_instance( );
   crude_player_controller *player_controllers_per_entity = ecs_field( it, crude_player_controller, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_player_controller *player_controller = &player_controllers_per_entity[ i ];
-    crude_entity entity = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( entity, "hitbox" );
+    crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
     crude_physics_character_body *hitbox_body = crude_physics_access_character_body( &game_instance( )->physics, *hitbox_body_handle );
     hitbox_body->callback_container.fun = crude_hitbox_callback;
 
     player_controller->withdrawal = 1;
+  
+    player_controller->input_enabled = true;
+    game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
   }
 }
 
@@ -51,6 +55,7 @@ crude_player_controller_update_system_
   _In_ ecs_iter_t *it
 )
 {
+  game_t *game = game_instance( );
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player_controller *player_controllere_per_entity = ecs_field( it, crude_player_controller, 1 );
 
@@ -70,11 +75,11 @@ crude_player_controller_update_system_
 
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game_get_scene( game_instance( ) )->input_entity, crude_input );
+    input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game_get_scene( game )->input_entity, crude_input );
     
     physics_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     
-    velocity = crude_physics_character_body_get_velocity( &game_instance( )->physics, *physics_body );
+    velocity = crude_physics_character_body_get_velocity( &game->physics, *physics_body );
  
     if ( input->keys[ 83 /* shift */ ].current )
     {
@@ -85,7 +90,7 @@ crude_player_controller_update_system_
       moving_limit = player_controller->walk_speed;
     }
 
-    on_floor = crude_physics_character_body_on_floor( &game_instance( )->physics, *physics_body );
+    on_floor = crude_physics_character_body_on_floor( &game->physics, *physics_body );
     if ( on_floor )
     {
       velocity = XMVectorSetY( velocity, 0.f );
@@ -95,7 +100,7 @@ crude_player_controller_update_system_
       velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
     }
 
-    if ( player_controller->_input_enabled )
+    if ( player_controller->input_enabled )
     {
       crude_transform                                     *pivot_node_transform;
       crude_entity                                         pivot_node;
@@ -125,7 +130,6 @@ crude_player_controller_update_system_
         }
       }
 
-      if ( input->mouse.right.current )
       {
         XMVECTOR rotation = XMLoadFloat4( &pivot_node_transform->rotation );
         XMVECTOR camera_up = g_XMIdentityR1;
@@ -135,15 +139,15 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_node_transform->rotation, rotation );
       }
       
-      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( &game_instance( )->physics, *physics_body ) )
+      if ( input->keys[ 32 /* space */ ].current && crude_physics_character_body_on_floor( &game->physics, *physics_body ) )
       {
         velocity = XMVectorSetY( velocity, player_controller->jump_velocity );
       }
     }
 
-    crude_physics_character_body_set_velocity( &game_instance( )->physics, *physics_body, velocity );
+    crude_physics_character_body_set_velocity( &game->physics, *physics_body, velocity );
     
-    if ( player_controller->_input_enabled )
+    if ( player_controller->input_enabled )
     {
       player_controller->withdrawal -= 0.0001 * it->delta_time;
 

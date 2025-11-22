@@ -84,8 +84,6 @@ typedef struct game_t
   XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
-  crude_entity                                             editor_camera_node;
-
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;

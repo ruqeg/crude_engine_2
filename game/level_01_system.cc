@@ -1,6 +1,9 @@
-#include <core/memory.h>
+#include <SDL3/SDL.h>
 
+#include <core/memory.h>
+#include <game.h>
 #include <game_components.h>
+#include <platform/platform.h>
 
 #include <level_01_system.h>
 
@@ -13,14 +16,19 @@ crude_level_01_creation_observer_
   ecs_iter_t *it
 )
 {
+  game_t *game = game_instance( );
   crude_level_01 *enemies_per_entity = ecs_field( it, crude_level_01, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_level_01                                        *level;
-
+    crude_window_handle                                   *window_handle;
+    
     level = &enemies_per_entity[ i ];
     level->editor_camera_controller_enabled = true;
+
+    window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
+    crude_platform_hide_cursor( *window_handle );
   }
 }
 

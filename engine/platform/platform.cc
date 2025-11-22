@@ -39,3 +39,21 @@ crude_platform_service_deinitialize
   
   CRUDE_LOG_INFO( CRUDE_CHANNEL_PLATFORM, "SDL successfully shutdown" );
 }
+
+void
+crude_platform_hide_cursor
+(
+	_In_ crude_window_handle																window_handle
+)
+{
+  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), true );
+}
+
+void
+crude_platform_show_cursor
+(
+	_In_ crude_window_handle																window_handle
+)
+{
+  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), true );
+}

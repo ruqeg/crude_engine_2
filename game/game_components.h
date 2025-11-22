@@ -27,7 +27,7 @@ typedef struct crude_player_controller
   
   float32                                                  withdrawal;
 
-  bool                                                     _input_enabled;
+  bool                                                     input_enabled;
 } crude_player_controller;
 
 

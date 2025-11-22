@@ -55,7 +55,7 @@
 					"children":	[{
 							"name":	"camera",
 							"transform":	{
-								"translation":	[0, 0.10000000149011612, 0.5],
+								"translation":	[0, 0, 0 ],
 								"rotation":	[0, 0, 0, 1],
 								"scale":	[1, 1, 1]
 							},
@@ -65,18 +65,6 @@
 									"near_z":	0.00999999977648258,
 									"far_z":	1000,
 									"aspect_ratio":	1.7999999523162842
-								}],
-							"children":	[]
-						}, {
-							"name":	"redball_model",
-							"transform":	{
-								"translation":	[0, 0, 0],
-								"rotation":	[0, 0, 0, 1],
-								"scale":	[0.5, 0.5, 0.5]
-							},
-							"components":	[{
-									"type":	"crude_gltf",
-									"path":	"game\\models\\redball_default.gltf"
 								}],
 							"children":	[]
 						}]
