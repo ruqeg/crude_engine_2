@@ -1421,7 +1421,7 @@ crude_gfx_access_technique_by_name
 {
   uint64 technique_name_hashed = crude_hash_string( technique_name, 0 );
   int64 technique_index = CRUDE_HASHMAP_GET_INDEX( gpu->resource_cache.techniques, technique_name_hashed );
-  CRUDE_ASSERT( technique_index > 0 );
+  CRUDE_ASSERT( technique_index > -1 );
 
   crude_gfx_technique *technique = gpu->resource_cache.techniques[ technique_index ].value;
   return technique;

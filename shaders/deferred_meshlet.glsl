@@ -343,7 +343,7 @@ void main()
     radiance = scene.background_color * scene.background_intensity;
   }
 
-  out_radiance = vec4( radiance, albedo.a );
+  out_radiance = vec4( radiance, sqrt( albedo.a ) );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

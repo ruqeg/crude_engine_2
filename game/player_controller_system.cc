@@ -98,9 +98,9 @@ crude_player_controller_update_system_
     pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
     basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
 
-    if ( player_controller->fly_mode )
+    if ( player_controller->input_enabled && player_controller->fly_mode )
     {
-      input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, input->keys[ SDL_SCANCODE_SPACE ].current - input->keys[ SDL_SCANCODE_LCTRL ].current, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
+      input_dir = XMVectorSet( input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current, input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current, input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current, 0 );
       
       direction = XMVector3Normalize( XMVector3TransformNormal( input_dir, pivot_to_world ) );
 
