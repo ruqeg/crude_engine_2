@@ -1,9 +1,9 @@
-#include <core/profiler.h>
-#include <core/hash_map.h>
-#include <scene/scene_components.h>
-#include <graphics/scene_renderer.h>
+#include <engine/core/profiler.h>
+#include <engine/core/hash_map.h>
+#include <engine/scene/scene_components.h>
+#include <engine/graphics/scene_renderer.h>
 
-#include <graphics/passes/gbuffer_early_pass.h>
+#include <engine/graphics/passes/gbuffer_early_pass.h>
 
 void
 crude_gfx_gbuffer_early_pass_initialize

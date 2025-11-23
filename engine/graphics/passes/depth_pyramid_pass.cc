@@ -1,8 +1,8 @@
 
-#include <core/hash_map.h>
-#include <graphics/scene_renderer.h>
+#include <engine/core/hash_map.h>
+#include <engine/graphics/scene_renderer.h>
 
-#include <graphics/passes/depth_pyramid_pass.h>
+#include <engine/graphics/passes/depth_pyramid_pass.h>
 
 void
 crude_gfx_depth_pyramid_pass_initialize

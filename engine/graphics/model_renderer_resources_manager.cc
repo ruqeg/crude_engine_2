@@ -2,11 +2,11 @@
 #include <stb_image.h>
 #include <meshoptimizer.h>
 
-#include <core/file.h>
-#include <core/hash_map.h>
-#include <core/memory.h>
+#include <engine/core/file.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/memory.h>
 
-#include <graphics/model_renderer_resources_manager.h>
+#include <engine/graphics/model_renderer_resources_manager.h>
 
 /**
  * Scene Renderer Register Nodes & Gltf & Lights

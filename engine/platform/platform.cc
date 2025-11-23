@@ -2,10 +2,10 @@
 #include <SDL3/SDL_vulkan.h>
 #include <nfd.h>
 
-#include <core/file.h>
-#include <core/assert.h>
+#include <engine/core/file.h>
+#include <engine/core/assert.h>
 
-#include <platform/platform.h>
+#include <engine/platform/platform.h>
 
 void
 crude_platform_service_initialize

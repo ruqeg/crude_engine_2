@@ -1,8 +1,8 @@
 #pragma once
 
-#include <core/math.h>
-#include <core/ecs.h>
-#include <scene/components_serialization.h>
+#include <engine/core/math.h>
+#include <engine/core/ecs.h>
+#include <engine/scene/components_serialization.h>
 
 typedef struct crude_node_external
 {

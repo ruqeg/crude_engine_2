@@ -1,7 +1,7 @@
 #pragma once
 
-#include <graphics/render_graph.h>
-#include <graphics/scene_renderer_resources.h>
+#include <engine/graphics/render_graph.h>
+#include <engine/graphics/scene_renderer_resources.h>
 
 #define CRUDE_GRAPHICS_DEPTH_PYRAMID_PASS_MAX_LEVELS ( 16 )
 

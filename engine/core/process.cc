@@ -1,9 +1,9 @@
 #include <Windows.h>
 #include <stdio.h>
 
-#include <core/log.h>
+#include <engine/core/log.h>
 
-#include <core/process.h>
+#include <engine/core/process.h>
 
 char                s_process_log_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];
 static char         k_process_output_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];

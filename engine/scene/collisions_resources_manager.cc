@@ -1,9 +1,9 @@
 #include <cgltf.h>
 
-#include <core/hash_map.h>
-#include <core/file.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/file.h>
 
-#include <scene/collisions_resources_manager.h>
+#include <engine/scene/collisions_resources_manager.h>
 
 crude_collisions_resources_manager                        *manager_instance_;
 

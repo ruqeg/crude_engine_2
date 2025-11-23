@@ -1,10 +1,10 @@
-#include <core/log.h>
-#include <core/profiler.h>
-#include <scene/scripts_components.h>
-#include <scene/scene_components.h>
-#include <platform/platform_components.h>
+#include <engine/core/log.h>
+#include <engine/core/profiler.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/scene/scene_components.h>
+#include <engine/platform/platform_components.h>
 
-#include <scene/free_camera_system.h>
+#include <engine/scene/free_camera_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system );
 

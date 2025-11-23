@@ -1,4 +1,4 @@
-#include <graphics/scene_renderer_resources.h>
+#include <engine/graphics/scene_renderer_resources.h>
 
 void
 crude_gfx_camera_to_camera_gpu

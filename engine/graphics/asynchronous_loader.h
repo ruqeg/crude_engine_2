@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/gpu_device.h>
+#include <engine/graphics/gpu_device.h>
 
 /**
  * - Process load from file request

@@ -2,9 +2,9 @@
 
 #include <TaskScheduler_c.h>
 
-#include <graphics/asynchronous_loader.h>
-#include <core/ecs.h>
-#include <core/memory.h>
+#include <engine/graphics/asynchronous_loader.h>
+#include <engine/core/ecs.h>
+#include <engine/core/memory.h>
 
 typedef struct crude_engine_creation
 {

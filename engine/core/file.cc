@@ -8,9 +8,9 @@
 #define GetCurrentDir getcwd
 #endif
 
-#include <core/assert.h>
+#include <engine/core/assert.h>
 
-#include <core/file.h>
+#include <engine/core/file.h>
 
 static long _get_file_size
 (

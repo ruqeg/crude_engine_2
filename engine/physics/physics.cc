@@ -1,14 +1,14 @@
 #include <flecs.h>
 #include <stdarg.h>
 
-#include <core/log.h>
-#include <core/array.h>
-#include <core/hash_map.h>
-#include <core/assert.h>
-#include <scene/scene_components.h>
-#include <physics/physics_components.h>
+#include <engine/core/log.h>
+#include <engine/core/array.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/assert.h>
+#include <engine/scene/scene_components.h>
+#include <engine/physics/physics_components.h>
 
-#include <physics/physics.h>
+#include <engine/physics/physics.h>
 
 void
 crude_physics_initialize

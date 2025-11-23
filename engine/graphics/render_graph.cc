@@ -1,12 +1,12 @@
 #include <cJSON.h>
 
-#include <core/file.h>
-#include <core/log.h>
-#include <core/assert.h>
-#include <core/hash_map.h>
-#include <core/string.h>
+#include <engine/core/file.h>
+#include <engine/core/log.h>
+#include <engine/core/assert.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/string.h>
 
-#include <graphics/render_graph.h>
+#include <engine/graphics/render_graph.h>
 
 /************************************************
  *

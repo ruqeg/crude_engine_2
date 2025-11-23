@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/color.h>
-#include <graphics/gpu_device.h>
+#include <engine/core/color.h>
+#include <engine/graphics/gpu_device.h>
 
 typedef enum crude_gfx_gpu_pipeline_statistics_v
 {

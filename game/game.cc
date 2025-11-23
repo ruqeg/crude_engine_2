@@ -4,16 +4,16 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #endif
 
-#include <core/hash_map.h>
-#include <core/file.h>
-#include <core/memory.h>
-#include <core/process.h>
-#include <platform/platform_system.h>
-#include <platform/platform_components.h>
-#include <scene/scene_components.h>
-#include <scene/scripts_components.h>
-#include <graphics/gpu_resources_loader.h>
-#include <physics/physics.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/file.h>
+#include <engine/core/memory.h>
+#include <engine/core/process.h>
+#include <engine/platform/platform_system.h>
+#include <engine/platform/platform_components.h>
+#include <engine/scene/scene_components.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/graphics/gpu_resources_loader.h>
+#include <engine/physics/physics.h>
 #include <game_components.h>
 #include <player_controller_system.h>
 #include <enemy_system.h>
@@ -241,7 +241,7 @@ game_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
   
   crude_devmenu_deinitialize( &game->devmenu );
-  crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
+  SDSDWS TODO crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( &game->physics );

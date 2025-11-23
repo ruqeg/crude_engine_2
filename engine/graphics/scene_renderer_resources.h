@@ -1,8 +1,8 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <scene/scene_components.h>
-#include <graphics/gpu_resources.h>
+#include <engine/core/ecs.h>
+#include <engine/scene/scene_components.h>
+#include <engine/graphics/gpu_resources.h>
 
 #define CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT ( ( CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 31 ) / 32 )
 

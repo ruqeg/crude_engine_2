@@ -1,9 +1,9 @@
 #include <SDL3/SDL.h>
 
-#include <core/memory.h>
+#include <engine/core/memory.h>
 #include <game.h>
 #include <game_components.h>
-#include <platform/platform.h>
+#include <engine/platform/platform.h>
 
 #include <level_01_system.h>
 

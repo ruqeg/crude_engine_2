@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include <core/assert.h>
+#include <engine/core/assert.h>
 
-#include <core/resource_pool.h>
+#include <engine/core/resource_pool.h>
 
 void
 crude_resource_pool_initialize

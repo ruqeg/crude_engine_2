@@ -1,7 +1,7 @@
 #pragma once
 
-#include <graphics/gpu_device.h>
-#include <core/memory.h>
+#include <engine/graphics/gpu_device.h>
+#include <engine/core/memory.h>
 
 /************************************************
  *

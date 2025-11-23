@@ -1,10 +1,10 @@
 #include <cJSON.h>
 
-#include <core/file.h>
-#include <core/string.h>
-#include <core/hash_map.h>
+#include <engine/core/file.h>
+#include <engine/core/string.h>
+#include <engine/core/hash_map.h>
 
-#include <graphics/gpu_resources_loader.h>
+#include <engine/graphics/gpu_resources_loader.h>
 
 /************************************************
  *

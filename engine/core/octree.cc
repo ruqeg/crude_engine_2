@@ -1,7 +1,7 @@
-#include <core/array.h>
-#include <core/assert.h>
+#include <engine/core/array.h>
+#include <engine/core/assert.h>
 
-#include <core/octree.h>
+#include <engine/core/octree.h>
 
 void
 crude_octree_initialize

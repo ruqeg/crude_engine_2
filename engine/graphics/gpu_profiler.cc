@@ -1,4 +1,4 @@
-#include <graphics/gpu_profiler.h>
+#include <engine/graphics/gpu_profiler.h>
 
 void
 crude_gfx_gpu_time_queries_manager_initialize

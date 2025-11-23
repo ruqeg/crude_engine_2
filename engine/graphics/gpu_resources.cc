@@ -1,9 +1,9 @@
 #include <vulkan/vk_enum_string_helper.h>
 
-#include <core/assert.h>
-#include <core/hash_map.h>
+#include <engine/core/assert.h>
+#include <engine/core/hash_map.h>
 
-#include <graphics/gpu_resources.h>
+#include <engine/graphics/gpu_resources.h>
 
 /************************************************
  *

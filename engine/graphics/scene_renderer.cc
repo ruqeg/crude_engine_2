@@ -3,16 +3,16 @@
 #include <stb_image.h>
 #include <meshoptimizer.h>
 
-#include <core/profiler.h>
-#include <core/array.h>
-#include <core/file.h>
-#include <core/hash_map.h>
+#include <engine/core/profiler.h>
+#include <engine/core/array.h>
+#include <engine/core/file.h>
+#include <engine/core/hash_map.h>
 
-#include <scene/scene_components.h>
-#include <physics/physics_components.h>
+#include <engine/scene/scene_components.h>
+#include <engine/physics/physics_components.h>
 
-#include <graphics/gpu_profiler.h>
-#include <graphics/scene_renderer.h>
+#include <engine/graphics/gpu_profiler.h>
+#include <engine/graphics/scene_renderer.h>
 
 /**
  * Scene Renderer Other

@@ -1,23 +1,21 @@
 #pragma once
 
-#include <graphics/asynchronous_loader.h>
-#include <graphics/scene_renderer_resources.h>
-#include <graphics/passes/imgui_pass.h>
-#include <graphics/passes/gbuffer_early_pass.h>
-#include <graphics/passes/gbuffer_late_pass.h>
-#include <graphics/passes/depth_pyramid_pass.h>
-#include <graphics/passes/culling_early_pass.h>
-#include <graphics/passes/culling_late_pass.h>
-#include <graphics/passes/debug_pass.h>
-#include <graphics/passes/light_pass.h>
-#include <graphics/passes/pointlight_shadow_pass.h>
-#include <graphics/passes/postprocessing_pass.h>
-#include <graphics/passes/ray_tracing_solid_pass.h>
-#include <graphics/passes/indirect_light_pass.h>
-#include <graphics/passes/collision_visualizer_pass.h>
-#include <graphics/model_renderer_resources_manager.h>
-
-typedef struct crude_scene crude_scene;
+#include <engine/graphics/asynchronous_loader.h>
+#include <engine/graphics/scene_renderer_resources.h>
+#include <engine/graphics/passes/imgui_pass.h>
+#include <engine/graphics/passes/gbuffer_early_pass.h>
+#include <engine/graphics/passes/gbuffer_late_pass.h>
+#include <engine/graphics/passes/depth_pyramid_pass.h>
+#include <engine/graphics/passes/culling_early_pass.h>
+#include <engine/graphics/passes/culling_late_pass.h>
+#include <engine/graphics/passes/debug_pass.h>
+#include <engine/graphics/passes/light_pass.h>
+#include <engine/graphics/passes/pointlight_shadow_pass.h>
+#include <engine/graphics/passes/postprocessing_pass.h>
+#include <engine/graphics/passes/ray_tracing_solid_pass.h>
+#include <engine/graphics/passes/indirect_light_pass.h>
+#include <engine/graphics/passes/collision_visualizer_pass.h>
+#include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_gfx_model_renderer_resources_instance
 {

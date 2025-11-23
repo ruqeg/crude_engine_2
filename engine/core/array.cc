@@ -1,6 +1,6 @@
-#include <core/assert.h>
+#include <engine/core/assert.h>
 
-#include <core/array.h>
+#include <engine/core/array.h>
 
 void*
 crude_array_growf

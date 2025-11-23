@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <core/ecs.h>
+#include <engine/core/ecs.h>
 
 typedef void ( *crude_input_callback_function )
 (

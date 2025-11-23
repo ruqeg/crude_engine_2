@@ -1,7 +1,7 @@
-#include <graphics/scene_renderer.h>
-#include <graphics/scene_renderer_resources.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/graphics/scene_renderer_resources.h>
 
-#include <graphics/passes/pointlight_shadow_pass.h>
+#include <engine/graphics/passes/pointlight_shadow_pass.h>
 
 void
 crude_gfx_pointlight_shadow_pass_initialize

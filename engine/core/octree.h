@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/math.h>
-#include <core/memory.h>
+#include <engine/core/math.h>
+#include <engine/core/memory.h>
 
 // !TODO implemente later, i'm too lazy for now 
 typedef struct crude_octree

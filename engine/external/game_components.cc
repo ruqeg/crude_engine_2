@@ -1,10 +1,8 @@
 #include <imgui/imgui.h>
 
-#include <core/memory.h>
-#include <scene/scripts_components.h>
-#include <game.h>
-
-#include <game_components.h>
+#include <engine/core/memory.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/external/game_components.h>
 
 ECS_COMPONENT_DECLARE( crude_enemy );
 ECS_COMPONENT_DECLARE( crude_level_01 );

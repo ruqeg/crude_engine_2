@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/array.h>
-#include <core/memory.h>
+#include <engine/core/array.h>
+#include <engine/core/memory.h>
 
 typedef struct crude_array_header
 {

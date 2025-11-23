@@ -1,7 +1,7 @@
 #pragma once
 
 #include <flecs.h>
-#include <core/alias.h>
+#include <engine/core/alias.h>
 
 typedef struct crude_entity
 {

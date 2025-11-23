@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <cJSON.h>
 
-#include <core/memory.h>
-#include <core/math.h>
-#include <core/assert.h>
+#include <engine/core/memory.h>
+#include <engine/core/math.h>
+#include <engine/core/assert.h>
 
 float32
 crude_random_unit_f32

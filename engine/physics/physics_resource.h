@@ -1,9 +1,9 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/math.h>
-#include <core/octree.h>
-#include <scene/collisions_resources_manager.h>
+#include <engine/core/ecs.h>
+#include <engine/core/math.h>
+#include <engine/core/octree.h>
+#include <engine/scene/collisions_resources_manager.h>
 
 typedef uint32 crude_physics_resource_index;
 

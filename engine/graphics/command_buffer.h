@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/gpu_resources.h>
+#include <engine/graphics/gpu_resources.h>
 
 /************************************************
  *

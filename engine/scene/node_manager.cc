@@ -1,16 +1,16 @@
 #include <cJSON.h>
 
-#include <core/assert.h>
-#include <core/file.h>
-#include <core/string.h>
-#include <core/array.h>
-#include <scene/scene_components.h>
-#include <scene/scripts_components.h>
-#include <core/hash_map.h>
-#include <physics/physics_components.h>
-#include <physics/physics_components.h>
+#include <engine/core/assert.h>
+#include <engine/core/file.h>
+#include <engine/core/string.h>
+#include <engine/core/array.h>
+#include <engine/scene/scene_components.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/core/hash_map.h>
+#include <engine/physics/physics_components.h>
+#include <engine/physics/physics_components.h>
 
-#include <scene/node_manager.h>
+#include <engine/scene/node_manager.h>
 
 static crude_entity
 crude_node_manager_load_node_from_file_
@@ -134,16 +134,13 @@ crude_node_manager_remove_node
 }
 
 void
-crude_node_manager_save_node_to_file
+crude_node_manager_save_node_by_file_to_file
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_absolute_filepath,
   _In_ char const                                         *saved_absolute_filepath
 )
 {
-  cJSON                                                   *node_json;
-  char const                                              *node_str;
-  crude_entity                                             node;
   int64                                                    node_index;
   uint64                                                   filename_hashed;
 
@@ -154,7 +151,19 @@ crude_node_manager_save_node_to_file
     return;
   }
   
-  node = manager->hashed_absolute_filepath_to_node[ node_index ].value;
+  crude_node_manager_save_node_to_file( manager, manager->hashed_absolute_filepath_to_node[ node_index ].value, saved_absolute_filepath );
+}
+
+void
+crude_node_manager_save_node_to_file
+(
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_entity                                        node,
+  _In_ char const                                         *saved_absolute_filepath
+)
+{
+  cJSON                                                   *node_json;
+  char const                                              *node_str;
   node_json = crude_node_manager_node_to_json_hierarchy_( manager, node );
   node_str = cJSON_Print( node_json );
   crude_write_file( saved_absolute_filepath, node_str, strlen( node_str ) ); // TODO

@@ -4,9 +4,9 @@
 #include <SDL3/SDL_vulkan.h>
 #include <threads.h>
 
-#include <core/string.h>
-#include <core/assert.h>
-#include <graphics/command_buffer.h>
+#include <engine/core/string.h>
+#include <engine/core/assert.h>
+#include <engine/graphics/command_buffer.h>
 
 typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;

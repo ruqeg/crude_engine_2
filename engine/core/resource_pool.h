@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/memory.h>
+#include <engine/core/memory.h>
 
 #define CRUDE_RESOURCE_INDEX_INVALID 0xffffffff
 

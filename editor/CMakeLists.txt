@@ -8,7 +8,7 @@ file(GLOB_RECURSE HEADERS *.h)
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
 add_executable(${PROJECT_NAME} ${CRUDE_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CRUDE_GAME_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}\\..\\)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine)
 

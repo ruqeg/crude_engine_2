@@ -1,9 +1,9 @@
-#include <core/assert.h>
+#include <engine/core/assert.h>
 #include <imgui/imgui.h>
 
-#include <scene/scene_components.h>
-#include <physics/physics_components.h>
-#include <scene/node_manager.h>
+#include <engine/scene/scene_components.h>
+#include <engine/physics/physics_components.h>
+#include <engine/scene/node_manager.h>
 
 ECS_COMPONENT_DECLARE( crude_transform );
 ECS_COMPONENT_DECLARE( crude_light );

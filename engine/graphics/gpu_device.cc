@@ -3,14 +3,14 @@
 #include <ctype.h>
 #include <renderdoc_app.h>
 
-#include <core/profiler.h>
-#include <core/string.h>
-#include <core/file.h>
-#include <core/process.h>
-#include <core/hash_map.h>
-#include <graphics/gpu_profiler.h>
+#include <engine/core/profiler.h>
+#include <engine/core/string.h>
+#include <engine/core/file.h>
+#include <engine/core/process.h>
+#include <engine/core/hash_map.h>
+#include <engine/graphics/gpu_profiler.h>
 
-#include <graphics/gpu_device.h>
+#include <engine/graphics/gpu_device.h>
 
 /************************************************
  *

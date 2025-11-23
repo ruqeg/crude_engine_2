@@ -1,7 +1,7 @@
-#include <core/assert.h>
-#include <core/string.h>
+#include <engine/core/assert.h>
+#include <engine/core/string.h>
 
-#include <physics/physics_resource.h>
+#include <engine/physics/physics_resource.h>
 
 char const*
 crude_physics_collision_shape_type_to_string

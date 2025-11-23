@@ -1,6 +1,6 @@
-#include <graphics/scene_renderer.h>
+#include <engine/graphics/scene_renderer.h>
 
-#include <graphics/passes/collision_visualizer_pass.h>
+#include <engine/graphics/passes/collision_visualizer_pass.h>
 
 void
 crude_gfx_collision_visualizer_pass_initialize

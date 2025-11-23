@@ -1,11 +1,11 @@
-#include <core/profiler.h>
-#include <core/time.h>
-#include <core/array.h>
-#include <core/log.h>
-#include <core/ecs.h>
-#include <platform/platform.h>
+#include <engine/core/profiler.h>
+#include <engine/core/time.h>
+#include <engine/core/array.h>
+#include <engine/core/log.h>
+#include <engine/core/ecs.h>
+#include <engine/platform/platform.h>
 
-#include <engine.h>
+#include <engine/engine.h>
 
 static void
 pinned_task_run_loop_

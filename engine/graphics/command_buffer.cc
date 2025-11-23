@@ -1,10 +1,10 @@
-#include <core/assert.h>
-#include <core/array.h>
-#include <core/profiler.h>
-#include <graphics/gpu_device.h>
-#include <graphics/gpu_profiler.h>
+#include <engine/core/assert.h>
+#include <engine/core/array.h>
+#include <engine/core/profiler.h>
+#include <engine/graphics/gpu_device.h>
+#include <engine/graphics/gpu_profiler.h>
 
-#include <graphics/command_buffer.h>
+#include <engine/graphics/command_buffer.h>
 
 
 /************************************************

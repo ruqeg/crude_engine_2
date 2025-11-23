@@ -1,6 +1,6 @@
-#include <graphics/scene_renderer.h>
+#include <engine/graphics/scene_renderer.h>
 
-#include <graphics/passes/debug_pass.h>
+#include <engine/graphics/passes/debug_pass.h>
 
 void
 crude_gfx_debug_pass_initialize

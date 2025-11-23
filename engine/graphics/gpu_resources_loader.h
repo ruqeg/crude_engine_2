@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/scene_renderer.h>
+#include <engine/graphics/scene_renderer.h>
 
 CRUDE_API void
 crude_gfx_technique_load_from_file

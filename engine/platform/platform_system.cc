@@ -2,13 +2,13 @@
 #include <SDL3/SDL_vulkan.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 
-#include <core/array.h>
-#include <core/profiler.h>
-#include <core/memory.h>
-#include <core/assert.h>
-#include <platform/platform_components.h>
+#include <engine/core/array.h>
+#include <engine/core/profiler.h>
+#include <engine/core/memory.h>
+#include <engine/core/assert.h>
+#include <engine/platform/platform_components.h>
 
-#include <platform/platform_system.h>
+#include <engine/platform/platform_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_process_events_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_creation_observer_ );

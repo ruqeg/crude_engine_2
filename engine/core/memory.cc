@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <core/profiler.h>
-#include <core/assert.h>
+#include <engine/core/profiler.h>
+#include <engine/core/assert.h>
 
-#include <core/memory.h>
+#include <engine/core/memory.h>
 
 typedef struct memory_statistics
 {

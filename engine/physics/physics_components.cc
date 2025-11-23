@@ -1,12 +1,12 @@
 #include <imgui/imgui.h>
 
-#include <core/string.h>
-#include <core/memory.h>
-#include <core/assert.h>
-#include <physics/physics.h>
-#include <scene/node_manager.h>
+#include <engine/core/string.h>
+#include <engine/core/memory.h>
+#include <engine/core/assert.h>
+#include <engine/physics/physics.h>
+#include <engine/scene/node_manager.h>
 
-#include <physics/physics_components.h>
+#include <engine/physics/physics_components.h>
 
 ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
 ECS_COMPONENT_DECLARE( crude_physics_character_body_handle );

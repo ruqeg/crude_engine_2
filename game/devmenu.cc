@@ -3,10 +3,10 @@
 #include <SDL3/SDL.h>
 #include <imgui/imgui.h>
 
-#include <core/hash_map.h>
-#include <platform/platform.h>
+#include <engine/core/hash_map.h>
+#include <engine/platform/platform.h>
 #include <game.h>
-#include <scene/scripts_components.h>
+#include <engine/scene/scripts_components.h>
 #include <game_components.h>
 
 #include <devmenu.h>

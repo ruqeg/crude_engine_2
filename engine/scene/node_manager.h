@@ -1,9 +1,9 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/octree.h>
-#include <core/memory.h>
-#include <core/string.h>
+#include <engine/core/ecs.h>
+#include <engine/core/octree.h>
+#include <engine/core/memory.h>
+#include <engine/core/string.h>
 
 typedef struct crude_node_manager crude_node_manager;
 typedef struct crude_physics crude_physics;
@@ -84,9 +84,17 @@ crude_node_manager_remove_node
 );
 
 CRUDE_API void
-crude_node_manager_save_node_to_file
+crude_node_manager_save_node_by_file_to_file
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_absolute_filepath,
+  _In_ char const                                         *saved_absolute_filepath
+);
+
+CRUDE_API void
+crude_node_manager_save_node_to_file
+(
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_entity                                        node,
   _In_ char const                                         *saved_absolute_filepath
 );

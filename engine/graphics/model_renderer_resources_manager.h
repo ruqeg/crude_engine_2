@@ -1,10 +1,10 @@
 #pragma once
 
-#include <graphics/gpu_device.h>
+#include <engine/graphics/gpu_device.h>
 
-#include <scene/scene_components.h>
-#include <graphics/model_renderer_resources.h>
-#include <graphics/asynchronous_loader.h>
+#include <engine/scene/scene_components.h>
+#include <engine/graphics/model_renderer_resources.h>
+#include <engine/graphics/asynchronous_loader.h>
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {

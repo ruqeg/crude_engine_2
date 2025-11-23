@@ -1,8 +1,8 @@
-#include <core/hash_map.h>
-#include <graphics/scene_renderer.h>
-#include <graphics/scene_renderer_resources.h>
+#include <engine/core/hash_map.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/graphics/scene_renderer_resources.h>
 
-#include <graphics/passes/culling_early_pass.h>
+#include <engine/graphics/passes/culling_early_pass.h>
 
 void
 crude_gfx_culling_early_pass_initialize

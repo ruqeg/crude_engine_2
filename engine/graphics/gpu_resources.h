@@ -4,10 +4,10 @@
 #include <vma_usage.h>
 #include <spirv_reflect.h>
 
-#include <core/math.h>
-#include <core/alias.h>
-#include <core/array.h>
-#include <core/resource_pool.h>
+#include <engine/core/math.h>
+#include <engine/core/alias.h>
+#include <engine/core/array.h>
+#include <engine/core/resource_pool.h>
 
 /************************************************
  *

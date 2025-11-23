@@ -1,7 +1,7 @@
 #pragma once
 
-#include <graphics/render_graph.h>
-#include <graphics/scene_renderer_resources.h>
+#include <engine/graphics/render_graph.h>
+#include <engine/graphics/scene_renderer_resources.h>
 
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 

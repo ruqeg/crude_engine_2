@@ -1,4 +1,4 @@
-#include <platform/platform_components.h>
+#include <engine/platform/platform_components.h>
 
 ECS_COMPONENT_DECLARE( crude_input );
 ECS_COMPONENT_DECLARE( crude_window );

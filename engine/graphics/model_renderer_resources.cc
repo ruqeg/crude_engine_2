@@ -1,4 +1,4 @@
-#include <graphics/model_renderer_resources.h>
+#include <engine/graphics/model_renderer_resources.h>
 
 void
 crude_gfx_mesh_cpu_to_mesh_draw_gpu

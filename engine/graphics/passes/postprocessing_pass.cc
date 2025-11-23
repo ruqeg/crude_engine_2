@@ -1,8 +1,8 @@
-#include <core/hash_map.h>
-#include <core/time.h>
-#include <graphics/scene_renderer.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/time.h>
+#include <engine/graphics/scene_renderer.h>
 
-#include <graphics/passes/postprocessing_pass.h>
+#include <engine/graphics/passes/postprocessing_pass.h>
 
 typedef struct crude_gfx_luminance_histogram_generation_push_constant
 {

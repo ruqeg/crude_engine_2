@@ -1,10 +1,10 @@
-#include <core/log.h>
-#include <core/profiler.h>
-#include <scene/scripts_components.h>
-#include <scene/scene_components.h>
-#include <platform/platform_components.h>
-#include <physics/physics_components.h>
-#include <physics/physics.h>
+#include <engine/core/log.h>
+#include <engine/core/profiler.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/scene/scene_components.h>
+#include <engine/platform/platform_components.h>
+#include <engine/physics/physics_components.h>
+#include <engine/physics/physics.h>
 #include <game_components.h>
 #include <game.h>
 

@@ -2,10 +2,10 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include <graphics/scene_renderer.h>
-#include <core/hash_map.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/core/hash_map.h>
 
-#include <graphics/passes/imgui_pass.h>
+#include <engine/graphics/passes/imgui_pass.h>
 
 static uint32 vertex_buffer_size_ = 665536;
 static uint32 index_buffer_size_ = 665536;

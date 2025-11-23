@@ -2,15 +2,15 @@
 #include <imgui/imgui.h>
 #include <ImGuizmo/ImGuizmo.h>
 
-#include <core/hash_map.h>
-#include <graphics/gpu_resources_loader.h>
-#include <scene/scripts_components.h>
-#include <physics/physics_components.h>
-#include <physics/physics.h>
-#include <game_components.h>
-#include <editor.h>
+#include <engine/core/hash_map.h>
+#include <engine/graphics/gpu_resources_loader.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/physics/physics_components.h>
+#include <engine/physics/physics.h>
+#include <engine/external/game_components.h>
+#include <editor/editor.h>
 
-#include <devgui.h>
+#include <editor/devgui.h>
 
 ImGuiWindowFlags                                           window_flags_;
 
@@ -40,7 +40,6 @@ crude_devgui_initialize
   crude_devgui_viewport_initialize( &devgui->dev_viewport, editor->scene_renderer.render_graph->builder->gpu );
   crude_devgui_render_graph_initialize( &devgui->dev_render_graph, editor->scene_renderer.render_graph );
   crude_devgui_gpu_initialize( &devgui->dev_gpu, editor->scene_renderer.render_graph->builder->gpu, &devgui->editor->temporary_allocator );
-  crude_devgui_gpu_visual_profiler_initialize( &devgui->dev_gpu_profiler, editor->scene_renderer.render_graph->builder->gpu, &editor->allocator );
   crude_devgui_scene_renderer_initialize( &devgui->dev_scene_renderer, &editor->scene_renderer );
 }
 
@@ -51,7 +50,6 @@ crude_devgui_deinitialize
 )
 {
   crude_devgui_scene_renderer_deinitialize( &devgui->dev_scene_renderer );
-  crude_devgui_gpu_visual_profiler_deinitialize( &devgui->dev_gpu_profiler );
 }
 
 void
@@ -62,6 +60,7 @@ crude_devgui_draw
   _In_ crude_entity                                        camera_node
 )
 {
+  crude_editor *editor = crude_editor_instance( );
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, devgui->editor->imgui_context ) );
 
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
@@ -73,10 +72,6 @@ crude_devgui_draw
     if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_R, false ) )
     {
         crude_editor_push_reload_techniques_command( crude_editor_instance( ) );
-    }
-    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_F, false ) )
-    {
-      devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
     }
 
     if ( ImGui::BeginMenu( "Graphics" ) )
@@ -93,10 +88,6 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "GPU Pools", "Ctrl+G+P" ) )
       {
         devgui->dev_gpu.enabled = !devgui->dev_gpu.enabled;
-      }
-      if ( ImGui::MenuItem( "GPU Profiler", "Ctrl+G" ) )
-      {
-        devgui->dev_gpu_profiler.enabled = !devgui->dev_gpu_profiler.enabled;
       }
       if ( ImGui::MenuItem( "Scene Renderer", "Ctrl+G+S" ) )
       {
@@ -136,7 +127,7 @@ crude_devgui_draw
         result = NFD_SaveDialogU8_With( &out_path, &args );
         if ( result == NFD_OKAY )
         {
-          crude_scene_save_to_file( &devgui->editor->scene, out_path );
+          crude_node_manager_save_node_to_file( &editor->node_manager, editor->main_node, out_path );
           NFD_FreePathU8( out_path );
         }
       }
@@ -158,7 +149,6 @@ crude_devgui_draw
   crude_devgui_viewport_draw( &devgui->dev_viewport, camera_node, devgui->dev_nodes_tree.selected_node );
   crude_devgui_render_graph_draw( &devgui->dev_render_graph );
   crude_devgui_gpu_draw( &devgui->dev_gpu );
-  crude_devgui_gpu_visual_profiler_draw( &devgui->dev_gpu_profiler );
   crude_devgui_scene_renderer_draw( &devgui->dev_scene_renderer );
   
   if ( crude_entity_valid( devgui->node_to_add ) )
@@ -218,7 +208,6 @@ crude_devgui_graphics_pre_update
   _In_ crude_devgui                                       *devgui
 )
 {
-  crude_devgui_gpu_visual_profiler_update( &devgui->dev_gpu_profiler );
 }
 
 /******************************
@@ -373,6 +362,7 @@ crude_devgui_node_inspector_draw
   _In_ crude_entity                                        node
 )
 {
+  crude_editor *editor = crude_editor_instance( );
   if ( !devgui_inspector->enabled )
   {
     return;
@@ -438,37 +428,37 @@ crude_devgui_node_inspector_draw
   crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_level_01 );
   if ( level_01 && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_01 ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( node, level_01 );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( node, level_01, &editor->node_manager );
   }
   
   crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
   if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( node, dynamic_body );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( node, dynamic_body, &editor->node_manager );
   }
   
   crude_physics_static_body_handle *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
   if ( static_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( node, static_body );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( node, static_body, &editor->node_manager );
   }
   
   crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_collision_shape );
   if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( node, collision_shape );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( node, collision_shape, &editor->node_manager );
   }
   
   crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( node, player_controller );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( node, player_controller, &editor->node_manager );
   }
   
   crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_enemy );
   if ( enemy && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_enemy ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( node, enemy );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( node, enemy, &editor->node_manager );
   }
   ImGui::End( );
 }
@@ -824,43 +814,6 @@ crude_devgui_gpu_draw
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->framebuffers, "Framebuffers" );
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->render_passes, "RenderPasses" );
   crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->shaders, "Shaders" );
-}
-
-/******************************
- * Dev Gui GPU Visual Profiler
- *******************************/
-void
-crude_devgui_gpu_visual_profiler_initialize
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_heap_allocator                               *allocator
-)
-{
-}
-
-void
-crude_devgui_gpu_visual_profiler_deinitialize
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
-)
-{
-}
-
-void
-crude_devgui_gpu_visual_profiler_update
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
-)
-{
-}
-
-void
-crude_devgui_gpu_visual_profiler_draw
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
-)
-{
 }
 
 /******************************

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/math.h>
-#include <core/resource_pool.h>
-#include <physics/physics_resource.h>
+#include <engine/core/ecs.h>
+#include <engine/core/math.h>
+#include <engine/core/resource_pool.h>
+#include <engine/physics/physics_resource.h>
 
 typedef struct crude_physics_raycast_result
 {

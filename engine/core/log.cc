@@ -3,11 +3,11 @@
 #include <stdio.h>
 #endif
 
-#include <core/file.h>
-#include <core/string.h>
-#include <core/assert.h>
+#include <engine/core/file.h>
+#include <engine/core/string.h>
+#include <engine/core/assert.h>
 
-#include <core/log.h>
+#include <engine/core/log.h>
 
 char                                                       message_buffer_[ CRUDE_RKILO( 8 ) ];
 char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];

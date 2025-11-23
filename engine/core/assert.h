@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/log.h>
+#include <engine/core/log.h>
 
 #define CRUDE_ASSERT( condition )\
 {\

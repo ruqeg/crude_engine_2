@@ -5,7 +5,7 @@
 #include <math.h>
 #include <cJSON.h>
 
-#include <core/alias.h>
+#include <engine/core/alias.h>
 
 using namespace DirectX;
 

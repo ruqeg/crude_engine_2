@@ -1,8 +1,8 @@
 #include <cJSON.h>
 
-#include <core/string.h>
-#include <scene/scripts_components.h>
-#include <scene/node_manager.h>
+#include <engine/core/string.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/scene/node_manager.h>
 
 ECS_COMPONENT_DECLARE( crude_free_camera );
 

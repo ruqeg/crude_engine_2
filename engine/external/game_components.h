@@ -1,8 +1,8 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/math.h>
-#include <scene/components_serialization.h>
+#include <engine/core/ecs.h>
+#include <engine/core/math.h>
+#include <engine/scene/components_serialization.h>
 
 typedef struct crude_enemy
 {

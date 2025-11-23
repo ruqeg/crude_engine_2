@@ -2,10 +2,11 @@
 
 #include <imgui.h>
 
-#include <core/ecs.h>
-#include <platform/platform_components.h>
-#include <graphics/scene_renderer.h>
-#include <graphics/gpu_profiler.h>
+#include <engine/core/ecs.h>
+#include <engine/platform/platform_components.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/graphics/gpu_profiler.h>
+#include <engine/scene/node_manager.h>
 
 typedef struct crude_editor crude_editor;
 typedef struct crude_devgui crude_devgui;
@@ -203,35 +204,6 @@ CRUDE_API void
 crude_devgui_gpu_draw
 (
   _In_ crude_devgui_gpu                                   *dev_gpu
-);
-
-/******************************
- * Dev Gui GPU Visual Profiler
- *******************************/
-CRUDE_API void
-crude_devgui_gpu_visual_profiler_initialize
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_heap_allocator                               *allocator
-);
-
-CRUDE_API void
-crude_devgui_gpu_visual_profiler_deinitialize
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
-);
-
-CRUDE_API void
-crude_devgui_gpu_visual_profiler_update
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
-);
-
-CRUDE_API void
-crude_devgui_gpu_visual_profiler_draw
-(
-  _In_ crude_devgui_gpu_visual_profiler                   *dev_gpu_profiler
 );
 
 /******************************

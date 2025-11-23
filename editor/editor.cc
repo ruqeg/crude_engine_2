@@ -3,22 +3,20 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <ImGuizmo/ImGuizmo.h>
 
-#include <core/hash_map.h>
-#include <core/file.h>
-#include <core/memory.h>
-#include <core/process.h>
-#include <platform/platform_system.h>
-#include <platform/platform_components.h>
-#include <scene/free_camera_system.h>
-#include <scene/scene_components.h>
-#include <scene/scripts_components.h>
-#include <graphics/gpu_resources_loader.h>
-#include <physics/physics.h>
-#include <physics/physics_system.h>
+#include <engine/core/hash_map.h>
+#include <engine/core/file.h>
+#include <engine/core/memory.h>
+#include <engine/core/process.h>
+#include <engine/platform/platform_system.h>
+#include <engine/platform/platform_components.h>
+#include <engine/scene/free_camera_system.h>
+#include <engine/scene/scene_components.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/graphics/gpu_resources_loader.h>
+#include <engine/physics/physics.h>
+#include <engine/external/game_components.h>
 
-#include <game_components.h>
-
-#include <editor.h>
+#include <editor/editor.h>
 
 crude_editor                                              *crude_editor_instance_;
 
@@ -34,6 +32,25 @@ crude_editor_initialize_allocators_
 
 static void
 crude_editor_initialize_imgui_
+(
+  _In_ crude_editor                                       *editor
+);
+
+static void
+crude_editor_initialize_constant_strings_
+(
+  _In_ crude_editor                                       *editor,
+  _In_ char const                                         *scene_relative_filepath,
+  _In_ char const                                         *render_graph_relative_directory,
+  _In_ char const                                         *resources_relative_directory,
+  _In_ char const                                         *shaders_relative_directory,
+  _In_ char const                                         *techniques_relative_directory,
+  _In_ char const                                         *compiled_shaders_relative_directory,
+  _In_ char const                                         *working_absolute_directory
+);
+
+static void
+crude_editor_deinitialize_constant_strings_
 (
   _In_ crude_editor                                       *editor
 );
@@ -93,14 +110,15 @@ crude_editor_parse_json_to_component_
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
   _In_ char const                                         *component_name,
-  _In_ crude_scene                                        *scene
+  _In_ crude_node_manager                                 *manager
 );
 
 static void
 crude_editor_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json 
+  _In_ cJSON                                              *node_components_json,
+  _In_ crude_node_manager                                 *manager
 );
 
 static void
@@ -113,21 +131,22 @@ void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
-  _In_ crude_engine                                       *engine
+  _In_ crude_editor_creation const                        *creation
 )
 {
-  editor->engine = engine;
-  editor->framerate = 60;
+  editor->engine = creation->engine;
+  editor->framerate = creation->framerate;
   editor->last_graphics_update_time = 0.f;
 
   editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 
   ECS_IMPORT( editor->engine->world, crude_platform_system );
-  ECS_IMPORT( editor->engine->world, crude_physics_system );
   ECS_IMPORT( editor->engine->world, crude_free_camera_system );
+  ECS_IMPORT( editor->engine->world, crude_game_components );
 
   crude_editor_initialize_allocators_( editor );
   crude_editor_initialize_imgui_( editor );
+  crude_editor_initialize_constant_strings_( editor, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   crude_editor_initialize_platform_( editor );
   crude_collisions_resources_manager_instance_allocate( crude_heap_allocator_pack( &editor->allocator ) );
   crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &editor->allocator, &editor->cgltf_temporary_allocator );
@@ -138,10 +157,7 @@ crude_editor_initialize
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( editor->commands_queue, 0, crude_heap_allocator_pack( &editor->allocator ) );
   
-  CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_graphics_system_, EcsPreStore, editor, {
-    { .id = ecs_id( crude_transform ) },
-    { .id = ecs_id( crude_free_camera ) },
-  } );
+  CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_graphics_system_, EcsPreStore, editor, { } );
   
   CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_input_system_, EcsOnUpdate, editor, {
     { .id = ecs_id( crude_input ) },
@@ -150,7 +166,7 @@ crude_editor_initialize
   
   CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_physics_system_, EcsOnUpdate, editor, { } );
   
-  game_setup_custom_nodes_to_scene_( editor );
+  crude_editor_setup_custom_nodes_to_scene_( editor );
 }
 
 void
@@ -165,25 +181,14 @@ crude_editor_postupdate
     {
     case CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
     {
-      crude_scene_creation                                 scene_creation;
-      crude_gfx_scene_renderer_creation                    scene_renderer_creation;
       bool                                                 buffer_recreated;
 
       vkDeviceWaitIdle( editor->gpu.vk_device );
-      crude_entity_destroy_hierarchy( editor->scene.main_node );
-      crude_scene_deinitialize( &editor->scene );
 
-      scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
-      scene_creation.world = editor->engine->world;
-      scene_creation.input_entity = editor->platform_node;
-      scene_creation.filepath = editor->commands_queue[ i ].reload_scene.filepath;
-      scene_creation.temporary_allocator = &editor->temporary_allocator;
-      scene_creation.allocator_container = crude_heap_allocator_pack( &editor->allocator );
-      scene_creation.additional_parse_all_components_to_json_func = crude_editor_parse_all_components_to_json_;
-      scene_creation.additional_parse_json_to_component_func = crude_editor_parse_json_to_component_;
-      crude_scene_initialize( &editor->scene, &scene_creation );
+      crude_node_manager_clear( &editor->node_manager );
+      crude_node_manager_get_node( &editor->node_manager, editor->commands_queue[ i ].reload_scene.filepath );
 
-      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->scene.main_node );
+      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->main_node );
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &editor->model_renderer_resources_manager );
 
       if ( buffer_recreated )
@@ -192,8 +197,6 @@ crude_editor_postupdate
         crude_gfx_scene_renderer_initialize_pases( &editor->scene_renderer );
         crude_gfx_scene_renderer_register_passes( &editor->scene_renderer, &editor->render_graph );
       }
-
-      game_setup_custom_nodes_to_scene_( editor );
 
       NFD_FreePathU8( editor->commands_queue[ i ].reload_scene.filepath );
       break;
@@ -209,7 +212,7 @@ crude_editor_postupdate
         
         crude_gfx_technique *technique = editor->gpu.resource_cache.techniques[ i ].value; 
         crude_gfx_destroy_technique_instant( &editor->gpu, technique );
-        crude_gfx_technique_load_from_file( technique->json_name, &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+        crude_gfx_technique_load_from_file( technique->technique_relative_filepath, &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
       }
 
       crude_gfx_render_graph_on_techniques_reloaded( &editor->render_graph );
@@ -234,7 +237,8 @@ crude_editor_deinitialize
   crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
   crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &editor->allocator ) );
   crude_editor_graphics_deinitialize_( editor );
-  crude_scene_deinitialize( &editor->scene );
+  crude_node_manager_deinitialize( &editor->node_manager );
+  crude_editor_deinitialize_constant_strings_( editor );
   crude_heap_allocator_deinitialize( &editor->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &editor->allocator );
   crude_heap_allocator_deinitialize( &editor->resources_allocator );
@@ -251,7 +255,7 @@ crude_editor_push_reload_scene_command
   _In_ nfdu8char_t                                        *filepath
 )
 {
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
+  crude_editor_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_editor_queue_command );
   command.type = CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_SCENE;
   command.reload_scene.filepath = filepath;
   CRUDE_ARRAY_PUSH( editor->commands_queue, command );
@@ -263,7 +267,7 @@ crude_editor_push_reload_techniques_command
   _In_ crude_editor                                             *editor
 )
 {
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
+  crude_editor_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_editor_queue_command );
   command.type = CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
   CRUDE_ARRAY_PUSH( editor->commands_queue, command );
 }
@@ -305,7 +309,7 @@ crude_editor_graphics_system_
     crude_devgui_on_resize( &editor->devgui );
   }
 
-  crude_devgui_draw( &editor->devgui, editor->scene.main_node, editor->focused_camera_node );
+  crude_devgui_draw( &editor->devgui, editor->main_node, editor->focused_camera_node );
   crude_gfx_scene_renderer_submit_draw_task( &editor->scene_renderer, false );
 
   {
@@ -313,7 +317,7 @@ crude_editor_graphics_system_
     crude_gfx_present( &editor->gpu, final_render_texture );
   }
   
-  CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->scene.main_node ) );
+  CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &editor->model_renderer_resources_manager );
 }
 
@@ -392,25 +396,25 @@ crude_editor_parse_json_to_component_
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
   _In_ char const                                         *component_name,
-  _In_ crude_scene                                        *scene
+  _In_ crude_node_manager                                 *manager
 )
 {
   if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
   {
     crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
   {
     crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
   }
   else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
   {
     crude_level_01                                         level01;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, scene );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
   }
   return true;
@@ -420,7 +424,8 @@ void
 crude_editor_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json
+  _In_ cJSON                                              *node_components_json,
+  _In_ crude_node_manager                                 *manager
 )
 {
   crude_player_controller const                           *player_component;
@@ -430,19 +435,19 @@ crude_editor_parse_all_components_to_json_
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
   }
   
   enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
   if ( enemy )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
   }
   
   level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
   if ( level01 )
   {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01 ) );
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
   }
 }
 
@@ -478,6 +483,48 @@ crude_editor_initialize_imgui_
 }
 
 void
+crude_editor_initialize_constant_strings_
+(
+  _In_ crude_editor                                       *editor,
+  _In_ char const                                         *scene_relative_filepath,
+  _In_ char const                                         *render_graph_relative_directory,
+  _In_ char const                                         *resources_relative_directory,
+  _In_ char const                                         *shaders_relative_directory,
+  _In_ char const                                         *techniques_relative_directory,
+  _In_ char const                                         *compiled_shaders_relative_directory,
+  _In_ char const                                         *working_absolute_directory
+)
+{
+  uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
+  uint64 resources_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
+  uint64 shaders_directory_length = working_directory_length + crude_string_length( shaders_relative_directory );
+  uint64 render_graph_directory_length = working_directory_length + crude_string_length( render_graph_relative_directory );
+  uint64 scene_filepath_length = working_directory_length + crude_string_length( scene_relative_filepath );
+  uint64 techniques_relative_directory_length = working_directory_length + crude_string_length( techniques_relative_directory );
+  uint64 compiled_shaders_relative_directory_length = working_directory_length + crude_string_length( compiled_shaders_relative_directory );
+
+  uint64 constant_string_buffer_size = working_directory_length + resources_directory_length + shaders_directory_length + render_graph_directory_length + scene_filepath_length + techniques_relative_directory_length + compiled_shaders_relative_directory_length;
+
+  crude_string_buffer_initialize( &editor->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &editor->allocator ) );
+  editor->working_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s", working_absolute_directory );
+  editor->resources_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, resources_relative_directory );
+  editor->shaders_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, shaders_relative_directory );
+  editor->scene_absolute_filepath = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, scene_relative_filepath );
+  editor->render_graph_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, render_graph_relative_directory );
+  editor->techniques_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, techniques_relative_directory );
+  editor->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, compiled_shaders_relative_directory );
+}
+
+void
+crude_editor_deinitialize_constant_strings_
+(
+  _In_ crude_editor                                       *editor
+)
+{
+  crude_string_buffer_deinitialize( &editor->constant_strings_buffer );
+}
+
+void
 crude_editor_initialize_platform_
 (
   _In_ crude_editor                                             *editor
@@ -502,28 +549,18 @@ crude_editor_initialize_scene_
   _In_ crude_editor                                             *editor
 )
 {
-  uint32                                                   temporary_allocator_marker;
-  crude_scene_creation                                     scene_creation;
-  crude_string_buffer                                      temporary_string_buffer;
-  char                                                     working_directory[ 512 ];
+  crude_node_manager_creation                              node_manager_creation;
+  node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
+  node_manager_creation.world = editor->engine->world;
+  node_manager_creation.resources_absolute_directory = editor->resources_absolute_directory;
+  node_manager_creation.temporary_allocator = &editor->temporary_allocator;
+  node_manager_creation.additional_parse_all_components_to_json_func = crude_editor_parse_all_components_to_json_;
+  node_manager_creation.additional_parse_json_to_component_func = crude_editor_parse_json_to_component_;
+  node_manager_creation.physics = NULL;
+  node_manager_creation.allocator = &editor->allocator;
+  crude_node_manager_initialize( &editor->node_manager, &node_manager_creation );
 
-  temporary_allocator_marker = crude_stack_allocator_get_marker( &editor->temporary_allocator );
-
-  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( &editor->temporary_allocator ) );
-
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-
-  scene_creation = CRUDE_COMPOUNT_EMPTY( crude_scene_creation );
-  scene_creation.world = editor->engine->world;
-  scene_creation.input_entity = editor->platform_node;
-  scene_creation.filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, "nodes\\test_level.crude_node" );
-  scene_creation.temporary_allocator = &editor->temporary_allocator;
-  scene_creation.allocator_container = crude_heap_allocator_pack( &editor->allocator );
-  scene_creation.additional_parse_all_components_to_json_func = crude_editor_parse_all_components_to_json_;
-  scene_creation.additional_parse_json_to_component_func = crude_editor_parse_json_to_component_;
-  crude_scene_initialize( &editor->scene, &scene_creation );
-
-  crude_stack_allocator_free_marker( &editor->temporary_allocator, temporary_allocator_marker );
+  editor->main_node = crude_node_manager_get_node( &editor->node_manager, editor->scene_absolute_filepath );
 }
 
 void
@@ -593,14 +630,13 @@ crude_editor_initialize_graphics_
   scene_renderer_creation.temporary_allocator = &editor->temporary_allocator;
   scene_renderer_creation.task_scheduler = editor->engine->asynchronous_loader_manager.task_sheduler;
   scene_renderer_creation.imgui_context = editor->imgui_context;
-  scene_renderer_creation.scene = &editor->scene;
   scene_renderer_creation.model_renderer_resources_manager = &editor->model_renderer_resources_manager;
   crude_gfx_scene_renderer_initialize( &editor->scene_renderer, &scene_renderer_creation );
 
   editor->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   editor->scene_renderer.options.ambient_intensity = 1.5f;
 
-  crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->scene.main_node );
+  crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &editor->scene_renderer );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &editor->model_renderer_resources_manager );
 
@@ -611,9 +647,9 @@ crude_editor_initialize_graphics_
 }
 
 void
-game_setup_custom_nodes_to_scene_
+crude_editor_setup_custom_nodes_to_scene_
 ( 
-  _In_ crude_editor                                             *editor
+  _In_ crude_editor                                       *editor
 )
 {
   crude_player_controller                                  *player_controller;
@@ -643,19 +679,17 @@ game_setup_custom_nodes_to_scene_
     editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
     XMStoreFloat3( &editor_camera_node_crude_free_camera.moving_speed_multiplier, XMVectorReplicate( 7 ) );
     XMStoreFloat2( &editor_camera_node_crude_free_camera.rotating_speed_multiplier, XMVectorReplicate( -0.001 ) );
+    editor_camera_node_crude_free_camera.input_enabled = true;
+    editor_camera_node_crude_free_camera.input_node = editor->platform_node;
 
-    editor->editor_camera_node = crude_entity_create_empty( editor->scene.world, "editor_camera" );
+    editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
   }
 
-  editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->scene.main_node, "editor_camera" );
+  editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->main_node, "editor_camera" );
   editor->focused_camera_node = editor->editor_camera_node;
-  
-  free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_free_camera );
-  free_camera->entity_input = editor->scene.input_entity;
-  free_camera->enabled = true;
 }
 
 void

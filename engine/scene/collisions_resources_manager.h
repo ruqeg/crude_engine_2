@@ -1,10 +1,10 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/resource_pool.h>
-#include <core/octree.h>
-#include <core/memory.h>
-#include <core/string.h>
+#include <engine/core/ecs.h>
+#include <engine/core/resource_pool.h>
+#include <engine/core/octree.h>
+#include <engine/core/memory.h>
+#include <engine/core/string.h>
 
 typedef uint32 crude_octree_resource_index;
 

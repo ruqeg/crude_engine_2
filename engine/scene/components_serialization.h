@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/ecs.h>
-#include <core/memory.h>
+#include <engine/core/ecs.h>
+#include <engine/core/memory.h>
 #include <cJSON.h>
 
 typedef struct crude_node_manager crude_node_manager;

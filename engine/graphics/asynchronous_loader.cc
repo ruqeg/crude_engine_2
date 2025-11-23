@@ -1,11 +1,11 @@
 #include <stb_image.h>
 #include <TaskScheduler_c.h>
 
-#include <core/profiler.h>
-#include <core/array.h>
-#include <core/time.h>
+#include <engine/core/profiler.h>
+#include <engine/core/array.h>
+#include <engine/core/time.h>
 
-#include <graphics/asynchronous_loader.h>
+#include <engine/graphics/asynchronous_loader.h>
 
 static void
 crude_gfx_asynchronous_loader_push_upload_requests_

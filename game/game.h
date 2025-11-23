@@ -3,12 +3,12 @@
 #include <nfd.h>
 
 #include <engine.h>
-#include <scene/node_manager.h>
-#include <graphics/scene_renderer.h>
-#include <core/ecs.h>
-#include <platform/platform_components.h>
-#include <scene/collisions_resources_manager.h>
-#include <physics/physics.h>
+#include <engine/scene/node_manager.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/core/ecs.h>
+#include <engine/platform/platform_components.h>
+#include <engine/scene/collisions_resources_manager.h>
+#include <engine/physics/physics.h>
 #include <devmenu.h>
 
 typedef enum crude_game_queue_command_type
