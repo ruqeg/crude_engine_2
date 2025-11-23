@@ -24,6 +24,16 @@ crude_physics_resources_manager_deinitialize
   _In_ crude_physics_resources_manager                    *manager
 )
 {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->character_bodies ); ++i )
+  {
+    crude_physics_resources_manager_destroy_character_body( manager, manager->character_bodies[ i ] );
+  }
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->static_bodies ); ++i )
+  {
+    crude_physics_resources_manager_destroy_static_body( manager, manager->static_bodies[ i ] );
+  }
+
   CRUDE_ARRAY_DEINITIALIZE( manager->character_bodies );
   CRUDE_ARRAY_DEINITIALIZE( manager->static_bodies );
 
