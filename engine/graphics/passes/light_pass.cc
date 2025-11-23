@@ -119,12 +119,12 @@ crude_gfx_light_pass_on_techniques_reloaded
     ds_creation.name = "light_pass_ds";
     
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ gpu->current_frame ], 1u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 2u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ gpu->current_frame ], 3u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_indices_sb[ gpu->current_frame ], 4u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ], 5u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->light_cb, 6u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ gpu->current_frame ], 10u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 11u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ gpu->current_frame ], 12u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_indices_sb[ gpu->current_frame ], 13u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->pointlight_world_to_clip_sb[ gpu->current_frame ], 14u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->light_cb, 15u );
     
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, pass->scene_renderer->vk_tlas, 10u );

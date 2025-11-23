@@ -5,8 +5,10 @@
 
 typedef enum crude_gfx_mesh_draw_flags
 {
-  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL = ( 1 << 4 ),
-  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS = ( 1 << 8 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_ALPHA_MASK = ( 1 << 1 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_TRANSPARENT_MASK = ( 1 << 2 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL = ( 1 << 3 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS = ( 1 << 4 ),
 } crude_gfx_mesh_draw_flags;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu

@@ -76,7 +76,6 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->lights_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
-  scene_renderer->total_collision_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_COLLISION_MESH_INSTANCES_BUFFER_CAPACITY;
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -89,7 +88,6 @@ crude_gfx_scene_renderer_initialize
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->collision_model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -97,13 +95,6 @@ crude_gfx_scene_renderer_initialize
   buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity;
   buffer_creation.name = "meshes_instances_draws_sb";
   scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_collision_meshes_instances_buffer_capacity;
-  buffer_creation.name = "collision_meshes_instances_draws_sb";
-  scene_renderer->collision_meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
   buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
   buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -180,7 +171,6 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->collision_meshes_instances_draws_sb );
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -198,7 +188,6 @@ crude_gfx_scene_renderer_deinitialize
   }
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->collision_model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
 }
 
@@ -212,9 +201,6 @@ crude_gfx_scene_renderer_update_instances_from_node
   bool                                                     buffers_recrteated;
   crude_gfx_buffer_creation                                buffer_creation;
  
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Update scene renderer instances from node \"%s\".", crude_entity_get_name( main_node ) ? crude_entity_get_name( main_node ) : "Unknown" );
-
-  CRUDE_ARRAY_SET_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node );
   
@@ -224,36 +210,12 @@ crude_gfx_scene_renderer_update_instances_from_node
     scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
   }
 
-  scene_renderer->total_collision_meshes_instances_count = 0u;
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances ); ++i )
-  {
-    scene_renderer->total_collision_meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
-  }
-
   buffers_recrteated = false;
 
-  if ( scene_renderer->total_collision_meshes_instances_count > scene_renderer->total_collision_meshes_instances_buffer_capacity )
-  {
-    scene_renderer->total_collision_meshes_instances_buffer_capacity = scene_renderer->total_collision_meshes_instances_count * 2;
-
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->collision_meshes_instances_draws_sb ) )
-    {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->collision_meshes_instances_draws_sb );
-    }
-    
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_collision_meshes_instances_buffer_capacity;
-    buffer_creation.name = "collision_meshes_instances_draws_sb";
-    scene_renderer->collision_meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-    
-    buffers_recrteated = true;
-  }
   
-  if ( scene_renderer->total_meshes_instances_count > scene_renderer->total_meshes_instances_buffer_capacity )
+  if ( 2.f * scene_renderer->total_meshes_instances_count > scene_renderer->total_meshes_instances_buffer_capacity )
   {
-    scene_renderer->total_meshes_instances_buffer_capacity = scene_renderer->total_meshes_instances_count * 2;
+    scene_renderer->total_meshes_instances_buffer_capacity = 4 * scene_renderer->total_meshes_instances_count; /* we need at least 2x because of transparency objects, so do 4x for extensions idk */
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->meshes_instances_draws_sb ) )
     {
@@ -388,7 +350,7 @@ crude_gfx_scene_renderer_initialize_pases
   crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
   crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
-  crude_gfx_collision_visualizer_pass_initialize( &scene_renderer->collision_visualizer_pass, scene_renderer );
+  crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
@@ -424,7 +386,7 @@ crude_gfx_scene_renderer_deinitialize_passes
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
   crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
-  crude_gfx_collision_visualizer_pass_deinitialize( &scene_renderer->collision_visualizer_pass );
+  crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
@@ -489,7 +451,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_pass", crude_gfx_light_pass_pack( &scene_renderer->light_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "collision_visualizer_pass", crude_gfx_collision_visualizer_pass_pack( &scene_renderer->collision_visualizer_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "transparent_pass", crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
@@ -649,77 +611,6 @@ update_dynamic_buffers_
     if ( meshes_instances_draws )
     {
       crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_instances_draws_sb );
-    }
-  }
-  {
-    crude_gfx_mesh_instance_draw_gpu                      *collision_meshes_instances_draws;
-  
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = scene_renderer->collision_meshes_instances_draws_sb;
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_collision_meshes_instances_count;
-    collision_meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-  
-    if ( collision_meshes_instances_draws )
-    {
-      uint64 mesh_instance_draw_index = 0u;
-      for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->collision_model_renderer_resoruces_instances ); ++model_instance_index )
-      {
-        crude_gfx_model_renderer_resources_instance       *collision_model_renderer_resources_instance;
-        crude_physics_collision_shape const               *collision_shape;
-        XMMATRIX                                           collision_transform_matrix;
-
-        collision_model_renderer_resources_instance = &scene_renderer->collision_model_renderer_resoruces_instances[ model_instance_index ];
-        collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_physics_collision_shape );
-
-        collision_transform_matrix = XMMatrixIdentity( );
-        if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-        {
-          collision_transform_matrix = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
-        }
-        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-        {
-          collision_transform_matrix = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
-        }
-        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-        {
-          collision_transform_matrix = XMMatrixIdentity( );
-        }
-        else
-        {
-          CRUDE_ASSERT( false );
-        }
-
-        for ( uint32 collision_model_mesh_instance_index = 0; collision_model_mesh_instance_index < CRUDE_ARRAY_LENGTH( collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++collision_model_mesh_instance_index )
-        {
-          crude_transform const                             *mesh_transform, *model_transform;
-          XMMATRIX                                           mesh_to_model, mesh_to_model_without_rotation, model_to_world, mesh_to_world;
-          crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
-          
-          mesh_instance_cpu = &collision_model_renderer_resources_instance->model_renderer_resources.meshes_instances[ collision_model_mesh_instance_index ];
-
-          mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
-          mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
-          mesh_to_model_without_rotation = mesh_to_model; // !TODO nope
-          mesh_to_model = XMMatrixMultiply( collision_transform_matrix, mesh_to_model_without_rotation );
-
-          model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( collision_model_renderer_resources_instance->node, crude_transform );
-          model_to_world = crude_transform_node_to_world( collision_model_renderer_resources_instance->node, model_transform );
-
-          mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
-
-          XMStoreFloat4x4( &collision_meshes_instances_draws[ mesh_instance_draw_index ].mesh_to_world, mesh_to_world );
-          XMStoreFloat4x4( &collision_meshes_instances_draws[ mesh_instance_draw_index ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
-          collision_meshes_instances_draws[ mesh_instance_draw_index ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
-
-          ++mesh_instance_draw_index;
-        }
-      }
-    }
-
-    if ( collision_meshes_instances_draws )
-    {
-      crude_gfx_unmap_buffer( gpu, scene_renderer->collision_meshes_instances_draws_sb );
     }
   }
   

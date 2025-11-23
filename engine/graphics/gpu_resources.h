@@ -223,12 +223,6 @@ typedef enum crude_gfx_vertex_input_rate
   CRUDE_GFX_VERTEX_INPUT_RATE_COUNT,
 } crude_gfx_vertex_input_rate;
 
-typedef enum crude_gfx_draw_flags
-{
-  CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK = 1 << 0,
-  CRUDE_GFX_DRAW_FLAGS_TRANSPARENT_MASK = 2 << 0,
-} crude_gfx_draw_flags;
-
 typedef enum crude_gfx_pipeline_type
 {
   CRUDE_GFX_PIPELINE_TYPE_GRAPHICS,

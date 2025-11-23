@@ -8,7 +8,9 @@
 				"crude/platform.glsli",
 				"crude/debug.glsli",
 				"crude/scene.glsli",
-				"crude/culling.glsli"
+				"crude/culling.glsli",
+				"crude/light.glsli",
+				"crude/light_impl.glsli"
 			]
 		}
 	],
@@ -40,10 +42,10 @@
 			]
 		},
 		{
-			"name" : "collision_visualizer",
+			"name" : "transparent_no_cull",
 			"render_pass_output":
 			{
-				"reference": "collision_visualizer_pass" 
+				"reference": "transparent_pass" 
 			},
 			"depth" : {
 				"write" : 0,

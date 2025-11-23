@@ -241,8 +241,6 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Wait till uploaded model resources manager updated." );
-
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GRAPHICS_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {
@@ -378,7 +376,11 @@ crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_
   
   if ( material->alpha_mode == cgltf_alpha_mode_mask )
   {
-    mesh_draw->flags |= CRUDE_GFX_DRAW_FLAGS_ALPHA_MASK;
+    mesh_draw->flags |= CRUDE_GFX_MESH_DRAW_FLAGS_ALPHA_MASK;
+  }
+  else if ( material->alpha_mode == cgltf_alpha_mode_blend )
+  {
+    mesh_draw->flags |= CRUDE_GFX_MESH_DRAW_FLAGS_TRANSPARENT_MASK;
   }
 
   if ( material->pbr_metallic_roughness.base_color_texture.texture )
@@ -851,7 +853,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       mesh_draw.bounding_sphere.z = XMVectorGetZ( bounding_center );
       mesh_draw.bounding_sphere.w = bounding_radius;
 
-      mesh_draw.flags = flags;
+      mesh_draw.flags |= flags;
 
       meshes[ mesh_primitive_index++ ] = mesh_draw;
     }

@@ -286,16 +286,10 @@ game_graphics_system_
 {
   game_t                                                  *game;
   crude_gfx_texture                                       *final_render_texture;
-#if CRUDE_DEVELOP
-  crude_gfx_texture                                       *imgui_render_texture;
-#endif
 
   game = ( game_t* )it->ctx;
   
   final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
-#if CRUDE_DEVELOP
-  imgui_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
-#endif
 
   game->last_graphics_update_time += it->delta_time;
 
@@ -314,12 +308,7 @@ game_graphics_system_
   ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
   ImGui_ImplSDL3_NewFrame( );
   ImGui::NewFrame( );
-
   crude_devmenu_draw( &game->devmenu );
-  ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height ) );
-  ImGui::Begin( "Background", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing );
-  ImGui::Image( CRUDE_CAST( ImTextureRef, &final_render_texture->handle.index ), ImGui::GetContentRegionAvail( ) );
-  ImGui::End( );
 #endif
 
   if ( game->gpu.swapchain_resized_last_frame )
@@ -330,11 +319,7 @@ game_graphics_system_
 
   crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
   
-#if CRUDE_DEVELOP
-  crude_gfx_present( &game->gpu, imgui_render_texture );
-#else
   crude_gfx_present( &game->gpu, final_render_texture );
-#endif
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );

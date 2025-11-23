@@ -37,6 +37,11 @@ typedef struct crude_gltf
   char                                                    *original_path;
 } crude_gltf;
 
+typedef struct crude_debug_gltf
+{
+  char                                                    *absolute_filepath;
+} crude_debug_gltf;
+
 typedef struct crude_scene_handle
 {
   void                                                    *value;
@@ -46,6 +51,7 @@ CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_debug_gltf );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_node_external );
 

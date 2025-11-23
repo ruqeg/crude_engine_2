@@ -1,8 +1,9 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define LUMINANCE_HISTOGRAM_GENERATION
-
+//#define LUMINANCE_HISTOGRAM_GENERATION
+#define CULLING
+#define CRUDE_COMPUTE
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
@@ -121,14 +122,27 @@ void main()
 
     if ( frustum_visible && occlusion_visible )
     {
-      uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
-      mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
-      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
-      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
-      mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
+			if ( ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 ) ) /* opaque */
+      {
+        uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
+        mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
+      }
+      else if ( occlusion_culling_late_flag == 0 ) /* transparent */
+      {
+				uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
+
+				mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
+        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
+      }
     }
     else if ( occlusion_culling_late_flag == 0 )
     {
+      /* Add culled object for re-test */
       uint draw_index = atomicAdd( opaque_mesh_culled_count, 1 );
       late_mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
       late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;

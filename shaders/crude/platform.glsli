@@ -15,8 +15,10 @@
 #define PI 3.1415926538
 #define CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED 0xffffffff
 
-#define CRUDE_DRAW_FLAGS_HAS_NORMAL ( 1 << 4 )
-#define CRUDE_DRAW_FLAGS_HAS_TANGENTS ( 1 << 8 )
+#define CRUDE_DRAW_FLAGS_ALPHA_MASK ( 1 << 1 )
+#define CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ( 1 << 2 )
+#define CRUDE_DRAW_FLAGS_HAS_NORMAL ( 1 << 3 )
+#define CRUDE_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
 
 #define CRUDE_UNIFORM( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std140) uniform name
 #define CRUDE_RBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) readonly buffer name

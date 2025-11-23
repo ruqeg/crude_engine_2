@@ -14,7 +14,7 @@
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
 #include <engine/graphics/passes/indirect_light_pass.h>
-#include <engine/graphics/passes/collision_visualizer_pass.h>
+#include <engine/graphics/passes/transparent_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_gfx_model_renderer_resources_instance
@@ -76,12 +76,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   
-  crude_gfx_model_renderer_resources_instance             *collision_model_renderer_resoruces_instances;
-  uint32                                                   total_collision_meshes_instances_count;
-  crude_gfx_buffer_handle                                  collision_meshes_instances_draws_sb;
-  
   uint32                                                   total_meshes_instances_buffer_capacity;
-  uint32                                                   total_collision_meshes_instances_buffer_capacity;
 
   /***********************
    * Common Debug CPU & GPU Data
@@ -125,7 +120,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
-  crude_gfx_collision_visualizer_pass                      collision_visualizer_pass;
+  crude_gfx_transparent_pass                               transparent_pass;
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
