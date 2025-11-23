@@ -242,8 +242,9 @@ game_deinitialize
   crude_devmenu_deinitialize( &game->devmenu );
   crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
   game_graphics_deinitialize_( game );
-  crude_physics_deinitialize( &game->physics );
   crude_node_manager_deinitialize( &game->node_manager );
+  crude_physics_resources_manager_deinitialize( &game->physics_resources_manager );
+  crude_physics_deinitialize( &game->physics );
   game_deinitialize_constant_strings_( game );
   crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &game->allocator );
