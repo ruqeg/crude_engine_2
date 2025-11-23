@@ -58,6 +58,7 @@ typedef struct crude_editor
   char const                                              *working_absolute_directory;
 
   crude_string_buffer                                      constant_strings_buffer;
+  crude_string_buffer                                      dynamic_strings_buffer;
 
   /* Common */
   crude_heap_allocator                                     allocator;

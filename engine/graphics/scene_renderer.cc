@@ -596,7 +596,31 @@ update_dynamic_buffers_
 
           model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_transform );
           model_to_world = crude_transform_node_to_world( model_renderer_resources_instance->node, model_transform );
-
+          
+#if CRUDE_DEVELOP
+          if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape ) )
+          {
+            XMMATRIX collision_transform_matrix = XMMatrixIdentity( );
+            crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
+            if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+            {
+              collision_transform_matrix = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
+            }
+            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+            {
+              collision_transform_matrix = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
+            }
+            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+            {
+              collision_transform_matrix = XMMatrixIdentity( );
+            }
+            else
+            {
+              CRUDE_ASSERT( false );
+            }
+            mesh_to_model = XMMatrixMultiply( mesh_to_model, collision_transform_matrix );
+          }
+#endif
           mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
 
           XMStoreFloat4x4( &meshes_instances_draws[ mesh_instance_draw_index ].mesh_to_world, mesh_to_world );
@@ -1073,31 +1097,20 @@ crude_scene_renderer_register_nodes_instances_
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
 
-      // !TODO
-      //if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_physics_collision_shape ) )
-      //{
-      //  crude_physics_collision_shape const               *child_collision_shape;
-      //  char                                              *model_filepath;
-      //  char                                               working_directory[ 512 ];
-      //  crude_string_buffer                                temporary_string_buffer;
-      //  uint64                                             temporary_allocator_marker;
-      //  crude_gfx_model_renderer_resources_instance        collision_model_renderer_resources_instant;
-      //
-      //  temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
-      //
-      //  crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-      //  child_collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_physics_collision_shape );
-      //  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-      //  
-      //  model_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s%s%s", working_directory, CRUDE_RESOURCES_DIR, child_collision_shape->debug_model_filename );
-      //
-      //  collision_model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-      //  collision_model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, model_filepath );
-      //  collision_model_renderer_resources_instant.node = child;
-      //  CRUDE_ARRAY_PUSH( scene_renderer->collision_model_renderer_resoruces_instances, collision_model_renderer_resources_instant );
-      //
-      //  crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
-      //}
+#if CRUDE_DEVELOP
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_collision ) )
+      {
+        crude_debug_collision const                       *child_gltf;
+        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+
+        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_collision );
+
+        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath );
+        model_renderer_resources_instant.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+      }
+#endif
 
       if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
       {

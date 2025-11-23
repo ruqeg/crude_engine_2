@@ -11,10 +11,14 @@ ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
+#if CRUDE_DEVELOP
+ECS_COMPONENT_DECLARE( crude_debug_collision );
+#endif
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_debug_collision, "crude_debug_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
@@ -26,6 +30,9 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_gltf );
   ECS_COMPONENT_DEFINE( world, crude_scene_handle );
   ECS_COMPONENT_DEFINE( world, crude_node_external );
+#if CRUDE_DEVELOP
+  ECS_COMPONENT_DEFINE( world, crude_debug_collision );
+#endif
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )

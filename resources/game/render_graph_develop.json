@@ -346,17 +346,6 @@
         {
           "type": "reference",
           "name": "final"
-        },
-        {
-          "type": "attachment",
-          "name": "imgui_depth",
-          "format": "VK_FORMAT_D32_SFLOAT",
-          "resolution": [
-            800,
-            600
-          ],
-          "op": "clear",
-          "clear_depth": 1.0
         }
       ]
     }

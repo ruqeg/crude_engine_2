@@ -127,6 +127,7 @@ void main()
   
   bool accept = true;
 
+#if defined( DEFERRED_MESHLET )
   accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.camera.position );
   
   vec4 view_center = world_center * scene.camera.world_to_view;
@@ -149,6 +150,7 @@ void main()
   }
   occlusion_visible = true; //!TODO fix
   accept = accept && occlusion_visible;
+#endif
 
   uvec4 ballot = subgroupBallot( accept );
   

@@ -14,6 +14,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine)
 
 source_group(${PROJECT_NAME} FILES ${CRUDE_SOURCES})
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC CRUDE_EDITOR)
+
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE "/MP" "/ZI")
 endif()

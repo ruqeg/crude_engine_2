@@ -23,6 +23,46 @@ crude_editor                                              *crude_editor_instance
 CRUDE_ECS_SYSTEM_DECLARE( crude_editor_graphics_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_editor_input_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_editor_physics_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_editor_physics_collision_shape_create_observer_ );
+
+static void
+crude_editor_physics_collision_shape_create_observer_ 
+(
+  ecs_iter_t *it
+)
+{
+  crude_editor *editor = crude_editor_instance( );
+  crude_physics_collision_shape *collision_shapes_per_entity = ecs_field( it, crude_physics_collision_shape, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_level_01                                        *level;
+    crude_window_handle                                   *window_handle;
+    crude_entity                                           node;
+    char const                                            *debug_model_relative_filename;
+    char const                                            *debug_model_absolute_filename;
+
+    if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+    {
+      debug_model_relative_filename = "editor\\models\\crude_physics_box_collision_shape.gltf";
+    }
+    else if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+    {
+      debug_model_relative_filename = "editor\\models\\crude_physics_sphere_collision_shape.gltf";
+    }
+    else if ( collision_shapes_per_entity[ i ].type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+    {
+      debug_model_relative_filename = collision_shapes_per_entity[ i ].mesh.model_filename;
+    }
+    else
+    {
+      CRUDE_ASSERT( false );
+    }
+    debug_model_absolute_filename = crude_string_buffer_append_use_f( &editor->dynamic_strings_buffer, "%s%s", editor->resources_absolute_directory, debug_model_relative_filename );
+    node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_debug_collision, { debug_model_absolute_filename } );
+  }
+}
 
 static void
 crude_editor_initialize_allocators_
@@ -150,6 +190,10 @@ crude_editor_initialize
   ECS_IMPORT( editor->engine->world, crude_free_camera_system );
   ECS_IMPORT( editor->engine->world, crude_game_components );
   ECS_IMPORT( editor->engine->world, crude_physics_components );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( editor->engine->world, crude_editor_physics_collision_shape_create_observer_, EcsOnSet, { 
+    { .id = ecs_id( crude_physics_collision_shape ) }
+  } );
 
   crude_editor_initialize_allocators_( editor );
   crude_editor_initialize_imgui_( editor );
@@ -172,7 +216,7 @@ crude_editor_initialize
   } );
   
   CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_physics_system_, EcsOnUpdate, editor, { } );
-  
+
   crude_editor_setup_custom_nodes_to_scene_( editor );
 }
 
@@ -285,8 +329,10 @@ crude_editor_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
-  crude_editor *editor = ( crude_editor* )it->ctx;
-
+  crude_editor                                            *editor;
+  crude_gfx_texture                                       *final_render_texture;
+  
+  editor = CRUDE_CAST( crude_editor*, it->ctx );
   editor->last_graphics_update_time += it->delta_time;
 
   if ( editor->last_graphics_update_time < 1.f / editor->framerate )
@@ -296,7 +342,7 @@ crude_editor_graphics_system_
   editor->last_graphics_update_time = 0.f;
 
   editor->scene_renderer.options.camera_node = editor->focused_camera_node;
-
+  
   crude_devgui_graphics_pre_update( &editor->devgui );
 
   crude_gfx_new_frame( &editor->gpu );
@@ -319,10 +365,8 @@ crude_editor_graphics_system_
   crude_devgui_draw( &editor->devgui, editor->main_node, editor->focused_camera_node );
   crude_gfx_scene_renderer_submit_draw_task( &editor->scene_renderer, false );
 
-  {
-    crude_gfx_texture *final_render_texture = crude_gfx_access_texture( &editor->gpu, crude_gfx_render_graph_builder_access_resource_by_name( editor->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
-    crude_gfx_present( &editor->gpu, final_render_texture );
-  }
+  final_render_texture = crude_gfx_access_texture( &editor->gpu, crude_gfx_render_graph_builder_access_resource_by_name( editor->scene_renderer.render_graph->builder, "imgui" )->resource_info.texture.handle );
+  crude_gfx_present( &editor->gpu, final_render_texture );
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &editor->scene_renderer, editor->main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &editor->model_renderer_resources_manager );
@@ -513,6 +557,8 @@ crude_editor_initialize_constant_strings_
   uint64 compiled_shaders_relative_directory_length = working_directory_length + crude_string_length( compiled_shaders_relative_directory );
 
   uint64 constant_string_buffer_size = working_directory_length + resources_directory_length + shaders_directory_length + render_graph_directory_length + scene_filepath_length + techniques_relative_directory_length + compiled_shaders_relative_directory_length;
+  
+  crude_string_buffer_initialize( &editor->dynamic_strings_buffer, 4096, crude_heap_allocator_pack( &editor->allocator ) );
 
   crude_string_buffer_initialize( &editor->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &editor->allocator ) );
   editor->working_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s", working_absolute_directory );
@@ -531,6 +577,7 @@ crude_editor_deinitialize_constant_strings_
 )
 {
   crude_string_buffer_deinitialize( &editor->constant_strings_buffer );
+  crude_string_buffer_deinitialize( &editor->dynamic_strings_buffer );
 }
 
 void
