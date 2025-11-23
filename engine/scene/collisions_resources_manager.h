@@ -48,20 +48,3 @@ crude_collisions_resources_manager_access_octree
   _In_ crude_collisions_resources_manager                 *manager,
   _In_ crude_octree_handle                                 handle
 );
-
-CRUDE_API void
-crude_collisions_resources_manager_instance_allocate
-(
-  _In_ crude_allocator_container                           allocator_container
-);
-
-CRUDE_API void
-crude_collisions_resources_manager_instance_deallocate
-(
-  _In_ crude_allocator_container                           allocator_container
-);
-
-CRUDE_API crude_collisions_resources_manager*
-crude_collisions_resources_manager_instance
-(
-);

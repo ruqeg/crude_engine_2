@@ -13,7 +13,7 @@
 #include <engine/scene/scene_components.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
-#include <engine/physics/physics.h>
+#include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 
 #include <editor/editor.h>
@@ -69,6 +69,12 @@ crude_editor_initialize_scene_
 
 static void
 crude_editor_initialize_graphics_
+(
+  _In_ crude_editor                                       *editor
+);
+
+static void
+crude_editor_initialize_physics_
 (
   _In_ crude_editor                                       *editor
 );
@@ -143,13 +149,14 @@ crude_editor_initialize
   ECS_IMPORT( editor->engine->world, crude_platform_system );
   ECS_IMPORT( editor->engine->world, crude_free_camera_system );
   ECS_IMPORT( editor->engine->world, crude_game_components );
+  ECS_IMPORT( editor->engine->world, crude_physics_components );
 
   crude_editor_initialize_allocators_( editor );
   crude_editor_initialize_imgui_( editor );
   crude_editor_initialize_constant_strings_( editor, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   crude_editor_initialize_platform_( editor );
-  crude_collisions_resources_manager_instance_allocate( crude_heap_allocator_pack( &editor->allocator ) );
-  crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &editor->allocator, &editor->cgltf_temporary_allocator );
+  crude_collisions_resources_manager_initialize( &editor->collision_resouces_manager, &editor->allocator, &editor->cgltf_temporary_allocator );
+  crude_editor_initialize_physics_( editor );
   crude_editor_initialize_scene_( editor );
   crude_editor_initialize_graphics_( editor );
   
@@ -234,11 +241,11 @@ crude_editor_deinitialize
   
   CRUDE_ARRAY_DEINITIALIZE( editor->commands_queue );
 
-  crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
-  crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &editor->allocator ) );
+  crude_collisions_resources_manager_deinitialize( &editor->collision_resouces_manager );
   crude_editor_graphics_deinitialize_( editor );
   crude_node_manager_deinitialize( &editor->node_manager );
   crude_editor_deinitialize_constant_strings_( editor );
+  crude_physics_resources_manager_deinitialize( &editor->physics_resouces_manager );
   crude_heap_allocator_deinitialize( &editor->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &editor->allocator );
   crude_heap_allocator_deinitialize( &editor->resources_allocator );
@@ -386,7 +393,9 @@ crude_editor_input_callback_
   _In_ void                                               *sdl_event
 )
 {
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, ctx ) );
+  crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
+
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, editor->imgui_context ) );
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }
 
@@ -539,7 +548,7 @@ crude_editor_initialize_platform_
   });
   CRUDE_ENTITY_SET_COMPONENT( editor->platform_node, crude_input, {
     .callback = crude_editor_input_callback_,
-    .ctx = editor->imgui_context
+    .ctx = editor
   } );
 }
 
@@ -556,7 +565,8 @@ crude_editor_initialize_scene_
   node_manager_creation.temporary_allocator = &editor->temporary_allocator;
   node_manager_creation.additional_parse_all_components_to_json_func = crude_editor_parse_all_components_to_json_;
   node_manager_creation.additional_parse_json_to_component_func = crude_editor_parse_json_to_component_;
-  node_manager_creation.physics = NULL;
+  node_manager_creation.physics_resources_manager = &editor->physics_resouces_manager;
+  node_manager_creation.collisions_resources_manager = &editor->collision_resouces_manager;
   node_manager_creation.allocator = &editor->allocator;
   crude_node_manager_initialize( &editor->node_manager, &node_manager_creation );
 
@@ -572,7 +582,6 @@ crude_editor_initialize_graphics_
   crude_window_handle                                     *window_handle;
   char const                                              *render_graph_file_path;
   crude_string_buffer                                      temporary_name_buffer;
-  char                                                     working_directory[ 512 ];
   crude_gfx_model_renderer_resources_manager_creation      model_renderer_resources_manager_creation;
   crude_gfx_device_creation                                device_creation;
   crude_gfx_scene_renderer_creation                        scene_renderer_creation;
@@ -580,19 +589,21 @@ crude_editor_initialize_graphics_
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( &editor->temporary_allocator );
   
-  crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
-  crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &editor->temporary_allocator ) );
+  crude_string_buffer_initialize( &temporary_name_buffer, crude_string_length( editor->scene_absolute_filepath ) + 512, crude_stack_allocator_pack( &editor->temporary_allocator ) );
 
   window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->platform_node, crude_window_handle );
 
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window             = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
-  device_creation.vk_application_name    = "CrudeEngine";
+  device_creation.sdl_window = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
+  device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container    = crude_heap_allocator_pack( &editor->allocator );
-  device_creation.temporary_allocator    = &editor->temporary_allocator;
-  device_creation.queries_per_frame      = 1u;
-  device_creation.num_threads            = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, editor->engine->asynchronous_loader_manager.task_sheduler ) ) );
+  device_creation.allocator_container = crude_heap_allocator_pack( &editor->allocator );
+  device_creation.temporary_allocator = &editor->temporary_allocator;
+  device_creation.queries_per_frame = 1u;
+  device_creation.num_threads = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, editor->engine->asynchronous_loader_manager.task_sheduler ) ) );
+  device_creation.shaders_absolute_directory = editor->shaders_absolute_directory;
+  device_creation.techniques_absolute_directory = editor->techniques_absolute_directory;
+  device_creation.compiled_shaders_absolute_directory = editor->compiled_shaders_absolute_directory;
   crude_gfx_device_initialize( &editor->gpu, &device_creation );
   
   crude_gfx_render_graph_builder_initialize( &editor->render_graph_builder, &editor->gpu );
@@ -601,16 +612,16 @@ crude_editor_initialize_graphics_
   crude_gfx_asynchronous_loader_initialize( &editor->async_loader, &editor->gpu );
   crude_gfx_asynchronous_loader_manager_add_loader( &editor->engine->asynchronous_loader_manager, &editor->async_loader );
   
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", working_directory, "\\..\\..\\resources\\render_graph.json" );
+  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", editor->resources_absolute_directory, "editor\\render_graph.json" );
   crude_gfx_render_graph_parse_from_file( &editor->render_graph, render_graph_file_path, &editor->temporary_allocator );
   crude_gfx_render_graph_compile( &editor->render_graph, &editor->temporary_allocator );
 
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\deferred_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\pointshadow_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\compute.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\debug.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\fullscreen.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "\\..\\..\\shaders\\imgui.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "deferred_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "compute.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "debug.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "fullscreen.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  crude_gfx_technique_load_from_file( "imgui.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "\\..\\..\\shaders\\ray_tracing_solid.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
@@ -629,8 +640,9 @@ crude_editor_initialize_graphics_
   scene_renderer_creation.allocator = &editor->allocator;
   scene_renderer_creation.temporary_allocator = &editor->temporary_allocator;
   scene_renderer_creation.task_scheduler = editor->engine->asynchronous_loader_manager.task_sheduler;
-  scene_renderer_creation.imgui_context = editor->imgui_context;
   scene_renderer_creation.model_renderer_resources_manager = &editor->model_renderer_resources_manager;
+  scene_renderer_creation.imgui_pass_enalbed = true;
+  scene_renderer_creation.imgui_context = editor->imgui_context;
   crude_gfx_scene_renderer_initialize( &editor->scene_renderer, &scene_renderer_creation );
 
   editor->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
@@ -644,6 +656,17 @@ crude_editor_initialize_graphics_
   crude_gfx_scene_renderer_register_passes( &editor->scene_renderer, &editor->render_graph );
 
   crude_stack_allocator_free_marker( &editor->temporary_allocator, temporary_allocator_marker );
+}
+
+void
+crude_editor_initialize_physics_
+(
+  _In_ crude_editor                                       *editor
+)
+{
+  crude_physics_resources_manager_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_resources_manager_creation );
+  creation.allocator = &editor->allocator;
+  crude_physics_resources_manager_initialize( &editor->physics_resouces_manager, &creation );
 }
 
 void

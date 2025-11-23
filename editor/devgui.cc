@@ -38,9 +38,6 @@ crude_devgui_initialize
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree, devgui );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport, editor->scene_renderer.render_graph->builder->gpu );
-  crude_devgui_render_graph_initialize( &devgui->dev_render_graph, editor->scene_renderer.render_graph );
-  crude_devgui_gpu_initialize( &devgui->dev_gpu, editor->scene_renderer.render_graph->builder->gpu, &devgui->editor->temporary_allocator );
-  crude_devgui_scene_renderer_initialize( &devgui->dev_scene_renderer, &editor->scene_renderer );
 }
 
 void
@@ -49,7 +46,6 @@ crude_devgui_deinitialize
   _In_ crude_devgui                                       *devgui
 )
 {
-  crude_devgui_scene_renderer_deinitialize( &devgui->dev_scene_renderer );
 }
 
 void
@@ -69,32 +65,7 @@ crude_devgui_draw
     {
       ImGui::OpenPopup( devgui->last_focused_menutab_name );
     }
-    if ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) && ImGui::IsKeyDown( ImGuiKey_G ) && ImGui::IsKeyPressed( ImGuiKey_R, false ) )
-    {
-        crude_editor_push_reload_techniques_command( crude_editor_instance( ) );
-    }
 
-    if ( ImGui::BeginMenu( "Graphics" ) )
-    {
-      devgui->last_focused_menutab_name = "Graphics";
-      if ( ImGui::MenuItem( "Reload Techniques", "Ctrl+G+R" ) )
-      {
-        crude_editor_push_reload_techniques_command( crude_editor_instance( ) );
-      }
-      if ( ImGui::MenuItem( "Render Graph", "Ctrl+G+R" ) )
-      {
-        devgui->dev_render_graph.enabled = !devgui->dev_render_graph.enabled;
-      }
-      if ( ImGui::MenuItem( "GPU Pools", "Ctrl+G+P" ) )
-      {
-        devgui->dev_gpu.enabled = !devgui->dev_gpu.enabled;
-      }
-      if ( ImGui::MenuItem( "Scene Renderer", "Ctrl+G+S" ) )
-      {
-        devgui->dev_scene_renderer.enabled = !devgui->dev_scene_renderer.enabled;
-      }
-      ImGui::EndMenu( );
-    }
     if ( ImGui::BeginMenu( "Scene" ) )
     {
       devgui->last_focused_menutab_name = "Scene";
@@ -147,9 +118,6 @@ crude_devgui_draw
   crude_devgui_nodes_tree_draw( &devgui->dev_nodes_tree, main_scene_node );
   crude_devgui_node_inspector_draw( &devgui->dev_node_inspector, devgui->dev_nodes_tree.selected_node );
   crude_devgui_viewport_draw( &devgui->dev_viewport, camera_node, devgui->dev_nodes_tree.selected_node );
-  crude_devgui_render_graph_draw( &devgui->dev_render_graph );
-  crude_devgui_gpu_draw( &devgui->dev_gpu );
-  crude_devgui_scene_renderer_draw( &devgui->dev_scene_renderer );
   
   if ( crude_entity_valid( devgui->node_to_add ) )
   {
@@ -688,199 +656,4 @@ crude_devgui_viewport_input
   _In_ crude_input                                        *input
 )
 {
-}
-
-/******************************
- * Dev Gui Render Graph
- *******************************/
-void
-crude_devgui_render_graph_initialize
-(
-  _In_ crude_devgui_render_graph                          *devgui_render_graph,
-  _In_ crude_gfx_render_graph                             *render_graph
-)
-{
-  devgui_render_graph->render_graph = render_graph;
-  devgui_render_graph->enabled = false;
-}
-
-void
-crude_devgui_render_graph_draw
-(
-  _In_ crude_devgui_render_graph                          *devgui_render_graph
-)
-{
-  if ( !devgui_render_graph->enabled )
-  {
-    return;
-  }
-  if ( ImGui::Begin( "Render Graph Debug", NULL, window_flags_ ) )
-  {
-    if ( ImGui::CollapsingHeader( "Nodes" ) )
-    {
-      for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( devgui_render_graph->render_graph->nodes ); ++n )
-      {
-        crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( devgui_render_graph->render_graph->builder, devgui_render_graph->render_graph->nodes[ n ] );
-
-        ImGui::Separator( );
-        ImGui::Text( "Pass: %s", node->name );
-
-        ImGui::Text( "\tInputs" );
-        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
-        {
-          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( devgui_render_graph->render_graph->builder, node->inputs[ i ] );
-          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
-        }
-
-        ImGui::Text( "\tOutputs" );
-        for ( uint32 o = 0; o < CRUDE_ARRAY_LENGTH( node->outputs ); ++o )
-        {
-          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( devgui_render_graph->render_graph->builder, node->outputs[ o ] );
-          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
-        }
-
-        ImGui::PushID( n );
-        ImGui::Checkbox( "Enabled", &node->enabled );
-        ImGui::PopID( );
-      }
-    }
-  }
-  ImGui::End( );
-}
-
-/******************************
- * Dev Gui GPU
- *******************************/
-static void
-crude_devgui_gpu_pool_draw_
-(
-  _In_ crude_resource_pool                                *resource_pool,
-  _In_ char const                                         *resource_name
-)
-{
-  ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
-}
-
-void
-crude_devgui_gpu_initialize
-(
-  _In_ crude_devgui_gpu                                   *dev_gpu,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_stack_allocator                              *temporary_allocator
-)
-{
-  dev_gpu->enabled = false;
-  dev_gpu->gpu = gpu;
-  dev_gpu->temporary_allocator = temporary_allocator;
-}
-
-void
-crude_devgui_gpu_draw
-(
-  _In_ crude_devgui_gpu                                   *dev_gpu
-)
-{
-  if ( !dev_gpu->enabled )
-  {
-    return;
-  }
-
-  VkPhysicalDeviceProperties                               vk_physical_properties;
-  VmaBudget                                                gpu_memory_heap_budgets[ VK_MAX_MEMORY_HEAPS ];
-  uint64                                                   memory_used, memory_allocated;
-
-  crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
-  vmaGetHeapBudgets( dev_gpu->gpu->vma_allocator, gpu_memory_heap_budgets );
- 
-  memory_used = memory_allocated = 0;
-  for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
-  {
-    memory_used += gpu_memory_heap_budgets[ i ].usage;
-    memory_allocated += gpu_memory_heap_budgets[ i ].budget;
-  }
-   
-  vkGetPhysicalDeviceProperties( dev_gpu->gpu->vk_physical_device, &vk_physical_properties );
-
-  ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
-  ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
-
-  ImGui::Separator();
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->buffers, "Buffers" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->textures, "Textures" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->pipelines, "Pipelines" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->samplers, "Samplers" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->descriptor_sets, "DescriptorSets" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->descriptor_set_layouts, "DescriptorSetLayouts" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->framebuffers, "Framebuffers" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->render_passes, "RenderPasses" );
-  crude_devgui_gpu_pool_draw_( &dev_gpu->gpu->shaders, "Shaders" );
-}
-
-/******************************
- * Dev Gui Scene Renderer
- *******************************/
-void
-crude_devgui_scene_renderer_initialize
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-)
-{
-  dev_scene_renderer->enabled = true;
-  dev_scene_renderer->scene_renderer = scene_renderer;
-}
-
-void
-crude_devgui_scene_renderer_deinitialize
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-)
-{
-}
-
-void
-crude_devgui_scene_renderer_update
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-)
-{
-}
-
-void
-crude_devgui_scene_renderer_draw
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-)
-{
-  if ( !dev_scene_renderer->enabled )
-  {
-    return;
-  }
-  ImGui::Begin( "Scene Renderer", NULL, window_flags_ );
-  if ( ImGui::CollapsingHeader( "Background" ) )
-  {
-    ImGui::ColorEdit3( "Background Color", &dev_scene_renderer->scene_renderer->options.background_color.x );
-    ImGui::DragFloat( "Background Intensity", &dev_scene_renderer->scene_renderer->options.background_intensity, 1.f, 0.f );
-  }
-  if ( ImGui::CollapsingHeader( "Global Illumination" ) )
-  {
-    ImGui::ColorEdit3( "Ambient Color", &dev_scene_renderer->scene_renderer->options.ambient_color.x );
-    ImGui::DragFloat( "Ambient Intensity", &dev_scene_renderer->scene_renderer->options.ambient_intensity, 0.1f, 0.f );
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-    ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
-    ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
-    ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
-    ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
-    ImGui::SliderFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis, 0.0, 1.0 );
-    ImGui::DragFloat( "Shadow Weight Power", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.shadow_weight_power );
-    ImGui::SliderFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier, 0.0, 1.0 );
-    ImGui::DragInt( "Probe Update Per Frame", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_update_per_frame );
-    ImGui::Text( "Probe Debug Flags" );
-    ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
-    ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
-    ImGui::CheckboxFlags( "Probe Index | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 4 );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  }
-  
-  ImGui::End( );
 }

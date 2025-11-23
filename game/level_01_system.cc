@@ -1,11 +1,11 @@
 #include <SDL3/SDL.h>
 
 #include <engine/core/memory.h>
-#include <game.h>
-#include <game_components.h>
+#include <game/game.h>
+#include <engine/external/game_components.h>
 #include <engine/platform/platform.h>
 
-#include <level_01_system.h>
+#include <game/level_01_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_level_01_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_level_01_creation_observer_ );

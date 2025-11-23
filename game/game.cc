@@ -14,12 +14,12 @@
 #include <engine/scene/scripts_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/physics/physics.h>
-#include <game_components.h>
-#include <player_controller_system.h>
-#include <enemy_system.h>
-#include <level_01_system.h>
+#include <engine/external/game_components.h>
+#include <game/player_controller_system.h>
+#include <game/enemy_system.h>
+#include <game/level_01_system.h>
 
-#include <game.h>
+#include <game/game.h>
 
 game_t                                                    *game_instance_;
 
@@ -157,8 +157,7 @@ game_initialize
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   game_initialize_platform_( game );
   game_initialize_physics_( game );
-  crude_collisions_resources_manager_instance_allocate( crude_heap_allocator_pack( &game->allocator ) );
-  crude_collisions_resources_manager_initialize( crude_collisions_resources_manager_instance( ), &game->allocator, &game->cgltf_temporary_allocator );
+  crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
   crude_devmenu_initialize( &game->devmenu );
@@ -241,8 +240,7 @@ game_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
   
   crude_devmenu_deinitialize( &game->devmenu );
-  SDSDWS TODO crude_collisions_resources_manager_deinitialize( crude_collisions_resources_manager_instance( ) );
-  crude_collisions_resources_manager_instance_deallocate( crude_heap_allocator_pack( &game->allocator ) );
+  crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
   game_graphics_deinitialize_( game );
   crude_physics_deinitialize( &game->physics );
   crude_node_manager_deinitialize( &game->node_manager );
@@ -585,8 +583,13 @@ game_initialize_physics_
   _In_ game_t                                             *game
 )
 {
+  crude_physics_resources_manager_creation physics_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_resources_manager_creation );
+  physics_resources_manager_creation.allocator = &game->allocator;
+  crude_physics_resources_manager_initialize( &game->physics_resources_manager, &physics_resources_manager_creation );
+
   crude_physics_creation physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
-  physics_creation.allocator = &game->allocator;
+  physics_creation.collision_manager = &game->collision_resources_manager;
+  physics_creation.manager = &game->physics_resources_manager;
   crude_physics_initialize( &game->physics, &physics_creation );
 }
 
@@ -603,7 +606,8 @@ game_initialize_scene_
   node_manager_creation.temporary_allocator = &game->temporary_allocator;
   node_manager_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
   node_manager_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
-  node_manager_creation.physics = &game->physics;
+  node_manager_creation.physics_resources_manager = &game->physics_resources_manager;
+  node_manager_creation.collisions_resources_manager = &game->collision_resources_manager;
   node_manager_creation.allocator = &game->allocator;
   crude_node_manager_initialize( &game->node_manager, &node_manager_creation );
 

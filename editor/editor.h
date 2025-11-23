@@ -8,6 +8,7 @@
 #include <engine/platform/platform_components.h>
 #include <engine/scene/collisions_resources_manager.h>
 #include <editor/devgui.h>
+#include <engine/physics/physics_resources_manager.h>
 
 typedef enum crude_editor_queue_command_type
 {
@@ -65,6 +66,9 @@ typedef struct crude_editor
   crude_stack_allocator                                    temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
   crude_entity                                             main_node;
+
+  crude_physics_resources_manager                          physics_resouces_manager;
+  crude_collisions_resources_manager                       collision_resouces_manager;
 
   /* Graphics */
   crude_gfx_device                                         gpu;

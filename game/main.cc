@@ -1,6 +1,6 @@
 #include <engine/core/file.h>
 
-#include <game.h>
+#include <game/game.h>
 
 int
 main

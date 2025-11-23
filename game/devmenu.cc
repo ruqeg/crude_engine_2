@@ -5,11 +5,53 @@
 
 #include <engine/core/hash_map.h>
 #include <engine/platform/platform.h>
-#include <game.h>
+#include <game/game.h>
 #include <engine/scene/scripts_components.h>
-#include <game_components.h>
+#include <engine/external/game_components.h>
 
-#include <devmenu.h>
+#include <game/devmenu.h>
+
+typedef void ( *crude_devmenu_option_callback_function )
+(
+  _In_ crude_devmenu                                      *devmenu
+);
+
+typedef bool ( *crude_devmenu_hotkey_pressed_callback_function )
+(
+  _In_ crude_input																				*input
+);
+
+typedef struct crude_devmenu_option
+{
+  char const                                              *name;
+  crude_devmenu_option_callback_function                   callback;
+  crude_devmenu_hotkey_pressed_callback_function           hotkey_pressed_callback;
+} crude_devmenu_option;
+
+crude_devmenu_option devmenu_options[ ] =
+{
+  {
+    "Free Camera", crude_devmenu_free_camera_callback, crude_devmenu_free_camera_callback_hotkey_pressed_callback
+  },
+  {
+    "Reload Techniques", crude_devmenu_reload_techniques_callback, crude_devmenu_reload_techniques_hotkey_pressed_callback
+  },
+  {
+    "GPU Visual Profiler", crude_devmenu_gpu_visual_profiler_callback
+  },
+  {
+    "Texture Inspector", crude_devmenu_texture_inspector_callback
+  },
+  {
+    "Render Graph", crude_devmenu_render_graph_callback
+  },
+  {
+    "GPU Pool", crude_devmenu_gpu_pool_callback
+  },
+  {
+    "Scene Renderer", crude_devmenu_scene_renderer_callback
+  }
+};
 
 void
 crude_devmenu_initialize
@@ -21,6 +63,9 @@ crude_devmenu_initialize
   devmenu->selected_option = 0;
   crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler );
   crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector );
+  crude_devmenu_render_graph_initialize( &devmenu->render_graph );
+  crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool );
+  crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer );
 }
 
 void
@@ -31,6 +76,9 @@ crude_devmenu_deinitialize
 {
   crude_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
   crude_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
+  crude_devmenu_render_graph_deinitialize( &devmenu->render_graph );
+  crude_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
+  crude_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
 }
 
 void
@@ -48,40 +96,25 @@ crude_devmenu_draw
     ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
-    char const* devmenu_options[ ] =
-    {
-      "GPU Visual Profiler",
-      "Texture Inspector"
-    };
-    
-    ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 1.0f, 0.0f, 0.0f, 1.0f )); // Red
-    ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 1.0f, 0.5f, 0.5f, 1.0f ) );
-    ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0.8f, 0.0f, 0.0f, 1.0f ) );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
     {
-	    ImGui::SetCursorPos( ImVec2( i * ( 100 + 20 ), 0 ) );
-      if ( ImGui::Button( devmenu_options[ i ], ImVec2( 100, 25 ) ) )
+	    ImGui::SetCursorPos( ImVec2( i * ( 100 ), 0 ) );
+      if ( ImGui::Button( devmenu_options[ i ].name, ImVec2( 100, 25 ) ) )
       {
-        devmenu->selected_option = i;
-        if ( i == 0 )
-        {
-          devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
-        }
-        else if ( i == 1 )
-        {
-          devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
-        }
+        devmenu_options[ i ].callback( devmenu );
       }
       ImGui::SameLine( );
     }
-    ImGui::PopStyleColor( 3 );
     ImGui::GetIO().FontGlobalScale = 1.f;
     ImGui::End( );
   }
 
   crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
   crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
+  crude_devmenu_render_graph_draw( &devmenu->render_graph );
+  crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
+  crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
 }
 
 void
@@ -92,6 +125,9 @@ crude_devmenu_update
 {
   crude_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
   crude_devmenu_texture_inspector_update( &devmenu->texture_inspector );
+  crude_devmenu_render_graph_update( &devmenu->render_graph );
+  crude_devmenu_gpu_pool_update( &devmenu->gpu_pool );
+  crude_devmenu_scene_renderer_update( &devmenu->scene_renderer );
 }
 
 void
@@ -105,13 +141,6 @@ crude_devmenu_handle_input
 
   game = game_instance( );
   
-	if ( input->keys[ SDL_SCANCODE_F1 ].pressed )
-	{
-    crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
-    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
-    player_controller->fly_mode = !player_controller->fly_mode;
-    crude_physics_enable_simulation( &game->physics, !game->physics.simulation_enabled );
-  }
 	if ( input->keys[ SDL_SCANCODE_F4 ].pressed )
 	{
 		devmenu->enabled = !devmenu->enabled;
@@ -130,6 +159,59 @@ crude_devmenu_handle_input
       crude_platform_hide_cursor( *window_handle );
     }
 	}
+
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
+  {
+    if ( devmenu_options[ i ].hotkey_pressed_callback && devmenu_options[ i ].hotkey_pressed_callback( input ) )
+    {
+      devmenu_options[ i ].callback( devmenu );
+    }
+  }
+}
+
+/***********************
+ * 
+ * Common Commmads
+ * 
+ ***********************/
+void
+crude_devmenu_free_camera_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  game_t *game = game_instance( );
+  crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
+  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
+  player_controller->fly_mode = !player_controller->fly_mode;
+  crude_physics_enable_simulation( &game->physics, !game->physics.simulation_enabled );
+}
+
+bool
+crude_devmenu_free_camera_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+)
+{
+  return input->keys[ SDL_SCANCODE_F1 ].pressed;
+}
+
+void
+crude_devmenu_reload_techniques_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  game_push_reload_techniques_command( game_instance( ) );
+}
+
+bool
+crude_devmenu_reload_techniques_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+)
+{
+  return input->keys[ SDL_SCANCODE_LCTRL ].pressed && input->keys[ SDL_SCANCODE_G ].pressed && input->keys[ SDL_SCANCODE_R ].pressed;
 }
 
 /***********************
@@ -486,6 +568,15 @@ crude_devmenu_gpu_visual_profiler_draw
   ImGui::End( );
 }
 
+void
+crude_devmenu_gpu_visual_profiler_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
+}
+
 /***********************
  * 
  * Develop Texture Inspector
@@ -597,6 +688,276 @@ crude_devmenu_texture_inspector_draw
   }
 
   ImGui::End( );
+}
+
+void
+crude_devmenu_texture_inspector_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
+}
+
+
+/***********************
+ * 
+ * Develop Render Graph
+ * 
+ ***********************/
+void
+crude_devmenu_render_graph_initialize
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+)
+{
+  dev_render_graph->enabled = false;
+}
+
+void
+crude_devmenu_render_graph_deinitialize
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+)
+{
+}
+
+void
+crude_devmenu_render_graph_update
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+)
+{
+}
+
+void
+crude_devmenu_render_graph_draw
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+)
+{
+  game_t *game = game_instance( );
+
+  if ( !dev_render_graph->enabled )
+  {
+    return;
+  }
+
+  if ( ImGui::Begin( "Render Graph Debug" ) )
+  {
+    if ( ImGui::CollapsingHeader( "Nodes" ) )
+    {
+      for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( game->render_graph.nodes ); ++n )
+      {
+        crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( game->render_graph.builder, game->render_graph.nodes[ n ] );
+
+        ImGui::Separator( );
+        ImGui::Text( "Pass: %s", node->name );
+
+        ImGui::Text( "\tInputs" );
+        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+        {
+          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->inputs[ i ] );
+          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
+        }
+
+        ImGui::Text( "\tOutputs" );
+        for ( uint32 o = 0; o < CRUDE_ARRAY_LENGTH( node->outputs ); ++o )
+        {
+          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->outputs[ o ] );
+          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
+        }
+
+        ImGui::PushID( n );
+        ImGui::Checkbox( "Enabled", &node->enabled );
+        ImGui::PopID( );
+      }
+    }
+  }
+  ImGui::End( );
+}
+
+void
+crude_devmenu_render_graph_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->render_graph.enabled = !devmenu->render_graph.enabled;
+}
+
+/***********************
+ * 
+ * Develop GPU Pools
+ * 
+ ***********************/
+static void
+crude_devmenu_gpu_pool_draw_pool_
+(
+  _In_ crude_resource_pool                                *resource_pool,
+  _In_ char const                                         *resource_name
+)
+{
+  ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
+}
+
+void
+crude_devmenu_gpu_pool_initialize
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+)
+{
+  dev_gpu_pool->enabled = false;
+}
+
+void
+crude_devmenu_gpu_pool_deinitialize
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+)
+{
+}
+
+void
+crude_devmenu_gpu_pool_update
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+)
+{
+}
+
+void
+crude_devmenu_gpu_pool_draw
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+)
+{
+  game_t *game = game_instance( );
+
+  if ( !dev_gpu_pool->enabled )
+  {
+    return;
+  }
+
+  VkPhysicalDeviceProperties                               vk_physical_properties;
+  VmaBudget                                                gpu_memory_heap_budgets[ VK_MAX_MEMORY_HEAPS ];
+  uint64                                                   memory_used, memory_allocated;
+
+  crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
+  vmaGetHeapBudgets( game->gpu.vma_allocator, gpu_memory_heap_budgets );
+ 
+  memory_used = memory_allocated = 0;
+  for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
+  {
+    memory_used += gpu_memory_heap_budgets[ i ].usage;
+    memory_allocated += gpu_memory_heap_budgets[ i ].budget;
+  }
+   
+  vkGetPhysicalDeviceProperties( game->gpu.vk_physical_device, &vk_physical_properties );
+
+  ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
+  ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
+
+  ImGui::Separator();
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.buffers, "Buffers" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.textures, "Textures" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.pipelines, "Pipelines" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.samplers, "Samplers" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_sets, "DescriptorSets" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_set_layouts, "DescriptorSetLayouts" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.framebuffers, "Framebuffers" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.render_passes, "RenderPasses" );
+  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.shaders, "Shaders" );
+}
+
+void
+crude_devmenu_gpu_pool_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->gpu_pool.enabled = !devmenu->gpu_pool.enabled;
+}
+
+/***********************
+ * 
+ * Develop Scene Renderer
+ * 
+ ***********************/
+void
+crude_devmenu_scene_renderer_initialize
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+)
+{
+  dev_scene_rendere->enabled = false;
+}
+
+void
+crude_devmenu_scene_renderer_deinitialize
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+)
+{
+}
+
+void
+crude_devmenu_scene_renderer_update
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+)
+{
+}
+
+void
+crude_devmenu_scene_renderer_draw
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+)
+{
+  game_t *game = game_instance( );
+
+  if ( !dev_scene_rendere->enabled )
+  {
+    return;
+  }
+
+  ImGui::Begin( "Scene Renderer" );
+  if ( ImGui::CollapsingHeader( "Background" ) )
+  {
+    ImGui::ColorEdit3( "Background Color", &game->scene_renderer.options.background_color.x );
+    ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
+  }
+  if ( ImGui::CollapsingHeader( "Global Illumination" ) )
+  {
+    ImGui::ColorEdit3( "Ambient Color", &game->scene_renderer.options.ambient_color.x );
+    ImGui::DragFloat( "Ambient Intensity", &game->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+    ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
+    ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
+    ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
+    ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
+    ImGui::SliderFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis, 0.0, 1.0 );
+    ImGui::DragFloat( "Shadow Weight Power", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.shadow_weight_power );
+    ImGui::SliderFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier, 0.0, 1.0 );
+    ImGui::DragInt( "Probe Update Per Frame", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_update_per_frame );
+    ImGui::Text( "Probe Debug Flags" );
+    ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
+    ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
+    ImGui::CheckboxFlags( "Probe Index | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 4 );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+  }
+  
+  ImGui::End( );
+}
+
+void
+crude_devmenu_scene_renderer_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
 }
 
 #endif

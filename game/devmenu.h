@@ -36,11 +36,31 @@ typedef struct crude_devmenu_gpu_visual_profiler
   bool                                                     enabled;
 } crude_devmenu_gpu_visual_profiler;
 
+typedef struct crude_devmenu_render_graph
+{
+  bool                                                     enabled;
+} crude_devmenu_render_graph;
+
+typedef struct crude_devmenu_gpu_pool
+{
+  bool                                                     enabled;
+} crude_devmenu_gpu_pool;
+
+typedef struct crude_devmenu_scene_renderer
+{
+  bool                                                     debug_probes_statuses;
+  bool                                                     debug_probes_radiance;
+  bool                                                     enabled;
+} crude_devmenu_scene_renderer;
+
 typedef struct crude_devmenu
 {
 	bool																										 enabled;
   crude_devmenu_gpu_visual_profiler                        gpu_visual_profiler;
   crude_devmenu_texture_inspector                          texture_inspector;
+  crude_devmenu_render_graph                               render_graph;
+  crude_devmenu_gpu_pool                                   gpu_pool;
+  crude_devmenu_scene_renderer                             scene_renderer;
   uint32                                                   selected_option;
 } crude_devmenu;
 
@@ -82,6 +102,36 @@ crude_devmenu_handle_input
 
 /***********************
  * 
+ * Common Commmads
+ * 
+ ***********************/
+
+CRUDE_API void
+crude_devmenu_free_camera_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+CRUDE_API bool
+crude_devmenu_free_camera_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+);
+
+CRUDE_API void
+crude_devmenu_reload_techniques_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+CRUDE_API bool
+crude_devmenu_reload_techniques_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+);
+
+/***********************
+ * 
  * Develop GPU Visual Profiler
  * 
  ***********************/
@@ -107,6 +157,12 @@ CRUDE_API void
 crude_devmenu_gpu_visual_profiler_draw
 (
 	_In_ crude_devmenu_gpu_visual_profiler									*dev_gpu_profiler
+);
+
+CRUDE_API void
+crude_devmenu_gpu_visual_profiler_callback
+(
+	_In_ crude_devmenu									                    *devmenu
 );
 
 /***********************
@@ -137,4 +193,116 @@ crude_devmenu_texture_inspector_draw
 (
 	_In_ crude_devmenu_texture_inspector									  *dev_texture_inspector
 );
+
+CRUDE_API void
+crude_devmenu_texture_inspector_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+/***********************
+ * 
+ * Develop Render Graph
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_render_graph_initialize
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+);
+
+CRUDE_API void
+crude_devmenu_render_graph_deinitialize
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+);
+
+CRUDE_API void
+crude_devmenu_render_graph_update
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+);
+
+CRUDE_API void
+crude_devmenu_render_graph_draw
+(
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
+);
+
+CRUDE_API void
+crude_devmenu_render_graph_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+/***********************
+ * 
+ * Develop GPU Pools
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_gpu_pool_initialize
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+);
+
+CRUDE_API void
+crude_devmenu_gpu_pool_deinitialize
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+);
+
+CRUDE_API void
+crude_devmenu_gpu_pool_update
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+);
+
+CRUDE_API void
+crude_devmenu_gpu_pool_draw
+(
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+);
+
+CRUDE_API void
+crude_devmenu_gpu_pool_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+/***********************
+ * 
+ * Develop Scene Renderer
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_scene_renderer_initialize
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+);
+
+CRUDE_API void
+crude_devmenu_scene_renderer_deinitialize
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+);
+
+CRUDE_API void
+crude_devmenu_scene_renderer_update
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+);
+
+CRUDE_API void
+crude_devmenu_scene_renderer_draw
+(
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+);
+
+CRUDE_API void
+crude_devmenu_scene_renderer_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
 #endif

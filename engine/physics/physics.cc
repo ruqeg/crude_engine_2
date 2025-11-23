@@ -17,15 +17,9 @@ crude_physics_initialize
   _In_ crude_physics_creation const                       *creation
 )
 {
-  physics->allocator = creation->allocator;
-
+  physics->manager = creation->manager;
+  physics->collision_manager = creation->collision_manager;
   physics->simulation_enabled = true;
-
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( physics->character_bodies, 0, crude_heap_allocator_pack( physics->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( physics->static_bodies, 0, crude_heap_allocator_pack( physics->allocator ) );
-
-  crude_resource_pool_initialize( &physics->character_bodies_resource_pool, crude_heap_allocator_pack( physics->allocator ), CRUDE_PHYSICS_MAX_BODIES_COUNT, sizeof( crude_physics_character_body ) );
-  crude_resource_pool_initialize( &physics->static_bodies_resource_pool, crude_heap_allocator_pack( physics->allocator ), CRUDE_PHYSICS_MAX_BODIES_COUNT, sizeof( crude_physics_static_body ) );
 }
 
 void
@@ -34,11 +28,6 @@ crude_physics_deinitialize
   _In_ crude_physics                                      *physics
 )
 {
-  CRUDE_ARRAY_DEINITIALIZE( physics->character_bodies );
-  CRUDE_ARRAY_DEINITIALIZE( physics->static_bodies );
-
-  crude_resource_pool_deinitialize( &physics->character_bodies_resource_pool );
-  crude_resource_pool_deinitialize( &physics->static_bodies_resource_pool );
 }
 
 void
@@ -52,7 +41,8 @@ crude_physics_update
   {
     return;
   }
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->character_bodies ); ++i )
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->manager->character_bodies ); ++i )
   {
     crude_transform                                       *transform;
     crude_physics_collision_shape                         *collision_shape;
@@ -64,13 +54,13 @@ crude_physics_update
     XMVECTOR                                               translation;
     XMVECTOR                                               velocity;
 
-    character_body_handle = physics->character_bodies[ i ];
-    character_body = crude_physics_access_character_body( physics, character_body_handle );
+    character_body_handle = physics->manager->character_bodies[ i ];
+    character_body = crude_physics_resources_manager_access_character_body( physics->manager, character_body_handle );
 
     transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( character_body->node, crude_transform );
     collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( character_body->node, crude_physics_collision_shape );
 
-    velocity = crude_physics_character_body_get_velocity( physics, character_body_handle );
+    velocity = XMLoadFloat3( &character_body->velocity );
     
     parent_to_world = crude_transform_parent_to_world( character_body->node );
     node_to_parent = crude_transform_node_to_parent( transform );
@@ -80,7 +70,7 @@ crude_physics_update
 
     character_body->on_floor = false;
 
-    for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->static_bodies ); ++s )
+    for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->manager->static_bodies ); ++s )
     {
       crude_physics_static_body                           *second_body;
       crude_physics_collision_shape                       *second_collision_shape;
@@ -89,7 +79,7 @@ crude_physics_update
       XMVECTOR                                             second_translation, closest_point;
       bool                                                 intersected;
 
-      second_body = crude_physics_access_static_body( physics, physics->static_bodies[ s ] );
+      second_body = crude_physics_resources_manager_access_static_body( physics->manager, physics->manager->static_bodies[ s ] );
 
       if ( !( character_body->mask & second_body->layer ) )
       {
@@ -111,7 +101,7 @@ crude_physics_update
       }
       else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
       {
-        crude_octree *octree = crude_collisions_resources_manager_access_octree( crude_collisions_resources_manager_instance( ), second_collision_shape->mesh.octree_handle );
+        crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
         closest_point = crude_octree_closest_point( octree, translation );
         intersected = crude_intersection_sphere_triangle( closest_point, translation, collision_shape->sphere.radius );
       }
@@ -147,129 +137,6 @@ crude_physics_update
   }
 }
 
-crude_physics_character_body_handle
-crude_physics_create_character_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_entity                                        node
-)
-{
-  crude_physics_character_body_handle character_body_handle = CRUDE_COMPOUNT( crude_physics_character_body_handle, { crude_resource_pool_obtain_resource( &physics->character_bodies_resource_pool ) } );
-  crude_physics_character_body *character_body = crude_physics_access_character_body( physics, character_body_handle );
-  character_body->callback_container = crude_physics_collision_callback_container_empty( );
-  character_body->node = node;
-
-  CRUDE_ARRAY_PUSH( physics->character_bodies, character_body_handle ); 
-  return character_body_handle;
-}
-
-CRUDE_API crude_physics_static_body_handle
-crude_physics_create_static_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_entity                                        node
-)
-{
-  crude_physics_static_body_handle static_body_handle = CRUDE_COMPOUNT( crude_physics_static_body_handle, { crude_resource_pool_obtain_resource( &physics->static_bodies_resource_pool ) } );
-  crude_physics_static_body *static_body = crude_physics_access_static_body( physics, static_body_handle );
-  static_body->node = node;
-  
-  CRUDE_ARRAY_PUSH( physics->static_bodies, static_body_handle ); 
-  return static_body_handle;
-}
-
-void
-crude_physics_destroy_character_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                 handle
-)
-{
-  // !TODO :D
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->character_bodies ); ++i )
-  {
-    if ( physics->character_bodies[ i ].index == handle.index )
-    {
-      CRUDE_ARRAY_DELSWAP( physics->character_bodies, i );
-      break;
-    }
-  }
-  crude_resource_pool_release_resource( &physics->character_bodies_resource_pool, handle.index );
-}
-
-void
-crude_physics_destroy_static_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_static_body_handle                    handle
-)
-{
-  // !TODO :D
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->static_bodies ); ++i )
-  {
-    if ( physics->static_bodies[ i ].index == handle.index )
-    {
-      CRUDE_ARRAY_DELSWAP( physics->static_bodies, i );
-      break;
-    }
-  }
-  crude_resource_pool_release_resource( &physics->static_bodies_resource_pool, handle.index );
-}
-
-crude_physics_character_body*
-crude_physics_access_character_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                 handle
-)
-{
-  return CRUDE_CAST( crude_physics_character_body*, crude_resource_pool_access_resource( &physics->character_bodies_resource_pool, handle.index ) );
-}
-
-crude_physics_static_body*
-crude_physics_access_static_body
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_static_body_handle                    handle
-)
-{
-  return CRUDE_CAST( crude_physics_static_body*, crude_resource_pool_access_resource( &physics->static_bodies_resource_pool, handle.index ) );
-}
-
-XMVECTOR
-crude_physics_character_body_get_velocity
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                 handle
-)
-{
-  crude_physics_character_body *body = CRUDE_CAST( crude_physics_character_body*, crude_resource_pool_access_resource( &physics->character_bodies_resource_pool, handle.index ) );
-  return XMLoadFloat3( &body->velocity );
-}
-
-void
-crude_physics_character_body_set_velocity
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                 handle,
-  _In_ XMVECTOR                                            velocity
-)
-{
-  crude_physics_character_body *body = CRUDE_CAST( crude_physics_character_body*, crude_resource_pool_access_resource( &physics->character_bodies_resource_pool, handle.index ) );
-  XMStoreFloat3( &body->velocity, velocity );
-}
-
-bool
-crude_physics_character_body_on_floor
-(
-  _In_ crude_physics                                      *physics,
-  _In_ crude_physics_character_body_handle                 handle
-)
-{
-  crude_physics_character_body *body = CRUDE_CAST( crude_physics_character_body*, crude_resource_pool_access_resource( &physics->character_bodies_resource_pool, handle.index ) );
-  return body->on_floor;
-}
-
 void
 crude_physics_enable_simulation
 (
@@ -281,9 +148,9 @@ crude_physics_enable_simulation
 
   if ( enable )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->character_bodies ); ++i )
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->manager->character_bodies ); ++i )
     {
-      crude_physics_character_body *dynamic_body = crude_physics_access_character_body( physics, physics->character_bodies[ i ] );
+      crude_physics_character_body *dynamic_body = crude_physics_resources_manager_access_character_body( physics->manager, physics->manager->character_bodies[ i ] );
       XMStoreFloat3( &dynamic_body->velocity, XMVectorZero( ) );
       dynamic_body->on_floor = false;
     }
@@ -302,7 +169,7 @@ crude_physics_cast_ray
 {
   float32 nearest_t = FLT_MAX;
 
-  for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->static_bodies ); ++s )
+  for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->manager->static_bodies ); ++s )
   {
     crude_physics_static_body                           *second_body;
     crude_physics_collision_shape                       *second_collision_shape;
@@ -312,7 +179,7 @@ crude_physics_cast_ray
     crude_raycast_result                                 current_result;
     bool                                                 intersected;
 
-    second_body = crude_physics_access_static_body( physics, physics->static_bodies[ s ] );
+    second_body = crude_physics_resources_manager_access_static_body( physics->manager, physics->manager->static_bodies[ s ] );
 
     if ( !( mask & second_body->layer ) )
     {
@@ -331,7 +198,7 @@ crude_physics_cast_ray
     }
     else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
     {
-      crude_octree *octree = crude_collisions_resources_manager_access_octree( crude_collisions_resources_manager_instance( ), second_collision_shape->mesh.octree_handle );
+      crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
       intersected = crude_octree_cast_ray( octree, ray_origin, ray_direction, &current_result );
     }
     else

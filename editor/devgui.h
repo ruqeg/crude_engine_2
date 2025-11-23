@@ -35,27 +35,6 @@ typedef struct crude_devgui_viewport
   crude_gfx_texture_handle                                 selected_texture;
 } crude_devgui_scene_node_viewport;
 
-typedef struct crude_devgui_render_graph
-{
-  crude_gfx_render_graph                                  *render_graph;
-  bool                                                     enabled;
-} crude_devgui_render_graph;
-
-typedef struct crude_devgui_gpu
-{
-  crude_gfx_device                                        *gpu;
-  crude_stack_allocator                                   *temporary_allocator;
-  bool                                                     enabled;
-} crude_devgui_gpu;
-
-typedef struct crude_devgui_scene_renderer
-{
-  crude_gfx_scene_renderer                                *scene_renderer;
-  bool                                                     debug_probes_statuses;
-  bool                                                     debug_probes_radiance;
-  bool                                                     enabled;
-} crude_devgui_scene_renderer;
-
 typedef struct crude_devgui
 {
   char const                                              *last_focused_menutab_name;
@@ -64,9 +43,6 @@ typedef struct crude_devgui
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
   crude_devgui_viewport                                    dev_viewport;
-  crude_devgui_render_graph                                dev_render_graph;
-  crude_devgui_gpu                                         dev_gpu;
-  crude_devgui_scene_renderer                              dev_scene_renderer;
   crude_devgui_added_node_data                             added_node_data;
   crude_entity                                             node_to_add;
   crude_entity                                             node_to_remove;
@@ -171,65 +147,4 @@ crude_devgui_viewport_input
 (
   _In_ crude_devgui_viewport                              *devgui_viewport,
   _In_ crude_input                                        *input
-);
-
-/******************************
- * Dev Gui Render Graph
- *******************************/
-CRUDE_API void
-crude_devgui_render_graph_initialize
-(
-  _In_ crude_devgui_render_graph                          *devgui_render_graph,
-  _In_ crude_gfx_render_graph                             *render_graph
-);
-
-CRUDE_API void
-crude_devgui_render_graph_draw
-(
-  _In_ crude_devgui_render_graph                          *devgui_render_graph
-);
-
-/******************************
- * Dev Gui GPU
- *******************************/
-CRUDE_API void
-crude_devgui_gpu_initialize
-(
-  _In_ crude_devgui_gpu                                   *dev_gpu,
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_stack_allocator                              *temporary_allocator
-);
-
-CRUDE_API void
-crude_devgui_gpu_draw
-(
-  _In_ crude_devgui_gpu                                   *dev_gpu
-);
-
-/******************************
- * Dev Gui Scene Renderer
- *******************************/
-CRUDE_API void
-crude_devgui_scene_renderer_initialize
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-);
-
-CRUDE_API void
-crude_devgui_scene_renderer_deinitialize
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-);
-
-CRUDE_API void
-crude_devgui_scene_renderer_update
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
-);
-
-CRUDE_API void
-crude_devgui_scene_renderer_draw
-(
-  _In_ crude_devgui_scene_renderer                        *dev_scene_renderer
 );

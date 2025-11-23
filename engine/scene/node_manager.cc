@@ -52,7 +52,8 @@ crude_node_manager_initialize
   manager->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
   manager->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
-  manager->physics = creation->physics;
+  manager->physics_resources_manager = creation->physics_resources_manager;
+  manager->collisions_resources_manager = creation->collisions_resources_manager;
   manager->allocator = creation->allocator;
 
   crude_linear_allocator_initialize( &manager->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );

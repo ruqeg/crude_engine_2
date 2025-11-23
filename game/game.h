@@ -2,14 +2,14 @@
 
 #include <nfd.h>
 
-#include <engine.h>
+#include <engine/engine.h>
 #include <engine/scene/node_manager.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/core/ecs.h>
 #include <engine/platform/platform_components.h>
 #include <engine/scene/collisions_resources_manager.h>
 #include <engine/physics/physics.h>
-#include <devmenu.h>
+#include <game/devmenu.h>
 
 typedef enum crude_game_queue_command_type
 {
@@ -82,6 +82,8 @@ typedef struct game_t
   void                                                    *imgui_context;
 #endif
   /* Physics */
+  crude_physics_resources_manager                          physics_resources_manager;
+  crude_collisions_resources_manager                       collision_resources_manager;
   crude_physics                                            physics;
   /* Scene */
   crude_node_manager                                       node_manager;

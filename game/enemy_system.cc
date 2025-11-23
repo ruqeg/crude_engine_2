@@ -5,11 +5,11 @@
 #include <engine/scene/scene_components.h>
 #include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
-#include <game_components.h>
+#include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
-#include <game.h>
+#include <game/game.h>
 
-#include <enemy_system.h>
+#include <game/enemy_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_enemy_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_enemy_creation_observer_ );

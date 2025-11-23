@@ -5,8 +5,6 @@
 
 #include <engine/scene/collisions_resources_manager.h>
 
-crude_collisions_resources_manager                        *manager_instance_;
-
 static cgltf_data*
 crude_collisions_resources_manager_gltf_parse_
 (
@@ -280,31 +278,4 @@ crude_collisions_resources_manager_access_octree
 )
 {
   return CRUDE_CAST( crude_octree*, crude_resource_pool_access_resource( &manager->octree_resource_pool, handle.index ) );
-}
-
-void
-crude_collisions_resources_manager_instance_allocate
-(
-  _In_ crude_allocator_container                           allocator_container
-)
-{
-  manager_instance_ = CRUDE_CAST( crude_collisions_resources_manager*, CRUDE_ALLOCATE( allocator_container, sizeof( crude_collisions_resources_manager ) ) );
-  *manager_instance_ = CRUDE_COMPOUNT_EMPTY( crude_collisions_resources_manager );
-}
-
-void
-crude_collisions_resources_manager_instance_deallocate
-(
-  _In_ crude_allocator_container                           allocator_container
-)
-{
-  CRUDE_DEALLOCATE( allocator_container, manager_instance_ );
-}
-
-crude_collisions_resources_manager*
-crude_collisions_resources_manager_instance
-(
-)
-{
-  return manager_instance_;
 }

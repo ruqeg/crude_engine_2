@@ -4,9 +4,9 @@
 #include <engine/core/octree.h>
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
+#include <engine/physics/physics_resources_manager.h>
 
 typedef struct crude_node_manager crude_node_manager;
-typedef struct crude_physics crude_physics;
 
 typedef bool (*crude_scene_parse_json_to_component_func)
 ( 
@@ -26,7 +26,8 @@ typedef void (*crude_scene_parse_all_components_to_json_func)
 typedef struct crude_node_manager_creation
 {
   ecs_world_t                                             *world;
-  crude_physics                                           *physics;
+  crude_physics_resources_manager                         *physics_resources_manager;
+  crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
@@ -38,7 +39,8 @@ typedef struct crude_node_manager
 {
   /* Context */
   ecs_world_t                                             *world;
-  crude_physics                                           *physics;
+  crude_physics_resources_manager                         *physics_resources_manager;
+  crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
