@@ -4,6 +4,7 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #endif
 
+#include <engine/core/profiler.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/file.h>
 #include <engine/core/memory.h>
@@ -180,6 +181,7 @@ game_postupdate
   _In_ game_t                                             *game
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "game_postupdate" );
   crude_devmenu_update( &game->devmenu );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
@@ -229,6 +231,7 @@ game_postupdate
   }
 
   CRUDE_ARRAY_SET_LENGTH( game->commands_queue, 0u );
+  CRUDE_PROFILER_END( "game_postupdate" );
 }
 
 void
@@ -285,6 +288,7 @@ game_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "game_graphics_system_" );
   game_t                                                  *game;
   crude_gfx_texture                                       *final_render_texture;
 
@@ -324,6 +328,7 @@ game_graphics_system_
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
+  CRUDE_PROFILER_END;
 }
 
 void
@@ -349,6 +354,7 @@ game_input_system_
   _In_ ecs_iter_t                                         *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "game_input_system_" );
   game_t *game = ( game_t* )it->ctx;
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
@@ -375,6 +381,7 @@ game_input_system_
     //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
     //}
   }
+  CRUDE_PROFILER_END( "game_input_system_" );
 #endif /* CRUDE_DEVELOP */
 }
 
@@ -384,8 +391,10 @@ game_physics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "game_physics_system_" );
   game_t *game = ( game_t* )it->ctx;
   crude_physics_update( &game->physics, CRUDE_MIN( it->delta_time, 0.016f ) );
+  CRUDE_PROFILER_END;
 }
 
 bool

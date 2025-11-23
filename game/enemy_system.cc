@@ -38,6 +38,7 @@ crude_enemy_update_system_
   _In_ ecs_iter_t *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_enemy_update_system_" );
   crude_enemy *enemies_per_entity = ecs_field( it, crude_enemy, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
@@ -80,6 +81,7 @@ crude_enemy_update_system_
       }
     }
   }
+  CRUDE_PROFILER_END( "crude_enemy_update_system_" );
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )

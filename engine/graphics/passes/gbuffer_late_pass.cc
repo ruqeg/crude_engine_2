@@ -58,7 +58,7 @@ crude_gfx_gbuffer_late_pass_render
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
     pass->scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ],
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_count ),
-    pass->scene_renderer->total_meshes_instances_count,
+    pass->scene_renderer->total_visible_meshes_instances_count,
     sizeof( crude_gfx_mesh_draw_command_gpu )
   );
 }

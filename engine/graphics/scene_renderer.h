@@ -41,6 +41,9 @@ typedef struct crude_gfx_scene_renderer_options
   float32                                                  background_intensity;
   XMFLOAT3                                                 ambient_color;
   float32                                                  ambient_intensity;
+#if CRUDE_DEVELOP
+  bool                                                     hide_collision;
+#endif
 } crude_gfx_scene_renderer_options;
 
 typedef struct crude_gfx_scene_renderer
@@ -69,6 +72,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_buffer_handle                                  scene_cb;
   
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
+  uint32                                                   total_visible_meshes_instances_count;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];

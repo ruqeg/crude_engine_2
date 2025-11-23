@@ -14,10 +14,10 @@ crude_free_camera_update_system
   _In_ ecs_iter_t *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_free_camera_update_system" );
   crude_transform *transforms = ecs_field( it, crude_transform, 0 );
   crude_free_camera *free_cameras = ecs_field( it, crude_free_camera, 1 );
   
-  CRUDE_PROFILER_ZONE_NAME( "UpdateFreeCameras" );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     if ( !free_cameras[ i ].input_enabled )

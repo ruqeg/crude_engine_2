@@ -60,7 +60,7 @@ crude_editor_physics_collision_shape_create_observer_
     }
     debug_model_absolute_filename = crude_string_buffer_append_use_f( &editor->dynamic_strings_buffer, "%s%s", editor->resources_absolute_directory, debug_model_relative_filename );
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_debug_collision, { debug_model_absolute_filename } );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_debug_collision, { debug_model_absolute_filename, true } );
   }
 }
 
@@ -192,7 +192,8 @@ crude_editor_initialize
   ECS_IMPORT( editor->engine->world, crude_physics_components );
   
   CRUDE_ECS_OBSERVER_DEFINE( editor->engine->world, crude_editor_physics_collision_shape_create_observer_, EcsOnSet, { 
-    { .id = ecs_id( crude_physics_collision_shape ) }
+    { .id = ecs_id( crude_physics_collision_shape ) },
+    { .id = ecs_id( crude_debug_collision ), .oper = EcsNot }
   } );
 
   crude_editor_initialize_allocators_( editor );

@@ -128,7 +128,7 @@
 					},
 					"components":	[],
 					"children":	[{
-							"name":	"redball_ghost_model",
+							"name":	"redball_enemy_model",
 							"transform":	{
 								"translation":	[0, 0, 0],
 								"rotation":	[0, 0, 0, 1],
@@ -136,7 +136,7 @@
 							},
 							"components":	[{
 									"type":	"crude_gltf",
-									"path":	"game\\models\\redball_ghost.gltf"
+									"path":	"game\\models\\Enemy.gltf"
 								}],
 							"children":	[]
 						}]

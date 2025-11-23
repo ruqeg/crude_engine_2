@@ -84,6 +84,7 @@ crude_engine_update
   _In_ crude_engine                                       *engine
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   ecs_world_t                                             *world;
   int64                                                    current_time;
   float32                                                  delta_time;
@@ -93,6 +94,7 @@ crude_engine_update
   {
     crude_ecs_fini( world );
     engine->running = false;
+    CRUDE_PROFILER_END;
     return false;
   }
   
@@ -100,6 +102,7 @@ crude_engine_update
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( world, delta_time );
   engine->last_update_time = current_time;
+  CRUDE_PROFILER_END;
 
   return true;
 }

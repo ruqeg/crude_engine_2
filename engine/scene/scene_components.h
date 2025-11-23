@@ -46,6 +46,7 @@ typedef struct crude_scene_handle
 typedef struct crude_debug_collision
 {
   char const                                              *absolute_filepath;
+  bool                                                     visible;
 } crude_debug_collision;
 #endif
 
@@ -72,6 +73,13 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_camera );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light );
+#if CRUDE_DEVELOP
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_debug_collision );
+#endif
+
+#if CRUDE_DEVELOP
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_debug_collision );
+#endif
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip

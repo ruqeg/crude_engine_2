@@ -1,4 +1,5 @@
 #include <engine/core/file.h>
+#include <engine/core/profiler.h>
 
 #include <game/game.h>
 
@@ -40,6 +41,7 @@ main
   {
     crude_engine_update( &engine );
     game_postupdate( game_instance( ) );
+    CRUDE_PROFILER_MARK_FRAME;
   }
    
   /* Deinitialization */

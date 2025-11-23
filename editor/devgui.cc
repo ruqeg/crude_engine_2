@@ -112,6 +112,20 @@ crude_devgui_draw
       }
       ImGui::EndMenu( );
     }
+    
+    if ( ImGui::BeginMenu( "View" ) )
+    {
+      devgui->last_focused_menutab_name = "View";
+      if ( ImGui::MenuItem( "Show All Collision" ) )
+      {
+        editor->scene_renderer.options.hide_collision = false;
+      }
+      if ( ImGui::MenuItem( "Hide All Collision" ) )
+      {
+        editor->scene_renderer.options.hide_collision = true;
+      }
+      ImGui::EndMenu( );
+    }
     ImGui::EndMainMenuBar( );
   }
 
@@ -428,6 +442,11 @@ crude_devgui_node_inspector_draw
   {
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( node, enemy, &editor->node_manager );
   }
+  crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_debug_collision );
+  if ( debug_collision && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_collision ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_collision )( node, debug_collision, &editor->node_manager );
+  }
   ImGui::End( );
 }
 
@@ -457,8 +476,9 @@ crude_devgui_viewport_initialize
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  crude_editor *editor = crude_editor_instance( );
   devgui_viewport->gpu = gpu;
-  devgui_viewport->selected_texture = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devgui_viewport->selected_texture = crude_gfx_render_graph_builder_access_resource_by_name( editor->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle;
 }
 
 void

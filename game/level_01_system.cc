@@ -31,17 +31,16 @@ crude_level_01_creation_observer_
     level->editor_camera_controller_enabled = true;
     level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
     
-    //ecs_iter_t it = ecs_children( node.world, node.handle );
-    //while ( ecs_children_next( &it ) )
-    //{
-    //  for ( size_t i = 0; i < it.count; ++i )
-    //  {
-    //    crude_entity                                       child;
-    //
-    //    child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-    //    cJSON_AddItemToArray( children_json, node_to_json_hierarchy_( scene, child ) );
-    //  }
-    //}
+    ecs_iter_t entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
+    while ( ecs_children_next( &entity_swapnpoint_it ) )
+    {
+      for ( size_t i = 0; i < entity_swapnpoint_it.count; ++i )
+      {
+        crude_entity                                       entity_swapnpoint_node;
+    
+        entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
+      }
+    }
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_platform_hide_cursor( *window_handle );

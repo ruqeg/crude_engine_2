@@ -66,6 +66,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->imgui_context = creation->imgui_context;
   scene_renderer->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   scene_renderer->imgui_pass_enalbed = creation->imgui_pass_enalbed;
+  scene_renderer->total_visible_meshes_instances_count = 0u;
 
   scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
   scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
@@ -546,7 +547,7 @@ update_dynamic_buffers_
       scene_constant->resolution.x = scene_renderer->gpu->vk_swapchain_width;
       scene_constant->resolution.y = scene_renderer->gpu->vk_swapchain_height;
       crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene_constant->camera );
-      scene_constant->meshes_instances_count = scene_renderer->total_meshes_instances_count;
+      scene_constant->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
       scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
       scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
@@ -576,12 +577,49 @@ update_dynamic_buffers_
   
     if ( meshes_instances_draws )
     {
-      uint64 mesh_instance_draw_index = 0u;
+      scene_renderer->total_visible_meshes_instances_count = 0u;
       for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
       {
         crude_gfx_model_renderer_resources_instance       *model_renderer_resources_instance;
+        XMMATRIX                                           model_to_custom_model;
 
+        model_to_custom_model = XMMatrixIdentity( );
         model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
+        
+#if CRUDE_DEVELOP
+        if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape ) && CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision ) )
+        {
+          crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision );
+          crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
+          
+          if ( scene_renderer->options.hide_collision )
+          {
+            continue;
+          }
+
+          if ( !debug_collision->visible )
+          {
+            continue;
+          }
+
+          if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+          {
+            model_to_custom_model = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
+          }
+          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+          {
+            model_to_custom_model = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
+          }
+          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+          {
+            model_to_custom_model = XMMatrixIdentity( );
+          }
+          else
+          {
+            CRUDE_ASSERT( false );
+          }
+        }
+#endif
 
         for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
         {
@@ -593,41 +631,18 @@ update_dynamic_buffers_
           
           mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
           mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
+          mesh_to_model = XMMatrixMultiply( mesh_to_model, model_to_custom_model );
 
           model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_transform );
           model_to_world = crude_transform_node_to_world( model_renderer_resources_instance->node, model_transform );
           
-#if CRUDE_DEVELOP
-          if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape ) )
-          {
-            XMMATRIX collision_transform_matrix = XMMatrixIdentity( );
-            crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
-            if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-            {
-              collision_transform_matrix = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
-            }
-            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-            {
-              collision_transform_matrix = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
-            }
-            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-            {
-              collision_transform_matrix = XMMatrixIdentity( );
-            }
-            else
-            {
-              CRUDE_ASSERT( false );
-            }
-            mesh_to_model = XMMatrixMultiply( mesh_to_model, collision_transform_matrix );
-          }
-#endif
           mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
 
-          XMStoreFloat4x4( &meshes_instances_draws[ mesh_instance_draw_index ].mesh_to_world, mesh_to_world );
-          XMStoreFloat4x4( &meshes_instances_draws[ mesh_instance_draw_index ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
-          meshes_instances_draws[ mesh_instance_draw_index ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
+          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
+          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
+          meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
 
-          ++mesh_instance_draw_index;
+          ++scene_renderer->total_visible_meshes_instances_count;
         }
       }
     }
@@ -651,7 +666,7 @@ update_dynamic_buffers_
     if ( mesh_draw_counts_early )
     {
       *mesh_draw_counts_early = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
-      mesh_draw_counts_early->total_count = scene_renderer->total_meshes_instances_count;
+      mesh_draw_counts_early->total_count = scene_renderer->total_visible_meshes_instances_count;
       mesh_draw_counts_early->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
       mesh_draw_counts_early->occlusion_culling_late_flag = false;
       crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ] );
@@ -665,7 +680,7 @@ update_dynamic_buffers_
     if ( mesh_draw_counts_late )
     {
       *mesh_draw_counts_late = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
-      mesh_draw_counts_late->total_count = scene_renderer->total_meshes_instances_count;
+      mesh_draw_counts_late->total_count = scene_renderer->total_visible_meshes_instances_count;
       mesh_draw_counts_late->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
       mesh_draw_counts_late->occlusion_culling_late_flag = true;
       crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_late_sb[ gpu->current_frame ] );
@@ -1098,11 +1113,11 @@ crude_scene_renderer_register_nodes_instances_
       }
 
 #if CRUDE_DEVELOP
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_collision ) )
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_collision ) && CRUDE_ENTITY_HAS_COMPONENT( child, crude_physics_collision_shape ) )
       {
         crude_debug_collision const                       *child_gltf;
         crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
-
+        
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_collision );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );

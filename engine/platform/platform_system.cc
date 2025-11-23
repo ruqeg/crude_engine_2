@@ -191,11 +191,10 @@ crude_process_events_system_
   ecs_iter_t *it
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_process_events_system_" );
   crude_input *inputs_per_entity = ecs_field( it, crude_input, 0 );
   crude_window *windows_per_entity = ecs_field( it, crude_window, 1 );
   crude_window_handle *windows_handles_per_entity = ecs_field( it, crude_window_handle, 2 );
-  
-  CRUDE_PROFILER_ZONE_NAME( "SDLProcessEvents" );
 
   /* Reset input */
   for ( uint32 i = 0; i < it->count; ++i )
