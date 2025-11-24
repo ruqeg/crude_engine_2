@@ -12,6 +12,7 @@ typedef struct crude_enemy
 
 typedef struct crude_level_01
 {
+  crude_entity                                             syringes_spawn_points_parent_node;
   crude_entity                                             enemies_spawn_points_parent_node;
   bool                                                     editor_camera_controller_enabled;
 } crude_level_01;

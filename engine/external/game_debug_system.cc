@@ -24,7 +24,8 @@ crude_level_01_creation_observer_
 
     level->editor_camera_controller_enabled = true;
     level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
-    
+    level->syringes_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "syringes_spawn_points" );
+
     ecs_iter_t entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
     while ( ecs_children_next( &entity_swapnpoint_it ) )
     {
@@ -33,6 +34,17 @@ crude_level_01_creation_observer_
         crude_entity                                       entity_swapnpoint_node;
         entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
         CRUDE_ENTITY_SET_COMPONENT( entity_swapnpoint_node, crude_debug_gltf, { ctx->enemy_spawnpoint_model_absolute_filepath, true } );
+      }
+    }
+
+    ecs_iter_t entity_syringe_spawn_point_it = ecs_children( it->world, level->syringes_spawn_points_parent_node.handle );
+    while ( ecs_children_next( &entity_syringe_spawn_point_it ) )
+    {
+      for ( size_t i = 0; i < entity_syringe_spawn_point_it.count; ++i )
+      {
+        crude_entity                                       entity_spawn_point_node;
+        entity_spawn_point_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_syringe_spawn_point_it.entities[ i ], .world = it->world } );
+        CRUDE_ENTITY_SET_COMPONENT( entity_spawn_point_node, crude_debug_gltf, { ctx->syringe_spawnpoint_model_absolute_filepath, true } );
       }
     }
   }
@@ -47,6 +59,7 @@ crude_game_debug_system_import
 {
   if ( !ctx->enemy_spawnpoint_model_absolute_filepath )
   {
+    ctx->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
     ctx->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
   }
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, ctx, { 

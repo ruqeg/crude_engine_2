@@ -192,7 +192,7 @@
 					"children":	[]
 				}]
 		}, {
-			"name":	"syringes_spawnes",
+			"name":	"syringes_spawn_points",
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
