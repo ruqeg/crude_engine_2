@@ -8,7 +8,9 @@
 #include <engine/core/ecs.h>
 #include <engine/platform/platform_components.h>
 #include <engine/scene/collisions_resources_manager.h>
+#include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics.h>
+#include <engine/external/game_debug_system.h>
 #include <game/devmenu.h>
 
 typedef enum crude_game_queue_command_type
@@ -60,6 +62,7 @@ typedef struct game_t
   char const                                              *working_absolute_directory;
 
   crude_string_buffer                                      constant_strings_buffer;
+  crude_string_buffer                                      debug_strings_buffer;
 
   crude_devmenu                                            devmenu;
 
@@ -92,6 +95,11 @@ typedef struct game_t
   XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
+  /* System Context */
+#if CRUDE_DEVELOP
+  crude_physics_debug_system_context                       physics_debug_system_context;
+  crude_game_debug_system_context                          game_debug_system_context;
+#endif
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;

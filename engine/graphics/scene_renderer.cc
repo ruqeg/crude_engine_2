@@ -10,6 +10,7 @@
 
 #include <engine/scene/scene_components.h>
 #include <engine/physics/physics_components.h>
+#include <engine/scene/scene_debug_components.h>
 
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
@@ -619,6 +620,20 @@ update_dynamic_buffers_
             CRUDE_ASSERT( false );
           }
         }
+        else if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf )  )
+        {
+          crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf );
+          
+          if ( scene_renderer->options.hide_debug_gltf )
+          {
+            continue;
+          }
+
+          if ( !debug_gltf->visible )
+          {
+            continue;
+          }
+        }
 #endif
 
         for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
@@ -1119,6 +1134,18 @@ crude_scene_renderer_register_nodes_instances_
         crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
         
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_collision );
+
+        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath );
+        model_renderer_resources_instant.node = child;
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+      }
+      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_gltf ) )
+      {
+        crude_debug_gltf const                            *child_gltf;
+        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+        
+        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_gltf );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
         model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath );

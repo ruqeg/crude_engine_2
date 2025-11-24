@@ -9,6 +9,8 @@
 #include <engine/scene/collisions_resources_manager.h>
 #include <editor/devgui.h>
 #include <engine/physics/physics_resources_manager.h>
+#include <engine/physics/physics_debug_system.h>
+#include <engine/external/game_debug_system.h>
 
 typedef enum crude_editor_queue_command_type
 {
@@ -59,6 +61,7 @@ typedef struct crude_editor
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      dynamic_strings_buffer;
+  crude_string_buffer                                      debug_strings_buffer;
 
   /* Common */
   crude_heap_allocator                                     allocator;
@@ -89,7 +92,16 @@ typedef struct crude_editor
   /* Game */
   crude_entity                                             focused_camera_node;
   crude_entity                                             editor_camera_node;
-
+  crude_entity                                             selected_node;
+  crude_devgui_added_node_data                             added_node_data;
+  crude_entity                                             node_to_add;
+  crude_entity                                             node_to_remove;
+  crude_entity                                             node_to_dublicate;
+  /* System Context */
+#if CRUDE_DEVELOP
+  crude_physics_debug_system_context                       physics_debug_system_context;
+  crude_game_debug_system_context                          game_debug_system_context;
+#endif
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;

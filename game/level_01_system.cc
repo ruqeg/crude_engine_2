@@ -1,9 +1,9 @@
 #include <SDL3/SDL.h>
 
 #include <engine/core/memory.h>
-#include <game/game.h>
 #include <engine/external/game_components.h>
 #include <engine/platform/platform.h>
+#include <game/game.h>
 
 #include <game/level_01_system.h>
 
@@ -37,7 +37,6 @@ crude_level_01_creation_observer_
       for ( size_t i = 0; i < entity_swapnpoint_it.count; ++i )
       {
         crude_entity                                       entity_swapnpoint_node;
-    
         entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
       }
     }
@@ -74,7 +73,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_level_01_system )
   
   ECS_IMPORT( world, crude_game_components );
 
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, { 
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, NULL, { 
     { .id = ecs_id( crude_level_01 ) }
   } );
 

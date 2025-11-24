@@ -106,9 +106,24 @@ crude_entity_get_name
 );
 
 CRUDE_API void
+crude_entity_set_name
+(
+  _In_ crude_entity                                        entity,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
 crude_entity_destroy_hierarchy
 (
   _In_ crude_entity                                        entity
+);
+
+CRUDE_API crude_entity
+crude_entity_clone
+(
+  _In_ crude_entity                                        dst,
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
 );
 
 /************************************************
@@ -188,7 +203,7 @@ crude_entity_destroy_hierarchy
 #define CRUDE_ECS_OBSERVER_DECLARE( id )\
   ecs_entity_t ecs_id(id)
 
-#define CRUDE_ECS_OBSERVER_DEFINE( world, id_, kind, ... )\
+#define CRUDE_ECS_OBSERVER_DEFINE( world, id_, kind, ctx_, ... )\
 {\
   ecs_entity_desc_t edesc = { 0 };\
   edesc.id = ecs_id( id_ ); \
@@ -201,6 +216,7 @@ crude_entity_destroy_hierarchy
   desc.entity = ecs_entity_init( world, &edesc ); \
   desc.callback = id_;\
   desc.events[0] = kind;\
+  desc.ctx = ctx_;\
   ecs_id( id_ ) = ecs_observer_init( world, &desc );\
   ecs_assert( ecs_id( id_ ) != 0, ECS_INVALID_PARAMETER, "failed to create observer %s", #id_ );\
 }

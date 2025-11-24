@@ -68,16 +68,16 @@ void main()
 
   uvec2 position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
   
-  vec4 radiance = vec4( 0.f, 0.f, 0.f, 1.f );
+  vec3 radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
-    radiance = vec4( crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position, in_texcoord.st ), 1 );
+    radiance = crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position, in_texcoord.st );
   }
   else
   {
-    radiance = vec4( scene.background_color * scene.background_intensity, 1.f );
+    radiance = scene.background_color * scene.background_intensity;
   }
-  out_color = radiance;
+  out_color = vec4( radiance, 1.f );
 }
 
 #endif /* LIGHT_PBR && CRUDE_STAGE_FRAGMENT */

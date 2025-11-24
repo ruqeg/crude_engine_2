@@ -186,7 +186,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )
     { .id = ecs_id( crude_player_controller ) }
   } );
   
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_creation_observer_, EcsOnSet, { 
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_creation_observer_, EcsOnSet, NULL, { 
     { .id = ecs_id( crude_player_controller ) }
   } );
 }

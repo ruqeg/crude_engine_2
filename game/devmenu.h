@@ -1,5 +1,6 @@
-#if CRUDE_DEVELOP
 #pragma once
+
+#if CRUDE_DEVELOP
 
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
@@ -105,6 +106,18 @@ crude_devmenu_handle_input
  * Common Commmads
  * 
  ***********************/
+CRUDE_API void
+crude_devmenu_debug_gltf_view_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+CRUDE_API bool
+crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+);
+
 CRUDE_API void
 crude_devmenu_collisions_view_callback
 (

@@ -57,7 +57,7 @@ crude_node_manager_initialize
   manager->allocator = creation->allocator;
 
   crude_linear_allocator_initialize( &manager->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );
-  crude_string_buffer_initialize( &manager->string_bufffer, 512, crude_linear_allocator_pack( &manager->string_linear_allocator ) );
+  crude_string_buffer_initialize( &manager->string_bufffer, 1024, crude_linear_allocator_pack( &manager->string_linear_allocator ) );
   CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
 }
 
@@ -84,10 +84,11 @@ crude_node_manager_clear
     {
       crude_entity_destroy_hierarchy( manager->hashed_absolute_filepath_to_node[ i ].value );
     }
+    manager->hashed_absolute_filepath_to_node[ i ].key = 0;
   }
-  CRUDE_HASHMAP_DEINITIALIZE( manager->hashed_absolute_filepath_to_node );
-  crude_string_buffer_deinitialize( &manager->string_bufffer );
-  crude_linear_allocator_deinitialize( &manager->string_linear_allocator );
+
+  crude_string_buffer_clear( &manager->string_bufffer );
+  crude_linear_allocator_clear( &manager->string_linear_allocator );
 }
 
 crude_entity
@@ -221,7 +222,7 @@ crude_node_manager_load_node_from_json_
     crude_string_buffer                                    temporary_path_buffer;
     
     temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
-    crude_string_buffer_initialize( &temporary_path_buffer, 1024, crude_stack_allocator_pack( manager->temporary_allocator ) );
+    crude_string_buffer_initialize( &temporary_path_buffer, 2048, crude_stack_allocator_pack( manager->temporary_allocator ) );
 
     node_external_json_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     

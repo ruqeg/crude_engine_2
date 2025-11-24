@@ -53,6 +53,9 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Show/Hide Collisions", crude_devmenu_collisions_view_callback
+  },
+  {
+    "Show/Hide Debug GLTF", crude_devmenu_debug_gltf_view_callback
   }
 };
 
@@ -177,6 +180,26 @@ crude_devmenu_handle_input
  * Common Commmads
  * 
  ***********************/
+void
+crude_devmenu_debug_gltf_view_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  game_t *game = game_instance( );
+  game->scene_renderer.options.hide_debug_gltf = !game->scene_renderer.options.hide_debug_gltf;
+}
+
+
+bool
+crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+)
+{
+  return false;
+}
+
 void
 crude_devmenu_collisions_view_callback
 (

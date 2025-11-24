@@ -19,8 +19,6 @@ typedef struct crude_devgui_added_node_data
 typedef struct crude_devgui_nodes_tree
 {
   bool                                                     enabled;
-  crude_entity                                             selected_node;
-  crude_devgui                                            *devgui;
 } crude_devgui_nodes_tree;
 
 typedef struct crude_devgui_node_inspector
@@ -30,32 +28,26 @@ typedef struct crude_devgui_node_inspector
 
 typedef struct crude_devgui_viewport
 {
-  crude_gfx_device                                        *gpu;
-  crude_devgui_nodes_tree                                 *devgui_nodes_tree;
   crude_gfx_texture_handle                                 selected_texture;
 } crude_devgui_scene_node_viewport;
 
 typedef struct crude_devgui
 {
-  char const                                              *last_focused_menutab_name;
-  crude_editor                                            *editor;
-  bool                                                     menubar_enabled;
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
   crude_devgui_viewport                                    dev_viewport;
-  crude_devgui_added_node_data                             added_node_data;
-  crude_entity                                             node_to_add;
-  crude_entity                                             node_to_remove;
+  bool                                                     menubar_enabled;
 } crude_devgui;
 
-/*********
+/***********************
+* 
  * Dev Gui
- *************/
+ * 
+ ************************/
 CRUDE_API void
 crude_devgui_initialize
 (
-  _In_ crude_devgui                                       *devgui,
-  _In_ crude_editor                                       *editor
+  _In_ crude_devgui                                       *devgui
 );
 
 CRUDE_API void
@@ -67,9 +59,7 @@ crude_devgui_deinitialize
 CRUDE_API void
 crude_devgui_draw
 (
-  _In_ crude_devgui                                       *devgui,
-  _In_ crude_entity                                        main_scene_node,
-  _In_ crude_entity                                        camera_node
+  _In_ crude_devgui                                       *devgui
 );
 
 CRUDE_API void
@@ -92,24 +82,26 @@ crude_devgui_graphics_pre_update
 );
 
 /******************************
+ * 
  * Dev Gui Nodes Tree
+ * 
  *******************************/
 CRUDE_API void
 crude_devgui_nodes_tree_initialize
 (
-  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree,
-  _In_ crude_devgui                                       *devgui
+  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
 );
 
 CRUDE_API void
 crude_devgui_nodes_tree_draw
 (
-  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree,
-  _In_ crude_entity                                        node
+  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
 );
 
 /******************************
+ * 
  * Dev Gui Node Inspector
+ * 
  *******************************/
 CRUDE_API void
 crude_devgui_node_inspector_initialize
@@ -120,26 +112,24 @@ crude_devgui_node_inspector_initialize
 CRUDE_API void
 crude_devgui_node_inspector_draw
 (
-  _In_ crude_devgui_node_inspector                        *devgui_inspector,
-  _In_ crude_entity                                        node
+  _In_ crude_devgui_node_inspector                        *devgui_inspector
 );
 
 /******************************
+ * 
  * Dev Gui Viewport
+ * 
  *******************************/
 CRUDE_API void
 crude_devgui_viewport_initialize
 (
-  _In_ crude_devgui_viewport                              *devgui_viewport,
-  _In_ crude_gfx_device                                   *gpu
+  _In_ crude_devgui_viewport                              *devgui_viewport
 );
 
 CRUDE_API void
 crude_devgui_viewport_draw
 (
-  _In_ crude_devgui_viewport                              *devgui_viewport,
-  _In_ crude_entity                                        camera_node,
-  _In_ crude_entity                                        selected_node
+  _In_ crude_devgui_viewport                              *devgui_viewport
 );
 
 CRUDE_API void

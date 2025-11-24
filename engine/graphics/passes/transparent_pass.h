@@ -39,6 +39,14 @@ crude_gfx_transparent_pass_on_techniques_reloaded
   _In_ void                                               *ctx
 );
 
+CRUDE_API void
+crude_gfx_transparent_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+);
+
 CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_transparent_pass_pack
 (

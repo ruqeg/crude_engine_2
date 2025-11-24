@@ -135,6 +135,16 @@ crude_entity_get_name
 }
 
 void
+crude_entity_set_name
+(
+  _In_ crude_entity                                        entity,
+  _In_ char const                                         *name
+)
+{
+  ecs_set_name( entity.world, entity.handle, name );
+}
+
+void
 crude_entity_destroy_hierarchy
 (
   _In_ crude_entity                                        entity
@@ -156,4 +166,17 @@ crude_entity_destroy_hierarchy
     }
   }
   crude_entity_destroy( entity );
+}
+
+crude_entity
+crude_entity_clone
+(
+  _In_ crude_entity                                        dst,
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
+)
+{
+  dst.world = src.world;
+  dst.handle = ecs_clone( src.world, dst.handle, src.handle, copy_value );
+  return dst;
 }

@@ -167,7 +167,7 @@ crude_calculate_lighting
   stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( scene.resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
   address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
 
-  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
+  if ( ( scene.active_lights_count > 0 ) && min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
   {
     for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
     {

@@ -43,6 +43,7 @@ typedef struct crude_gfx_scene_renderer_options
   float32                                                  ambient_intensity;
 #if CRUDE_DEVELOP
   bool                                                     hide_collision;
+  bool                                                     hide_debug_gltf;
 #endif
 } crude_gfx_scene_renderer_options;
 

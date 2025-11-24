@@ -37,28 +37,11 @@ typedef struct crude_gltf
   char                                                    *original_path;
 } crude_gltf;
 
-typedef struct crude_scene_handle
-{
-  void                                                    *value;
-} crude_scene_handle;
-
-#if CRUDE_DEVELOP
-typedef struct crude_debug_collision
-{
-  char const                                              *absolute_filepath;
-  bool                                                     visible;
-} crude_debug_collision;
-#endif
-
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
-CRUDE_API ECS_COMPONENT_DECLARE( crude_scene_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_node_external );
-#if CRUDE_DEVELOP
-CRUDE_API ECS_COMPONENT_DECLARE( crude_debug_collision );
-#endif
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera );
@@ -73,13 +56,6 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_camera );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light );
-#if CRUDE_DEVELOP
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_debug_collision );
-#endif
-
-#if CRUDE_DEVELOP
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_debug_collision );
-#endif
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip

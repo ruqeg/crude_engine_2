@@ -15,6 +15,7 @@
 #include <engine/scene/scripts_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/physics/physics.h>
+#include <engine/physics/physics_debug_system.h>
 #include <engine/external/game_components.h>
 #include <game/player_controller_system.h>
 #include <game/enemy_system.h>
@@ -156,6 +157,17 @@ game_initialize
   game_initialize_imgui_( game );
 #endif
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
+
+  game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
+  game->physics_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
+  game->physics_debug_system_context.string_bufffer = &game->debug_strings_buffer;
+  crude_physics_debug_system_import( game->engine->world, &game->physics_debug_system_context );
+  
+  game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
+  game->game_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
+  game->game_debug_system_context.string_bufffer = &game->debug_strings_buffer;
+  crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
+
   game_initialize_platform_( game );
   game_initialize_physics_( game );
   crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
@@ -540,6 +552,8 @@ game_initialize_constant_strings_
   game->render_graph_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, render_graph_relative_directory );
   game->techniques_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, techniques_relative_directory );
   game->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, compiled_shaders_relative_directory );
+
+  crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
 }
 
 void
@@ -549,6 +563,7 @@ game_deinitialize_constant_strings_
 )
 {
   crude_string_buffer_deinitialize( &game->constant_strings_buffer );
+  crude_string_buffer_deinitialize( &game->debug_strings_buffer );
 }
 
 void
@@ -688,6 +703,8 @@ game_initialize_graphics_
 #endif
   crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
 
+  game->scene_renderer.options.hide_collision = true;
+  game->scene_renderer.options.hide_debug_gltf = true;
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
 

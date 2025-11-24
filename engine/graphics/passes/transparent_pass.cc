@@ -115,6 +115,17 @@ crude_gfx_transparent_pass_on_techniques_reloaded
   }
 }
 
+void
+crude_gfx_transparent_pass_on_resize
+(
+  _In_ void                                               *ctx,
+  _In_ uint32                                              new_width,
+  _In_ uint32                                              new_height
+)
+{
+  return crude_gfx_transparent_pass_on_techniques_reloaded( ctx );
+}
+
 crude_gfx_render_graph_pass_container
 crude_gfx_transparent_pass_pack
 (
@@ -125,5 +136,6 @@ crude_gfx_transparent_pass_pack
   container.ctx = pass;
   container.render = crude_gfx_transparent_pass_render;
   container.on_techniques_reloaded = crude_gfx_transparent_pass_on_techniques_reloaded;
+  container.on_resize = crude_gfx_transparent_pass_on_resize;
   return container;
 }

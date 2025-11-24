@@ -402,12 +402,12 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )
   ECS_MODULE( world, crude_platform_system );
   ECS_IMPORT( world, crude_platform_components );
 
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_creation_observer_, EcsOnSet, { 
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_creation_observer_, EcsOnSet, NULL, { 
     { .id = ecs_id( crude_window ) },
     { .id = ecs_id( crude_window_handle ), .oper = EcsNot }
   } );
 
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_destrotion_observer_, EcsOnRemove, { 
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_window_destrotion_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_window_handle ) }
   } );
 

@@ -107,7 +107,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handl
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
 {
   crude_memory_set( component, 0, sizeof( crude_physics_collision_shape ) );
-
+  
   component->type = crude_physics_collision_shape_string_to_type( cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
@@ -126,6 +126,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   {
     CRUDE_ASSERT( false );
   }
+
   return true;
 }
 
