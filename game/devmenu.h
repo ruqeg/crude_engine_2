@@ -105,6 +105,17 @@ crude_devmenu_handle_input
  * Common Commmads
  * 
  ***********************/
+CRUDE_API void
+crude_devmenu_collisions_view_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+CRUDE_API bool
+crude_devmenu_collisions_view_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+);
 
 CRUDE_API void
 crude_devmenu_free_camera_callback

@@ -40,7 +40,9 @@ parse_gpu_pipeline_
 (
   _In_ cJSON const                                        *pipeline_json,
   _Out_ crude_gfx_pipeline_creation                       *pipeline_creation,
+#if !CRUDE_PRODUCTION
   _In_ shader_buffer_data_hashmap                         *name_hashed_to_buffer,
+#endif
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
@@ -74,23 +76,27 @@ crude_gfx_technique_load_from_file
 {
   char const                                              *json_path;
   crude_gfx_technique_creation                             technique_creation;
-  shader_buffer_data_hashmap                              *name_hashed_to_buffer;
   cJSON                                                   *technique_json;
   cJSON const                                             *passes;
   uint8                                                   *technique_json_buffer;
-  crude_string_buffer                                      shader_code_buffer;
-  crude_string_buffer                                      path_buffer;
   size_t                                                   allocated_marker;
   uint32                                                   technique_json_buffer_size;
-  
+#if !CRUDE_PRODUCTION
+  shader_buffer_data_hashmap                              *name_hashed_to_buffer;
+  crude_string_buffer                                      shader_code_buffer;
+  crude_string_buffer                                      path_buffer;
+#endif
+
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Load technique load from file %s", technique_relative_filepath );
 
   allocated_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
+#if !CRUDE_PRODUCTION
   CRUDE_HASHMAP_INITIALIZE( name_hashed_to_buffer, crude_stack_allocator_pack( temporary_allocator ) );
-
+  
   crude_string_buffer_initialize( &shader_code_buffer, CRUDE_RMEGA( 2 ), crude_stack_allocator_pack( temporary_allocator ) );
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
+#endif
 
   json_path = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s%s", gpu->techniques_absolute_directory, technique_relative_filepath );;
   if ( !crude_file_exist( json_path ) )
@@ -119,7 +125,8 @@ crude_gfx_technique_load_from_file
     technique_name = cJSON_GetStringValue( technique_name_json );
     technique_creation.name = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", technique_name );
   }
-
+  
+#if !CRUDE_PRODUCTION
   {
     cJSON const                                           *buffers_json;
 
@@ -167,6 +174,7 @@ crude_gfx_technique_load_from_file
       CRUDE_HASHMAP_SET( name_hashed_to_buffer, key, shader_buffer );
     }
   }
+#endif
 
   {
   
@@ -180,7 +188,11 @@ crude_gfx_technique_load_from_file
 
       pipeline = cJSON_GetArrayItem( pipelines_json, i );
       pipeline_creation = crude_gfx_pipeline_creation_empty();
-      parse_gpu_pipeline_( pipeline, &pipeline_creation, name_hashed_to_buffer, gpu, render_graph, temporary_allocator );
+      parse_gpu_pipeline_( pipeline, &pipeline_creation,
+#if !CRUDE_PRODUCTION // !TODO tmp solution, lately we will pack all compiled shaders in one file, but before that lets to this
+        name_hashed_to_buffer,
+#endif
+        gpu, render_graph, temporary_allocator );
       crude_gfx_technique_creation_add_pass( &technique_creation, crude_gfx_create_pipeline( gpu, &pipeline_creation ) );
     }
   }
@@ -203,7 +215,9 @@ parse_gpu_pipeline_
 (
   _In_ cJSON const                                        *pipeline_json,
   _Out_ crude_gfx_pipeline_creation                       *pipeline_creation,
+#if !CRUDE_PRODUCTION
   _In_ shader_buffer_data_hashmap                         *name_hashed_to_buffer,
+#endif
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_render_graph                             *render_graph,
   _In_ crude_stack_allocator                              *temporary_allocator
@@ -228,16 +242,26 @@ parse_gpu_pipeline_
       int64                                                shader_buffer_index;
 
       pipeline_creation->shaders.name = pipeline_creation->name;
+
+#if CRUDE_PRODUCTION
+      pipeline_creation->shaders.spv_input = true;
+#else
+      pipeline_creation->shaders.spv_input = false;
+#endif
       
       shader_stage_json = cJSON_GetArrayItem( shaders_json, shader_index );
       
       buffer_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "buffer" ) );
       buffer_hashed_name = crude_hash_string( buffer_name, 0 );
       
+#if CRUDE_PRODUCTION
+      shader_buffer_data empty_shader_buffer = CRUDE_COMPOUNT_EMPTY( shader_buffer_data );
+      shader_buffer = &empty_shader_buffer;
+#else
       shader_buffer_index = CRUDE_HASHMAP_GET_INDEX( name_hashed_to_buffer, buffer_hashed_name );
       CRUDE_ASSERT( shader_buffer_index >= 0 );
       shader_buffer = &name_hashed_to_buffer[ shader_buffer_index ].value;
-
+#endif
       stage = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
       if ( strcmp( stage, "vertex" ) == 0 )
       {

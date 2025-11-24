@@ -332,6 +332,15 @@ crude_gfx_texture_ready
 );
 
 CRUDE_API VkShaderModuleCreateInfo
+crude_gfx_read_shader
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *name,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,

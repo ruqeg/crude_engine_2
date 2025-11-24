@@ -1065,6 +1065,37 @@ crude_gfx_texture_ready
 }
 
 VkShaderModuleCreateInfo
+crude_gfx_read_shader
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ char const                                         *name,
+  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  uint8                                                   *spirv_code;
+  char const                                              *optimized_spirv_filename;
+  crude_string_buffer                                      temporary_string_buffer;
+  VkShaderModuleCreateInfo                                 shader_create_info;
+  uint32                                                   spirv_codesize;
+  
+  spirv_code = NULL;
+  spirv_codesize = 0u;
+
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+  
+  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
+
+  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
+
+  shader_create_info = CRUDE_COMPOUNT_EMPTY( VkShaderModuleCreateInfo );
+  shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  shader_create_info.codeSize = spirv_codesize;
+  shader_create_info.pCode = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code );
+  return shader_create_info;
+}
+
+VkShaderModuleCreateInfo
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -1088,9 +1119,6 @@ crude_gfx_compile_shader
   
   optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
 
-#if CRUDE_PRODUCTION
-  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
-#else
   char const                                              *temp_filename;
   char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
   char                                                     technique_name_upper[ 1024 ];
@@ -1136,7 +1164,6 @@ crude_gfx_compile_shader
   
   crude_file_delete( temp_filename );
   crude_file_delete( final_spirv_filename );
-#endif /* CRUDE_PRODACTION */
 
   shader_create_info = CRUDE_COMPOUNT( VkShaderModuleCreateInfo, {
     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -1685,60 +1712,70 @@ crude_gfx_create_shader_state
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_shader_state_creation const              *creation
 )
-{ 
+{
+  crude_gfx_shader_state                                  *shader_state;
+  crude_gfx_shader_state_handle                            shader_state_handle;
+  VkShaderModuleCreateInfo                                 vk_shader_create_info;
+  uint32                                                   compiled_shaders_count;
+
   if ( creation->stages_count == 0 || creation->stages == NULL )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Shader %s does not contain shader stages.", creation->name );
     return CRUDE_GFX_SHADER_STATE_HANDLE_INVALID;
   }
   
-  crude_gfx_shader_state_handle handle = crude_gfx_obtain_shader_state( gpu );
-  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
+  shader_state_handle = crude_gfx_obtain_shader_state( gpu );
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( shader_state_handle ) )
   {
-    return handle;
+    return shader_state_handle;
   }
 
-  uint32 compiled_shaders = 0u;
+  compiled_shaders_count = 0u;
 
-  crude_gfx_shader_state *shader_state = crude_gfx_access_shader_state( gpu, handle );
+  shader_state = crude_gfx_access_shader_state( gpu, shader_state_handle );
   shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_GRAPHICS;
   shader_state->active_shaders = 0;
   
-  for ( compiled_shaders = 0; compiled_shaders < creation->stages_count; ++compiled_shaders )
+  for ( compiled_shaders_count = 0; compiled_shaders_count < creation->stages_count; ++compiled_shaders_count )
   {
-    size_t temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
-    crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders ];
+    crude_gfx_shader_stage const                          *stage;
+    VkPipelineShaderStageCreateInfo                       *vk_shader_stage_info;
+    VkShaderModuleCreateInfo                               vk_shader_create_info;
+    uint64                                                 temporary_allocator_marker;
+
+    temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
+    stage = &creation->stages[ compiled_shaders_count ];
   
     if ( stage->type == VK_SHADER_STAGE_COMPUTE_BIT )
     {
       shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_COMPUTE;
     }
   
-    VkShaderModuleCreateInfo shader_create_info = { .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
     if ( creation->spv_input )
     {
-      shader_create_info.codeSize = stage->code_size;
-      shader_create_info.pCode = ( uint32 const * )stage->code;
+      vk_shader_create_info.codeSize = stage->code_size;  //! TODO
+      vk_shader_create_info.pCode = CRUDE_CAST( uint32 const*, stage->code );
+      vk_shader_create_info = crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->temporary_allocator );
     }
     else
     {
-      shader_create_info = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
+      vk_shader_create_info = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
     }
   
-    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, shader_create_info.pCode && shader_create_info.codeSize, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_shader_create_info.pCode && vk_shader_create_info.codeSize, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
 
-    if ( !shader_create_info.pCode || !shader_create_info.codeSize )
+    if ( !vk_shader_create_info.pCode || !vk_shader_create_info.codeSize )
     {
       return CRUDE_GFX_SHADER_STATE_HANDLE_INVALID;
     }
 
-    VkPipelineShaderStageCreateInfo *shader_stage_info = &shader_state->shader_stage_info[ compiled_shaders ];
-    memset( shader_stage_info, 0, sizeof( VkPipelineShaderStageCreateInfo ) );
-    shader_stage_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shader_stage_info->pName = "main";
-    shader_stage_info->stage = stage->type;
+    vk_shader_stage_info = &shader_state->shader_stage_info[ compiled_shaders_count ];
+    *vk_shader_stage_info = CRUDE_COMPOUNT_EMPTY( VkPipelineShaderStageCreateInfo );
+    vk_shader_stage_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vk_shader_stage_info->pName = "main";
+    vk_shader_stage_info->stage = stage->type;
     
-    if ( vkCreateShaderModule( gpu->vk_device, &shader_create_info, NULL, &shader_state->shader_stage_info[ compiled_shaders ].module ) != VK_SUCCESS )
+    if ( vkCreateShaderModule( gpu->vk_device, &vk_shader_create_info, NULL, &shader_state->shader_stage_info[ compiled_shaders_count ].module ) != VK_SUCCESS )
     {
       break;
     }
@@ -1801,34 +1838,34 @@ crude_gfx_create_shader_state
     }
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders ].module, creation->name );
+    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SHADER_MODULE, ( uint64 ) shader_state->shader_stage_info[ compiled_shaders_count ].module, creation->name );
 
-    if ( shader_create_info.pCode )
+    if ( vk_shader_create_info.pCode )
     {
-      vk_reflect_shader_( gpu, shader_create_info.pCode, shader_create_info.codeSize, &shader_state->reflect );
+      vk_reflect_shader_( gpu, vk_shader_create_info.pCode, vk_shader_create_info.codeSize, &shader_state->reflect );
     }
   
     crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
   }
   
-  shader_state->active_shaders = compiled_shaders;
+  shader_state->active_shaders = compiled_shaders_count;
   shader_state->name = creation->name;
 
-  bool creation_failed = compiled_shaders != creation->stages_count;
+  bool creation_failed = compiled_shaders_count != creation->stages_count;
   if ( creation_failed )
   {
-    crude_gfx_destroy_shader_state( gpu, handle );
+    crude_gfx_destroy_shader_state( gpu, shader_state_handle );
     
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s. Dumping all shader informations.", creation->name );
-    for ( compiled_shaders = 0; compiled_shaders < creation->stages_count; ++compiled_shaders )
+    for ( compiled_shaders_count = 0; compiled_shaders_count < creation->stages_count; ++compiled_shaders_count )
     {
-      crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders ];
+      crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders_count ];
       CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u:\n%s", stage->type, stage->code );
     }
     return CRUDE_GFX_SHADER_STATE_HANDLE_INVALID;
   }
 
-  return handle;
+  return shader_state_handle;
 }
 
 void

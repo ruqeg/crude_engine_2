@@ -11,7 +11,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Production" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Develop;Release;Production;" CACHE STRING "" FORCE)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Develop" CACHE STRING "Default build type" FORCE)
 endif()
@@ -22,17 +22,18 @@ add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
 
 # Develop Configuration
-#set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_DEBUG} /O2")
-#add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
-#add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=0>")
+set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 
 # Release Configuration  
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:Release>:CRUDE_PRODUCTION=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 
 # Production Configuration  
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+set(CMAKE_CXX_FLAGS_PRODUCTION "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_DEVELOP=0>")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_PRODUCTION=1>")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")

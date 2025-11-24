@@ -50,6 +50,9 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Scene Renderer", crude_devmenu_scene_renderer_callback
+  },
+  {
+    "Show/Hide Collisions", crude_devmenu_collisions_view_callback
   }
 };
 
@@ -174,6 +177,25 @@ crude_devmenu_handle_input
  * Common Commmads
  * 
  ***********************/
+void
+crude_devmenu_collisions_view_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  game_t *game = game_instance( );
+  game->scene_renderer.options.hide_collision = !game->scene_renderer.options.hide_collision;
+}
+
+bool
+crude_devmenu_collisions_view_callback_hotkey_pressed_callback
+(
+  _In_ crude_input																				*input
+)
+{
+  return false;
+}
+
 void
 crude_devmenu_free_camera_callback
 (

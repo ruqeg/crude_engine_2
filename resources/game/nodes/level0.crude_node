@@ -136,7 +136,7 @@
 							},
 							"components":	[{
 									"type":	"crude_gltf",
-									"path":	"game\\models\\Enemy.gltf"
+									"path":	"game\\models\\SyringeTransparent\\SyringeTransparent.gltf"
 								}],
 							"children":	[]
 						}]
