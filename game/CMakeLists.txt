@@ -12,6 +12,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}\\.
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine)
 
+source_group(graphics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/*")
+source_group(graphics/passes REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/passes/*")
 source_group(${PROJECT_NAME} FILES ${CRUDE_SOURCES})
 
 if(MSVC)

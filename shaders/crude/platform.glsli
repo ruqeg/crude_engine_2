@@ -170,6 +170,18 @@ vec3 crude_aces_fitted2( vec3 x )
   return clamp( ( x * ( a * x + b ) ) / ( x * ( c * x + d ) + e ), 0, 1 );
 }
 
+vec3 crude_uncharted2_tonemap( vec3 x )
+{
+  const float A = 0.22;
+  const float B = 0.30;
+  const float C = 0.10;
+  const float D = 0.20;
+  const float E = 0.01;
+  const float F = 0.30;
+  return ( ( x * ( A * x + C * B ) + D * E ) / ( x * ( A * x + B ) + D * F ) ) - E / F;
+}
+
+
 float crude_rgb_to_luminance( vec3 rgb )
 {
   return dot( rgb, vec3( 0.2125, 0.7154, 0.0721 ) );

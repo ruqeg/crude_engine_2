@@ -18,7 +18,6 @@ crude_level_01_creation_observer_
 {
   game_t                                                  *game;
   crude_level_01                                          *enemies_per_entity;
-  char                                                     enemy_node_name_buffer[ 512 ];
 
   game = game_instance( );
   enemies_per_entity = ecs_field( it, crude_level_01, 0 );
@@ -33,43 +32,97 @@ crude_level_01_creation_observer_
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     level->editor_camera_controller_enabled = true;
-    level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
-    
-    uint32 enemy_count = 0;
-    ecs_iter_t entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
-    while ( ecs_children_next( &entity_swapnpoint_it ) )
+
+    /* Setup enemies*/
     {
-      for ( size_t i = 0; i < entity_swapnpoint_it.count; ++i )
+      ecs_iter_t                                           entity_swapnpoint_it;
+      uint32                                               enemy_count;
+
+      level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
+
+      enemy_count = 0;
+      entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
+      while ( ecs_children_next( &entity_swapnpoint_it ) )
       {
-        crude_transform const                             *entity_spawn_point_transform;
-        crude_enemy                                       *enemy;
-        crude_transform                                    enemy_transform;
-        crude_entity                                       entity_swapnpoint_node, enemy_node;
-        crude_enemy                                        enemy_component;
-        XMMATRIX                                           entity_swapn_point_to_world;
-        XMVECTOR                                           translation, scale, rotation;
+        for ( size_t i = 0; i < entity_swapnpoint_it.count; ++i )
+        {
+          crude_transform const                             *entity_spawn_point_transform;
+          crude_enemy                                       *enemy;
+          crude_transform                                    enemy_transform;
+          crude_entity                                       entity_swapnpoint_node, enemy_node;
+          crude_enemy                                        enemy_component;
+          XMMATRIX                                           entity_swapn_point_to_world;
+          XMVECTOR                                           translation, scale, rotation;
+          char                                               enemy_node_name_buffer[ 512 ];
 
-        entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
+          entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
 
-        entity_spawn_point_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( entity_swapnpoint_node, crude_transform );
-        entity_swapn_point_to_world = crude_transform_node_to_world( entity_swapnpoint_node, entity_spawn_point_transform );
+          entity_spawn_point_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( entity_swapnpoint_node, crude_transform );
+          entity_swapn_point_to_world = crude_transform_node_to_world( entity_swapnpoint_node, entity_spawn_point_transform );
 
-        enemy_transform = crude_transform_empty( );
-        enemy_transform.translation.x = XMVectorGetX( entity_swapn_point_to_world.r[ 3 ] );
-        enemy_transform.translation.z = XMVectorGetZ( entity_swapn_point_to_world.r[ 3 ] );
-        
-        crude_snprintf( enemy_node_name_buffer, sizeof( enemy_node_name_buffer ), "enemy_%i", enemy_count );
-        enemy_node = crude_entity_copy_hierarchy( game->template_enemy_node, enemy_node_name_buffer, true );
-        crude_entity_set_parent( enemy_node, level_node );
-        CRUDE_ENTITY_ENABLE( enemy_node );
-        CRUDE_ENTITY_ADD_COMPONENT( enemy_node, crude_node_runtime );
+          enemy_transform = crude_transform_empty( );
+          enemy_transform.translation.x = XMVectorGetX( entity_swapn_point_to_world.r[ 3 ] );
+          enemy_transform.translation.z = XMVectorGetZ( entity_swapn_point_to_world.r[ 3 ] );
+          
+          crude_snprintf( enemy_node_name_buffer, sizeof( enemy_node_name_buffer ), "enemy_%i", enemy_count );
+          enemy_node = crude_entity_copy_hierarchy( game->template_enemy_node, enemy_node_name_buffer, true );
+          crude_entity_set_parent( enemy_node, level_node );
+          CRUDE_ENTITY_ENABLE( enemy_node );
+          CRUDE_ENTITY_ADD_COMPONENT( enemy_node, crude_node_runtime );
 
-        enemy_component = CRUDE_COMPOUNT_EMPTY( crude_enemy );
-        enemy_component.moving_speed = 5;
-        enemy_component.spawn_node_translation = enemy_transform.translation;
-        CRUDE_ENTITY_SET_COMPONENT( enemy_node, crude_enemy, { enemy_component } );
-        CRUDE_ENTITY_SET_COMPONENT( enemy_node, crude_transform, { enemy_transform } );
-        ++enemy_count;
+          enemy_component = CRUDE_COMPOUNT_EMPTY( crude_enemy );
+          enemy_component.moving_speed = 5;
+          enemy_component.spawn_node_translation = enemy_transform.translation;
+          CRUDE_ENTITY_SET_COMPONENT( enemy_node, crude_enemy, { enemy_component } );
+          CRUDE_ENTITY_SET_COMPONENT( enemy_node, crude_transform, { enemy_transform } );
+
+          ++enemy_count;
+        }
+      }
+    }
+
+    /* Setup serum stations */
+    {
+      ecs_iter_t                                           serum_stations_swapn_points_it;
+      uint32                                               serum_stations_count;
+      
+      level->serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "serum_station_spawn_points" );
+
+      serum_stations_count = 0;
+      serum_stations_swapn_points_it = ecs_children( it->world, level->serum_stations_spawn_points_parent_node.handle );
+      while ( ecs_children_next( &serum_stations_swapn_points_it ) )
+      {
+        for ( size_t i = 0; i < serum_stations_swapn_points_it.count; ++i )
+        {
+          crude_transform const                             *serum_station_spawn_point_transform;
+          crude_enemy                                       *serum_station;
+          crude_transform                                    serum_station_transform;
+          crude_entity                                       serum_station_spawn_point_node, serum_station_node;
+          crude_serum_station                                serum_station_component;
+          XMMATRIX                                           serum_station_spawn_point_to_world;
+          XMVECTOR                                           translation, scale, rotation;
+          char                                               serum_station_node_name_buffer[ 512 ];
+
+          serum_station_spawn_point_node = CRUDE_COMPOUNT( crude_entity, { .handle = serum_stations_swapn_points_it.entities[ i ], .world = it->world } );
+
+          serum_station_spawn_point_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( serum_station_spawn_point_node, crude_transform );
+          serum_station_spawn_point_to_world = crude_transform_node_to_world( serum_station_spawn_point_node, serum_station_spawn_point_transform );
+
+          serum_station_transform = crude_transform_empty( );
+          serum_station_transform.translation.x = XMVectorGetX( serum_station_spawn_point_to_world.r[ 3 ] );
+          serum_station_transform.translation.z = XMVectorGetZ( serum_station_spawn_point_to_world.r[ 3 ] );
+          
+          crude_snprintf( serum_station_node_name_buffer, sizeof( serum_station_node_name_buffer ), "serum_station_%i", serum_stations_count );
+          serum_station_node = crude_entity_copy_hierarchy( game->template_serum_station_node, serum_station_node_name_buffer, true );
+          crude_entity_set_parent( serum_station_node, level_node );
+          CRUDE_ENTITY_ENABLE( serum_station_node );
+          CRUDE_ENTITY_ADD_COMPONENT( serum_station_node, crude_node_runtime );
+
+          serum_station_component = CRUDE_COMPOUNT_EMPTY( crude_serum_station );
+          CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_serum_station, { serum_station_component } );
+          CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_transform, { serum_station_transform } );
+          ++serum_stations_count;
+        }
       }
     }
 

@@ -47,7 +47,7 @@ crude_gfx_light_pass_on_render_graph_registered
   light_constant.textures.x = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_albedo" )->resource_info.texture.handle.index;
   light_constant.textures.y = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" )->resource_info.texture.handle.index;
   light_constant.textures.z = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_roughness_metalness" )->resource_info.texture.handle.index;
-  light_constant.textures.w = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" )->resource_info.texture.handle.index;
+  light_constant.textures.w = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->light_cb ) )
   {

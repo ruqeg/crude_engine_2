@@ -11,6 +11,7 @@
 #include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics.h>
 #include <engine/external/game_debug_system.h>
+#include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/devmenu.h>
 
 typedef enum crude_game_queue_command_type
@@ -61,6 +62,7 @@ typedef struct game_t
   char const                                              *compiled_shaders_absolute_directory;
   char const                                              *working_absolute_directory;
   char const                                              *enemy_node_absolute_filepath;
+  char const                                              *serum_station_node_absolute_filepath;
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      game_strings_buffer;
@@ -76,6 +78,7 @@ typedef struct game_t
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
   crude_entity                                             main_node;
   crude_entity                                             template_enemy_node;
+  crude_entity                                             template_serum_station_node;
   crude_entity                                             player_node;
 
   /* Graphics */
@@ -85,6 +88,8 @@ typedef struct game_t
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
+  crude_gfx_game_postprocessing_pass                       game_postprocessing_pass;
+  XMFLOAT4                                                 fog_color;
 #if CRUDE_DEVELOP
   void                                                    *imgui_context;
 #endif

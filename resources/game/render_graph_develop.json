@@ -266,7 +266,7 @@
       ]
     },
     {
-      "name": "postprocessing_pass",
+      "name": "game_postprocessing_pass",
       "inputs": [
         {
           "type": "texture",
@@ -275,6 +275,28 @@
         {
           "type": "reference",
           "name": "transparent_pass_marker"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "game_hdr_pre_tonemapping",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
+      "name": "postprocessing_pass",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "game_hdr_pre_tonemapping"
         }
       ],
       "outputs": [

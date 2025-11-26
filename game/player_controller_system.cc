@@ -45,6 +45,7 @@ crude_player_controller_creation_observer_
     player_controller->fly_mode = false;
     player_controller->input_enabled = true;
     player_controller->fly_speed_scale = 5;
+    player_controller->health = 1.f;
     game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
   }
 }

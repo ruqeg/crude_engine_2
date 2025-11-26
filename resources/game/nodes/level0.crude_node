@@ -127,32 +127,7 @@
 					"children":	[]
 				}]
 		}, {
-			"name":	"syringe",
-			"transform":	{
-				"translation":	[0, 1.1844382286071777, 0],
-				"rotation":	[0, 0, 0, 1],
-				"scale":	[1, 1, 1]
-			},
-			"components":	[],
-			"children":	[{
-					"name":	"collision",
-					"transform":	{
-						"translation":	[0, 0, 0],
-						"rotation":	[0, 0, 0, 1],
-						"scale":	[1, 1, 1]
-					},
-					"components":	[{
-							"type":	"crude_physics_static_body_handle",
-							"layer":	8
-						}, {
-							"type":	"crude_physics_collision_shape",
-							"shape_type":	"box",
-							"half_extent":	[1, 1, 1]
-						}],
-					"children":	[]
-				}]
-		}, {
-			"name":	"syringes_spawn_points",
+			"name":	"serum_station_spawn_points",
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],

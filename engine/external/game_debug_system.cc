@@ -24,7 +24,7 @@ crude_level_01_creation_observer_
 
     level->editor_camera_controller_enabled = true;
     level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
-    level->syringes_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "syringes_spawn_points" );
+    level->serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "serum_station_spawn_points" );
 
     ecs_iter_t entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
     while ( ecs_children_next( &entity_swapnpoint_it ) )
@@ -37,7 +37,7 @@ crude_level_01_creation_observer_
       }
     }
 
-    ecs_iter_t entity_syringe_spawn_point_it = ecs_children( it->world, level->syringes_spawn_points_parent_node.handle );
+    ecs_iter_t entity_syringe_spawn_point_it = ecs_children( it->world, level->serum_stations_spawn_points_parent_node.handle );
     while ( ecs_children_next( &entity_syringe_spawn_point_it ) )
     {
       for ( size_t i = 0; i < entity_syringe_spawn_point_it.count; ++i )

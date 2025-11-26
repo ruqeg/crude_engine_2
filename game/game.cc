@@ -219,6 +219,7 @@ game_postupdate
       vkDeviceWaitIdle( game->gpu.vk_device );
 
       crude_node_manager_clear( &game->node_manager );
+      crude_gfx_model_renderer_resources_manager_clear( &game->model_renderer_resources_manager );
       game_setup_custom_preload_nodes_( game );
       game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].reload_scene.filepath );
       game_setup_custom_postload_nodes_( game );
@@ -228,9 +229,7 @@ game_postupdate
 
       if ( buffer_recreated )
       {
-        crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
-        crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
-        crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+        crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
       }
 
       NFD_FreePathU8( game->commands_queue[ i ].reload_scene.filepath );
@@ -366,6 +365,7 @@ game_graphics_deinitialize_
   crude_gfx_asynchronous_loader_manager_remove_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
   vkDeviceWaitIdle( game->gpu.vk_device );
   crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
+  crude_gfx_game_postprocessing_pass_deinitialize( &game->game_postprocessing_pass );
   crude_gfx_scene_renderer_deinitialize( &game->scene_renderer );
   crude_gfx_asynchronous_loader_deinitialize( &game->async_loader );
   crude_gfx_model_renderer_resources_manager_deintialize( &game->model_renderer_resources_manager );
@@ -660,7 +660,12 @@ game_initialize_scene_
     game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
     CRUDE_ENTITY_DISABLE( game->template_enemy_node );
   }
-  
+  {
+    char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
+    game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
+    game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
+    CRUDE_ENTITY_DISABLE( game->template_serum_station_node );
+  }
   game_setup_custom_preload_nodes_( game );
   game->main_node = crude_node_manager_get_node( &game->node_manager, game->scene_absolute_filepath );
   game_setup_custom_postload_nodes_( game );
@@ -720,6 +725,7 @@ game_initialize_graphics_
 #if CRUDE_DEVELOP
   crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif
+  crude_gfx_technique_load_from_file( "game/fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
@@ -749,13 +755,18 @@ game_initialize_graphics_
   game->scene_renderer.options.hide_debug_gltf = true;
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
+  game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
+
+  game->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
 
   crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
 
   crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
+  crude_gfx_game_postprocessing_pass_initialize( &game->game_postprocessing_pass, &game->scene_renderer );
   crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
+  crude_gfx_render_graph_builder_register_render_pass( game->render_graph.builder, "game_postprocessing_pass", crude_gfx_game_postprocessing_pass_pack( &game->game_postprocessing_pass ) );
 
   crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
 }

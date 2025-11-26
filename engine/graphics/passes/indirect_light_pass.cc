@@ -186,7 +186,7 @@ crude_gfx_indirect_light_pass_render
     ddgi_mapped_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
     ddgi_mapped_data->indirect_output_index = pass->indirect_texture_handle.index;
 
-    render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "depth" );
+    render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name );
     ddgi_mapped_data->depth_fullscreen_texture_index = render_graph_resource->resource_info.texture.handle.index;
     
     render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" );
