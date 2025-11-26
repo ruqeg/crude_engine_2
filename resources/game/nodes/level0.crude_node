@@ -1,5 +1,5 @@
 {
-	"name":	"main",
+	"name":	"level_01",
 	"transform":	{
 		"translation":	[0, 0, 0],
 		"rotation":	[0, 0, 0, 1],
@@ -100,46 +100,6 @@
 							"radius":	0.5
 						}],
 					"children":	[]
-				}]
-		}, {
-			"name":	"enemy",
-			"transform":	{
-				"translation":	[5.3179144859313965, 2, 1.3452465257518244e-43],
-				"rotation":	[0, 0, 0, 1],
-				"scale":	[1, 1, 1]
-			},
-			"components":	[{
-					"type":	"crude_physics_static_body_handle",
-					"layer":	4
-				}, {
-					"type":	"crude_physics_collision_shape",
-					"shape_type":	"box",
-					"half_extent":	[0.5, 0.5, 0.5]
-				}, {
-					"type":	"crude_enemy",
-					"moving_speed":	0.05000000074505806
-				}],
-			"children":	[{
-					"name":	"pivot",
-					"transform":	{
-						"translation":	[0, 0, 0],
-						"rotation":	[0, 0, 0, 1],
-						"scale":	[1, 1, 1]
-					},
-					"components":	[],
-					"children":	[{
-							"name":	"redball_enemy_model",
-							"transform":	{
-								"translation":	[0, 0, 0],
-								"rotation":	[0, 0, 0, 1],
-								"scale":	[0.5, 0.5, 0.5]
-							},
-							"components":	[{
-									"type":	"crude_gltf",
-									"path":	"game\\models\\SyringeTransparent\\SyringeTransparent.gltf"
-								}],
-							"children":	[]
-						}]
 				}]
 		}, {
 			"name":	"collisions",

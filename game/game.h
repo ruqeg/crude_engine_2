@@ -60,8 +60,10 @@ typedef struct game_t
   char const                                              *shaders_absolute_directory;
   char const                                              *compiled_shaders_absolute_directory;
   char const                                              *working_absolute_directory;
+  char const                                              *enemy_node_absolute_filepath;
 
   crude_string_buffer                                      constant_strings_buffer;
+  crude_string_buffer                                      game_strings_buffer;
   crude_string_buffer                                      debug_strings_buffer;
 
   crude_devmenu                                            devmenu;
@@ -73,6 +75,8 @@ typedef struct game_t
   crude_stack_allocator                                    temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
   crude_entity                                             main_node;
+  crude_entity                                             template_enemy_node;
+  crude_entity                                             player_node;
 
   /* Graphics */
   crude_gfx_device                                         gpu;

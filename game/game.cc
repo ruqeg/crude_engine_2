@@ -110,6 +110,18 @@ game_graphics_deinitialize_
   _In_ game_t                                             *game
 );
 
+static void
+game_setup_custom_preload_nodes_
+(
+  _In_ game_t                                             *game
+);
+
+static void
+game_setup_custom_postload_nodes_
+(
+  _In_ game_t                                             *game
+);
+
 static bool
 game_parse_json_to_component_
 ( 
@@ -207,7 +219,9 @@ game_postupdate
       vkDeviceWaitIdle( game->gpu.vk_device );
 
       crude_node_manager_clear( &game->node_manager );
-      crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].reload_scene.filepath );
+      game_setup_custom_preload_nodes_( game );
+      game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].reload_scene.filepath );
+      game_setup_custom_postload_nodes_( game );
 
       buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
@@ -358,6 +372,23 @@ game_graphics_deinitialize_
   crude_gfx_render_graph_builder_deinitialize( &game->render_graph_builder );
   crude_gfx_render_graph_deinitialize( &game->render_graph );
   crude_gfx_device_deinitialize( &game->gpu );
+}
+
+void
+game_setup_custom_preload_nodes_
+(
+  _In_ game_t                                             *game
+)
+{
+}
+
+void
+game_setup_custom_postload_nodes_
+(
+  _In_ game_t                                             *game
+)
+{
+  game->player_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
 }
 
 void
@@ -552,8 +583,9 @@ game_initialize_constant_strings_
   game->render_graph_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, render_graph_relative_directory );
   game->techniques_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, techniques_relative_directory );
   game->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, compiled_shaders_relative_directory );
-
+  
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+  crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
 }
 
 void
@@ -564,6 +596,7 @@ game_deinitialize_constant_strings_
 {
   crude_string_buffer_deinitialize( &game->constant_strings_buffer );
   crude_string_buffer_deinitialize( &game->debug_strings_buffer );
+  crude_string_buffer_deinitialize( &game->game_strings_buffer );
 }
 
 void
@@ -620,8 +653,17 @@ game_initialize_scene_
   node_manager_creation.collisions_resources_manager = &game->collision_resources_manager;
   node_manager_creation.allocator = &game->allocator;
   crude_node_manager_initialize( &game->node_manager, &node_manager_creation );
-
+  
+  {
+    char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
+    game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
+    game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
+    CRUDE_ENTITY_DISABLE( game->template_enemy_node );
+  }
+  
+  game_setup_custom_preload_nodes_( game );
   game->main_node = crude_node_manager_get_node( &game->node_manager, game->scene_absolute_filepath );
+  game_setup_custom_postload_nodes_( game );
 }
 
 void

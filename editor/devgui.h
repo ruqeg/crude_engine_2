@@ -31,11 +31,17 @@ typedef struct crude_devgui_viewport
   crude_gfx_texture_handle                                 selected_texture;
 } crude_devgui_scene_node_viewport;
 
+typedef struct crude_devgui_editor_camera
+{
+  bool                                                     enabled;
+} crude_devgui_editor_camera;
+
 typedef struct crude_devgui
 {
   crude_devgui_nodes_tree                                  dev_nodes_tree;
   crude_devgui_node_inspector                              dev_node_inspector;
   crude_devgui_viewport                                    dev_viewport;
+  crude_devgui_editor_camera                               dev_editor_camera;
   bool                                                     menubar_enabled;
 } crude_devgui;
 
@@ -137,4 +143,21 @@ crude_devgui_viewport_input
 (
   _In_ crude_devgui_viewport                              *devgui_viewport,
   _In_ crude_input                                        *input
+);
+
+/******************************
+ * 
+ * Editor Camera
+ * 
+ *******************************/
+CRUDE_API void
+crude_devgui_editor_camera_initialize
+(
+  _In_ crude_devgui_editor_camera                         *dev_editor_camera
+);
+
+CRUDE_API void
+crude_devgui_editor_camera_draw
+(
+  _In_ crude_devgui_editor_camera                         *dev_editor_camera
 );

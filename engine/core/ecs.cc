@@ -75,6 +75,17 @@ crude_ecs_lookup_entity_from_parent
  * 
  ***********************************************/
 crude_entity
+crude_entity_create_empty_without_name
+(
+  _In_ ecs_world_t                                        *world
+)
+{
+  crude_entity entity = CRUDE_COMPOUNT( crude_entity, { .handle = ecs_new( world ), .world = world } );
+  ecs_add( world, entity.handle, crude_entity_tag );
+  return entity;
+}
+
+crude_entity
 crude_entity_create_empty
 (
   _In_ ecs_world_t                                        *world,
@@ -179,4 +190,50 @@ crude_entity_clone
   dst.world = src.world;
   dst.handle = ecs_clone( src.world, dst.handle, src.handle, copy_value );
   return dst;
+}
+
+crude_entity
+crude_entity_copy
+(
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
+)
+{
+  crude_entity dst = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  dst.world = src.world;
+  dst.handle = ecs_clone( src.world, dst.handle, src.handle, copy_value );
+  return dst;
+}
+
+crude_entity
+crude_entity_copy_hierarchy
+(
+  _In_ crude_entity                                        src,
+  _In_ char const                                         *name,
+  _In_ bool                                                copy_value
+)
+{
+  if ( !crude_entity_valid( src ) )
+  {
+    return CRUDE_COMPOUNT_EMPTY( crude_entity );
+  }
+  
+  crude_entity new_node = crude_entity_copy( src, copy_value );
+
+  ecs_iter_t it = ecs_children( src.world, src.handle );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = src.world } );
+      crude_entity new_child = crude_entity_copy_hierarchy( child, crude_entity_get_name( child ), copy_value );
+
+      crude_entity_set_parent( new_child, new_node );
+    }
+  }
+  
+  crude_entity_set_name( new_node, name );
+
+  return new_node;
 }

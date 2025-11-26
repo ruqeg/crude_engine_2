@@ -39,7 +39,8 @@ static void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_entity                                        node
+  _In_ crude_entity                                        node,
+  _Out_opt_ bool                                          *model_initialized
 );
 
 /**
@@ -200,11 +201,13 @@ crude_gfx_scene_renderer_update_instances_from_node
   _In_ crude_entity                                        main_node
 )
 {
-  bool                                                     buffers_recrteated;
+  bool                                                     buffers_recrteated, model_initialized;
   crude_gfx_buffer_creation                                buffer_creation;
  
+  model_initialized = false;
+
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
-  crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node );
+  crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node, &model_initialized );
   
   scene_renderer->total_meshes_instances_count = 0u;
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
@@ -213,7 +216,6 @@ crude_gfx_scene_renderer_update_instances_from_node
   }
 
   buffers_recrteated = false;
-
   
   if ( 2.f * scene_renderer->total_meshes_instances_count > scene_renderer->total_meshes_instances_buffer_capacity )
   {
@@ -266,7 +268,7 @@ crude_gfx_scene_renderer_update_instances_from_node
     buffers_recrteated = true;
   }
 
-  return buffers_recrteated;
+  return buffers_recrteated | model_initialized;
 }
 
 void
@@ -1104,10 +1106,12 @@ void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_entity                                        node
+  _In_ crude_entity                                        node,
+  _Out_opt_ bool                                          *model_initialized
 )
 {
   ecs_iter_t it = ecs_children( node.world, node.handle );
+  bool local_model_initialized = false;
 
   while ( ecs_children_next( &it ) )
   {
@@ -1122,7 +1126,7 @@ crude_scene_renderer_register_nodes_instances_
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
         model_renderer_resources_instant.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
@@ -1136,7 +1140,7 @@ crude_scene_renderer_register_nodes_instances_
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_collision );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
         model_renderer_resources_instant.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
@@ -1148,7 +1152,7 @@ crude_scene_renderer_register_nodes_instances_
         child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_gltf );
 
         model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath );
+        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
         model_renderer_resources_instant.node = child;
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
       }
@@ -1161,7 +1165,9 @@ crude_scene_renderer_register_nodes_instances_
         CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
       }
 
-      crude_scene_renderer_register_nodes_instances_( scene_renderer, child );
+      *model_initialized |= local_model_initialized;
+      crude_scene_renderer_register_nodes_instances_( scene_renderer, child, &local_model_initialized );
+      *model_initialized |= local_model_initialized;
     }
   }
 }

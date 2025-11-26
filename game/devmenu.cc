@@ -56,6 +56,9 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Show/Hide Debug GLTF", crude_devmenu_debug_gltf_view_callback
+  },
+  {
+    "Nodes Tree", crude_devmenu_nodes_tree_callback
   }
 };
 
@@ -72,6 +75,7 @@ crude_devmenu_initialize
   crude_devmenu_render_graph_initialize( &devmenu->render_graph );
   crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer );
+  crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree );
 }
 
 void
@@ -85,6 +89,7 @@ crude_devmenu_deinitialize
   crude_devmenu_render_graph_deinitialize( &devmenu->render_graph );
   crude_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
+  crude_devmenu_nodes_tree_deinitialize( &devmenu->nodes_tree );
 }
 
 void
@@ -121,6 +126,7 @@ crude_devmenu_draw
   crude_devmenu_render_graph_draw( &devmenu->render_graph );
   crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
+  crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
 }
 
 void
@@ -134,6 +140,7 @@ crude_devmenu_update
   crude_devmenu_render_graph_update( &devmenu->render_graph );
   crude_devmenu_gpu_pool_update( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_update( &devmenu->scene_renderer );
+  crude_devmenu_nodes_tree_update( &devmenu->nodes_tree );
 }
 
 void
@@ -1003,6 +1010,147 @@ crude_devmenu_scene_renderer_callback
 )
 {
   devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
+}
+
+/***********************
+ * 
+ * Develop Nodes Tree
+ * 
+ ***********************/
+void
+crude_devmenu_nodes_tree_draw_internal_
+(
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
+  _In_ crude_entity                                        node,
+  _In_ uint32                                             *current_node_index
+)
+{
+  game_t                                                  *game;
+  ImGuiTreeNodeFlags                                       tree_node_flags;
+  bool                                                     can_open_children_nodes, tree_node_opened;
+  
+  game = game_instance( );
+
+  ImGui::Begin( "Scene Node Tree" );
+  
+  {
+    can_open_children_nodes = false;
+
+    ecs_iter_t it = ecs_children( node.world, node.handle );
+    if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) && ecs_children_next( &it ) )
+    {
+      if ( it.count )
+      {
+        can_open_children_nodes = true;
+      }
+    }
+  }
+
+  tree_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+  
+  if ( !can_open_children_nodes )
+  {
+    tree_node_flags |= ImGuiTreeNodeFlags_Leaf;
+  }
+
+  if ( dev_nodes_tree->selected_node.handle == node.handle )
+  {
+    tree_node_flags |= ImGuiTreeNodeFlags_Selected;
+  }
+
+  tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( node ) );
+  if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
+  {
+    dev_nodes_tree->selected_node = node;
+  }
+
+  if ( ImGui::IsItemClicked( 1 ) && !ImGui::IsItemToggledOpen( ) )
+  {
+    ImGui::OpenPopup( crude_entity_get_name( node ) );
+  }
+
+  if (ImGui::BeginDragDropSource( ) )
+  {
+    ImGui::SetDragDropPayload( crude_entity_get_name( node ), NULL, 0 );
+    ImGui::Text( crude_entity_get_name( node ) );
+    ImGui::EndDragDropSource( );
+  }
+
+  ++( *current_node_index );
+  if ( tree_node_opened )
+  {
+    if ( can_open_children_nodes )
+    {
+      ecs_iter_t it = ecs_children( node.world, node.handle );
+      while ( ecs_children_next( &it ) )
+      {
+        for (int i = 0; i < it.count; i ++)
+        {
+          crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
+          child.world = it.world;
+          child.handle = it.entities[ i ];
+          crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, child, current_node_index );
+        }
+      }
+    }
+    
+    ImGui::TreePop( );
+  }
+
+  ImGui::End( );
+}
+
+void
+crude_devmenu_nodes_tree_initialize
+(
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+)
+{
+  game_t *game = game_instance( );
+  dev_nodes_tree->selected_node = game->main_node;
+  dev_nodes_tree->enabled = false;
+}
+
+void
+crude_devmenu_nodes_tree_deinitialize
+(
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+)
+{
+}
+
+void
+crude_devmenu_nodes_tree_update
+(
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+)
+{
+}
+
+void
+crude_devmenu_nodes_tree_draw
+(
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+)
+{
+  game_t *game = game_instance( );
+
+  if ( !dev_nodes_tree->enabled )
+  {
+    return;
+  }
+
+  uint32 current_node_index = 0u;
+  crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, game->main_node, &current_node_index );
+}
+
+void
+crude_devmenu_nodes_tree_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->nodes_tree.enabled = !devmenu->nodes_tree.enabled;
 }
 
 #endif

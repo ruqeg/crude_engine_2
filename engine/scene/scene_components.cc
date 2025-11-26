@@ -8,14 +8,15 @@
 ECS_COMPONENT_DECLARE( crude_transform );
 ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
-ECS_COMPONENT_DECLARE( crude_scene_handle );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
+ECS_COMPONENT_DECLARE( crude_node_runtime );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_node_runtime, "crude_node_runtime" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
 {
@@ -25,6 +26,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_components )
   ECS_COMPONENT_DEFINE( world, crude_camera );
   ECS_COMPONENT_DEFINE( world, crude_gltf );
   ECS_COMPONENT_DEFINE( world, crude_node_external );
+  ECS_COMPONENT_DEFINE( world, crude_node_runtime );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
@@ -102,6 +104,10 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
   cJSON_AddItemToObject( light_json, "color", cJSON_CreateFloatArray( &component->color.x, 3 ) );
   cJSON_AddItemToObject( light_json, "intensity", cJSON_CreateNumber( component->intensity ) );
   return light_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_runtime )
+{
 }
 
 XMMATRIX

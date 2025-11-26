@@ -23,7 +23,6 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_enemy )
 {
   crude_memory_set( component, 0, sizeof( crude_enemy ) );
-  component->moving_speed = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed" ) );
   return true;
 }
 
@@ -31,7 +30,6 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_enemy )
 {
   cJSON *json = cJSON_CreateObject( );
   cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_enemy ) ) );
-  cJSON_AddItemToObject( json, "moving_speed", cJSON_CreateNumber( component->moving_speed ) );
   return json;
 }
 

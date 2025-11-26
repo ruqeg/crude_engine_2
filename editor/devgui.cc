@@ -29,6 +29,7 @@ crude_devgui_initialize
   crude_devgui_nodes_tree_initialize( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_initialize( &devgui->dev_node_inspector );
   crude_devgui_viewport_initialize( &devgui->dev_viewport );
+  crude_devgui_editor_camera_initialize( &devgui->dev_editor_camera );
 }
 
 void
@@ -86,6 +87,10 @@ crude_devgui_draw
           NFD_FreePathU8( out_path );
         }
       }
+      ImGui::EndMenu( );
+    }
+    if ( ImGui::BeginMenu( "Layout" ) )
+    {
       if ( ImGui::MenuItem( "Node Tree" ) )
       {
         devgui->dev_nodes_tree.enabled = !devgui->dev_nodes_tree.enabled;
@@ -93,6 +98,10 @@ crude_devgui_draw
       if ( ImGui::MenuItem( "Node Inpsector" ) )
       {
         devgui->dev_node_inspector.enabled = !devgui->dev_node_inspector.enabled;
+      }
+      if ( ImGui::MenuItem( "Editor Camera Node Inpsector" ) )
+      {
+        devgui->dev_editor_camera.enabled = !devgui->dev_editor_camera.enabled;
       }
       ImGui::EndMenu( );
     }
@@ -123,6 +132,7 @@ crude_devgui_draw
   crude_devgui_nodes_tree_draw( &devgui->dev_nodes_tree );
   crude_devgui_node_inspector_draw( &devgui->dev_node_inspector  );
   crude_devgui_viewport_draw( &devgui->dev_viewport );
+  crude_devgui_editor_camera_draw( &devgui->dev_editor_camera );
   
   if ( crude_entity_valid( editor->node_to_add ) )
   {
@@ -464,6 +474,13 @@ crude_devgui_node_inspector_draw
   {
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_gltf )( editor->selected_node, debug_gltf, &editor->node_manager );
   }
+
+  crude_node_runtime *runtime_node = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_node_runtime );
+  if ( runtime_node && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_node_runtime ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( editor->selected_node, runtime_node, &editor->node_manager );
+  }
+
   ImGui::End( );
 }
 
@@ -692,4 +709,72 @@ crude_devgui_viewport_input
   _In_ crude_input                                        *input
 )
 {
+}
+
+/******************************
+ * 
+ * Editor Camera
+ * 
+ *******************************/
+void
+crude_devgui_editor_camera_initialize
+(
+  _In_ crude_devgui_editor_camera                         *dev_editor_camera
+)
+{
+  dev_editor_camera->enabled = false;
+}
+
+void
+crude_devgui_editor_camera_draw
+(
+  _In_ crude_devgui_editor_camera                         *dev_editor_camera
+)
+{
+  crude_editor *editor = crude_editor_instance( );
+
+  if ( !dev_editor_camera->enabled )
+  {
+    return;
+  }
+
+  if ( !crude_entity_valid( editor->editor_camera_node ) )
+  {
+    return;
+  }
+
+  ImGui::Begin( "Editor Camera Node Inspector" );
+  ImGui::Text( "Node: \"%s\"", crude_entity_get_name( editor->editor_camera_node ) );
+
+  
+  crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_transform );
+  if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
+  {
+    bool transform_edited = false;
+    transform_edited |= ImGui::DragFloat3( "Translation", &transform->translation.x, .1f );
+    transform_edited |= ImGui::DragFloat3( "Scale", &transform->scale.x, .1f );
+    transform_edited |= ImGui::DragFloat4( "Rotation", &transform->rotation.x, .1f );
+    if ( transform_edited )
+    {
+      CRUDE_ENTITY_COMPONENT_MODIFIED( editor->editor_camera_node, crude_transform );
+    }
+  }
+  
+  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_free_camera );
+  if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
+  {
+    ImGui::DragFloat3( "Moving Speed", &free_camera->moving_speed_multiplier.x, .1f );
+    ImGui::DragFloat2( "Rotating Speed", &free_camera->rotating_speed_multiplier.x, .1f );
+  }
+  
+  crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_camera );
+  if ( camera && ImGui::CollapsingHeader( "crude_camera" ) )
+  {
+    ImGui::InputFloat( "Far Z", &camera->far_z );
+    ImGui::InputFloat( "Near Z", &camera->near_z );
+    ImGui::SliderAngle( "FOV Radians", &camera->fov_radians );
+    ImGui::InputFloat( "Aspect Ratio", &camera->aspect_ratio );
+  }
+
+  ImGui::End( );
 }

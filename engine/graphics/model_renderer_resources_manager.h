@@ -66,11 +66,18 @@ crude_gfx_model_renderer_resources_manager_deintialize
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 );
 
+CRUDE_API void
+crude_gfx_model_renderer_resources_manager_clear
+(
+  _In_ crude_gfx_model_renderer_resources_manager          *manager
+);
+
 CRUDE_API crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ char const                                          *filepath
+  _In_ char const                                          *filepath,
+  _Out_opt_ bool                                           *model_initialized
 );
 
 CRUDE_API void

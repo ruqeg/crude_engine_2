@@ -212,11 +212,68 @@ crude_gfx_model_renderer_resources_manager_deintialize
   crude_gfx_destroy_buffer( manager->gpu, manager->meshes_bounds_sb );
 }
 
+void
+crude_gfx_model_renderer_resources_manager_clear
+(
+  _In_ crude_gfx_model_renderer_resources_manager          *manager
+)
+{
+  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->model_hashed_name_to_model_renderer_resource ); ++i )
+  {
+    if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
+    {
+      crude_gfx_model_renderer_resources resource = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      crude_entity_destroy_hierarchy( resource.main_node );
+      CRUDE_ARRAY_DEINITIALIZE( resource.meshes_instances );
+    }
+    manager->model_hashed_name_to_model_renderer_resource[ i ].key = 0;
+  }
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
+  {
+    crude_gfx_destroy_sampler( manager->gpu, manager->samplers[ i ] );
+  }
+  CRUDE_ARRAY_SET_LENGTH( manager->samplers, 0 );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->images ); ++i )
+  {
+    crude_gfx_destroy_texture( manager->gpu, manager->images[ i ] );
+  }
+  CRUDE_ARRAY_SET_LENGTH( manager->images, 0 );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->buffers ); ++i )
+  {
+    crude_gfx_destroy_buffer( manager->gpu, manager->buffers[ i ] );
+  }
+  CRUDE_ARRAY_SET_LENGTH( manager->buffers, 0 );
+
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_vertices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_vertices_indices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshlets_triangles_indices_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshes_draws_sb );
+  crude_gfx_destroy_buffer( manager->gpu, manager->meshes_bounds_sb );
+
+  manager->total_meshes_count = 0;
+  manager->total_meshlets_count = 0;
+  manager->total_meshlets_vertices_count = 0;
+  manager->total_meshlets_vertices_indices_count = 0;
+  manager->total_meshlets_triangles_indices_count = 0;
+
+  manager->meshlets_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_vertices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_vertices_indices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshlets_triangles_indices_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshes_draws_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+  manager->meshes_bounds_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
+}
+
 crude_gfx_model_renderer_resources
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ char const                                          *filepath
+  _In_ char const                                          *filepath,
+  _Out_opt_ bool                                           *model_initialized
 )
 {
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
@@ -227,9 +284,17 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
   model_renderer_resouces_index = CRUDE_HASHMAP_GET_INDEX( manager->model_hashed_name_to_model_renderer_resource, filename_hashed );
   if ( model_renderer_resouces_index != -1 )
   {
+    if ( model_initialized )
+    {
+      *model_initialized = false;
+    }
     return manager->model_hashed_name_to_model_renderer_resource[ model_renderer_resouces_index ].value;
   }
-
+  
+  if ( model_initialized )
+  {
+    *model_initialized = true;
+  }
   model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, filepath );
   CRUDE_HASHMAP_SET( manager->model_hashed_name_to_model_renderer_resource, filename_hashed, model_renderer_resouces );
   return model_renderer_resouces;

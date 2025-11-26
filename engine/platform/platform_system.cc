@@ -14,33 +14,6 @@ CRUDE_ECS_SYSTEM_DECLARE( crude_process_events_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_window_destrotion_observer_ );
 
-static uint32
-key_sym_
-(
-  _In_ uint32 sdl_sym
-)
-{
-  if (sdl_sym < 128)
-  {
-    return sdl_sym;
-  }
-  
-  switch (sdl_sym)
-  {
-  case SDLK_RIGHT:  return 'R';
-  case SDLK_LEFT:   return 'L';
-  case SDLK_DOWN:   return 'D';
-  case SDLK_UP:     return 'U';
-  case SDLK_LCTRL:  return 'C';
-  case SDLK_LSHIFT: return 'S';
-  case SDLK_LALT:   return 'A';
-  case SDLK_RCTRL:  return 'C';
-  case SDLK_RSHIFT: return 'S';
-  case SDLK_RALT:   return 'A';
-  }
-  return 0;
-}
-
 static void
 key_down_
 (
@@ -377,13 +350,11 @@ crude_process_events_system_
         {
           if ( sdl_event.type == SDL_EVENT_KEY_DOWN )
           {
-            uint32 sym = key_sym_( sdl_event.key.scancode );
-            key_down_( &focused_input->keys[ sym ] );
+            key_down_( &focused_input->keys[ sdl_event.key.scancode ] );
           }
           else if ( sdl_event.type == SDL_EVENT_KEY_UP )
           {
-            uint32 sym = key_sym_( sdl_event.key.scancode );
-            key_up_( &focused_input->keys[ sym ] );
+            key_up_( &focused_input->keys[ sdl_event.key.scancode ] );
           }
 
           if ( focused_input->callback )

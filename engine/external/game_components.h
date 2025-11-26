@@ -7,7 +7,10 @@
 typedef struct crude_enemy
 {
   float32                                                  moving_speed;
-  crude_entity                                             player_node;
+  XMFLOAT3                                                 spawn_node_translation;
+  XMFLOAT3                                                 last_player_visible_translation;
+  float32                                                  time_near_last_player_visible_translaion;
+  float32                                                  looking_angle;
 } crude_enemy;
 
 typedef struct crude_level_01

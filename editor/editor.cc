@@ -204,11 +204,12 @@ crude_editor_postupdate
     {
     case CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
     {
-      bool                                                 buffer_recreated;
+      bool                                                 buffer_recreated, model_initialized;
 
       vkDeviceWaitIdle( editor->gpu.vk_device );
 
       crude_node_manager_clear( &editor->node_manager );
+      crude_gfx_model_renderer_resources_manager_clear( &editor->model_renderer_resources_manager );
       editor->main_node = crude_node_manager_get_node( &editor->node_manager, editor->commands_queue[ i ].reload_scene.filepath );
       editor->selected_node = editor->main_node;
 
@@ -217,9 +218,7 @@ crude_editor_postupdate
 
       if ( buffer_recreated )
       {
-        crude_gfx_scene_renderer_deinitialize_passes( &editor->scene_renderer );
-        crude_gfx_scene_renderer_initialize_pases( &editor->scene_renderer );
-        crude_gfx_scene_renderer_register_passes( &editor->scene_renderer, &editor->render_graph );
+        crude_gfx_render_graph_on_techniques_reloaded( &editor->render_graph );
       }
 
       NFD_FreePathU8( editor->commands_queue[ i ].reload_scene.filepath );

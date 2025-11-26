@@ -19,7 +19,6 @@ main
     crude_engine_initialize( &engine, &engine_creation );
     crude_editor_instance_intialize( );
 
-    
     editor_creation = CRUDE_COMPOUNT_EMPTY( crude_editor_creation );
     editor_creation.engine = &engine;
     editor_creation.framerate = 60;

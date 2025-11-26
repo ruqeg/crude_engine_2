@@ -68,6 +68,12 @@ crude_ecs_lookup_entity_from_parent
  * 
  ***********************************************/
 CRUDE_API crude_entity
+crude_entity_create_empty_without_name
+(
+  _In_ ecs_world_t                                        *world
+);
+
+CRUDE_API crude_entity
 crude_entity_create_empty
 (
   _In_ ecs_world_t                                        *world,
@@ -126,6 +132,21 @@ crude_entity_clone
   _In_ bool                                                copy_value
 );
 
+CRUDE_API crude_entity
+crude_entity_copy
+(
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
+);
+
+CRUDE_API crude_entity
+crude_entity_copy_hierarchy
+(
+  _In_ crude_entity                                        src,
+  _In_ char const                                         *name,
+  _In_ bool                                                copy_value
+);
+
 /************************************************
  *
  * ECS Macros
@@ -137,6 +158,21 @@ crude_entity_clone
   CRUDE_ENTITY_SET_COMPONENT( entity, component, ##__VA_ARGS__ );\
   entity;\
 })
+
+#define CRUDE_ENTITY_DISABLE( entity )\
+{\
+  ecs_add_id( entity.world, entity.handle, EcsDisabled );\
+}
+
+#define CRUDE_ENTITY_ENABLE( entity )\
+{\
+  ecs_remove_id( entity.world, entity.handle, EcsDisabled );\
+}
+
+#define CRUDE_ENTITY_ADD_COMPONENT( entity, component )\
+{\
+  ecs_add_id( entity.world, entity.handle, ecs_id( component ) );\
+}
 
 #define CRUDE_ENTITY_SET_COMPONENT( entity, component, ... )\
 {\

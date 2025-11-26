@@ -98,20 +98,23 @@ crude_node_manager_get_node
   _In_ char const                                         *node_absolute_filepath
 )
 {
-  crude_entity                                             node;
+  crude_entity                                             node_template;
   int64                                                    node_index;
   uint64                                                   filename_hashed;
 
   filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
-  if ( node_index != -1 )
+  if ( node_index == -1 )
   {
-    return manager->hashed_absolute_filepath_to_node[ node_index ].value;
+    node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath );
+    CRUDE_HASHMAP_SET( manager->hashed_absolute_filepath_to_node, filename_hashed, node_template );
+  }
+  else
+  {
+    node_template = manager->hashed_absolute_filepath_to_node[ node_index ].value;
   }
 
-  node = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath );
-  CRUDE_HASHMAP_SET( manager->hashed_absolute_filepath_to_node, filename_hashed, node );
-  return node;
+  return node_template;
 }
 
 void
@@ -465,7 +468,10 @@ crude_node_manager_node_to_json_hierarchy_
           crude_entity                                       child;
 
           child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-          cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, child ) );
+          if ( !CRUDE_ENTITY_HAS_COMPONENT( child, crude_node_runtime ) )
+          {
+            cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, child ) );
+          }
         }
       }
     }
