@@ -25,7 +25,12 @@ CRUDE_PUSH_CONSTANT( Constants )
   uint                                                     pbr_texture_index;
   float                                                    fog_distance;
   float                                                    fog_coeff;
-  float                                                    padding;
+  float                                                    wave_size;
+  float                                                    wave_texcoord_scale;
+  float                                                    wave_absolute_frame_scale;
+  float                                                    aberration_strength_scale;
+  float                                                    aberration_strength_offset;
+  float                                                    aberration_strength_sin_affect;
 };
 
 #if defined( CRUDE_STAGE_VERTEX )
@@ -60,50 +65,40 @@ layout(location = 0) out vec4 out_radiance;
 
 layout(location=0) in vec2 in_texcoord;
 
-vec4 drunk_effect
-(
-  in vec2                                                  texcoord
-)
-{
-  float wave_x = sin( texcoord.y * 20.0 + scene.time * 5.0 ) * 0.02;
-  float wave_y = cos( texcoord.x * 15.0 + scene.time * 4.0 ) * 0.02;
-    
-  texcoord.x += wave_x;
-  texcoord.y += wave_y;
-
-  float aberration_strength = 0.005;
-  aberration_strength = sin( scene.time * 2.0) * 0.005 + 0.005;
-
-  vec2 offset = vec2( aberration_strength, aberration_strength );
-    
-  float r = CRUDE_TEXTURE_LOD( pbr_texture_index, texcoord + offset, 0 ).r;
-  float g = CRUDE_TEXTURE_LOD( pbr_texture_index, texcoord, 0 ).g;
-  float b = CRUDE_TEXTURE_LOD( pbr_texture_index, texcoord - offset, 0 ).b;
-
-  return vec4( r, g, b, 1.0 );
-}
-
 void main()
 { 
-  float depth = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( gl_FragCoord.xy ), 0 ).r;
-  //vec4 radiance = CRUDE_TEXTURE_FETCH( pbr_texture_index, ivec2( gl_FragCoord.xy ), 0 );
-  vec4 drunk_radiance = drunk_effect( in_texcoord );
+  /* Drunk Effect */
+  float wave_x = sin( in_texcoord.y * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
+  float wave_y = cos( in_texcoord.x * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
+  
+  vec2 drunk_texcoord = vec2( in_texcoord.x + wave_x, in_texcoord.y + wave_y ); 
+  
+  float aberration_strength = sin( scene.absolute_frame * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
 
-  vec3 pixel_world_position = crude_world_position_from_depth( in_texcoord, depth, scene.camera.clip_to_world );
+  vec2 offset = vec2( aberration_strength, aberration_strength );
+  
+  vec3 drunk_radiance;
+  vec3 drunk_depth;
+  drunk_depth.r = CRUDE_TEXTURE_LOD( depth_texture_index, drunk_texcoord + offset, 0 ).r;
+  drunk_depth.g = CRUDE_TEXTURE_LOD( depth_texture_index, drunk_texcoord, 0 ).g;
+  drunk_depth.b = CRUDE_TEXTURE_LOD( depth_texture_index, drunk_texcoord - offset, 0 ).b;
+  drunk_radiance.r = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_texcoord + offset, 0 ).r;
+  drunk_radiance.g = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_texcoord, 0 ).g;
+  drunk_radiance.b = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_texcoord - offset, 0 ).b;
 
-  uvec2 position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
-  float current_visbility = length( player_position - pixel_world_position );
+  vec3 drunk_pixel_world_position_r = crude_world_position_from_depth( in_texcoord, drunk_depth.r, scene.camera.clip_to_world );
+  vec3 drunk_pixel_world_position_g = crude_world_position_from_depth( in_texcoord, drunk_depth.g, scene.camera.clip_to_world );
+  vec3 drunk_pixel_world_position_b = crude_world_position_from_depth( in_texcoord, drunk_depth.b, scene.camera.clip_to_world );
 
-  vec4 new_radiance = vec4( 0.f, 0.f, 0.f, 0.f );
-  if ( depth != 1.f )
-  {
-    new_radiance = vec4( mix( drunk_radiance.xyz, fog_color.a * fog_color.xyz, clamp( pow( current_visbility / fog_distance, fog_coeff ), 0, 1 ) ), 1.f );
-  }
-  else
-  {
-    new_radiance = vec4( fog_color.a * fog_color.xyz, 1.0 );
-  }
-  out_radiance = new_radiance;
+  float drunk_visbility_r = length( player_position - drunk_pixel_world_position_r );
+  float drunk_visbility_g = length( player_position - drunk_pixel_world_position_g );
+  float drunk_visbility_b = length( player_position - drunk_pixel_world_position_b );
+
+  vec3 drunk_with_fog_radiance;
+  drunk_with_fog_radiance.r = ( drunk_depth.r != 1.f ) ? ( mix( drunk_radiance.x, fog_color.a * fog_color.x, clamp( pow( drunk_visbility_r / fog_distance, fog_coeff ), 0, 1 ) ) ) :  fog_color.a * fog_color.x;
+  drunk_with_fog_radiance.g = ( drunk_depth.g != 1.f ) ? ( mix( drunk_radiance.y, fog_color.a * fog_color.y, clamp( pow( drunk_visbility_g / fog_distance, fog_coeff ), 0, 1 ) ) ) :  fog_color.a * fog_color.y;
+  drunk_with_fog_radiance.b = ( drunk_depth.b != 1.f ) ? ( mix( drunk_radiance.z, fog_color.a * fog_color.z, clamp( pow( drunk_visbility_b / fog_distance, fog_coeff ), 0, 1 ) ) ) :  fog_color.a * fog_color.z;
+  out_radiance = vec4( drunk_with_fog_radiance, 1.f );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

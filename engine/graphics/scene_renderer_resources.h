@@ -57,7 +57,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   XMFLOAT3                                                 ambient_color;
   float32                                                  ambient_intensity;
   uint32                                                   indirect_light_texture_index;
-  float32                                                  time;
+  uint32                                                   absolute_frame;
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu

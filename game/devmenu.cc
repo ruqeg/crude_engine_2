@@ -979,10 +979,16 @@ crude_devmenu_scene_renderer_draw
   {
     ImGui::ColorEdit3( "Background Color", &game->scene_renderer.options.background_color.x );
     ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
-    ImGui::ColorEdit3( "Fog Color", &game->fog_color.x );
-    ImGui::DragFloat( "Fog Intensity", &game->fog_color.w, 1.f, 0.f );
-    ImGui::DragFloat( "Fog Distance", &game->fog_distance, 1.f, 0.f );
-    ImGui::DragFloat( "Fog Coeff", &game->fog_coeff, 1.f, 0.f );
+    ImGui::ColorEdit3( "Fog Color", &game->game_postprocessing_pass.options.fog_color.x );
+    ImGui::DragFloat( "Fog Intensity", &game->game_postprocessing_pass.options.fog_color.w, 1.f, 0.f );
+    ImGui::DragFloat( "Fog Distance", &game->game_postprocessing_pass.options.fog_distance, 1.f, 0.f );
+    ImGui::DragFloat( "Fog Coeff", &game->game_postprocessing_pass.options.fog_coeff, 1.f, 0.f );
+    ImGui::DragFloat( "Wave Size", &game->game_postprocessing_pass.options.wave_size, 1.f, 0.f );
+    ImGui::DragFloat( "Wave Texcoord Scale", &game->game_postprocessing_pass.options.wave_texcoord_scale, 1.f, 0.f );
+    ImGui::DragFloat( "Wave Absolute Frame Scale", &game->game_postprocessing_pass.options.wave_absolute_frame_scale, 1.f, 0.f );
+    ImGui::DragFloat( "Aberration Strength Scale", &game->game_postprocessing_pass.options.aberration_strength_scale, 1.f, 0.f );
+    ImGui::DragFloat( "Aberration Strength Offset", &game->game_postprocessing_pass.options.aberration_strength_offset, 1.f, 0.f );
+    ImGui::DragFloat( "Aberration Strength Sin Affect", &game->game_postprocessing_pass.options.aberration_strength_sin_affect, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {

@@ -5,10 +5,24 @@
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
+typedef struct crude_gfx_game_postprocessing_pass_options
+{
+  XMFLOAT4                                                 fog_color;
+  float32                                                  fog_distance;
+  float32                                                  fog_coeff;
+  float32                                                  wave_size;
+  float32                                                  wave_texcoord_scale;
+  float32                                                  wave_absolute_frame_scale;
+  float32                                                  aberration_strength_scale;
+  float32                                                  aberration_strength_offset;
+  float32                                                  aberration_strength_sin_affect;
+} crude_gfx_game_postprocessing_pass_options;
+
 typedef struct crude_gfx_game_postprocessing_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_descriptor_set_handle                          game_postprocessing_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_game_postprocessing_pass_options               options;
 } crude_gfx_game_postprocessing_pass;
 
 CRUDE_API void

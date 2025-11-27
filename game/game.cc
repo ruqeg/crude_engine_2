@@ -353,7 +353,6 @@ game_graphics_system_
 
   game->last_graphics_update_time = 0.f;
 
-  game->scene_renderer.options.time += 0.016;
   game->scene_renderer.options.camera_node = game->focused_camera_node;
 
   crude_gfx_new_frame( &game->gpu );
@@ -780,10 +779,6 @@ game_initialize_graphics_
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
-
-  game->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
-  game->fog_distance = 10.f;
-  game->fog_coeff = 0.5f;
 
   crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );

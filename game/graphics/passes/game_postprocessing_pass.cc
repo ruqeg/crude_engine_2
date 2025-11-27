@@ -14,7 +14,12 @@ typedef struct crude_gfx_game_postprocessing_push_constant
   uint32                                                   pbr_texture_index;
   float32                                                  fog_distance;
   float32                                                  fog_coeff;
-  float32                                                  padding;
+  float32                                                  wave_size;
+  float32                                                  wave_texcoord_scale;
+  float32                                                  wave_absolute_frame_scale;
+  float32                                                  aberration_strength_scale;
+  float32                                                  aberration_strength_offset;
+  float32                                                  aberration_strength_sin_affect;
 } crude_gfx_game_postprocessing_push_constant;
 
 void
@@ -24,6 +29,16 @@ crude_gfx_game_postprocessing_pass_initialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  pass->options.fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
+  pass->options.fog_distance = 10.f;
+  pass->options.fog_coeff = 0.5f;
+  pass->options.wave_size = 0.02;
+  pass->options.wave_texcoord_scale = 20.0;
+  pass->options.wave_absolute_frame_scale = 5.0;
+  pass->options.aberration_strength_scale = 0.005;
+  pass->options.aberration_strength_offset = 0.005;
+  pass->options.aberration_strength_sin_affect = 2.0;
+
   pass->scene_renderer = scene_renderer;
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
@@ -76,9 +91,15 @@ crude_gfx_game_postprocessing_pass_render
   game_postprocessing_constant.pbr_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle.index;
   game_postprocessing_constant.depth_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
   game_postprocessing_constant.player_position = player_transform->translation;
-  game_postprocessing_constant.fog_color = game->fog_color;
-  game_postprocessing_constant.fog_distance = game->fog_distance;
-  game_postprocessing_constant.fog_coeff = game->fog_coeff;
+  game_postprocessing_constant.fog_color = pass->options.fog_color;
+  game_postprocessing_constant.fog_distance = pass->options.fog_distance;
+  game_postprocessing_constant.fog_coeff = pass->options.fog_coeff;
+  game_postprocessing_constant.wave_size = pass->options.wave_size;
+  game_postprocessing_constant.wave_texcoord_scale = pass->options.wave_texcoord_scale;
+  game_postprocessing_constant.wave_absolute_frame_scale = pass->options.wave_absolute_frame_scale;
+  game_postprocessing_constant.aberration_strength_scale = pass->options.aberration_strength_scale;
+  game_postprocessing_constant.aberration_strength_offset = pass->options.aberration_strength_offset;
+  game_postprocessing_constant.aberration_strength_sin_affect = pass->options.aberration_strength_sin_affect;
   crude_gfx_cmd_push_constant( primary_cmd, &game_postprocessing_constant, sizeof( game_postprocessing_constant ) );
 
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );

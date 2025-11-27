@@ -89,9 +89,6 @@ typedef struct game_t
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   crude_gfx_game_postprocessing_pass                       game_postprocessing_pass;
-  XMFLOAT4                                                 fog_color;
-  float32                                                  fog_distance;
-  float32                                                  fog_coeff;
 #if CRUDE_DEVELOP
   void                                                    *imgui_context;
 #endif
