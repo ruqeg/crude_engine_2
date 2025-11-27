@@ -90,6 +90,8 @@ typedef struct game_t
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   crude_gfx_game_postprocessing_pass                       game_postprocessing_pass;
   XMFLOAT4                                                 fog_color;
+  float32                                                  fog_distance;
+  float32                                                  fog_coeff;
 #if CRUDE_DEVELOP
   void                                                    *imgui_context;
 #endif
@@ -112,6 +114,7 @@ typedef struct game_t
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
+  float32                                                  time;
 
   crude_game_queue_command                                *commands_queue;
 } game_t;

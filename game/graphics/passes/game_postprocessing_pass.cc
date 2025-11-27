@@ -12,8 +12,9 @@ typedef struct crude_gfx_game_postprocessing_push_constant
   uint32                                                   depth_texture_index;
   XMFLOAT4                                                 fog_color;
   uint32                                                   pbr_texture_index;
-  float32                                                  visibility_sq;
-  XMFLOAT2                                                 padding;
+  float32                                                  fog_distance;
+  float32                                                  fog_coeff;
+  float32                                                  padding;
 } crude_gfx_game_postprocessing_push_constant;
 
 void
@@ -76,7 +77,8 @@ crude_gfx_game_postprocessing_pass_render
   game_postprocessing_constant.depth_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
   game_postprocessing_constant.player_position = player_transform->translation;
   game_postprocessing_constant.fog_color = game->fog_color;
-  game_postprocessing_constant.visibility_sq = 20.0;
+  game_postprocessing_constant.fog_distance = game->fog_distance;
+  game_postprocessing_constant.fog_coeff = game->fog_coeff;
   crude_gfx_cmd_push_constant( primary_cmd, &game_postprocessing_constant, sizeof( game_postprocessing_constant ) );
 
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );

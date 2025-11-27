@@ -8,11 +8,13 @@ ECS_COMPONENT_DECLARE( crude_serum_station );
 ECS_COMPONENT_DECLARE( crude_enemy );
 ECS_COMPONENT_DECLARE( crude_level_01 );
 ECS_COMPONENT_DECLARE( crude_player_controller );
+ECS_COMPONENT_DECLARE( crude_player );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_serum_station, "crude_serum_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_enemy, "crude_enemy" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_01, "crude_level_01" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_player_controller, "crude_player_controller" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_player, "crude_player" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 {
@@ -21,6 +23,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
   ECS_COMPONENT_DEFINE( world, crude_enemy );
   ECS_COMPONENT_DEFINE( world, crude_level_01 );
   ECS_COMPONENT_DEFINE( world, crude_player_controller );
+  ECS_COMPONENT_DEFINE( world, crude_player );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_serum_station )
@@ -137,4 +140,21 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controller )
   ImGui::DragFloat( "Stop Speed Coeff", &component->stop_change_coeff, 0.01 );
   ImGui::DragFloat( "Move Change Coeff", &component->move_change_coeff, 0.01 );
   ImGui::DragFloat( "Weight", &component->weight, 0.01 );
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player )
+{
+  crude_memory_set( component, 0, sizeof( crude_player ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player )
+{
+  cJSON *json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_player ) ) );
+  return json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player )
+{
 }

@@ -125,6 +125,8 @@ struct crude_scene
   vec3                                                     ambient_color;
   float                                                    ambient_intensity;
   uint                                                     indirect_light_texture_index;
+  float                                                    time;
+  float                                                    padding1;
 };
 
 #endif /* CRUDE_SCENE_GLSL */

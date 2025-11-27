@@ -25,6 +25,7 @@
 
 game_t                                                    *game_instance_;
 
+CRUDE_ECS_SYSTEM_DECLARE( game_update_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_graphics_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_input_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_physics_system_ );
@@ -88,6 +89,12 @@ game_initialize_graphics_
 
 static void
 game_graphics_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
+game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 );
@@ -158,6 +165,7 @@ game_initialize
   game->engine = creation->engine;
   game->framerate = creation->framerate;
   game->last_graphics_update_time = 0.f;
+  game->time = 0.f;
 
   ECS_IMPORT( game->engine->world, crude_platform_system );
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
@@ -190,6 +198,7 @@ game_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
+  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsPreStore, game, { } );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
     { .id = ecs_id( crude_input ) },
@@ -308,6 +317,20 @@ game_push_reload_techniques_command
 }
 
 void
+game_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "game_update_system_" );
+  game_t                                                  *game;
+
+  game = ( game_t* )it->ctx;
+  game->time += it->delta_time;
+  CRUDE_PROFILER_END;
+}
+
+void
 game_graphics_system_
 (
   _In_ ecs_iter_t                                         *it
@@ -330,6 +353,7 @@ game_graphics_system_
 
   game->last_graphics_update_time = 0.f;
 
+  game->scene_renderer.options.time += 0.016;
   game->scene_renderer.options.camera_node = game->focused_camera_node;
 
   crude_gfx_new_frame( &game->gpu );
@@ -758,6 +782,8 @@ game_initialize_graphics_
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
 
   game->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
+  game->fog_distance = 10.f;
+  game->fog_coeff = 0.5f;
 
   crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );

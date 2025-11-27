@@ -566,6 +566,7 @@ update_dynamic_buffers_
       scene_constant->background_intensity = scene_renderer->options.background_intensity;
       scene_constant->ambient_color = scene_renderer->options.ambient_color;
       scene_constant->ambient_intensity = scene_renderer->options.ambient_intensity;
+      scene_constant->time = scene_renderer->options.time;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }

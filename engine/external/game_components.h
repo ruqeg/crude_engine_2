@@ -24,6 +24,13 @@ typedef struct crude_level_01
   bool                                                     editor_camera_controller_enabled;
 } crude_level_01;
 
+typedef struct crude_player
+{
+  float32                                                  health;
+  float32                                                  drug_withdrawal;
+  float32                                                  sanity;
+} crude_player;
+
 typedef struct crude_player_controller
 {
   float32                                                  weight;
@@ -33,11 +40,7 @@ typedef struct crude_player_controller
   float32                                                  move_change_coeff;
   float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
-
-  float32                                                  health;
-
   bool                                                     input_enabled;
-
 #if CRUDE_DEVELOP
   bool                                                     fly_mode;
   float32                                                  fly_speed_scale;
@@ -67,5 +70,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player_controller );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controller );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_player_controller );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_player );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_player );
 
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_game_components );

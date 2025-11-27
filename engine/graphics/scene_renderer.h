@@ -43,6 +43,7 @@ typedef struct crude_gfx_scene_renderer_options
   float32                                                  ambient_intensity;
   char const                                              *hdr_pre_tonemapping_texture_name;
   char const                                              *depth_texture_name;
+  float32                                                  time;
 #if CRUDE_DEVELOP
   bool                                                     hide_collision;
   bool                                                     hide_debug_gltf;
@@ -68,7 +69,7 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   bool                                                     imgui_pass_enalbed;
-  
+
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/

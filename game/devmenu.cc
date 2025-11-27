@@ -981,7 +981,8 @@ crude_devmenu_scene_renderer_draw
     ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
     ImGui::ColorEdit3( "Fog Color", &game->fog_color.x );
     ImGui::DragFloat( "Fog Intensity", &game->fog_color.w, 1.f, 0.f );
-    
+    ImGui::DragFloat( "Fog Distance", &game->fog_distance, 1.f, 0.f );
+    ImGui::DragFloat( "Fog Coeff", &game->fog_coeff, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
