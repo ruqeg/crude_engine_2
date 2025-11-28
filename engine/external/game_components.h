@@ -26,6 +26,7 @@ typedef struct crude_level_01
 
 typedef struct crude_player
 {
+  bool                                                     stop_updating_gameplay_values;
   float32                                                  health;
   float32                                                  drug_withdrawal;
   float32                                                  sanity;

@@ -122,10 +122,13 @@ struct crude_scene
 
   vec3                                                     background_color;
   float                                                    background_intensity;
+
   vec3                                                     ambient_color;
   float                                                    ambient_intensity;
+
   uint                                                     indirect_light_texture_index;
   uint                                                     absolute_frame;
+  float                                                    resolution_ratio;
   float                                                    padding1;
 };
 

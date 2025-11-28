@@ -60,6 +60,11 @@ typedef struct crude_devmenu_nodes_tree
 	bool																										 enabled;
 } crude_devmenu_nodes_tree;
 
+typedef struct crude_devmenu_gameplay
+{
+	bool																										 enabled;
+} crude_devmenu_gameplay;
+
 typedef struct crude_devmenu
 {
 	bool																										 enabled;
@@ -69,6 +74,7 @@ typedef struct crude_devmenu
   crude_devmenu_gpu_pool                                   gpu_pool;
   crude_devmenu_scene_renderer                             scene_renderer;
   crude_devmenu_nodes_tree                                 nodes_tree;
+  crude_devmenu_gameplay                                   gameplay;
   uint32                                                   selected_option;
 } crude_devmenu;
 
@@ -367,6 +373,41 @@ crude_devmenu_nodes_tree_draw
 
 CRUDE_API void
 crude_devmenu_nodes_tree_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+/***********************
+ * 
+ * Develop Gameplay
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_gameplay_initialize
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+);
+
+CRUDE_API void
+crude_devmenu_gameplay_deinitialize
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+);
+
+CRUDE_API void
+crude_devmenu_gameplay_update
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+);
+
+CRUDE_API void
+crude_devmenu_gameplay_draw
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+);
+
+CRUDE_API void
+crude_devmenu_gameplay_callback
 (
 	_In_ crude_devmenu									                    *devmenu
 );

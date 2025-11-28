@@ -59,6 +59,9 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Nodes Tree", crude_devmenu_nodes_tree_callback
+  },
+  {
+    "Gameplay", crude_devmenu_gameplay_callback
   }
 };
 
@@ -76,6 +79,7 @@ crude_devmenu_initialize
   crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree );
+  crude_devmenu_gameplay_initialize( &devmenu->gameplay );
 }
 
 void
@@ -90,6 +94,7 @@ crude_devmenu_deinitialize
   crude_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_deinitialize( &devmenu->nodes_tree );
+  crude_devmenu_gameplay_deinitialize( &devmenu->gameplay );
 }
 
 void
@@ -127,6 +132,7 @@ crude_devmenu_draw
   crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
+  crude_devmenu_gameplay_draw( &devmenu->gameplay );
 }
 
 void
@@ -141,6 +147,7 @@ crude_devmenu_update
   crude_devmenu_gpu_pool_update( &devmenu->gpu_pool );
   crude_devmenu_scene_renderer_update( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_update( &devmenu->nodes_tree );
+  crude_devmenu_gameplay_update( &devmenu->gameplay );
 }
 
 void
@@ -979,16 +986,31 @@ crude_devmenu_scene_renderer_draw
   {
     ImGui::ColorEdit3( "Background Color", &game->scene_renderer.options.background_color.x );
     ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
+  }
+  if ( ImGui::CollapsingHeader( "Fog" ) )
+  {
     ImGui::ColorEdit3( "Fog Color", &game->game_postprocessing_pass.options.fog_color.x );
     ImGui::DragFloat( "Fog Intensity", &game->game_postprocessing_pass.options.fog_color.w, 1.f, 0.f );
     ImGui::DragFloat( "Fog Distance", &game->game_postprocessing_pass.options.fog_distance, 1.f, 0.f );
     ImGui::DragFloat( "Fog Coeff", &game->game_postprocessing_pass.options.fog_coeff, 1.f, 0.f );
+  }
+  if ( ImGui::CollapsingHeader( "Drunk Effect" ) )
+  {
     ImGui::DragFloat( "Wave Size", &game->game_postprocessing_pass.options.wave_size, 1.f, 0.f );
     ImGui::DragFloat( "Wave Texcoord Scale", &game->game_postprocessing_pass.options.wave_texcoord_scale, 1.f, 0.f );
     ImGui::DragFloat( "Wave Absolute Frame Scale", &game->game_postprocessing_pass.options.wave_absolute_frame_scale, 1.f, 0.f );
     ImGui::DragFloat( "Aberration Strength Scale", &game->game_postprocessing_pass.options.aberration_strength_scale, 1.f, 0.f );
     ImGui::DragFloat( "Aberration Strength Offset", &game->game_postprocessing_pass.options.aberration_strength_offset, 1.f, 0.f );
     ImGui::DragFloat( "Aberration Strength Sin Affect", &game->game_postprocessing_pass.options.aberration_strength_sin_affect, 1.f, 0.f );
+  }
+  if ( ImGui::CollapsingHeader( "Health Pulse Effect" ) )
+  {
+    ImGui::ColorEdit3( "Pulse Color", &game->game_postprocessing_pass.options.pulse_color.x );
+    ImGui::DragFloat( "Pulse Intensity", &game->game_postprocessing_pass.options.pulse_color.w, 1.f, 0.f );
+    ImGui::DragFloat( "Pulse Frame Scale", &game->game_postprocessing_pass.options.pulse_frame_scale, 1.f, 0.f );
+    ImGui::DragFloat( "Pulse Scale", &game->game_postprocessing_pass.options.pulse_scale, 1.f, 0.f );
+    ImGui::DragFloat( "Pulse Coeff", &game->game_postprocessing_pass.options.pulse_distance_coeff, 1.f, 0.f );
+    ImGui::DragFloat( "Pulse Distance", &game->game_postprocessing_pass.options.pulse_distance, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
@@ -1161,6 +1183,83 @@ crude_devmenu_nodes_tree_callback
 )
 {
   devmenu->nodes_tree.enabled = !devmenu->nodes_tree.enabled;
+}
+
+
+/***********************
+ * 
+ * Develop Gameplay
+ * 
+ ***********************/
+void
+crude_devmenu_gameplay_initialize
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+)
+{
+  dev_gameplay->enabled = false;
+}
+
+void
+crude_devmenu_gameplay_deinitialize
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+)
+{
+}
+
+void
+crude_devmenu_gameplay_update
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+)
+{
+}
+
+void
+crude_devmenu_gameplay_draw
+(
+  _In_ crude_devmenu_gameplay                             *dev_gameplay
+)
+{
+  game_t *game = game_instance( );
+
+  if ( !dev_gameplay->enabled )
+  {
+    return;
+  }
+
+  ImGui::Begin( "Gameplay" );
+  if ( ImGui::CollapsingHeader( "Player" ) )
+  {
+    crude_player                                          *player;
+
+    player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+    CRUDE_ASSERT( player );
+
+    ImGui::SliderFloat( "Health", &player->health, 1.f, 0.f );
+    ImGui::SliderFloat( "Drug Withdrawal", &player->drug_withdrawal, 1.f, 0.f );
+    ImGui::SliderFloat( "Sanity", &player->sanity, 1.f, 0.f );
+    ImGui::Checkbox( "Stop Updating Gameplay Values", &player->stop_updating_gameplay_values );
+
+    if ( ImGui::Button( "Reset Position" ) )
+    {
+      crude_transform                                     *player_transform;
+      player_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_transform );
+      player_transform->translation = CRUDE_COMPOUNT( XMFLOAT3, { 0.f, 1.5f, 0.f } );
+    }
+  }
+  
+  ImGui::End( );
+}
+
+void
+crude_devmenu_gameplay_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->gameplay.enabled = !devmenu->gameplay.enabled;
 }
 
 #endif

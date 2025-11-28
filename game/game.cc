@@ -18,6 +18,7 @@
 #include <engine/physics/physics_debug_system.h>
 #include <engine/external/game_components.h>
 #include <game/player_controller_system.h>
+#include <game/player_system.h>
 #include <game/enemy_system.h>
 #include <game/level_01_system.h>
 
@@ -171,6 +172,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_player_controller_system );
   ECS_IMPORT( game->engine->world, crude_enemy_system );
   ECS_IMPORT( game->engine->world, crude_level_01_system );
+  ECS_IMPORT( game->engine->world, crude_player_system );
 
   game_initialize_allocators_( game );
 #if CRUDE_DEVELOP
@@ -490,6 +492,12 @@ game_parse_json_to_component_
     CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
   }
+  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
+  {
+    crude_player                                         player;
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, node, manager );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_player, { player } );
+  }
   return true;
 }
 
@@ -504,6 +512,7 @@ game_parse_all_components_to_json_
   crude_player_controller const                           *player_component;
   crude_enemy const                                       *enemy;
   crude_level_01 const                                    *level01;
+  crude_player const                                      *player;
   
   player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
   if ( player_component )
@@ -521,6 +530,12 @@ game_parse_all_components_to_json_
   if ( level01 )
   {
     cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
+  }
+  
+  player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player );
+  if ( level01 )
+  {
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
   }
 }
 

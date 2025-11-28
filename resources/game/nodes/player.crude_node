@@ -21,6 +21,8 @@
 			"move_change_coeff":	5,
 			"weight":	1,
 			"jump_velocity": 5
+		}, {
+			"type":	"crude_player"
 		}],
 	"children":	[{
 			"name":	"pivot",

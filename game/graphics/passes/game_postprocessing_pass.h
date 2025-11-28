@@ -16,6 +16,11 @@ typedef struct crude_gfx_game_postprocessing_pass_options
   float32                                                  aberration_strength_scale;
   float32                                                  aberration_strength_offset;
   float32                                                  aberration_strength_sin_affect;
+  XMFLOAT4                                                 pulse_color;
+  float32                                                  pulse_frame_scale;
+  float32                                                  pulse_scale;
+  float32                                                  pulse_distance_coeff;
+  float32                                                  pulse_distance;
 } crude_gfx_game_postprocessing_pass_options;
 
 typedef struct crude_gfx_game_postprocessing_pass

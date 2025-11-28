@@ -43,7 +43,10 @@
 					"stop_change_coeff":	7,
 					"move_change_coeff":	4,
 					"weight":	1
-				}],
+				}, {
+					"type":	"crude_player"
+				}
+			],
 			"children":	[{
 					"name":	"pivot",
 					"transform":	{

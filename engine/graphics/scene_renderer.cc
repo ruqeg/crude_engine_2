@@ -551,6 +551,7 @@ update_dynamic_buffers_
       scene_constant->camera_previous = scene_constant->camera;
       scene_constant->resolution.x = scene_renderer->gpu->vk_swapchain_width;
       scene_constant->resolution.y = scene_renderer->gpu->vk_swapchain_height;
+      scene_constant->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->vk_swapchain_width ) / scene_renderer->gpu->vk_swapchain_height;
       crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene_constant->camera );
       scene_constant->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
       scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );

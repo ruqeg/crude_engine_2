@@ -137,10 +137,12 @@ crude_level_01_update_system_
   _In_ ecs_iter_t *it
 )
 {
+  game_t *game = game_instance( );
   crude_level_01 *leveles_per_entity = ecs_field( it, crude_level_01, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
+    crude_player const                                    *player;
     crude_level_01                                        *level;
     crude_entity                                           level_node;
     
@@ -149,6 +151,9 @@ crude_level_01_update_system_
 
     level = &leveles_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_player );
+    //game-> player->drug_withdrawal
   }
 }
 

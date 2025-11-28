@@ -27,6 +27,12 @@ crude_hitbox_callback
 }
 
 static void
+crude_player_update_visual_
+(
+  _In_ crude_player                                       *player
+);
+
+static void
 crude_player_creation_observer_
 (
   _In_ ecs_iter_t *it
@@ -48,6 +54,7 @@ crude_player_creation_observer_
     player->health = 1.f;
     player->drug_withdrawal = 0.f;
     player->sanity = 1.f;
+    player->stop_updating_gameplay_values = false;
   }
 }
 
@@ -69,8 +76,10 @@ crude_player_update_system_
 
     transform = &transforms_per_entity[ i ];
     player = &player_per_entity[ i ];
-
-    player->drug_withdrawal += it->delta_time;
+    if ( !player->stop_updating_gameplay_values )
+    {
+    }
+    crude_player_update_visual_( player );
   }
   CRUDE_PROFILER_END;
 }
@@ -91,4 +100,24 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_system )
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_creation_observer_, EcsOnSet, NULL, { 
     { .id = ecs_id( crude_player ) }
   } );
+}
+
+void
+crude_player_update_visual_
+(
+  _In_ crude_player                                       *player
+)
+{
+  game_t                                                  *game;
+  crude_gfx_game_postprocessing_pass_options              *pass_options;
+  
+  game = game_instance( );
+  pass_options = &game->game_postprocessing_pass.options;
+
+  /* Health Pulse Effect */
+  pass_options->pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 1.f } );
+  pass_options->pulse_distance = 1.f;
+  pass_options->pulse_distance_coeff  = 1.5f;
+  pass_options->pulse_frame_scale = 0.02f;
+  pass_options->pulse_scale = 1.f - player->health;
 }

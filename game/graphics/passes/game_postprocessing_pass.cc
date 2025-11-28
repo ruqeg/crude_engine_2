@@ -11,6 +11,7 @@ typedef struct crude_gfx_game_postprocessing_push_constant
   XMFLOAT3                                                 player_position;
   uint32                                                   depth_texture_index;
   XMFLOAT4                                                 fog_color;
+  XMFLOAT4                                                 pulse_color;
   uint32                                                   pbr_texture_index;
   float32                                                  fog_distance;
   float32                                                  fog_coeff;
@@ -20,6 +21,10 @@ typedef struct crude_gfx_game_postprocessing_push_constant
   float32                                                  aberration_strength_scale;
   float32                                                  aberration_strength_offset;
   float32                                                  aberration_strength_sin_affect;
+  float32                                                  pulse_frame_scale;
+  float32                                                  pulse_scale;
+  float32                                                  pulse_distance_coeff;
+  float32                                                  pulse_distance;
 } crude_gfx_game_postprocessing_push_constant;
 
 void
@@ -38,6 +43,11 @@ crude_gfx_game_postprocessing_pass_initialize
   pass->options.aberration_strength_scale = 0.005;
   pass->options.aberration_strength_offset = 0.005;
   pass->options.aberration_strength_sin_affect = 2.0;
+  pass->options.pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1, 0, 0, 1 } );
+  pass->options.pulse_frame_scale = 10.f;
+  pass->options.pulse_scale = 0.1f;
+  pass->options.pulse_distance_coeff = 0.1f;
+  pass->options.pulse_distance = 0.5f;
 
   pass->scene_renderer = scene_renderer;
   
@@ -100,6 +110,11 @@ crude_gfx_game_postprocessing_pass_render
   game_postprocessing_constant.aberration_strength_scale = pass->options.aberration_strength_scale;
   game_postprocessing_constant.aberration_strength_offset = pass->options.aberration_strength_offset;
   game_postprocessing_constant.aberration_strength_sin_affect = pass->options.aberration_strength_sin_affect;
+  game_postprocessing_constant.pulse_color = pass->options.pulse_color;
+  game_postprocessing_constant.pulse_frame_scale = pass->options.pulse_frame_scale;
+  game_postprocessing_constant.pulse_scale = pass->options.pulse_scale;
+  game_postprocessing_constant.pulse_distance_coeff = pass->options.pulse_distance_coeff;
+  game_postprocessing_constant.pulse_distance = pass->options.pulse_distance;
   crude_gfx_cmd_push_constant( primary_cmd, &game_postprocessing_constant, sizeof( game_postprocessing_constant ) );
 
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
