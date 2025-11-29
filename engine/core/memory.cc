@@ -46,11 +46,12 @@ crude_heap_allocator_initialize
 (
   _In_ crude_heap_allocator                               *allocator,
   _In_ sizet                                               capacity,
-  char const                                               *name
+  _In_ char const                                         *name
 )
 {
   allocator->memory = malloc( capacity );
   allocator->capacity = capacity;
+  allocator->occupied = 0.f;
   allocator->name = name;
   allocator->tlsf_handle = tlsf_create_with_pool( allocator->memory, capacity );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "Heap allocator \"%s\" of capacity %llu created", name, capacity );
@@ -99,11 +100,14 @@ crude_heap_allocator_allocate
 {
   void                                                    *allocated_memory;
   sizet                                                    actual_size;
-  
+
   allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocated_memory, "Failed to allocate %i bytes in \"%s\" allocator!", size, allocator->name ? allocator->name : "unknown allocator" );
   actual_size = tlsf_block_size( allocated_memory );
+  
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
+  allocator->occupied += actual_size;
+
   return allocated_memory;
 }
 
@@ -121,6 +125,7 @@ crude_heap_allocator_allocate_align
   allocated_memory = alignment == 1 ? tlsf_malloc( allocator->tlsf_handle, size ) : tlsf_memalign( allocator->tlsf_handle, alignment, size );
   actual_size = tlsf_block_size( allocated_memory );
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
+  allocator->occupied += actual_size;
   return allocated_memory;
 }
 
@@ -137,10 +142,13 @@ crude_heap_allocator_reallocate
 
   if ( pointer )
   {
+    actual_size = tlsf_block_size( pointer );
+    allocator->occupied -= actual_size;
     CRUDE_PROFILER_FREE_NAME( pointer, allocator->name );
   }
   allocated_memory = tlsf_realloc( allocator->tlsf_handle, pointer, size );
   actual_size = tlsf_block_size( allocated_memory );
+  allocator->occupied += actual_size;
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
   return allocated_memory;
 }
@@ -166,7 +174,7 @@ crude_stack_allocator_initialize
 (
   _In_ crude_stack_allocator                              *allocator,
   _In_ sizet                                               capacity,
-  char const                                              *name
+  _In_ char const                                         *name
 )
 {
   allocator->memory = malloc( capacity );
@@ -237,7 +245,7 @@ crude_linear_allocator_initialize
 (
   _In_ crude_linear_allocator                             *allocator,
   _In_ sizet                                               capacity,
-  char const                                              *name
+  _In_ char const                                         *name
 )
 {
   allocator->memory = malloc( capacity );
@@ -380,4 +388,25 @@ crude_linear_allocator_pack
     .ctx = linear_allocator,
   };
   return allocator;
+}
+
+crude_allocator_type
+crude_allocator_container_get_type
+(
+  _In_ crude_allocator_container                           allocator_container
+)
+{
+  if ( allocator_container.allocate == crude_heap_allocate_raw )
+  {
+    return CRUDE_ALLOCATOR_TYPE_HEAP;
+  }
+  else if ( allocator_container.allocate == crude_stack_allocate_raw )
+  {
+    return CRUDE_ALLOCATOR_TYPE_STACK;
+  }
+  else if ( allocator_container.allocate == crude_linear_allocate_raw )
+  {
+    return CRUDE_ALLOCATOR_TYPE_LINEAR;
+  }
+  return CRUDE_ALLOCATOR_TYPE_UNKNOWN;
 }

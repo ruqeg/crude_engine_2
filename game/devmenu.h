@@ -14,6 +14,12 @@ typedef struct crude_devmenu_texture_inspector
   crude_gfx_texture_handle                                 texture_handle;
 } crude_devmenu_texture_inspector;
 
+typedef struct crude_devmenu_memory_visual_profiler
+{
+	bool																										 enabled;
+  crude_allocator_container                               *allocators_containers;
+} crude_devmenu_memory_visual_profiler;
+
 typedef struct crude_devmenu_gpu_visual_profiler
 {
   crude_gfx_device                                        *gpu;
@@ -69,6 +75,7 @@ typedef struct crude_devmenu
 {
 	bool																										 enabled;
   crude_devmenu_gpu_visual_profiler                        gpu_visual_profiler;
+  crude_devmenu_memory_visual_profiler                     memory_visual_profiler;
   crude_devmenu_texture_inspector                          texture_inspector;
   crude_devmenu_render_graph                               render_graph;
   crude_devmenu_gpu_pool                                   gpu_pool;
@@ -198,6 +205,41 @@ crude_devmenu_gpu_visual_profiler_draw
 
 CRUDE_API void
 crude_devmenu_gpu_visual_profiler_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+);
+
+/***********************
+ * 
+ * Develop Memory Visual Profiler
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_memory_visual_profiler_initialize
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+);
+
+CRUDE_API void
+crude_devmenu_memory_visual_profiler_deinitialize
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+);
+
+CRUDE_API void
+crude_devmenu_memory_visual_profiler_update
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+);
+
+CRUDE_API void
+crude_devmenu_memory_visual_profiler_draw
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+);
+
+CRUDE_API void
+crude_devmenu_memory_visual_profiler_callback
 (
 	_In_ crude_devmenu									                    *devmenu
 );

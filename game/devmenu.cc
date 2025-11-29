@@ -40,6 +40,9 @@ crude_devmenu_option devmenu_options[ ] =
     "GPU Visual Profiler", crude_devmenu_gpu_visual_profiler_callback
   },
   {
+    "Memory Visual Profiler", crude_devmenu_memory_visual_profiler_callback
+  },
+  {
     "Texture Inspector", crude_devmenu_texture_inspector_callback
   },
   {
@@ -74,6 +77,7 @@ crude_devmenu_initialize
   devmenu->enabled = false;
   devmenu->selected_option = 0;
   crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler );
+  crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector );
   crude_devmenu_render_graph_initialize( &devmenu->render_graph );
   crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool );
@@ -89,6 +93,7 @@ crude_devmenu_deinitialize
 )
 {
   crude_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
+  crude_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
   crude_devmenu_render_graph_deinitialize( &devmenu->render_graph );
   crude_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
@@ -127,6 +132,7 @@ crude_devmenu_draw
   }
 
   crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
+  crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
   crude_devmenu_render_graph_draw( &devmenu->render_graph );
   crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
@@ -142,6 +148,7 @@ crude_devmenu_update
 )
 {
   crude_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
+  crude_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_update( &devmenu->texture_inspector );
   crude_devmenu_render_graph_update( &devmenu->render_graph );
   crude_devmenu_gpu_pool_update( &devmenu->gpu_pool );
@@ -399,7 +406,7 @@ crude_devmenu_gpu_visual_profiler_draw
     return;
   }
 
-  ImGui::Begin( "Visual Profiler" );
+  ImGui::Begin( "GPU Visual Profiler" );
 
   {
     ImGuiIO                                               *imgui_io;
@@ -634,6 +641,165 @@ crude_devmenu_gpu_visual_profiler_callback
 )
 {
   devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
+}
+
+/***********************
+ * 
+ * Develop Memory Visual Profiler
+ * 
+ ***********************/
+void
+crude_devmenu_memory_visual_profiler_initialize
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+)
+{
+  game_t *game = game_instance( );
+
+  dev_mem_profiler->enabled = false;
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( dev_mem_profiler->allocators_containers, 16, crude_heap_allocator_pack( &game->allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->engine->asynchronous_loader_manager_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->cgltf_temporary_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->model_renderer_resources_manager_temporary_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->resources_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->temporary_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->render_graph.linear_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->node_manager.string_linear_allocator ) );
+}
+
+void
+crude_devmenu_memory_visual_profiler_deinitialize
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+)
+{
+  CRUDE_ARRAY_DEINITIALIZE( dev_mem_profiler->allocators_containers );
+}
+
+void
+crude_devmenu_memory_visual_profiler_update
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+)
+{
+}
+
+void
+crude_devmenu_memory_visual_profiler_draw
+(
+	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+)
+{
+  game_t                                                  *game;
+
+  game = game_instance( );
+
+  if ( !dev_mem_profiler->enabled )
+  {
+    return;
+  }
+
+  ImGui::Begin( "Memory Visual Profiler" );
+
+  {
+    ImDrawList                                            *draw_list;
+    char                                                   buf[ 128 ];
+    ImVec2                                                 cursor_pos, canvas_size;
+    float32                                                widget_width, widget_height, legend_width, graph_width;
+    uint32                                                 rect_height;
+
+    draw_list = ImGui::GetWindowDrawList();
+    cursor_pos = ImGui::GetCursorScreenPos();
+    canvas_size = ImGui::GetContentRegionAvail();
+    widget_width = canvas_size.x;
+    widget_height = canvas_size.y;
+    
+    legend_width = 250;
+    graph_width = CRUDE_MIN( 400.f, fabsf( canvas_size.x - legend_width ) );
+    rect_height = CRUDE_CEIL( widget_height / CRUDE_ARRAY_LENGTH( dev_mem_profiler->allocators_containers ) );
+    
+    crude_memory_set( buf, 0u, sizeof( buf ) );
+
+    /* Draw Graph */
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( dev_mem_profiler->allocators_containers ); ++i )
+    {
+      crude_allocator_container                            allocator_container;
+      char const                                          *allocator_name;
+      crude_color                                          allocator_color;
+      uint32                                               allocator_capacity, allocator_occupied;
+      float32                                              allocator_occupied_precent;
+
+      allocator_container = dev_mem_profiler->allocators_containers[ i ];
+
+      switch ( crude_allocator_container_get_type( allocator_container ) )
+      {
+      case CRUDE_ALLOCATOR_TYPE_HEAP:
+      {
+        crude_heap_allocator *heap_allocator = CRUDE_CAST( crude_heap_allocator*, allocator_container.ctx );
+        allocator_occupied_precent = heap_allocator->occupied / CRUDE_CAST( float32, heap_allocator->capacity );
+        allocator_capacity = heap_allocator->capacity;
+        allocator_occupied = heap_allocator->occupied;
+        allocator_name = heap_allocator->name;
+        break;
+      }
+      case CRUDE_ALLOCATOR_TYPE_STACK:
+      {
+        crude_stack_allocator *stack_allocator = CRUDE_CAST( crude_stack_allocator*, allocator_container.ctx );
+        allocator_occupied_precent = stack_allocator->occupied / CRUDE_CAST( float32, stack_allocator->capacity );
+        allocator_capacity = stack_allocator->capacity;
+        allocator_occupied = stack_allocator->occupied;
+        allocator_name = stack_allocator->name;
+        break;
+      }
+      case CRUDE_ALLOCATOR_TYPE_LINEAR:
+      {
+        crude_linear_allocator *linear_allocator = CRUDE_CAST( crude_linear_allocator*, allocator_container.ctx );
+        allocator_occupied_precent = linear_allocator->occupied / CRUDE_CAST( float32, linear_allocator->capacity );
+        allocator_capacity = linear_allocator->capacity;
+        allocator_occupied = linear_allocator->occupied;
+        allocator_name = linear_allocator->name;
+        break;
+      }
+      }
+
+      allocator_color = crude_color_get_distinct_color( i );
+
+      draw_list->AddRectFilled(
+        { cursor_pos.x, cursor_pos.y },
+        { cursor_pos.x + graph_width, cursor_pos.y + rect_height },
+        crude_color_set( crude_color_r( allocator_color ), crude_color_g( allocator_color ), crude_color_b( allocator_color ), 0.5 )
+      );
+      draw_list->AddRectFilled(
+        { cursor_pos.x, cursor_pos.y },
+        { cursor_pos.x + allocator_occupied_precent * graph_width, cursor_pos.y + rect_height },
+        allocator_color
+      );
+      draw_list->AddLine(
+        { cursor_pos.x, cursor_pos.y + rect_height },
+        { cursor_pos.x + graph_width, cursor_pos.y + rect_height },
+        1
+      );
+
+      sprintf( buf, "%s: O %.3f MB | C %.3f MB | R %.3f", allocator_name, allocator_occupied / (1024*1024.f), allocator_capacity / (1024*1024.f), allocator_occupied_precent );
+      draw_list->AddText( { cursor_pos.x + graph_width + 20, cursor_pos.y + 0.5f * rect_height }, 0xffffffff, buf );
+
+      cursor_pos.y += rect_height;
+    }
+  
+    ImGui::Dummy( { widget_width, canvas_size.y } );
+  }
+  
+  ImGui::End( );
+}
+
+void
+crude_devmenu_memory_visual_profiler_callback
+(
+	_In_ crude_devmenu									                    *devmenu
+)
+{
+  devmenu->memory_visual_profiler.enabled = !devmenu->memory_visual_profiler.enabled;
 }
 
 /***********************

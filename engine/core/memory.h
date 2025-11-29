@@ -2,6 +2,18 @@
 
 #include <engine/core/alias.h>
 
+#define CRUDE_RKILO( size ) ( size * 1024u )
+#define CRUDE_RMEGA( size ) ( size * 1024u * 1024u )
+#define CRUDE_RGIGA( size ) ( size * 1024u * 1024u * 1024u )
+
+typedef enum crude_allocator_type
+{
+  CRUDE_ALLOCATOR_TYPE_UNKNOWN,
+  CRUDE_ALLOCATOR_TYPE_HEAP,
+  CRUDE_ALLOCATOR_TYPE_STACK,
+  CRUDE_ALLOCATOR_TYPE_LINEAR,
+} crude_allocator_type;
+
 /*****************************************
  *
  * Heap Allocator
@@ -13,6 +25,9 @@ typedef struct crude_heap_allocator
   void                                                    *memory;
   sizet                                                    capacity;
   char const                                              *name;
+#if CRUDE_DEVELOP
+  int64                                                    occupied;
+#endif
 } crude_heap_allocator;
 
 CRUDE_API void
@@ -20,7 +35,7 @@ crude_heap_allocator_initialize
 (
   _In_ crude_heap_allocator                               *allocator,
   _In_ sizet                                               capacity,
-  char const                                              *name
+  _In_ char const                                         *name
 );
 
 CRUDE_API void
@@ -77,7 +92,7 @@ crude_stack_allocator_initialize
 (
   _In_ crude_stack_allocator                              *allocator,
   _In_ sizet                                               capacity,
-  char const                                              *name
+  _In_ char const                                         *name
 );
 
 CRUDE_API void
@@ -125,7 +140,7 @@ crude_linear_allocator_initialize
 (
   _In_ crude_linear_allocator                             *allocator,
   _In_ sizet                                               capacity,
-  char const                                              *name
+  _In_ char const                                         *name
 );
 
 CRUDE_API void
@@ -175,10 +190,6 @@ crude_memory_set
   _In_ sizet                                               size
 );
 
-#define CRUDE_RKILO( size ) ( size * 1024u )
-#define CRUDE_RMEGA( size ) ( size * 1024u * 1024u )
-#define CRUDE_RGIGA( size ) ( size * 1024u * 1024u * 1024u )
-
 /*****************************************
  *
  * Common Allocator Interface
@@ -212,6 +223,12 @@ CRUDE_API crude_allocator_container
 crude_linear_allocator_pack
 (
   _In_ crude_linear_allocator                             *linear_allocator
+);
+
+CRUDE_API crude_allocator_type
+crude_allocator_container_get_type
+(
+  _In_ crude_allocator_container                           allocator_container
 );
 
 #define CRUDE_ALLOCATE( allocator_container, size ) ( ( allocator_container ).allocate( ( allocator_container ).ctx, size ) )
