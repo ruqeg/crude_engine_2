@@ -20,7 +20,9 @@ main
 
     engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
     crude_engine_initialize( &engine, &engine_creation );
-    
+
+    game_instance_intialize( );
+  
     game_creation = CRUDE_COMPOUNT_EMPTY( crude_game_creation );
     game_creation.engine = &engine;
     game_creation.framerate = 60;
@@ -32,8 +34,6 @@ main
     game_creation.compiled_shaders_relative_directory = "\\..\\..\\compiled_shaders\\";
     crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
     game_creation.working_absolute_directory = working_directory;
-
-    game_instance_intialize( );
     game_initialize( game_instance( ), &game_creation );
   }
 

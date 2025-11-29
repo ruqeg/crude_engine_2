@@ -1241,7 +1241,8 @@ crude_devmenu_gameplay_draw
     ImGui::SliderFloat( "Drug Withdrawal", &player->drug_withdrawal, 1.f, 0.f );
     ImGui::SliderFloat( "Sanity", &player->sanity, 1.f, 0.f );
     ImGui::Checkbox( "Stop Updating Gameplay Values", &player->stop_updating_gameplay_values );
-
+    ImGui::Checkbox( "Stop Updating Visual Values", &player->stop_updating_visual_values );
+    
     if ( ImGui::Button( "Reset Position" ) )
     {
       crude_transform                                     *player_transform;

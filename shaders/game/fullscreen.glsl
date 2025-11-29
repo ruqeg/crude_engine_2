@@ -72,19 +72,23 @@ layout(location=0) in vec2 in_texcoord;
 
 void main()
 { 
+  float max_offset = wave_size + aberration_strength_scale + aberration_strength_offset;
+  vec2 texcoord = in_texcoord * ( 1.f - 2.f * max_offset ) + max_offset;
+
   /* Drunk effect */
-  float wave_x = sin( in_texcoord.y * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
-  float wave_y = cos( in_texcoord.x * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
+  float wave_x = sin( texcoord.y * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
+  float wave_y = cos( texcoord.x * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
   
-  vec2 drunk_texcoord = vec2( in_texcoord.x + wave_x, in_texcoord.y + wave_y ); 
+  vec2 drunk_texcoord = vec2( texcoord.x + wave_x, texcoord.y + wave_y ); 
   
   float aberration_strength = sin( scene.absolute_frame * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
 
   vec2 offset = vec2( aberration_strength, aberration_strength );
-  vec2 drunk_with_aberration_r_texcoord = clamp( drunk_texcoord + offset, 0, 1 ); 
-  vec2 drunk_with_aberration_g_texcoord = clamp( drunk_texcoord, 0, 1 ); 
-  vec2 drunk_with_aberration_b_texcoord = clamp( drunk_texcoord - offset, 0, 1 ); 
-  
+
+  vec2 drunk_with_aberration_r_texcoord = clamp( ( drunk_texcoord + offset ), 0, 1 ); 
+  vec2 drunk_with_aberration_g_texcoord = clamp( ( drunk_texcoord ), 0, 1 ); 
+  vec2 drunk_with_aberration_b_texcoord = clamp( ( drunk_texcoord - offset ), 0, 1 ); 
+
   vec3 drunk_radiance;
   vec3 drunk_depth;
   drunk_depth.r = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_r_texcoord * ( scene.resolution - vec2( 1 ) ) ), 0 ).r;

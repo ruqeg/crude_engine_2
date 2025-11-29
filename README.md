@@ -55,4 +55,4 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 [SDL3](https://github.com/ruqeg/SDL),
 [tracy](https://github.com/ruqeg/tracy),
 [meshoptimizer](https://github.com/ruqeg/meshoptimizer),
-[flecs](https://github.com/SanderMertens/flecs)
+[flecs](https://github.com/SanderMertens/flecs),

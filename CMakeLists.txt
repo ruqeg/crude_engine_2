@@ -43,6 +43,7 @@ add_compile_definitions(
   ## !MAIN
   #CRUDE_GRAPHICS_RAY_TRACING_ENABLED=0
   #CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS=0
+  CRUDE_HOST_ENABLED=1
 
   ## !CORE
   CRUDE_CORE_HASHMAP_INITIAL_CAPACITY=16
@@ -102,4 +103,4 @@ add_subdirectory(engine)
 add_subdirectory(game)
 add_subdirectory(editor)
 
-#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
+#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT crude_host)

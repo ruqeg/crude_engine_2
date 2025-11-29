@@ -10,8 +10,8 @@
 
 #include <game/player_system.h>
 
-#define CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE 30
-#define CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT 10
+#define CRUDE_GAME_PLAYER_SANITY_LIMIT ( 2.5 * 60 )
+#define CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT ( 5 * 60 )
 
 CRUDE_ECS_OBSERVER_DECLARE( crude_player_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
@@ -26,7 +26,14 @@ crude_hitbox_callback
   b++;
 }
 
-static void
+CRUDE_API void
+crude_player_update_values_
+(
+  _In_ crude_player                                       *player,
+  _In_ float32                                             delta_time
+);
+
+CRUDE_API void
 crude_player_update_visual_
 (
   _In_ crude_player                                       *player
@@ -55,13 +62,14 @@ crude_player_creation_observer_
     player->drug_withdrawal = 0.f;
     player->sanity = 1.f;
     player->stop_updating_gameplay_values = false;
+    player->stop_updating_visual_values = false;
   }
 }
 
-static void
+void
 crude_player_update_system_
 (
-  _In_ ecs_iter_t *it
+  _In_ ecs_iter_t                                         *it
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_player_update_system_" );
@@ -78,8 +86,12 @@ crude_player_update_system_
     player = &player_per_entity[ i ];
     if ( !player->stop_updating_gameplay_values )
     {
+      crude_player_update_values_( player, it->delta_time );
     }
-    crude_player_update_visual_( player );
+    if ( !player->stop_updating_visual_values )
+    {
+      crude_player_update_visual_( player );
+    }
   }
   CRUDE_PROFILER_END;
 }
@@ -110,14 +122,38 @@ crude_player_update_visual_
 {
   game_t                                                  *game;
   crude_gfx_game_postprocessing_pass_options              *pass_options;
-  
+
   game = game_instance( );
   pass_options = &game->game_postprocessing_pass.options;
+  
+  /* Drug Effect */
+  pass_options->wave_size = CRUDE_LERP( 0, 0.2, CRUDE_MAX( 0.f, player->drug_withdrawal - 0.2f ) );
+  pass_options->wave_texcoord_scale = CRUDE_LERP( 0, 3.5, player->drug_withdrawal );
+  pass_options->wave_absolute_frame_scale = CRUDE_LERP( 0.02, 0.035, player->drug_withdrawal );
+  pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.1f, CRUDE_MAX( 0.f, player->drug_withdrawal - 0.5f ) );
+  pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.05f, CRUDE_MAX( 0.f, player->drug_withdrawal - 0.5f ) );;
+  pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.03f, player->drug_withdrawal );
+  
+  /* Sanity */
+  pass_options->fog_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 0.f } );
+  pass_options->fog_color.w = 5.f * CRUDE_MAX( 0.f, ( 0.5f - player->health ) );
+  pass_options->fog_distance = CRUDE_LERP( 0.f, 25.f, player->sanity );
 
   /* Health Pulse Effect */
-  pass_options->pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 1.f } );
-  pass_options->pulse_distance = 1.f;
-  pass_options->pulse_distance_coeff  = 1.5f;
-  pass_options->pulse_frame_scale = 0.02f;
+  pass_options->pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 1.f + 3.f * ( 1.f - player->health ) } );
+  pass_options->pulse_distance = CRUDE_LERP( 0.8f, 1.5f, player->health );
+  pass_options->pulse_distance_coeff = CRUDE_LERP( 1.f, 3.0f, player->health );
+  pass_options->pulse_frame_scale = CRUDE_LERP( 0.03f, 0.02f, player->health );
   pass_options->pulse_scale = 1.f - player->health;
+}
+
+void
+crude_player_update_values_
+(
+  _In_ crude_player                                       *player,
+  _In_ float32                                             delta_time
+)
+{
+  player->drug_withdrawal += delta_time / CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT;
+  player->sanity -= delta_time / CRUDE_GAME_PLAYER_SANITY_LIMIT;
 }
