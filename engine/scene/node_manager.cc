@@ -41,6 +41,12 @@ crude_node_manager_node_to_json_hierarchy_
 );
 
 void
+crude_node_destroy_hierarchy_
+(
+  _In_ crude_entity                                        entity
+);
+
+void
 crude_node_manager_initialize
 (
   _In_ crude_node_manager                                 *manager,
@@ -82,7 +88,7 @@ crude_node_manager_clear
   {
     if ( crude_hashmap_backet_key_valid( manager->hashed_absolute_filepath_to_node[ i ].key ) )
     {
-      crude_entity_destroy_hierarchy( manager->hashed_absolute_filepath_to_node[ i ].value );
+      crude_node_destroy_hierarchy_( manager->hashed_absolute_filepath_to_node[ i ].value );
     }
     manager->hashed_absolute_filepath_to_node[ i ].key = 0;
   }
@@ -129,12 +135,12 @@ crude_node_manager_remove_node
 
   filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
-  if ( node_index != -1 )
+  if ( node_index == -1 )
   {
     return;
   }
   
-  crude_entity_destroy_hierarchy( manager->hashed_absolute_filepath_to_node[ node_index ].value );
+  crude_node_destroy_hierarchy_( manager->hashed_absolute_filepath_to_node[ node_index ].value );
   CRUDE_HASHMAP_REMOVE( manager->hashed_absolute_filepath_to_node, filename_hashed );
 }
 
@@ -478,4 +484,28 @@ crude_node_manager_node_to_json_hierarchy_
   }
 
   return node_json;
+}
+
+void
+crude_node_destroy_hierarchy_
+(
+  _In_ crude_entity                                        node
+)
+{
+  if ( !crude_entity_valid( node ) )
+  {
+    return;
+  }
+
+  ecs_iter_t it = ecs_children( node.world, node.handle );
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
+      crude_entity_destroy_hierarchy( child );
+    }
+  }
+
+  crude_entity_destroy( node );
 }

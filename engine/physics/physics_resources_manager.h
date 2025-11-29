@@ -33,6 +33,12 @@ crude_physics_resources_manager_deinitialize
   _In_ crude_physics_resources_manager                    *manager
 );
 
+CRUDE_API void
+crude_physics_resources_manager_clear
+(
+  _In_ crude_physics_resources_manager                    *manager
+);
+
 CRUDE_API crude_physics_character_body_handle
 crude_physics_resources_manager_create_character_body
 (

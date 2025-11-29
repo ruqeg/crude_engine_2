@@ -18,7 +18,7 @@ typedef void ( *crude_devmenu_option_callback_function )
 
 typedef bool ( *crude_devmenu_hotkey_pressed_callback_function )
 (
-  _In_ crude_input																				*input
+  _In_ crude_input                                        *input
 );
 
 typedef struct crude_devmenu_option
@@ -68,10 +68,10 @@ crude_devmenu_option devmenu_options[ ] =
 void
 crude_devmenu_initialize
 (
-	_In_ crude_devmenu																			*devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
-	devmenu->enabled = false;
+  devmenu->enabled = false;
   devmenu->selected_option = 0;
   crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler );
   crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector );
@@ -85,7 +85,7 @@ crude_devmenu_initialize
 void
 crude_devmenu_deinitialize
 (
-	_In_ crude_devmenu																			*devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   crude_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
@@ -100,22 +100,22 @@ crude_devmenu_deinitialize
 void
 crude_devmenu_draw
 (
-	_In_ crude_devmenu																			*devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   game_t                                                  *game;
 
   game = game_instance( );
   
-	if ( devmenu->enabled )
-	{
+  if ( devmenu->enabled )
+  {
     ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
     {
-	    ImGui::SetCursorPos( ImVec2( i * ( 100 ), 0 ) );
+      ImGui::SetCursorPos( ImVec2( i * ( 100 ), 0 ) );
       if ( ImGui::Button( devmenu_options[ i ].name, ImVec2( 100, 25 ) ) )
       {
         devmenu_options[ i ].callback( devmenu );
@@ -138,7 +138,7 @@ crude_devmenu_draw
 void
 crude_devmenu_update
 (
-	_In_ crude_devmenu																			*devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   crude_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
@@ -153,17 +153,17 @@ crude_devmenu_update
 void
 crude_devmenu_handle_input
 (
-	_In_ crude_devmenu																			*devmenu,
-	_In_ crude_input																				*input
+  _In_ crude_devmenu                                      *devmenu,
+  _In_ crude_input                                        *input
 )
 {
   game_t                                                  *game;
 
   game = game_instance( );
   
-	if ( input->keys[ SDL_SCANCODE_F4 ].pressed )
-	{
-		devmenu->enabled = !devmenu->enabled;
+  if ( input->keys[ SDL_SCANCODE_F4 ].pressed )
+  {
+    devmenu->enabled = !devmenu->enabled;
     
     crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
@@ -178,7 +178,7 @@ crude_devmenu_handle_input
       player_controller->input_enabled = true;
       crude_platform_hide_cursor( *window_handle );
     }
-	}
+  }
 
   for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
   {
@@ -197,7 +197,7 @@ crude_devmenu_handle_input
 void
 crude_devmenu_debug_gltf_view_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   game_t *game = game_instance( );
@@ -208,7 +208,7 @@ crude_devmenu_debug_gltf_view_callback
 bool
 crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
 (
-  _In_ crude_input																				*input
+  _In_ crude_input                                        *input
 )
 {
   return false;
@@ -217,7 +217,7 @@ crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
 void
 crude_devmenu_collisions_view_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   game_t *game = game_instance( );
@@ -227,7 +227,7 @@ crude_devmenu_collisions_view_callback
 bool
 crude_devmenu_collisions_view_callback_hotkey_pressed_callback
 (
-  _In_ crude_input																				*input
+  _In_ crude_input                                        *input
 )
 {
   return false;
@@ -236,7 +236,7 @@ crude_devmenu_collisions_view_callback_hotkey_pressed_callback
 void
 crude_devmenu_free_camera_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   game_t *game = game_instance( );
@@ -249,7 +249,7 @@ crude_devmenu_free_camera_callback
 bool
 crude_devmenu_free_camera_callback_hotkey_pressed_callback
 (
-  _In_ crude_input																				*input
+  _In_ crude_input                                        *input
 )
 {
   return input->keys[ SDL_SCANCODE_F1 ].pressed;
@@ -258,7 +258,7 @@ crude_devmenu_free_camera_callback_hotkey_pressed_callback
 void
 crude_devmenu_reload_techniques_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   game_push_reload_techniques_command( game_instance( ) );
@@ -267,7 +267,7 @@ crude_devmenu_reload_techniques_callback
 bool
 crude_devmenu_reload_techniques_hotkey_pressed_callback
 (
-  _In_ crude_input																				*input
+  _In_ crude_input                                        *input
 )
 {
   return input->keys[ SDL_SCANCODE_LCTRL ].pressed && input->keys[ SDL_SCANCODE_G ].pressed && input->keys[ SDL_SCANCODE_R ].pressed;
@@ -279,7 +279,7 @@ crude_devmenu_reload_techniques_hotkey_pressed_callback
 void
 crude_devmenu_gpu_visual_profiler_initialize
 (
-	_In_ crude_devmenu_gpu_visual_profiler									*dev_gpu_profiler
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 )
 {
   game_t                                                  *game;
@@ -307,7 +307,7 @@ crude_devmenu_gpu_visual_profiler_initialize
 void
 crude_devmenu_gpu_visual_profiler_deinitialize
 (
-	_In_ crude_devmenu_gpu_visual_profiler									*dev_gpu_profiler
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 )
 {
   game_t                                                  *game;
@@ -322,7 +322,7 @@ crude_devmenu_gpu_visual_profiler_deinitialize
 void
 crude_devmenu_gpu_visual_profiler_update
 (
-	_In_ crude_devmenu_gpu_visual_profiler									*dev_gpu_profiler
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 )
 {
   game_t                                                  *game;
@@ -387,7 +387,7 @@ crude_devmenu_gpu_visual_profiler_update
 void
 crude_devmenu_gpu_visual_profiler_draw
 (
-	_In_ crude_devmenu_gpu_visual_profiler									*dev_gpu_profiler
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 )
 {
   game_t                                                  *game;
@@ -630,7 +630,7 @@ crude_devmenu_gpu_visual_profiler_draw
 void
 crude_devmenu_gpu_visual_profiler_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
@@ -644,7 +644,7 @@ crude_devmenu_gpu_visual_profiler_callback
 void
 crude_devmenu_texture_inspector_initialize
 (
-	_In_ crude_devmenu_texture_inspector									  *dev_texture_inspector
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 )
 {
   game_t                                                  *game;
@@ -658,7 +658,7 @@ crude_devmenu_texture_inspector_initialize
 void
 crude_devmenu_texture_inspector_deinitialize
 (
-	_In_ crude_devmenu_texture_inspector									  *dev_texture_inspector
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 )
 {
 }
@@ -666,7 +666,7 @@ crude_devmenu_texture_inspector_deinitialize
 void
 crude_devmenu_texture_inspector_update
 (
-	_In_ crude_devmenu_texture_inspector									  *dev_texture_inspector
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 )
 {
 }
@@ -674,7 +674,7 @@ crude_devmenu_texture_inspector_update
 void
 crude_devmenu_texture_inspector_draw
 (
-	_In_ crude_devmenu_texture_inspector									  *dev_texture_inspector
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 )
 {
   char const                                              *preview_texture_name;
@@ -752,7 +752,7 @@ crude_devmenu_texture_inspector_draw
 void
 crude_devmenu_texture_inspector_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
@@ -839,7 +839,7 @@ crude_devmenu_render_graph_draw
 void
 crude_devmenu_render_graph_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->render_graph.enabled = !devmenu->render_graph.enabled;
@@ -932,7 +932,7 @@ crude_devmenu_gpu_pool_draw
 void
 crude_devmenu_gpu_pool_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->gpu_pool.enabled = !devmenu->gpu_pool.enabled;
@@ -1038,7 +1038,7 @@ crude_devmenu_scene_renderer_draw
 void
 crude_devmenu_scene_renderer_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
@@ -1179,7 +1179,7 @@ crude_devmenu_nodes_tree_draw
 void
 crude_devmenu_nodes_tree_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->nodes_tree.enabled = !devmenu->nodes_tree.enabled;
@@ -1257,7 +1257,7 @@ crude_devmenu_gameplay_draw
 void
 crude_devmenu_gameplay_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->gameplay.enabled = !devmenu->gameplay.enabled;

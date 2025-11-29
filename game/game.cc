@@ -16,6 +16,7 @@
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_debug_system.h>
+#include <engine/physics/physics_system.h>
 #include <engine/external/game_components.h>
 #include <game/player_controller_system.h>
 #include <game/player_system.h>
@@ -29,7 +30,6 @@ game_t                                                    *game_instance_;
 CRUDE_ECS_SYSTEM_DECLARE( game_update_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_graphics_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_input_system_ );
-CRUDE_ECS_SYSTEM_DECLARE( game_physics_system_ );
 
 static void
 game_initialize_allocators_
@@ -102,12 +102,6 @@ game_update_system_
 
 static void
 game_input_system_
-(
-  _In_ ecs_iter_t                                         *it
-);
-
-static void
-game_physics_system_
 (
   _In_ ecs_iter_t                                         *it
 );
@@ -187,7 +181,7 @@ game_initialize
   
   game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   game->game_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
-  game->game_debug_system_context.string_bufffer = &game->debug_strings_buffer;
+  game->game_debug_system_context.constant_string_bufffer = &game->debug_constant_strings_buffer;
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
 
   game_initialize_platform_( game );
@@ -206,8 +200,6 @@ game_initialize
     { .id = ecs_id( crude_input ) },
     { .id = ecs_id( crude_window_handle ) },
   } );
-  
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_physics_system_, EcsOnUpdate, game, { } );
 }
 
 void
@@ -228,22 +220,16 @@ game_postupdate
       bool                                                 buffer_recreated;
 
       vkDeviceWaitIdle( game->gpu.vk_device );
-
+      
       crude_node_manager_clear( &game->node_manager );
-      crude_gfx_model_renderer_resources_manager_clear( &game->model_renderer_resources_manager );
+      crude_physics_resources_manager_clear( &game->physics_resources_manager );
+      crude_string_buffer_clear( &game->debug_strings_buffer );
+
       game_setup_custom_preload_nodes_( game );
-      game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].reload_scene.filepath );
+      game->main_node = crude_node_manager_get_node( &game->node_manager, game->current_scene_absolute_filepath );
       game_setup_custom_postload_nodes_( game );
 
-      buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
-      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
-
-      if ( buffer_recreated )
-      {
-        crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
-      }
-
-      NFD_FreePathU8( game->commands_queue[ i ].reload_scene.filepath );
+      crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
       break;
     }
     case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
@@ -297,13 +283,11 @@ game_deinitialize
 void
 game_push_reload_scene_command
 (
-  _In_ game_t                                             *game,
-  _In_ nfdu8char_t                                        *filepath
+  _In_ game_t                                             *game
 )
 {
   crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
   command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE;
-  command.reload_scene.filepath = filepath;
   CRUDE_ARRAY_PUSH( game->commands_queue, command );
 }
 
@@ -405,6 +389,16 @@ game_setup_custom_preload_nodes_
   _In_ game_t                                             *game
 )
 {
+  char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
+  char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
+
+  game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
+  game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
+  CRUDE_ENTITY_DISABLE( game->template_enemy_node );
+
+  game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
+  game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
+  CRUDE_ENTITY_DISABLE( game->template_serum_station_node );
 }
 
 void
@@ -451,18 +445,6 @@ game_input_system_
   }
   CRUDE_PROFILER_END( "game_input_system_" );
 #endif /* CRUDE_DEVELOP */
-}
-
-void
-game_physics_system_
-(
-  _In_ ecs_iter_t                                         *it
-)
-{
-  CRUDE_PROFILER_ZONE_NAME( "game_physics_system_" );
-  game_t *game = ( game_t* )it->ctx;
-  crude_physics_update( &game->physics, CRUDE_MIN( it->delta_time, 0.016f ) );
-  CRUDE_PROFILER_END;
 }
 
 bool
@@ -623,6 +605,7 @@ game_initialize_constant_strings_
   game->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, compiled_shaders_relative_directory );
   
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+  crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
 }
 
@@ -632,6 +615,7 @@ game_deinitialize_constant_strings_
   _In_ game_t                                             *game
 )
 {
+  crude_string_buffer_deinitialize( &game->debug_constant_strings_buffer );
   crude_string_buffer_deinitialize( &game->constant_strings_buffer );
   crude_string_buffer_deinitialize( &game->debug_strings_buffer );
   crude_string_buffer_deinitialize( &game->game_strings_buffer );
@@ -672,6 +656,10 @@ game_initialize_physics_
   physics_creation.collision_manager = &game->collision_resources_manager;
   physics_creation.manager = &game->physics_resources_manager;
   crude_physics_initialize( &game->physics, &physics_creation );
+
+  game->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
+  game->physics_system_context.physics = &game->physics;
+  crude_physics_system_import( game->engine->world, &game->physics_system_context );
 }
 
 void
@@ -680,6 +668,8 @@ game_initialize_scene_
   _In_ game_t                                             *game
 )
 {
+  crude_string_copy( game->current_scene_absolute_filepath, game->scene_absolute_filepath, sizeof( game->current_scene_absolute_filepath ) );
+
   crude_node_manager_creation                              node_manager_creation;
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
   node_manager_creation.world = game->engine->world;
@@ -692,18 +682,6 @@ game_initialize_scene_
   node_manager_creation.allocator = &game->allocator;
   crude_node_manager_initialize( &game->node_manager, &node_manager_creation );
   
-  {
-    char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
-    game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
-    game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
-    CRUDE_ENTITY_DISABLE( game->template_enemy_node );
-  }
-  {
-    char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
-    game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
-    game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
-    CRUDE_ENTITY_DISABLE( game->template_serum_station_node );
-  }
   game_setup_custom_preload_nodes_( game );
   game->main_node = crude_node_manager_get_node( &game->node_manager, game->scene_absolute_filepath );
   game_setup_custom_postload_nodes_( game );

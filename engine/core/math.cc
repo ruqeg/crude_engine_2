@@ -236,13 +236,13 @@ crude_raycast_plane
 
   if ( t >= 0.0f )
   {
-		if ( result )
+    if ( result )
     {
-			result->t = t;
-			result->hit = true;
-			result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t ) );
-			result->normal = XMVector3Normalize( plane );
-		}
+      result->t = t;
+      result->hit = true;
+      result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t ) );
+      result->normal = XMVector3Normalize( plane );
+    }
     return true;
   }
 
@@ -280,10 +280,10 @@ crude_raycast_triangle
   {
     if ( result )
     {
-			result->t = result->t;
-			result->hit = true;
-			result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
-			result->normal = XMVector3Normalize( plane );
+      result->t = result->t;
+      result->hit = true;
+      result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
+      result->normal = XMVector3Normalize( plane );
     }
     return true;
   }

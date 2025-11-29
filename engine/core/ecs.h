@@ -125,14 +125,6 @@ crude_entity_destroy_hierarchy
 );
 
 CRUDE_API crude_entity
-crude_entity_clone
-(
-  _In_ crude_entity                                        dst,
-  _In_ crude_entity                                        src,
-  _In_ bool                                                copy_value
-);
-
-CRUDE_API crude_entity
 crude_entity_copy
 (
   _In_ crude_entity                                        src,

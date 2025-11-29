@@ -43,7 +43,7 @@ crude_platform_service_deinitialize
 void
 crude_platform_hide_cursor
 (
-	_In_ crude_window_handle																window_handle
+  _In_ crude_window_handle                                window_handle
 )
 {
   SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), true );
@@ -52,7 +52,7 @@ crude_platform_hide_cursor
 void
 crude_platform_show_cursor
 (
-	_In_ crude_window_handle																window_handle
+  _In_ crude_window_handle                                window_handle
 )
 {
   SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle.value ), false );

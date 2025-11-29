@@ -16,7 +16,7 @@ crude_engine_physics_collision_shape_create_observer_
   ecs_iter_t *it
 )
 {
-	crude_physics_debug_system_context *ctx = CRUDE_CAST( crude_physics_debug_system_context*, it->ctx );
+  crude_physics_debug_system_context *ctx = CRUDE_CAST( crude_physics_debug_system_context*, it->ctx );
   crude_physics_collision_shape *collision_shapes_per_entity = ecs_field( it, crude_physics_collision_shape, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
@@ -57,7 +57,7 @@ void
 crude_physics_debug_system_import
 (
   _In_ ecs_world_t                                        *world,
-	_In_ crude_physics_debug_system_context									*ctx
+  _In_ crude_physics_debug_system_context                  *ctx
 )
 {
   ECS_IMPORT( world, crude_physics_components );

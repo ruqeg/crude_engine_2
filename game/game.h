@@ -9,7 +9,7 @@
 #include <engine/platform/platform_components.h>
 #include <engine/scene/collisions_resources_manager.h>
 #include <engine/physics/physics_debug_system.h>
-#include <engine/physics/physics.h>
+#include <engine/physics/physics_system.h>
 #include <engine/external/game_debug_system.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/devmenu.h>
@@ -28,7 +28,6 @@ typedef struct crude_game_queue_command
   {
     struct 
     {
-      nfdu8char_t                                         *filepath;
     } reload_scene;
     struct 
     {
@@ -66,7 +65,11 @@ typedef struct game_t
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      game_strings_buffer;
+#if CRUDE_DEVELOP
   crude_string_buffer                                      debug_strings_buffer;
+  crude_string_buffer                                      debug_constant_strings_buffer;
+#endif
+  char                                                     current_scene_absolute_filepath[ 1024 ];
 
   crude_devmenu                                            devmenu;
 
@@ -104,6 +107,7 @@ typedef struct game_t
   /* Game */
   crude_entity                                             focused_camera_node;
   /* System Context */
+  crude_physics_system_context                             physics_system_context;
 #if CRUDE_DEVELOP
   crude_physics_debug_system_context                       physics_debug_system_context;
   crude_game_debug_system_context                          game_debug_system_context;
@@ -138,8 +142,7 @@ game_deinitialize
 CRUDE_API void
 game_push_reload_scene_command
 (
-  _In_ game_t                                             *game,
-  _In_ nfdu8char_t                                        *filepath
+  _In_ game_t                                             *game
 );
 
 CRUDE_API void

@@ -180,19 +180,6 @@ crude_entity_destroy_hierarchy
 }
 
 crude_entity
-crude_entity_clone
-(
-  _In_ crude_entity                                        dst,
-  _In_ crude_entity                                        src,
-  _In_ bool                                                copy_value
-)
-{
-  dst.world = src.world;
-  dst.handle = ecs_clone( src.world, dst.handle, src.handle, copy_value );
-  return dst;
-}
-
-crude_entity
 crude_entity_copy
 (
   _In_ crude_entity                                        src,

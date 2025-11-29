@@ -92,6 +92,11 @@ crude_player_update_system_
     {
       crude_player_update_visual_( player );
     }
+
+    if ( player->health < 0.f || player->drug_withdrawal > 1.f || player->sanity < 0.f )
+    {
+      game_push_reload_scene_command( game );
+    }
   }
   CRUDE_PROFILER_END;
 }

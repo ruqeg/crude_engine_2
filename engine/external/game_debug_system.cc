@@ -54,13 +54,13 @@ void
 crude_game_debug_system_import
 (
   _In_ ecs_world_t                                        *world,
-	_In_ crude_game_debug_system_context									  *ctx
+  _In_ crude_game_debug_system_context                    *ctx
 )
 {
   if ( !ctx->enemy_spawnpoint_model_absolute_filepath )
   {
-    ctx->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
-    ctx->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
+    ctx->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->constant_string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
+    ctx->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->constant_string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
   }
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_level_01 ) }

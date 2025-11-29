@@ -41,6 +41,22 @@ crude_physics_resources_manager_deinitialize
   crude_resource_pool_deinitialize( &manager->static_bodies_resource_pool );
 }
 
+void
+crude_physics_resources_manager_clear
+(
+  _In_ crude_physics_resources_manager                    *manager
+)
+{  for ( int32 i = CRUDE_ARRAY_LENGTH( manager->character_bodies ) - 1; i >= 0; --i )
+  {
+    crude_physics_resources_manager_destroy_character_body( manager, manager->character_bodies[ i ] );
+  }
+
+  for ( int32 i = CRUDE_ARRAY_LENGTH( manager->static_bodies ) - 1; i >= 0; --i )
+  {
+    crude_physics_resources_manager_destroy_static_body( manager, manager->static_bodies[ i ] );
+  }
+}
+
 crude_physics_character_body_handle
 crude_physics_resources_manager_create_character_body
 (
