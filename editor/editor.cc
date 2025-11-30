@@ -167,7 +167,7 @@ crude_editor_initialize
   
   editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   editor->game_debug_system_context.resources_absolute_directory = editor->resources_absolute_directory;
-  editor->game_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
+  editor->game_debug_system_context.constant_string_bufffer = &editor->debug_constant_strings_buffer;
   crude_game_debug_system_import( editor->engine->world, &editor->game_debug_system_context );
 
   crude_editor_initialize_platform_( editor );
@@ -532,6 +532,7 @@ crude_editor_initialize_constant_strings_
   
   crude_string_buffer_initialize( &editor->dynamic_strings_buffer, 4096, crude_heap_allocator_pack( &editor->allocator ) );
   crude_string_buffer_initialize( &editor->debug_strings_buffer, 4096, crude_heap_allocator_pack( &editor->allocator ) );
+  crude_string_buffer_initialize( &editor->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &editor->allocator ) );
 
   crude_string_buffer_initialize( &editor->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &editor->allocator ) );
   editor->working_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s", working_absolute_directory );
@@ -552,6 +553,7 @@ crude_editor_deinitialize_constant_strings_
   crude_string_buffer_deinitialize( &editor->constant_strings_buffer );
   crude_string_buffer_deinitialize( &editor->dynamic_strings_buffer );
   crude_string_buffer_deinitialize( &editor->debug_strings_buffer );
+  crude_string_buffer_deinitialize( &editor->debug_constant_strings_buffer );
 }
 
 void
@@ -722,8 +724,8 @@ crude_editor_setup_custom_nodes_to_scene_
     editor_camera_node_camera.far_z = 1000;
 
     editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
-    XMStoreFloat3( &editor_camera_node_crude_free_camera.moving_speed_multiplier, XMVectorReplicate( 7 ) );
-    XMStoreFloat2( &editor_camera_node_crude_free_camera.rotating_speed_multiplier, XMVectorReplicate( -0.002 ) );
+    editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
+    editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
     editor_camera_node_crude_free_camera.input_enabled = true;
     editor_camera_node_crude_free_camera.input_node = editor->platform_node;
 

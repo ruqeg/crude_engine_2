@@ -394,11 +394,11 @@ game_setup_custom_preload_nodes_
 
   game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
   game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
-  CRUDE_ENTITY_DISABLE( game->template_enemy_node );
+  crude_entity_enable_hierarchy( game->template_enemy_node, false );
 
   game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
   game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
-  CRUDE_ENTITY_DISABLE( game->template_serum_station_node );
+  crude_entity_enable_hierarchy( game->template_serum_station_node, false );
 }
 
 void
@@ -655,6 +655,7 @@ game_initialize_physics_
   crude_physics_creation physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &game->collision_resources_manager;
   physics_creation.manager = &game->physics_resources_manager;
+  physics_creation.world = game->engine->world;
   crude_physics_initialize( &game->physics, &physics_creation );
 
   game->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );

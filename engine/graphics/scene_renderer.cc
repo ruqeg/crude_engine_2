@@ -1116,60 +1116,62 @@ crude_scene_renderer_register_nodes_instances_
 {
   ecs_iter_t it = ecs_children( node.world, node.handle );
   bool local_model_initialized = false;
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) )
+  {
+    crude_gltf const                                  *child_gltf;
+    crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+  
+    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
+  
+    model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+    model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
+    model_renderer_resources_instant.node = node;
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+  }
+
+#if CRUDE_DEVELOP
+  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_debug_collision ) && CRUDE_ENTITY_HAS_COMPONENT( node, crude_physics_collision_shape ) )
+  {
+    crude_debug_collision const                       *child_gltf;
+    crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+    
+    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_debug_collision );
+  
+    model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+    model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
+    model_renderer_resources_instant.node = node;
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+  }
+  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_debug_gltf ) )
+  {
+    crude_debug_gltf const                            *child_gltf;
+    crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
+    
+    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_debug_gltf );
+  
+    model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+    model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
+    model_renderer_resources_instant.node = node;
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
+  }
+#endif
+
+  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_light ) )
+  {
+    crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
+    light_gpu.node = node;
+    CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
+  }
+  
+  *model_initialized |= local_model_initialized;
 
   while ( ecs_children_next( &it ) )
   {
     for ( size_t i = 0; i < it.count; ++i )
     {
       crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_gltf ) )
-      {
-        crude_gltf const                                  *child_gltf;
-        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
 
-        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_gltf );
-
-        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
-        model_renderer_resources_instant.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
-      }
-
-#if CRUDE_DEVELOP
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_collision ) && CRUDE_ENTITY_HAS_COMPONENT( child, crude_physics_collision_shape ) )
-      {
-        crude_debug_collision const                       *child_gltf;
-        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
-        
-        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_collision );
-
-        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
-        model_renderer_resources_instant.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
-      }
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_debug_gltf ) )
-      {
-        crude_debug_gltf const                            *child_gltf;
-        crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
-        
-        child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( child, crude_debug_gltf );
-
-        model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-        model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
-        model_renderer_resources_instant.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
-      }
-#endif
-
-      if ( CRUDE_ENTITY_HAS_COMPONENT( child, crude_light ) )
-      {
-        crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
-        light_gpu.node = child;
-        CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
-      }
-
-      *model_initialized |= local_model_initialized;
       crude_scene_renderer_register_nodes_instances_( scene_renderer, child, &local_model_initialized );
       *model_initialized |= local_model_initialized;
     }

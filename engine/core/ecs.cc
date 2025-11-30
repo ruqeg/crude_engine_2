@@ -224,3 +224,39 @@ crude_entity_copy_hierarchy
 
   return new_node;
 }
+
+void
+crude_entity_enable
+(
+  _In_ crude_entity                                        entity,
+  _In_ bool                                                enabled
+)
+{
+  ecs_enable( entity.world, entity.handle, enabled );
+}
+
+void
+crude_entity_enable_hierarchy
+(
+  _In_ crude_entity                                        entity,
+  _In_ bool                                                enabled
+)
+{
+  if ( !crude_entity_valid( entity ) )
+  {
+    return;
+  }
+  
+  ecs_iter_t it = ecs_children( entity.world, entity.handle );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = entity.world } );
+      crude_entity_enable( child, enabled );
+    }
+  }
+  
+  crude_entity_enable( entity, enabled );
+}

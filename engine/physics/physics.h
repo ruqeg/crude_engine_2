@@ -10,12 +10,15 @@ typedef struct crude_physics_raycast_result
 
 typedef struct crude_physics_creation
 {
+  ecs_world_t                                             *world;
   crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
+  ecs_world_t                                             *world;
+  ecs_query_t                                             *static_body_handle_query;
   crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;
   bool                                                     simulation_enabled;
@@ -32,13 +35,6 @@ CRUDE_API void
 crude_physics_deinitialize
 (
   _In_ crude_physics                                      *physics
-);
-
-CRUDE_API void
-crude_physics_update
-(
-  _In_ crude_physics                                      *physics,
-  _In_ float64                                             delta_time
 );
 
 CRUDE_API void

@@ -63,11 +63,13 @@ crude_physics_collision_callback_container_empty
 void
 crude_physics_collision_callback_container_fun
 (
-  _In_ crude_physics_collision_callback_container          container
+  _In_ crude_physics_collision_callback_container          container,
+  _In_ crude_entity                                        character_node,
+  _In_ crude_entity                                        static_body_node
 )
 {
   if ( container.fun )
   {
-    container.fun( container.ctx );
+    container.fun( container.ctx, character_node, static_body_node );
   }
 }

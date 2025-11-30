@@ -139,6 +139,20 @@ crude_entity_copy_hierarchy
   _In_ bool                                                copy_value
 );
 
+CRUDE_API void
+crude_entity_enable
+(
+  _In_ crude_entity                                        entity,
+  _In_ bool                                                enabled
+);
+
+CRUDE_API void
+crude_entity_enable_hierarchy
+(
+  _In_ crude_entity                                        entity,
+  _In_ bool                                                enabled
+);
+
 /************************************************
  *
  * ECS Macros
@@ -150,16 +164,6 @@ crude_entity_copy_hierarchy
   CRUDE_ENTITY_SET_COMPONENT( entity, component, ##__VA_ARGS__ );\
   entity;\
 })
-
-#define CRUDE_ENTITY_DISABLE( entity )\
-{\
-  ecs_add_id( entity.world, entity.handle, EcsDisabled );\
-}
-
-#define CRUDE_ENTITY_ENABLE( entity )\
-{\
-  ecs_remove_id( entity.world, entity.handle, EcsDisabled );\
-}
 
 #define CRUDE_ENTITY_ADD_COMPONENT( entity, component )\
 {\

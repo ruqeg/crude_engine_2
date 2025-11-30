@@ -37,18 +37,24 @@ crude_free_camera_update_system
     XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
     XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
     XMVECTOR basis_forward = XMVector3Normalize( node_to_world.r[ 2 ] );
+    
+    float32 moving_speed = free_cameras[ i ].moving_speed_multiplier;
+    if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
+    {
+      moving_speed = moving_speed * 2.f;
+    }
 
     if ( moving_right )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_right, free_cameras[i].moving_speed_multiplier.x * moving_right * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_right, moving_speed * moving_right * it->delta_time ) );
     }
     if ( moving_forward )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, free_cameras[i].moving_speed_multiplier.z * moving_forward * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, moving_speed * moving_forward * it->delta_time ) );
     }
     if ( moving_up )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_up, free_cameras[i].moving_speed_multiplier.y * moving_up * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_up, moving_speed * moving_up * it->delta_time ) );
     }
     XMStoreFloat3( &transforms[ i ].translation, translation );
 
@@ -57,8 +63,8 @@ crude_free_camera_update_system
       XMVECTOR rotation = XMLoadFloat4( &transforms[ i ].rotation );
       XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
 
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier.y * input->mouse.rel.y ) );
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier.x * input->mouse.rel.x ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.y ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.x ) );
       XMStoreFloat4( &transforms[ i ].rotation, rotation );
     }
   }

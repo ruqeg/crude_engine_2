@@ -12,18 +12,29 @@
 
 #define CRUDE_GAME_PLAYER_SANITY_LIMIT ( 2.5 * 60 )
 #define CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT ( 5 * 60 )
+#define CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY ( 0.1 )
+#define CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY ( 0.1 )
 
 CRUDE_ECS_OBSERVER_DECLARE( crude_player_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
 
 static void
-crude_hitbox_callback
+crude_player_enemy_hitbox_callback
 (
-  _In_ void                                               *ctx
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        character_node,
+  _In_ crude_entity                                        static_body_node
 )
 {
-  static int b =0;
-  b++;
+  game_t *game = game_instance( );
+
+  crude_physics_static_body_handle *static_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_physics_static_body_handle );
+  crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *static_body_handle );
+  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );;
+
+  player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
+  player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
+  static_body->enabeld = false;
 }
 
 CRUDE_API void
@@ -56,7 +67,9 @@ crude_player_creation_observer_
     crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
     crude_physics_character_body *hitbox_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *hitbox_body_handle );
-    hitbox_body->callback_container.fun = crude_hitbox_callback;
+    
+    hitbox_body->callback_container.ctx = (void*)1;
+    hitbox_body->callback_container.fun = crude_player_enemy_hitbox_callback;
 
     player->health = 1.f;
     player->drug_withdrawal = 0.f;

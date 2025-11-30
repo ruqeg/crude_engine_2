@@ -781,7 +781,7 @@ crude_devmenu_memory_visual_profiler_draw
         1
       );
 
-      sprintf( buf, "%s: O %.3f MB | C %.3f MB | R %.3f", allocator_name, allocator_occupied / (1024*1024.f), allocator_capacity / (1024*1024.f), allocator_occupied_precent );
+      sprintf( buf, "%s: O %.3f MB | C %.3f MB | R %.3f", allocator_name, allocator_occupied / ( 1024.f * 1024.f ), allocator_capacity / ( 1024.f * 1024.f ), allocator_occupied_precent );
       draw_list->AddText( { cursor_pos.x + graph_width + 20, cursor_pos.y + 0.5f * rect_height }, 0xffffffff, buf );
 
       cursor_pos.y += rect_height;

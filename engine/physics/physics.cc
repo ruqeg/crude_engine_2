@@ -17,9 +17,18 @@ crude_physics_initialize
   _In_ crude_physics_creation const                       *creation
 )
 {
+  ecs_query_desc_t                                         query_desc;
+  
+  physics->world = creation->world;
   physics->manager = creation->manager;
   physics->collision_manager = creation->collision_manager;
   physics->simulation_enabled = true;
+  
+  query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
+  query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body_handle );
+  query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
+  query_desc.terms[ 2 ].id = ecs_id( crude_transform );
+  physics->static_body_handle_query = ecs_query_init( creation->world, &query_desc );
 }
 
 void
@@ -28,113 +37,6 @@ crude_physics_deinitialize
   _In_ crude_physics                                      *physics
 )
 {
-}
-
-void
-crude_physics_update
-(
-  _In_ crude_physics                                      *physics,
-  _In_ float64                                             delta_time
-)
-{
-  if ( !physics->simulation_enabled )
-  {
-    return;
-  }
-
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->manager->character_bodies ); ++i )
-  {
-    crude_transform                                       *transform;
-    crude_physics_collision_shape                         *collision_shape;
-    crude_physics_character_body                          *character_body;
-    crude_physics_character_body_handle                    character_body_handle;
-    XMMATRIX                                               node_to_parent;
-    XMMATRIX                                               parent_to_world;
-    XMMATRIX                                               node_to_world;
-    XMVECTOR                                               translation;
-    XMVECTOR                                               velocity;
-
-    character_body_handle = physics->manager->character_bodies[ i ];
-    character_body = crude_physics_resources_manager_access_character_body( physics->manager, character_body_handle );
-
-    transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( character_body->node, crude_transform );
-    collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( character_body->node, crude_physics_collision_shape );
-
-    velocity = XMLoadFloat3( &character_body->velocity );
-    
-    parent_to_world = crude_transform_parent_to_world( character_body->node );
-    node_to_parent = crude_transform_node_to_parent( transform );
-    node_to_world = XMMatrixMultiply( node_to_parent, parent_to_world );
-
-    translation = XMVectorAdd( node_to_world.r[ 3 ], velocity * CRUDE_MIN( delta_time, 1.f ) );
-
-    character_body->on_floor = false;
-
-    for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->manager->static_bodies ); ++s )
-    {
-      crude_physics_static_body                           *second_body;
-      crude_physics_collision_shape                       *second_collision_shape;
-      crude_transform                                     *second_transform;
-      XMMATRIX                                             second_transform_mesh_to_world;
-      XMVECTOR                                             second_translation, closest_point;
-      bool                                                 intersected;
-
-      second_body = crude_physics_resources_manager_access_static_body( physics->manager, physics->manager->static_bodies[ s ] );
-
-      if ( !( character_body->mask & second_body->layer ) )
-      {
-        continue;
-      }
-
-      second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
-      second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
-      second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
-      second_translation = second_transform_mesh_to_world.r[ 3 ];
-
-      if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-      {
-        XMVECTOR                                           second_box_half_extent;
-
-        second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
-        closest_point = crude_closest_point_to_obb( translation, second_translation, second_box_half_extent, second_transform_mesh_to_world );
-        intersected = crude_intersection_sphere_obb( closest_point, translation, collision_shape->sphere.radius );
-      }
-      else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-      {
-        crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
-        closest_point = crude_octree_closest_point( octree, translation );
-        intersected = crude_intersection_sphere_triangle( closest_point, translation, collision_shape->sphere.radius );
-      }
-      else
-      {
-        CRUDE_ASSERT( false );
-      }
-      
-      if ( intersected )
-      {
-        crude_physics_collision_callback_container_fun( character_body->callback_container );
-
-        if ( character_body->mask & 1 )
-        {
-          XMVECTOR                                         closest_point_to_translation;
-          float32                                          translation_to_closest_point_projected_length;
-
-          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-
-          translation = XMVectorAdd( closest_point, XMVectorScale( XMVector3Normalize( closest_point_to_translation ), collision_shape->sphere.radius ) );
-            
-          closest_point_to_translation = XMVectorSubtract( translation, closest_point );
-          translation_to_closest_point_projected_length = -1.f * XMVectorGetX( XMVector3Dot( closest_point_to_translation, XMVectorSet( 0, -1, 0, 1 ) ) );
-          if ( translation_to_closest_point_projected_length > collision_shape->sphere.radius * 0.75f && translation_to_closest_point_projected_length < collision_shape->sphere.radius + 0.00001f ) // !TODO it works, so why not ahahah ( i like this solution :D )
-          {
-            character_body->on_floor = true;
-          }
-        }
-      }
-    }
-
-    XMStoreFloat3( &transform->translation, XMVectorSubtract( translation, parent_to_world.r[ 3 ] ) );
-  }
 }
 
 void
@@ -167,52 +69,79 @@ crude_physics_cast_ray
   _Out_opt_ crude_physics_raycast_result                  *result
 )
 {
-  float32 nearest_t = FLT_MAX;
+  ecs_iter_t                                               static_body_handle_it;
+  float32                                                  nearest_t;
 
-  for ( uint32 s = 0; s < CRUDE_ARRAY_LENGTH( physics->manager->static_bodies ); ++s )
+  nearest_t = FLT_MAX;
+
+  static_body_handle_it = ecs_query_iter( physics->world, physics->static_body_handle_query );
+  while ( ecs_query_next( &static_body_handle_it ) )
   {
-    crude_physics_static_body                           *second_body;
-    crude_physics_collision_shape                       *second_collision_shape;
-    crude_transform                                     *second_transform;
-    XMMATRIX                                             second_transform_mesh_to_world;
-    XMVECTOR                                             second_translation;
-    crude_raycast_result                                 current_result;
-    bool                                                 intersected;
+    crude_physics_collision_shape                         *second_collision_shape_per_entity;
+    crude_transform                                       *second_transform_per_entity;
+    crude_physics_static_body_handle                      *second_body_handle_per_entity;
 
-    second_body = crude_physics_resources_manager_access_static_body( physics->manager, physics->manager->static_bodies[ s ] );
+    second_body_handle_per_entity = ecs_field( &static_body_handle_it, crude_physics_static_body_handle, 0 );
+    second_collision_shape_per_entity = ecs_field( &static_body_handle_it, crude_physics_collision_shape, 1 );
+    second_transform_per_entity = ecs_field( &static_body_handle_it, crude_transform, 2 );
 
-    if ( !( mask & second_body->layer ) )
+    for ( uint32 static_body_index = 0; static_body_index < static_body_handle_it.count; ++static_body_index )
     {
-      continue;
-    }
-
-    second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_physics_collision_shape );
-    second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( second_body->node, crude_transform );
-    second_transform_mesh_to_world = crude_transform_node_to_world( second_body->node, second_transform );
-    second_translation = second_transform_mesh_to_world.r[ 3 ];
-
-    if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-    {
-      XMVECTOR second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
-      intersected = crude_raycast_obb( ray_origin, ray_direction, second_translation, second_box_half_extent, second_transform_mesh_to_world, &current_result );
-    }
-    else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-    {
-      crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
-      intersected = crude_octree_cast_ray( octree, ray_origin, ray_direction, &current_result );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
-    }
+      crude_physics_collision_shape                       *second_collision_shape;
+      crude_transform                                     *second_transform;
+      crude_physics_static_body_handle                    *second_body_handle;
+      crude_physics_static_body                           *second_body;
+      crude_entity                                         static_body_node;
+      XMMATRIX                                             second_transform_mesh_to_world;
+      XMVECTOR                                             second_translation;
+      crude_raycast_result                                 current_result;
+      bool                                                 intersected;
       
-    if ( intersected && current_result.t < nearest_t )
-    {
-      nearest_t = current_result.t;
-      if ( result )
+      second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
+      second_transform = &second_transform_per_entity[ static_body_index ];
+      second_body_handle = &second_body_handle_per_entity[ static_body_index ];
+      static_body_node = CRUDE_COMPOUNT( crude_entity, { static_body_handle_it.entities[ static_body_index ], static_body_handle_it.world } );
+    
+      second_body = crude_physics_resources_manager_access_static_body( physics->manager, *second_body_handle );
+  
+      if ( !second_body->enabeld )
       {
-        result->raycast_result = current_result;
-        result->node = second_body->node;
+        continue;
+      }
+
+      if ( !( mask & second_body->layer ) )
+      {
+        continue;
+      }
+  
+      second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_physics_collision_shape );
+      second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_transform );
+      second_transform_mesh_to_world = crude_transform_node_to_world( static_body_node, second_transform );
+      second_translation = second_transform_mesh_to_world.r[ 3 ];
+  
+      if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+      {
+        XMVECTOR second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
+        intersected = crude_raycast_obb( ray_origin, ray_direction, second_translation, second_box_half_extent, second_transform_mesh_to_world, &current_result );
+      }
+      else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+      {
+        crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
+        intersected = crude_octree_cast_ray( octree, ray_origin, ray_direction, &current_result );
+      }
+      else
+      {
+        CRUDE_ASSERT( false );
+      }
+        
+      if ( intersected && current_result.t < nearest_t )
+      {
+        nearest_t = current_result.t;
+        if ( result )
+        {
+          result->raycast_result = current_result;
+          result->node = static_body_node;
+        }
       }
     }
   }

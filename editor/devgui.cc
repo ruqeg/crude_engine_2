@@ -165,8 +165,7 @@ crude_devgui_draw
     ImGui::InputText( "Name", editor->added_node_data.buffer, sizeof( editor->added_node_data.buffer ) );
     if ( ImGui::Button( "Dublicate" ) )
     {
-      crude_entity new_node = crude_entity_clone( CRUDE_COMPOUNT_EMPTY( crude_entity ), editor->node_to_dublicate, true );
-      crude_entity_set_name( new_node, editor->added_node_data.buffer );
+      crude_entity new_node =  crude_entity_copy_hierarchy( editor->node_to_dublicate, editor->added_node_data.buffer, true );
       editor->node_to_dublicate = CRUDE_COMPOUNT_EMPTY( crude_entity );
     }
     ImGui::End( );
@@ -400,8 +399,8 @@ crude_devgui_node_inspector_draw
   crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_free_camera );
   if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
   {
-    ImGui::DragFloat3( "Moving Speed", &free_camera->moving_speed_multiplier.x, .1f );
-    ImGui::DragFloat2( "Rotating Speed", &free_camera->rotating_speed_multiplier.x, .1f );
+    ImGui::InputFloat( "Moving Speed", &free_camera->moving_speed_multiplier, .1f );
+    ImGui::InputFloat( "Rotating Speed", &free_camera->rotating_speed_multiplier, .1f );
   }
   
   crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_camera );
@@ -763,8 +762,8 @@ crude_devgui_editor_camera_draw
   crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_free_camera );
   if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
   {
-    ImGui::DragFloat3( "Moving Speed", &free_camera->moving_speed_multiplier.x, .1f );
-    ImGui::DragFloat2( "Rotating Speed", &free_camera->rotating_speed_multiplier.x, .1f );
+    ImGui::InputFloat( "Moving Speed", &free_camera->moving_speed_multiplier, .1f );
+    ImGui::InputFloat( "Rotating Speed", &free_camera->rotating_speed_multiplier, .1f );
   }
   
   crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->editor_camera_node, crude_camera );

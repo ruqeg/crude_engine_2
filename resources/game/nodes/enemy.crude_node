@@ -1,40 +1,40 @@
 {
-			"name":	"enemy",
+	"name":	"enemy",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_physics_static_body_handle",
+			"layer":	4
+		}, {
+			"type":	"crude_physics_collision_shape",
+			"shape_type":	"box",
+			"half_extent":	[1, 1.809999942779541, 0.800000011920929]
+		}, {
+			"type":	"crude_enemy"
+		}],
+	"children":	[{
+			"name":	"pivot",
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
-			"components":	[{
-					"type":	"crude_physics_static_body_handle",
-					"layer":	4
-				}, {
-					"type":	"crude_physics_collision_shape",
-					"shape_type":	"box",
-					"half_extent":	[0.5, 0.5, 0.5]
-				}, {
-					"type":	"crude_enemy"
-				}],
+			"components":	[],
 			"children":	[{
-					"name":	"pivot",
+					"name":	"redball_enemy_model",
 					"transform":	{
 						"translation":	[0, 0, 0],
 						"rotation":	[0, 0, 0, 1],
-						"scale":	[1, 1, 1]
+						"scale":	[0.40000000596046448, 0.40000000596046448, 0.40000000596046448]
 					},
-					"components":	[],
-					"children":	[{
-							"name":	"redball_enemy_model",
-							"transform":	{
-								"translation":	[0, 0, 0],
-								"rotation":	[0, 0, 0, 1],
-								"scale":	[0.5, 0.5, 0.5]
-							},
-							"components":	[{
-									"type":	"crude_gltf",
-									"path":	"game\\models\\Enemy.gltf"
-								}],
-							"children":	[]
-						}]
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\Enemy.gltf"
+						}],
+					"children":	[]
 				}]
-		}
+		}]
+}

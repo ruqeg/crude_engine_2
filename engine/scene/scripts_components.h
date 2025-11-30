@@ -6,8 +6,8 @@
 
 typedef struct crude_free_camera
 {
-  XMFLOAT3                                                 moving_speed_multiplier;
-  XMFLOAT2                                                 rotating_speed_multiplier;
+  float32                                                  moving_speed_multiplier;
+  float32                                                  rotating_speed_multiplier;
   crude_entity                                             input_node;
   bool                                                     input_enabled;
 } crude_free_camera;

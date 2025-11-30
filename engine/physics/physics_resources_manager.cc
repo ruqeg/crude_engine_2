@@ -67,8 +67,6 @@ crude_physics_resources_manager_create_character_body
   crude_physics_character_body_handle character_body_handle = CRUDE_COMPOUNT( crude_physics_character_body_handle, { crude_resource_pool_obtain_resource( &manager->character_bodies_resource_pool ) } );
   crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager, character_body_handle );
   character_body->callback_container = crude_physics_collision_callback_container_empty( );
-  character_body->node = node;
-
   CRUDE_ARRAY_PUSH( manager->character_bodies, character_body_handle ); 
   return character_body_handle;
 }
@@ -82,7 +80,7 @@ crude_physics_resources_manager_create_static_body
 {
   crude_physics_static_body_handle static_body_handle = CRUDE_COMPOUNT( crude_physics_static_body_handle, { crude_resource_pool_obtain_resource( &manager->static_bodies_resource_pool ) } );
   crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( manager, static_body_handle );
-  static_body->node = node;
+  static_body->enabeld = true;
   
   CRUDE_ARRAY_PUSH( manager->static_bodies, static_body_handle ); 
   return static_body_handle;
