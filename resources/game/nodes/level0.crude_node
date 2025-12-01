@@ -43,7 +43,7 @@
 					"stop_change_coeff":	7,
 					"move_change_coeff":	4,
 					"weight":	1
-				},{
+				}, {
 					"type":	"crude_player"
 				}],
 			"children":	[{
@@ -80,30 +80,27 @@
 							"children":	[{
 									"name":	"item_0",
 									"transform":	{
-										"translation":	[0.20000000298023224, 0, 0],
+										"translation":	[-0.46012929081916809, -0.251255214214325, -0.28243237733840942],
 										"rotation":	[0, 0, 0, 1],
-										"scale":	[1, 1, 1]
+										"scale":	[0.10000000149011612, 0.05000000074505806, 0.10000000149011612]
 									},
-									"components":	[{
-					"type":	"crude_gltf",
-					"path":	"game\\models\\serum.gltf"
-				}],
+									"components":	[],
 									"children":	[]
 								}, {
 									"name":	"item_1",
 									"transform":	{
-										"translation":	[0.20000000298023224, 0.20000000298023224, 0],
+										"translation":	[-0.46012929081916809, -0.10141517221927643, -0.28243237733840942],
 										"rotation":	[0, 0, 0, 1],
-										"scale":	[1, 1, 1]
+										"scale":	[0.10000000149011612, 0.05000000074505806, 0.10000000149011612]
 									},
 									"components":	[],
 									"children":	[]
 								}, {
 									"name":	"item_2",
 									"transform":	{
-										"translation":	[0.20000000298023224, 0.40000000596046448, 0],
+										"translation":	[-0.46012929081916809, 0.0214909203350544, -0.28243237733840942],
 										"rotation":	[0, 0, 0, 1],
-										"scale":	[1, 1, 1]
+										"scale":	[0.10000000149011612, 0.05000000074505806, 0.10000000149011612]
 									},
 									"components":	[],
 									"children":	[]

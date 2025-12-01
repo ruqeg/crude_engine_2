@@ -25,18 +25,24 @@ add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENAB
 set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Release Configuration  
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_PRODUCTION=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Production Configuration  
 set(CMAKE_CXX_FLAGS_PRODUCTION "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_DEVELOP=0>")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_PRODUCTION=1>")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Common Configuration
 add_compile_definitions(
