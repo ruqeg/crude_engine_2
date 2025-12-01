@@ -36,17 +36,16 @@
 					"radius":	0.5
 				}, {
 					"type":	"crude_player_controller",
-					"rotation_speed":	-0.0020000000474974513,
+					"rotation_speed":	-0.0020000000949949026,
 					"jump_velocity":	4,
 					"walk_speed":	3,
 					"run_speed":	8,
 					"stop_change_coeff":	7,
 					"move_change_coeff":	4,
 					"weight":	1
-				}, {
+				},{
 					"type":	"crude_player"
-				}
-			],
+				}],
 			"children":	[{
 					"name":	"pivot",
 					"transform":	{
@@ -58,7 +57,7 @@
 					"children":	[{
 							"name":	"camera",
 							"transform":	{
-								"translation":	[0, 0, 0 ],
+								"translation":	[0, 0, 0],
 								"rotation":	[0, 0, 0, 1],
 								"scale":	[1, 1, 1]
 							},
@@ -70,9 +69,48 @@
 									"aspect_ratio":	1.7999999523162842
 								}],
 							"children":	[]
+						}, {
+							"name":	"items",
+							"transform":	{
+								"translation":	[0, 0, 1],
+								"rotation":	[0, 0, 0, 1],
+								"scale":	[1, 1, 1]
+							},
+							"components":	[],
+							"children":	[{
+									"name":	"item_0",
+									"transform":	{
+										"translation":	[0.20000000298023224, 0, 0],
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
+									},
+									"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\serum.gltf"
+				}],
+									"children":	[]
+								}, {
+									"name":	"item_1",
+									"transform":	{
+										"translation":	[0.20000000298023224, 0.20000000298023224, 0],
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
+									},
+									"components":	[],
+									"children":	[]
+								}, {
+									"name":	"item_2",
+									"transform":	{
+										"translation":	[0.20000000298023224, 0.40000000596046448, 0],
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
+									},
+									"components":	[],
+									"children":	[]
+								}]
 						}]
 				}, {
-					"name":	"hitbox",
+					"name":	"enemy_hitbox",
 					"transform":	{
 						"translation":	[0, 0, 0],
 						"rotation":	[0, 0, 0, 1],
@@ -88,7 +126,7 @@
 						}],
 					"children":	[]
 				}, {
-					"name":	"syringe_collision",
+					"name":	"serum_station_collision",
 					"transform":	{
 						"translation":	[0, 0, 0],
 						"rotation":	[0, 0, 0, 1],

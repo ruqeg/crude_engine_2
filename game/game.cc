@@ -124,6 +124,12 @@ game_setup_custom_postload_nodes_
   _In_ game_t                                             *game
 );
 
+static void
+game_setup_custom_postload_model_resources_
+(
+  _In_ game_t                                             *game
+);
+
 static bool
 game_parse_json_to_component_
 ( 
@@ -173,6 +179,8 @@ game_initialize
   game_initialize_imgui_( game );
 #endif
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
 
   game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
   game->physics_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
@@ -180,8 +188,9 @@ game_initialize
   crude_physics_debug_system_import( game->engine->world, &game->physics_debug_system_context );
   
   game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
-  game->game_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
-  game->game_debug_system_context.constant_string_bufffer = &game->debug_constant_strings_buffer;
+  game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_model_absolute_filepath;
+  game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_model_absolute_filepath;
+  game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_model_absolute_filepath;
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
 
   game_initialize_platform_( game );
@@ -189,9 +198,8 @@ game_initialize
   crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
-  crude_devmenu_initialize( &game->devmenu );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
+  crude_devmenu_initialize( &game->devmenu );
   
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsPreStore, game, { } );
@@ -249,6 +257,49 @@ game_postupdate
       crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
       break;
     }
+    case CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION:
+    {
+      crude_entity                                         serum_stations_spawn_points_parent_node;
+      ecs_iter_t                                           serum_stations_spawn_points_it;
+      uint32                                               serum_stations_count;
+ 
+      srand( time( NULL ) );
+
+      serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( game->main_node, "serum_station_spawn_points" );
+
+      serum_stations_count = 0;
+      serum_stations_spawn_points_it = ecs_children( game->engine->world, serum_stations_spawn_points_parent_node.handle );
+      while ( ecs_children_next( &serum_stations_spawn_points_it ) )
+      {
+        uint32                                             serum_stations_spawn_points_random_index;
+        uint32                                             serum_stations_spawn_points_count;
+
+        serum_stations_spawn_points_count = serum_stations_spawn_points_it.count;
+        serum_stations_spawn_points_random_index = rand( ) % serum_stations_spawn_points_count;
+
+        while ( serum_stations_spawn_points_random_index < serum_stations_spawn_points_count )
+        {
+          crude_serum_station                             *serum_station_component;
+          crude_entity                                     serum_station_spawn_point_node;
+          char                                             serum_station_node_name_buffer[ 512 ];
+          
+          crude_snprintf( serum_station_node_name_buffer, sizeof( serum_station_node_name_buffer ), "serum_station_%i", serum_stations_spawn_points_random_index );
+
+          serum_station_spawn_point_node = crude_ecs_lookup_entity_from_parent( game->main_node, serum_station_node_name_buffer );
+
+          if ( serum_station_spawn_point_node.handle != game->commands_queue[ i ].enable_random_serum_station.ignored_serum_station.handle )
+          {
+            if ( !CRUDE_ENTITY_HAS_TAG( serum_station_spawn_point_node, crude_serum_station_enabled ) )
+            {
+              CRUDE_ENTITY_ADD_TAG( serum_station_spawn_point_node, crude_serum_station_enabled );
+              break;
+            }
+          }
+          serum_stations_spawn_points_random_index = ( serum_stations_spawn_points_random_index + 1 ) % serum_stations_spawn_points_count;
+        }
+      }
+      break;
+    }
     }
   }
 
@@ -299,6 +350,19 @@ game_push_reload_techniques_command
 {
   crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
   command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
+  CRUDE_ARRAY_PUSH( game->commands_queue, command );
+}
+
+void
+game_push_enable_random_serum_station_command
+(
+  _In_ game_t                                             *game,
+  _In_ crude_entity                                        ignored_serum_station
+)
+{
+  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
+  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION;
+  command.enable_random_serum_station.ignored_serum_station = ignored_serum_station;
   CRUDE_ARRAY_PUSH( game->commands_queue, command );
 }
 
@@ -408,6 +472,18 @@ game_setup_custom_postload_nodes_
 )
 {
   game->player_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
+}
+
+void
+game_setup_custom_postload_model_resources_
+(
+  _In_ game_t                                             *game
+)
+{
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_model_absolute_filepath, NULL );
 }
 
 void
@@ -585,28 +661,41 @@ game_initialize_constant_strings_
   _In_ char const                                         *working_absolute_directory
 )
 {
-  uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
-  uint64 resources_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
-  uint64 shaders_directory_length = working_directory_length + crude_string_length( shaders_relative_directory );
-  uint64 render_graph_directory_length = working_directory_length + crude_string_length( render_graph_relative_directory );
-  uint64 scene_filepath_length = working_directory_length + crude_string_length( scene_relative_filepath );
-  uint64 techniques_relative_directory_length = working_directory_length + crude_string_length( techniques_relative_directory );
-  uint64 compiled_shaders_relative_directory_length = working_directory_length + crude_string_length( compiled_shaders_relative_directory );
+  char const *serum_model_relative_filepath = "game\\models\\serum.gltf";
 
-  uint64 constant_string_buffer_size = working_directory_length + resources_directory_length + shaders_directory_length + render_graph_directory_length + scene_filepath_length + techniques_relative_directory_length + compiled_shaders_relative_directory_length;
+  uint64 constant_string_buffer_size = 0;
+  uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
+  constant_string_buffer_size += working_directory_length;
+  constant_string_buffer_size += working_directory_length;
+  constant_string_buffer_size += working_directory_length + crude_string_length( shaders_relative_directory );
+  constant_string_buffer_size += working_directory_length + crude_string_length( render_graph_relative_directory );
+  constant_string_buffer_size += working_directory_length + crude_string_length( scene_relative_filepath );
+  constant_string_buffer_size += working_directory_length + crude_string_length( techniques_relative_directory );
+  constant_string_buffer_size += working_directory_length + crude_string_length( compiled_shaders_relative_directory );
+  
+  uint64 resources_absolute_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
+  constant_string_buffer_size += resources_absolute_directory_length;
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
+  
   game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
-  game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
   game->shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, shaders_relative_directory );
   game->scene_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, scene_relative_filepath );
   game->render_graph_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, render_graph_relative_directory );
   game->techniques_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, techniques_relative_directory );
   game->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, compiled_shaders_relative_directory );
   
+  game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
+  game->serum_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_model_relative_filepath );
+
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+
+  game->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
+  game->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
+  game->syringe_serum_station_active_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
 }
 
 void
@@ -773,6 +862,8 @@ game_initialize_graphics_
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
+
+  game_setup_custom_postload_model_resources_( game );
 
   crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );

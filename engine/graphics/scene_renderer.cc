@@ -594,51 +594,57 @@ update_dynamic_buffers_
         model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
         
 #if CRUDE_DEVELOP
+        bool                                               should_skip_model_renderer_resource_instace;
+
+        should_skip_model_renderer_resource_instace = false;
         if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape ) && CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision ) )
         {
           crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision );
           crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
           
-          if ( scene_renderer->options.hide_collision )
+          if ( scene_renderer->options.hide_collision || !debug_collision->visible )
           {
-            continue;
-          }
-
-          if ( !debug_collision->visible )
-          {
-            continue;
-          }
-
-          if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-          {
-            model_to_custom_model = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
-          }
-          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-          {
-            model_to_custom_model = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
-          }
-          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-          {
-            model_to_custom_model = XMMatrixIdentity( );
+            should_skip_model_renderer_resource_instace = true;
           }
           else
           {
-            CRUDE_ASSERT( false );
+            should_skip_model_renderer_resource_instace = false;
+
+            if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+            {
+              model_to_custom_model = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
+            }
+            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+            {
+              model_to_custom_model = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
+            }
+            else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+            {
+              model_to_custom_model = XMMatrixIdentity( );
+            }
+            else
+            {
+              CRUDE_ASSERT( false );
+            }
           }
         }
-        else if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf )  )
+        if ( CRUDE_ENTITY_HAS_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf )  )
         {
           crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf );
           
-          if ( scene_renderer->options.hide_debug_gltf )
+          if ( scene_renderer->options.hide_debug_gltf || !debug_gltf->visible )
           {
-            continue;
+            should_skip_model_renderer_resource_instace = true;
           }
+          else
+          {
+            should_skip_model_renderer_resource_instace = false;
+          }
+        }
 
-          if ( !debug_gltf->visible )
-          {
-            continue;
-          }
+        if ( should_skip_model_renderer_resource_instace )
+        {
+          continue;
         }
 #endif
 

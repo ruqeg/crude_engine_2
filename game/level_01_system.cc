@@ -125,6 +125,11 @@ crude_level_01_creation_observer_
       }
     }
 
+    for ( uint32 i = 0; i < CRUDE_GAME_SERUM_STATION_MAX_ACTIVE_COUNT; ++i )
+    {
+      game_push_enable_random_serum_station_command( game, CRUDE_COMPOUNT_EMPTY( crude_entity ) );
+    }
+
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_platform_hide_cursor( *window_handle );
   }

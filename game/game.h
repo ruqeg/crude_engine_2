@@ -18,6 +18,7 @@ typedef enum crude_game_queue_command_type
 {
   CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
   CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
+  CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION, /* Wtf is it doing here ahaha */
   CRUDE_GAME_QUEUE_COMMAND_TYPE_COUNT,
 } crude_game_queue_command_type;
 
@@ -29,6 +30,10 @@ typedef struct crude_game_queue_command
     struct 
     {
     } reload_scene;
+    struct 
+    {
+      crude_entity                                         ignored_serum_station;
+    } enable_random_serum_station;
     struct 
     {
     } reload_techniques;
@@ -62,6 +67,11 @@ typedef struct game_t
   char const                                              *working_absolute_directory;
   char const                                              *enemy_node_absolute_filepath;
   char const                                              *serum_station_node_absolute_filepath;
+
+  char const                                              *serum_model_absolute_filepath;
+  char const                                              *syringe_serum_station_active_model_absolute_filepath;
+  char const                                              *syringe_spawnpoint_model_absolute_filepath;
+  char const                                              *enemy_spawnpoint_model_absolute_filepath;
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      game_strings_buffer;
@@ -149,6 +159,13 @@ CRUDE_API void
 game_push_reload_techniques_command
 (
   _In_ game_t                                             *game
+);
+
+CRUDE_API void
+game_push_enable_random_serum_station_command
+(
+  _In_ game_t                                             *game,
+  _In_ crude_entity                                        ignored_serum_station
 );
 
 CRUDE_API void

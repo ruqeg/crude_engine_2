@@ -37,8 +37,8 @@ typedef struct crude_light
 
 typedef struct crude_gltf
 {
-  char                                                    *path;
-  char                                                    *original_path;
+  char const                                              *path;
+  char const                                              *original_path;
 } crude_gltf;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );

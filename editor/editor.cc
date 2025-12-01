@@ -164,11 +164,6 @@ crude_editor_initialize
   editor->physics_debug_system_context.resources_absolute_directory = editor->resources_absolute_directory;
   editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
   crude_physics_debug_system_import( editor->engine->world, &editor->physics_debug_system_context );
-  
-  editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
-  editor->game_debug_system_context.resources_absolute_directory = editor->resources_absolute_directory;
-  editor->game_debug_system_context.constant_string_bufffer = &editor->debug_constant_strings_buffer;
-  crude_game_debug_system_import( editor->engine->world, &editor->game_debug_system_context );
 
   crude_editor_initialize_platform_( editor );
   crude_collisions_resources_manager_initialize( &editor->collision_resouces_manager, &editor->allocator, &editor->cgltf_temporary_allocator );
@@ -442,6 +437,12 @@ crude_editor_parse_json_to_component_
     CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
   }
+  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
+  {
+    crude_player                                         player;
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, node, manager );
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_player, { player } );
+  }
   return true;
 }
 
@@ -454,6 +455,7 @@ crude_editor_parse_all_components_to_json_
 )
 {
   crude_player_controller const                           *player_component;
+  crude_player const                                      *player;
   crude_enemy const                                       *enemy;
   crude_level_01 const                                    *level01;
   
@@ -473,6 +475,12 @@ crude_editor_parse_all_components_to_json_
   if ( level01 )
   {
     cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
+  }
+  
+  player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player );
+  if ( player )
+  {
+    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
   }
 }
 

@@ -4,6 +4,8 @@
 #include <engine/external/game_debug_system.h>
 
 CRUDE_ECS_OBSERVER_DECLARE( crude_level_01_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_destroy_observer_ );
 
 static void
 crude_level_01_creation_observer_
@@ -50,6 +52,42 @@ crude_level_01_creation_observer_
   }
 }
 
+static void
+crude_serum_station_enabled_creation_observer_
+(
+  ecs_iter_t *it
+)
+{
+  crude_game_debug_system_context *ctx = CRUDE_CAST( crude_game_debug_system_context*, it->ctx );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_entity                                           serum_station_node;
+    
+    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_debug_gltf, { ctx->syringe_serum_station_active_model_absolute_filepath, true } );
+  }
+}
+
+static void
+crude_serum_station_enabled_destroy_observer_
+(
+  ecs_iter_t *it
+)
+{
+  crude_game_debug_system_context *ctx = CRUDE_CAST( crude_game_debug_system_context*, it->ctx );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_entity                                           serum_station_node;
+    
+    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    CRUDE_ENTITY_REMOVE_COMPONENT( serum_station_node, crude_debug_gltf );
+  }
+}
+
 void
 crude_game_debug_system_import
 (
@@ -57,12 +95,19 @@ crude_game_debug_system_import
   _In_ crude_game_debug_system_context                    *ctx
 )
 {
-  if ( !ctx->enemy_spawnpoint_model_absolute_filepath )
-  {
-    ctx->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->constant_string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
-    ctx->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( ctx->constant_string_bufffer, "%s%s", ctx->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
-  }
+  CRUDE_ASSERT( ctx->syringe_spawnpoint_model_absolute_filepath );
+  CRUDE_ASSERT( ctx->enemy_spawnpoint_model_absolute_filepath );
+  CRUDE_ASSERT( ctx->syringe_serum_station_active_model_absolute_filepath );
+    
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_level_01 ) }
+  } );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_creation_observer_, EcsOnSet, ctx, { 
+    { .id = ecs_id( crude_serum_station_enabled ) }
+  } );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_destroy_observer_, EcsOnRemove, ctx, { 
+    { .id = ecs_id( crude_serum_station_enabled ) }
   } );
 }

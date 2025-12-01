@@ -4,6 +4,8 @@
 #include <engine/scene/scripts_components.h>
 #include <engine/external/game_components.h>
 
+ECS_TAG_DECLARE( crude_serum_station_enabled );
+
 ECS_COMPONENT_DECLARE( crude_serum_station );
 ECS_COMPONENT_DECLARE( crude_enemy );
 ECS_COMPONENT_DECLARE( crude_level_01 );
@@ -24,6 +26,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
   ECS_COMPONENT_DEFINE( world, crude_level_01 );
   ECS_COMPONENT_DEFINE( world, crude_player_controller );
   ECS_COMPONENT_DEFINE( world, crude_player );
+  ECS_TAG_DEFINE( world, crude_serum_station_enabled );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_serum_station )

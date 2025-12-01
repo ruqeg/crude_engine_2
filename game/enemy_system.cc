@@ -11,15 +11,6 @@
 
 #include <game/enemy_system.h>
 
-/*****
- * 
- * Constant
- * 
- *******/
-#define CRUDE_GAME_ENEMY_RESET_ENEMY_POSITION_TIMER 10
-#define CRUDE_GAME_ENEMY_RESET_ENEMY_MIN_DISTANCE_POSITION_TIMER_ACTIVATION 10
-#define CRUDE_GAME_ENEMY_ROTATION_SPEED 10
-
 CRUDE_ECS_SYSTEM_DECLARE( crude_enemy_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_enemy_creation_observer_ );
 
@@ -51,11 +42,15 @@ crude_enemy_update_system_
   CRUDE_PROFILER_ZONE_NAME( "crude_enemy_update_system_" );
   game_t *game = game_instance( );
   crude_enemy *enemies_per_entity = ecs_field( it, crude_enemy, 0 );
-
+  crude_physics_static_body_handle *static_body_handle_per_entity = ecs_field( it, crude_physics_static_body_handle, 1 );
+  crude_transform *transform_per_entity = ecs_field( it, crude_transform, 2 );
+  
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_enemy                                           *enemy;
     crude_transform                                       *enemy_transform;
+    crude_physics_static_body_handle                      *enemy_static_body_handle;
+    crude_physics_static_body                             *enemy_static_body;
     crude_transform const                                 *player_transform;
     XMVECTOR                                               player_translation;
     XMVECTOR                                               enemy_translation, enemy_new_translation;
@@ -66,10 +61,25 @@ crude_enemy_update_system_
     float32                                                enemy_to_last_player_visible_translation_distance;
 
     enemy = &enemies_per_entity[ i ];
+    enemy_static_body_handle = &static_body_handle_per_entity[ i ];
+    enemy_transform = &transform_per_entity[ i ];
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     CRUDE_ASSERT( crude_entity_valid( game->player_node ) );
     
+    enemy_static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *enemy_static_body_handle );
+
+    if ( enemy->last_player_hit_timer < CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER )
+    {
+      enemy->last_player_hit_timer += it->delta_time;
+      enemy_static_body->enabeld = false;
+      continue;
+    }
+    else
+    {
+      enemy_static_body->enabeld = true;
+    }
+
     if ( enemy->time_near_last_player_visible_translaion > CRUDE_GAME_ENEMY_RESET_ENEMY_POSITION_TIMER ) /* reset when enemy don't see player for a while */
     {
       enemy->time_near_last_player_visible_translaion = 0.f;
@@ -77,7 +87,6 @@ crude_enemy_update_system_
       enemy_new_translation = XMLoadFloat3( &enemy->spawn_node_translation );
     }
 
-    enemy_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( enemy_node, crude_transform );
     player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
     
     player_translation = XMLoadFloat3( &player_transform->translation );
@@ -134,6 +143,8 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )
   } );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_enemy_update_system_, EcsOnUpdate, NULL, {
-    { .id = ecs_id( crude_enemy ) }
+    { .id = ecs_id( crude_enemy ) },
+    { .id = ecs_id( crude_physics_static_body_handle ) },
+    { .id = ecs_id( crude_transform ) }
   } );
 }

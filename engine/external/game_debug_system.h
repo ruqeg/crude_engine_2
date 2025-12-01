@@ -4,11 +4,11 @@
 
 #include <engine/core/ecs.h>
 #include <engine/core/string.h>
+#include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_game_debug_system_context
 {
-  crude_string_buffer                                     *constant_string_bufffer;
-  char const                                              *resources_absolute_directory;
+  char const                                              *syringe_serum_station_active_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_model_absolute_filepath;
   char const                                              *enemy_spawnpoint_model_absolute_filepath;
 } crude_game_debug_system_context;

@@ -10,13 +10,48 @@
 
 #include <game/player_system.h>
 
-#define CRUDE_GAME_PLAYER_SANITY_LIMIT ( 2.5 * 60 )
-#define CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT ( 5 * 60 )
-#define CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY ( 0.1 )
-#define CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY ( 0.1 )
-
 CRUDE_ECS_OBSERVER_DECLARE( crude_player_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
+
+static void
+crude_player_serum_station_collision_callback
+(
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        character_node,
+  _In_ crude_entity                                        static_body_node
+)
+{
+  game_t *game = game_instance( );
+  crude_input const *input;
+  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );;
+  
+  input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
+  if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) && input->keys[ SDL_SCANCODE_E ].current )
+  {
+    crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
+
+    for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+    {
+      if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
+      {
+        char item_node_name_buffer[ 128 ];
+        crude_snprintf( item_node_name_buffer, sizeof( item_node_name_buffer ), "item_%i", i );
+        crude_entity player_item_node = crude_ecs_lookup_entity_from_parent( player_items_node, item_node_name_buffer );
+        CRUDE_ASSERT( !CRUDE_ENTITY_HAS_COMPONENT( player_item_node, crude_gltf ) );
+
+        CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->serum_model_absolute_filepath } );
+        CRUDE_ENTITY_ADD_COMPONENT( player_item_node, crude_node_runtime );
+
+        player->inventory_items[ i ] = CRUDE_GAME_ITEM_SERUM;
+        
+        CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
+        game_push_enable_random_serum_station_command( game, static_body_node );
+
+        break;
+      }
+    }
+  }
+}
 
 static void
 crude_player_enemy_hitbox_callback
@@ -28,13 +63,14 @@ crude_player_enemy_hitbox_callback
 {
   game_t *game = game_instance( );
 
-  crude_physics_static_body_handle *static_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_physics_static_body_handle );
-  crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *static_body_handle );
+  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_enemy );
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );;
 
   player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
   player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
-  static_body->enabeld = false;
+  crude_memory_set( player->inventory_items, 0, sizeof( player->inventory_items ) );
+
+  enemy->last_player_hit_timer = 0.f;
 }
 
 CRUDE_API void
@@ -64,12 +100,19 @@ crude_player_creation_observer_
     crude_player *player = &player_per_entity[ i ];
     crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "hitbox" );
+    crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "enemy_hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );
     crude_physics_character_body *hitbox_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *hitbox_body_handle );
     
     hitbox_body->callback_container.ctx = (void*)1;
     hitbox_body->callback_container.fun = crude_player_enemy_hitbox_callback;
+    
+    crude_entity serum_station_collision_node = crude_ecs_lookup_entity_from_parent( node, "serum_station_collision" );
+    crude_physics_character_body_handle *serum_station_collision_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( serum_station_collision_node, crude_physics_character_body_handle );
+    crude_physics_character_body *serum_station_collision_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *serum_station_collision_handle );
+    
+    serum_station_collision_body->callback_container.ctx = (void*)1;
+    serum_station_collision_body->callback_container.fun = crude_player_serum_station_collision_callback;
 
     player->health = 1.f;
     player->drug_withdrawal = 0.f;

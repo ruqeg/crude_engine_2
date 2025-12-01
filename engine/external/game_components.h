@@ -3,10 +3,12 @@
 #include <engine/core/ecs.h>
 #include <engine/core/math.h>
 #include <engine/scene/components_serialization.h>
+#include <engine/external/game_resources.h>
 
 typedef struct crude_enemy
 {
   float32                                                  moving_speed;
+  float32                                                  last_player_hit_timer;
   XMFLOAT3                                                 spawn_node_translation;
   XMFLOAT3                                                 last_player_visible_translation;
   float32                                                  time_near_last_player_visible_translaion;
@@ -31,6 +33,7 @@ typedef struct crude_player
   float32                                                  health;
   float32                                                  drug_withdrawal;
   float32                                                  sanity;
+  crude_game_item                                          inventory_items[ CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT ];
 } crude_player;
 
 typedef struct crude_player_controller
@@ -48,6 +51,8 @@ typedef struct crude_player_controller
   float32                                                  fly_speed_scale;
 #endif
 } crude_player_controller;
+
+CRUDE_API ECS_TAG_DECLARE( crude_serum_station_enabled );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_serum_station );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_serum_station );

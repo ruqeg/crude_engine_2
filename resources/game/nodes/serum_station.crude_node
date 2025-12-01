@@ -1,31 +1,29 @@
 {
-			"name":	"serum_station",
+	"name":	"serum_station",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_physics_static_body_handle",
+			"layer":	8
+		}, {
+			"type":	"crude_physics_collision_shape",
+			"shape_type":	"box",
+			"half_extent":	[0.5, 2.1500000953674316, 0.5]
+		}],
+	"children":	[{
+			"name":	"serum_station_model",
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[1, 1, 1]
+				"scale":	[0.5, 0.5, 0.5]
 			},
 			"components":	[{
-					"type":	"crude_physics_static_body_handle",
-					"layer":	4
-				}, {
-					"type":	"crude_physics_collision_shape",
-					"shape_type":	"box",
-					"half_extent":	[0.5, 0.5, 0.5]
-				}, {
-					"type":	"crude_serum_station"
+					"type":	"crude_gltf",
+					"path":	"game\\models\\serum_station.gltf"
 				}],
-			"children":	[{
-							"name":	"serum_station_model",
-							"transform":	{
-								"translation":	[0, 0, 0],
-								"rotation":	[0, 0, 0, 1],
-								"scale":	[0.5, 0.5, 0.5]
-							},
-							"components":	[{
-									"type":	"crude_gltf",
-									"path":	"game\\models\\serum_station.gltf"
-								}],
-							"children":	[]
-						}]
-		}
+			"children":	[]
+		}]
+}

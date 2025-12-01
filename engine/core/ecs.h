@@ -206,6 +206,21 @@ crude_entity_enable_hierarchy
   ecs_modified_id( entity.world, entity.handle, ecs_id( component ) );\
 }
 
+#define CRUDE_ENTITY_HAS_TAG( entity, tag )\
+(\
+  ecs_has_id( entity.world, entity.handle, tag )\
+)
+
+#define CRUDE_ENTITY_ADD_TAG( entity, tag )\
+(\
+  ecs_add_id( entity.world, entity.handle, tag )\
+)
+
+#define CRUDE_ENTITY_REMOVE_TAG( entity, tag )\
+(\
+  ecs_remove_id( entity.world, entity.handle, tag )\
+)
+
 #define CRUDE_ECS_SYSTEM_DECLARE( id )\
   ecs_entity_t ecs_id( id )
 

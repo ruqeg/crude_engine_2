@@ -410,6 +410,10 @@ crude_devgui_node_inspector_draw
     ImGui::InputFloat( "Near Z", &camera->near_z );
     ImGui::SliderAngle( "FOV Radians", &camera->fov_radians );
     ImGui::InputFloat( "Aspect Ratio", &camera->aspect_ratio );
+    if ( ImGui::Button( "Set Active" ) )
+    {
+      editor->focused_camera_node = editor->selected_node;
+    }
   }
   
   crude_light *light = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_light );
@@ -773,6 +777,10 @@ crude_devgui_editor_camera_draw
     ImGui::InputFloat( "Near Z", &camera->near_z );
     ImGui::SliderAngle( "FOV Radians", &camera->fov_radians );
     ImGui::InputFloat( "Aspect Ratio", &camera->aspect_ratio );
+    if ( ImGui::Button( "Set Active" ) )
+    {
+      editor->focused_camera_node = editor->editor_camera_node;
+    }
   }
 
   ImGui::End( );
