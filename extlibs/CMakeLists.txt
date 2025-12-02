@@ -79,6 +79,7 @@ FetchContent_Declare(
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE
 )
+set(TRACY_STATIC OFF CACHE BOOL "Whether to build Tracy as a static library" FORCE)
 FetchContent_MakeAvailable(tracy)
 target_compile_definitions(TracyClient PRIVATE
   TRACY_ENABLE

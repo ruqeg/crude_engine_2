@@ -76,6 +76,8 @@ crude_devmenu_initialize
 {
   devmenu->enabled = false;
   devmenu->selected_option = 0;
+  devmenu->previous_framerate = 0.f;
+  devmenu->current_framerate = 0.f;
   crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler );
   crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector );
@@ -112,9 +114,9 @@ crude_devmenu_draw
 
   game = game_instance( );
   
+  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
   {
-    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
@@ -128,6 +130,13 @@ crude_devmenu_draw
       ImGui::SameLine( );
     }
     ImGui::GetIO().FontGlobalScale = 1.f;
+    ImGui::End( );
+  }
+
+  {
+    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 50 ) );
+    ImGui::Begin( "Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+    ImGui::Text( "FPS %u", devmenu->previous_framerate );
     ImGui::End( );
   }
 
@@ -147,6 +156,8 @@ crude_devmenu_update
   _In_ crude_devmenu                                      *devmenu
 )
 {
+  game_t *game = game_instance( );
+
   crude_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
   crude_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_update( &devmenu->texture_inspector );
@@ -155,6 +166,17 @@ crude_devmenu_update
   crude_devmenu_scene_renderer_update( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_update( &devmenu->nodes_tree );
   crude_devmenu_gameplay_update( &devmenu->gameplay );
+
+  if ( game->time - devmenu->last_framerate_update_time > 1.f )
+  {
+    devmenu->previous_framerate = devmenu->current_framerate;
+    devmenu->current_framerate = 0u;
+    devmenu->last_framerate_update_time = game->time;
+  }
+  else
+  {
+    devmenu->current_framerate++;
+  }
 }
 
 void

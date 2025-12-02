@@ -83,6 +83,9 @@ typedef struct crude_devmenu
   crude_devmenu_nodes_tree                                 nodes_tree;
   crude_devmenu_gameplay                                   gameplay;
   uint32                                                   selected_option;
+  float32                                                  last_framerate_update_time;
+  uint32                                                   previous_framerate;
+  uint32                                                   current_framerate;
 } crude_devmenu;
 
 /***********************

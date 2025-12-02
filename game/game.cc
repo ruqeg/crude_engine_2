@@ -400,6 +400,7 @@ game_graphics_system_
 
   if ( game->last_graphics_update_time < 1.f / game->framerate )
   {
+    CRUDE_PROFILER_END;
     return;
   }
 

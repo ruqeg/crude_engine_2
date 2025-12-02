@@ -66,7 +66,7 @@
 					"radius":	0.5
 				}, {
 					"type":	"crude_player_controller",
-					"rotation_speed":	-0.0020000000949949026,
+					"rotation_speed":	-0.01,
 					"jump_velocity":	4,
 					"walk_speed":	3,
 					"run_speed":	8,
@@ -95,7 +95,7 @@
 									"type":	"crude_camera",
 									"fov_radians":	1,
 									"near_z":	0.00999999977648258,
-									"far_z":	1000,
+									"far_z":	27.0,
 									"aspect_ratio":	1.7999999523162842
 								}],
 							"children":	[]

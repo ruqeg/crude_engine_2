@@ -72,12 +72,7 @@ crude_enemy_update_system_
     if ( enemy->last_player_hit_timer < CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER )
     {
       enemy->last_player_hit_timer += it->delta_time;
-      enemy_static_body->enabeld = false;
       continue;
-    }
-    else
-    {
-      enemy_static_body->enabeld = true;
     }
 
     if ( enemy->time_near_last_player_visible_translaion > CRUDE_GAME_ENEMY_RESET_ENEMY_POSITION_TIMER ) /* reset when enemy don't see player for a while */
@@ -94,11 +89,14 @@ crude_enemy_update_system_
     enemy_to_player = XMVectorSubtract( player_translation, enemy_translation );
     enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
     
-    if ( crude_physics_cast_ray( &game_instance( )->physics, enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
+    if ( XMVectorGetX( XMVector3Length( XMVectorSubtract( enemy_translation, player_translation ) ) ) < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE )
     {
-      if ( XMVectorGetX( XMVector3LengthSq( enemy_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( enemy_translation, raycast_result.raycast_result.point ) ) ) )
+      if ( crude_physics_cast_ray( &game_instance( )->physics, enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
       {
-        enemy->last_player_visible_translation = player_transform->translation;
+        if ( XMVectorGetX( XMVector3LengthSq( enemy_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( enemy_translation, raycast_result.raycast_result.point ) ) ) )
+        {
+          enemy->last_player_visible_translation = player_transform->translation;
+        }
       }
     }
     enemy_to_last_player_visible_translation = XMVectorSubtract( XMLoadFloat3( &enemy->last_player_visible_translation ), enemy_translation );

@@ -66,6 +66,11 @@ crude_player_enemy_hitbox_callback
   crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_enemy );
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
 
+  if ( enemy->last_player_hit_timer < CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER )
+  {
+    return;
+  }
+
   player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
   player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
   crude_memory_set( player->inventory_items, 0, sizeof( player->inventory_items ) );
@@ -204,7 +209,7 @@ crude_player_update_visual_
   /* Sanity */
   pass_options->fog_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 0.f } );
   pass_options->fog_color.w = 5.f * CRUDE_MAX( 0.f, ( 0.5f - player->health ) );
-  pass_options->fog_distance = CRUDE_LERP( 0.f, 25.f, player->sanity );
+  pass_options->fog_distance = CRUDE_LERP( 0.f, CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE, player->sanity );
 
   /* Health Pulse Effect */
   pass_options->pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 1.f + 3.f * ( 1.f - player->health ) } );
