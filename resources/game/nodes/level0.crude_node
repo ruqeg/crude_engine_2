@@ -17,7 +17,7 @@
 			},
 			"components":	[{
 					"type":	"crude_gltf",
-					"path":	"game\\models\\0_hall.gltf"
+					"path":	"game\\models\\0_hall_1.gltf"
 				}],
 			"children":	[]
 		}, {

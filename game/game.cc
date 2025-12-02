@@ -22,6 +22,7 @@
 #include <game/player_system.h>
 #include <game/enemy_system.h>
 #include <game/level_01_system.h>
+#include <game/serum_station_system.h>
 
 #include <game/game.h>
 
@@ -173,7 +174,8 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_enemy_system );
   ECS_IMPORT( game->engine->world, crude_level_01_system );
   ECS_IMPORT( game->engine->world, crude_player_system );
-
+  ECS_IMPORT( game->engine->world, crude_serum_station_system );
+  
   game_initialize_allocators_( game );
 #if CRUDE_DEVELOP
   game_initialize_imgui_( game );
@@ -188,9 +190,9 @@ game_initialize
   crude_physics_debug_system_import( game->engine->world, &game->physics_debug_system_context );
   
   game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
-  game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_model_absolute_filepath;
-  game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_model_absolute_filepath;
-  game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_model_absolute_filepath;
+  game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_debug_model_absolute_filepath;
+  game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_debug_model_absolute_filepath;
+  game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_debug_model_absolute_filepath;
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
 
   game_initialize_platform_( game );
@@ -481,9 +483,11 @@ game_setup_custom_postload_model_resources_
 )
 {
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
-  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_model_absolute_filepath, NULL );
-  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_model_absolute_filepath, NULL );
-  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_enabled_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_disabled_model_absolute_filepath, NULL );
 }
 
 void
@@ -662,6 +666,8 @@ game_initialize_constant_strings_
 )
 {
   char const *serum_model_relative_filepath = "game\\models\\serum.gltf";
+  char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
+  char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
 
   uint64 constant_string_buffer_size = 0;
   uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
@@ -676,6 +682,8 @@ game_initialize_constant_strings_
   uint64 resources_absolute_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
   constant_string_buffer_size += resources_absolute_directory_length;
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_enabled_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_disabled_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -688,14 +696,16 @@ game_initialize_constant_strings_
   
   game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
   game->serum_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_model_relative_filepath );
+  game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
+  game->serum_station_disabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_disabled_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
 
-  game->syringe_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
-  game->enemy_spawnpoint_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
-  game->syringe_serum_station_active_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
+  game->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
+  game->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
+  game->syringe_serum_station_active_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
 }
 
 void

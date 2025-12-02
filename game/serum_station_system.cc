@@ -19,6 +19,8 @@
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_serum_station_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_destroy_observer_ );
 
 static void
 crude_serum_station_creation_observer_
@@ -26,13 +28,18 @@ crude_serum_station_creation_observer_
   ecs_iter_t *it
 )
 {
+  game_t *game = game_instance( );
+
   crude_serum_station *serum_station_per_entity = ecs_field( it, crude_serum_station, 0 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_serum_station                                   *serum_station;
+    crude_entity                                           serum_station_node;
 
     serum_station = &serum_station_per_entity[ i ];
+    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_gltf, { game->serum_station_disabled_model_absolute_filepath } );
   }
 }
 
@@ -68,6 +75,42 @@ crude_serum_station_update_system_
   CRUDE_PROFILER_END;
 }
 
+static void
+crude_serum_station_enabled_creation_observer_
+(
+  ecs_iter_t *it
+)
+{
+  game_t *game = game_instance( );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_entity                                           serum_station_node;
+    
+    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_gltf, { game->serum_station_enabled_model_absolute_filepath } );
+  }
+}
+
+static void
+crude_serum_station_enabled_destroy_observer_
+(
+  ecs_iter_t *it
+)
+{
+  game_t *game = game_instance( );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_entity                                           serum_station_node;
+    
+    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    
+    CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_gltf, { game->serum_station_disabled_model_absolute_filepath } );
+  }
+}
+
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_serum_station_system )
 {
   ECS_MODULE( world, crude_serum_station_system );
@@ -84,5 +127,13 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_serum_station_system )
     { .id = ecs_id( crude_serum_station ) },
     { .id = ecs_id( crude_physics_static_body_handle ) },
     { .id = ecs_id( crude_transform ) }
+  } );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_creation_observer_, EcsOnSet, NULL, { 
+    { .id = ecs_id( crude_serum_station_enabled ) }
+  } );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_destroy_observer_, EcsOnRemove, NULL, { 
+    { .id = ecs_id( crude_serum_station_enabled ) }
   } );
 }

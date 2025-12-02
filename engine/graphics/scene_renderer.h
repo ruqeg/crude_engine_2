@@ -17,10 +17,20 @@
 #include <engine/graphics/passes/transparent_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
+typedef enum crude_gfx_model_renderer_resoruces_instances_type
+{
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF,
+#if CRUDE_DEVELOP
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF,
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION,
+#endif
+} crude_gfx_model_renderer_resoruces_instances_type;
+
 typedef struct crude_gfx_model_renderer_resources_instance
 {
   crude_gfx_model_renderer_resources                       model_renderer_resources;
   crude_entity                                             node;
+  crude_gfx_model_renderer_resoruces_instances_type        type;
 } crude_gfx_model_renderer_resources_instance;
 
 typedef struct crude_gfx_scene_renderer_creation

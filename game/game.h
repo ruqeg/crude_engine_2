@@ -69,9 +69,13 @@ typedef struct game_t
   char const                                              *serum_station_node_absolute_filepath;
 
   char const                                              *serum_model_absolute_filepath;
-  char const                                              *syringe_serum_station_active_model_absolute_filepath;
-  char const                                              *syringe_spawnpoint_model_absolute_filepath;
-  char const                                              *enemy_spawnpoint_model_absolute_filepath;
+  char const                                              *serum_station_enabled_model_absolute_filepath;
+  char const                                              *serum_station_disabled_model_absolute_filepath;
+#if CRUDE_DEVELOP
+  char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
+  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
+  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
+#endif
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      game_strings_buffer;
