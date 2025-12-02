@@ -24,30 +24,38 @@ crude_player_serum_station_collision_callback
   game_t *game = game_instance( );
   crude_input const *input;
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );;
-  
+  crude_entity static_body_node_parent = crude_entity_get_parent( static_body_node );
+
   input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
-  if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) && input->keys[ SDL_SCANCODE_E ].current )
+
+  if ( input->keys[ SDL_SCANCODE_E ].current )
   {
-    crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
-
-    for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+    if ( crude_entity_valid( static_body_node_parent ) && CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
     {
-      if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
+      crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
+      
+      for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
       {
-        char item_node_name_buffer[ 128 ];
-        crude_snprintf( item_node_name_buffer, sizeof( item_node_name_buffer ), "item_%i", i );
-        crude_entity player_item_node = crude_ecs_lookup_entity_from_parent( player_items_node, item_node_name_buffer );
-        CRUDE_ASSERT( !CRUDE_ENTITY_HAS_COMPONENT( player_item_node, crude_gltf ) );
+        if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
+        {
+          game_player_set_item( game, player, i, recycle_station->game_item );
+        }
+      }
+    }
 
-        CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->serum_model_absolute_filepath } );
-        CRUDE_ENTITY_ADD_COMPONENT( player_item_node, crude_node_runtime );
+    if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) )
+    {
+      crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
 
-        player->inventory_items[ i ] = CRUDE_GAME_ITEM_SERUM;
-        
-        CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
-        game_push_enable_random_serum_station_command( game, static_body_node );
-
-        break;
+      for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+      {
+        if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
+        {
+          game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SERUM );
+          CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
+          game_push_enable_random_serum_station_command( game, static_body_node );
+          break;
+        }
       }
     }
   }

@@ -16,7 +16,10 @@
 				"rotation":	[0, 0.70839112997055054, 0, 0.705820083618164],
 				"scale":	[0.99999982118606567, 1, 0.99999982118606567]
 			},
-			"components":	[],
+			"components":	[{
+					"type":	"crude_recycle_station",
+					"game_item":	2
+				}],
 			"children":	[]
 		}, {
 			"name":	"recycle_station_1",
@@ -26,7 +29,10 @@
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
-			"components":	[],
+			"components":	[{
+					"type":	"crude_recycle_station",
+					"game_item":	4
+				}],
 			"children":	[]
 		}, {
 			"name":	"recycle_station_2",
@@ -36,7 +42,10 @@
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
-			"components":	[],
+			"components":	[{
+					"type":	"crude_recycle_station",
+					"game_item":	3
+				}],
 			"children":	[]
 		}, {
 			"name":	"0_hall",
@@ -66,7 +75,7 @@
 					"radius":	0.5
 				}, {
 					"type":	"crude_player_controller",
-					"rotation_speed":	-0.01,
+					"rotation_speed":	-0.00999999977648258,
 					"jump_velocity":	4,
 					"walk_speed":	3,
 					"run_speed":	8,
@@ -95,7 +104,7 @@
 									"type":	"crude_camera",
 									"fov_radians":	1,
 									"near_z":	0.00999999977648258,
-									"far_z":	27.0,
+									"far_z":	27,
 									"aspect_ratio":	1.7999999523162842
 								}],
 							"children":	[]

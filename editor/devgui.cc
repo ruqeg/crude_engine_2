@@ -484,6 +484,12 @@ crude_devgui_node_inspector_draw
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( editor->selected_node, runtime_node, &editor->node_manager );
   }
 
+  crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_recycle_station );
+  if ( recycle_station && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_recycle_station ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_recycle_station )( editor->selected_node, recycle_station, &editor->node_manager );
+  }
+  
   ImGui::End( );
 }
 

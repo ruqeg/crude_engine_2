@@ -11,12 +11,14 @@ ECS_COMPONENT_DECLARE( crude_enemy );
 ECS_COMPONENT_DECLARE( crude_level_01 );
 ECS_COMPONENT_DECLARE( crude_player_controller );
 ECS_COMPONENT_DECLARE( crude_player );
+ECS_COMPONENT_DECLARE( crude_recycle_station );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_serum_station, "crude_serum_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_enemy, "crude_enemy" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_01, "crude_level_01" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_player_controller, "crude_player_controller" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_player, "crude_player" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_recycle_station, "crude_recycle_station" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 {
@@ -26,6 +28,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
   ECS_COMPONENT_DEFINE( world, crude_level_01 );
   ECS_COMPONENT_DEFINE( world, crude_player_controller );
   ECS_COMPONENT_DEFINE( world, crude_player );
+  ECS_COMPONENT_DEFINE( world, crude_recycle_station );
   ECS_TAG_DEFINE( world, crude_serum_station_enabled );
 }
 
@@ -160,4 +163,27 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player )
 {
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_recycle_station )
+{
+  crude_memory_set( component, 0, sizeof( crude_recycle_station ) );
+  component->game_item = CRUDE_CAST( crude_game_item, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "game_item" ) ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_recycle_station )
+{
+  cJSON *json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_recycle_station ) ) );
+  cJSON_AddItemToObject( json, "game_item", cJSON_CreateNumber( component->game_item  ) );
+  return json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_recycle_station )
+{
+  const char* items[] = { crude_game_item_to_string( CRUDE_GAME_ITEM_NONE ), crude_game_item_to_string( CRUDE_GAME_ITEM_SERUM ), crude_game_item_to_string( CRUDE_GAME_ITEM_SYRINGE_HEALTH ), crude_game_item_to_string( CRUDE_GAME_ITEM_SYRINGE_DRUG ), crude_game_item_to_string( CRUDE_GAME_ITEM_AMMUNITION ) };
+  int32 item_current = component->game_item;
+  ImGui::Combo( "item", &item_current, items, IM_ARRAYSIZE( items ) );
+  component->game_item = CRUDE_CAST( crude_game_item, item_current );
 }

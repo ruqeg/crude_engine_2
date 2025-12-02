@@ -424,30 +424,6 @@ crude_editor_parse_json_to_component_
   _In_ crude_node_manager                                 *manager
 )
 {
-  if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
-  {
-    crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
-  {
-    crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
-  {
-    crude_level_01                                         level01;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
-  {
-    crude_player                                         player;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_player, { player } );
-  }
   return true;
 }
 
@@ -459,34 +435,6 @@ crude_editor_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 )
 {
-  crude_player_controller const                           *player_component;
-  crude_player const                                      *player;
-  crude_enemy const                                       *enemy;
-  crude_level_01 const                                    *level01;
-  
-  player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
-  if ( player_component )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
-  }
-  
-  enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
-  if ( enemy )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
-  }
-  
-  level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
-  if ( level01 )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
-  }
-  
-  player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player );
-  if ( player )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
-  }
 }
 
 void

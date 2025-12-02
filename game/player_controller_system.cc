@@ -44,12 +44,14 @@ crude_player_controller_update_system_
   game_t *game = game_instance( );
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player_controller *player_controllere_per_entity = ecs_field( it, crude_player_controller, 1 );
+  crude_player *player_per_entity = ecs_field( it, crude_player, 2 );
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_transform                                       *transform;
     crude_player_controller                               *player_controller;
     crude_input const                                     *input;
+    crude_player                                          *player;
     crude_physics_character_body                          *character_body;
     crude_transform                                       *pivot_node_transform;
     crude_physics_character_body_handle                    character_body_handle;
@@ -60,7 +62,7 @@ crude_player_controller_update_system_
 
     transform = &transforms_per_entity[ i ];
     player_controller = &player_controllere_per_entity[ i ];
-
+    player = &player_per_entity[ i ];
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
@@ -70,6 +72,41 @@ crude_player_controller_update_system_
     
     velocity = XMLoadFloat3( &character_body->velocity );
  
+    
+    if ( input->keys[ SDL_SCANCODE_1 ].current || input->keys[ SDL_SCANCODE_2 ].current || input->keys[ SDL_SCANCODE_3 ].current )
+    {
+      uint32 item_slot = 0u;
+      if ( input->keys[ SDL_SCANCODE_1 ].current )
+      {
+        item_slot = 0;
+      }
+      else if ( input->keys[ SDL_SCANCODE_2 ].current )
+      {
+        item_slot = 1;
+      }
+      else if ( input->keys[ SDL_SCANCODE_3 ].current )
+      {
+        item_slot = 2;
+      }
+      if ( player->inventory_items[ item_slot ] != CRUDE_GAME_ITEM_NONE )
+      {
+        switch ( player->inventory_items[ item_slot ] )
+        {
+        case CRUDE_GAME_ITEM_SYRINGE_DRUG:
+        {
+          player->drug_withdrawal = CRUDE_MAX( player->drug_withdrawal - CRUDE_GAME_ITEM_SYRINGE_DRUG_WITHDRAWAL_REMOVE, 0.f );
+          break;
+        }
+        case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
+        {
+          player->health = CRUDE_MIN( 1.f, player->health + CRUDE_GAME_ITEM_SYRINGE_HEALTH_ADD );
+          break;
+        }
+        }
+        game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
+      }
+    }
+
     if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
     {
       moving_limit = player_controller->run_speed;
@@ -169,7 +206,8 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, EcsOnUpdate, NULL, {
     { .id = ecs_id( crude_transform ) },
-    { .id = ecs_id( crude_player_controller ) }
+    { .id = ecs_id( crude_player_controller ) },
+    { .id = ecs_id( crude_player ) }
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_creation_observer_, EcsOnSet, NULL, { 

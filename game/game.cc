@@ -369,6 +369,51 @@ game_push_enable_random_serum_station_command
 }
 
 void
+game_player_set_item
+(
+  _In_ game_t                                             *game,
+  _In_ crude_player                                       *player,
+  _In_ uint32                                              slot,
+  _In_ crude_game_item                                     item
+)
+{
+  crude_entity                                             player_items_node, player_item_node;
+  char                                                     item_node_name_buffer[ 128 ];;
+
+  player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
+  
+  crude_snprintf( item_node_name_buffer, sizeof( item_node_name_buffer ), "item_%i", slot );
+  player_item_node = crude_ecs_lookup_entity_from_parent( player_items_node, item_node_name_buffer );
+  
+  player->inventory_items[ slot ] = item;
+
+  switch ( item )
+  {
+  case CRUDE_GAME_ITEM_NONE:
+  {
+    CRUDE_ENTITY_REMOVE_COMPONENT( player_item_node, crude_gltf );
+    break;
+  }
+  case CRUDE_GAME_ITEM_SERUM:
+  {
+    CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->serum_model_absolute_filepath } );
+    break;
+  }
+  case CRUDE_GAME_ITEM_SYRINGE_DRUG:
+  {
+    CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->syringe_drug_model_absolute_filepath } );
+    break;
+  }
+  case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
+  {
+    CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->syringe_health_model_absolute_filepath } );
+    break;
+  }
+  }
+  CRUDE_ENTITY_ADD_COMPONENT( player_item_node, crude_node_runtime );
+}
+
+void
 game_update_system_
 (
   _In_ ecs_iter_t                                         *it
@@ -484,6 +529,8 @@ game_setup_custom_postload_model_resources_
 )
 {
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_drug_model_absolute_filepath , NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_health_model_absolute_filepath , NULL );
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
@@ -537,30 +584,6 @@ game_parse_json_to_component_
   _In_ crude_node_manager                                 *manager
 )
 {
-  if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
-  {
-    crude_player_controller                                player_controller;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
-  {
-    crude_enemy                                enemy;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
-  {
-    crude_level_01                                         level01;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
-  }
-  else if ( crude_string_cmp( component_name, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
-  {
-    crude_player                                         player;
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_player, { player } );
-  }
   return true;
 }
 
@@ -572,34 +595,6 @@ game_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 )
 {
-  crude_player_controller const                           *player_component;
-  crude_enemy const                                       *enemy;
-  crude_level_01 const                                    *level01;
-  crude_player const                                      *player;
-  
-  player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
-  if ( player_component )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
-  }
-  
-  enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
-  if ( enemy )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
-  }
-  
-  level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
-  if ( level01 )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
-  }
-  
-  player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player );
-  if ( level01 )
-  {
-    cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
-  }
 }
 
 #if CRUDE_DEVELOP
@@ -667,6 +662,8 @@ game_initialize_constant_strings_
 )
 {
   char const *serum_model_relative_filepath = "game\\models\\serum.gltf";
+  char const *syringe_drug_model_relative_filepath = "game\\models\\syringe_drug.gltf";
+  char const *syringe_health_model_relative_filepath = "game\\models\\syringe_health.gltf";
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
 
@@ -685,6 +682,8 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_enabled_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_disabled_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_drug_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_health_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -697,6 +696,8 @@ game_initialize_constant_strings_
   
   game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
   game->serum_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_model_relative_filepath );
+  game->syringe_drug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_drug_model_relative_filepath );
+  game->syringe_health_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_health_model_relative_filepath );
   game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
   game->serum_station_disabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_disabled_model_relative_filepath );
 
@@ -872,6 +873,7 @@ game_initialize_graphics_
   game->scene_renderer.options.hide_debug_gltf = true;
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
+  game->scene_renderer.options.background_intensity = 0.f;
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
 
   game_setup_custom_postload_model_resources_( game );

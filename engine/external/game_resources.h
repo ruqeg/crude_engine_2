@@ -1,12 +1,18 @@
 #pragma once
 
+#include <engine/core/alias.h>
+
 /* Player */
-#define CRUDE_GAME_PLAYER_SANITY_LIMIT ( 2.5 * 60 )
+#define CRUDE_GAME_PLAYER_SANITY_LIMIT ( 5 * 60 )
 #define CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT ( 5 * 60 )
 #define CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY ( 0.1 )
-#define CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY ( 0.1 )
+#define CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY ( 0.025 )
 #define CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT ( 3u )
 #define CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ( 25.f )
+
+/* Items */
+#define CRUDE_GAME_ITEM_SYRINGE_HEALTH_ADD ( 0.5f )
+#define CRUDE_GAME_ITEM_SYRINGE_DRUG_WITHDRAWAL_REMOVE ( 0.5f )
 
 /* Enemmy */
 #define CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER 1
@@ -20,5 +26,15 @@
 typedef enum crude_game_item
 {
 	CRUDE_GAME_ITEM_NONE = 0,
-	CRUDE_GAME_ITEM_SERUM,
+	CRUDE_GAME_ITEM_SERUM = 1,
+	CRUDE_GAME_ITEM_SYRINGE_HEALTH = 2,
+	CRUDE_GAME_ITEM_SYRINGE_DRUG = 3,
+	CRUDE_GAME_ITEM_AMMUNITION = 4,
+	CRUDE_GAME_ITEM_COUNT,
 } crude_game_item;
+
+char const*
+crude_game_item_to_string
+(
+	_In_ crude_game_item																		 game_item
+);

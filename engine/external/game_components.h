@@ -19,6 +19,11 @@ typedef struct crude_serum_station
 {
 } crude_serum_station;
 
+typedef struct crude_recycle_station
+{
+  crude_game_item                                          game_item;
+} crude_recycle_station;
+
 typedef struct crude_level_01
 {
   crude_entity                                             serum_stations_spawn_points_parent_node;
@@ -83,5 +88,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_player );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_recycle_station );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_recycle_station );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_recycle_station );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_recycle_station );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_recycle_station );
 
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_game_components );

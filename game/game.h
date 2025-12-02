@@ -11,6 +11,7 @@
 #include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics_system.h>
 #include <engine/external/game_debug_system.h>
+#include <engine/external/game_components.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/devmenu.h>
 
@@ -69,6 +70,8 @@ typedef struct game_t
   char const                                              *serum_station_node_absolute_filepath;
 
   char const                                              *serum_model_absolute_filepath;
+  char const                                              *syringe_drug_model_absolute_filepath;
+  char const                                              *syringe_health_model_absolute_filepath;
   char const                                              *serum_station_enabled_model_absolute_filepath;
   char const                                              *serum_station_disabled_model_absolute_filepath;
 #if CRUDE_DEVELOP
@@ -170,6 +173,15 @@ game_push_enable_random_serum_station_command
 (
   _In_ game_t                                             *game,
   _In_ crude_entity                                        ignored_serum_station
+);
+
+CRUDE_API void
+game_player_set_item
+(
+  _In_ game_t                                             *game,
+  _In_ crude_player                                       *player,
+  _In_ uint32                                              slot,
+  _In_ crude_game_item                                     item
 );
 
 CRUDE_API void
