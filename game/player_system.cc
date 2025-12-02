@@ -153,6 +153,12 @@ crude_player_update_system_
     {
       game_push_reload_scene_command( game );
     }
+
+    {
+      crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
+      crude_transform *player_items_trasnform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_items_node, crude_transform );
+      player_items_trasnform->translation.y = 0.004f * sin( game->time );
+    }
   }
   CRUDE_PROFILER_END;
 }
