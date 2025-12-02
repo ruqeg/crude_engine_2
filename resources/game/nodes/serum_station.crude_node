@@ -15,5 +15,21 @@
 		}, {
 			"type": "crude_serum_station"
 		}],
-	"children":	[]
+	"children":	[{
+			"name":	"collision_node",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+			"type":	"crude_physics_static_body_handle",
+			"layer":	1
+		}, {
+			"type":	"crude_physics_collision_shape",
+			"shape_type":	"box",
+			"half_extent":	[0.165, 6, 0.165]
+		}],
+			"children":	[]
+		}]
 }

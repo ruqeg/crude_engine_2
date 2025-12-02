@@ -237,6 +237,7 @@ crude_node_manager_load_node_from_json_
     
     node_external_json = crude_node_manager_parse_json_( manager, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", manager->resources_absolute_directory, node_external_json_filepath ) );
     node = crude_node_manager_load_node_from_json_( manager, node_external_json );
+    crude_entity_set_name( node, node_name );
 
     CRUDE_ENTITY_SET_COMPONENT( node, crude_node_external, { crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", node_external_json_filepath ) } );
 
@@ -259,6 +260,7 @@ crude_node_manager_load_node_from_json_
       crude_entity child_node = crude_node_manager_load_node_from_json_( manager, child_json );
       crude_entity_set_parent( child_node, node );
     }
+  }
 
   {
     cJSON const                                           *node_transform_json;
@@ -330,7 +332,6 @@ crude_node_manager_load_node_from_json_
         manager->additional_parse_json_to_component_func( node, component_json, component_type, manager );
       }
     }
-  }
   }
 
   return node;

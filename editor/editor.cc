@@ -164,6 +164,11 @@ crude_editor_initialize
   editor->physics_debug_system_context.resources_absolute_directory = editor->resources_absolute_directory;
   editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
   crude_physics_debug_system_import( editor->engine->world, &editor->physics_debug_system_context );
+  
+  editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
+  editor->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = editor->enemy_spawnpoint_debug_model_absolute_filepath;
+  editor->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = editor->syringe_spawnpoint_debug_model_absolute_filepath;
+  crude_game_debug_system_import( editor->engine->world, &editor->game_debug_system_context );
 
   crude_editor_initialize_platform_( editor );
   crude_collisions_resources_manager_initialize( &editor->collision_resouces_manager, &editor->allocator, &editor->cgltf_temporary_allocator );
@@ -550,6 +555,9 @@ crude_editor_initialize_constant_strings_
   editor->render_graph_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, render_graph_relative_directory );
   editor->techniques_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, techniques_relative_directory );
   editor->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, compiled_shaders_relative_directory );
+
+  editor->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &editor->debug_constant_strings_buffer, "%s%s", editor->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
+  editor->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &editor->debug_constant_strings_buffer, "%s%s", editor->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
 }
 
 void

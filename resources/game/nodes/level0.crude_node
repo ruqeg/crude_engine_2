@@ -9,6 +9,36 @@
 			"type":	"crude_level_01"
 		}],
 	"children":	[{
+			"name":	"recycle_station_0",
+			"external":	"game\\nodes\\recycle_station.crude_node",
+			"transform":	{
+				"translation":	[-49.823249816894531, 7.870872974395752, -7.9310002326965332],
+				"rotation":	[0, 0.70839112997055054, 0, 0.705820083618164],
+				"scale":	[0.99999982118606567, 1, 0.99999982118606567]
+			},
+			"components":	[],
+			"children":	[]
+		}, {
+			"name":	"recycle_station_1",
+			"external":	"game\\nodes\\recycle_station.crude_node",
+			"transform":	{
+				"translation":	[36.9723243713379, 7.8059868812561035, 0.33756983280181885],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[]
+		}, {
+			"name":	"recycle_station_2",
+			"external":	"game\\nodes\\recycle_station.crude_node",
+			"transform":	{
+				"translation":	[-8.47836112976074, 7.8734073638916016, 51.540225982666016],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[]
+		}, {
 			"name":	"0_hall",
 			"transform":	{
 				"translation":	[0, 0, 0],
@@ -274,7 +304,7 @@
 			"children":	[{
 					"name":	"0",
 					"transform":	{
-						"translation":	[-10.417459487915039, 0, 28.924907684326172],
+						"translation":	[-6.3646116256713867, 0, 41.723358154296875],
 						"rotation":	[0, 0, 0, 1],
 						"scale":	[1, 1, 1]
 					},
@@ -284,6 +314,123 @@
 					"name":	"1",
 					"transform":	{
 						"translation":	[-46.386016845703125, 0, 4.77629566192627],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"2",
+					"transform":	{
+						"translation":	[-10.417459487915039, 0, 28.924907684326172],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"3",
+					"transform":	{
+						"translation":	[6.37712287902832, 0, 43.034126281738281],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"4",
+					"transform":	{
+						"translation":	[-1.5195960998535156, 0, 68.6857147216797],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"5",
+					"transform":	{
+						"translation":	[-44.799263000488281, 0, -19.2542610168457],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"6",
+					"transform":	{
+						"translation":	[-51.431159973144531, 0, 28.692991256713867],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"7",
+					"transform":	{
+						"translation":	[-63.947582244873047, 0, -20.770183563232422],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"8",
+					"transform":	{
+						"translation":	[-63.947582244873047, 0, -6.37076711654663],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"9",
+					"transform":	{
+						"translation":	[-19.169849395751953, 0, 67.153335571289062],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"10",
+					"transform":	{
+						"translation":	[-49.492607116699219, 0, 19.17759895324707],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"11",
+					"transform":	{
+						"translation":	[38.486507415771484, 0, -30.46025276184082],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"12",
+					"transform":	{
+						"translation":	[7.95469617843628, 0, -39.939144134521484],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"13",
+					"transform":	{
+						"translation":	[47.969810485839844, 0, -20.764610290527344],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[],
+					"children":	[]
+				}, {
+					"name":	"14",
+					"transform":	{
+						"translation":	[41.567485809326172, 0, 3.2116794586181641],
 						"rotation":	[0, 0, 0, 1],
 						"scale":	[1, 1, 1]
 					},

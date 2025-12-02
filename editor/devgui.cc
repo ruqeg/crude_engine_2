@@ -263,7 +263,7 @@ crude_devgui_nodes_tree_draw_internal_
     can_open_children_nodes = false;
 
     ecs_iter_t it = ecs_children( node.world, node.handle );
-    if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) && ecs_children_next( &it ) )
+    if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) && !CRUDE_ENTITY_HAS_COMPONENT( node, crude_node_external ) && ecs_children_next( &it ) )
     {
       if ( it.count )
       {

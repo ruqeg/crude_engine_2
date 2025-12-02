@@ -97,17 +97,19 @@ crude_game_debug_system_import
 {
   CRUDE_ASSERT( ctx->syringe_spawnpoint_model_absolute_filepath );
   CRUDE_ASSERT( ctx->enemy_spawnpoint_model_absolute_filepath );
-  CRUDE_ASSERT( ctx->syringe_serum_station_active_model_absolute_filepath );
     
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_level_01 ) }
   } );
 
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_creation_observer_, EcsOnSet, ctx, { 
-    { .id = ecs_id( crude_serum_station_enabled ) }
-  } );
+  if ( ctx->syringe_serum_station_active_model_absolute_filepath )
+  {
+    CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_creation_observer_, EcsOnSet, ctx, { 
+      { .id = ecs_id( crude_serum_station_enabled ) }
+    } );
 
-  CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_destroy_observer_, EcsOnRemove, ctx, { 
-    { .id = ecs_id( crude_serum_station_enabled ) }
-  } );
+    CRUDE_ECS_OBSERVER_DEFINE( world, crude_serum_station_enabled_destroy_observer_, EcsOnRemove, ctx, { 
+      { .id = ecs_id( crude_serum_station_enabled ) }
+    } );
+  }
 }

@@ -58,6 +58,10 @@ typedef struct crude_editor
   char const                                              *shaders_absolute_directory;
   char const                                              *compiled_shaders_absolute_directory;
   char const                                              *working_absolute_directory;
+#if CRUDE_DEVELOP
+  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
+  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
+#endif
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      dynamic_strings_buffer;
