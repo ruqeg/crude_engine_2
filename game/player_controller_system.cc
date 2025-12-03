@@ -72,7 +72,6 @@ crude_player_controller_update_system_
     
     velocity = XMLoadFloat3( &character_body->velocity );
  
-    
     if ( input->keys[ SDL_SCANCODE_1 ].current || input->keys[ SDL_SCANCODE_2 ].current || input->keys[ SDL_SCANCODE_3 ].current )
     {
       uint32 item_slot = 0u;
@@ -103,7 +102,7 @@ crude_player_controller_update_system_
           break;
         }
         }
-        game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
+        game_player_set_item( game, player, item_slot, CRUDE_GAME_ITEM_NONE );
       }
     }
 

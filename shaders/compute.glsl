@@ -105,7 +105,7 @@ void main()
       frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
     }
 
-    bool occlusion_visible = true;
+    bool occlusion_visible = false;
     if ( frustum_visible )
     {
       occlusion_visible = crude_occlusion_culling(
@@ -118,9 +118,8 @@ void main()
         scene.camera.world_to_clip
       );
     }
-    occlusion_visible = true; //!TODO fix
 
-    if ( frustum_visible && occlusion_visible )
+    if ( occlusion_visible )
     {
 			if ( ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 ) ) /* opaque */
       {

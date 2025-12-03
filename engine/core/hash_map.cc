@@ -96,7 +96,7 @@ crude_hashmap_growf
       {
          /* Hashmap shouldn't be resizes here since it's already resized based on the previous hashmap */
         CRUDE_ASSERT( nh == crude_hashmap_set_index( nh, backet->key, elemsize ) );
-        uint32 temp = CRUDE_HASHMAP_TEMP( nh );
+        uint64 temp = CRUDE_HASHMAP_TEMP( nh );
         crude_memory_copy( nh + CRUDE_HASHMAP_TEMP( nh ) * elemsize, backet, elemsize );
       }
     }
@@ -155,12 +155,11 @@ crude_hashmap_set_index
   {
     nh = h;
   }
-    
-  ++CRUDE_HASHMAP_HEADER( nh )->length;
-
+  uint64 length = CRUDE_HASHMAP_LENGTH( nh );
+  uint64 cappppp = CRUDE_HASHMAP_CAPACITY( nh );
   index = key_to_index_( nh, key );
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
-  while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY )
+  while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && backet->key != CRUDE_HASHMAP_BACKET_STATE_REMOVED )
   {
     if ( key == backet->key ) /* fuck "removed" backet, loser backet will be replaced by MY HAND HAHAHAH 0W0 */
     {
@@ -171,6 +170,8 @@ crude_hashmap_set_index
     index = ( index + 1 ) % CRUDE_HASHMAP_CAPACITY( nh );
     backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   }
+
+  CRUDE_HASHMAP_HEADER( nh )->length = CRUDE_HASHMAP_HEADER( nh )->length + 1;
   
   backet->key = key;
   CRUDE_HASHMAP_HEADER( nh )->temp = index;

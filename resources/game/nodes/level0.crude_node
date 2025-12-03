@@ -144,6 +144,24 @@
 									"components":	[],
 									"children":	[]
 								}]
+						}, {
+							"name":	"weapon",
+							"transform":	{
+								"translation":	[0, 0, 1],
+								"rotation":	[0, 0, 0, 1],
+								"scale":	[1, 1, 1]
+							},
+							"components":	[],
+							"children":	[{
+									"name":	"weapon_model",
+									"transform":	{
+										"translation":	[0, 0, 1],
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
+									},
+									"components":	[],
+									"children":	[]
+								}]
 						}]
 				}, {
 					"name":	"enemy_hitbox",

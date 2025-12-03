@@ -39,6 +39,7 @@ crude_player_serum_station_collision_callback
         if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
         {
           game_player_set_item( game, player, i, recycle_station->game_item );
+          break;
         }
       }
     }
@@ -132,6 +133,9 @@ crude_player_creation_observer_
     player->sanity = 1.f;
     player->stop_updating_gameplay_values = false;
     player->stop_updating_visual_values = false;
+    player->inventory_items[ 0 ] = CRUDE_GAME_ITEM_NONE;
+    player->inventory_items[ 1 ] = CRUDE_GAME_ITEM_NONE;
+    player->inventory_items[ 2 ] = CRUDE_GAME_ITEM_NONE;
   }
 }
 

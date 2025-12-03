@@ -3082,6 +3082,7 @@ crude_gfx_destroy_technique_instant
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
   CRUDE_HASHMAP_DEINITIALIZE( technique->name_hashed_to_pass_index );
   CRUDE_HASHMAP_REMOVE( gpu->resource_cache.techniques, technique_name_hashed );
+  ( gpu->resource_cache.techniques )[ CRUDE_HASHMAP_TEMP( gpu->resource_cache.techniques ) ].key = CRUDE_HASHMAP_BACKET_STATE_REMOVED;
   crude_gfx_release_technique( gpu, CRUDE_COMPOUNT( crude_gfx_technique_handle, { technique->pool_index } ) );
 }
 
