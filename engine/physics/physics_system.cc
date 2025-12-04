@@ -62,7 +62,7 @@ crude_physics_update_system_
   
   if ( !ctx->physics->simulation_enabled )
   {
-    return;
+    goto cleanup;
   }
 
   delta_time = CRUDE_MIN( it->delta_time, 0.016f );
@@ -187,6 +187,7 @@ crude_physics_update_system_
     XMStoreFloat3( &transform->translation, XMVectorSubtract( translation, parent_to_world.r[ 3 ] ) );
   }
 
+cleanup:
   CRUDE_PROFILER_END;
 }
 
