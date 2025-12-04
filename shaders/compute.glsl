@@ -122,7 +122,7 @@ void main()
 
     if ( occlusion_visible )
     {
-			if ( ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 ) ) /* opaque */
+      if ( ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 ) ) /* opaque */
       {
         uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
         mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
@@ -132,9 +132,9 @@ void main()
       }
       else if ( occlusion_culling_late_flag == 0 ) /* transparent */
       {
-				uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
+        uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
 
-				mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
+        mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
         mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
         mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
         mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
@@ -214,8 +214,8 @@ layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
 
 CRUDE_PUSH_CONSTANT( Constants )
 {
-	float                                                    log_lum_range;
-	float                                                    min_log_lum;
+  float                                                    log_lum_range;
+  float                                                    min_log_lum;
   float                                                    time_coeff;
   uint                                                     num_pixels;
 };
@@ -276,8 +276,8 @@ CRUDE_RWBUFFER( Histogram, 0 )
 
 CRUDE_PUSH_CONSTANT( Constants )
 {
-	float                                                    inverse_log_lum_range;
-	float                                                    min_log_lum;
+  float                                                    inverse_log_lum_range;
+  float                                                    min_log_lum;
   uint                                                     hdr_color_texture_index;
 };
 

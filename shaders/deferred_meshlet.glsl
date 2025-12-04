@@ -90,8 +90,8 @@ taskPayloadSharedEXT struct
 #if defined ( TRANSPARENT_NO_CULL )
 CRUDE_PUSH_CONSTANT( Constants )
 {
-	float                                                    inv_radiance_texture_width;
-	float                                                    inv_radiance_texture_height;
+  float                                                    inv_radiance_texture_width;
+  float                                                    inv_radiance_texture_height;
 };
 #endif
 

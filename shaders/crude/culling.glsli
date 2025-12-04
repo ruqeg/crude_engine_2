@@ -24,9 +24,9 @@ crude_sphere_intersect
   in float                                                 radius_b
 )
 {
-	vec3 v = center_b - center_a;
-	float total_radius = radius_a + radius_b;
-	return dot( v, v ) < total_radius * total_radius;
+  vec3 v = center_b - center_a;
+  float total_radius = radius_a + radius_b;
+  return dot( v, v ) < total_radius * total_radius;
 }
 
 /* 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013 */
