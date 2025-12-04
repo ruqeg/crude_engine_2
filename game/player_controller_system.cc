@@ -87,7 +87,7 @@ crude_player_controller_update_system_
       {
         item_slot = 2;
       }
-      if ( player->inventory_items[ item_slot ] != CRUDE_GAME_ITEM_NONE )
+      if ( player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_DRUG ||  player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_HEALTH )
       {
         switch ( player->inventory_items[ item_slot ] )
         {
