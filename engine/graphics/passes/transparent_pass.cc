@@ -55,9 +55,9 @@ crude_gfx_transparent_pass_render
   crude_gfx_cmd_push_constant( primary_cmd, &inv_radiance_texture_resolution, sizeof( inv_radiance_texture_resolution ) );
   crude_gfx_cmd_draw_mesh_task_indirect_count(
     primary_cmd,
-    pass->scene_renderer->mesh_task_indirect_commands_early_sb[ gpu->current_frame ],
+    pass->scene_renderer->mesh_task_indirect_commands_sb[ gpu->current_frame ],
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
-    pass->scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ],
+    pass->scene_renderer->mesh_task_indirect_count_sb[ gpu->current_frame ],
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, transparent_mesh_visible_count ),
     pass->scene_renderer->total_visible_meshes_instances_count,
     sizeof( crude_gfx_mesh_draw_command_gpu ) );
@@ -101,8 +101,8 @@ crude_gfx_transparent_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_sb, 4u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_sb, 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_sb, 6u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_late_sb[ i ], 7u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 8u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_sb[ i ], 7u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_sb[ i ], 8u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ pass->scene_renderer->gpu->current_frame ], 10u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 11u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ pass->scene_renderer->gpu->current_frame ], 12u );

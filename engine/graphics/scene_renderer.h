@@ -88,10 +88,9 @@ typedef struct crude_gfx_scene_renderer
   uint32                                                   total_visible_meshes_instances_count;
   uint32                                                   total_meshes_instances_count;
   crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_early_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_late_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_culled_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_buffer_handle                                  mesh_task_indirect_count_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   
   uint32                                                   total_meshes_instances_buffer_capacity;
 

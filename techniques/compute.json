@@ -23,7 +23,16 @@
 			]
 	  	},
 	  	{
-			"name": "culling",
+			"name": "culling_early",
+			"shaders": [
+				{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+	  	},
+	  	{
+			"name": "culling_late",
 			"shaders": [
 				{
 					"stage": "compute",

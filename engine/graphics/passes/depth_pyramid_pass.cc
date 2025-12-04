@@ -144,7 +144,7 @@ crude_gfx_depth_pyramid_pass_on_resize
   depth_hierarchy_height = height = depth_texture->height / 2;
   
   pass->depth_pyramid_levels = 0;
-  while ( width >= 2 && height >= 2 )
+  while ( width >= 1 && height >= 1 )
   {
     pass->depth_pyramid_levels++;
     

@@ -4,8 +4,8 @@
 #define DEFERRED_MESHLET
 //#define COLLISION_VISUALIZER
 //#define TRANSPARENT_NO_CULL
-#define CRUDE_STAGE_FRAGMENT
-
+//#define CRUDE_STAGE_FRAGMENT
+#define CRUDE_STAGE_TASK
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
@@ -58,14 +58,14 @@ CRUDE_RBUFFER( VerticesIndices, 6 )
 
 CRUDE_RBUFFER( VisibleMeshCount, 7 )
 {
-  uint                                                     opaque_mesh_visible_count;
+  uint                                                     opaque_mesh_visible_early_count;
+  uint                                                     opaque_mesh_visible_late_count;
   uint                                                     opaque_mesh_culled_count;
   uint                                                     transparent_mesh_visible_count;
-  uint                                                     transparent_mesh_culled_count;
 
+  uint                                                     transparent_mesh_culled_count;
   uint                                                     total_mesh_count;
   uint                                                     depth_pyramid_texture_index;
-  uint                                                     occlusion_culling_late_flag;
   uint                                                     meshlet_index_count;
 
   uint                                                     dispatch_task_x;

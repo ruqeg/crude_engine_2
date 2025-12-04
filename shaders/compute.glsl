@@ -2,8 +2,9 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define LUMINANCE_HISTOGRAM_GENERATION
-//#define CULLING
-#define DEPTH_PYRAMID
+//#define CULLING_EARLY
+#define CULLING_LATE
+//#define DEPTH_PYRAMID
 #define CRUDE_COMPUTE
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -11,7 +12,7 @@
 #include "crude/culling.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-#if defined( CULLING )
+#if defined( CULLING_EARLY ) || defined( CULLING_LATE )
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 
 CRUDE_UNIFORM( SceneConstant, 0 ) 
@@ -39,39 +40,21 @@ CRUDE_RWBUFFER( MeshDrawCommands, 4 )
   crude_mesh_draw_command                                  mesh_draw_commands[];
 };
 
-CRUDE_RWBUFFER( MeshDrawCommandsLate, 5 )
+CRUDE_RWBUFFER( MeshDrawCommandsCulled, 5 )
 {
-  crude_mesh_draw_command                                  late_mesh_draw_commands[];
+  crude_mesh_draw_command                                  mesh_draw_commands_culled[];
 };
 
-CRUDE_RWBUFFER( MeshDrawCountsEarly, 6 )
+CRUDE_RWBUFFER( MeshDrawCounts, 6 )
 {
-  uint                                                     early_opaque_mesh_visible_count;
-  uint                                                     early_opaque_mesh_culled_count;
-  uint                                                     early_transparent_mesh_visible_count;
-  uint                                                     early_transparent_mesh_culled_count;
-
-  uint                                                     early_total_mesh_count;
-  uint                                                     early_depth_pyramid_texture_index;
-  uint                                                     early_occlusion_culling_late_flag;
-  uint                                                     early_meshlet_index_count;
-
-  uint                                                     early_dispatch_task_x;
-  uint                                                     early_dispatch_task_y;
-  uint                                                     early_dispatch_task_z;
-  uint                                                     early_meshlet_instances_count;
-};
-
-CRUDE_RWBUFFER( MeshDrawCounts, 7 )
-{
-  uint                                                     opaque_mesh_visible_count;
+  uint                                                     opaque_mesh_visible_early_count;
+  uint                                                     opaque_mesh_visible_late_count;
   uint                                                     opaque_mesh_culled_count;
   uint                                                     transparent_mesh_visible_count;
-  uint                                                     transparent_mesh_culled_count;
 
+  uint                                                     transparent_mesh_culled_count;
   uint                                                     total_mesh_count;
   uint                                                     depth_pyramid_texture_index;
-  uint                                                     occlusion_culling_late_flag;
   uint                                                     meshlet_index_count;
 
   uint                                                     dispatch_task_x;
@@ -80,78 +63,119 @@ CRUDE_RWBUFFER( MeshDrawCounts, 7 )
   uint                                                     meshlet_instances_count;
 };
 
+void write_mesh_draw_command
+(
+  out crude_mesh_draw_command                              mesh_draw_command,
+  in uint                                                  mesh_instance_draw_index,
+  in uint                                                  mesh_draw_index
+)
+{
+  mesh_draw_command.draw_id = mesh_instance_draw_index;
+  mesh_draw_command.indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
+  mesh_draw_command.indirect_meshlet_group_count_y = 1;
+  mesh_draw_command.indirect_meshlet_group_count_z = 1;
+}
+
 void main()
 {
   uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
-  uint count = occlusion_culling_late_flag == 1 ? early_opaque_mesh_culled_count : total_mesh_count;
-  
-  if ( mesh_instance_draw_index < count )
+
+#if defined( CULLING_LATE )
+  if ( mesh_instance_draw_index < opaque_mesh_culled_count )
   {
-    if ( occlusion_culling_late_flag == 1 )
+    mesh_instance_draw_index = mesh_draw_commands_culled[ mesh_instance_draw_index ].draw_id;
+  }
+  else if ( int(mesh_instance_draw_index) - opaque_mesh_culled_count < transparent_mesh_culled_count )
+  {
+    mesh_instance_draw_index = mesh_draw_commands_culled[ int(mesh_instance_draw_index) - opaque_mesh_culled_count + total_mesh_count ].draw_id;
+  }
+  else
+  {
+    return;
+  }
+#else
+  if ( mesh_instance_draw_index >= total_mesh_count )
+  {
+    return;
+  }
+#endif
+  
+  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
+  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
+  vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
+  vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
+  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
+  float radius = bounding_sphere.w * scale * 1.1;
+
+  vec4 view_center = world_center * scene.camera.world_to_view;
+
+  bool frustum_visible = true;
+  for ( uint i = 0; i < 6; ++i )
+  {
+    frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
+  }
+
+  bool occlusion_visible = false;
+  if ( frustum_visible )
+  {
+    occlusion_visible = crude_occlusion_culling(
+      mesh_draw_index,
+      view_center.xyz, radius, scene.camera.znear, 
+      scene.camera.view_to_clip[ 0 ][ 0 ],
+      scene.camera.view_to_clip[ 1 ][ 1 ],
+      depth_pyramid_texture_index, world_center.xyz,
+      scene.camera.position,
+      scene.camera.world_to_clip
+    );
+  }
+
+  bool is_mesh_opaque = ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
+#if defined( CULLING_LATE )
+  if ( occlusion_visible )
+  {
+    if ( is_mesh_opaque )
     {
-      mesh_instance_draw_index = late_mesh_draw_commands[ mesh_instance_draw_index ].draw_id;
+      uint draw_index = atomicAdd( opaque_mesh_visible_late_count, 1 );
+      write_mesh_draw_command( mesh_draw_commands[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
-    uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
-    mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
-    vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
-    vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
-    float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
-    float radius = bounding_sphere.w * scale * 1.1;
-
-    vec4 view_center = world_center * scene.camera.world_to_view;
-
-    bool frustum_visible = true;
-    for ( uint i = 0; i < 6; ++i )
+    else
     {
-      frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
+      uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
+      write_mesh_draw_command( mesh_draw_commands[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
-
-    bool occlusion_visible = false;
-    if ( frustum_visible )
+  }
+#else
+  if ( occlusion_visible )
+  {
+    if ( is_mesh_opaque )
     {
-      occlusion_visible = crude_occlusion_culling(
-        mesh_draw_index,
-        view_center.xyz, radius, scene.camera.znear, 
-        scene.camera.view_to_clip[ 0 ][ 0 ],
-        scene.camera.view_to_clip[ 1 ][ 1 ],
-        depth_pyramid_texture_index, world_center.xyz,
-        scene.camera.position,
-        scene.camera.world_to_clip
-      );
+      uint draw_index = atomicAdd( opaque_mesh_visible_early_count, 1 );
+      write_mesh_draw_command( mesh_draw_commands[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
-
-    if ( occlusion_visible )
+    else
     {
-      if ( ( ( mesh_draws[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 ) ) /* opaque */
-      {
-        uint draw_index = atomicAdd( opaque_mesh_visible_count, 1 );
-        mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
-      }
-      else if ( occlusion_culling_late_flag == 0 ) /* transparent */
-      {
-        uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
-
-        mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
-        mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
-      }
+      uint draw_index = atomicAdd( transparent_mesh_visible_count, 1 ) + total_mesh_count;
+      write_mesh_draw_command( mesh_draw_commands[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
-    else if ( occlusion_culling_late_flag == 0 )
+  }
+  else
+  {
+    if ( is_mesh_opaque )
     {
       /* Add culled object for re-test */
       uint draw_index = atomicAdd( opaque_mesh_culled_count, 1 );
-      late_mesh_draw_commands[ draw_index ].draw_id = mesh_instance_draw_index;
-      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_x = ( mesh_draws[ mesh_draw_index ].meshletes_count + 31 ) / 32;
-      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_y = 1;
-      late_mesh_draw_commands[ draw_index ].indirect_meshlet_group_count_z = 1;
+      write_mesh_draw_command( mesh_draw_commands_culled[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
+    }
+    else
+    {
+      /* Add culled object for re-test */
+      uint draw_index = atomicAdd( transparent_mesh_culled_count, 1 ) + total_mesh_count;
+      write_mesh_draw_command( mesh_draw_commands_culled[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
   }
+#endif
 }
-#endif /* CULLING */
+#endif /* CULLING_EARLY || CULLING_LATE */
 
 #if defined( DEPTH_PYRAMID )
 layout(set=CRUDE_MATERIAL_SET, binding=0) uniform sampler2D src;

@@ -54,10 +54,10 @@ crude_gfx_gbuffer_early_pass_render
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->meshlet_early_ds[ gpu->current_frame ] );
   crude_gfx_cmd_draw_mesh_task_indirect_count(
     primary_cmd,
-    pass->scene_renderer->mesh_task_indirect_commands_early_sb[ gpu->current_frame ],
+    pass->scene_renderer->mesh_task_indirect_commands_sb[ gpu->current_frame ],
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
-    pass->scene_renderer->mesh_task_indirect_count_early_sb[ gpu->current_frame ],
-    CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_count ),
+    pass->scene_renderer->mesh_task_indirect_count_sb[ gpu->current_frame ],
+    CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_early_count ),
     pass->scene_renderer->total_visible_meshes_instances_count,
     sizeof( crude_gfx_mesh_draw_command_gpu )
   );
@@ -101,8 +101,8 @@ crude_gfx_gbuffer_early_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_sb, 4u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_sb, 5u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_sb, 6u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_early_sb[ i ], 7u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_early_sb[ i ], 8u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_count_sb[ i ], 7u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->mesh_task_indirect_commands_sb[ i ], 8u );
     crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation( &ds_creation, pass->scene_renderer, i );
     
     pass->meshlet_early_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->gpu, &ds_creation );
