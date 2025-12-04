@@ -116,7 +116,7 @@ void main()
 
   mat4 mesh_to_world = mesh_instance_draws[ draw_id ].mesh_to_world;
   vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
-  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
+  float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
   float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
 
   vec3 cone_axis = vec3(

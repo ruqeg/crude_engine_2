@@ -35,6 +35,23 @@ crude_gfx_gbuffer_early_pass_deinitialize
 }
 
 void
+crude_gfx_gbuffer_early_pass_pre_render
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  crude_gfx_gbuffer_early_pass                            *pass;
+  crude_gfx_device                                        *gpu;
+ 
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_early_pass*, ctx );
+  gpu = pass->scene_renderer->gpu;
+
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_sb[ gpu->current_frame ], CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+}
+
+void
 crude_gfx_gbuffer_early_pass_render
 (
   _In_ void                                               *ctx,
@@ -119,5 +136,6 @@ crude_gfx_gbuffer_early_pass_pack
   container.ctx = pass;
   container.render = crude_gfx_gbuffer_early_pass_render;
   container.on_techniques_reloaded = crude_gfx_gbuffer_early_pass_on_techniques_reloaded;
+  container.pre_render = crude_gfx_gbuffer_early_pass_pre_render;
   return container;
 }

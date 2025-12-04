@@ -127,6 +127,14 @@ crude_uv_nearest
   vec2 uv = pixel + .5;
   return uv / texture_size;
 }
+float
+crude_calculate_scale_from_matrix
+(
+  in mat3                                                  m
+)
+{
+  return max( length( m[ 0 ] ), max( length( m[ 1 ] ), length( m[ 2 ] ) ) );
+}
 
 /* https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl */
 

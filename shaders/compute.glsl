@@ -104,7 +104,7 @@ void main()
   mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
   vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
   vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
-  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
+  float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
   float radius = bounding_sphere.w * scale * 1.1;
 
   vec4 view_center = world_center * scene.camera.world_to_view;

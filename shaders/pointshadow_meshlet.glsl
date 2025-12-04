@@ -104,7 +104,7 @@ void main()
 
   mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_index ].mesh_to_world;
   vec4 world_center = vec4( meshlets[ global_meshlet_index ].center, 1 ) * mesh_to_world;
-  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
+  float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
   float radius = meshlets[ global_meshlet_index ].radius * scale * 1.1;
   vec3 cone_axis = vec3(
     int( meshlets[ global_meshlet_index ].cone_axis[ 0 ] ) / 127.f,
@@ -314,7 +314,7 @@ void main()
 
   vec4 mesh_world_bounding_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
 
-  float scale = max( mesh_to_world[ 0 ][ 0 ], max( mesh_to_world[ 1 ][ 1 ], mesh_to_world[ 2 ][ 2 ] ) );
+  float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
   float mesh_radius = bounding_sphere.w * scale * 1.1;
 
   const bool mesh_intersects_sphere = crude_sphere_intersect( mesh_world_bounding_center.xyz, mesh_radius, light.world_position, light.radius );

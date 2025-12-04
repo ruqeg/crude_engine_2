@@ -25,6 +25,13 @@ crude_gfx_gbuffer_late_pass_deinitialize
 );
 
 CRUDE_API void
+crude_gfx_gbuffer_late_pass_pre_render
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+);
+
+CRUDE_API void
 crude_gfx_gbuffer_late_pass_render
 (
   _In_ void                                               *ctx,
