@@ -20,7 +20,11 @@
 #if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
 #define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS ""
 #else
+#if CRUDE_DEVELOP
+#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS  --D CRUDE_DEVELOP=1"
+#else
 #define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS"
+#endif
 #endif
 
 static char const *const vk_device_required_extensions[] = 
@@ -3082,7 +3086,6 @@ crude_gfx_destroy_technique_instant
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
   CRUDE_HASHMAP_DEINITIALIZE( technique->name_hashed_to_pass_index );
   CRUDE_HASHMAP_REMOVE( gpu->resource_cache.techniques, technique_name_hashed );
-  ( gpu->resource_cache.techniques )[ CRUDE_HASHMAP_TEMP( gpu->resource_cache.techniques ) ].key = CRUDE_HASHMAP_BACKET_STATE_REMOVED;
   crude_gfx_release_technique( gpu, CRUDE_COMPOUNT( crude_gfx_technique_handle, { technique->pool_index } ) );
 }
 

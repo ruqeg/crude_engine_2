@@ -1,9 +1,9 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-//#define DEFERRED_MESHLET
+#define DEFERRED_MESHLET
 //#define COLLISION_VISUALIZER
-#define TRANSPARENT_NO_CULL
+//#define TRANSPARENT_NO_CULL
 #define CRUDE_STAGE_FRAGMENT
 
 #include "crude/platform.glsli"
@@ -148,7 +148,6 @@ void main()
       world_center.xyz, scene.camera.position, scene.camera.world_to_clip
     );
   }
-  occlusion_visible = true; //!TODO fix
   accept = accept && occlusion_visible;
 #endif
 
@@ -245,6 +244,9 @@ void main()
 layout(location = 0) out vec4 out_abledo;
 layout(location = 1) out vec2 out_normal;
 layout(location = 2) out vec2 out_roughness_metalness;
+#if CRUDE_DEVELOP
+layout(location = 3) out uint out_mesh_draw_index;
+#endif
 
 layout(location=0) in vec2 in_texcoord0;
 layout(location=1) in flat uint in_mesh_draw_index;
@@ -285,6 +287,9 @@ void main()
   out_abledo = albedo;
   out_normal = crude_octahedral_encode( normal );
   out_roughness_metalness = roughness_metalness;
+#if CRUDE_DEVELOP
+  out_mesh_draw_index = in_mesh_draw_index;
+#endif
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

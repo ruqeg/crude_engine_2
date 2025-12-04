@@ -101,7 +101,7 @@ crude_occlusion_culling
     float width = ( aabb.z - aabb.x ) * depth_pyramid_size.x;
     float height = ( aabb.w - aabb.y ) * depth_pyramid_size.y;
 
-    float level = 7;
+    float level = floor( log2( max( width, height ) ) );
 
     vec2 uv = ( aabb.xy + aabb.zw ) * 0.5;
     uv.y = 1 - uv.y;
@@ -113,16 +113,10 @@ crude_occlusion_culling
     depth = max( depth, textureLod( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], vec2( aabb.z, 1.0f - aabb.y ), level ).r );
 
     vec3 dir = normalize( camera_world_position - world_bounding_center );
+    
     vec4 sceen_space_center_last = vec4( world_bounding_center + dir * radius, 1.0 ) * culling_view_projection;
-    vec3 dir_position = world_bounding_center + dir * radius;
-
     float depth_sphere = sceen_space_center_last.z / sceen_space_center_last.w;
-
-    sceen_space_center_last.x = sceen_space_center_last.x / sceen_space_center_last.w;
-    sceen_space_center_last.y = sceen_space_center_last.y / sceen_space_center_last.w;
     occlusion_visible = ( depth_sphere <= depth );
-
-    //crude_debug_draw_2d_box( vec2( aabb_clip.x, -aabb_clip.y ), vec2( aabb_clip.z, -aabb_clip.w ), occlusion_visible ? vec4(0,1,0,1) : vec4(1,0,0,1) );
   }
 
   return occlusion_visible;

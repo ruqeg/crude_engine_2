@@ -18,6 +18,8 @@
 #include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics_system.h>
 #include <engine/external/game_components.h>
+#include <engine/scene/scripts_components.h>
+#include <engine/scene/free_camera_system.h>
 #include <game/player_controller_system.h>
 #include <game/player_system.h>
 #include <game/enemy_system.h>
@@ -175,6 +177,9 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_01_system );
   ECS_IMPORT( game->engine->world, crude_player_system );
   ECS_IMPORT( game->engine->world, crude_serum_station_system );
+#if CRUDE_DEVELOP
+  ECS_IMPORT( game->engine->world, crude_free_camera_system );
+#endif
   
   game_initialize_allocators_( game );
 #if CRUDE_DEVELOP
@@ -520,6 +525,40 @@ game_setup_custom_postload_nodes_
 )
 {
   game->player_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
+  
+    crude_entity editor_camera_node;
+  {
+    crude_transform                                        editor_camera_node_transform;
+    crude_camera                                           editor_camera_node_camera;
+    crude_free_camera                                      editor_camera_node_crude_free_camera;
+
+
+    editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+    XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
+    XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
+    XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
+
+    editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+    editor_camera_node_camera.fov_radians = 1;
+    editor_camera_node_camera.aspect_ratio = 1.8;
+    editor_camera_node_camera.near_z = 0.001;
+    editor_camera_node_camera.far_z = 1000;
+
+    editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
+    editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
+    editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
+    editor_camera_node_crude_free_camera.input_enabled = true;
+    editor_camera_node_crude_free_camera.input_node = game->platform_node;
+
+    editor_camera_node = crude_entity_create_empty( game->engine->world, "editor_camera" );
+    CRUDE_ENTITY_SET_COMPONENT( editor_camera_node, crude_transform, { editor_camera_node_transform } );
+    CRUDE_ENTITY_SET_COMPONENT( editor_camera_node, crude_camera, { editor_camera_node_camera } );
+    CRUDE_ENTITY_SET_COMPONENT( editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
+  }
+
+  game->focused_camera_node = editor_camera_node;
+  /*
+  */
 }
 
 void

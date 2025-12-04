@@ -196,16 +196,23 @@ crude_devmenu_handle_input
     
     crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
-    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
     if ( devmenu->enabled )
     {
-      player_controller->input_enabled = false;
       crude_platform_show_cursor( *window_handle );
     }
     else
     {
-      player_controller->input_enabled = true;
       crude_platform_hide_cursor( *window_handle );
+    }
+    
+    crude_player_controller *player_controller = NULL;
+    if ( crude_entity_valid( player_controller_node ) )
+    {
+      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
+    }
+    if ( player_controller )
+    {
+      player_controller->input_enabled = !devmenu->enabled;
     }
   }
 

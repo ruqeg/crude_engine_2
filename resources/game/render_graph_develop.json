@@ -64,6 +64,17 @@
         },
         {
           "type": "attachment",
+          "name": "gbuffer_mesh_draw_index",
+          "format": "VK_FORMAT_R16_UINT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
+          "type": "attachment",
           "name": "depth",
           "format": "VK_FORMAT_D32_SFLOAT",
           "resolution": [
@@ -149,6 +160,10 @@
         },
         {
           "type": "attachment",
+          "name": "gbuffer_mesh_draw_index"
+        },
+        {
+          "type": "attachment",
           "name": "depth"
         }
       ],
@@ -164,6 +179,10 @@
         {
           "type": "reference",
           "name": "gbuffer_roughness_metalness"
+        },
+        {
+          "type": "reference",
+          "name": "gbuffer_mesh_draw_index"
         },
         {
           "type": "reference",
@@ -358,6 +377,10 @@
         {
           "type": "texture",
           "name": "pbr"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_mesh_draw_index"
         },
         {
           "type": "attachment",

@@ -155,8 +155,7 @@ crude_hashmap_set_index
   {
     nh = h;
   }
-  uint64 length = CRUDE_HASHMAP_LENGTH( nh );
-  uint64 cappppp = CRUDE_HASHMAP_CAPACITY( nh );
+
   index = key_to_index_( nh, key );
   backet = CRUDE_REINTERPRET_CAST( hash_backet*, nh + elemsize * index );
   while ( backet->key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && backet->key != CRUDE_HASHMAP_BACKET_STATE_REMOVED )

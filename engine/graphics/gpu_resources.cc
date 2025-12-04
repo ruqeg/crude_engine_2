@@ -527,6 +527,7 @@ crude_gfx_string_to_vk_format
   if ( strcmp( format, "VK_FORMAT_R16G16_SNORM" ) == 0 ) return VK_FORMAT_R16G16_SNORM;
   if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SNORM" ) == 0 ) return VK_FORMAT_R16G16_SNORM;
   if ( strcmp( format, "VK_FORMAT_R16G16B16A16_UNORM" ) == 0 ) return VK_FORMAT_R16G16B16A16_UNORM;
+  if ( strcmp( format, "VK_FORMAT_R16_UINT" ) == 0 ) return VK_FORMAT_R16_UINT;
   // !OPTTODO HASH STRING
   CRUDE_ASSERT( false );
   return VK_FORMAT_UNDEFINED;

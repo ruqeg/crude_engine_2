@@ -81,9 +81,7 @@ crude_gfx_depth_pyramid_pass_render
   crude_gfx_texture                                       *depth_pyramid_texture;
   crude_gfx_depth_pyramid_pass                            *pass;
   crude_gfx_pipeline_handle                                depth_pyramid_pipeline;
-  uint32                                                   width;
-  uint32                                                   height;
-  uint32                                                   group_x, group_y;
+  uint32                                                   width, height, group_x, group_y;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
 
@@ -134,7 +132,7 @@ crude_gfx_depth_pyramid_pass_on_resize
   crude_gfx_sampler_creation                               sampler_creation;
   crude_gfx_texture_creation                               depth_hierarchy_creation;
   crude_gfx_texture_view_creation                          depth_pyramid_view_creation;
-  uint32                                                   width, height;
+  uint32                                                   depth_hierarchy_width, depth_hierarchy_height, width, height;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
   
@@ -142,8 +140,8 @@ crude_gfx_depth_pyramid_pass_on_resize
   depth_texture_handle = depth_resource->resource_info.texture.handle;
   depth_texture = crude_gfx_access_texture( pass->scene_renderer->gpu, depth_texture_handle );
 
-  width = depth_texture->width / 2;
-  height = depth_texture->height / 2;
+  depth_hierarchy_width = width = depth_texture->width / 2;
+  depth_hierarchy_height = height = depth_texture->height / 2;
   
   pass->depth_pyramid_levels = 0;
   while ( width >= 2 && height >= 2 )
@@ -162,8 +160,8 @@ crude_gfx_depth_pyramid_pass_on_resize
   depth_hierarchy_creation = crude_gfx_texture_creation_empty();
   depth_hierarchy_creation.format = VK_FORMAT_R32_SFLOAT;
   depth_hierarchy_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-  depth_hierarchy_creation.width = depth_texture->width / 2;
-  depth_hierarchy_creation.height = depth_texture->height / 2;
+  depth_hierarchy_creation.width = depth_hierarchy_width;
+  depth_hierarchy_creation.height = depth_hierarchy_height;
   depth_hierarchy_creation.depth = 1u;
   depth_hierarchy_creation.subresource.mip_level_count = pass->depth_pyramid_levels;
   depth_hierarchy_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;

@@ -95,26 +95,29 @@ crude_gfx_game_postprocessing_pass_render
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->game_postprocessing_ds[ gpu->current_frame ] );
   
-  player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
-
   game_postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_game_postprocessing_push_constant );
-  game_postprocessing_constant.pbr_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle.index;
-  game_postprocessing_constant.depth_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
-  game_postprocessing_constant.player_position = player_transform->translation;
-  game_postprocessing_constant.fog_color = pass->options.fog_color;
-  game_postprocessing_constant.fog_distance = pass->options.fog_distance;
-  game_postprocessing_constant.fog_coeff = pass->options.fog_coeff;
-  game_postprocessing_constant.wave_size = pass->options.wave_size;
-  game_postprocessing_constant.wave_texcoord_scale = pass->options.wave_texcoord_scale;
-  game_postprocessing_constant.wave_absolute_frame_scale = pass->options.wave_absolute_frame_scale;
-  game_postprocessing_constant.aberration_strength_scale = pass->options.aberration_strength_scale;
-  game_postprocessing_constant.aberration_strength_offset = pass->options.aberration_strength_offset;
-  game_postprocessing_constant.aberration_strength_sin_affect = pass->options.aberration_strength_sin_affect;
-  game_postprocessing_constant.pulse_color = pass->options.pulse_color;
-  game_postprocessing_constant.pulse_frame_scale = pass->options.pulse_frame_scale;
-  game_postprocessing_constant.pulse_scale = pass->options.pulse_scale;
-  game_postprocessing_constant.pulse_distance_coeff = pass->options.pulse_distance_coeff;
-  game_postprocessing_constant.pulse_distance = pass->options.pulse_distance;
+  if ( crude_entity_valid( game->player_node ) )
+  {
+    player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+    game_postprocessing_constant.pbr_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle.index;
+    game_postprocessing_constant.depth_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
+    game_postprocessing_constant.player_position = player_transform->translation;
+    game_postprocessing_constant.fog_color = pass->options.fog_color;
+    game_postprocessing_constant.fog_distance = pass->options.fog_distance;
+    game_postprocessing_constant.fog_coeff = pass->options.fog_coeff;
+    game_postprocessing_constant.wave_size = pass->options.wave_size;
+    game_postprocessing_constant.wave_texcoord_scale = pass->options.wave_texcoord_scale;
+    game_postprocessing_constant.wave_absolute_frame_scale = pass->options.wave_absolute_frame_scale;
+    game_postprocessing_constant.aberration_strength_scale = pass->options.aberration_strength_scale;
+    game_postprocessing_constant.aberration_strength_offset = pass->options.aberration_strength_offset;
+    game_postprocessing_constant.aberration_strength_sin_affect = pass->options.aberration_strength_sin_affect;
+    game_postprocessing_constant.pulse_color = pass->options.pulse_color;
+    game_postprocessing_constant.pulse_frame_scale = pass->options.pulse_frame_scale;
+    game_postprocessing_constant.pulse_scale = pass->options.pulse_scale;
+    game_postprocessing_constant.pulse_distance_coeff = pass->options.pulse_distance_coeff;
+    game_postprocessing_constant.pulse_distance = pass->options.pulse_distance;
+  }
+
   crude_gfx_cmd_push_constant( primary_cmd, &game_postprocessing_constant, sizeof( game_postprocessing_constant ) );
 
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );

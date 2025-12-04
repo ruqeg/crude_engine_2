@@ -663,9 +663,6 @@ crude_editor_setup_custom_nodes_to_scene_
   _In_ crude_editor                                       *editor
 )
 {
-  crude_player_controller                                  *player_controller;
-  crude_free_camera                                        *free_camera;
-
   {
     crude_transform                                        editor_camera_node_transform;
     crude_camera                                           editor_camera_node_camera;

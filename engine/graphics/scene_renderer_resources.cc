@@ -24,9 +24,7 @@ crude_gfx_camera_to_camera_gpu
   XMStoreFloat4x4A( &camera_gpu->world_to_clip, world_to_clip );
   XMStoreFloat4x4A( &camera_gpu->clip_to_world, clip_to_world );
   
-  camera_gpu->position.x = transform->translation.x;
-  camera_gpu->position.y = transform->translation.y;
-  camera_gpu->position.z = transform->translation.z;
+  XMStoreFloat3( &camera_gpu->position, XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), view_to_world ) );
 
   camera_gpu->znear = camera->near_z;
   camera_gpu->zfar = camera->far_z;
