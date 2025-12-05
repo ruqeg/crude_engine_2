@@ -58,7 +58,7 @@ crude_player_controller_update_system_
     crude_entity                                           node, pivot_node;
     XMMATRIX                                               pivot_to_world;
     XMVECTOR                                               basis_pivot_right, velocity;
-    float32                                                moving_limit;
+    float32                                                moving_limit, rotation_speed;
 
     transform = &transforms_per_entity[ i ];
     player_controller = &player_controllere_per_entity[ i ];
@@ -113,6 +113,13 @@ crude_player_controller_update_system_
     else
     {
       moving_limit = player_controller->walk_speed;
+    }
+
+    rotation_speed = player_controller->rotation_speed;
+    if ( input->mouse.right.current )
+    {
+      moving_limit *= 0.5;
+      rotation_speed *= 0.75;
     }
 
     pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
@@ -173,8 +180,8 @@ crude_player_controller_update_system_
 
         {
           XMVECTOR rotation = XMLoadFloat4( &pivot_node_transform->rotation );
-          rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_pivot_right, -player_controller->rotation_speed * input->mouse.rel.y ) );
-          rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( g_XMIdentityR1, -player_controller->rotation_speed * input->mouse.rel.x ) );
+          rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_pivot_right, -rotation_speed * input->mouse.rel.y ) );
+          rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( g_XMIdentityR1, -rotation_speed * input->mouse.rel.x ) );
           XMStoreFloat4( &pivot_node_transform->rotation, rotation );
         }
         

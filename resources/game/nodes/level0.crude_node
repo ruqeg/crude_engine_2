@@ -144,20 +144,46 @@
 									"components":	[],
 									"children":	[]
 								}]
-						}, {
+						},
+						{
 							"name":	"weapon",
 							"transform":	{
-								"translation":	[0, 0, 1],
+								"translation":	[0, 0, 0],
 								"rotation":	[0, 0, 0, 1],
 								"scale":	[1, 1, 1]
 							},
-							"components":	[],
-							"children":	[{
+							"components": [{
+											"type": "crude_weapon",
+											"max_ammo": 10
+										}],
+							"children":	[
+								{
 									"name":	"weapon_model",
 									"transform":	{
-										"translation":	[0, 0, 1],
-										"rotation":	[0, 0, 0, 1],
-										"scale":	[1, 1, 1]
+										"translation":	[0.164000004529953, -0.0900000035762787, 0.270000010728836],
+										"rotation":	[0, 1, 0, 0],
+										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
+									},
+									"components": [{
+											"type":	"crude_gltf",
+											"path":	"game\\models\\Pistol.gltf"
+										}],
+									"children":	[]
+								}, {
+									"name":	"weapon_basic_position",
+									"transform":	{
+										"translation":	[0.164000004529953, -0.0900000035762787, 0.270000010728836],
+										"rotation":	[0, 1, 0, 0],
+										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
+									},
+									"components":	[],
+									"children":	[]
+								}, {
+									"name":	"weapon_scoped_position",
+									"transform":	{
+										"translation":	[0, -0.0423888936638832, 0.15000000596046448],
+										"rotation":	[0, 1, 0, 0],
+										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
 									},
 									"components":	[],
 									"children":	[]

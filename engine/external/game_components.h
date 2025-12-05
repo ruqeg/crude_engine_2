@@ -24,6 +24,15 @@ typedef struct crude_recycle_station
   crude_game_item                                          game_item;
 } crude_recycle_station;
 
+typedef struct crude_weapon
+{
+  int32                                                    max_ammo;
+  crude_entity                                             weapon_model_node;
+  crude_entity                                             weapon_basic_node;
+  crude_entity                                             weapon_scoped_node;
+  float32                                                  last_shot_timer;
+} crude_weapon;
+
 typedef struct crude_level_01
 {
   crude_entity                                             serum_stations_spawn_points_parent_node;
@@ -70,6 +79,12 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_enemy );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_enemy );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_enemy );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_enemy );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_weapon );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_weapon );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_weapon );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_weapon );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_weapon );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_level_01 );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_01 );

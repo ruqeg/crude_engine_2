@@ -465,7 +465,13 @@ crude_devgui_node_inspector_draw
   {
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( editor->selected_node, enemy, &editor->node_manager );
   }
-
+  
+  crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_weapon );
+  if ( weapon && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_weapon ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_weapon )( editor->selected_node, weapon, &editor->node_manager );
+  }
+  
   crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_debug_collision );
   if ( debug_collision && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_collision ) ) )
   {

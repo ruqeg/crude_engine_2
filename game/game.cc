@@ -25,6 +25,7 @@
 #include <game/enemy_system.h>
 #include <game/level_01_system.h>
 #include <game/serum_station_system.h>
+#include <game/weapon_system.h>
 
 #include <game/game.h>
 
@@ -177,7 +178,8 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_01_system );
   ECS_IMPORT( game->engine->world, crude_player_system );
   ECS_IMPORT( game->engine->world, crude_serum_station_system );
-  
+  ECS_IMPORT( game->engine->world, crude_weapon_system );
+
   game_initialize_allocators_( game );
 #if CRUDE_DEVELOP
   game_initialize_imgui_( game );

@@ -340,6 +340,12 @@ crude_node_manager_load_node_from_json_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
       }
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_weapon ) ) == 0 )
+      {
+        crude_weapon                                       weapon;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_weapon )( &weapon, component_json, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_weapon, { weapon } );
+      }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
       {
         crude_level_01                                     level01;
@@ -445,6 +451,7 @@ crude_node_manager_node_to_json_hierarchy_
     crude_player_controller const                         *player_component;
     crude_player const                                    *player;
     crude_enemy const                                     *enemy;
+    crude_weapon const                                    *weapon;
     crude_level_01 const                                  *level01;
     crude_recycle_station const                           *recycle_station;
 
@@ -503,6 +510,12 @@ crude_node_manager_node_to_json_hierarchy_
     if ( enemy )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
+    }
+    
+    weapon = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_weapon );
+    if ( weapon )
+    {
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_weapon )( weapon, manager ) );
     }
     
     level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
