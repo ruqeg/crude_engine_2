@@ -6,6 +6,7 @@ typedef struct crude_physics_raycast_result
 {
   crude_raycast_result                                     raycast_result;
   crude_entity                                             node;
+  uint64                                                   body_layer;
 } crude_physics_raycast_result;
 
 typedef struct crude_physics_creation

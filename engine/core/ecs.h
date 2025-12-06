@@ -136,7 +136,8 @@ crude_entity_copy_hierarchy
 (
   _In_ crude_entity                                        src,
   _In_ char const                                         *name,
-  _In_ bool                                                copy_value
+  _In_ bool                                                copy_value,
+  _In_ bool                                                enabled
 );
 
 CRUDE_API void

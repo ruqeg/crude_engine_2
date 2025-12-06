@@ -6,16 +6,114 @@
 		"scale":	[1, 1, 1]
 	},
 	"components":	[{
-			"type":	"crude_physics_static_body_handle",
-			"layer":	4
-		}, {
-			"type":	"crude_physics_collision_shape",
-			"shape_type":	"box",
-			"half_extent":	[1, 1.809999942779541, 0.800000011920929]
-		}, {
 			"type":	"crude_enemy"
 		}],
 	"children":	[{
+			"name":	"collisions",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"physics_collision",
+					"transform":	{
+						"translation":	[0, 0.800000011920929, -0.0021425485610961914],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	1
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.63999998569488525, 0.899999976158142, 0.509999990463257]
+						}],
+					"children":	[]
+				}, {
+					"name":	"damage_dealing_collision",
+					"transform":	{
+						"translation":	[0, 0.530229151248932, 0.55841952562332153],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	4
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.57999998331069946, 0.43000000715255737, 0.18000000715255737]
+						}],
+					"children":	[]
+				}, {
+					"name":	"damage_receive_collision_0",
+					"transform":	{
+						"translation":	[0.3260730504989624, 1.4415824413299561, 0.55841952562332153],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	32
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.10999999940395355, 0.10000000149011612, 0.10000000149011612]
+						}],
+					"children":	[]
+				}, {
+					"name":	"damage_receive_collision_1",
+					"transform":	{
+						"translation":	[-0.47877347469329834, 1.2045929431915283, 0.45920062065124512],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	32
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.10999999940395355, 0.14000000059604645, 0.0900000035762787]
+						}],
+					"children":	[]
+				}, {
+					"name":	"damage_receive_collision_2",
+					"transform":	{
+						"translation":	[0.7153550386428833, 0.73614305257797241, 0.30947932600975037],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	32
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.0900000035762787, 0.12999999523162842, 0.12999999523162842]
+						}],
+					"children":	[]
+				}, {
+					"name":	"damage_receive_collision_3",
+					"transform":	{
+						"translation":	[0.075715959072113037, 0.68631505966186523, 0.15120247006416321],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_physics_static_body_handle",
+							"layer":	64
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[0.56000000238418579, 1.0199999809265137, 0.52999997138977051]
+						}],
+					"children":	[]
+				}]
+		}, {
 			"name":	"pivot",
 			"transform":	{
 				"translation":	[0, 0, 0],
@@ -36,5 +134,14 @@
 						}],
 					"children":	[]
 				}]
+		}, {
+			"name":	"player_look_ray_origin",
+			"transform":	{
+				"translation":	[0, 1.24594783782959, 0.543408751487732],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 11.699999809265137, 1]
+			},
+			"components":	[],
+			"children":	[]
 		}]
 }

@@ -5,14 +5,27 @@
 #include <engine/scene/components_serialization.h>
 #include <engine/external/game_resources.h>
 
+typedef enum crude_enemy_state
+{
+  CRUDE_ENEMY_STATE_IDLE,
+  CRUDE_ENEMY_STATE_DEAD,
+  CRUDE_ENEMY_STATE_LOOKING_FOR_PLAYER,
+  CRUDE_ENEMY_STATE_FOLLOW_PLAYER,
+  CRUDE_ENEMY_STATE_RETURN_TO_SPAWN,
+  CRUDE_ENEMY_STATE_STANNED,
+} crude_enemy_state;
+
 typedef struct crude_enemy
 {
+  crude_entity                                             player_look_ray_origin_node;
   float32                                                  moving_speed;
-  float32                                                  last_player_hit_timer;
   XMFLOAT3                                                 spawn_node_translation;
-  XMFLOAT3                                                 last_player_visible_translation;
-  float32                                                  time_near_last_player_visible_translaion;
-  float32                                                  looking_angle;
+  float32                                                  stanned_time_left;
+  crude_enemy_state                                        state;
+  float32                                                  player_last_visible_time;
+  XMFLOAT3                                                 player_last_visible_translation;
+  float32                                                  target_looking_angle;
+  float32                                                  health;
 } crude_enemy;
 
 typedef struct crude_serum_station
@@ -27,9 +40,10 @@ typedef struct crude_recycle_station
 typedef struct crude_weapon
 {
   int32                                                    max_ammo;
-  crude_entity                                             weapon_model_node;
+  float32                                                  ammo;
   crude_entity                                             weapon_basic_node;
   crude_entity                                             weapon_scoped_node;
+  crude_entity                                             weapon_shot_node;
   float32                                                  last_shot_timer;
 } crude_weapon;
 

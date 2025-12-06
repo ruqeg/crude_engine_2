@@ -64,9 +64,8 @@ crude_level_01_creation_observer_
           enemy_transform.translation.x = XMVectorGetX( entity_swapn_point_to_world.r[ 3 ] );
           enemy_transform.translation.z = XMVectorGetZ( entity_swapn_point_to_world.r[ 3 ] );
           crude_snprintf( enemy_node_name_buffer, sizeof( enemy_node_name_buffer ), "enemy_%i", enemy_count );
-          enemy_node = crude_entity_copy_hierarchy( game->template_enemy_node, enemy_node_name_buffer, true );
+          enemy_node = crude_entity_copy_hierarchy( game->template_enemy_node, enemy_node_name_buffer, true, true );
           crude_entity_set_parent( enemy_node, level_node );
-          crude_entity_enable_hierarchy( enemy_node, true );
           CRUDE_ENTITY_ADD_COMPONENT( enemy_node, crude_node_runtime );
 
           enemy_component = CRUDE_COMPOUNT_EMPTY( crude_enemy );
@@ -112,9 +111,8 @@ crude_level_01_creation_observer_
           serum_station_transform.translation.z = XMVectorGetZ( serum_station_spawn_point_to_world.r[ 3 ] );
           
           crude_snprintf( serum_station_node_name_buffer, sizeof( serum_station_node_name_buffer ), "serum_station_%i", serum_stations_count );
-          serum_station_node = crude_entity_copy_hierarchy( game->template_serum_station_node, serum_station_node_name_buffer, true );
+          serum_station_node = crude_entity_copy_hierarchy( game->template_serum_station_node, serum_station_node_name_buffer, true, true );
           crude_entity_set_parent( serum_station_node, level_node );
-          crude_entity_enable_hierarchy( serum_station_node, true );
           CRUDE_ENTITY_ADD_COMPONENT( serum_station_node, crude_node_runtime );
 
           serum_station_component = CRUDE_COMPOUNT_EMPTY( crude_serum_station );

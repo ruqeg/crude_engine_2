@@ -7,6 +7,7 @@
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
 #include <game/game.h>
+#include <game/enemy_system.h>
 
 #include <game/player_system.h>
 
@@ -71,20 +72,11 @@ crude_player_enemy_hitbox_callback
 )
 {
   game_t *game = game_instance( );
-
-  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_enemy );
+  
+  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( static_body_node ) ), crude_enemy );
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
-
-  if ( enemy->last_player_hit_timer < CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER )
-  {
-    return;
-  }
-
-  player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
-  player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
-  crude_memory_set( player->inventory_items, 0, sizeof( player->inventory_items ) );
-
-  enemy->last_player_hit_timer = 0.f;
+  
+  crude_enemy_deal_damage_to_player( enemy, player );
 }
 
 CRUDE_API void

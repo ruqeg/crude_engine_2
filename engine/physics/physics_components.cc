@@ -85,6 +85,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_ha
   ImGui::CheckboxFlags( "3", &character_body->mask, 1 << 4 );
   ImGui::SameLine( );
   ImGui::CheckboxFlags( "4", &character_body->mask, 1 << 5 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "5", &character_body->mask, 1 << 6 );
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle )
@@ -101,6 +103,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handl
   ImGui::CheckboxFlags( "3", &static_body->layer, 1 << 4 );
   ImGui::SameLine( );
   ImGui::CheckboxFlags( "4", &static_body->layer, 1 << 5 );
+  ImGui::SameLine( );
+  ImGui::CheckboxFlags( "5", &static_body->layer, 1 << 6 );
   
 }
 

@@ -165,7 +165,7 @@ crude_devgui_draw
     ImGui::InputText( "Name", editor->added_node_data.buffer, sizeof( editor->added_node_data.buffer ) );
     if ( ImGui::Button( "Dublicate" ) )
     {
-      crude_entity new_node =  crude_entity_copy_hierarchy( editor->node_to_dublicate, editor->added_node_data.buffer, true );
+      crude_entity new_node =  crude_entity_copy_hierarchy( editor->node_to_dublicate, editor->added_node_data.buffer, true, true );
       editor->node_to_dublicate = CRUDE_COMPOUNT_EMPTY( crude_entity );
     }
     ImGui::End( );

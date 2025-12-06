@@ -197,7 +197,8 @@ crude_entity_copy_hierarchy
 (
   _In_ crude_entity                                        src,
   _In_ char const                                         *name,
-  _In_ bool                                                copy_value
+  _In_ bool                                                copy_value,
+  _In_ bool                                                enabled
 )
 {
   if ( !crude_entity_valid( src ) )
@@ -214,12 +215,13 @@ crude_entity_copy_hierarchy
     for ( size_t i = 0; i < it.count; ++i )
     {
       crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = src.world } );
-      crude_entity new_child = crude_entity_copy_hierarchy( child, crude_entity_get_name( child ), copy_value );
+      crude_entity new_child = crude_entity_copy_hierarchy( child, crude_entity_get_name( child ), copy_value, enabled );
 
       crude_entity_set_parent( new_child, new_node );
     }
   }
   
+  crude_entity_enable( new_node, enabled );
   crude_entity_set_name( new_node, name );
 
   return new_node;
@@ -254,7 +256,7 @@ crude_entity_enable_hierarchy
     for ( size_t i = 0; i < it.count; ++i )
     {
       crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = entity.world } );
-      crude_entity_enable( child, enabled );
+      crude_entity_enable_hierarchy( child, enabled );
     }
   }
   

@@ -14,6 +14,107 @@
 CRUDE_ECS_SYSTEM_DECLARE( crude_enemy_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_enemy_creation_observer_ );
 
+void
+crude_enemy_deal_damage_to_player
+(
+	_In_ crude_enemy																				*enemy,
+	_In_ crude_player																				*player
+)
+{
+  if ( enemy->state != CRUDE_ENEMY_STATE_STANNED )
+  {
+    enemy->state = CRUDE_ENEMY_STATE_STANNED;
+    enemy->stanned_time_left = CRUDE_GAME_ENEMY_HIT_DEALE_STANNE_TIME;
+  
+    player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
+    player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
+  }
+}
+
+void
+crude_enemy_receive_damage
+(
+	_In_ crude_enemy																				*enemy,
+	_In_ float64																				     damage,
+  _In_ bool                                                critical
+)
+{
+  enemy->state = CRUDE_ENEMY_STATE_STANNED;
+  enemy->stanned_time_left = critical ? CRUDE_GAME_ENEMY_CRITICAL_HIT_RECEIVE_STANNE_TIME : CRUDE_GAME_ENEMY_HIT_RECEIVE_STANNE_TIME;
+  enemy->health -= damage;
+}
+
+static bool
+crude_enemy_search_player
+(
+  _In_ crude_enemy                                        *enemy
+)
+{
+  game_t                                                  *game;
+  crude_transform const                                   *player_transform;
+  crude_transform const                                   *player_look_ray_origin_transform;
+  XMMATRIX                                                 player_look_ray_origin_to_world;
+  XMVECTOR                                                 player_look_ray_origin_world_translation;
+  XMVECTOR                                                 player_look_ray_origin_to_player, player_look_ray_direction;
+  XMVECTOR                                                 player_translation;
+  crude_physics_raycast_result                             raycast_result;
+  
+  game = game_instance( );
+
+  player_look_ray_origin_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( enemy->player_look_ray_origin_node, crude_transform );
+  player_look_ray_origin_to_world = crude_transform_node_to_world( enemy->player_look_ray_origin_node, player_look_ray_origin_transform );
+  player_look_ray_origin_world_translation = player_look_ray_origin_to_world.r[ 3 ];
+  
+  player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+  player_translation = XMLoadFloat3( &player_transform->translation );
+  player_look_ray_origin_to_player = XMVectorSubtract( player_translation, player_look_ray_origin_world_translation );
+  player_look_ray_direction = XMVector3Normalize( player_look_ray_origin_to_player );
+  
+  bool player_visible_in_fog = XMVectorGetX( XMVector3Length( XMVectorSubtract( player_look_ray_origin_world_translation, player_translation ) ) ) < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
+  if ( player_visible_in_fog )
+  {
+    bool enemy_see_body = crude_physics_cast_ray( &game_instance( )->physics, player_look_ray_origin_world_translation, player_look_ray_direction, 1, &raycast_result );
+    if ( enemy_see_body )
+    {
+      bool enemy_can_see_player = XMVectorGetX( XMVector3LengthSq( player_look_ray_origin_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( player_look_ray_origin_world_translation, raycast_result.raycast_result.point ) ) );
+      if ( enemy_can_see_player )
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static void
+crude_enemy_go_to_point
+(
+  _In_ crude_enemy                                        *enemy,
+  _In_ crude_transform                                    *enemy_transform,
+  _In_ XMVECTOR                                            point,
+  _In_ float32                                             delta_time
+)
+{
+  XMVECTOR                                             enemy_translation, enemy_new_translation;
+  XMVECTOR                                             enemy_to_point, enemy_to_point_normalized, enemy_to_point_translation_2d;
+  float32                                              enemy_to_point_distance, angle;
+  
+  enemy_translation = XMLoadFloat3( &enemy_transform->translation );
+  enemy_to_point = XMVectorSubtract( point, enemy_translation );
+  enemy_to_point_distance = XMVectorGetX( XMVector3Length( enemy_to_point ) );
+  enemy_to_point_normalized = XMVector3Normalize( enemy_to_point );
+  
+  enemy_new_translation = XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_point_normalized, enemy->moving_speed * delta_time ) );
+  enemy_new_translation = XMVectorSetY( enemy_new_translation, XMVectorGetY( enemy_translation ) );
+
+  enemy_to_point_translation_2d = XMVectorSet( XMVectorGetX( enemy_to_point ), XMVectorGetZ( enemy_to_point ), 0.f, 0.f );
+  angle = atan2f( XMVectorGetX( enemy_to_point_translation_2d ), XMVectorGetY( enemy_to_point_translation_2d ) );
+  enemy->target_looking_angle = crude_lerp_angle( enemy->target_looking_angle, angle, CRUDE_GAME_ENEMY_ROTATION_FOLLOWING_SPEED * delta_time );
+
+  XMStoreFloat3( &enemy_transform->translation, enemy_new_translation );
+  XMStoreFloat4( &enemy_transform->rotation, XMQuaternionRotationAxis( g_XMIdentityR1, enemy->target_looking_angle ) );
+}
+
 static void
 crude_enemy_creation_observer_
 (
@@ -25,11 +126,17 @@ crude_enemy_creation_observer_
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_enemy                                           *enemy;
+    crude_entity                                           enemy_node;
 
     enemy = &enemies_per_entity[ i ];
+    enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    enemy->time_near_last_player_visible_translaion = 1000000.f;
-    enemy->looking_angle = 0.f;
+    enemy->state = CRUDE_ENEMY_STATE_IDLE;
+    enemy->player_look_ray_origin_node = crude_ecs_lookup_entity_from_parent( enemy_node, "player_look_ray_origin" );
+    enemy->player_last_visible_time = 1000000.f;
+    enemy->target_looking_angle = 0.f;
+    enemy->stanned_time_left = 0.f;
+    enemy->health = 1.f;
   }
 }
 
@@ -42,87 +149,88 @@ crude_enemy_update_system_
   CRUDE_PROFILER_ZONE_NAME( "crude_enemy_update_system_" );
   game_t *game = game_instance( );
   crude_enemy *enemies_per_entity = ecs_field( it, crude_enemy, 0 );
-  crude_physics_static_body_handle *static_body_handle_per_entity = ecs_field( it, crude_physics_static_body_handle, 1 );
-  crude_transform *transform_per_entity = ecs_field( it, crude_transform, 2 );
+  crude_transform *transform_per_entity = ecs_field( it, crude_transform, 1 );
   
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_enemy                                           *enemy;
     crude_transform                                       *enemy_transform;
-    crude_physics_static_body_handle                      *enemy_static_body_handle;
-    crude_physics_static_body                             *enemy_static_body;
-    crude_transform const                                 *player_transform;
-    XMVECTOR                                               player_translation;
-    XMVECTOR                                               enemy_translation, enemy_new_translation;
-    XMVECTOR                                               enemy_to_player, enemy_to_player_normalized;
-    XMVECTOR                                               enemy_to_last_player_visible_translation, enemy_to_last_player_visible_translation_normalized;
+    XMVECTOR                                               enemy_new_translation;
     crude_entity                                           enemy_node;
-    crude_physics_raycast_result                           raycast_result;
-    float32                                                enemy_to_last_player_visible_translation_distance;
 
     enemy = &enemies_per_entity[ i ];
-    enemy_static_body_handle = &static_body_handle_per_entity[ i ];
     enemy_transform = &transform_per_entity[ i ];
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     CRUDE_ASSERT( crude_entity_valid( game->player_node ) );
-    
-    enemy_static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *enemy_static_body_handle );
 
-    if ( enemy->last_player_hit_timer < CRUDE_GAME_ENEMY_RESET_ENEMY_ATACK_TIMER )
+    switch ( enemy->state )
     {
-      enemy->last_player_hit_timer += it->delta_time;
-      continue;
-    }
-
-    if ( enemy->time_near_last_player_visible_translaion > CRUDE_GAME_ENEMY_RESET_ENEMY_POSITION_TIMER ) /* reset when enemy don't see player for a while */
+    case CRUDE_ENEMY_STATE_IDLE:
     {
-      enemy->time_near_last_player_visible_translaion = 0.f;
-      enemy->last_player_visible_translation = enemy->spawn_node_translation;
-      enemy_new_translation = XMLoadFloat3( &enemy->spawn_node_translation );
-    }
-
-    player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
-    
-    player_translation = XMLoadFloat3( &player_transform->translation );
-    enemy_translation = XMLoadFloat3( &enemy_transform->translation );
-    enemy_to_player = XMVectorSubtract( player_translation, enemy_translation );
-    enemy_to_player_normalized = XMVector3Normalize( enemy_to_player );
-    
-    if ( XMVectorGetX( XMVector3Length( XMVectorSubtract( enemy_translation, player_translation ) ) ) < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE )
-    {
-      if ( crude_physics_cast_ray( &game_instance( )->physics, enemy_translation, enemy_to_player_normalized, 1, &raycast_result ) )
+      if ( crude_enemy_search_player( enemy ) )
       {
-        if ( XMVectorGetX( XMVector3LengthSq( enemy_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( enemy_translation, raycast_result.raycast_result.point ) ) ) )
+        enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
+      }
+      else
+      {
+        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &enemy_transform->rotation ), XMQuaternionRotationAxis( g_XMIdentityR1, CRUDE_GAME_ENEMY_ROTATION_IDLE_SPEED * it->delta_time ) ) );
+      }
+      break;
+    }
+    case CRUDE_ENEMY_STATE_FOLLOW_PLAYER:
+    {
+      if ( crude_enemy_search_player( enemy ) )
+      {
+        crude_transform const *player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+        enemy->player_last_visible_time = 0.f;
+        enemy->player_last_visible_translation = player_transform->translation;
+      }
+
+      bool enemy_reach_player_last_visible_translation = ( XMVectorGetX( XMVector2Length( XMVectorSubtract( XMVectorSet( enemy_transform->translation.x, enemy_transform->translation.z, 0, 0 ), XMVectorSet( enemy->player_last_visible_translation.x, enemy->player_last_visible_translation.z, 0, 0 ) ) ) ) < 0.01 );
+      if ( enemy_reach_player_last_visible_translation )
+      {
+        enemy->player_last_visible_time += it->delta_time;
+        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &enemy_transform->rotation ), XMQuaternionRotationAxis( g_XMIdentityR1, CRUDE_GAME_ENEMY_ROTATION_IDLE_SPEED * it->delta_time ) ) );
+      }
+      else
+      {
+        crude_enemy_go_to_point( enemy, enemy_transform, XMLoadFloat3( &enemy->player_last_visible_translation ), it->delta_time );
+      }
+
+      if ( enemy->player_last_visible_time > CRUDE_GAME_ENEMY_RESET_ENEMY_POSITION_TIMER )
+      {
+        enemy->state = CRUDE_ENEMY_STATE_RETURN_TO_SPAWN;
+      }
+      break;
+    }
+    case CRUDE_ENEMY_STATE_RETURN_TO_SPAWN:
+    {
+      if ( crude_enemy_search_player( enemy ) )
+      {
+        enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
+      }
+      else
+      {
+        crude_enemy_go_to_point( enemy, enemy_transform, XMLoadFloat3( &enemy->spawn_node_translation ), it->delta_time );
+        
+        bool enemy_reach_spawn = ( XMVectorGetX( XMVector2Length( XMVectorSubtract( XMVectorSet( enemy_transform->translation.x, enemy_transform->translation.z, 0, 0 ), XMVectorSet( enemy->spawn_node_translation.x, enemy->spawn_node_translation.z, 0, 0 ) ) ) ) < 0.01 );
+        if ( enemy_reach_spawn )
         {
-          enemy->last_player_visible_translation = player_transform->translation;
+          enemy->state = CRUDE_ENEMY_STATE_IDLE;
         }
       }
+      break;
     }
-    enemy_to_last_player_visible_translation = XMVectorSubtract( XMLoadFloat3( &enemy->last_player_visible_translation ), enemy_translation );
-    enemy_to_last_player_visible_translation_distance = XMVectorGetX( XMVector3Length( enemy_to_last_player_visible_translation ) );
-    enemy_to_last_player_visible_translation_normalized = XMVector3Normalize( enemy_to_last_player_visible_translation );
-    if ( enemy_to_last_player_visible_translation_distance < CRUDE_GAME_ENEMY_RESET_ENEMY_MIN_DISTANCE_POSITION_TIMER_ACTIVATION )
+    case CRUDE_ENEMY_STATE_STANNED:
     {
-      enemy->time_near_last_player_visible_translaion += it->delta_time;
+      enemy->stanned_time_left -= it->delta_time;
+      if ( enemy->stanned_time_left < 0.f )
+      {
+        enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
+      }
+      break;
     }
-    else
-    {
-      enemy->time_near_last_player_visible_translaion = 0.f;
-    }
-
-    enemy_new_translation = XMVectorAdd( enemy_translation, XMVectorScale( enemy_to_last_player_visible_translation_normalized, enemy->moving_speed * it->delta_time ) );
-    enemy_new_translation = XMVectorSetY( enemy_new_translation, XMVectorGetY( enemy_translation ) );
-    XMStoreFloat3( &enemy_transform->translation, enemy_new_translation );
-    if ( enemy_to_last_player_visible_translation_distance > 0.001f )
-    {
-      XMVECTOR                                             enemy_to_last_player_visible_translation_2d;
-      float32                                              angle;
-      
-      enemy_to_last_player_visible_translation_2d = XMVectorSet( XMVectorGetX( enemy_to_last_player_visible_translation ), XMVectorGetZ( enemy_to_last_player_visible_translation ), 0.f, 0.f );
-      angle = atan2f( XMVectorGetX( enemy_to_last_player_visible_translation_2d ), XMVectorGetY( enemy_to_last_player_visible_translation_2d ) );
-      enemy->looking_angle = crude_lerp_angle( enemy->looking_angle, angle, CRUDE_GAME_ENEMY_ROTATION_SPEED * it->delta_time );
-      XMStoreFloat4( &enemy_transform->rotation, XMQuaternionRotationAxis( g_XMIdentityR1, enemy->looking_angle ) );
     }
   }
   CRUDE_PROFILER_END( "crude_enemy_update_system_" );
@@ -142,7 +250,6 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_enemy_update_system_, EcsOnUpdate, NULL, {
     { .id = ecs_id( crude_enemy ) },
-    { .id = ecs_id( crude_physics_static_body_handle ) },
     { .id = ecs_id( crude_transform ) }
   } );
 }

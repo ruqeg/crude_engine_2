@@ -141,6 +141,7 @@ crude_physics_cast_ray
         {
           result->raycast_result = current_result;
           result->node = static_body_node;
+          result->body_layer = second_body->layer;
         }
       }
     }

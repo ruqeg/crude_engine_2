@@ -97,8 +97,8 @@
 							"name":	"camera",
 							"transform":	{
 								"translation":	[0, 0, 0],
-								"rotation":	[0, 0, 0, 1],
-								"scale":	[1, 1, 1]
+								"rotation":	[0, 0.00037572564906440675, 0, 0.99994277954101562],
+								"scale":	[1, 0.99999982118606567, 1]
 							},
 							"components":	[{
 									"type":	"crude_camera",
@@ -144,27 +144,25 @@
 									"components":	[],
 									"children":	[]
 								}]
-						},
-						{
+						}, {
 							"name":	"weapon",
 							"transform":	{
-								"translation":	[0, 0, 0],
+								"translation":	[0.164000004529953, -0.0900000035762787, 0.270000010728836],
 								"rotation":	[0, 0, 0, 1],
 								"scale":	[1, 1, 1]
 							},
-							"components": [{
-											"type": "crude_weapon",
-											"max_ammo": 10
-										}],
-							"children":	[
-								{
+							"components":	[{
+									"type":	"crude_weapon",
+									"max_ammo":	10
+								}],
+							"children":	[{
 									"name":	"weapon_model",
 									"transform":	{
-										"translation":	[0.164000004529953, -0.0900000035762787, 0.270000010728836],
-										"rotation":	[0, 1, 0, 0],
-										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
+										"translation":	[0, 0, 0],
+										"rotation":	[0, 0.999696910381317, -0.02500000037252903, 0],
+										"scale":	[0.10000015795230865, 0.10000002384185791, 0.10000019520521164]
 									},
-									"components": [{
+									"components":	[{
 											"type":	"crude_gltf",
 											"path":	"game\\models\\Pistol.gltf"
 										}],
@@ -173,8 +171,8 @@
 									"name":	"weapon_basic_position",
 									"transform":	{
 										"translation":	[0.164000004529953, -0.0900000035762787, 0.270000010728836],
-										"rotation":	[0, 1, 0, 0],
-										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
 									},
 									"components":	[],
 									"children":	[]
@@ -182,8 +180,17 @@
 									"name":	"weapon_scoped_position",
 									"transform":	{
 										"translation":	[0, -0.0423888936638832, 0.15000000596046448],
-										"rotation":	[0, 1, 0, 0],
-										"scale":	[0.10000001639127731, 0.10000000149011612, 0.10000001639127731]
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
+									},
+									"components":	[],
+									"children":	[]
+								}, {
+									"name":	"weapon_shot_node",
+									"transform":	{
+										"translation":	[0, 0.03818242996931076, 0.21047195792198181],
+										"rotation":	[0, 0, 0, 1],
+										"scale":	[1, 1, 1]
 									},
 									"components":	[],
 									"children":	[]
