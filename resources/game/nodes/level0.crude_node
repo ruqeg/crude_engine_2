@@ -12,9 +12,9 @@
 			"name":	"recycle_station_0",
 			"external":	"game\\nodes\\recycle_station.crude_node",
 			"transform":	{
-				"translation":	[-49.823249816894531, 7.870872974395752, -7.9310002326965332],
-				"rotation":	[0, 0.70839112997055054, 0, 0.705820083618164],
-				"scale":	[0.99999982118606567, 1, 0.99999982118606567]
+				"translation":	[-48.234321594238281, 7.870872974395752, -7.9310002326965332],
+				"rotation":	[0, -0.69985544681549072, 0, 0.71428453922271729],
+				"scale":	[0.980203151702881, 1, 0.980203151702881]
 			},
 			"components":	[{
 					"type":	"crude_recycle_station",
@@ -25,7 +25,7 @@
 			"name":	"recycle_station_1",
 			"external":	"game\\nodes\\recycle_station.crude_node",
 			"transform":	{
-				"translation":	[36.9723243713379, 7.8059868812561035, 0.33756983280181885],
+				"translation":	[36.9723243713379, 7.8059868812561035, -1.3957817554473877],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -38,7 +38,7 @@
 			"name":	"recycle_station_2",
 			"external":	"game\\nodes\\recycle_station.crude_node",
 			"transform":	{
-				"translation":	[-8.47836112976074, 7.8734073638916016, 51.540225982666016],
+				"translation":	[-8.47836112976074, 7.8734073638916016, 49.846885681152344],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},

@@ -12,6 +12,7 @@
 #include <engine/physics/physics_system.h>
 #include <engine/external/game_debug_system.h>
 #include <engine/external/game_components.h>
+#include <engine/audio/audio_device.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/devmenu.h>
 
@@ -74,6 +75,7 @@ typedef struct game_t
   char const                                              *syringe_health_model_absolute_filepath;
   char const                                              *serum_station_enabled_model_absolute_filepath;
   char const                                              *serum_station_disabled_model_absolute_filepath;
+  char const                                              *ammo_box_model_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
@@ -116,6 +118,8 @@ typedef struct game_t
   crude_physics_resources_manager                          physics_resources_manager;
   crude_collisions_resources_manager                       collision_resources_manager;
   crude_physics                                            physics;
+  /* Audio */
+  crude_audio_device                                       audio_device;
   /* Scene */
   crude_node_manager                                       node_manager;
   /* Window & Input */

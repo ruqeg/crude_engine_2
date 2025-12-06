@@ -35,16 +35,16 @@
 
 typedef enum crude_game_item
 {
-	CRUDE_GAME_ITEM_NONE = 0,
-	CRUDE_GAME_ITEM_SERUM = 1,
-	CRUDE_GAME_ITEM_SYRINGE_HEALTH = 2,
-	CRUDE_GAME_ITEM_SYRINGE_DRUG = 3,
-	CRUDE_GAME_ITEM_AMMUNITION = 4,
-	CRUDE_GAME_ITEM_COUNT,
+  CRUDE_GAME_ITEM_NONE = 0,
+  CRUDE_GAME_ITEM_SERUM = 1,
+  CRUDE_GAME_ITEM_SYRINGE_HEALTH = 2,
+  CRUDE_GAME_ITEM_SYRINGE_DRUG = 3,
+  CRUDE_GAME_ITEM_AMMUNITION = 4,
+  CRUDE_GAME_ITEM_COUNT,
 } crude_game_item;
 
 char const*
 crude_game_item_to_string
 (
-	_In_ crude_game_item																		 game_item
+  _In_ crude_game_item                                     game_item
 );

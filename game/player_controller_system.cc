@@ -66,6 +66,8 @@ crude_player_controller_update_system_
     node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
+
+    pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
     
     character_body_handle = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     character_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, character_body_handle );
@@ -87,7 +89,7 @@ crude_player_controller_update_system_
       {
         item_slot = 2;
       }
-      if ( player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_DRUG ||  player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_HEALTH )
+      if ( player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_DRUG || player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_SYRINGE_HEALTH || player->inventory_items[ item_slot ] == CRUDE_GAME_ITEM_AMMUNITION )
       {
         switch ( player->inventory_items[ item_slot ] )
         {
@@ -99,6 +101,12 @@ crude_player_controller_update_system_
         case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
         {
           player->health = CRUDE_MIN( 1.f, player->health + CRUDE_GAME_ITEM_SYRINGE_HEALTH_ADD );
+          break;
+        }
+        case CRUDE_GAME_ITEM_AMMUNITION:
+        {
+          crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( pivot_node, "weapon" ), crude_weapon );
+          weapon->ammo = 10;
           break;
         }
         }
@@ -122,7 +130,6 @@ crude_player_controller_update_system_
       rotation_speed *= 0.75;
     }
 
-    pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
     pivot_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( pivot_node, crude_transform );
     pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
     basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );

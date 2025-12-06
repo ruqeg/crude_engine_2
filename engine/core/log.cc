@@ -44,7 +44,7 @@ get_channel_string_
     case CRUDE_CHANNEL_GRAPHICS:    return "Graphics";
     case CRUDE_CHANNEL_COLLISIONS:  return "Collisions";
     case CRUDE_CHANNEL_GAMEPLAY:    return "Gameplay";
-    case CRUDE_CHANNEL_SOUND:       return "Sound";
+    case CRUDE_CHANNEL_AUDIO:       return "Audio";
     case CRUDE_CHANNEL_FILEIO:      return "File I/O";
     case CRUDE_CHANNEL_GUI:         return "GUI";
     case CRUDE_CHANNEL_ALL:         return "All";

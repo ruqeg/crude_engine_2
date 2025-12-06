@@ -160,6 +160,7 @@ game_input_callback_
 );
 #endif
 
+#include <miniaudio.h>
 void
 game_initialize
 (
@@ -204,6 +205,7 @@ game_initialize
   crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
+  crude_audio_device_initialize( &game->audio_device );
 
   crude_devmenu_initialize( &game->devmenu );
   
@@ -323,6 +325,7 @@ game_deinitialize
   
   crude_devmenu_deinitialize( &game->devmenu );
   crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
+  crude_audio_device_deinitialize( &game->audio_device );
   game_graphics_deinitialize_( game );
   crude_node_manager_deinitialize( &game->node_manager );
   crude_physics_resources_manager_deinitialize( &game->physics_resources_manager );
@@ -411,6 +414,11 @@ game_player_set_item
   case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
   {
     CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->syringe_health_model_absolute_filepath } );
+    break;
+  }
+  case CRUDE_GAME_ITEM_AMMUNITION:
+  {
+    CRUDE_ENTITY_SET_COMPONENT( player_item_node, crude_gltf, { game->ammo_box_model_absolute_filepath } );
     break;
   }
   }
@@ -573,6 +581,7 @@ game_setup_custom_postload_model_resources_
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_enabled_model_absolute_filepath, NULL );
   crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_disabled_model_absolute_filepath, NULL );
+  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->ammo_box_model_absolute_filepath, NULL );
 }
 
 void
@@ -703,6 +712,7 @@ game_initialize_constant_strings_
   char const *syringe_health_model_relative_filepath = "game\\models\\syringe_health.gltf";
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
+  char const *ammo_box_model_relative_filepath = "game\\models\\ammo_box.gltf";
 
   uint64 constant_string_buffer_size = 0;
   uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
@@ -721,6 +731,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_disabled_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_drug_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_health_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( ammo_box_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -737,6 +748,7 @@ game_initialize_constant_strings_
   game->syringe_health_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_health_model_relative_filepath );
   game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
   game->serum_station_disabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_disabled_model_relative_filepath );
+  game->ammo_box_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ammo_box_model_relative_filepath );
 
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
