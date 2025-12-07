@@ -81,9 +81,9 @@ crude_weapon_update_system_
       if ( weapon->ammo > 0 )
       {
         crude_transform const                             *weapon_shot_node_transform;
+        XMMATRIX                                           weapon_shot_to_world;
         crude_physics_raycast_result                       raycast_result;
         XMVECTOR                                           shot_point_translation;
-        XMMATRIX                                           weapon_shot_to_world;
         XMVECTOR                                           ray_origin;
         XMVECTOR                                           ray_direction;
 
@@ -109,6 +109,9 @@ crude_weapon_update_system_
         weapon->last_shot_timer = 0.f;
         XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), XMQuaternionRotationAxis( XMVectorSet( 1, 0, 0, 0 ), -XM_PIDIV2 ) ) );
         --weapon->ammo;
+
+        crude_audio_device_sound_set_translation( &game->audio_device, game->shot_sound_handle, ray_origin );
+        crude_audio_device_sound_start( &game->audio_device, game->shot_sound_handle );
       }
       else
       {

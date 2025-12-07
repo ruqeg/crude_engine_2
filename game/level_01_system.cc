@@ -32,8 +32,6 @@ crude_level_01_destroy_observer_
     
     level = &enemies_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
-
-    crude_audio_device_destroy_sound( &game->audio_device, level->ambient_sound_handle );
   }
 }
 static void
@@ -61,11 +59,7 @@ crude_level_01_creation_observer_
     
     /* Setup sounds */
     {
-      crude_sound_creation creation = crude_sound_creation_empty( );
-      creation.looping = true;
-      creation.absolute_filepath = game->ambient_sound_absolute_filepath;
-      level->ambient_sound_handle = crude_audio_device_create_sound( &game->audio_device, &creation );
-      crude_audio_device_sound_start( &game->audio_device, level->ambient_sound_handle );
+      crude_audio_device_sound_start( &game->audio_device, game->ambient_sound_handle );
     }
 
     /* Setup enemies*/

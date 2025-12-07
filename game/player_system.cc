@@ -6,6 +6,7 @@
 #include <engine/physics/physics_components.h>
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
+#include <engine/audio/audio_components.h>
 #include <game/game.h>
 #include <game/enemy_system.h>
 
@@ -105,6 +106,8 @@ crude_player_creation_observer_
   {
     crude_player *player = &player_per_entity[ i ];
     crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    CRUDE_ENTITY_SET_COMPONENT( node, crude_audio_listener, {} );
 
     crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "enemy_hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );

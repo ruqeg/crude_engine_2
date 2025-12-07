@@ -12,7 +12,7 @@
 #include <engine/physics/physics_system.h>
 #include <engine/external/game_debug_system.h>
 #include <engine/external/game_components.h>
-#include <engine/audio/audio_device.h>
+#include <engine/audio/audio_system.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/devmenu.h>
 
@@ -77,6 +77,7 @@ typedef struct game_t
   char const                                              *serum_station_disabled_model_absolute_filepath;
   char const                                              *ammo_box_model_absolute_filepath;
   char const                                              *ambient_sound_absolute_filepath;
+  char const                                              *shot_sound_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
@@ -121,6 +122,7 @@ typedef struct game_t
   crude_physics                                            physics;
   /* Audio */
   crude_audio_device                                       audio_device;
+  crude_audio_system_context                               audio_system_context;
   /* Scene */
   crude_node_manager                                       node_manager;
   /* Window & Input */
@@ -128,6 +130,8 @@ typedef struct game_t
   XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
+  crude_sound_handle                                       ambient_sound_handle;
+  crude_sound_handle                                       shot_sound_handle;
   /* System Context */
   crude_physics_system_context                             physics_system_context;
 #if CRUDE_DEVELOP
