@@ -1428,8 +1428,10 @@ crude_devmenu_gameplay_draw
   if ( ImGui::CollapsingHeader( "Player" ) )
   {
     crude_player                                          *player;
+    crude_weapon                                          *weapon;
 
     player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+    weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_ecs_lookup_entity_from_parent( game->player_node, "pivot" ), "weapon" ), crude_weapon );
     CRUDE_ASSERT( player );
 
     ImGui::SliderFloat( "Health", &player->health, 1.f, 0.f );
@@ -1437,6 +1439,7 @@ crude_devmenu_gameplay_draw
     ImGui::SliderFloat( "Sanity", &player->sanity, 1.f, 0.f );
     ImGui::Checkbox( "Stop Updating Gameplay Values", &player->stop_updating_gameplay_values );
     ImGui::Checkbox( "Stop Updating Visual Values", &player->stop_updating_visual_values );
+    ImGui::SliderInt( "Ammo", &weapon->ammo, 0, 1000 );
     
     if ( ImGui::Button( "Reset Position" ) )
     {

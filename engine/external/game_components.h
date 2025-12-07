@@ -41,7 +41,7 @@ typedef struct crude_recycle_station
 typedef struct crude_weapon
 {
   int32                                                    max_ammo;
-  float32                                                  ammo;
+  int32                                                    ammo;
   crude_entity                                             weapon_basic_node;
   crude_entity                                             weapon_scoped_node;
   crude_entity                                             weapon_shot_node;
@@ -63,6 +63,8 @@ typedef struct crude_player
   float32                                                  drug_withdrawal;
   float32                                                  sanity;
   crude_game_item                                          inventory_items[ CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT ];
+  bool                                                     inside_safe_zone;
+  float32                                                  safe_zone_volume;
 } crude_player;
 
 typedef struct crude_player_controller

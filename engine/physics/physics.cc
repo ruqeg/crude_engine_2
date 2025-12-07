@@ -22,7 +22,7 @@ crude_physics_initialize
   physics->world = creation->world;
   physics->manager = creation->manager;
   physics->collision_manager = creation->collision_manager;
-  physics->simulation_enabled = true;
+  physics->simulation_enabled = false;
   
   query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
   query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body_handle );

@@ -11,7 +11,8 @@ typedef void (*crude_physics_collision_callback_fun)
 (
   _In_ void                                               *ctx,
   _In_ crude_entity                                        character_node,
-  _In_ crude_entity                                        static_body_node
+  _In_ crude_entity                                        static_body_node,
+  _In_ uint32                                              static_body_layer
 );
 
 typedef struct crude_physics_collision_callback_container
@@ -94,5 +95,6 @@ crude_physics_collision_callback_container_fun
 (
   _In_ crude_physics_collision_callback_container          container,
   _In_ crude_entity                                        character_node,
-  _In_ crude_entity                                        static_body_node
+  _In_ crude_entity                                        static_body_node,
+  _In_ uint32                                              static_body_layer
 );

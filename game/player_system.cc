@@ -16,51 +16,59 @@ CRUDE_ECS_OBSERVER_DECLARE( crude_player_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
 
 static void
-crude_player_serum_station_collision_callback
+crude_player_interaction_collision_callback
 (
   _In_ void                                               *ctx,
   _In_ crude_entity                                        character_node,
-  _In_ crude_entity                                        static_body_node
+  _In_ crude_entity                                        static_body_node,
+  _In_ uint32                                              static_body_layer
 )
 {
   game_t *game = game_instance( );
   crude_input const *input;
-  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );;
+  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
   crude_entity static_body_node_parent = crude_entity_get_parent( static_body_node );
 
   input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
 
-  if ( input->keys[ SDL_SCANCODE_E ].current )
+  if ( static_body_layer & 8 )
   {
-    if ( crude_entity_valid( static_body_node_parent ) && CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
+    if ( input->keys[ SDL_SCANCODE_E ].pressed )
     {
-      crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
-      
-      for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+      if ( crude_entity_valid( static_body_node_parent ) && CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
       {
-        if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
+        crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
+        
+        for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
         {
-          game_player_set_item( game, player, i, recycle_station->game_item );
-          break;
+          if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
+          {
+            game_player_set_item( game, player, i, recycle_station->game_item );
+            break;
+          }
+        }
+      }
+
+      if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) )
+      {
+        crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
+
+        for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+        {
+          if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
+          {
+            game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SERUM );
+            CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
+            game_push_enable_random_serum_station_command( game, static_body_node );
+            break;
+          }
         }
       }
     }
-
-    if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) )
-    {
-      crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
-
-      for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
-      {
-        if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
-        {
-          game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SERUM );
-          CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
-          game_push_enable_random_serum_station_command( game, static_body_node );
-          break;
-        }
-      }
-    }
+  }
+  else if ( static_body_layer & ( 1 << 7 ) )
+  {
+    player->inside_safe_zone = true;
   }
 }
 
@@ -69,7 +77,8 @@ crude_player_enemy_hitbox_callback
 (
   _In_ void                                               *ctx,
   _In_ crude_entity                                        character_node,
-  _In_ crude_entity                                        static_body_node
+  _In_ crude_entity                                        static_body_node,
+  _In_ uint32                                              static_body_layer
 )
 {
   game_t *game = game_instance( );
@@ -116,12 +125,12 @@ crude_player_creation_observer_
     hitbox_body->callback_container.ctx = (void*)1;
     hitbox_body->callback_container.fun = crude_player_enemy_hitbox_callback;
     
-    crude_entity serum_station_collision_node = crude_ecs_lookup_entity_from_parent( node, "serum_station_collision" );
-    crude_physics_character_body_handle *serum_station_collision_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( serum_station_collision_node, crude_physics_character_body_handle );
-    crude_physics_character_body *serum_station_collision_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *serum_station_collision_handle );
+    crude_entity interaction_collision_node = crude_ecs_lookup_entity_from_parent( node, "interaction_collision" );
+    crude_physics_character_body_handle *interaction_collision_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( interaction_collision_node, crude_physics_character_body_handle );
+    crude_physics_character_body *interaction_collision_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *interaction_collision_handle );
     
-    serum_station_collision_body->callback_container.ctx = (void*)1;
-    serum_station_collision_body->callback_container.fun = crude_player_serum_station_collision_callback;
+    interaction_collision_body->callback_container.ctx = (void*)1;
+    interaction_collision_body->callback_container.fun = crude_player_interaction_collision_callback;
 
     player->health = 1.f;
     player->drug_withdrawal = 0.f;
@@ -152,7 +161,8 @@ crude_player_update_system_
 
     transform = &transforms_per_entity[ i ];
     player = &player_per_entity[ i ];
-    if ( !player->stop_updating_gameplay_values )
+
+    if ( !player->inside_safe_zone && !player->stop_updating_gameplay_values )
     {
       crude_player_update_values_( player, it->delta_time );
     }
@@ -160,6 +170,23 @@ crude_player_update_system_
     {
       crude_player_update_visual_( player );
     }
+    
+    if ( player->inside_safe_zone )
+    {
+      player->safe_zone_volume = CRUDE_MIN( 1.05f, player->safe_zone_volume + 0.2 * it->delta_time );
+    }
+    else
+    {
+      player->safe_zone_volume = CRUDE_MAX( -0.05f, player->safe_zone_volume - 0.2 * it->delta_time );
+    }
+
+    if ( player->safe_zone_volume > 0 && player->safe_zone_volume < 1.0 )
+    {
+      crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( player->safe_zone_volume, 1.f ) ) );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( 1.f, 1.f - player->safe_zone_volume ) ) );
+    }
+
+    player->inside_safe_zone = false;
 
     if ( player->health < 0.f || player->drug_withdrawal > 1.f || player->sanity < 0.f )
     {

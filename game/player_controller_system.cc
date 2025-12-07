@@ -68,7 +68,7 @@ crude_player_controller_update_system_
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
 
     pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
-    
+
     character_body_handle = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     character_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, character_body_handle );
     
@@ -156,13 +156,16 @@ crude_player_controller_update_system_
       XMVECTOR                                             input_dir, direction, basis_pivot_up, pivot_node_rotation;
       XMVECTOR                                             basis_node_right, basis_node_up, basis_node_forward;
 
-      if ( character_body->on_floor )
+      if ( game->physics.simulation_enabled )
       {
-        velocity = XMVectorSetY( velocity, 0.f );
-      }
-      else
-      {
-        velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+        if ( character_body->on_floor )
+        {
+          velocity = XMVectorSetY( velocity, 0.f );
+        }
+        else
+        {
+          velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+        }
       }
 
       if ( player_controller->input_enabled )

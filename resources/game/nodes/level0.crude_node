@@ -48,6 +48,54 @@
 				}],
 			"children":	[]
 		}, {
+			"name":	"safe_zone_0",
+			"transform":	{
+				"translation":	[-55.907928466796875, 13.724252700805664, -14.766095161437988],
+				"rotation":	[0, -0.69985544681549072, 0, 0.71428447961807251],
+				"scale":	[0.980203151702881, 1, 0.980203151702881]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	128
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[15.289999961853027, 5.96999979019165, 8.6499996185302734]
+				}],
+			"children":	[]
+		}, {
+			"name":	"safe_zone_1",
+			"transform":	{
+				"translation":	[-8.12115478515625, 12.538780212402344, 61.5151481628418],
+				"rotation":	[0, -0.69985544681549072, 0, 0.71428453922271729],
+				"scale":	[0.980203092098236, 1, 0.980203092098236]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	128
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[13.359999656677246, 4.7100000381469727, 6.9499998092651367]
+				}],
+			"children":	[]
+		}, {
+			"name":	"safe_zone_2",
+			"transform":	{
+				"translation":	[36.747474670410156, 12.737628936767578, 5.4965033531188965],
+				"rotation":	[0, -0.69985544681549072, 0, 0.71428453922271729],
+				"scale":	[0.980203151702881, 1, 0.980203151702881]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	128
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[7.6500000953674316, 4.929999828338623, 15.25]
+				}],
+			"children":	[]
+		}, {
 			"name":	"0_hall",
 			"transform":	{
 				"translation":	[0, 0, 0],
@@ -213,7 +261,7 @@
 						}],
 					"children":	[]
 				}, {
-					"name":	"serum_station_collision",
+					"name":	"interaction_collision",
 					"transform":	{
 						"translation":	[0, 0, 0],
 						"rotation":	[0, 0, 0, 1],
@@ -221,7 +269,7 @@
 					},
 					"components":	[{
 							"type":	"crude_physics_character_body_handle",
-							"mask":	8
+							"mask":	136
 						}, {
 							"type":	"crude_physics_collision_shape",
 							"shape_type":	"sphere",

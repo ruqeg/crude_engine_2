@@ -1,7 +1,7 @@
 {
 	"name":	"player",
 	"transform":	{
-		"translation":	[0, 0, 0],
+		"translation":	[0, 0.5, 0],
 		"rotation":	[0, 0, 0, 1],
 		"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 	},

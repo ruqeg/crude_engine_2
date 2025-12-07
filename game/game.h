@@ -77,6 +77,7 @@ typedef struct game_t
   char const                                              *serum_station_disabled_model_absolute_filepath;
   char const                                              *ammo_box_model_absolute_filepath;
   char const                                              *ambient_sound_absolute_filepath;
+  char const                                              *save_theme_sound_absolute_filepath;
   char const                                              *shot_sound_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
@@ -131,6 +132,7 @@ typedef struct game_t
   /* Game */
   crude_entity                                             focused_camera_node;
   crude_sound_handle                                       ambient_sound_handle;
+  crude_sound_handle                                       save_theme_sound_handle;
   crude_sound_handle                                       shot_sound_handle;
   /* System Context */
   crude_physics_system_context                             physics_system_context;

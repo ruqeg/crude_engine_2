@@ -95,7 +95,7 @@ crude_physics_update_system_
     node_to_parent = crude_transform_node_to_parent( transform );
     node_to_world = XMMatrixMultiply( node_to_parent, parent_to_world );
     
-    translation = XMVectorAdd( node_to_world.r[ 3 ], velocity * CRUDE_MIN( delta_time, 1.f ) );
+    translation = XMVectorAdd( node_to_world.r[ 3 ], velocity * delta_time );
 
     character_body->on_floor = false;
 
@@ -162,7 +162,7 @@ crude_physics_update_system_
         
         if ( intersected )
         {
-          crude_physics_collision_callback_container_fun( character_body->callback_container, character_body_node, second_body_node );
+          crude_physics_collision_callback_container_fun( character_body->callback_container, character_body_node, second_body_node, second_body->layer );
 
           if ( character_body->mask & 1 )
           {
