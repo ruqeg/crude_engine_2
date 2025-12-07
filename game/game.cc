@@ -727,7 +727,7 @@ game_initialize_constant_strings_
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
   char const *ammo_box_model_relative_filepath = "game\\models\\ammo_box.gltf";
-  char const *ambient_sound_relative_filepath = "game\\sounds\\Opal_Vessel_Eternal_Labyrinth.wav";
+  char const *ambient_sound_relative_filepath = "game\\sounds\\level0_ambient.wav";
   char const *shot_sound_relative_filepath = "game\\sounds\\shot-from-an-antique-gun.wav";
   
   uint64 constant_string_buffer_size = 0;

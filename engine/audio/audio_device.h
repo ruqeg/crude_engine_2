@@ -58,6 +58,14 @@ crude_audio_device_sound_set_translation
 );
 
 CRUDE_API void
+crude_audio_device_sound_set_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle,
+  _In_ float32                                              volume
+);
+
+CRUDE_API void
 crude_audio_device_listener_set_local_to_world
 (
   _In_ crude_audio_device                                  *audio,

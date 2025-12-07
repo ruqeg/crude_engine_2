@@ -165,6 +165,19 @@ crude_audio_device_sound_set_translation
 }
 
 void
+crude_audio_device_sound_set_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle,
+  _In_ float32                                              volume
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  ma_sound_set_volume( lma_sound, volume );
+}
+
+void
 crude_audio_device_listener_set_local_to_world
 (
   _In_ crude_audio_device                                  *audio,
