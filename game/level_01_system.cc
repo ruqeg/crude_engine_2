@@ -3,13 +3,39 @@
 #include <engine/core/memory.h>
 #include <engine/external/game_components.h>
 #include <engine/platform/platform.h>
+#include <engine/audio/audio_device.h>
 #include <game/game.h>
 
 #include <game/level_01_system.h>
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_level_01_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_level_01_creation_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_level_01_destroy_observer_ );
 
+static void
+crude_level_01_destroy_observer_
+(
+  ecs_iter_t *it
+)
+{
+  game_t                                                  *game;
+  crude_level_01                                          *enemies_per_entity;
+
+  game = game_instance( );
+  enemies_per_entity = ecs_field( it, crude_level_01, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_level_01                                        *level;
+    crude_window_handle                                   *window_handle;
+    crude_entity                                           level_node;
+    
+    level = &enemies_per_entity[ i ];
+    level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    crude_audio_device_destroy_sound( &game->audio_device, level->ambient_sound_handle );
+  }
+}
 static void
 crude_level_01_creation_observer_
 (
@@ -32,6 +58,15 @@ crude_level_01_creation_observer_
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     level->editor_camera_controller_enabled = true;
+    
+    /* Setup sounds */
+    {
+      crude_sound_creation creation = crude_sound_creation_empty( );
+      creation.looping = true;
+      creation.absolute_filepath = game->ambient_sound_absolute_filepath;
+      level->ambient_sound_handle = crude_audio_device_create_sound( &game->audio_device, &creation );
+      crude_audio_device_sound_start( &game->audio_device, level->ambient_sound_handle );
+    }
 
     /* Setup enemies*/
     {
@@ -166,6 +201,10 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_level_01_system )
   ECS_IMPORT( world, crude_game_components );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_creation_observer_, EcsOnSet, NULL, { 
+    { .id = ecs_id( crude_level_01 ) }
+  } );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_level_01_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_level_01 ) }
   } );
 

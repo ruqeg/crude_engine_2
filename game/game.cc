@@ -201,11 +201,11 @@ game_initialize
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
 
   game_initialize_platform_( game );
+  crude_audio_device_initialize( &game->audio_device, &game->allocator );
   game_initialize_physics_( game );
   crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_scene_( game );
   game_initialize_graphics_( game );
-  crude_audio_device_initialize( &game->audio_device );
 
   crude_devmenu_initialize( &game->devmenu );
   
@@ -713,6 +713,7 @@ game_initialize_constant_strings_
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
   char const *ammo_box_model_relative_filepath = "game\\models\\ammo_box.gltf";
+  char const *ambient_sound_relative_filepath = "game\\sounds\\Opal_Vessel_Eternal Labyrinth.mp3";
 
   uint64 constant_string_buffer_size = 0;
   uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
@@ -732,6 +733,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_drug_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_health_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( ammo_box_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( ambient_sound_relative_filepath );
 
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -749,6 +751,7 @@ game_initialize_constant_strings_
   game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
   game->serum_station_disabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_disabled_model_relative_filepath );
   game->ammo_box_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ammo_box_model_relative_filepath );
+  game->ambient_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ambient_sound_relative_filepath );
 
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );

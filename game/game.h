@@ -76,6 +76,7 @@ typedef struct game_t
   char const                                              *serum_station_enabled_model_absolute_filepath;
   char const                                              *serum_station_disabled_model_absolute_filepath;
   char const                                              *ammo_box_model_absolute_filepath;
+  char const                                              *ambient_sound_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;

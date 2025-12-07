@@ -4,6 +4,7 @@
 #include <engine/core/math.h>
 #include <engine/scene/components_serialization.h>
 #include <engine/external/game_resources.h>
+#include <engine/audio/audio_device_resources.h>
 
 typedef enum crude_enemy_state
 {
@@ -52,6 +53,7 @@ typedef struct crude_level_01
   crude_entity                                             serum_stations_spawn_points_parent_node;
   crude_entity                                             enemies_spawn_points_parent_node;
   bool                                                     editor_camera_controller_enabled;
+  crude_sound_handle                                       ambient_sound_handle;
 } crude_level_01;
 
 typedef struct crude_player
