@@ -44,6 +44,7 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 ## TODO
 - CPU and Memory Profiler PLEASE (same as gpu one)
 - Physics rework
+- Resources Manager
 
 ## Dependencies
 [cgltf](https://github.com/jkuhlmann/cgltf), 

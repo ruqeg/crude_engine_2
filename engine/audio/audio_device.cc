@@ -175,6 +175,7 @@ crude_audio_device_sound_set_volume
   ma_sound                                                *lma_sound;
   lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
   ma_sound_set_volume( lma_sound, volume );
+  ma_sound_set_attenuation_model( )
 }
 
 void

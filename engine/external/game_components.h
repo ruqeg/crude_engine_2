@@ -16,6 +16,13 @@ typedef enum crude_enemy_state
   CRUDE_ENEMY_STATE_STANNED,
 } crude_enemy_state;
 
+typedef enum crude_recycle_station_state
+{
+  CRUDE_RECYCLE_STATION_STATE_EMPTY,
+  CRUDE_RECYCLE_STATION_STATE_ACTIVE,
+  CRUDE_RECYCLE_STATION_STATE_DONE,
+} crude_recycle_station_state;
+
 typedef struct crude_enemy
 {
   crude_entity                                             player_look_ray_origin_node;
@@ -36,6 +43,8 @@ typedef struct crude_serum_station
 typedef struct crude_recycle_station
 {
   crude_game_item                                          game_item;
+  float32                                                  last_recycle_time;
+  crude_recycle_station_state                              state;
 } crude_recycle_station;
 
 typedef struct crude_weapon
@@ -77,6 +86,7 @@ typedef struct crude_player_controller
   float32                                                  stop_change_coeff;
   float32                                                  jump_velocity;
   bool                                                     input_enabled;
+  float32                                                  walking_sound_volume;
 #if CRUDE_DEVELOP
   bool                                                     fly_mode;
   float32                                                  fly_speed_scale;

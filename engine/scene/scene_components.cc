@@ -76,6 +76,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
   crude_memory_set( component, 0, sizeof( crude_gltf ) );
   component->original_path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", gltf_path );
   component->path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s%s", manager->resources_absolute_directory, gltf_path );
+  component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   return true;
 }
 
@@ -84,6 +85,10 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
   cJSON *gltf_json = cJSON_CreateObject( );     
   cJSON_AddItemToObject( gltf_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_gltf ) ) );
   cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( component->original_path ) );
+  if ( component->hidden )
+  {
+    cJSON_AddItemToObject( gltf_json, "hidden", cJSON_CreateBool( component->hidden ) );
+  }
   return gltf_json;
 }
 

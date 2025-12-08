@@ -7,6 +7,7 @@
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
 #include <engine/audio/audio_components.h>
+#include <game/recycle_station_system.h>
 #include <game/game.h>
 #include <game/enemy_system.h>
 
@@ -38,15 +39,7 @@ crude_player_interaction_collision_callback
       if ( crude_entity_valid( static_body_node_parent ) && CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
       {
         crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
-        
-        for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
-        {
-          if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
-          {
-            game_player_set_item( game, player, i, recycle_station->game_item );
-            break;
-          }
-        }
+        crude_recycle_station_start_recycle( recycle_station, player, static_body_node_parent );
       }
 
       if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) )
@@ -236,9 +229,9 @@ crude_player_update_visual_
   pass_options->wave_size = CRUDE_LERP( 0, 0.1, pow( player->drug_withdrawal, 4.f ) );
   pass_options->wave_texcoord_scale = CRUDE_LERP( 0, 3.f, pow( player->drug_withdrawal, 4.f ) );
   pass_options->wave_absolute_frame_scale = CRUDE_LERP( 0.02, 0.025, player->drug_withdrawal );
-  pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.1f, CRUDE_MAX( 0.f, player->drug_withdrawal - 0.5f ) );
-  pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.05f, CRUDE_MAX( 0.f, player->drug_withdrawal - 0.5f ) );;
-  pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.03f, player->drug_withdrawal );
+  pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.046f, pow( player->drug_withdrawal, 6.f ) );
+  pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.015f, pow( player->drug_withdrawal, 6.f ) );;
+  pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.02f, pow( player->drug_withdrawal, 2.f ) );
   
   /* Sanity */
   pass_options->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );

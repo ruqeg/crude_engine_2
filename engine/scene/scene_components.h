@@ -39,6 +39,7 @@ typedef struct crude_gltf
 {
   char const                                              *path;
   char const                                              *original_path;
+  bool                                                     hidden;
 } crude_gltf;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );

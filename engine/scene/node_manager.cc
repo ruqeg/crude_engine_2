@@ -64,7 +64,7 @@ crude_node_manager_initialize
   manager->allocator = creation->allocator;
 
   crude_linear_allocator_initialize( &manager->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );
-  crude_string_buffer_initialize( &manager->string_bufffer, 1024, crude_linear_allocator_pack( &manager->string_linear_allocator ) );
+  crude_string_buffer_initialize( &manager->string_bufffer, 4096, crude_linear_allocator_pack( &manager->string_linear_allocator ) );
   CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
 }
 

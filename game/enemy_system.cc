@@ -17,8 +17,8 @@ CRUDE_ECS_OBSERVER_DECLARE( crude_enemy_creation_observer_ );
 void
 crude_enemy_deal_damage_to_player
 (
-	_In_ crude_enemy																				*enemy,
-	_In_ crude_player																				*player
+  _In_ crude_enemy                                        *enemy,
+  _In_ crude_player                                        *player
 )
 {
   if ( enemy->state != CRUDE_ENEMY_STATE_STANNED )
@@ -34,8 +34,8 @@ crude_enemy_deal_damage_to_player
 void
 crude_enemy_receive_damage
 (
-	_In_ crude_enemy																				*enemy,
-	_In_ float64																				     damage,
+  _In_ crude_enemy                                        *enemy,
+  _In_ float64                                             damage,
   _In_ bool                                                critical
 )
 {

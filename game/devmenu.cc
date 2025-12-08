@@ -680,7 +680,7 @@ crude_devmenu_gpu_visual_profiler_callback
 void
 crude_devmenu_memory_visual_profiler_initialize
 (
-	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
 )
 {
   game_t *game = game_instance( );
@@ -700,7 +700,7 @@ crude_devmenu_memory_visual_profiler_initialize
 void
 crude_devmenu_memory_visual_profiler_deinitialize
 (
-	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
 )
 {
   CRUDE_ARRAY_DEINITIALIZE( dev_mem_profiler->allocators_containers );
@@ -709,7 +709,7 @@ crude_devmenu_memory_visual_profiler_deinitialize
 void
 crude_devmenu_memory_visual_profiler_update
 (
-	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
 )
 {
 }
@@ -717,7 +717,7 @@ crude_devmenu_memory_visual_profiler_update
 void
 crude_devmenu_memory_visual_profiler_draw
 (
-	_In_ crude_devmenu_memory_visual_profiler							  *dev_mem_profiler
+  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
 )
 {
   game_t                                                  *game;
@@ -825,7 +825,7 @@ crude_devmenu_memory_visual_profiler_draw
 void
 crude_devmenu_memory_visual_profiler_callback
 (
-	_In_ crude_devmenu									                    *devmenu
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   devmenu->memory_visual_profiler.enabled = !devmenu->memory_visual_profiler.enabled;

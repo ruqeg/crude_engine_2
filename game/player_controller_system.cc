@@ -31,6 +31,9 @@ crude_player_controller_creation_observer_
     player_controller->input_enabled = true;
     player_controller->fly_speed_scale = 5;
     game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
+
+    crude_audio_device_sound_start( &game->audio_device, game->walking_sound_handle );
+    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, 0.f );
   }
 }
 
@@ -73,7 +76,10 @@ crude_player_controller_update_system_
     character_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, character_body_handle );
     
     velocity = XMLoadFloat3( &character_body->velocity );
- 
+
+    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, player_controller->walking_sound_volume );
+    player_controller->walking_sound_volume = 3.f * CRUDE_MIN( XMVectorGetX( XMVector2Length( XMVectorSet( XMVectorGetX( velocity ), XMVectorGetZ( velocity ), 0.f, 0.f ) ) ) / player_controller->walk_speed, 1.f );
+
     if ( input->keys[ SDL_SCANCODE_1 ].current || input->keys[ SDL_SCANCODE_2 ].current || input->keys[ SDL_SCANCODE_3 ].current )
     {
       uint32 item_slot = 0u;

@@ -590,6 +590,11 @@ update_dynamic_buffers_
         {
         case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF:
         {
+          crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_gltf );
+          if ( gltf->hidden )
+          {
+            continue;
+          }
           break;
         }
 #if CRUDE_DEVELOP

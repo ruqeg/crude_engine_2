@@ -6,15 +6,15 @@
 CRUDE_API void
 crude_enemy_deal_damage_to_player
 (
-	_In_ crude_enemy																				*enemy,
-	_In_ crude_player																				*player
+  _In_ crude_enemy                                        *enemy,
+  _In_ crude_player                                        *player
 );
 
 CRUDE_API void
 crude_enemy_receive_damage
 (
-	_In_ crude_enemy																				*enemy,
-	_In_ float64																				     damage,
+  _In_ crude_enemy                                        *enemy,
+  _In_ float64                                             damage,
   _In_ bool                                                critical
 );
 
