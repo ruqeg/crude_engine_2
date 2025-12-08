@@ -76,7 +76,8 @@ crude_weapon_update_system_
       XMStoreFloat4( &transform->rotation, XMVectorLerp( XMLoadFloat4( &transform->rotation ), XMLoadFloat4( &weapon_basic_transform->rotation ), 2 * it->delta_time ) ); 
     }
 
-    if ( input->mouse.left.current && ( weapon->last_shot_timer > CRUDE_GAME_WEAPON_SHOT_INTEVAL ) )
+    crude_player_controller const *player_controller = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_player_controller );
+    if ( player_controller->input_enabled && input->mouse.left.current && ( weapon->last_shot_timer > CRUDE_GAME_WEAPON_SHOT_INTEVAL ) )
     {
       if ( weapon->ammo > 0 )
       {

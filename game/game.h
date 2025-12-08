@@ -144,6 +144,7 @@ typedef struct game_t
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
   float32                                                  time;
+  float32                                                  graphics_time;
 
   crude_game_queue_command                                *commands_queue;
 } game_t;

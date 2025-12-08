@@ -128,8 +128,8 @@ struct crude_scene
 
   uint                                                     indirect_light_texture_index;
   uint                                                     absolute_frame;
+  float                                                    absolute_time;
   float                                                    resolution_ratio;
-  float                                                    padding1;
 };
 
 #endif /* CRUDE_SCENE_GLSL */

@@ -477,9 +477,12 @@ game_graphics_system_
     return;
   }
 
+  game->graphics_time += CRUDE_MAX( 1.f / game->framerate, it->delta_time );
+
   game->last_graphics_update_time = 0.f;
 
   game->scene_renderer.options.camera_node = game->focused_camera_node;
+  game->scene_renderer.options.absolute_time = game->graphics_time;
 
   crude_gfx_new_frame( &game->gpu );
  
@@ -724,8 +727,8 @@ game_initialize_constant_strings_
 )
 {
   char const *serum_model_relative_filepath = "game\\models\\serum.gltf";
-  char const *syringe_drug_model_relative_filepath = "game\\models\\syringe_drug.gltf";
-  char const *syringe_health_model_relative_filepath = "game\\models\\syringe_health.gltf";
+  char const *syringe_drug_model_relative_filepath = "game\\models\\Syringe.gltf";
+  char const *syringe_health_model_relative_filepath = "game\\models\\Syringe_Health.gltf";
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
   char const *ammo_box_model_relative_filepath = "game\\models\\ammo_box.gltf";
@@ -859,6 +862,7 @@ game_deinitialize_audio_
   _In_ game_t                                             *game
 )
 {
+  crude_audio_device_destroy_sound( &game->audio_device, game->save_theme_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->ambient_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->shot_sound_handle );
   crude_audio_device_deinitialize( &game->audio_device );
@@ -996,6 +1000,8 @@ game_initialize_graphics_
   game->scene_renderer.options.ambient_intensity = 1.5f;
   game->scene_renderer.options.background_intensity = 0.f;
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
+
+  game->graphics_time = 0.f;
 
   game_setup_custom_postload_model_resources_( game );
 

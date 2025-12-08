@@ -62,6 +62,7 @@ crude_level_01_creation_observer_
       crude_audio_device_sound_start( &game->audio_device, game->ambient_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, game->save_theme_sound_handle );
       crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, 0.f );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, 1.f );
     }
 
     /* Setup enemies*/

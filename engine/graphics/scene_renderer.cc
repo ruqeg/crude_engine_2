@@ -559,7 +559,8 @@ update_dynamic_buffers_
       scene_constant->background_intensity = scene_renderer->options.background_intensity;
       scene_constant->ambient_color = scene_renderer->options.ambient_color;
       scene_constant->ambient_intensity = scene_renderer->options.ambient_intensity;
-      scene_constant->absolute_frame = scene_renderer->gpu->absolute_frame;
+      scene_constant->absolute_time = scene_renderer->gpu->absolute_frame;
+      scene_constant->absolute_frame = scene_renderer->options.absolute_time;
       crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
     }
   }

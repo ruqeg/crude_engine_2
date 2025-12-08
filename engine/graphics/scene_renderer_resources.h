@@ -58,6 +58,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   float32                                                  ambient_intensity;
   uint32                                                   indirect_light_texture_index;
   uint32                                                   absolute_frame;
+  float32                                                  absolute_time;
   float32                                                  resolution_ratio;
 } crude_gfx_scene_constant_gpu;
 

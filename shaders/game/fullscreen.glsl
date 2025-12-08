@@ -76,12 +76,12 @@ void main()
   vec2 texcoord = in_texcoord * ( 1.f - 2.f * max_offset ) + max_offset;
 
   /* Drunk effect */
-  float wave_x = sin( texcoord.y * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
-  float wave_y = cos( texcoord.x * wave_texcoord_scale + scene.absolute_frame * wave_absolute_frame_scale ) * wave_size;
+  float wave_x = sin( texcoord.y * wave_texcoord_scale + scene.absolute_time * wave_absolute_frame_scale ) * wave_size;
+  float wave_y = cos( texcoord.x * wave_texcoord_scale + scene.absolute_time * wave_absolute_frame_scale ) * wave_size;
   
   vec2 drunk_texcoord = vec2( texcoord.x + wave_x, texcoord.y + wave_y ); 
   
-  float aberration_strength = sin( scene.absolute_frame * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
+  float aberration_strength = sin( scene.absolute_time * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
 
   vec2 offset = vec2( aberration_strength, aberration_strength );
 
@@ -115,7 +115,7 @@ void main()
   /* Pulse with heartbeat effect */
   vec2 texcoord_to_center = in_texcoord - vec2( 0.5 );
   float texcoord_to_center_length = length( texcoord_to_center * scene.resolution_ratio );
-  float pulse = abs( cos( scene.absolute_frame * pulse_frame_scale) ) * pulse_scale;
+  float pulse = abs( cos( scene.absolute_time * pulse_frame_scale) ) * pulse_scale;
   vec3 pulse_radiance = mix( drunk_with_fog_radiance, pulse_color.rgb * pulse_color.a, pulse * clamp( pow( texcoord_to_center_length / pulse_distance, pulse_distance_coeff ), 0, 1 ) );
 
   out_radiance = vec4( pulse_radiance, 1.f );

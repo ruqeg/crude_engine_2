@@ -51,6 +51,7 @@ typedef struct crude_gfx_scene_renderer_options
   float32                                                  background_intensity;
   XMFLOAT3                                                 ambient_color;
   float32                                                  ambient_intensity;
+  float32                                                  absolute_time;
   char const                                              *hdr_pre_tonemapping_texture_name;
   char const                                              *depth_texture_name;
 #if CRUDE_DEVELOP

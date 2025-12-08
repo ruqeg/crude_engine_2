@@ -174,7 +174,8 @@ crude_enemy_update_system_
       }
       else
       {
-        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &enemy_transform->rotation ), XMQuaternionRotationAxis( g_XMIdentityR1, CRUDE_GAME_ENEMY_ROTATION_IDLE_SPEED * it->delta_time ) ) );
+        enemy->target_looking_angle += 0.6 * it->delta_time;
+        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionRotationAxis( g_XMIdentityR1, enemy->target_looking_angle ) );
       }
       break;
     }
@@ -191,8 +192,8 @@ crude_enemy_update_system_
       if ( enemy_reach_player_last_visible_translation )
       {
         enemy->player_last_visible_time += it->delta_time;
-        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &enemy_transform->rotation ), XMQuaternionRotationAxis( g_XMIdentityR1, CRUDE_GAME_ENEMY_ROTATION_IDLE_SPEED * it->delta_time ) ) );
-      }
+        enemy->target_looking_angle += 0.6 * it->delta_time;
+        XMStoreFloat4( &enemy_transform->rotation, XMQuaternionRotationAxis( g_XMIdentityR1, enemy->target_looking_angle ) );      }
       else
       {
         crude_enemy_go_to_point( enemy, enemy_transform, XMLoadFloat3( &enemy->player_last_visible_translation ), it->delta_time );

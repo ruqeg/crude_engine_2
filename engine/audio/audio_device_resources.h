@@ -14,7 +14,7 @@ typedef struct crude_sound_handle
 typedef enum crude_audio_sound_positioning
 {
   CRUDE_AUDIO_SOUND_POSITIONING_ABSOLUTE = ma_positioning_absolute,
-  CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE =  ma_positioning_relative
+  CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE = ma_positioning_relative
 } crude_audio_sound_positioning;
 
 typedef struct crude_sound_creation

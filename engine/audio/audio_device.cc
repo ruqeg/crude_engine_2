@@ -77,7 +77,7 @@ crude_audio_device_initialize
     return;
   }
   
-  if ( ma_fence_init( &audio->fence ) != MA_SUCCESS )
+  if ( ma_fence_init( &audio->lma_fence ) != MA_SUCCESS )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed initialize audio fence!" );
     return;
@@ -90,7 +90,7 @@ crude_audio_device_wait_wait_till_uploaded
   _In_ crude_audio_device                                  *audio
 )
 {
-  ma_fence_wait( &audio->fence );
+  ma_fence_wait( &audio->lma_fence );
 }
 
 crude_sound_handle
@@ -127,7 +127,7 @@ crude_audio_device_create_sound
     sounnd_flags |= MA_SOUND_FLAG_LOOPING;
   }
   
-  result = ma_sound_init_from_file( &audio->lma_engine, creation->absolute_filepath, sounnd_flags, NULL, creation->async_loading ? &audio->fence : NULL, lma_sound );
+  result = ma_sound_init_from_file( &audio->lma_engine, creation->absolute_filepath, sounnd_flags, NULL, creation->async_loading ? &audio->lma_fence : NULL, lma_sound );
   if ( result != MA_SUCCESS)
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed load sound \"%s\"", creation->absolute_filepath );
@@ -214,7 +214,7 @@ crude_audio_device_deinitialize
   _In_ crude_audio_device                                  *audio
 )
 {
-  ma_fence_uninit( &audio->fence );
+  ma_fence_uninit( &audio->lma_fence );
   ma_engine_uninit( &audio->lma_engine );
   ma_device_uninit( &audio->lma_device );
   ma_context_uninit( &audio->lma_context );
