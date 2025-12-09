@@ -50,6 +50,8 @@ crude_player_interaction_collision_callback
         {
           if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
           {
+            crude_audio_device_sound_set_translation( &game->audio_device, game->take_serum_sound_handle, crude_transform_node_to_world( static_body_node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_transform ) ).r[ 3 ] );
+            crude_audio_device_sound_start( &game->audio_device, game->take_serum_sound_handle );
             game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SERUM );
             CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
             game_push_enable_random_serum_station_command( game, static_body_node );
@@ -78,8 +80,9 @@ crude_player_enemy_hitbox_callback
   
   crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( static_body_node ) ), crude_enemy );
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+  crude_transform const *player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
   
-  crude_enemy_deal_damage_to_player( enemy, player );
+  crude_enemy_deal_damage_to_player( enemy, player, XMLoadFloat3( &player_transform->translation ) );
 }
 
 CRUDE_API void
@@ -108,8 +111,7 @@ crude_player_creation_observer_
   {
     crude_player *player = &player_per_entity[ i ];
     crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
-
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_audio_listener, {} );
+    CRUDE_ENTITY_SET_COMPONENT( crude_ecs_lookup_entity_from_parent( node, "pivot" ), crude_audio_listener, {} );
 
     crude_entity hitbox_node = crude_ecs_lookup_entity_from_parent( node, "enemy_hitbox" );
     crude_physics_character_body_handle *hitbox_body_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( hitbox_node, crude_physics_character_body_handle );

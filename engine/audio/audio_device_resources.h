@@ -17,6 +17,14 @@ typedef enum crude_audio_sound_positioning
   CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE = ma_positioning_relative
 } crude_audio_sound_positioning;
 
+typedef enum crude_audio_sound_attenuation_model
+{
+  CRUDE_AUDIO_SOUND_ATTENUATION_MODEL_NONE = ma_attenuation_model_none,
+  CRUDE_AUDIO_SOUND_ATTENUATION_MODEL_INVERSE = ma_attenuation_model_inverse,
+  CRUDE_AUDIO_SOUND_ATTENUATION_MODEL_LINEAR = ma_attenuation_model_linear,
+  CRUDE_AUDIO_SOUND_ATTENUATION_MODEL_EXPONENTIAL = ma_attenuation_model_exponential
+} crude_audio_sound_attenuation_model;
+
 typedef struct crude_sound_creation
 {
   char const                                              *absolute_filepath;
@@ -25,6 +33,10 @@ typedef struct crude_sound_creation
   bool                                                     stream;
   bool                                                     decode;
   crude_audio_sound_positioning                            positioning;
+  crude_audio_sound_attenuation_model                      attenuation_model;
+  float32                                                  max_distance;
+  float32                                                  min_distance;
+  float32                                                  rolloff;
 } crude_sound_creation;
 
 CRUDE_API crude_sound_creation

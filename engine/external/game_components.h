@@ -34,6 +34,9 @@ typedef struct crude_enemy
   XMFLOAT3                                                 player_last_visible_translation;
   float32                                                  target_looking_angle;
   float32                                                  health;
+  crude_sound_handle                                       enemy_idle_sound_handle;
+  crude_sound_handle                                       enemy_notice_sound_handle;
+  crude_sound_handle                                       enemy_attack_sound_handle;
 } crude_enemy;
 
 typedef struct crude_serum_station

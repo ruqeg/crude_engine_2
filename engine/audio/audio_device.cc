@@ -108,7 +108,7 @@ crude_audio_device_create_sound
   sound_handle.index = crude_resource_pool_obtain_resource( &audio->sounds );
   lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
 
-  sounnd_flags = MA_SOUND_FLAG_NO_SPATIALIZATION | MA_SOUND_FLAG_NO_PITCH;
+  sounnd_flags = MA_SOUND_FLAG_NO_PITCH;
   if ( creation->decode )
   {
     sounnd_flags |= MA_SOUND_FLAG_DECODE;
@@ -128,13 +128,29 @@ crude_audio_device_create_sound
   }
   
   result = ma_sound_init_from_file( &audio->lma_engine, creation->absolute_filepath, sounnd_flags, NULL, creation->async_loading ? &audio->lma_fence : NULL, lma_sound );
-  if ( result != MA_SUCCESS)
+  if ( result != MA_SUCCESS )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed load sound \"%s\"", creation->absolute_filepath );
     return CRUDE_SOUND_HANDLE_INVALID;
   }
 
   ma_sound_set_positioning( lma_sound, CRUDE_CAST( ma_positioning, creation->positioning ) );
+  ma_sound_set_attenuation_model( lma_sound, CRUDE_CAST( ma_attenuation_model, creation->attenuation_model ) );
+
+  if ( creation->max_distance )
+  {
+    ma_sound_set_max_distance( lma_sound, creation->max_distance );
+  }
+
+  if ( creation->min_distance )
+  {
+    ma_sound_set_min_distance( lma_sound, creation->min_distance );
+  }
+
+  if ( creation->rolloff )
+  {
+    ma_sound_set_rolloff( lma_sound, creation->rolloff );
+  }
   
   return sound_handle;
 }
@@ -150,6 +166,31 @@ crude_audio_device_sound_start
   lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
   ma_sound_start( lma_sound );
 }
+
+void
+crude_audio_device_sound_stop
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{ 
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  ma_sound_stop( lma_sound );
+}
+
+bool
+crude_audio_device_sound_is_playing
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  return ma_sound_is_playing( lma_sound );
+}
+
 
 void
 crude_audio_device_sound_set_translation
@@ -175,7 +216,19 @@ crude_audio_device_sound_set_volume
   ma_sound                                                *lma_sound;
   lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
   ma_sound_set_volume( lma_sound, volume );
-  ma_sound_set_attenuation_model( )
+}
+
+void
+crude_audio_device_sound_set_attenuation_model
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle,
+  _In_ crude_audio_sound_attenuation_model                  attenuation_model
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  ma_sound_set_attenuation_model( lma_sound, CRUDE_CAST( ma_attenuation_model, attenuation_model ) );
 }
 
 void
@@ -189,11 +242,10 @@ crude_audio_device_listener_set_local_to_world
   XMFLOAT3                                                 translation;
 
   XMStoreFloat3( &translation, local_to_world.r[ 3 ] );
-  XMStoreFloat3( &forward, XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), local_to_world ) );
+  XMStoreFloat3( &forward, XMVector3TransformNormal( XMVectorSet( 0, 0, -1, 0 ), local_to_world ) );
 
   ma_engine_listener_set_position( &audio->lma_engine, 0, translation.x, translation.y, translation.z );
   ma_engine_listener_set_direction( &audio->lma_engine, 0, forward.x, forward.y, forward.z );
-  //ma_engine_listener_set_world_up( &audio->lma_engine, 0, 0, 1, 0);
 }
 
 void

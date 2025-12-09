@@ -83,6 +83,13 @@ typedef struct game_t
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;
+  char const                                              *take_serum_sound_absolute_filepath;
+  char const                                              *enemy_idle_sound_absolute_filepath;
+  char const                                              *enemy_notice_sound_absolute_filepath;
+  char const                                              *enemy_attack_sound_absolute_filepath;
+  char const                                              *recycle_interaction_sound_absolute_filepath;
+  char const                                              *syringe_sound_absolute_filepath;
+  char const                                              *reload_sound_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
@@ -142,6 +149,10 @@ typedef struct game_t
   crude_sound_handle                                       recycle_sound_handle;
   crude_sound_handle                                       hit_critical_sound_handle;
   crude_sound_handle                                       hit_basic_sound_handle;
+  crude_sound_handle                                       take_serum_sound_handle;
+  crude_sound_handle                                       recycle_interaction_sound_handle;
+  crude_sound_handle                                       syringe_sound_handle;
+  crude_sound_handle                                       reload_sound_handle;
   /* System Context */
   crude_physics_system_context                             physics_system_context;
 #if CRUDE_DEVELOP

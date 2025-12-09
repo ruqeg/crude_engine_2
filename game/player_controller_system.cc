@@ -101,16 +101,19 @@ crude_player_controller_update_system_
         {
         case CRUDE_GAME_ITEM_SYRINGE_DRUG:
         {
+          crude_audio_device_sound_start( &game->audio_device, game->syringe_sound_handle );
           player->drug_withdrawal = CRUDE_MAX( player->drug_withdrawal - CRUDE_GAME_ITEM_SYRINGE_DRUG_WITHDRAWAL_REMOVE, 0.f );
           break;
         }
         case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
         {
+          crude_audio_device_sound_start( &game->audio_device, game->syringe_sound_handle );
           player->health = CRUDE_MIN( 1.f, player->health + CRUDE_GAME_ITEM_SYRINGE_HEALTH_ADD );
           break;
         }
         case CRUDE_GAME_ITEM_AMMUNITION:
         {
+          crude_audio_device_sound_start( &game->audio_device, game->reload_sound_handle );
           crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( pivot_node, "weapon" ), crude_weapon );
           weapon->ammo = 10;
           break;

@@ -117,7 +117,6 @@ crude_weapon_update_system_
         XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), XMQuaternionRotationAxis( XMVectorSet( 1, 0, 0, 0 ), -XM_PIDIV2 ) ) );
         --weapon->ammo;
 
-        crude_audio_device_sound_set_translation( &game->audio_device, game->shot_sound_handle, ray_origin );
         crude_audio_device_sound_start( &game->audio_device, game->shot_sound_handle );
       }
       else

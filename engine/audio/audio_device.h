@@ -43,7 +43,14 @@ crude_audio_device_sound_start
 );
 
 CRUDE_API void
-crude_audio_device_sound_start
+crude_audio_device_sound_stop
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+);
+
+CRUDE_API bool
+crude_audio_device_sound_is_playing
 (
   _In_ crude_audio_device                                  *audio,
   _In_ crude_sound_handle                                   sound_handle
@@ -63,6 +70,14 @@ crude_audio_device_sound_set_volume
   _In_ crude_audio_device                                  *audio,
   _In_ crude_sound_handle                                   sound_handle,
   _In_ float32                                              volume
+);
+
+CRUDE_API void
+crude_audio_device_sound_set_attenuation_model
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle,
+  _In_ crude_audio_sound_attenuation_model                  attenuation_model
 );
 
 CRUDE_API void
