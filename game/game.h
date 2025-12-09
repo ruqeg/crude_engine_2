@@ -14,6 +14,7 @@
 #include <engine/external/game_components.h>
 #include <engine/audio/audio_system.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
+#include <game/game_menu.h>
 #include <game/devmenu.h>
 
 typedef enum crude_game_queue_command_type
@@ -106,6 +107,7 @@ typedef struct game_t
   char                                                     current_scene_absolute_filepath[ 1024 ];
 
   crude_devmenu                                            devmenu;
+  crude_game_menu                                          game_menu;
 
   /* Common */
   crude_heap_allocator                                     allocator;
@@ -136,6 +138,7 @@ typedef struct game_t
   /* Audio */
   crude_audio_device                                       audio_device;
   crude_audio_system_context                               audio_system_context;
+  float32                                                  volume;
   /* Scene */
   crude_node_manager                                       node_manager;
   /* Window & Input */

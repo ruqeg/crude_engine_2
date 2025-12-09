@@ -165,14 +165,12 @@ game_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 );
 
-#if CRUDE_DEVELOP
 static void
 game_input_callback_
 (
   _In_ void                                               *ctx,
   _In_ void                                               *sdl_event
 );
-#endif
 
 #include <miniaudio.h>
 void
@@ -223,6 +221,7 @@ game_initialize
   game_initialize_graphics_( game );
 
   crude_devmenu_initialize( &game->devmenu );
+  crude_game_menu_initialize( &game->game_menu );
   
   crude_audio_device_wait_wait_till_uploaded( &game->audio_device );
 
@@ -247,7 +246,8 @@ game_postupdate
 {
   CRUDE_PROFILER_ZONE_NAME( "game_postupdate" );
   crude_devmenu_update( &game->devmenu );
-
+  crude_game_menu_update( &game->game_menu );
+  
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
   {
     switch ( game->commands_queue[ i ].type )
@@ -345,6 +345,7 @@ game_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
   
   crude_devmenu_deinitialize( &game->devmenu );
+  crude_game_menu_deinitialize( &game->game_menu );
   crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
   game_deinitialize_audio_( game );
   game_graphics_deinitialize_( game );
@@ -499,6 +500,7 @@ game_graphics_system_
   ImGui_ImplSDL3_NewFrame( );
   ImGui::NewFrame( );
   crude_devmenu_draw( &game->devmenu );
+  crude_game_menu_draw( &game->game_menu );
 #endif
 
   if ( game->gpu.swapchain_resized_last_frame )
@@ -628,6 +630,7 @@ game_input_system_
     crude_window_handle *window_handle = &window_handle_per_entity[ i ];
 
     crude_devmenu_handle_input( &game->devmenu, input );
+    crude_game_menu_handle_input( &game->game_menu, input );
     //crude_devgui_handle_input( &editor->devgui, input );
 
     //if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
@@ -668,7 +671,6 @@ game_parse_all_components_to_json_
 {
 }
 
-#if CRUDE_DEVELOP
 void
 game_input_callback_
 (
@@ -678,13 +680,16 @@ game_input_callback_
 {
   game_t *game = CRUDE_CAST( game_t*, ctx );
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
-
-  if ( game->devmenu.enabled )
+  
+  bool should_process_sdl_events = game->game_menu.enabled;
+#if CRUDE_DEVELOP
+  should_process_sdl_events |= game->devmenu.enabled;
+#endif
+  if ( should_process_sdl_events )
   {
     ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
   }
 }
-#endif
 
 void
 game_initialize_allocators_
@@ -871,6 +876,8 @@ game_initialize_audio_
 {
   crude_sound_creation                                     sound_creation;
 
+  game->volume = 1.f;
+
   crude_audio_device_initialize( &game->audio_device, &game->allocator );
   
   game->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
@@ -923,7 +930,7 @@ game_initialize_audio_
   sound_creation.absolute_filepath = game->hit_basic_sound_absolute_filepath;
   sound_creation.rolloff = 0.15;
   game->hit_basic_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-  crude_audio_device_sound_set_volume( &game->audio_device, game->hit_basic_sound_handle, 2.5f );
+  crude_audio_device_sound_set_volume( &game->audio_device, game->hit_basic_sound_handle, 5.0f );
 
   sound_creation = crude_sound_creation_empty( );
   sound_creation.async_loading = true;
@@ -979,6 +986,7 @@ game_deinitialize_audio_
   crude_audio_device_destroy_sound( &game->audio_device, game->recycle_interaction_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->syringe_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->reload_sound_handle );
+  crude_audio_device_destroy_sound( &game->audio_device, game->heartbeat_sound_handle );
   crude_audio_device_deinitialize( &game->audio_device );
 }
 

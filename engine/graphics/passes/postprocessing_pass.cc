@@ -23,6 +23,7 @@ typedef struct crude_gfx_postprocessing_push_constant
 {
   uint32                                                   luminance_average_texture_index;
   uint32                                                   pbr_texture_index;
+  float32                                                  inv_gamma;
 } crude_gfx_postprocessing_push_constant;
 
 void
@@ -206,6 +207,7 @@ crude_gfx_postprocessing_pass_render
   postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
   postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle[ gpu->current_frame ].index;
   postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
+  postprocessing_constant.inv_gamma = 1.f / pass->scene_renderer->options.gamma;
   crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
 

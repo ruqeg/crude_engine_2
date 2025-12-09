@@ -249,6 +249,16 @@ crude_audio_device_listener_set_local_to_world
 }
 
 void
+crude_audio_device_set_global_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ float32                                              volume
+)
+{
+  ma_engine_set_volume( &audio->lma_engine, volume );
+}
+
+void
 crude_audio_device_destroy_sound
 (
   _In_ crude_audio_device                                  *audio,

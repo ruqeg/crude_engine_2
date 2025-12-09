@@ -1,7 +1,8 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define CRUDE_STAGE_FRAGMENT
+//#define CRUDE_STAGE_FRAGMENT
+#define POSTPROCESSING
 #define LIGHT_PBR
 
 #include "crude/platform.glsli"
@@ -92,6 +93,7 @@ layout( push_constant ) uniform Constants
 {
   uint                                                     luminance_average_texture_index;
   uint                                                     pbr_texture_index;
+  float                                                    inv_gamma;
 };
 
 void main()
@@ -102,7 +104,7 @@ void main()
   float luminance = crude_rgb_to_luminance( color.xyz );
   color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );
   color.xyz = crude_uncharted2_tonemap( color.xyz );
-  color.xyz = pow( color.xyz, vec3( 1 / 2.2 ) );
+  color.xyz = pow( color.xyz, vec3( inv_gamma ) );
   out_color = color;
 }
 #endif /* POSTPROCESSING && CRUDE_STAGE_FRAGMENT */

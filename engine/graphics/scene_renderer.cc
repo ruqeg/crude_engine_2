@@ -77,6 +77,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.ambient_intensity = 1.f;
   scene_renderer->options.hdr_pre_tonemapping_texture_name = "pbr";
   scene_renderer->options.depth_texture_name = "depth";
+  scene_renderer->options.gamma = 2.2f;
   
   scene_renderer->lights_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 

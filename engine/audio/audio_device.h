@@ -88,6 +88,13 @@ crude_audio_device_listener_set_local_to_world
 );
 
 CRUDE_API void
+crude_audio_device_set_global_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ float32                                              volume
+);
+
+CRUDE_API void
 crude_audio_device_destroy_sound
 (
   _In_ crude_audio_device                                  *audio,
