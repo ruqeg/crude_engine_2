@@ -165,6 +165,8 @@ crude_player_update_system_
     {
       crude_player_update_visual_( player );
     }
+
+    crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
     
     if ( player->inside_safe_zone )
     {

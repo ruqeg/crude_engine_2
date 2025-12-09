@@ -30,7 +30,7 @@ crude_weapon_creation_observer_
     weapon->weapon_basic_node  = crude_ecs_lookup_entity_from_parent( node, "weapon_basic_position" );
     weapon->weapon_scoped_node = crude_ecs_lookup_entity_from_parent( node, "weapon_scoped_position" );
     weapon->weapon_shot_node = crude_ecs_lookup_entity_from_parent( node, "weapon_shot_node" );
-    weapon->last_shot_timer = 0.f;
+    weapon->last_shot_timer = 100.f;
     weapon->ammo = weapon->max_ammo;
   }
 }
@@ -96,20 +96,22 @@ crude_weapon_update_system_
         
         if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 5 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 5 ) )
         {
+          crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE, true );
-          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_basic_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, game->hit_basic_sound_handle );
+          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_critical_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->audio_device, game->hit_critical_sound_handle );
+          player->sanity = CRUDE_MIN( player->sanity + 0.1, 1.f );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Critical hit" );
         }
         else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 6 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 6 ) )
         {
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
-          player->sanity = CRUDE_MIN( player->sanity + 0.1, 1.f );
+          player->sanity = CRUDE_MIN( player->sanity + 0.05, 1.f );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_DAMAGE, false );
-          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_critical_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, game->hit_critical_sound_handle );
+          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_basic_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->audio_device, game->hit_basic_sound_handle );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Default Hit" );
         }
 

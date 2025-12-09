@@ -752,7 +752,8 @@ game_initialize_constant_strings_
   char const *recycle_interaction_sound_relative_filepath = "game\\sounds\\recycle_interaction.wav";
   char const *syringe_sound_relative_filepath = "game\\sounds\\syringe.wav";
   char const *reload_interaction_sound_relative_filepath = "game\\sounds\\reload.wav";
-  
+  char const *heartbeat_sound_relative_filepath = "game\\sounds\\heartbeat.wav";
+
   uint64 constant_string_buffer_size = 0;
   uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
   constant_string_buffer_size += working_directory_length;
@@ -785,7 +786,8 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( recycle_interaction_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( reload_interaction_sound_relative_filepath );
-
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( heartbeat_sound_relative_filepath );
+  
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
   game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
@@ -812,6 +814,7 @@ game_initialize_constant_strings_
   game->take_serum_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, take_serum_sound_relative_filepath );
   game->syringe_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_sound_relative_filepath );
   game->reload_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, reload_interaction_sound_relative_filepath );
+  game->heartbeat_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, heartbeat_sound_relative_filepath );
 
   game->enemy_idle_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_idle_sound_relative_filepath );
   game->enemy_notice_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_notice_sound_relative_filepath );
@@ -913,7 +916,7 @@ game_initialize_audio_
   sound_creation.absolute_filepath = game->hit_critical_sound_absolute_filepath;
   sound_creation.rolloff = 0.15;
   game->hit_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-  crude_audio_device_sound_set_volume( &game->audio_device, game->hit_critical_sound_handle, 3.5f );
+  crude_audio_device_sound_set_volume( &game->audio_device, game->hit_critical_sound_handle, 5.0f );
   
   sound_creation = crude_sound_creation_empty( );
   sound_creation.async_loading = true;
@@ -947,6 +950,15 @@ game_initialize_audio_
   sound_creation.absolute_filepath = game->reload_sound_absolute_filepath;
   sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
   game->reload_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+  sound_creation = crude_sound_creation_empty( );
+  sound_creation.looping = true;
+  sound_creation.async_loading = true;
+  sound_creation.absolute_filepath = game->heartbeat_sound_absolute_filepath;
+  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+  game->heartbeat_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+  crude_audio_device_sound_start( &game->audio_device, game->heartbeat_sound_handle );
+  crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 0.f );
 }
 
 

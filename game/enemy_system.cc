@@ -271,9 +271,18 @@ crude_enemy_update_system_
       if ( crude_enemy_search_player( enemy ) )
       {
         crude_transform const *player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+
+        if ( enemy->player_last_visible_translation_updated_time > 0.75f )
+        {
+          crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+          crude_audio_device_sound_start( &game->audio_device, enemy->enemy_notice_sound_handle );
+        }
         enemy->player_last_visible_time = 0.f;
+        enemy->player_last_visible_translation_updated_time = 0.f;
         enemy->player_last_visible_translation = player_transform->translation;
       }
+
+      enemy->player_last_visible_translation_updated_time += it->delta_time;
 
       bool enemy_reach_player_last_visible_translation = ( XMVectorGetX( XMVector2Length( XMVectorSubtract( XMVectorSet( enemy_transform->translation.x, enemy_transform->translation.z, 0, 0 ), XMVectorSet( enemy->player_last_visible_translation.x, enemy->player_last_visible_translation.z, 0, 0 ) ) ) ) < 0.01 );
       if ( enemy_reach_player_last_visible_translation )

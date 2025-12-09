@@ -115,7 +115,7 @@ crude_recycle_station_update_system_
     recycle_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     recycle_station->last_recycle_time += it->delta_time;
-    if ( recycle_station->last_recycle_time > 6.1 && recycle_station->state == CRUDE_RECYCLE_STATION_STATE_ACTIVE )
+    if ( recycle_station->last_recycle_time > 6.0 && recycle_station->state == CRUDE_RECYCLE_STATION_STATE_ACTIVE )
     {
       recycle_station->state = CRUDE_RECYCLE_STATION_STATE_DONE;
     }

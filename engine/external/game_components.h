@@ -32,6 +32,7 @@ typedef struct crude_enemy
   crude_enemy_state                                        state;
   float32                                                  player_last_visible_time;
   XMFLOAT3                                                 player_last_visible_translation;
+  float32                                                  player_last_visible_translation_updated_time;
   float32                                                  target_looking_angle;
   float32                                                  health;
   crude_sound_handle                                       enemy_idle_sound_handle;
