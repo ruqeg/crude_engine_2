@@ -53,7 +53,7 @@ crude_game_menu_draw
     );
 
     float32 sensetivity = 10 * player_controller->rotation_speed;
-    if ( ImGui::DragFloat( "Sensetivity (Default -0.1 or something like that)", &sensetivity, 0.1 ) )
+    if ( ImGui::DragFloat( "Sensetivity (Default -0.1)", &sensetivity, 0.1 ) )
     {
       player_controller->rotation_speed = 0.1f * sensetivity;
     }
@@ -74,13 +74,6 @@ crude_game_menu_draw
       SDL_Window *sdl_window = CRUDE_CAST( SDL_Window*, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle )->value );
       SDL_SetWindowBordered( sdl_window, true );
       SDL_SetWindowFullscreen( sdl_window, false );
-    }
-    ImGui::SameLine( );
-    if ( ImGui::Button( "Window Fullscreen Bordered (IDK is there any difference)" ) )
-    {
-      SDL_Window *sdl_window = CRUDE_CAST( SDL_Window*, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle )->value );
-      SDL_SetWindowBordered( sdl_window, true );
-      SDL_SetWindowFullscreen( sdl_window, true );
     }
     ImGui::SameLine( );
     if ( ImGui::Button( "Exclusive fullscreen (TODO)" ) )
