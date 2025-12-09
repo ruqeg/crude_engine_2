@@ -136,7 +136,7 @@ crude_devmenu_draw
   {
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 50 ) );
     ImGui::Begin( "Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
-    ImGui::Text( "FPS %u", devmenu->previous_framerate );
+    ImGui::Text( "FPS %u", CRUDE_MIN_INT( devmenu->previous_framerate, game->framerate ) );
     ImGui::End( );
   }
 

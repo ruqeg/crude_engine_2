@@ -53,18 +53,44 @@ crude_game_menu_draw
     );
 
     float32 sensetivity = 10 * player_controller->rotation_speed;
-    if ( ImGui::DragFloat( "Sensetivity", &sensetivity, 0.1 ) )
+    if ( ImGui::DragFloat( "Sensetivity (Default -0.1 or something like that)", &sensetivity, 0.1 ) )
     {
       player_controller->rotation_speed = 0.1f * sensetivity;
     }
-    if ( ImGui::DragFloat( "Volume", &game->volume, 0.1 ) )
+    if ( ImGui::DragFloat( "Volume (Default 1.0)", &game->volume, 0.1 ) )
     {
       crude_audio_device_set_global_volume( &game->audio_device, game->volume );
     }
-    ImGui::DragFloat( "Gamma", &game->scene_renderer.options.gamma, 0.1, 0.1, 5 );
-    if ( ImGui::Button( "Exit" ) )
+    ImGui::DragFloat( "Gamma (Default 2.2)", &game->scene_renderer.options.gamma, 0.1, 0.1, 5 );
+    if ( ImGui::Button( "Window Fullscreen" ) )
     {
-      ecs_quit( game->engine->world );
+      SDL_Window *sdl_window = CRUDE_CAST( SDL_Window*, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle )->value );
+      SDL_SetWindowFullscreen( sdl_window, true );
+      SDL_SetWindowBordered( sdl_window, false );
+    }
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Window Bordered" ) )
+    {
+      SDL_Window *sdl_window = CRUDE_CAST( SDL_Window*, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle )->value );
+      SDL_SetWindowBordered( sdl_window, true );
+      SDL_SetWindowFullscreen( sdl_window, false );
+    }
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Window Fullscreen Bordered (IDK is there any difference)" ) )
+    {
+      SDL_Window *sdl_window = CRUDE_CAST( SDL_Window*, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle )->value );
+      SDL_SetWindowBordered( sdl_window, true );
+      SDL_SetWindowFullscreen( sdl_window, true );
+    }
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Exclusive fullscreen (TODO)" ) )
+    {
+    }
+
+    int32 framerate = game->framerate;
+    if ( ImGui::DragInt( "FPS Limit", &framerate ) )
+    {
+      game->framerate = framerate;
     }
 
     ImGui::GetIO().FontGlobalScale = 1.f;

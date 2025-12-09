@@ -13,6 +13,7 @@ using namespace DirectX;
 #define CRUDE_CEIL( a ) ceil( a )
 #define CRUDE_MAX( a, b ) fmaxf( a, b )
 #define CRUDE_MIN( a, b ) fminf( a, b )
+#define CRUDE_MIN_INT( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
 #define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )
 #define CRUDE_DEG_TO_RAD( x ) ( XMConvertToRadians( x ) ) 
 #define CRUDE_RAD_TO_DEG( x ) ( XMConvertToDegrees( x ) ) 
