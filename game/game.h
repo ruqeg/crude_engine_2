@@ -1,5 +1,6 @@
 #pragma once
 
+#include <imgui/imgui.h>
 #include <nfd.h>
 
 #include <engine/engine.h>
@@ -81,6 +82,7 @@ typedef struct game_t
   char const                                              *save_theme_sound_absolute_filepath;
   char const                                              *walking_sound_absolute_filepath;
   char const                                              *shot_sound_absolute_filepath;
+  char const                                              *shot_without_ammo_sound_absolute_filepath;
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;
@@ -91,7 +93,10 @@ typedef struct game_t
   char const                                              *recycle_interaction_sound_absolute_filepath;
   char const                                              *syringe_sound_absolute_filepath;
   char const                                              *reload_sound_absolute_filepath;
+  char const                                              *death_sound_absolute_filepath;
   char const                                              *heartbeat_sound_absolute_filepath;
+  
+  char const                                              *game_font_absolute_filepath;
 #if CRUDE_DEVELOP
   char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
@@ -128,9 +133,8 @@ typedef struct game_t
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   crude_gfx_game_postprocessing_pass                       game_postprocessing_pass;
-#if CRUDE_DEVELOP
   void                                                    *imgui_context;
-#endif
+  ImFont                                                  *im_game_font;
   /* Physics */
   crude_physics_resources_manager                          physics_resources_manager;
   crude_collisions_resources_manager                       collision_resources_manager;
@@ -149,6 +153,7 @@ typedef struct game_t
   crude_sound_handle                                       ambient_sound_handle;
   crude_sound_handle                                       save_theme_sound_handle;
   crude_sound_handle                                       shot_sound_handle;
+  crude_sound_handle                                       shot_without_ammo_sound_handle;
   crude_sound_handle                                       walking_sound_handle;
   crude_sound_handle                                       recycle_sound_handle;
   crude_sound_handle                                       hit_critical_sound_handle;
@@ -158,6 +163,9 @@ typedef struct game_t
   crude_sound_handle                                       syringe_sound_handle;
   crude_sound_handle                                       reload_sound_handle;
   crude_sound_handle                                       heartbeat_sound_handle;
+  crude_sound_handle                                       death_sound_handle;
+  bool                                                     death_screen;
+  XMFLOAT4                                                 death_overlap_color;
   /* System Context */
   crude_physics_system_context                             physics_system_context;
 #if CRUDE_DEVELOP

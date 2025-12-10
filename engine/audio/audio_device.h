@@ -11,6 +11,7 @@ typedef struct crude_audio_device
   ma_device                                                lma_device;
   ma_engine                                                lma_engine;
   ma_fence                                                 lma_fence;
+  crude_resource_pool                                      sounds_groups;
   crude_resource_pool                                      sounds;
   crude_heap_allocator                                    *allocator;
 } crude_audio_device;
@@ -23,9 +24,50 @@ crude_audio_device_initialize
 );
 
 CRUDE_API void
+crude_audio_device_deinitialize
+(
+  _In_ crude_audio_device                                  *audio
+);
+
+CRUDE_API void
 crude_audio_device_wait_wait_till_uploaded
 (
   _In_ crude_audio_device                                  *audio
+);
+
+CRUDE_API crude_sound_group_handle
+crude_audio_device_create_sound_group
+(
+  _In_ crude_audio_device                                  *audio
+);
+
+CRUDE_API void
+crude_audio_device_destroy_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+);
+
+CRUDE_API void
+crude_audio_device_start_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+);
+
+CRUDE_API void
+crude_audio_device_stop_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+);
+
+CRUDE_API void
+crude_audio_device_sound_group_set_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle,
+  _In_ float32                                              volume
 );
 
 CRUDE_API crude_sound_handle
@@ -33,6 +75,13 @@ crude_audio_device_create_sound
 (
   _In_ crude_audio_device                                  *audio,
   _In_ crude_sound_creation const                          *creation
+);
+
+CRUDE_API void
+crude_audio_device_destroy_sound
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
 );
 
 CRUDE_API void
@@ -92,17 +141,4 @@ crude_audio_device_set_global_volume
 (
   _In_ crude_audio_device                                  *audio,
   _In_ float32                                              volume
-);
-
-CRUDE_API void
-crude_audio_device_destroy_sound
-(
-  _In_ crude_audio_device                                  *audio,
-  _In_ crude_sound_handle                                   sound_handle
-);
-
-CRUDE_API void
-crude_audio_device_deinitialize
-(
-  _In_ crude_audio_device                                  *audio
 );

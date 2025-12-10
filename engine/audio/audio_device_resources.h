@@ -3,12 +3,19 @@
 #include <miniaudio.h>
 
 #include <engine/core/alias.h>
+#include <engine/core/resource_pool.h>
 
 typedef struct crude_sound_handle
 {
   uint32                                                   index;
 } crude_sound_handle;
 
+typedef struct crude_sound_group_handle
+{
+  uint32                                                   index;
+} crude_sound_group_handle;
+
+#define CRUDE_SOUND_GROUP_HANDLE_INVALID                   ( CRUDE_COMPOUNT( crude_sound_group_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 #define CRUDE_SOUND_HANDLE_INVALID                         ( CRUDE_COMPOUNT( crude_sound_handle, { CRUDE_RESOURCE_INDEX_INVALID } ) )
 
 typedef enum crude_audio_sound_positioning
@@ -37,6 +44,7 @@ typedef struct crude_sound_creation
   float32                                                  max_distance;
   float32                                                  min_distance;
   float32                                                  rolloff;
+  crude_sound_group_handle                                 sound_group_handle;
 } crude_sound_creation;
 
 CRUDE_API crude_sound_creation

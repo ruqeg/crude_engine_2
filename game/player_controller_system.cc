@@ -48,6 +48,12 @@ crude_player_controller_update_system_
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player_controller *player_controllere_per_entity = ecs_field( it, crude_player_controller, 1 );
   crude_player *player_per_entity = ecs_field( it, crude_player, 2 );
+  
+  if ( game->death_screen )
+  {
+    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, 0.f );
+    return;
+  }
 
   for ( uint32 i = 0; i < it->count; ++i )
   {

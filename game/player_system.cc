@@ -149,6 +149,8 @@ crude_player_update_system_
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player *player_per_entity = ecs_field( it, crude_player, 1 );
 
+  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_transform                                       *transform;
@@ -166,29 +168,51 @@ crude_player_update_system_
       crude_player_update_visual_( player );
     }
 
-    crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
     
-    if ( player->inside_safe_zone )
+    if ( game->death_screen )
     {
-      player->safe_zone_volume = CRUDE_MIN( 1.05f, player->safe_zone_volume + 0.2 * it->delta_time );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->death_sound_handle, CRUDE_LERP( 1.5, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 4 ) ) );
     }
     else
     {
-      player->safe_zone_volume = CRUDE_MAX( -0.05f, player->safe_zone_volume - 0.2 * it->delta_time );
-    }
+      crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
+      if ( player->inside_safe_zone )
+      {
+        player->safe_zone_volume = CRUDE_MIN( 1.05f, player->safe_zone_volume + 0.2 * it->delta_time );
+      }
+      else
+      {
+        player->safe_zone_volume = CRUDE_MAX( -0.05f, player->safe_zone_volume - 0.2 * it->delta_time );
+      }
 
-    if ( player->safe_zone_volume > 0 && player->safe_zone_volume < 1.0 )
-    {
-      crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( player->safe_zone_volume, 1.f ) ) );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( 1.f, 1.f - player->safe_zone_volume ) ) );
+      if ( player->safe_zone_volume > 0 && player->safe_zone_volume < 1.0 )
+      {
+        crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( player->safe_zone_volume, 1.f ) ) );
+        crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( 1.f, 1.f - player->safe_zone_volume ) ) );
+      }
     }
 
     player->inside_safe_zone = false;
 
-    if ( player->health < 0.f || player->drug_withdrawal > 1.f || player->sanity < 0.f )
+    if ( !game->death_screen && ( player->health < 0.f || player->drug_withdrawal > 1.f || player->sanity < 0.f ) )
+    {
+      crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
+      player_controller->input_enabled = false;
+
+      game->death_screen = true;
+      player->time_to_reload_scene = 5.f;
+      crude_audio_device_sound_start( &game->audio_device, game->death_sound_handle );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, 0 );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, 0 );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 0 );
+    }
+
+    if ( game->death_screen && player->time_to_reload_scene < 0 && input->keys[ SDL_SCANCODE_SPACE ].current )
     {
       game_push_reload_scene_command( game );
     }
+
+    player->time_to_reload_scene -= it->delta_time;
 
     {
       crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
@@ -249,6 +273,9 @@ crude_player_update_visual_
   pass_options->pulse_distance_coeff = 1.5f;
   pass_options->pulse_frame_scale = CRUDE_LERP( 0.03f, 0.005f, pow( player->health, 0.25f ) );
   pass_options->pulse_scale = 1.f - player->health;
+
+  /* Death Screen */
+  game->death_overlap_color.w = game->death_screen ? CRUDE_LERP( 1, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 4 ) ) : 0.f;
 }
 
 void

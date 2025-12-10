@@ -31,6 +31,7 @@ crude_audio_device_initialize
   audio->allocator = allocator;
 
   crude_resource_pool_initialize( &audio->sounds, crude_heap_allocator_pack( audio->allocator ), 512, sizeof( ma_sound ) );
+  crude_resource_pool_initialize( &audio->sounds_groups, crude_heap_allocator_pack( audio->allocator ), 512, sizeof( ma_sound_group ) );
 
   if ( ma_context_init( NULL, 0, NULL, &audio->lma_context ) != MA_SUCCESS )
   {
@@ -85,12 +86,98 @@ crude_audio_device_initialize
 }
 
 void
+crude_audio_device_deinitialize
+(
+  _In_ crude_audio_device                                  *audio
+)
+{
+  ma_fence_uninit( &audio->lma_fence );
+  ma_engine_uninit( &audio->lma_engine );
+  ma_device_uninit( &audio->lma_device );
+  ma_context_uninit( &audio->lma_context );
+  crude_resource_pool_deinitialize( &audio->sounds );
+  crude_resource_pool_deinitialize( &audio->sounds_groups );
+}
+
+void
 crude_audio_device_wait_wait_till_uploaded
 (
   _In_ crude_audio_device                                  *audio
 )
 {
   ma_fence_wait( &audio->lma_fence );
+}
+
+crude_sound_group_handle
+crude_audio_device_create_sound_group
+(
+  _In_ crude_audio_device                                  *audio
+)
+{
+  ma_sound_group                                          *lma_sound_group;
+  crude_sound_group_handle                                 sound_group_handle; 
+  ma_result                                                result;
+  ma_uint32                                                sounnd_flags;
+
+  sound_group_handle.index = crude_resource_pool_obtain_resource( &audio->sounds_groups );
+  lma_sound_group = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds_groups, sound_group_handle.index ) );
+  result = ma_sound_group_init( &audio->lma_engine, 0u, NULL, lma_sound_group );
+  if ( result != MA_SUCCESS )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed load sound group!" );
+    return CRUDE_SOUND_GROUP_HANDLE_INVALID;
+  }
+  return sound_group_handle;
+}
+
+void
+crude_audio_device_destroy_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+)
+{
+  ma_sound_group                                          *lma_sound_group;
+  lma_sound_group = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_group_handle.index ) );
+  ma_sound_group_uninit( lma_sound_group );
+  crude_resource_pool_release_resource(  &audio->sounds_groups, sound_group_handle.index );
+}
+
+void
+crude_audio_device_start_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+)
+{
+  ma_sound_group                                          *lma_sound_group;
+  lma_sound_group = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_group_handle.index ) );
+  ma_sound_group_start( lma_sound_group );
+}
+
+void
+crude_audio_device_stop_sound_group
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle
+)
+{
+  ma_sound_group                                          *lma_sound_group;
+  lma_sound_group = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_group_handle.index ) );
+  ma_sound_group_stop( lma_sound_group );
+}
+
+void
+crude_audio_device_sound_group_set_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_group_handle                             sound_group_handle,
+  _In_ float32                                              volume
+)
+{
+  ma_sound_group                                          *lma_sound_group;
+  lma_sound_group = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_group_handle.index ) );
+  ma_sound_group_set_volume( lma_sound_group, volume );
 }
 
 crude_sound_handle
@@ -153,6 +240,19 @@ crude_audio_device_create_sound
   }
   
   return sound_handle;
+}
+
+void
+crude_audio_device_destroy_sound
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  ma_sound_uninit( lma_sound );
+  crude_resource_pool_release_resource(  &audio->sounds, sound_handle.index );
 }
 
 void
@@ -256,30 +356,4 @@ crude_audio_device_set_global_volume
 )
 {
   ma_engine_set_volume( &audio->lma_engine, volume );
-}
-
-void
-crude_audio_device_destroy_sound
-(
-  _In_ crude_audio_device                                  *audio,
-  _In_ crude_sound_handle                                   sound_handle
-)
-{
-  ma_sound                                                *lma_sound;
-  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
-  ma_sound_uninit( lma_sound );
-  crude_resource_pool_release_resource(  &audio->sounds, sound_handle.index );
-}
-
-void
-crude_audio_device_deinitialize
-(
-  _In_ crude_audio_device                                  *audio
-)
-{
-  ma_fence_uninit( &audio->lma_fence );
-  ma_engine_uninit( &audio->lma_engine );
-  ma_device_uninit( &audio->lma_device );
-  ma_context_uninit( &audio->lma_context );
-  crude_resource_pool_deinitialize( &audio->sounds );
 }

@@ -36,26 +36,61 @@ crude_game_menu_draw
 
   game = game_instance( );
 
-  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+  ImGui::PushFont( game->im_game_font );
+  
+  ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.10f, 0.10f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.15f, 0.15f, 0.15f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.08f, 0.08f, 0.08f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.30f, 0.30f, 0.30f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.40f, 0.40f, 0.40f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.12f, 0.12f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.18f, 0.18f, 0.18f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.25f, 0.25f, 1.00f));
+  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.00f));
+
+  if ( game->death_screen )
+  {
+    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width + 100, game->gpu.vk_swapchain_height + 100 ) );
+    ImGui::Begin( "Game Death Background", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+    ImDrawList *draw_list = ImGui::GetWindowDrawList( );
+    draw_list->AddRectFilled(
+      { 0, 0 },
+      { float32( game->gpu.vk_swapchain_width + 100 ), float32( game->gpu.vk_swapchain_height + 100 ) },
+      crude_color_set( game->death_overlap_color.x, game->death_overlap_color.y, game->death_overlap_color.z, game->death_overlap_color.w )
+    );
+    ImGui::End();
+
+    ImGui::SetNextWindowPos( ImVec2( ImGui::GetIO( ).DisplaySize.x * 0.5f, ImGui::GetIO( ).DisplaySize.y * 0.5f ), ImGuiCond_Always, ImVec2( 0.5f, 0.5f ) );
+    ImGui::Begin( "Game Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+    ImGui::Text( "YOU ARE DEAD" );
+    ImGui::Text( "Press Space to restart..." );
+    ImGui::End();
+  }
+
   if ( menu->enabled )
   {
-    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
+    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height ) );
-    
-    ImGui::Begin( "Game Menu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
-    
-    ImGui::GetIO().FontGlobalScale = 0.5f;
+    ImGui::Begin( "Game Menu Background", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImDrawList *draw_list = ImGui::GetWindowDrawList( );
     draw_list->AddRectFilled(
       { 0, 0 },
       { float32( game->gpu.vk_swapchain_width ), float32( game->gpu.vk_swapchain_height ) },
       crude_color_set( 0, 0, 0, 0.5 )
     );
+    ImGui::End();
 
-    float32 sensetivity = 10 * player_controller->rotation_speed;
-    if ( ImGui::DragFloat( "Sensetivity (Default -0.1)", &sensetivity, 0.1 ) )
+    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
+    ImGui::SetNextWindowPos( ImVec2( ImGui::GetIO( ).DisplaySize.x * 0.5f, ImGui::GetIO( ).DisplaySize.y * 0.5f ), ImGuiCond_Always, ImVec2( 0.5f, 0.5f ) );
+    //ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width * 0.5, game->gpu.vk_swapchain_height * 0.5f ) );
+
+    ImGui::Begin( "Game Menu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+    
+    float32 sensetivity = -10 * player_controller->rotation_speed;
+    if ( ImGui::DragFloat( "Sensetivity (Default 0.1)", &sensetivity, 0.1 ) )
     {
-      player_controller->rotation_speed = 0.1f * sensetivity;
+      player_controller->rotation_speed = -0.1f * sensetivity;
     }
     if ( ImGui::DragFloat( "Volume (Default 1.0)", &game->volume, 0.1 ) )
     {
@@ -86,10 +121,11 @@ crude_game_menu_draw
       game->framerate = framerate;
     }
 
-    ImGui::GetIO().FontGlobalScale = 1.f;
-
     ImGui::End( );
   }
+
+  ImGui::PopStyleColor( 9 );
+  ImGui::PopFont( );
 }
 
 void

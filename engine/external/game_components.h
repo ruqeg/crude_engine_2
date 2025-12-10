@@ -78,6 +78,7 @@ typedef struct crude_player
   crude_game_item                                          inventory_items[ CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT ];
   bool                                                     inside_safe_zone;
   float32                                                  safe_zone_volume;
+  float32                                                  time_to_reload_scene;
 } crude_player;
 
 typedef struct crude_player_controller

@@ -214,6 +214,12 @@ crude_enemy_update_system_
   crude_enemy *enemies_per_entity = ecs_field( it, crude_enemy, 0 );
   crude_transform *transform_per_entity = ecs_field( it, crude_transform, 1 );
     
+    
+  if ( game->death_screen )
+  {
+    return;
+  }
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_enemy                                           *enemy;
@@ -233,13 +239,13 @@ crude_enemy_update_system_
     player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_player );
     player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
     distance_to_player = XMVectorGetX( XMVector2Length( XMVectorSubtract( XMVectorSet( enemy_transform->translation.x, enemy_transform->translation.z, 0, 0 ), XMVectorSet( player_transform->translation.x, player_transform->translation.z, 0, 0 ) ) ) );
-    
-    if ( ( player->inside_safe_zone || distance_to_player > CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
+
+    if ( ( game->death_screen || player->inside_safe_zone || distance_to_player > CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
     {
       crude_audio_device_sound_stop( &game->audio_device, enemy->enemy_idle_sound_handle );
     }
     
-    if ( ( !player->inside_safe_zone && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && !crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
+    if ( ( !game->death_screen && !player->inside_safe_zone && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && !crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
     {
       crude_audio_device_sound_start( &game->audio_device, enemy->enemy_idle_sound_handle );
     }

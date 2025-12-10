@@ -47,6 +47,11 @@ crude_weapon_update_system_
   crude_input *input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_input );
   crude_weapon *weapon_per_entity = ecs_field( it, crude_weapon, 0 );
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 1 );
+  
+  if ( game->death_screen )
+  {
+    return;
+  }
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
@@ -123,6 +128,7 @@ crude_weapon_update_system_
       }
       else
       {
+        crude_audio_device_sound_start( &game->audio_device, game->shot_without_ammo_sound_handle );
       }
     }
 
