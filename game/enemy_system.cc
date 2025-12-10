@@ -247,6 +247,7 @@ crude_enemy_update_system_
     
     if ( ( !game->death_screen && !player->inside_safe_zone && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && !crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
     {
+      crude_audio_device_sound_reset( &game->audio_device, enemy->enemy_idle_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, enemy->enemy_idle_sound_handle );
     }
 

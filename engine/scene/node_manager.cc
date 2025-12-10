@@ -364,6 +364,12 @@ crude_node_manager_load_node_from_json_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_recycle_station )( &recycle_station, component_json, node, manager );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_recycle_station, { recycle_station } );
       }
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_teleport_station ) ) == 0 )
+      {
+        crude_teleport_station                             teleport_station;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_teleport_station )( &teleport_station, component_json, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_teleport_station, { teleport_station } );
+      }
       else
       {
         manager->additional_parse_json_to_component_func( node, component_json, component_type, manager );
@@ -454,6 +460,7 @@ crude_node_manager_node_to_json_hierarchy_
     crude_weapon const                                    *weapon;
     crude_level_01 const                                  *level01;
     crude_recycle_station const                           *recycle_station;
+    crude_teleport_station const                          *teleport_station;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
@@ -535,7 +542,13 @@ crude_node_manager_node_to_json_hierarchy_
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_recycle_station )( recycle_station, manager ) );
     }
-
+    
+    teleport_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_teleport_station );
+    if ( teleport_station )
+    {
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_teleport_station )( teleport_station, manager ) );
+    }
+    
     manager->additional_parse_all_components_to_json_func( node, node_components_json, manager );
   }
   

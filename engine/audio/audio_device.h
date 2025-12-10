@@ -92,6 +92,13 @@ crude_audio_device_sound_start
 );
 
 CRUDE_API void
+crude_audio_device_sound_reset
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+);
+
+CRUDE_API void
 crude_audio_device_sound_stop
 (
   _In_ crude_audio_device                                  *audio,

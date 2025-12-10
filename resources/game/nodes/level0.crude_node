@@ -9,6 +9,16 @@
 			"type":	"crude_level_01"
 		}],
 	"children":	[{
+			"name":	"teleport_station",
+			"external":	"game\\nodes\\teleport_station.crude_node",
+			"transform":	{
+				"translation":	[0, -0.28276097774505615, -6.009587287902832],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[]
+		}, {
 			"name":	"recycle_station_0",
 			"transform":	{
 				"translation":	[-2.084531307220459, 7.8708720207214355, 64.643173217773438],
@@ -41,7 +51,7 @@
 							"path":	"game\\models\\Drug_Station_Empty.gltf"
 						}],
 					"children":	[]
-				},{
+				}, {
 					"name":	"model_loaded",
 					"transform":	{
 						"translation":	[0, 0.11876937747001648, 0],
@@ -51,7 +61,7 @@
 					"components":	[{
 							"type":	"crude_gltf",
 							"path":	"game\\models\\Drug_Station_Loaded.gltf",
-							"hidden": 1
+							"hidden":	true
 						}],
 					"children":	[]
 				}]
@@ -356,7 +366,7 @@
 							"path":	"game\\models\\Health_Station_Empty.gltf"
 						}],
 					"children":	[]
-				},{
+				}, {
 					"name":	"model_loaded",
 					"transform":	{
 						"translation":	[0, 0.11876937747001648, 0],
@@ -366,7 +376,7 @@
 					"components":	[{
 							"type":	"crude_gltf",
 							"path":	"game\\models\\Health_Station_Loaded.gltf",
-							"hidden": 1
+							"hidden":	true
 						}],
 					"children":	[]
 				}]
@@ -403,7 +413,7 @@
 							"path":	"game\\models\\Bullet_Station_Empty.gltf"
 						}],
 					"children":	[]
-				},{
+				}, {
 					"name":	"model_loaded",
 					"transform":	{
 						"translation":	[0, 0.11876937747001648, 0],
@@ -413,7 +423,7 @@
 					"components":	[{
 							"type":	"crude_gltf",
 							"path":	"game\\models\\Bullet_Station_Loaded.gltf",
-							"hidden": 1
+							"hidden":	true
 						}],
 					"children":	[]
 				}]

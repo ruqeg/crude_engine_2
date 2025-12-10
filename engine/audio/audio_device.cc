@@ -268,6 +268,18 @@ crude_audio_device_sound_start
 }
 
 void
+crude_audio_device_sound_reset
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  ma_sound_seek_to_pcm_frame( lma_sound, 0 );
+}
+
+void
 crude_audio_device_sound_stop
 (
   _In_ crude_audio_device                                  *audio,

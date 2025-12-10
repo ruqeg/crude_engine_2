@@ -50,13 +50,13 @@ crude_game_menu_draw
 
   if ( game->death_screen )
   {
-    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+    ImGui::SetNextWindowPos( ImVec2( -50, -50 ) );
     ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width + 100, game->gpu.vk_swapchain_height + 100 ) );
     ImGui::Begin( "Game Death Background", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImDrawList *draw_list = ImGui::GetWindowDrawList( );
     draw_list->AddRectFilled(
-      { 0, 0 },
-      { float32( game->gpu.vk_swapchain_width + 100 ), float32( game->gpu.vk_swapchain_height + 100 ) },
+      { -50, -50 },
+      { float32( game->gpu.vk_swapchain_width + 50 ), float32( game->gpu.vk_swapchain_height + 50 ) },
       crude_color_set( game->death_overlap_color.x, game->death_overlap_color.y, game->death_overlap_color.z, game->death_overlap_color.w )
     );
     ImGui::End();
@@ -70,13 +70,13 @@ crude_game_menu_draw
 
   if ( menu->enabled )
   {
-    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height ) );
+    ImGui::SetNextWindowPos( ImVec2( -50, -50 ) );
+    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width + 100, game->gpu.vk_swapchain_height  + 100 ) );
     ImGui::Begin( "Game Menu Background", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImDrawList *draw_list = ImGui::GetWindowDrawList( );
     draw_list->AddRectFilled(
-      { 0, 0 },
-      { float32( game->gpu.vk_swapchain_width ), float32( game->gpu.vk_swapchain_height ) },
+      { -50, -50 },
+      { float32( game->gpu.vk_swapchain_width + 50 ), float32( game->gpu.vk_swapchain_height + 50 ) },
       crude_color_set( 0, 0, 0, 0.5 )
     );
     ImGui::End();

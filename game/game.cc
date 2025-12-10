@@ -749,6 +749,7 @@ game_initialize_constant_strings_
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
   char const *ammo_box_model_relative_filepath = "game\\models\\ammo_box.gltf";
+  char const *serum_absolute_model_relative_filepath = "game\\models\\serum_absolute.gltf";
   char const *ambient_sound_relative_filepath = "game\\sounds\\level0_ambient.wav";
   char const *shot_sound_relative_filepath = "game\\sounds\\shot-from-an-antique-gun.wav";
   char const *save_theme_sound_relative_filepath = "game\\sounds\\Resident_Evil_1_OST_Save_Room.wav";
@@ -804,6 +805,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( game_font_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( death_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( shot_without_ammo_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_absolute_model_relative_filepath );
   
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -821,6 +823,7 @@ game_initialize_constant_strings_
   game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
   game->serum_station_disabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_disabled_model_relative_filepath );
   game->ammo_box_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ammo_box_model_relative_filepath );
+  
   game->ambient_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ambient_sound_relative_filepath );
   game->shot_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, shot_sound_relative_filepath );
   game->save_theme_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, save_theme_sound_relative_filepath );
@@ -1007,6 +1010,7 @@ game_deinitialize_audio_
   crude_audio_device_destroy_sound( &game->audio_device, game->ambient_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->save_theme_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->shot_sound_handle );
+  crude_audio_device_destroy_sound( &game->audio_device, game->shot_without_ammo_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->walking_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->recycle_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->hit_critical_sound_handle );
@@ -1016,6 +1020,7 @@ game_deinitialize_audio_
   crude_audio_device_destroy_sound( &game->audio_device, game->syringe_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->reload_sound_handle );
   crude_audio_device_destroy_sound( &game->audio_device, game->heartbeat_sound_handle );
+  crude_audio_device_destroy_sound( &game->audio_device, game->death_sound_handle );
   crude_audio_device_deinitialize( &game->audio_device );
 }
 

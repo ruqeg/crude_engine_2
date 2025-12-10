@@ -1,0 +1,182 @@
+{
+	"name":	"teleport_station",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_teleport_station"
+		}],
+	"children":	[{
+			"name":	"serums",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"serum_0",
+					"transform":	{
+						"translation":	[2.84043025970459, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_1",
+					"transform":	{
+						"translation":	[2.1495163440704346, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_2",
+					"transform":	{
+						"translation":	[1.4703351259231567, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_3",
+					"transform":	{
+						"translation":	[0.78690218925476074, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_4",
+					"transform":	{
+						"translation":	[0.0691063106060028, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_5",
+					"transform":	{
+						"translation":	[-0.63797461986541748, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_6",
+					"transform":	{
+						"translation":	[-1.3084594011306763, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_7",
+					"transform":	{
+						"translation":	[-2.0031225681304932, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}, {
+					"name":	"serum_8",
+					"transform":	{
+						"translation":	[-2.7308237552642822, 0.8187827467918396, 1.0173354148864746],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\serum_absolute.gltf",
+							"hidden":	true
+						}],
+					"children":	[]
+				}]
+		}, {
+			"name":	"model",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[0.5, 0.5, 0.5]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\teleport_station.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"activate_collision",
+			"transform":	{
+				"translation":	[0, 3.7651576995849609, 1.2170945405960083],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	8
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[3.8599998950958252, 3.369999885559082, 1.5099999904632568]
+				}],
+			"children":	[]
+		}, {
+			"name":	"physics_collision",
+			"transform":	{
+				"translation":	[0, 2.720005989074707, 0.40171635150909424],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[3.2149999141693115, 2.5899999141693115, 1.125]
+				}],
+			"children":	[]
+		}]
+}

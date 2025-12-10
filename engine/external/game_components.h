@@ -44,6 +44,10 @@ typedef struct crude_serum_station
 {
 } crude_serum_station;
 
+typedef struct crude_teleport_station
+{
+} crude_teleport_station;
+
 typedef struct crude_recycle_station
 {
   crude_game_item                                          game_item;
@@ -141,5 +145,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_recycle_station );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_recycle_station );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_recycle_station );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_recycle_station );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_teleport_station );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_teleport_station );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_teleport_station );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_teleport_station );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_teleport_station );
 
 CRUDE_ECS_MODULE_IMPORT_DECL( crude_game_components );

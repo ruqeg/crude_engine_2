@@ -427,7 +427,9 @@ crude_devgui_node_inspector_draw
   crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_gltf );
   if ( gltf && ImGui::CollapsingHeader( "crude_gltf" ) )
   {
-    ImGui::Text( "TODO" );
+    ImGui::Text( "Relative Path \"%s\"", gltf->original_path );
+    ImGui::Text( "Absolute Path \"%s\"", gltf->path );
+    ImGui::Checkbox( "Hidden", &gltf->hidden );
   }
   
   crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_level_01 );

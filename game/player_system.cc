@@ -10,6 +10,7 @@
 #include <game/recycle_station_system.h>
 #include <game/game.h>
 #include <game/enemy_system.h>
+#include <game/teleport_station_system.h>
 
 #include <game/player_system.h>
 
@@ -36,16 +37,22 @@ crude_player_interaction_collision_callback
   {
     if ( input->keys[ SDL_SCANCODE_E ].pressed )
     {
-      if ( crude_entity_valid( static_body_node_parent ) && CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
+      if ( crude_entity_valid( static_body_node_parent ) )
       {
-        crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
-        crude_recycle_station_start_recycle( recycle_station, player, static_body_node_parent );
+        if ( CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_recycle_station ) )
+        {
+          crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_recycle_station );
+          crude_recycle_station_start_recycle( recycle_station, player, static_body_node_parent );
+        }
+        else if ( CRUDE_ENTITY_HAS_COMPONENT( static_body_node_parent, crude_teleport_station ) )
+        {
+          crude_teleport_station *teleport_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node_parent, crude_teleport_station );
+          crude_teleport_station_set_serum( teleport_station, player, static_body_node_parent );
+        }
       }
 
       if ( CRUDE_ENTITY_HAS_TAG( static_body_node, crude_serum_station_enabled ) )
       {
-        crude_entity player_items_node = crude_ecs_lookup_entity_from_parent( game->player_node, "pivot.items" );
-
         for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
         {
           if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
@@ -171,7 +178,7 @@ crude_player_update_system_
     
     if ( game->death_screen )
     {
-      crude_audio_device_sound_set_volume( &game->audio_device, game->death_sound_handle, CRUDE_LERP( 1.5, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 4 ) ) );
+      crude_audio_device_sound_set_volume( &game->audio_device, game->death_sound_handle, CRUDE_LERP( 1.5, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 2 ) ) );
     }
     else
     {
@@ -200,7 +207,8 @@ crude_player_update_system_
       player_controller->input_enabled = false;
 
       game->death_screen = true;
-      player->time_to_reload_scene = 5.f;
+      player->time_to_reload_scene = 3.f;
+      crude_audio_device_sound_reset( &game->audio_device, game->death_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, game->death_sound_handle );
       crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, 0 );
       crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, 0 );
@@ -210,6 +218,7 @@ crude_player_update_system_
     if ( game->death_screen && player->time_to_reload_scene < 0 && input->keys[ SDL_SCANCODE_SPACE ].current )
     {
       game_push_reload_scene_command( game );
+      crude_audio_device_sound_stop( &game->audio_device, game->death_sound_handle );
     }
 
     player->time_to_reload_scene -= it->delta_time;
@@ -275,7 +284,7 @@ crude_player_update_visual_
   pass_options->pulse_scale = 1.f - player->health;
 
   /* Death Screen */
-  game->death_overlap_color.w = game->death_screen ? CRUDE_LERP( 1, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 4 ) ) : 0.f;
+  game->death_overlap_color.w = game->death_screen ? CRUDE_LERP( 1, 0, CRUDE_MAX( 0, player->time_to_reload_scene - 2 ) ) : 0.f;
 }
 
 void
