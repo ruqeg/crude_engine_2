@@ -134,7 +134,7 @@ crude_weapon_update_system_
 
     weapon->last_shot_timer += it->delta_time;
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_weapon_system )

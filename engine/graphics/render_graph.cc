@@ -5,6 +5,7 @@
 #include <engine/core/assert.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/string.h>
+#include <engine/core/profiler.h>
 
 #include <engine/graphics/render_graph.h>
 
@@ -839,6 +840,7 @@ crude_gfx_render_graph_on_resize
   _In_ uint32                                              new_height
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_render_graph_on_resize" );
   for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
   {
     crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
@@ -850,6 +852,7 @@ crude_gfx_render_graph_on_resize
     crude_gfx_resize_framebuffer( render_graph->builder->gpu, node->framebuffer, new_width, new_height );
     crude_gfx_render_graph_render_pass_container_on_resize( node->render_graph_pass_container, new_width, new_height );
   }
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void

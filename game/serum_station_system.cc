@@ -72,7 +72,7 @@ crude_serum_station_update_system_
     
     serum_station_static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *serum_station_static_body_handle );
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 static void

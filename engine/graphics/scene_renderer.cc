@@ -199,6 +199,8 @@ crude_gfx_scene_renderer_update_instances_from_node
   bool                                                     buffers_recrteated, model_initialized;
   crude_gfx_buffer_creation                                buffer_creation;
  
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_instances_from_node" );
+
   model_initialized = false;
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
@@ -262,7 +264,8 @@ crude_gfx_scene_renderer_update_instances_from_node
 
     buffers_recrteated = true;
   }
-
+  
+  CRUDE_PROFILER_ZONE_END;
   return buffers_recrteated | model_initialized;
 }
 
@@ -417,13 +420,15 @@ crude_gfx_scene_renderer_submit_draw_task
 )
 {
   crude_gfx_cmd_buffer                                    *primary_cmd;
-
+  
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
   crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
   update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
   crude_gfx_cmd_pop_marker( primary_cmd );
   crude_gfx_queue_cmd( primary_cmd );
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -472,6 +477,7 @@ crude_gfx_scene_renderer_on_resize
 {
   crude_gfx_buffer_creation                                buffer_creation;
   
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_on_resize" );
   /* Reinitialize light gpu data */
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -493,6 +499,7 @@ crude_gfx_scene_renderer_on_resize
     buffer_creation.name = "lights_tiles_sb";
     scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
+  CRUDE_PROFILER_ZONE_END;
 }
 
 /**

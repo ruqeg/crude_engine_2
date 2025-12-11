@@ -554,8 +554,10 @@ crude_gfx_new_frame
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_new_frame" );
   if ( gpu->absolute_frame >= CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES )
   {
+    CRUDE_PROFILER_ZONE_NAME( "wait for vk_graphics_semaphore" );
     uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES - 1 );
     uint64 wait_values[ ] = { graphics_timeline_value };
   
@@ -567,14 +569,17 @@ crude_gfx_new_frame
     semaphore_wait_info.pValues = wait_values;
   
     vkWaitSemaphores( gpu->vk_device, &semaphore_wait_info, UINT64_MAX );
+    CRUDE_PROFILER_ZONE_END;
   }
   
   {
+    CRUDE_PROFILER_ZONE_NAME( "vkAcquireNextImageKHR" );
     VkResult result = vkAcquireNextImageKHR( gpu->vk_device, gpu->vk_swapchain, UINT64_MAX, gpu->vk_image_avalivable_semaphores[ gpu->current_frame ], VK_NULL_HANDLE, &gpu->vk_swapchain_image_index );
     if ( result == VK_ERROR_OUT_OF_DATE_KHR  )
     {
       vk_resize_swapchain_( gpu );
     }
+    CRUDE_PROFILER_ZONE_END;
   }
   
   crude_gfx_cmd_manager_reset( &gpu->cmd_buffer_manager, gpu->current_frame );
@@ -584,6 +589,7 @@ crude_gfx_new_frame
     gpu->dynamic_max_per_frame_size = CRUDE_MAX( used_size, gpu->dynamic_max_per_frame_size );
     gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
   }
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -594,7 +600,8 @@ crude_gfx_present
 )
 {
   VkCommandBuffer                                          enqueued_command_buffers[ 4 ];
-
+  
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_present" );
   {
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
     {
@@ -886,6 +893,8 @@ crude_gfx_present
       --i;
     }
   }
+
+  CRUDE_PROFILER_ZONE_END;
 }
 
 crude_gfx_cmd_buffer*

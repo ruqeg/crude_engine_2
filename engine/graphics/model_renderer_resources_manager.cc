@@ -5,6 +5,7 @@
 #include <engine/core/file.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/memory.h>
+#include <engine/core/profiler.h>
 
 #include <engine/graphics/model_renderer_resources_manager.h>
 
@@ -306,12 +307,14 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GRAPHICS_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {
     crude_gfx_add_texture_update_commands( manager->gpu, cmd );
   }
   crude_gfx_submit_immediate( cmd );
+  CRUDE_PROFILER_ZONE_END;
 }
 
 /**

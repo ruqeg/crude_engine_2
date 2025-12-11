@@ -120,7 +120,7 @@ crude_recycle_station_update_system_
       recycle_station->state = CRUDE_RECYCLE_STATION_STATE_DONE;
     }
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_recycle_station_system )

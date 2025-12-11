@@ -28,6 +28,7 @@
 #include <game/serum_station_system.h>
 #include <game/recycle_station_system.h>
 #include <game/weapon_system.h>
+#include <game/level_starting_room_system.h>
 
 #include <game/game.h>
 
@@ -194,6 +195,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_serum_station_system );
   ECS_IMPORT( game->engine->world, crude_weapon_system );
   ECS_IMPORT( game->engine->world, crude_recycle_station_system );
+  ECS_IMPORT( game->engine->world, crude_level_starting_room_system );
   
   game_initialize_allocators_( game );
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
@@ -336,7 +338,7 @@ game_postupdate
   }
 
   CRUDE_ARRAY_SET_LENGTH( game->commands_queue, 0u );
-  CRUDE_PROFILER_END( "game_postupdate" );
+  CRUDE_PROFILER_ZONE_END( "game_postupdate" );
 }
 
 void
@@ -461,7 +463,7 @@ game_update_system_
 
   game = ( game_t* )it->ctx;
   game->time += it->delta_time;
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -482,7 +484,7 @@ game_graphics_system_
 
   if ( game->last_graphics_update_time < 1.f / game->framerate )
   {
-    CRUDE_PROFILER_END;
+    CRUDE_PROFILER_ZONE_END;
     return;
   }
 
@@ -496,14 +498,18 @@ game_graphics_system_
   crude_gfx_new_frame( &game->gpu );
   
   CRUDE_ASSERT( !crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) );
-  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
+  //crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
  
 #if CRUDE_DEVELOP
-  ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
-  ImGui_ImplSDL3_NewFrame( );
-  ImGui::NewFrame( );
-  crude_devmenu_draw( &game->devmenu );
-  crude_game_menu_draw( &game->game_menu );
+  {
+    CRUDE_PROFILER_ZONE_NAME( "ImGui_NewFrame" );
+    ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
+    ImGui_ImplSDL3_NewFrame( );
+    ImGui::NewFrame( );
+    CRUDE_PROFILER_ZONE_END;
+    crude_devmenu_draw( &game->devmenu );
+    crude_game_menu_draw( &game->game_menu );
+  }
 #endif
 
   if ( game->gpu.swapchain_resized_last_frame )
@@ -516,7 +522,7 @@ game_graphics_system_
   
   crude_gfx_present( &game->gpu, final_render_texture );
 
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -648,7 +654,7 @@ game_input_system_
     //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
     //}
   }
-  CRUDE_PROFILER_END( "game_input_system_" );
+  CRUDE_PROFILER_ZONE_END( "game_input_system_" );
 #endif /* CRUDE_DEVELOP */
 }
 
@@ -767,7 +773,11 @@ game_initialize_constant_strings_
   char const *heartbeat_sound_relative_filepath = "game\\sounds\\heartbeat.wav";
   char const *death_sound_relative_filepath = "game\\sounds\\death_music.wav";
   char const *shot_without_ammo_sound_relative_filepath = "game\\sounds\\shot_without_ammo.wav";
+  char const *starting_room_background_sound_relative_filepath = "game\\sounds\\starting_room\\background.wav";
   char const *game_font_relative_filepath = "game\\fonts\\IgnotumRegular.ttf";
+  char const *hit_0_sound_relative_filepath = "game\\sounds\\hit_0.wav";
+  char const *hit_1_sound_relative_filepath = "game\\sounds\\hit_1.wav";
+  char const *hit_2_sound_relative_filepath = "game\\sounds\\hit_2.wav";
   
   uint64 constant_string_buffer_size = 0;
   uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
@@ -806,7 +816,11 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( death_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( shot_without_ammo_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_absolute_model_relative_filepath );
-  
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_background_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_0_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_1_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_2_sound_relative_filepath );
+
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
   game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
@@ -835,6 +849,9 @@ game_initialize_constant_strings_
   game->syringe_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_sound_relative_filepath );
   game->reload_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, reload_interaction_sound_relative_filepath );
   game->heartbeat_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, heartbeat_sound_relative_filepath );
+  game->hit_0_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_0_sound_relative_filepath );
+  game->hit_1_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_1_sound_relative_filepath );
+  game->hit_2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_2_sound_relative_filepath );
 
   game->enemy_idle_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_idle_sound_relative_filepath );
   game->enemy_notice_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_notice_sound_relative_filepath );
@@ -842,6 +859,7 @@ game_initialize_constant_strings_
   game->recycle_interaction_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, recycle_interaction_sound_relative_filepath );
   game->death_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, death_sound_relative_filepath );
   game->shot_without_ammo_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, shot_without_ammo_sound_relative_filepath );
+  game->starting_room_background_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_background_sound_relative_filepath );
 
   game->game_font_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, game_font_relative_filepath );
 
@@ -998,6 +1016,25 @@ game_initialize_audio_
   sound_creation.absolute_filepath = game->death_sound_absolute_filepath;
   sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
   game->death_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+  
+  sound_creation = crude_sound_creation_empty( );
+  sound_creation.async_loading = true;
+  sound_creation.absolute_filepath = game->hit_0_sound_absolute_filepath;
+  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+  game->hit_0_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+  sound_creation = crude_sound_creation_empty( );
+  sound_creation.async_loading = true;
+  sound_creation.absolute_filepath = game->hit_1_sound_absolute_filepath;
+  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+  game->hit_1_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+  sound_creation = crude_sound_creation_empty( );
+  sound_creation.async_loading = true;
+  sound_creation.absolute_filepath = game->hit_2_sound_absolute_filepath;
+  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+  game->hit_2_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
 }
 
 

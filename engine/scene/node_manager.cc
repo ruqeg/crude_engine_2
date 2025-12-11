@@ -352,6 +352,12 @@ crude_node_manager_load_node_from_json_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
       }
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) == 0 )
+      {
+        crude_level_starting_room                          level_starting_room;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_starting_room )( &level_starting_room, component_json, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_starting_room, { level_starting_room } );
+      }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
       {
         crude_player                                       player;
@@ -461,6 +467,7 @@ crude_node_manager_node_to_json_hierarchy_
     crude_level_01 const                                  *level01;
     crude_recycle_station const                           *recycle_station;
     crude_teleport_station const                          *teleport_station;
+    crude_level_starting_room const                       *level_starting_room;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
@@ -523,6 +530,12 @@ crude_node_manager_node_to_json_hierarchy_
     if ( weapon )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_weapon )( weapon, manager ) );
+    }
+    
+    level_starting_room = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_starting_room );
+    if ( level_starting_room )
+    {
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_starting_room )( level_starting_room, manager ) );
     }
     
     level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );

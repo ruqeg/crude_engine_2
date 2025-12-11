@@ -188,7 +188,7 @@ crude_physics_update_system_
   }
 
 cleanup:
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void

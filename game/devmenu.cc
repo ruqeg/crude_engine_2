@@ -8,6 +8,7 @@
 #include <game/game.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/external/game_components.h>
+#include <engine/core/profiler.h>
 
 #include <game/devmenu.h>
 
@@ -111,7 +112,8 @@ crude_devmenu_draw
 )
 {
   game_t                                                  *game;
-
+  
+  CRUDE_PROFILER_ZONE_NAME( "crude_devmenu_draw" );
   game = game_instance( );
   
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
@@ -148,6 +150,7 @@ crude_devmenu_draw
   crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
   crude_devmenu_gameplay_draw( &devmenu->gameplay );
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -1429,9 +1432,16 @@ crude_devmenu_gameplay_draw
   {
     crude_player                                          *player;
     crude_weapon                                          *weapon;
+    crude_entity                                           weapon_node;
 
     player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
-    weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_ecs_lookup_entity_from_parent( game->player_node, "pivot" ), "weapon" ), crude_weapon );
+
+    weapon_node = crude_ecs_lookup_entity_from_parent( crude_ecs_lookup_entity_from_parent( game->player_node, "pivot" ), "weapon" );
+    if ( crude_entity_valid( weapon_node ) )
+    {
+      weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_ecs_lookup_entity_from_parent( game->player_node, "pivot" ), "weapon" ), crude_weapon );
+       ImGui::SliderInt( "Ammo", &weapon->ammo, 0, 1000 );
+    }
     CRUDE_ASSERT( player );
 
     ImGui::SliderFloat( "Health", &player->health, 1.f, 0.f );
@@ -1439,7 +1449,6 @@ crude_devmenu_gameplay_draw
     ImGui::SliderFloat( "Sanity", &player->sanity, 1.f, 0.f );
     ImGui::Checkbox( "Stop Updating Gameplay Values", &player->stop_updating_gameplay_values );
     ImGui::Checkbox( "Stop Updating Visual Values", &player->stop_updating_visual_values );
-    ImGui::SliderInt( "Ammo", &weapon->ammo, 0, 1000 );
     
     if ( ImGui::Button( "Reset Position" ) )
     {

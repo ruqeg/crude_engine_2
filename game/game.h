@@ -83,6 +83,7 @@ typedef struct game_t
   char const                                              *walking_sound_absolute_filepath;
   char const                                              *shot_sound_absolute_filepath;
   char const                                              *shot_without_ammo_sound_absolute_filepath;
+  char const                                              *starting_room_background_sound_absolute_filepath;
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;
@@ -95,6 +96,9 @@ typedef struct game_t
   char const                                              *reload_sound_absolute_filepath;
   char const                                              *death_sound_absolute_filepath;
   char const                                              *heartbeat_sound_absolute_filepath;
+  char const                                              *hit_0_sound_absolute_filepath;
+  char const                                              *hit_1_sound_absolute_filepath;
+  char const                                              *hit_2_sound_absolute_filepath;
   
   char const                                              *game_font_absolute_filepath;
 #if CRUDE_DEVELOP
@@ -153,6 +157,10 @@ typedef struct game_t
   crude_sound_handle                                       ambient_sound_handle;
   crude_sound_handle                                       save_theme_sound_handle;
   crude_sound_handle                                       shot_sound_handle;
+  crude_sound_handle                                       hit_0_sound_handle;
+  crude_sound_handle                                       hit_1_sound_handle;
+  crude_sound_handle                                       hit_2_sound_handle;
+
   crude_sound_handle                                       shot_without_ammo_sound_handle;
   crude_sound_handle                                       walking_sound_handle;
   crude_sound_handle                                       recycle_sound_handle;

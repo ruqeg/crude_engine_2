@@ -341,7 +341,7 @@ crude_enemy_update_system_
     }
     }
   }
-  CRUDE_PROFILER_END( "crude_enemy_update_system_" );
+  CRUDE_PROFILER_ZONE_END( "crude_enemy_update_system_" );
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )

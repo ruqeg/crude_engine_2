@@ -432,6 +432,12 @@ crude_devgui_node_inspector_draw
     ImGui::Checkbox( "Hidden", &gltf->hidden );
   }
   
+  crude_level_starting_room *level_starting_room = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_level_starting_room );
+  if ( level_starting_room && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) )
+  {
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_starting_room )( editor->selected_node, level_starting_room, &editor->node_manager );
+  }
+
   crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_level_01 );
   if ( level_01 && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_01 ) ) )
   {

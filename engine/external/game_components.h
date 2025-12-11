@@ -72,6 +72,21 @@ typedef struct crude_level_01
   bool                                                     editor_camera_controller_enabled;
 } crude_level_01;
 
+typedef enum crude_level_starting_room_state
+{
+  CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_HIT,
+  CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_HEALTH,
+  CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_DRUG,
+  CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_CAN_MOVE
+} crude_level_starting_room_state; 
+
+typedef struct crude_level_starting_room
+{
+  crude_sound_handle                                       background_sound_handle;
+  crude_level_starting_room_state                          state;
+
+} crude_level_starting_room;
+
 typedef struct crude_player
 {
   bool                                                     stop_updating_gameplay_values;
@@ -127,6 +142,12 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_01 );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_01 );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_01 );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_01 );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_level_starting_room );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_starting_room );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_starting_room );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_starting_room );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_starting_room );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller );

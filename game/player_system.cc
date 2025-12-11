@@ -33,6 +33,31 @@ crude_player_interaction_collision_callback
 
   input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
 
+  if ( input->keys[ SDL_SCANCODE_E ].pressed && CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_starting_room ) )
+  {
+    crude_level_starting_room *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_starting_room );
+    
+    for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
+    {
+      if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
+      {
+        if ( level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_HEALTH )
+        {
+          game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SYRINGE_HEALTH );
+        }
+        else if ( level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_DRUG )
+        {
+          game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SYRINGE_DRUG );
+        }
+        else if ( level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_CAN_MOVE )
+        {
+        }
+        break;
+      }
+    }
+    return;
+  }
+
   if ( static_body_layer & 8 )
   {
     if ( input->keys[ SDL_SCANCODE_E ].pressed )
@@ -92,6 +117,41 @@ crude_player_enemy_hitbox_callback
   crude_enemy_deal_damage_to_player( enemy, player, XMLoadFloat3( &player_transform->translation ) );
 }
 
+static void
+crude_player_hit_callback
+(
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        character_node,
+  _In_ crude_entity                                        static_body_node,
+  _In_ uint32                                              static_body_layer
+)
+{
+  game_t *game = game_instance( );
+  
+  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+  crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
+  
+  static uint32 sound_count = 0;
+
+  if ( input->mouse.left.pressed && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_0_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_1_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_2_sound_handle ) )
+  {
+    player->sanity += 0.05;
+    if ( sound_count == 0 )
+    {
+      crude_audio_device_sound_start( &game->audio_device, game->hit_0_sound_handle );
+    }
+    else if ( sound_count == 1 )
+    {
+      crude_audio_device_sound_start( &game->audio_device, game->hit_1_sound_handle );
+    }
+    else if ( sound_count == 2 )
+    {
+      crude_audio_device_sound_start( &game->audio_device, game->hit_2_sound_handle );
+    }
+    sound_count = ( sound_count + 1 ) % 3;
+  }
+}
+
 CRUDE_API void
 crude_player_update_values_
 (
@@ -133,6 +193,13 @@ crude_player_creation_observer_
     
     interaction_collision_body->callback_container.ctx = (void*)1;
     interaction_collision_body->callback_container.fun = crude_player_interaction_collision_callback;
+    
+    crude_entity mannequin_interaction_node = crude_ecs_lookup_entity_from_parent( node, "mannequin_interaction" );
+    crude_physics_character_body_handle *mannequin_interaction_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( mannequin_interaction_node, crude_physics_character_body_handle );
+    crude_physics_character_body *mannequin_interaction_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *mannequin_interaction_handle );
+    
+    mannequin_interaction_body->callback_container.ctx = (void*)1;
+    mannequin_interaction_body->callback_container.fun = crude_player_hit_callback;
 
     player->health = 1.f;
     player->drug_withdrawal = 0.f;
@@ -229,7 +296,7 @@ crude_player_update_system_
       player_items_trasnform->translation.y = 0.004f * sin( game->time );
     }
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_system )

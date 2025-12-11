@@ -68,7 +68,7 @@ crude_free_camera_update_system
       XMStoreFloat4( &transforms[ i ].rotation, rotation );
     }
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )

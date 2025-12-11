@@ -365,7 +365,7 @@ crude_process_events_system_
       }
     }
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_platform_system )

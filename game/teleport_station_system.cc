@@ -86,7 +86,7 @@ crude_teleport_station_update_system_
 
     CRUDE_ASSERT( crude_entity_valid( game->player_node ) );
   }
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 }
 
 static void

@@ -2,6 +2,7 @@
 #include <imgui/imgui.h>
 
 #include <engine/core/hash_map.h>
+#include <engine/core/profiler.h>
 #include <engine/platform/platform.h>
 #include <game/game.h>
 #include <engine/scene/scripts_components.h>
@@ -33,7 +34,8 @@ crude_game_menu_draw
 )
 {
   game_t                                                  *game;
-
+  
+  CRUDE_PROFILER_ZONE_NAME( "crude_game_menu_draw" );
   game = game_instance( );
 
   ImGui::PushFont( game->im_game_font );
@@ -82,8 +84,8 @@ crude_game_menu_draw
     ImGui::End();
 
     crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
-    ImGui::SetNextWindowPos( ImVec2( ImGui::GetIO( ).DisplaySize.x * 0.5f, ImGui::GetIO( ).DisplaySize.y * 0.5f ), ImGuiCond_Always, ImVec2( 0.5f, 0.5f ) );
-    //ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width * 0.5, game->gpu.vk_swapchain_height * 0.5f ) );
+    ImGui::SetNextWindowPos( ImVec2( game->gpu.vk_swapchain_width * 0.5f - 200, game->gpu.vk_swapchain_height * 0.5f - 100 ) );
+    ImGui::SetNextWindowSize( ImVec2( 400, 200 ) );
 
     ImGui::Begin( "Game Menu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     
@@ -116,7 +118,7 @@ crude_game_menu_draw
     }
 
     int32 framerate = game->framerate;
-    if ( ImGui::DragInt( "FPS Limit", &framerate ) )
+    if ( ImGui::DragInt( "FPS Limit", &framerate, 5, 1 ) )
     {
       game->framerate = framerate;
     }
@@ -126,6 +128,7 @@ crude_game_menu_draw
 
   ImGui::PopStyleColor( 9 );
   ImGui::PopFont( );
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void

@@ -224,7 +224,7 @@ crude_player_controller_update_system_
 
     XMStoreFloat3( &character_body->velocity, velocity );
   }
-  CRUDE_PROFILER_END( "crude_player_controller_update_system_" );
+  CRUDE_PROFILER_ZONE_END( "crude_player_controller_update_system_" );
 }
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_controller_system )

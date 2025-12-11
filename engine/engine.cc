@@ -94,7 +94,7 @@ crude_engine_update
   {
     crude_ecs_fini( world );
     engine->running = false;
-    CRUDE_PROFILER_END;
+    CRUDE_PROFILER_ZONE_END;
     return false;
   }
   
@@ -102,7 +102,7 @@ crude_engine_update
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( world, delta_time );
   engine->last_update_time = current_time;
-  CRUDE_PROFILER_END;
+  CRUDE_PROFILER_ZONE_END;
 
   return true;
 }

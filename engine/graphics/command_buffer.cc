@@ -1233,6 +1233,7 @@ crude_gfx_cmd_manager_reset
   _In_ uint32                                              frame
 )
 {
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_cmd_manager_reset" );
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
@@ -1252,6 +1253,7 @@ crude_gfx_cmd_manager_reset
 
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = 0;
   }
+  CRUDE_PROFILER_ZONE_END;
 }
 
 crude_gfx_cmd_buffer*
