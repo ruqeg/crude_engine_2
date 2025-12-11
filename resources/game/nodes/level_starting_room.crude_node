@@ -203,7 +203,7 @@
 		}, {
 			"name":	"drug_collision",
 			"transform":	{
-				"translation":	[3.6846911907196045, 1.7009235620498657, 0.66931456327438354],
+				"translation":	[3.5782489776611328, 1.7009235620498657, 0.665164887905121],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[0.980198621749878, 1, 0.980198621749878]
 			},
@@ -339,7 +339,7 @@
 					},
 					"components":	[{
 							"type":	"crude_physics_character_body_handle",
-							"mask":	256
+							"mask":	8
 						}, {
 							"type":	"crude_physics_collision_shape",
 							"shape_type":	"sphere",

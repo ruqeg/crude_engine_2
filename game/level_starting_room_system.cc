@@ -110,9 +110,10 @@ crude_level_starting_room_update_system_
     }
     if ( level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_HEALTH )
     {
-      if ( player->health > 1.0 )
+      if ( player->health > 0.99 )
       {
         level->state = CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_DRUG;
+        player->drug_withdrawal = 0.85;
       }
       else
       {
@@ -122,7 +123,7 @@ crude_level_starting_room_update_system_
     }
     if ( level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_DRUG )
     {
-      if ( player->drug_withdrawal < 0.1 )
+      if ( player->drug_withdrawal < 0.01 )
       {
         level->state = CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_CAN_MOVE;
       }
