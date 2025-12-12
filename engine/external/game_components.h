@@ -84,8 +84,24 @@ typedef struct crude_level_starting_room
 {
   crude_sound_handle                                       background_sound_handle;
   crude_level_starting_room_state                          state;
+  crude_sound_handle                                       voiceline0_sound_handle;
+  crude_sound_handle                                       voiceline1_sound_handle;
+  crude_sound_handle                                       voiceline2_sound_handle;
+  crude_sound_handle                                       voiceline3_sound_handle;
 
 } crude_level_starting_room;
+
+typedef enum crude_level_cutscene_only_sound_type
+{
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO
+} crude_level_cutscene_only_sound_type;
+
+typedef struct crude_level_cutscene_only_sound
+{
+  crude_level_cutscene_only_sound_type                     type;
+  crude_sound_handle                                       sound_handle;
+  float32                                                  time_left;
+} crude_level_cutscene_only_sound;
 
 typedef struct crude_player
 {
@@ -148,6 +164,12 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_starting_room );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_level_cutscene_only_sound );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_cutscene_only_sound );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_cutscene_only_sound );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_cutscene_only_sound );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_cutscene_only_sound );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller );

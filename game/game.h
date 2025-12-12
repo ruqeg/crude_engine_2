@@ -20,6 +20,7 @@
 
 typedef enum crude_game_queue_command_type
 {
+  CRUDE_GAME_QUEUE_COMMAND_TYPE_LOAD_SCENE,
   CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
   CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
   CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION, /* Wtf is it doing here ahaha */
@@ -41,6 +42,10 @@ typedef struct crude_game_queue_command
     struct 
     {
     } reload_techniques;
+    struct 
+    {
+      char const                                          *absolute_filepath;
+    } load_scene;
   };
 } crude_game_queue_command;
 
@@ -73,6 +78,8 @@ typedef struct game_t
   char const                                              *serum_station_node_absolute_filepath;
 
   char const                                              *serum_model_absolute_filepath;
+  char const                                              *starting_room_modern_syringe_health_model_absolute_filepath;
+  char const                                              *starting_room_modern_syringe_drug_model_absolute_filepath;
   char const                                              *syringe_drug_model_absolute_filepath;
   char const                                              *syringe_health_model_absolute_filepath;
   char const                                              *serum_station_enabled_model_absolute_filepath;
@@ -84,6 +91,7 @@ typedef struct game_t
   char const                                              *shot_sound_absolute_filepath;
   char const                                              *shot_without_ammo_sound_absolute_filepath;
   char const                                              *starting_room_background_sound_absolute_filepath;
+  char const                                              *level_intro_sound_absolute_filepath;
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;
@@ -99,6 +107,14 @@ typedef struct game_t
   char const                                              *hit_0_sound_absolute_filepath;
   char const                                              *hit_1_sound_absolute_filepath;
   char const                                              *hit_2_sound_absolute_filepath;
+  char const                                              *starting_room_voiceline0_sound_absolute_filepath;
+  char const                                              *starting_room_voiceline1_sound_absolute_filepath;
+  char const                                              *starting_room_voiceline2_sound_absolute_filepath;
+  char const                                              *starting_room_voiceline3_sound_absolute_filepath;
+
+  /* */
+  char const                                              *level_intro_node_absolute_filepath;
+  char const                                              *level_starting_room_node_absolute_filepath;
   
   char const                                              *game_font_absolute_filepath;
 #if CRUDE_DEVELOP
@@ -113,7 +129,7 @@ typedef struct game_t
   crude_string_buffer                                      debug_strings_buffer;
   crude_string_buffer                                      debug_constant_strings_buffer;
 #endif
-  char                                                     current_scene_absolute_filepath[ 1024 ];
+  char const                                              *current_scene_absolute_filepath;
 
   crude_devmenu                                            devmenu;
   crude_game_menu                                          game_menu;
@@ -212,6 +228,13 @@ CRUDE_API void
 game_push_reload_scene_command
 (
   _In_ game_t                                             *game
+);
+
+CRUDE_API void
+game_push_load_scene_command
+(
+  _In_ game_t                                             *game,
+  _In_ char const                                         *absolute_filepath
 );
 
 CRUDE_API void

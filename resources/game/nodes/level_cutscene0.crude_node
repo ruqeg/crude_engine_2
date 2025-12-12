@@ -1,0 +1,58 @@
+{
+	"name":	"level_cutscene0",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_level_cutscene_only_sound"
+		}],
+	"children":	[{
+			"name":	"teleport_station",
+			"external":	"game\\nodes\\teleport_station.crude_node",
+			"transform":	{
+				"translation":	[0, -0.28276097774505615, -6.009587287902832],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[]
+		},{
+			"name":	"hall_model",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\0_hall_1.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"redball_model",
+			"transform":	{
+				"translation":	[5.31794834136963, 3.0569252967834473, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Red_Ball.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"human",
+			"transform":	{
+				"translation":	[5.31794834136963, 3.0569252967834473, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Red_Ball_Man.gltf"
+				}],
+			"children":	[]
+		}]
+}
