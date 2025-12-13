@@ -14,6 +14,7 @@
 
 #include <game/player_system.h>
 
+CRUDE_ECS_OBSERVER_DECLARE( crude_player_destroy_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_player_creation_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
 
@@ -82,8 +83,9 @@ crude_player_interaction_collision_callback
         {
           if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_NONE )
           {
-            crude_audio_device_sound_set_translation( &game->audio_device, game->take_serum_sound_handle, crude_transform_node_to_world( static_body_node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_transform ) ).r[ 3 ] );
-            crude_audio_device_sound_start( &game->audio_device, game->take_serum_sound_handle );
+            crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+            crude_audio_device_sound_set_translation( &game->audio_device, level->take_serum_sound_handle, crude_transform_node_to_world( static_body_node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( static_body_node, crude_transform ) ).r[ 3 ] );
+            crude_audio_device_sound_start( &game->audio_device, level->take_serum_sound_handle );
             game_player_set_item( game, player, i, CRUDE_GAME_ITEM_SERUM );
             CRUDE_ENTITY_REMOVE_TAG( static_body_node, crude_serum_station_enabled );
             game_push_enable_random_serum_station_command( game, static_body_node );
@@ -96,6 +98,14 @@ crude_player_interaction_collision_callback
   else if ( static_body_layer & ( 1 << 7 ) )
   {
     player->inside_safe_zone = true;
+  }
+  else if ( static_body_layer & ( 1 << 9 ) )
+  {
+    crude_level_starting_room const *level = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->main_node, crude_level_starting_room );
+    if ( input->keys[ SDL_SCANCODE_E ].current && level->state == CRUDE_LEVEL_STARTING_ROOM_STATE_NEED_CAN_MOVE )
+    {
+      game_push_load_scene_command( game, game->level_cutscene0_node_absolute_filepath );
+    }
   }
 }
 
@@ -130,23 +140,24 @@ crude_player_hit_callback
   
   crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
   crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
+  crude_level_starting_room *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_starting_room );
   
   static uint32 sound_count = 0;
 
-  if ( input->mouse.left.pressed && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_0_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_1_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, game->hit_2_sound_handle ) )
+  if ( input->mouse.left.pressed && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_0_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_1_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_2_sound_handle ) )
   {
     player->sanity += 0.05;
     if ( sound_count == 0 )
     {
-      crude_audio_device_sound_start( &game->audio_device, game->hit_0_sound_handle );
+      crude_audio_device_sound_start( &game->audio_device, level->hit_0_sound_handle );
     }
     else if ( sound_count == 1 )
     {
-      crude_audio_device_sound_start( &game->audio_device, game->hit_1_sound_handle );
+      crude_audio_device_sound_start( &game->audio_device, level->hit_1_sound_handle );
     }
     else if ( sound_count == 2 )
     {
-      crude_audio_device_sound_start( &game->audio_device, game->hit_2_sound_handle );
+      crude_audio_device_sound_start( &game->audio_device, level->hit_2_sound_handle );
     }
     sound_count = ( sound_count + 1 ) % 3;
   }
@@ -195,11 +206,14 @@ crude_player_creation_observer_
     interaction_collision_body->callback_container.fun = crude_player_interaction_collision_callback;
     
     crude_entity mannequin_interaction_node = crude_ecs_lookup_entity_from_parent( node, "mannequin_interaction" );
-    crude_physics_character_body_handle *mannequin_interaction_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( mannequin_interaction_node, crude_physics_character_body_handle );
-    crude_physics_character_body *mannequin_interaction_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *mannequin_interaction_handle );
-    
-    mannequin_interaction_body->callback_container.ctx = (void*)1;
-    mannequin_interaction_body->callback_container.fun = crude_player_hit_callback;
+    if ( crude_entity_valid( mannequin_interaction_node ) )
+    {
+      crude_physics_character_body_handle *mannequin_interaction_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( mannequin_interaction_node, crude_physics_character_body_handle );
+      crude_physics_character_body *mannequin_interaction_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, *mannequin_interaction_handle );
+      
+      mannequin_interaction_body->callback_container.ctx = (void*)1;
+      mannequin_interaction_body->callback_container.fun = crude_player_hit_callback;
+    }
 
     player->health = 1.f;
     player->drug_withdrawal = 0.f;
@@ -209,6 +223,58 @@ crude_player_creation_observer_
     player->inventory_items[ 0 ] = CRUDE_GAME_ITEM_NONE;
     player->inventory_items[ 1 ] = CRUDE_GAME_ITEM_NONE;
     player->inventory_items[ 2 ] = CRUDE_GAME_ITEM_NONE;
+
+    crude_sound_creation sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->walking_sound_absolute_filepath;
+    sound_creation.looping = true;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    player->walking_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->syringe_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    player->syringe_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->reload_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    player->reload_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.looping = true;
+    sound_creation.stream = true;
+    sound_creation.absolute_filepath = game->heartbeat_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    player->heartbeat_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    crude_audio_device_sound_start( &game->audio_device, player->heartbeat_sound_handle );
+    crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 0.f );
+
+    crude_audio_device_sound_start( &game->audio_device, player->walking_sound_handle );
+    crude_audio_device_sound_set_volume( &game->audio_device, player->walking_sound_handle, 0.f );
+  }
+}
+
+static void
+crude_player_destroy_observer_
+(
+  _In_ ecs_iter_t *it
+)
+{
+  game_t *game = game_instance( );
+  crude_player *player_per_entity = ecs_field( it, crude_player, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_player *player = &player_per_entity[ i ];
+    crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    crude_audio_device_destroy_sound( &game->audio_device, player->walking_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, player->syringe_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, player->reload_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, player->heartbeat_sound_handle );
   }
 }
 
@@ -249,7 +315,7 @@ crude_player_update_system_
     }
     else
     {
-      crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
+      crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
       if ( player->inside_safe_zone )
       {
         player->safe_zone_volume = CRUDE_MIN( 1.05f, player->safe_zone_volume + 0.2 * it->delta_time );
@@ -261,8 +327,13 @@ crude_player_update_system_
 
       if ( player->safe_zone_volume > 0 && player->safe_zone_volume < 1.0 )
       {
-        crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( player->safe_zone_volume, 1.f ) ) );
-        crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( 1.f, 1.f - player->safe_zone_volume ) ) );
+        crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+
+        if ( level )
+        {
+          crude_audio_device_sound_set_volume( &game->audio_device, level->save_theme_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( player->safe_zone_volume, 1.f ) ) );
+          crude_audio_device_sound_set_volume( &game->audio_device, level->ambient_sound_handle, CRUDE_MAX( 0.f, CRUDE_MIN( 1.f, 1.f - player->safe_zone_volume ) ) );
+        }
       }
     }
 
@@ -277,9 +348,14 @@ crude_player_update_system_
       player->time_to_reload_scene = 3.f;
       crude_audio_device_sound_reset( &game->audio_device, game->death_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, game->death_sound_handle );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, 0 );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, 0 );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->heartbeat_sound_handle, 0 );
+      crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+
+      if ( level )
+      {
+        crude_audio_device_sound_set_volume( &game->audio_device, level->save_theme_sound_handle, 0 );
+        crude_audio_device_sound_set_volume( &game->audio_device, level->ambient_sound_handle, 0 );
+      }
+      crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 0 );
     }
 
     if ( game->death_screen && player->time_to_reload_scene < 0 && input->keys[ SDL_SCANCODE_SPACE ].current )
@@ -313,6 +389,10 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_player_system )
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_creation_observer_, EcsOnSet, NULL, { 
+    { .id = ecs_id( crude_player ) }
+  } );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_player ) }
   } );
 }

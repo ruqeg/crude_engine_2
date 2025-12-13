@@ -31,9 +31,6 @@ crude_player_controller_creation_observer_
     player_controller->input_enabled = true;
     player_controller->fly_speed_scale = 5;
     game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
-
-    crude_audio_device_sound_start( &game->audio_device, game->walking_sound_handle );
-    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, 0.f );
   }
 }
 
@@ -48,12 +45,6 @@ crude_player_controller_update_system_
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
   crude_player_controller *player_controllere_per_entity = ecs_field( it, crude_player_controller, 1 );
   crude_player *player_per_entity = ecs_field( it, crude_player, 2 );
-  
-  if ( game->death_screen )
-  {
-    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, 0.f );
-    return;
-  }
 
   for ( uint32 i = 0; i < it->count; ++i )
   {
@@ -77,13 +68,19 @@ crude_player_controller_update_system_
     input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->platform_node, crude_input );
 
     pivot_node = crude_ecs_lookup_entity_from_parent( node, "pivot" );
+    
+    if ( game->death_screen )
+    {
+      crude_audio_device_sound_set_volume( &game->audio_device, player->walking_sound_handle, 0.f );
+      continue;
+    }
 
     character_body_handle = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
     character_body = crude_physics_resources_manager_access_character_body( &game->physics_resources_manager, character_body_handle );
     
     velocity = XMLoadFloat3( &character_body->velocity );
 
-    crude_audio_device_sound_set_volume( &game->audio_device, game->walking_sound_handle, player_controller->walking_sound_volume );
+    crude_audio_device_sound_set_volume( &game->audio_device, player->walking_sound_handle, player_controller->walking_sound_volume );
     player_controller->walking_sound_volume = 3.f * CRUDE_MIN( XMVectorGetX( XMVector2Length( XMVectorSet( XMVectorGetX( velocity ), XMVectorGetZ( velocity ), 0.f, 0.f ) ) ) / player_controller->walk_speed, 1.f );
 
     if ( input->keys[ SDL_SCANCODE_1 ].current || input->keys[ SDL_SCANCODE_2 ].current || input->keys[ SDL_SCANCODE_3 ].current )
@@ -107,19 +104,19 @@ crude_player_controller_update_system_
         {
         case CRUDE_GAME_ITEM_SYRINGE_DRUG:
         {
-          crude_audio_device_sound_start( &game->audio_device, game->syringe_sound_handle );
+          crude_audio_device_sound_start( &game->audio_device, player->syringe_sound_handle );
           player->drug_withdrawal = CRUDE_MAX( player->drug_withdrawal - CRUDE_GAME_ITEM_SYRINGE_DRUG_WITHDRAWAL_REMOVE, 0.f );
           break;
         }
         case CRUDE_GAME_ITEM_SYRINGE_HEALTH:
         {
-          crude_audio_device_sound_start( &game->audio_device, game->syringe_sound_handle );
+          crude_audio_device_sound_start( &game->audio_device, player->syringe_sound_handle );
           player->health = CRUDE_MIN( 1.f, player->health + CRUDE_GAME_ITEM_SYRINGE_HEALTH_ADD );
           break;
         }
         case CRUDE_GAME_ITEM_AMMUNITION:
         {
-          crude_audio_device_sound_start( &game->audio_device, game->reload_sound_handle );
+          crude_audio_device_sound_start( &game->audio_device, player->reload_sound_handle );
           crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( pivot_node, "weapon" ), crude_weapon );
           weapon->ammo = 10;
           break;
@@ -138,7 +135,7 @@ crude_player_controller_update_system_
       moving_limit = player_controller->walk_speed;
     }
 
-    rotation_speed = player_controller->rotation_speed;
+    rotation_speed = game->sensetivity * player_controller->rotation_speed;
     if ( input->mouse.right.current )
     {
       moving_limit *= 0.5;

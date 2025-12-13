@@ -37,17 +37,17 @@ crude_gfx_game_postprocessing_pass_initialize
   pass->options.fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
   pass->options.fog_distance = 10.f;
   pass->options.fog_coeff = 0.5f;
-  pass->options.wave_size = 0.02;
-  pass->options.wave_texcoord_scale = 20.0;
-  pass->options.wave_absolute_frame_scale = 5.0;
-  pass->options.aberration_strength_scale = 0.005;
-  pass->options.aberration_strength_offset = 0.005;
-  pass->options.aberration_strength_sin_affect = 2.0;
-  pass->options.pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1, 0, 0, 1 } );
-  pass->options.pulse_frame_scale = 10.f;
-  pass->options.pulse_scale = 0.1f;
+  pass->options.wave_size = 0.0;
+  pass->options.wave_texcoord_scale = 0.0;
+  pass->options.wave_absolute_frame_scale = 0.0;
+  pass->options.aberration_strength_scale = 0.0;
+  pass->options.aberration_strength_offset = 0.0;
+  pass->options.aberration_strength_sin_affect = 0.0;
+  pass->options.pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 0, 0, 0, 0 } );
+  pass->options.pulse_frame_scale = 0.0f;
+  pass->options.pulse_scale = 0.0f;
   pass->options.pulse_distance_coeff = 0.1f;
-  pass->options.pulse_distance = 0.5f;
+  pass->options.pulse_distance = 0.0f;
 
   pass->scene_renderer = scene_renderer;
   
@@ -96,12 +96,12 @@ crude_gfx_game_postprocessing_pass_render
   crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->game_postprocessing_ds[ gpu->current_frame ] );
   
   game_postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_game_postprocessing_push_constant );
-  if ( crude_entity_valid( game->player_node ) )
+  if ( crude_entity_valid( game->focused_camera_node ) )
   {
-    player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+    player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
     game_postprocessing_constant.pbr_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "pbr" )->resource_info.texture.handle.index;
     game_postprocessing_constant.depth_texture_index = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
-    game_postprocessing_constant.player_position = player_transform->translation;
+    XMStoreFloat3( &game_postprocessing_constant.player_position, crude_transform_node_to_world( game->focused_camera_node, player_transform ).r[ 3 ] );
     game_postprocessing_constant.fog_color = pass->options.fog_color;
     game_postprocessing_constant.fog_distance = pass->options.fog_distance;
     game_postprocessing_constant.fog_coeff = pass->options.fog_coeff;

@@ -70,6 +70,15 @@ typedef struct crude_level_01
   crude_entity                                             serum_stations_spawn_points_parent_node;
   crude_entity                                             enemies_spawn_points_parent_node;
   bool                                                     editor_camera_controller_enabled;
+  crude_sound_handle                                       shot_without_ammo_sound_handle;
+  crude_sound_handle                                       recycle_sound_handle;
+  crude_sound_handle                                       hit_critical_sound_handle;
+  crude_sound_handle                                       hit_basic_sound_handle;
+  crude_sound_handle                                       take_serum_sound_handle;
+  crude_sound_handle                                       recycle_interaction_sound_handle;
+  crude_sound_handle                                       ambient_sound_handle;
+  crude_sound_handle                                       save_theme_sound_handle;
+  crude_sound_handle                                       shot_sound_handle;
 } crude_level_01;
 
 typedef enum crude_level_starting_room_state
@@ -88,6 +97,9 @@ typedef struct crude_level_starting_room
   crude_sound_handle                                       voiceline1_sound_handle;
   crude_sound_handle                                       voiceline2_sound_handle;
   crude_sound_handle                                       voiceline3_sound_handle;
+  crude_sound_handle                                       hit_0_sound_handle;
+  crude_sound_handle                                       hit_1_sound_handle;
+  crude_sound_handle                                       hit_2_sound_handle;
 
 } crude_level_starting_room;
 
@@ -101,6 +113,8 @@ typedef struct crude_level_cutscene_only_sound
 {
   crude_level_cutscene_only_sound_type                     type;
   crude_sound_handle                                       sound_handle;
+  int64                                                    time;
+  bool                                                     first_system_run;
 } crude_level_cutscene_only_sound;
 
 typedef struct crude_player
@@ -114,6 +128,10 @@ typedef struct crude_player
   bool                                                     inside_safe_zone;
   float32                                                  safe_zone_volume;
   float32                                                  time_to_reload_scene;
+  crude_sound_handle                                       walking_sound_handle;
+  crude_sound_handle                                       heartbeat_sound_handle;
+  crude_sound_handle                                       syringe_sound_handle;
+  crude_sound_handle                                       reload_sound_handle;
 } crude_player;
 
 typedef struct crude_player_controller

@@ -43,7 +43,7 @@
 		}, {
 			"name":	"collision1",
 			"transform":	{
-				"translation":	[3.3484082221984863, -0.12509250640869141, 4.2554621696472168],
+				"translation":	[3.342750072479248, -0.12509250640869141, 4.2554621696472168],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[0.980198621749878, 1, 0.980198621749878]
 			},
@@ -217,6 +217,22 @@
 				}],
 			"children":	[]
 		}, {
+			"name":	"bad_collision",
+			"transform":	{
+				"translation":	[3.342750072479248, -0.12509250640869141, 4.2554621696472168],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[0.980198621749878, 1, 0.980198621749878]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	512
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[3.52999997138977, 4.869999885559082, 1.3700000047683716]
+				}],
+			"children":	[]
+		}, {
 			"name":	"starting_room_model",
 			"transform":	{
 				"translation":	[0, 0, 0],
@@ -231,7 +247,7 @@
 		}, {
 			"name":	"player",
 			"transform":	{
-				"translation":	[0.25659996271133423, 1.0520608425140381, 0],
+				"translation":	[1.5671340227127075, 1.0520609617233276, 2.6636011600494385],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 			},
@@ -339,7 +355,7 @@
 					},
 					"components":	[{
 							"type":	"crude_physics_character_body_handle",
-							"mask":	8
+							"mask":	520
 						}, {
 							"type":	"crude_physics_collision_shape",
 							"shape_type":	"sphere",

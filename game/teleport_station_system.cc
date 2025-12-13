@@ -49,10 +49,11 @@ crude_teleport_station_set_serum
         {
           if ( player->inventory_items[ i ] == CRUDE_GAME_ITEM_SERUM )
           {
+            crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
             crude_transform                               *serum_transform;
             serum_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( serum_node, crude_transform );
-            crude_audio_device_sound_set_translation( &game->audio_device, game->recycle_interaction_sound_handle, crude_transform_node_to_world( serum_node, serum_transform ).r[ 3 ] );
-            crude_audio_device_sound_start( &game->audio_device, game->recycle_interaction_sound_handle );
+            crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, crude_transform_node_to_world( serum_node, serum_transform ).r[ 3 ] );
+            crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
             game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
             serum_gltf->hidden = false;
             break;

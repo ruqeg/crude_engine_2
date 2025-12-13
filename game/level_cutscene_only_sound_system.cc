@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 
+#include <engine/core/time.h>
 #include <engine/core/memory.h>
 #include <engine/external/game_components.h>
 #include <engine/platform/platform.h>
@@ -58,6 +59,8 @@ crude_level_cutscene_only_sound_creation_observer_
 
     level = &levels_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    
+    level->first_system_run = true;
 
     switch ( level->type )
     {
@@ -69,7 +72,10 @@ crude_level_cutscene_only_sound_creation_observer_
       sound_creation.absolute_filepath = game->level_intro_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-      crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+      
+      game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
+
+      game->game_postprocessing_pass.options.fog_distance = 10.f;
       break;
     }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
@@ -80,13 +86,16 @@ crude_level_cutscene_only_sound_creation_observer_
       sound_creation.absolute_filepath = game->level_cutscene0_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-      crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+      
+      game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
+
+      game->game_postprocessing_pass.options.fog_distance = 15.f;
       break;
     }
     }
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    crude_platform_show_cursor( *window_handle );
+    crude_platform_hide_cursor( *window_handle );
   }
 }
 
@@ -107,6 +116,26 @@ crude_level_cutscene_only_sound_update_system_
     
     level = &leveles_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    
+    if ( level->first_system_run )
+    {
+      switch ( level->type )
+      {
+      case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO:
+      {
+        crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+        break;
+      }
+      case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
+      {
+        crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+        break;
+      }
+      }
+      level->time = crude_time_now( );
+      level->first_system_run = false;
+      continue;
+    }
 
     switch ( level->type )
     {
@@ -116,13 +145,88 @@ crude_level_cutscene_only_sound_update_system_
       {
         game_push_load_scene_command( game, game->level_starting_room_node_absolute_filepath );
       }
+      crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
+      float32 time_from_start = crude_time_delta_seconds( level->time, crude_time_now( ) );
+      if ( time_from_start < 17.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap0" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = time_from_start / 17;
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 32.f && time_from_start < 45.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap2" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 32 ) / (45 - 32);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
       break;
     }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
     {
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
       {
-        game_push_load_scene_command( game, game->level_starting_room_node_absolute_filepath );
+        game_push_load_scene_command( game, game->level_0_node_absolute_filepath );
+      }
+
+      crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
+      float32 time_from_start = crude_time_delta_seconds( level->time, crude_time_now( ) );
+      if ( time_from_start < 20.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap0" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = time_from_start / 20;
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 29.f && time_from_start < 34.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap2" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 29.f ) / (34 - 29);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 34.f && time_from_start < 63.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap2" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap3" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 34 ) / (64 - 34);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 63.f && time_from_start < 72.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap3" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap4" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 63 ) / (72 - 63);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 72.f && time_from_start < 90.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap4" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap5" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 72.f ) / (90 - 72);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
       }
       break;
     }

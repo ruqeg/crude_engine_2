@@ -83,17 +83,12 @@ crude_game_menu_draw
     );
     ImGui::End();
 
-    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
     ImGui::SetNextWindowPos( ImVec2( game->gpu.vk_swapchain_width * 0.5f - 200, game->gpu.vk_swapchain_height * 0.5f - 100 ) );
     ImGui::SetNextWindowSize( ImVec2( 400, 200 ) );
 
     ImGui::Begin( "Game Menu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     
-    float32 sensetivity = -10 * player_controller->rotation_speed;
-    if ( ImGui::DragFloat( "Sensetivity (Default 0.1)", &sensetivity, 0.1 ) )
-    {
-      player_controller->rotation_speed = -0.1f * sensetivity;
-    }
+    ImGui::DragFloat( "Sensetivity (Default 1.0)", &game->sensetivity, 0.1 );
     if ( ImGui::DragFloat( "Volume (Default 1.0)", &game->volume, 0.1 ) )
     {
       crude_audio_device_set_global_volume( &game->audio_device, game->volume );

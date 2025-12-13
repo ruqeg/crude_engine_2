@@ -38,6 +38,9 @@ crude_level_starting_room_destroy_observer_
     crude_audio_device_destroy_sound( &game->audio_device, level->voiceline1_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, level->voiceline2_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, level->voiceline3_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_0_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_1_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_2_sound_handle );
   }
 }
 static void
@@ -91,6 +94,24 @@ crude_level_starting_room_creation_observer_
 
     sound_creation.absolute_filepath = game->starting_room_voiceline3_sound_absolute_filepath;
     level->voiceline3_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->hit_0_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    level->hit_0_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->hit_1_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    level->hit_1_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->hit_2_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    level->hit_2_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
 
     player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( level_node, "player" ), crude_player );
     player->sanity = 0.2;

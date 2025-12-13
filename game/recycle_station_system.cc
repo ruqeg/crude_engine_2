@@ -26,7 +26,7 @@ crude_recycle_station_start_recycle
 
   crude_transform *station_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( station_node, crude_transform );
   XMMATRIX station_node_to_world = crude_transform_node_to_world( station_node, station_transform );
-  
+
   if ( station->state == CRUDE_RECYCLE_STATION_STATE_DONE )
   {
     for ( uint32 i = 0; i < CRUDE_GAME_PLAYER_ITEMS_MAX_COUNT; ++i )
@@ -35,9 +35,10 @@ crude_recycle_station_start_recycle
       {
         station->state = CRUDE_RECYCLE_STATION_STATE_EMPTY;
         game_player_set_item( game, player, i, station->game_item );
-
-        crude_audio_device_sound_set_translation( &game->audio_device, game->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
-        crude_audio_device_sound_start( &game->audio_device, game->recycle_interaction_sound_handle );
+        
+        crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+        crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
+        crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
 
         crude_gltf *empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_empty" ), crude_gltf );
         crude_gltf *loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_loaded" ), crude_gltf );
@@ -58,10 +59,11 @@ crude_recycle_station_start_recycle
         
         game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
         
-        crude_audio_device_sound_start( &game->audio_device, game->recycle_sound_handle );
+        crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+        crude_audio_device_sound_start( &game->audio_device, level->recycle_sound_handle );
 
-        crude_audio_device_sound_set_translation( &game->audio_device, game->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
-        crude_audio_device_sound_start( &game->audio_device, game->recycle_interaction_sound_handle );
+        crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
+        crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
         
         crude_gltf *empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_empty" ), crude_gltf );
         crude_gltf *loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_loaded" ), crude_gltf );

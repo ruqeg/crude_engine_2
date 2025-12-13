@@ -84,6 +84,7 @@ crude_weapon_update_system_
     crude_player_controller const *player_controller = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_player_controller );
     if ( player_controller->input_enabled && input->mouse.left.current && ( weapon->last_shot_timer > CRUDE_GAME_WEAPON_SHOT_INTEVAL ) )
     {
+      crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
       if ( weapon->ammo > 0 )
       {
         crude_transform const                             *weapon_shot_node_transform;
@@ -104,8 +105,8 @@ crude_weapon_update_system_
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE, true );
-          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_critical_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, game->hit_critical_sound_handle );
+          crude_audio_device_sound_set_translation( &game->audio_device, level->hit_critical_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->audio_device, level->hit_critical_sound_handle );
           player->sanity = CRUDE_MIN( player->sanity + 0.1, 1.f );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Critical hit" );
         }
@@ -115,8 +116,8 @@ crude_weapon_update_system_
           player->sanity = CRUDE_MIN( player->sanity + 0.05, 1.f );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_DAMAGE, false );
-          crude_audio_device_sound_set_translation( &game->audio_device, game->hit_basic_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, game->hit_basic_sound_handle );
+          crude_audio_device_sound_set_translation( &game->audio_device, level->hit_basic_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->audio_device, level->hit_basic_sound_handle );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Default Hit" );
         }
 
@@ -124,11 +125,11 @@ crude_weapon_update_system_
         XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), XMQuaternionRotationAxis( XMVectorSet( 1, 0, 0, 0 ), -XM_PIDIV2 ) ) );
         --weapon->ammo;
 
-        crude_audio_device_sound_start( &game->audio_device, game->shot_sound_handle );
+        crude_audio_device_sound_start( &game->audio_device, level->shot_sound_handle );
       }
       else
       {
-        crude_audio_device_sound_start( &game->audio_device, game->shot_without_ammo_sound_handle );
+        crude_audio_device_sound_start( &game->audio_device, level->shot_without_ammo_sound_handle );
       }
     }
 

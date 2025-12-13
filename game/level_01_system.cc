@@ -32,6 +32,16 @@ crude_level_01_destroy_observer_
     
     level = &enemies_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+
+    crude_audio_device_destroy_sound( &game->audio_device, level->ambient_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->save_theme_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->shot_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->shot_without_ammo_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->recycle_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_critical_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_basic_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->take_serum_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->recycle_interaction_sound_handle );
   }
 }
 static void
@@ -70,10 +80,71 @@ crude_level_01_creation_observer_
 
     /* Setup sounds */
     {
-      crude_audio_device_sound_start( &game->audio_device, game->ambient_sound_handle );
-      crude_audio_device_sound_start( &game->audio_device, game->save_theme_sound_handle );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->save_theme_sound_handle, 0.f );
-      crude_audio_device_sound_set_volume( &game->audio_device, game->ambient_sound_handle, 1.f );
+      crude_sound_creation sound_creation = crude_sound_creation_empty( );
+      sound_creation.looping = true;
+      sound_creation.stream = true;
+      sound_creation.absolute_filepath = game->ambient_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->ambient_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.looping = true;
+      sound_creation.stream = true;
+      sound_creation.absolute_filepath = game->save_theme_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->save_theme_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->shot_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->shot_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->shot_without_ammo_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->shot_without_ammo_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->recycle_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->recycle_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->audio_device, level->recycle_sound_handle, 1.5f );
+
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->hit_critical_sound_absolute_filepath;
+      sound_creation.rolloff = 0.15;
+      level->hit_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->audio_device, level->hit_critical_sound_handle, 5.0f );
+      
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->hit_basic_sound_absolute_filepath;
+      sound_creation.rolloff = 0.15;
+      level->hit_basic_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->audio_device, level->hit_basic_sound_handle, 5.0f );
+
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->take_serum_sound_absolute_filepath;
+      sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
+      level->take_serum_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.async_loading = true;
+      sound_creation.absolute_filepath = game->recycle_interaction_sound_absolute_filepath;
+      sound_creation.min_distance = 1.0;
+      sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
+      sound_creation.rolloff = 0.25;
+      level->recycle_interaction_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+
+      crude_audio_device_sound_start( &game->audio_device, level->ambient_sound_handle );
+      crude_audio_device_sound_start( &game->audio_device, level->save_theme_sound_handle );
+      crude_audio_device_sound_set_volume( &game->audio_device, level->save_theme_sound_handle, 0.f );
+      crude_audio_device_sound_set_volume( &game->audio_device, level->ambient_sound_handle, 1.f );
     }
 
     /* Setup enemies*/

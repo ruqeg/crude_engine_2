@@ -116,6 +116,8 @@ typedef struct game_t
   /* */
   char const                                              *level_intro_node_absolute_filepath;
   char const                                              *level_starting_room_node_absolute_filepath;
+  char const                                              *level_0_node_absolute_filepath;
+  char const                                              *level_cutscene0_node_absolute_filepath;
   
   char const                                              *game_font_absolute_filepath;
 #if CRUDE_DEVELOP
@@ -145,6 +147,7 @@ typedef struct game_t
   crude_entity                                             template_enemy_node;
   crude_entity                                             template_serum_station_node;
   crude_entity                                             player_node;
+  float32                                                  sensetivity;
 
   /* Graphics */
   crude_gfx_device                                         gpu;
@@ -171,23 +174,7 @@ typedef struct game_t
   XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
-  crude_sound_handle                                       ambient_sound_handle;
-  crude_sound_handle                                       save_theme_sound_handle;
-  crude_sound_handle                                       shot_sound_handle;
-  crude_sound_handle                                       hit_0_sound_handle;
-  crude_sound_handle                                       hit_1_sound_handle;
-  crude_sound_handle                                       hit_2_sound_handle;
 
-  crude_sound_handle                                       shot_without_ammo_sound_handle;
-  crude_sound_handle                                       walking_sound_handle;
-  crude_sound_handle                                       recycle_sound_handle;
-  crude_sound_handle                                       hit_critical_sound_handle;
-  crude_sound_handle                                       hit_basic_sound_handle;
-  crude_sound_handle                                       take_serum_sound_handle;
-  crude_sound_handle                                       recycle_interaction_sound_handle;
-  crude_sound_handle                                       syringe_sound_handle;
-  crude_sound_handle                                       reload_sound_handle;
-  crude_sound_handle                                       heartbeat_sound_handle;
   crude_sound_handle                                       death_sound_handle;
   bool                                                     death_screen;
   XMFLOAT4                                                 death_overlap_color;
