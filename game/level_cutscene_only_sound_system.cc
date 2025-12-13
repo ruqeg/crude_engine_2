@@ -33,14 +33,7 @@ crude_level_cutscene_only_sound_destroy_observer_
     level = &levels_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    switch ( level->type )
-    {
-    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO:
-    {
-      crude_audio_device_destroy_sound( &game->audio_device, level->sound_handle );
-      break;
-    }
-    }
+    crude_audio_device_destroy_sound( &game->audio_device, level->sound_handle );
   }
 }
 static void
@@ -77,13 +70,23 @@ crude_level_cutscene_only_sound_creation_observer_
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
       crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
-      level->time_left = 44;
+      break;
+    }
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
+    {
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.stream = true;
+      sound_creation.looping = false;
+      sound_creation.absolute_filepath = game->level_cutscene0_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
       break;
     }
     }
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    crude_platform_hide_cursor( *window_handle );
+    crude_platform_show_cursor( *window_handle );
   }
 }
 
@@ -104,12 +107,18 @@ crude_level_cutscene_only_sound_update_system_
     
     level = &leveles_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
-  
-    level->time_left -= it->delta_time;
 
     switch ( level->type )
     {
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO:
+    {
+      if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
+      {
+        game_push_load_scene_command( game, game->level_starting_room_node_absolute_filepath );
+      }
+      break;
+    }
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
     {
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
       {

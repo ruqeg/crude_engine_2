@@ -92,6 +92,7 @@ typedef struct game_t
   char const                                              *shot_without_ammo_sound_absolute_filepath;
   char const                                              *starting_room_background_sound_absolute_filepath;
   char const                                              *level_intro_sound_absolute_filepath;
+  char const                                              *level_cutscene0_sound_absolute_filepath;
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;

@@ -93,14 +93,14 @@ typedef struct crude_level_starting_room
 
 typedef enum crude_level_cutscene_only_sound_type
 {
-  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO,
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0
 } crude_level_cutscene_only_sound_type;
 
 typedef struct crude_level_cutscene_only_sound
 {
   crude_level_cutscene_only_sound_type                     type;
   crude_sound_handle                                       sound_handle;
-  float32                                                  time_left;
 } crude_level_cutscene_only_sound;
 
 typedef struct crude_player

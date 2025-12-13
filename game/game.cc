@@ -842,6 +842,7 @@ game_initialize_constant_strings_
   char const *starting_room_voiceline1_sound_relative_filepath = "game\\sounds\\starting_room\\voiceline1.wav";
   char const *starting_room_voiceline2_sound_relative_filepath = "game\\sounds\\starting_room\\voiceline2.wav";
   char const *starting_room_voiceline3_sound_relative_filepath = "game\\sounds\\starting_room\\voiceline3.wav";
+  char const *level_cutscene0_sound_relative_filepath = "game\\sounds\\cutscenes\\cutscene0.wav";
 
   char const *starting_room_modern_syringe_health_model_relative_filepath = "game\\models\\starting_room\\Plastic_Syringe_Health.gltf";
   char const *starting_room_modern_syringe_drug_model_relative_filepath = "game\\models\\starting_room\\Plastic_Syringe_Drug.gltf";
@@ -895,7 +896,8 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_voiceline3_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_modern_syringe_health_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_modern_syringe_drug_model_relative_filepath );
-
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene0_sound_relative_filepath );
+  
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
   game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
@@ -931,6 +933,7 @@ game_initialize_constant_strings_
   game->hit_1_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_1_sound_relative_filepath );
   game->hit_2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_2_sound_relative_filepath );
   game->level_intro_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_intro_sound_relative_filepath );
+  game->level_cutscene0_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene0_sound_relative_filepath );
   game->starting_room_voiceline0_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline0_sound_relative_filepath );;
   game->starting_room_voiceline1_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline1_sound_relative_filepath );;
   game->starting_room_voiceline2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline2_sound_relative_filepath );;
