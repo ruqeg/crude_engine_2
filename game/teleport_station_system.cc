@@ -29,7 +29,7 @@ crude_teleport_station_set_serum
 {
   game_t                                                  *game;
   ecs_iter_t                                               serums_it;
-  uint32                                                   serums_count;
+  uint32                                                   serums_count;;
   
   game = game_instance( );
   serums_it = ecs_children( teleport_station_node.world, crude_ecs_lookup_entity_from_parent( teleport_station_node, "models_node.serums" ).handle );
@@ -63,8 +63,8 @@ crude_teleport_station_set_serum
       }
     }
   }
-
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Done" );
+  
+  game_push_load_scene_command( game, game->level_cutscene1_node_absolute_filepath );
 }
 
 static void

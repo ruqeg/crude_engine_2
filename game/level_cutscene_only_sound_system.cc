@@ -92,6 +92,39 @@ crude_level_cutscene_only_sound_creation_observer_
       game->game_postprocessing_pass.options.fog_distance = 15.f;
       break;
     }
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1:
+    {
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.stream = true;
+      sound_creation.looping = false;
+      sound_creation.absolute_filepath = game->level_cutscene1_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      
+      game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
+
+      game->game_postprocessing_pass.options.fog_distance = 20.f;
+      
+      ecs_iter_t                                               serums_it;
+      uint32                                                   serums_count;
+      crude_entity                                             teleport_station_node;
+      
+      teleport_station_node = crude_ecs_lookup_entity_from_parent( level_node, "teleport_station" );
+      serums_it = ecs_children( teleport_station_node.world, crude_ecs_lookup_entity_from_parent( teleport_station_node, "models_node.serums" ).handle );
+      while ( ecs_children_next( &serums_it ) )
+      {
+        for ( size_t i = 0; i < serums_it.count; ++i )
+        {
+          crude_gltf                                        *serum_gltf;
+          crude_entity                                       serum_node;
+      
+          serum_node = CRUDE_COMPOUNT( crude_entity, { .handle = serums_it.entities[ i ], .world = serums_it.world } );
+          serum_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( serum_node, crude_gltf );
+          serum_gltf->hidden = false;
+        }
+      }
+      break;
+    }
     }
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
@@ -127,6 +160,11 @@ crude_level_cutscene_only_sound_update_system_
         break;
       }
       case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
+      {
+        crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+        break;
+      }
+      case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1:
       {
         crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
         break;
@@ -225,6 +263,97 @@ crude_level_cutscene_only_sound_update_system_
         crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
         crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
         float32 t = ( time_from_start - 72.f ) / (90 - 72);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      break;
+    }
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1:
+    {
+      if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
+      {
+        game_push_load_scene_command( game, game->level_cutscene2_node_absolute_filepath );
+      }
+
+      crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
+      float32 time_from_start = crude_time_delta_seconds( level->time, crude_time_now( ) );
+      if ( time_from_start < 11.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap0" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = time_from_start / 11;
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 15 && time_from_start < 25 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap2" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 15 ) / (25 - 15);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 25 && time_from_start < 30 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap2" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap3" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 25 ) / (30 - 25);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 30 && time_from_start < 40 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap3" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap4" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 30 ) / (40 - 30);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 50 && time_from_start < 60 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap4" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap5" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 50 ) / (60 - 50);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 60 && time_from_start < 80 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap5" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap6" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 60 ) / (80 - 60);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 90 && time_from_start < 110  )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap6" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap7" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 90 ) / (110 - 90);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 120 && time_from_start < 127 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap7" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap8" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 120 ) / (127 - 120);
         XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
         XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
       }
