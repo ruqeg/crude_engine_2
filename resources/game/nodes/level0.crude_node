@@ -12,11 +12,13 @@
 			"name":	"teleport_station",
 			"external":	"game\\nodes\\teleport_station.crude_node",
 			"transform":	{
-				"translation":	[0, -0.28276097774505615, -6.009587287902832],
+				"translation":	[0, 0, -6.4042043685913086],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[1, 1, 1]
+				"scale":	[2, 2, 2]
 			},
-			"components":	[],
+			"components":	[{
+					"type":	"crude_teleport_station"
+				}],
 			"children":	[]
 		}, {
 			"name":	"recycle_station_0",
@@ -495,7 +497,25 @@
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 			},
-			"components":	[],
+			"components":	[{
+					"type":	"crude_physics_character_body_handle",
+					"mask":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"sphere",
+					"radius":	0.5
+				}, {
+					"type":	"crude_player_controller",
+					"rotation_speed":	-0.00999999977648258,
+					"jump_velocity":	4,
+					"walk_speed":	3,
+					"run_speed":	8,
+					"stop_change_coeff":	7,
+					"move_change_coeff":	4,
+					"weight":	1
+				}, {
+					"type":	"crude_player"
+				}],
 			"children":	[]
 		}]
 }

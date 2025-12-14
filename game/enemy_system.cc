@@ -154,6 +154,7 @@ crude_enemy_creation_observer_
     sound_creation = crude_sound_creation_empty( );
     sound_creation.stream = true;
     sound_creation.looping = true;
+    sound_creation.decode = true;
     sound_creation.absolute_filepath = game->enemy_idle_sound_absolute_filepath;
     sound_creation.rolloff = 0.25;
     sound_creation.min_distance = 2.0;

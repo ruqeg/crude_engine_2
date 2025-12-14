@@ -136,6 +136,7 @@ typedef struct crude_gfx_device
   uint16                                                   vk_swapchain_width;
   uint16                                                   vk_swapchain_height;
   uint32                                                   vk_swapchain_image_index;
+  VkPresentModeKHR                                         vk_selected_present_mode;
   bool                                                     swapchain_resized_last_frame;
   crude_gfx_render_pass_output                             swapchain_output;
   /**

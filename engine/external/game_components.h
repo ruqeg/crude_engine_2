@@ -117,6 +117,11 @@ typedef struct crude_level_cutscene_only_sound
   bool                                                     first_system_run;
 } crude_level_cutscene_only_sound;
 
+typedef struct crude_level_boss_fight
+{
+  crude_sound_handle                                       background_sound_handle;
+} crude_level_boss_fight;
+
 typedef struct crude_player
 {
   bool                                                     stop_updating_gameplay_values;
@@ -182,6 +187,12 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_starting_room );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_starting_room );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_level_boss_fight );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_boss_fight );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_boss_fight );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_boss_fight );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_boss_fight );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_level_cutscene_only_sound );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_cutscene_only_sound );

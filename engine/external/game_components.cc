@@ -16,6 +16,7 @@ ECS_COMPONENT_DECLARE( crude_player );
 ECS_COMPONENT_DECLARE( crude_recycle_station );
 ECS_COMPONENT_DECLARE( crude_teleport_station );
 ECS_COMPONENT_DECLARE( crude_level_cutscene_only_sound );
+ECS_COMPONENT_DECLARE( crude_level_boss_fight );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_serum_station, "crude_serum_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_enemy, "crude_enemy" );
@@ -27,6 +28,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_player, "crude_player" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_recycle_station, "crude_recycle_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_teleport_station, "crude_teleport_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_cutscene_only_sound, "crude_level_cutscene_only_sound" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_level_boss_fight, "crude_level_boss_fight" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 {
@@ -41,6 +43,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
   ECS_COMPONENT_DEFINE( world, crude_recycle_station );
   ECS_COMPONENT_DEFINE( world, crude_teleport_station );
   ECS_COMPONENT_DEFINE( world, crude_level_cutscene_only_sound );
+  ECS_COMPONENT_DEFINE( world, crude_level_boss_fight );
   ECS_TAG_DEFINE( world, crude_serum_station_enabled );
 }
 
@@ -150,31 +153,23 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_01 )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_01 )
 {
-  //crude_entity editor_camera_node = crude_ecs_lookup_entity_from_parent( node, "editor_camera" );
-  //crude_entity game_controller_node = crude_ecs_lookup_entity_from_parent( node, "player" );
-  //crude_entity game_camera_node = crude_ecs_lookup_entity_from_parent( node, "player.pivot.camera" );
-  //
-  //if ( ImGui::Checkbox( "Editor Camera Controller", &component->editor_camera_controller_enabled ) )
-  //{
-  //  if ( component->editor_camera_controller_enabled )
-  //  {
-  //    crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
-  //    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
-  //    
-  //    game_set_focused_camera_node( game_instance( ), editor_camera_node );
-  //    player_controller->input_enabled = false;
-  //    free_camera->enabled = true;
-  //  }
-  //  else
-  //  { 
-  //    crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor_camera_node, crude_free_camera );
-  //    crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game_controller_node, crude_player_controller );
-  //    
-  //    game_set_focused_camera_node( game_instance( ), game_camera_node );
-  //    player_controller->input_enabled = true;
-  //    free_camera->enabled = false;
-  //  }
-  //}
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_boss_fight )
+{
+  crude_memory_set( component, 0, sizeof( crude_level_boss_fight ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_boss_fight )
+{
+  cJSON *json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) );
+  return json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_boss_fight )
+{
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )

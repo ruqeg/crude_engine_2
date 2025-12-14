@@ -74,6 +74,7 @@ crude_level_starting_room_creation_observer_
     sound_creation = crude_sound_creation_empty( );
     sound_creation.stream = true;
     sound_creation.looping = true;
+    sound_creation.decode = true;
     sound_creation.absolute_filepath = game->starting_room_background_sound_absolute_filepath;
     sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
     level->background_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );

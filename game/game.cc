@@ -30,6 +30,7 @@
 #include <game/weapon_system.h>
 #include <game/level_starting_room_system.h>
 #include <game/level_cutscene_only_sound_system.h>
+#include <game/level_boss_fight_system.h>
 
 #include <game/game.h>
 
@@ -200,6 +201,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_recycle_station_system );
   ECS_IMPORT( game->engine->world, crude_level_starting_room_system );
   ECS_IMPORT( game->engine->world, crude_level_cutscene_only_sound_system );
+  ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
   
   game_initialize_allocators_( game );
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
@@ -819,24 +821,24 @@ game_initialize_constant_strings_
   char const *serum_station_disabled_model_relative_filepath = "game\\models\\serum_station_disabled.gltf";
   char const *ammo_box_model_relative_filepath = "game\\models\\Bullet_Box.gltf";
   char const *serum_absolute_model_relative_filepath = "game\\models\\serum_absolute.gltf";
-  char const *ambient_sound_relative_filepath = "game\\sounds\\level0_ambient.wav";
+  char const *ambient_sound_relative_filepath = "game\\sounds\\level0_ambient.mp3";
   char const *shot_sound_relative_filepath = "game\\sounds\\shot-from-an-antique-gun.wav";
-  char const *save_theme_sound_relative_filepath = "game\\sounds\\Resident_Evil_1_OST_Save_Room.wav";
+  char const *save_theme_sound_relative_filepath = "game\\sounds\\Resident_Evil_1_OST_Save_Room.mp3";
   char const *walking_sound_relative_filepath = "game\\sounds\\walking.wav";
   char const *recycle_sound_relative_filepath = "game\\sounds\\recycle.wav";
   char const *hit_critical_sound_relative_filepath = "game\\sounds\\hit_critical.wav";
   char const *hit_basic_sound_relative_filepath = "game\\sounds\\hit_basic.wav";
   char const *take_serum_sound_relative_filepath = "game\\sounds\\take_serum.wav";
-  char const *enemy_idle_sound_relative_filepath = "game\\sounds\\enemy_idle.wav";
+  char const *enemy_idle_sound_relative_filepath = "game\\sounds\\enemy_idle.mp3";
   char const *enemy_notice_sound_relative_filepath = "game\\sounds\\enemy_scream.wav";
   char const *enemy_attack_sound_relative_filepath = "game\\sounds\\enemy_attack.wav";
   char const *recycle_interaction_sound_relative_filepath = "game\\sounds\\recycle_interaction.wav";
   char const *syringe_sound_relative_filepath = "game\\sounds\\syringe.wav";
   char const *reload_interaction_sound_relative_filepath = "game\\sounds\\reload.wav";
   char const *heartbeat_sound_relative_filepath = "game\\sounds\\heartbeat.wav";
-  char const *death_sound_relative_filepath = "game\\sounds\\death_music.wav";
+  char const *death_sound_relative_filepath = "game\\sounds\\death_music.mp3";
   char const *shot_without_ammo_sound_relative_filepath = "game\\sounds\\shot_without_ammo.wav";
-  char const *starting_room_background_sound_relative_filepath = "game\\sounds\\starting_room\\background.wav";
+  char const *starting_room_background_sound_relative_filepath = "game\\sounds\\starting_room\\background.mp3";
   char const *game_font_relative_filepath = "game\\fonts\\IgnotumRegular.ttf";
   char const *hit_0_sound_relative_filepath = "game\\sounds\\hit_0.wav";
   char const *hit_1_sound_relative_filepath = "game\\sounds\\hit_1.wav";
@@ -1025,6 +1027,7 @@ game_initialize_audio_
   sound_creation = crude_sound_creation_empty( );
   sound_creation.looping = true;
   sound_creation.stream = true;
+  sound_creation.decode = true;
   sound_creation.absolute_filepath = game->death_sound_absolute_filepath;
   sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
   game->death_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );

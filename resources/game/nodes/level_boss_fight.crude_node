@@ -1,0 +1,132 @@
+{
+	"name":	"level_boss_fight",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_level_boss_fight"
+		}],
+	"children":	[{
+			"name":	"bad_collision",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[100, 1, 100]
+				}],
+			"children":	[]
+		}, {
+			"name":	"collision1",
+			"transform":	{
+				"translation":	[30, 0, 0],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[1, 100, 100]
+				}],
+			"children":	[]
+		}, {
+			"name":	"collision2",
+			"transform":	{
+				"translation":	[0, 0, 30],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[100, 100, 1]
+				}],
+			"children":	[]
+		}, {
+			"name":	"collision3",
+			"transform":	{
+				"translation":	[-30, 0, 0],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[1, 100, 100]
+				}],
+			"children":	[]
+		}, {
+			"name":	"collision4",
+			"transform":	{
+				"translation":	[0, 0, -30],
+				"rotation":	[0, 1, 0, 0],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_static_body_handle",
+					"layer":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"box",
+					"half_extent":	[100, 100, 1]
+				}],
+			"children":	[]
+		}, {
+			"name":	"model",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\level_boss_fight.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"player",
+			"external":	"game\\nodes\\player.crude_node",
+			"transform":	{
+				"translation":	[0.74620562791824341, 1.7721199989318848, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
+			},
+			"components":	[{
+					"type":	"crude_physics_character_body_handle",
+					"mask":	1
+				}, {
+					"type":	"crude_physics_collision_shape",
+					"shape_type":	"sphere",
+					"radius":	0.5
+				}, {
+					"type":	"crude_player_controller",
+					"rotation_speed":	-0.00999999977648258,
+					"jump_velocity":	4,
+					"walk_speed":	3,
+					"run_speed":	8,
+					"stop_change_coeff":	7,
+					"move_change_coeff":	4,
+					"weight":	1
+				}, {
+					"type":	"crude_player"
+				}],
+			"children":	[]
+		}]
+}

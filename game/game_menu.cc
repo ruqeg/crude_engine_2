@@ -118,6 +118,23 @@ crude_game_menu_draw
       game->framerate = framerate;
     }
 
+    if ( game->gpu.vk_selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR )
+    {
+      ImGui::Text( "Immediate present mode" );
+    }
+    else if ( game->gpu.vk_selected_present_mode == VK_PRESENT_MODE_MAILBOX_KHR )
+    {
+      ImGui::Text( "Mailbox present mode" );
+    }
+    else if ( game->gpu.vk_selected_present_mode == VK_PRESENT_MODE_FIFO_KHR  )
+    {
+      ImGui::Text( "Fifo present mode" );
+    }
+    else if ( game->gpu.vk_selected_present_mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR )
+    {
+      ImGui::Text( "Fifo relaxed present mode" );
+    }
+
     ImGui::End( );
   }
 

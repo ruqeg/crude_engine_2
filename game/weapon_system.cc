@@ -107,7 +107,7 @@ crude_weapon_update_system_
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE, true );
           crude_audio_device_sound_set_translation( &game->audio_device, level->hit_critical_sound_handle, raycast_result.raycast_result.point );
           crude_audio_device_sound_start( &game->audio_device, level->hit_critical_sound_handle );
-          player->sanity = CRUDE_MIN( player->sanity + 0.1, 1.f );
+          player->sanity = CRUDE_MIN( player->sanity + 0.15, 1.f );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Critical hit" );
         }
         else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 6 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 6 ) )

@@ -83,6 +83,7 @@ crude_level_01_creation_observer_
       crude_sound_creation sound_creation = crude_sound_creation_empty( );
       sound_creation.looping = true;
       sound_creation.stream = true;
+      sound_creation.decode = true;
       sound_creation.absolute_filepath = game->ambient_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
       level->ambient_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
@@ -90,6 +91,7 @@ crude_level_01_creation_observer_
       sound_creation = crude_sound_creation_empty( );
       sound_creation.looping = true;
       sound_creation.stream = true;
+      sound_creation.decode = true;
       sound_creation.absolute_filepath = game->save_theme_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
       level->save_theme_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );

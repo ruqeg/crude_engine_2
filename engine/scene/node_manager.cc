@@ -382,6 +382,12 @@ crude_node_manager_load_node_from_json_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_cutscene_only_sound )( &level_cutscene_only_sound, component_json, node, manager );
         CRUDE_ENTITY_SET_COMPONENT( node, crude_level_cutscene_only_sound, { level_cutscene_only_sound } );
       }
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) == 0 )
+      {
+        crude_level_boss_fight                             level_boss_fight;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_boss_fight )( &level_boss_fight, component_json, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_boss_fight, { level_boss_fight } );
+      }
       else
       {
         manager->additional_parse_json_to_component_func( node, component_json, component_type, manager );
@@ -475,7 +481,8 @@ crude_node_manager_node_to_json_hierarchy_
     crude_teleport_station const                          *teleport_station;
     crude_level_starting_room const                       *level_starting_room;
     crude_level_cutscene_only_sound const                 *level_cutscene_only_sound;
-
+    crude_level_boss_fight const                          *level_boss_fight;
+    
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
     node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_camera );
@@ -573,6 +580,12 @@ crude_node_manager_node_to_json_hierarchy_
     if ( level_cutscene_only_sound )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_cutscene_only_sound )( level_cutscene_only_sound, manager ) );
+    }
+    
+    level_boss_fight = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_boss_fight );
+    if ( level_boss_fight )
+    {
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_boss_fight )( level_boss_fight, manager ) );
     }
     
     manager->additional_parse_all_components_to_json_func( node, node_components_json, manager );

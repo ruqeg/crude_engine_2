@@ -3994,7 +3994,6 @@ vk_create_swapchain_
   VkPresentModeKHR                                        *available_present_modes;
   VkSurfaceFormatKHR                                      *available_formats;
   VkSwapchainCreateInfoKHR                                 swapchain_create_info;
-  VkPresentModeKHR                                         selected_present_mode;
   VkSurfaceCapabilitiesKHR                                 surface_capabilities;
   VkExtent2D                                               swapchain_extent;
   uint32                                                   available_formats_count, available_present_modes_count, image_count;
@@ -4052,17 +4051,17 @@ vk_create_swapchain_
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_present_modes, available_present_modes_count, temporary_allocator );
   vkGetPhysicalDeviceSurfacePresentModesKHR( gpu->vk_physical_device, gpu->vk_surface, &available_present_modes_count, available_present_modes );
 
-  selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  gpu->vk_selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
   for ( uint32 i = 0; i < available_present_modes_count; ++i )
   {
     if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
     {
-      selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+      gpu->vk_selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
       break;
     }
   }
 
-  image_count = ( selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
+  image_count = ( gpu->vk_selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
   queue_family_indices[ 0 ] = gpu->vk_main_queue_family;
   
   swapchain_create_info = CRUDE_COMPOUNT( VkSwapchainCreateInfoKHR, {
@@ -4080,7 +4079,7 @@ vk_create_swapchain_
     .pQueueFamilyIndices    = queue_family_indices,
     .preTransform           = surface_capabilities.currentTransform,
     .compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-    .presentMode            = selected_present_mode,
+    .presentMode            = gpu->vk_selected_present_mode,
     .clipped                = true,
     .oldSwapchain           = VK_NULL_HANDLE,
   } );
