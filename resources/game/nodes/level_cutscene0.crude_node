@@ -28,7 +28,7 @@
 			"name":	"teleport_station",
 			"external":	"game\\nodes\\teleport_station.crude_node",
 			"transform":	{
-				"translation":	[0, -0.28276097774505615, -6.009587287902832],
+				"translation":	[0, 0, -6.43186855316162],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},

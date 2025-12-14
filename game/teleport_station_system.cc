@@ -32,7 +32,7 @@ crude_teleport_station_set_serum
   uint32                                                   serums_count;
   
   game = game_instance( );
-  serums_it = ecs_children( teleport_station_node.world, crude_ecs_lookup_entity_from_parent( teleport_station_node, "serums" ).handle );
+  serums_it = ecs_children( teleport_station_node.world, crude_ecs_lookup_entity_from_parent( teleport_station_node, "models_node.serums" ).handle );
   while ( ecs_children_next( &serums_it ) )
   {
     for ( size_t i = 0; i < serums_it.count; ++i )

@@ -14,7 +14,7 @@
 			"transform":	{
 				"translation":	[0, 0, -6.4042043685913086],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[2, 2, 2]
+				"scale":	[1, 1, 1]
 			},
 			"components":	[{
 					"type":	"crude_teleport_station"
