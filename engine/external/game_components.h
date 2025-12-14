@@ -107,7 +107,8 @@ typedef enum crude_level_cutscene_only_sound_type
 {
   CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO,
   CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0,
-  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1,
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE2
 } crude_level_cutscene_only_sound_type;
 
 typedef struct crude_level_cutscene_only_sound
