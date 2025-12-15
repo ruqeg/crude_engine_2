@@ -40,6 +40,10 @@ typedef struct crude_enemy
   crude_sound_handle                                       enemy_attack_sound_handle;
 } crude_enemy;
 
+typedef struct crude_boss
+{
+} crude_boss;
+
 typedef struct crude_serum_station
 {
 } crude_serum_station;
@@ -109,7 +113,8 @@ typedef enum crude_level_cutscene_only_sound_type
   CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0,
   CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE1,
   CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE2,
-  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE3
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE3,
+  CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE4
 } crude_level_cutscene_only_sound_type;
 
 typedef struct crude_level_cutscene_only_sound

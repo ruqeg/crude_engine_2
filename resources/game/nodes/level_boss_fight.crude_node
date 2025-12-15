@@ -9,9 +9,9 @@
 			"type":	"crude_level_boss_fight"
 		}],
 	"children":	[{
-			"name":	"bad_collision",
+			"name":	"collision0",
 			"transform":	{
-				"translation":	[0, 0, 0],
+				"translation":	[0, -0.974577248096466, 0],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -27,7 +27,7 @@
 		}, {
 			"name":	"collision1",
 			"transform":	{
-				"translation":	[30, 0, 0],
+				"translation":	[30, 0.21429252624511719, 0],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -89,7 +89,7 @@
 				}],
 			"children":	[]
 		}, {
-			"name":	"model",
+			"name":	"Moon",
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
@@ -97,7 +97,7 @@
 			},
 			"components":	[{
 					"type":	"crude_gltf",
-					"path":	"game\\models\\level_boss_fight.gltf"
+					"path":	"game\\models\\Moon.gltf"
 				}],
 			"children":	[]
 		}, {
