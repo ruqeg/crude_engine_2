@@ -31,6 +31,7 @@
 #include <game/level_starting_room_system.h>
 #include <game/level_cutscene_only_sound_system.h>
 #include <game/level_boss_fight_system.h>
+#include <game/boss_system.h>
 
 #include <game/game.h>
 
@@ -202,6 +203,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_starting_room_system );
   ECS_IMPORT( game->engine->world, crude_level_cutscene_only_sound_system );
   ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
+  ECS_IMPORT( game->engine->world, crude_boss_system );
   
   game_initialize_allocators_( game );
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
@@ -622,6 +624,7 @@ game_setup_custom_preload_nodes_
 {
   char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
   char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
+  char const *boss_bullet_node_relative_filepath = "game\\nodes\\boss_bullet.crude_node";
 
   game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
   game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
@@ -630,6 +633,10 @@ game_setup_custom_preload_nodes_
   game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
   game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
   crude_entity_enable_hierarchy( game->template_serum_station_node, false );
+
+  game->boss_bullet_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_node_relative_filepath );
+  game->template_boss_bullet_node = crude_node_manager_get_node( &game->node_manager, game->boss_bullet_node_absolute_filepath );
+  crude_entity_enable_hierarchy( game->template_boss_bullet_node, false );
 
   game->focused_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 }
@@ -815,6 +822,7 @@ game_initialize_constant_strings_
 )
 {
   char const *serum_model_relative_filepath = "game\\models\\serum.gltf";
+  char const *boss_bullet_model_relative_filepath = "game\\models\\boss_bullet.gltf";
   char const *syringe_drug_model_relative_filepath = "game\\models\\Syringe.gltf";
   char const *syringe_health_model_relative_filepath = "game\\models\\Syringe_Health.gltf";
   char const *serum_station_enabled_model_relative_filepath = "game\\models\\serum_station_enabled.gltf";
@@ -839,6 +847,7 @@ game_initialize_constant_strings_
   char const *death_sound_relative_filepath = "game\\sounds\\death_music.mp3";
   char const *shot_without_ammo_sound_relative_filepath = "game\\sounds\\shot_without_ammo.wav";
   char const *starting_room_background_sound_relative_filepath = "game\\sounds\\starting_room\\background.mp3";
+  char const *boss_fight_sound_relative_filepath = "game\\sounds\\boss_fight.mp3";
   char const *game_font_relative_filepath = "game\\fonts\\IgnotumRegular.ttf";
   char const *hit_0_sound_relative_filepath = "game\\sounds\\hit_0.wav";
   char const *hit_1_sound_relative_filepath = "game\\sounds\\hit_1.wav";
@@ -847,6 +856,8 @@ game_initialize_constant_strings_
   char const *level_intro_node_relative_filepath = "game\\nodes\\level_intro.crude_node";
   char const *level_starting_room_node_relative_filepath = "game\\nodes\\level_starting_room.crude_node";
   char const *level_0_node_relative_filepath = "game\\nodes\\level0.crude_node";
+  char const *level_boss_fight_0_node_relative_filepath = "game\\nodes\\level_boss_fight.crude_node";
+  char const *level_boss_fight_1_node_relative_filepath = "game\\nodes\\level_boss_fight1.crude_node";
   char const *level_cutscene0_node_relative_filepath = "game\\nodes\\level_cutscene0.crude_node";
   char const *level_cutscene1_node_relative_filepath = "game\\nodes\\level_cutscene1.crude_node";
   char const *level_cutscene2_node_relative_filepath = "game\\nodes\\level_cutscene2.crude_node";
@@ -878,6 +889,7 @@ game_initialize_constant_strings_
   uint64 resources_absolute_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
   constant_string_buffer_size += resources_absolute_directory_length;
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_model_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( boss_bullet_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_enabled_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_station_disabled_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( syringe_drug_model_relative_filepath );
@@ -903,6 +915,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( shot_without_ammo_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( serum_absolute_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_background_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( boss_fight_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_0_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_1_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( hit_2_sound_relative_filepath );
@@ -916,6 +929,8 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( starting_room_modern_syringe_drug_model_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene0_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_0_node_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_boss_fight_0_node_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_boss_fight_1_node_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene0_node_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene1_node_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene2_node_relative_filepath );
@@ -937,6 +952,7 @@ game_initialize_constant_strings_
   
   game->resources_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, resources_relative_directory );
   game->serum_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_model_relative_filepath );
+  game->boss_bullet_model_absolute_filepath  = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_model_relative_filepath );
   game->syringe_drug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_drug_model_relative_filepath );
   game->syringe_health_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_health_model_relative_filepath );
   game->serum_station_enabled_model_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_enabled_model_relative_filepath );
@@ -974,6 +990,8 @@ game_initialize_constant_strings_
   game->level_intro_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_intro_node_relative_filepath );
   game->level_starting_room_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_starting_room_node_relative_filepath );
   game->level_0_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_0_node_relative_filepath );
+  game->level_boss_fight_0_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_boss_fight_0_node_relative_filepath );
+  game->level_boss_fight_1_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_boss_fight_1_node_relative_filepath );
   game->level_cutscene0_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene0_node_relative_filepath );
   game->level_cutscene1_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene1_node_relative_filepath );
   game->level_cutscene2_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene2_node_relative_filepath );
@@ -987,6 +1005,7 @@ game_initialize_constant_strings_
   game->death_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, death_sound_relative_filepath );
   game->shot_without_ammo_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, shot_without_ammo_sound_relative_filepath );
   game->starting_room_background_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_background_sound_relative_filepath );
+  game->boss_fight_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, boss_fight_sound_relative_filepath );
 
   game->game_font_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, game_font_relative_filepath );
 

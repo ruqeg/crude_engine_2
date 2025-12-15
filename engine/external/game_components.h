@@ -42,7 +42,16 @@ typedef struct crude_enemy
 
 typedef struct crude_boss
 {
+  float32                                                  health;
+  float32                                                  target_looking_angle;
+  float32                                                  last_shot_time;
 } crude_boss;
+
+typedef struct crude_boss_bullet
+{
+  XMFLOAT3                                                 target;
+  float32                                                  lifetime;
+} crude_boss_bullet;
 
 typedef struct crude_serum_station
 {
@@ -128,6 +137,10 @@ typedef struct crude_level_cutscene_only_sound
 typedef struct crude_level_boss_fight
 {
   crude_sound_handle                                       background_sound_handle;
+  crude_sound_handle                                       hit_critical_sound_handle;
+  crude_sound_handle                                       shot_sound_handle;
+  crude_sound_handle                                       shot_without_ammo_sound_handle;
+  uint32                                                   type;
 } crude_level_boss_fight;
 
 typedef struct crude_player
@@ -177,6 +190,18 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_enemy );
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_enemy );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_enemy );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_enemy );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_boss );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_boss );
+
+CRUDE_API ECS_COMPONENT_DECLARE( crude_boss_bullet );
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss_bullet );
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss_bullet );
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss_bullet );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_boss_bullet );
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_weapon );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_weapon );

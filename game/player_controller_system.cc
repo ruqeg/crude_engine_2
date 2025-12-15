@@ -176,7 +176,14 @@ crude_player_controller_update_system_
         }
         else
         {
-          velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+          if ( CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_boss_fight ) )
+          {
+            velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -3.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+          }
+          else
+          {
+            velocity = XMVectorAdd( velocity, XMVectorScale( XMVectorSet( 0, -9.8, 0, 1 ), it->delta_time * player_controller->weight ) );
+          }
         }
       }
 

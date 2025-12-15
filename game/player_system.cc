@@ -120,11 +120,20 @@ crude_player_enemy_hitbox_callback
 {
   game_t *game = game_instance( );
   
-  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( static_body_node ) ), crude_enemy );
-  crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
-  crude_transform const *player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
-  
-  crude_enemy_deal_damage_to_player( enemy, player, XMLoadFloat3( &player_transform->translation ) );
+  if ( CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_boss_fight ) )
+  {
+    crude_entity_destroy_hierarchy( crude_entity_get_parent( static_body_node ) );
+    crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+    player->health -= 0.25;
+  }
+  else
+  {
+    crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( static_body_node ) ), crude_enemy );
+    crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+    crude_transform const *player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
+    
+    crude_enemy_deal_damage_to_player( enemy, player, XMLoadFloat3( &player_transform->translation ) );
+  }
 }
 
 static void
@@ -349,11 +358,16 @@ crude_player_update_system_
       crude_audio_device_sound_reset( &game->audio_device, game->death_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, game->death_sound_handle );
       crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+      crude_level_boss_fight *level_boss = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_boss_fight );
 
       if ( level )
       {
         crude_audio_device_sound_set_volume( &game->audio_device, level->save_theme_sound_handle, 0 );
         crude_audio_device_sound_set_volume( &game->audio_device, level->ambient_sound_handle, 0 );
+      }
+      if ( level_boss )
+      {
+        crude_audio_device_sound_set_volume( &game->audio_device, level_boss->background_sound_handle, 0 );
       }
       crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 0 );
     }
@@ -409,19 +423,21 @@ crude_player_update_visual_
   game = game_instance( );
   pass_options = &game->game_postprocessing_pass.options;
   
-  /* Drug Effect */
-  pass_options->wave_size = CRUDE_LERP( 0, 0.1, pow( player->drug_withdrawal, 4.f ) );
-  pass_options->wave_texcoord_scale = CRUDE_LERP( 0, 3.f, pow( player->drug_withdrawal, 4.f ) );
-  pass_options->wave_absolute_frame_scale = CRUDE_LERP( 0.02, 0.025, player->drug_withdrawal );
-  pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.046f, pow( player->drug_withdrawal, 6.f ) );
-  pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.015f, pow( player->drug_withdrawal, 6.f ) );;
-  pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.02f, pow( player->drug_withdrawal, 2.f ) );
-  
-  /* Sanity */
-  pass_options->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
-  pass_options->fog_color.w = 0.f;
-  pass_options->fog_distance = CRUDE_LERP( 0.f, CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE, pow( player->sanity, 0.75 ) );
-
+  if ( !CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_boss_fight ) )
+  {
+    /* Drug Effect */
+    pass_options->wave_size = CRUDE_LERP( 0, 0.1, pow( player->drug_withdrawal, 4.f ) );
+    pass_options->wave_texcoord_scale = CRUDE_LERP( 0, 3.f, pow( player->drug_withdrawal, 4.f ) );
+    pass_options->wave_absolute_frame_scale = CRUDE_LERP( 0.02, 0.025, player->drug_withdrawal );
+    pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.046f, pow( player->drug_withdrawal, 6.f ) );
+    pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.015f, pow( player->drug_withdrawal, 6.f ) );;
+    pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.02f, pow( player->drug_withdrawal, 2.f ) );
+    
+    /* Sanity */
+    pass_options->fog_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
+    pass_options->fog_color.w = 0.f;
+    pass_options->fog_distance = CRUDE_LERP( 0.f, CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE, pow( player->sanity, 0.75 ) );
+  }
   /* Health Pulse Effect */
   pass_options->pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 0.f, 0.f, 0.f } );
   pass_options->pulse_color.w = CRUDE_LERP( 4.f, 0.5f, pow( player->health, 0.25f ) );
@@ -441,6 +457,11 @@ crude_player_update_values_
   _In_ float32                                             delta_time
 )
 {
-  player->drug_withdrawal += delta_time / CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT;
-  player->sanity -= delta_time / CRUDE_GAME_PLAYER_SANITY_LIMIT;
+  
+  game_t *game = game_instance( );
+  if ( !CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_boss_fight ) )
+  {
+    player->drug_withdrawal += delta_time / CRUDE_GAME_PLAYER_DRUG_WITHDRAWAL_LIMIT;
+    player->sanity -= delta_time / CRUDE_GAME_PLAYER_SANITY_LIMIT;
+  }
 }

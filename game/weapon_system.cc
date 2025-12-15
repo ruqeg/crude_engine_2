@@ -8,6 +8,7 @@
 #include <engine/external/game_components.h>
 #include <game/game.h>
 #include <game/enemy_system.h>
+#include <game/boss_system.h>
 
 #include <game/weapon_system.h>
 
@@ -85,6 +86,7 @@ crude_weapon_update_system_
     if ( player_controller->input_enabled && input->mouse.left.current && ( weapon->last_shot_timer > CRUDE_GAME_WEAPON_SHOT_INTEVAL ) )
     {
       crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
+      crude_level_boss_fight *level_boss_fight = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_boss_fight );
       if ( weapon->ammo > 0 )
       {
         crude_transform const                             *weapon_shot_node_transform;
@@ -100,7 +102,16 @@ crude_weapon_update_system_
         ray_origin = weapon_shot_to_world.r[ 3 ];
         ray_direction = XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), weapon_shot_to_world );
         
-        if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 5 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 5 ) )
+        if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, ( 1 << 10 ), &raycast_result ) )
+        {
+          crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+          crude_boss *boss = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( raycast_result.node ), crude_boss );
+          crude_boss_receive_damage( boss, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE );
+          crude_audio_device_sound_set_translation( &game->audio_device, level_boss_fight->hit_critical_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->hit_critical_sound_handle );
+          player->sanity = CRUDE_MIN( player->sanity + 0.15, 1.f );
+        }
+        else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 5 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 5 ) )
         {
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
@@ -123,13 +134,32 @@ crude_weapon_update_system_
 
         weapon->last_shot_timer = 0.f;
         XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), XMQuaternionRotationAxis( XMVectorSet( 1, 0, 0, 0 ), -XM_PIDIV2 ) ) );
-        --weapon->ammo;
+        
+        if ( !level_boss_fight )
+        {
+          --weapon->ammo;
+        }
 
-        crude_audio_device_sound_start( &game->audio_device, level->shot_sound_handle );
+
+        if ( level_boss_fight )
+        {
+          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->shot_sound_handle );
+        }
+        else
+        {
+          crude_audio_device_sound_start( &game->audio_device, level->shot_sound_handle );
+        }
       }
       else
       {
-        crude_audio_device_sound_start( &game->audio_device, level->shot_without_ammo_sound_handle );
+        if ( level_boss_fight )
+        {
+          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->shot_without_ammo_sound_handle );
+        }
+        else
+        {
+          crude_audio_device_sound_start( &game->audio_device, level->shot_without_ammo_sound_handle );
+        }
       }
     }
 

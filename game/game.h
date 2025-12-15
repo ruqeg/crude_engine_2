@@ -76,7 +76,9 @@ typedef struct game_t
   char const                                              *working_absolute_directory;
   char const                                              *enemy_node_absolute_filepath;
   char const                                              *serum_station_node_absolute_filepath;
+  char const                                              *boss_bullet_node_absolute_filepath;
 
+  char const                                              *boss_bullet_model_absolute_filepath;
   char const                                              *serum_model_absolute_filepath;
   char const                                              *starting_room_modern_syringe_health_model_absolute_filepath;
   char const                                              *starting_room_modern_syringe_drug_model_absolute_filepath;
@@ -91,6 +93,7 @@ typedef struct game_t
   char const                                              *shot_sound_absolute_filepath;
   char const                                              *shot_without_ammo_sound_absolute_filepath;
   char const                                              *starting_room_background_sound_absolute_filepath;
+  char const                                              *boss_fight_sound_absolute_filepath;
   char const                                              *level_intro_sound_absolute_filepath;
   char const                                              *level_cutscene0_sound_absolute_filepath;
   char const                                              *level_cutscene1_sound_absolute_filepath;
@@ -121,6 +124,8 @@ typedef struct game_t
   char const                                              *level_intro_node_absolute_filepath;
   char const                                              *level_starting_room_node_absolute_filepath;
   char const                                              *level_0_node_absolute_filepath;
+  char const                                              *level_boss_fight_0_node_absolute_filepath;
+  char const                                              *level_boss_fight_1_node_absolute_filepath;
   char const                                              *level_cutscene0_node_absolute_filepath;
   char const                                              *level_cutscene1_node_absolute_filepath;
   char const                                              *level_cutscene2_node_absolute_filepath;
@@ -152,6 +157,7 @@ typedef struct game_t
   crude_stack_allocator                                    temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
   crude_entity                                             main_node;
+  crude_entity                                             template_boss_bullet_node;
   crude_entity                                             template_enemy_node;
   crude_entity                                             template_serum_station_node;
   crude_entity                                             player_node;

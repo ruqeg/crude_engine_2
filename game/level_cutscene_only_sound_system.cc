@@ -61,6 +61,19 @@ crude_level_cutscene_only_sound_creation_observer_
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
     
     level->first_system_run = true;
+    
+    game->game_postprocessing_pass.options.fog_coeff = 0.5f;
+    game->game_postprocessing_pass.options.wave_size = 0.0;
+    game->game_postprocessing_pass.options.wave_texcoord_scale = 0.0;
+    game->game_postprocessing_pass.options.wave_absolute_frame_scale = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_scale = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_offset = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_sin_affect = 0.0;
+    game->game_postprocessing_pass.options.pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 0, 0, 0, 0 } );
+    game->game_postprocessing_pass.options.pulse_frame_scale = 0.0f;
+    game->game_postprocessing_pass.options.pulse_scale = 0.0f;
+    game->game_postprocessing_pass.options.pulse_distance_coeff = 0.1f;
+    game->game_postprocessing_pass.options.pulse_distance = 0.0f;
 
     switch ( level->type )
     {
@@ -421,7 +434,7 @@ crude_level_cutscene_only_sound_update_system_
 
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
       {
-        game_push_load_scene_command( game, game->level_cutscene3_node_absolute_filepath );
+        game_push_load_scene_command( game, game->level_boss_fight_0_node_absolute_filepath );
       }
 
       crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
@@ -477,7 +490,7 @@ crude_level_cutscene_only_sound_update_system_
 
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
       {
-        game_push_load_scene_command( game, game->level_cutscene4_node_absolute_filepath );
+        game_push_load_scene_command( game, game->level_boss_fight_1_node_absolute_filepath );
       }
 
       crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );

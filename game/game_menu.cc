@@ -50,6 +50,32 @@ crude_game_menu_draw
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.25f, 0.25f, 1.00f));
   ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.00f));
 
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( game->main_node, crude_level_boss_fight ) )
+  {
+    crude_level_boss_fight const *level =CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->main_node, crude_level_boss_fight );
+    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 300 ) );
+    ImGui::Begin( "Overlay Game", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+    crude_boss *boss = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( game->main_node, "boss" ), crude_boss );
+    ImDrawList *draw_list = ImGui::GetWindowDrawList( );
+
+    uint32 bg_color = level->type ? crude_color_set( 1, 1, 1, 0.5 ) : crude_color_set( 0.3, 0, 0.5, 1.0 );
+    uint32 hp_color  = level->type ? crude_color_set( 0.3, 0, 0.5, 1.0 ) : crude_color_set( 1, 0, 0, 1 );
+    draw_list->AddRectFilled(
+      { game->gpu.vk_swapchain_width / 2.f - 200.f, 20.f },
+      { game->gpu.vk_swapchain_width / 2.f + 200.f, 40.f },
+      bg_color
+    );
+    
+    draw_list->AddRectFilled(
+      { game->gpu.vk_swapchain_width / 2.f - 200.f, 20.f },
+      { game->gpu.vk_swapchain_width / 2.f + 200.f - 400.f * ( 1.f - boss->health ), 40.f },
+      hp_color
+    );
+    ImGui::End();
+  }
+
   if ( game->death_screen )
   {
     ImGui::SetNextWindowPos( ImVec2( -50, -50 ) );

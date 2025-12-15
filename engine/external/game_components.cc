@@ -8,6 +8,7 @@ ECS_TAG_DECLARE( crude_serum_station_enabled );
 
 ECS_COMPONENT_DECLARE( crude_serum_station );
 ECS_COMPONENT_DECLARE( crude_enemy );
+ECS_COMPONENT_DECLARE( crude_boss );
 ECS_COMPONENT_DECLARE( crude_weapon );
 ECS_COMPONENT_DECLARE( crude_level_01 );
 ECS_COMPONENT_DECLARE( crude_level_starting_room );
@@ -17,9 +18,11 @@ ECS_COMPONENT_DECLARE( crude_recycle_station );
 ECS_COMPONENT_DECLARE( crude_teleport_station );
 ECS_COMPONENT_DECLARE( crude_level_cutscene_only_sound );
 ECS_COMPONENT_DECLARE( crude_level_boss_fight );
+ECS_COMPONENT_DECLARE( crude_boss_bullet );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_serum_station, "crude_serum_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_enemy, "crude_enemy" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_boss, "crude_boss" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_weapon, "crude_weapon" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_01, "crude_level_01" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_starting_room, "crude_level_starting_room" );
@@ -29,12 +32,14 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_recycle_station, "crude_recycle_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_teleport_station, "crude_teleport_station" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_cutscene_only_sound, "crude_level_cutscene_only_sound" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_boss_fight, "crude_level_boss_fight" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_boss_bullet, "crude_boss_bullet" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 {
   ECS_MODULE( world, crude_game_components );
   ECS_COMPONENT_DEFINE( world, crude_serum_station );
   ECS_COMPONENT_DEFINE( world, crude_enemy );
+  ECS_COMPONENT_DEFINE( world, crude_boss );
   ECS_COMPONENT_DEFINE( world, crude_weapon );
   ECS_COMPONENT_DEFINE( world, crude_level_01 );
   ECS_COMPONENT_DEFINE( world, crude_level_starting_room );
@@ -44,6 +49,7 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
   ECS_COMPONENT_DEFINE( world, crude_teleport_station );
   ECS_COMPONENT_DEFINE( world, crude_level_cutscene_only_sound );
   ECS_COMPONENT_DEFINE( world, crude_level_boss_fight );
+  ECS_COMPONENT_DEFINE( world, crude_boss_bullet );
   ECS_TAG_DEFINE( world, crude_serum_station_enabled );
 }
 
@@ -80,6 +86,40 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_enemy )
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_enemy )
 {
   ImGui::DragFloat( "Moving Speed", &component->moving_speed, 0.01 );
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss )
+{
+  crude_memory_set( component, 0, sizeof( crude_boss ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss )
+{
+  cJSON *json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_boss ) ) );
+  return json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss )
+{
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss_bullet )
+{
+  crude_memory_set( component, 0, sizeof( crude_boss_bullet ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss_bullet )
+{
+  cJSON *json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_boss_bullet ) ) );
+  return json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss_bullet )
+{
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_weapon )
@@ -158,6 +198,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_01 )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_boss_fight )
 {
   crude_memory_set( component, 0, sizeof( crude_level_boss_fight ) );
+  component->type = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "level_type" ) );
   return true;
 }
 
@@ -165,6 +206,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_boss_fight )
 {
   cJSON *json = cJSON_CreateObject( );
   cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) );
+  cJSON_AddItemToObject( json, "level_type", cJSON_CreateNumber( component->type ) );
   return json;
 }
 

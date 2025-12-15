@@ -34,6 +34,9 @@ crude_level_boss_fight_destroy_observer_
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     crude_audio_device_destroy_sound( &game->audio_device, level->background_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->shot_without_ammo_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->hit_critical_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->shot_sound_handle );
   }
 }
 static void
@@ -59,14 +62,48 @@ crude_level_boss_fight_creation_observer_
     level = &levels_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
     
+    game->game_postprocessing_pass.options.fog_distance = 100.f;
+    game->game_postprocessing_pass.options.fog_coeff = 0.5f;
+    game->game_postprocessing_pass.options.wave_size = 0.0;
+    game->game_postprocessing_pass.options.wave_texcoord_scale = 0.0;
+    game->game_postprocessing_pass.options.wave_absolute_frame_scale = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_scale = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_offset = 0.0;
+    game->game_postprocessing_pass.options.aberration_strength_sin_affect = 0.0;
+    game->game_postprocessing_pass.options.pulse_color = CRUDE_COMPOUNT( XMFLOAT4, { 0, 0, 0, 0 } );
+    game->game_postprocessing_pass.options.pulse_frame_scale = 0.0f;
+    game->game_postprocessing_pass.options.pulse_scale = 0.0f;
+    game->game_postprocessing_pass.options.pulse_distance_coeff = 0.1f;
+    game->game_postprocessing_pass.options.pulse_distance = 0.0f;
+
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->boss_bullet_model_absolute_filepath , NULL );
+
     sound_creation = crude_sound_creation_empty( );
     sound_creation.stream = true;
     sound_creation.looping = true;
     sound_creation.decode = true;
-    sound_creation.absolute_filepath = game->starting_room_background_sound_absolute_filepath;
+    sound_creation.absolute_filepath = game->boss_fight_sound_absolute_filepath;
     sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
     level->background_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
     crude_audio_device_sound_start( &game->audio_device, level->background_sound_handle );
+
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->shot_without_ammo_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    level->shot_without_ammo_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->hit_critical_sound_absolute_filepath;
+    level->hit_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    crude_audio_device_sound_set_volume( &game->audio_device, level->hit_critical_sound_handle, 15.0f );
+    
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.absolute_filepath = game->shot_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    level->shot_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_platform_hide_cursor( *window_handle );

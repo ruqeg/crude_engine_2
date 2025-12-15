@@ -43,7 +43,7 @@
 							"type":	"crude_camera",
 							"fov_radians":	1,
 							"near_z":	0.00999999977648258,
-							"far_z":	27,
+							"far_z":	100,
 							"aspect_ratio":	1.7999999523162842
 						}],
 					"children":	[]
