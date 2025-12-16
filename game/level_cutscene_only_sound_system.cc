@@ -623,7 +623,7 @@ crude_level_cutscene_only_sound_update_system_
 
         crude_entity apollo_node = crude_ecs_lookup_entity_from_parent( game->main_node, "Apollon_Landing_Module" );
         crude_transform *apollo_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( apollo_node, crude_transform );
-        XMStoreFloat3( &apollo_node_transform->translation, XMVectorLerp( XMVectorSet( -6.437, 84.051, 0, 0 ), XMVectorSet( -6.437, 63.751, 0.000, 0 ), t ) );
+        XMStoreFloat3( &apollo_node_transform->translation, XMVectorLerp( XMVectorSet( -6.437, 84.051, 0, 0 ), XMVectorSet( -6.437, 64.490, 0.000, 0 ), t ) );
       }
       else if ( time_from_start > 122 && time_from_start < 180 )
       {

@@ -143,10 +143,14 @@ crude_weapon_update_system_
 
         if ( level_boss_fight )
         {
+          crude_audio_device_sound_stop( &game->audio_device, level_boss_fight->shot_sound_handle );
+          crude_audio_device_sound_reset( &game->audio_device, level_boss_fight->shot_sound_handle );
           crude_audio_device_sound_start( &game->audio_device, level_boss_fight->shot_sound_handle );
         }
         else
         {
+          crude_audio_device_sound_stop( &game->audio_device, level->shot_sound_handle );
+          crude_audio_device_sound_reset( &game->audio_device, level->shot_sound_handle );
           crude_audio_device_sound_start( &game->audio_device, level->shot_sound_handle );
         }
       }
