@@ -1417,7 +1417,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_
   buffer_data = CRUDE_CAST( uint8*, primitive->indices->buffer_view->buffer->data ) + primitive->indices->buffer_view->offset + primitive->indices->offset;
   
   CRUDE_ASSERT( primitive->indices->type == cgltf_type_scalar );
-  CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u ); // change ray tracing index property in geometry 
+  //CRUDE_ASSERT( primitive->indices->component_type == cgltf_component_type_r_16u ); // change ray tracing index property in geometry 
 
   if ( primitive->indices->component_type == cgltf_component_type_r_16u )
   {

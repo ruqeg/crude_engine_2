@@ -155,7 +155,7 @@ crude_player_hit_callback
 
   if ( input->mouse.left.pressed && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_0_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_1_sound_handle ) && !crude_audio_device_sound_is_playing( &game->audio_device, level->hit_2_sound_handle ) )
   {
-    player->sanity += 0.05;
+    player->sanity += 0.2;
     if ( sound_count == 0 )
     {
       crude_audio_device_sound_start( &game->audio_device, level->hit_0_sound_handle );

@@ -635,6 +635,13 @@ crude_level_cutscene_only_sound_update_system_
         XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
         XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
       }
+      else if ( time_from_start > 180 && time_from_start < 445 )
+      {
+        crude_entity feliratok_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "feliratok" );
+        crude_transform *feliratok_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( feliratok_entity, crude_transform );
+        float32 t = ( time_from_start - 180 ) / (445 - 180);
+        XMStoreFloat3( &feliratok_transform->translation, XMVectorLerp( XMVectorSet( 83.484, 42.741, 67.742, 0 ), XMVectorSet( 83.484, 173.479, 67.742, 0 ), t ) );
+      }
       break;
     }
     }

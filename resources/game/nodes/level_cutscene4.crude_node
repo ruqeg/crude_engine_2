@@ -70,6 +70,18 @@
 				}],
 			"children":	[]
 		}, {
+			"name":	"feliratok",
+			"transform":	{
+				"translation":	[0, 36.6832046508789, 0],
+				"rotation":	[0, -0.609286606311798, 0, 0.7929500937461853],
+				"scale":	[0.999997854232788, 1, 0.999997854232788]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\feliratok.gltf"
+				}],
+			"children":	[]
+		}, {
 			"name":	"camera",
 			"transform":	{
 				"translation":	[-498.49899291992188, 109.94899749755859, 0.43999999761581421],
