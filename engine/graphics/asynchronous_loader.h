@@ -39,8 +39,8 @@ typedef struct crude_gfx_asynchronous_loader
 {
   crude_gfx_device                                        *gpu;
 
-  crude_gfx_file_load_request                              file_load_requests[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT ];
-  crude_gfx_upload_request                                 upload_requests[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT ];
+  crude_gfx_file_load_request                             *file_load_requests;//[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT ];
+  crude_gfx_upload_request                                *upload_requests;//[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT ];
   
   crude_gfx_buffer                                        *staging_buffer;
   uint32                                                   staging_buffer_offset;
@@ -59,6 +59,10 @@ typedef struct crude_gfx_asynchronous_loader
 
   VkCommandPool                                            vk_cmd_pools[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+
+  mtx_t                                                    request_mutex;
+
+  crude_linear_allocator                                   linear_allocator;
 } crude_gfx_asynchronous_loader;
 
 /************************************************
@@ -69,7 +73,7 @@ typedef struct crude_gfx_asynchronous_loader
 typedef struct crude_gfx_asynchronous_loader_manager_creation
 {
   void                                                    *task_sheduler;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *allocator;
 } crude_gfx_asynchronous_loader_manager_creation;
 
 typedef struct crude_gfx_asynchronous_loader_manager
@@ -133,7 +137,7 @@ crude_gfx_asynchronous_loader_update
 CRUDE_API bool
 crude_gfx_asynchronous_loader_has_requests
 (
-  _In_ crude_gfx_asynchronous_loader const                *asynloader
+  _In_ crude_gfx_asynchronous_loader                      *asynloader
 );
 
 /************************************************

@@ -359,30 +359,6 @@
           "name": "IMGUI_PASS_MARKER"
         },
         {
-          "type": "texture",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_roughness_metalness"
-        },
-        {
-          "type": "texture",
-          "name": "depth"
-        },
-        {
-          "type": "texture",
-          "name": "pbr"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_mesh_draw_index"
-        },
-        {
           "type": "attachment",
           "name": "final"
         }

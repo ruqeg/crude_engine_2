@@ -1041,7 +1041,7 @@ game_initialize_platform_
   _In_ game_t                                             *game
 )
 {
-  game->platform_node = crude_entity_create_empty( game->engine->world, "game" );
+  game->platform_node = crude_entity_create_empty( game->engine->world, "Red Ball: The Adventures of a Drug Addict! (CE2 REMAKE)" );
 
   CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_window, { 
     .width     = 800,

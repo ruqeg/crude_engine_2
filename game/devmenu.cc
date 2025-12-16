@@ -135,12 +135,12 @@ crude_devmenu_draw
     ImGui::End( );
   }
 
-  {
-    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 50 ) );
-    ImGui::Begin( "Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
-    ImGui::Text( "FPS %u", CRUDE_MIN_INT( devmenu->previous_framerate, game->framerate ) );
-    ImGui::End( );
-  }
+  //{
+  //  ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 50 ) );
+  //  ImGui::Begin( "Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+  //  ImGui::Text( "FPS %u", CRUDE_MIN_INT( devmenu->previous_framerate, game->framerate ) );
+  //  ImGui::End( );
+  //}
 
   crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
   crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );

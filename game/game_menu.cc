@@ -135,7 +135,7 @@ crude_game_menu_draw
     ImGui::Begin( "Game Menu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     
     ImGui::DragFloat( "Sensetivity (Default 1.0)", &game->sensetivity, 0.1 );
-    if ( ImGui::DragFloat( "Volume (Default 1.0)", &game->volume, 0.1 ) )
+    if ( ImGui::DragFloat( "Volume (Default 1.0)", &game->volume, 0.025 ) )
     {
       crude_audio_device_set_global_volume( &game->audio_device, game->volume );
     }
@@ -161,6 +161,10 @@ crude_game_menu_draw
     int32 framerate = game->framerate;
     if ( ImGui::DragInt( "FPS Limit", &framerate, 5, 1 ) )
     {
+      if ( framerate < 30 )
+      {
+        framerate = 30;
+      }
       game->framerate = framerate;
     }
 

@@ -55,7 +55,7 @@ crude_engine_initialize
 
   alm_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_asynchronous_loader_manager_creation );
   alm_creation.task_sheduler = engine->task_sheduler;
-  alm_creation.allocator_container = crude_heap_allocator_pack( &engine->asynchronous_loader_manager_allocator );
+  alm_creation.allocator = &engine->asynchronous_loader_manager_allocator;
   crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &alm_creation );
 }
 
