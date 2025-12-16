@@ -106,7 +106,7 @@ crude_weapon_update_system_
         {
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_boss *boss = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( raycast_result.node ), crude_boss );
-          crude_boss_receive_damage( boss, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE );
+          crude_boss_receive_damage( boss, raycast_result.node );
           crude_audio_device_sound_set_translation( &game->audio_device, level_boss_fight->hit_critical_sound_handle, raycast_result.raycast_result.point );
           crude_audio_device_sound_start( &game->audio_device, level_boss_fight->hit_critical_sound_handle );
           player->sanity = CRUDE_MIN( player->sanity + 0.15, 1.f );

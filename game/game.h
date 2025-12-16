@@ -119,6 +119,8 @@ typedef struct game_t
   char const                                              *starting_room_voiceline1_sound_absolute_filepath;
   char const                                              *starting_room_voiceline2_sound_absolute_filepath;
   char const                                              *starting_room_voiceline3_sound_absolute_filepath;
+  char const                                              *show_2_sound_absolute_filepath;
+  char const                                              *super_criticlal_shot_sound_absolute_filepath;
 
   /* */
   char const                                              *level_intro_node_absolute_filepath;

@@ -45,6 +45,9 @@ typedef struct crude_boss
   float32                                                  health;
   float32                                                  target_looking_angle;
   float32                                                  last_shot_time;
+  float32                                                  health_eye_0;
+  float32                                                  health_eye_1;
+  float32                                                  health_eye_2;
 } crude_boss;
 
 typedef struct crude_boss_bullet
@@ -138,6 +141,7 @@ typedef struct crude_level_boss_fight
 {
   crude_sound_handle                                       background_sound_handle;
   crude_sound_handle                                       hit_critical_sound_handle;
+  crude_sound_handle                                       destroy_critical_sound_handle;
   crude_sound_handle                                       shot_sound_handle;
   crude_sound_handle                                       shot_without_ammo_sound_handle;
   uint32                                                   type;

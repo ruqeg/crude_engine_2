@@ -37,6 +37,7 @@ crude_level_boss_fight_destroy_observer_
     crude_audio_device_destroy_sound( &game->audio_device, level->shot_without_ammo_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, level->hit_critical_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, level->shot_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, level->destroy_critical_sound_handle );
   }
 }
 static void
@@ -97,13 +98,21 @@ crude_level_boss_fight_creation_observer_
     sound_creation.async_loading = true;
     sound_creation.absolute_filepath = game->hit_critical_sound_absolute_filepath;
     level->hit_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-    crude_audio_device_sound_set_volume( &game->audio_device, level->hit_critical_sound_handle, 15.0f );
+    crude_audio_device_sound_set_volume( &game->audio_device, level->hit_critical_sound_handle, 30.0f );
     
     sound_creation = crude_sound_creation_empty( );
     sound_creation.async_loading = true;
-    sound_creation.absolute_filepath = game->shot_sound_absolute_filepath;
+    sound_creation.decode = true;
+    sound_creation.absolute_filepath = level->type ? game->show_2_sound_absolute_filepath : game->shot_sound_absolute_filepath;
     sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
     level->shot_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.async_loading = true;
+    sound_creation.decode = true;
+    sound_creation.absolute_filepath = game->super_criticlal_shot_sound_absolute_filepath;
+    level->destroy_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    crude_audio_device_sound_set_volume( &game->audio_device, level->destroy_critical_sound_handle, 60.0f );
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
     crude_platform_hide_cursor( *window_handle );

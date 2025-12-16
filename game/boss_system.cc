@@ -20,22 +20,53 @@ void
 crude_boss_receive_damage
 (
   _In_ crude_boss                                         *boss,
-  _In_ float64                                             damage
+  _In_ crude_entity                                        node
 )
 {
   game_t *game = game_instance( );
   crude_level_boss_fight *boss_fight = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_boss_fight );
+
   if ( boss_fight->type == 1 )
   {
     boss->health -= 0.025;
   }
   else
   {
-    boss->health -= 0.05;
+    crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_transform );
+    XMVECTOR translation = crude_transform_node_to_world( node, transform ).r[ 3 ];
+    if ( crude_string_cmp( crude_entity_get_name( node ), "eye_collision0" ) == 0 )
+    {
+      boss->health_eye_0 -= 0.15;
+      if ( boss->health_eye_0 < 0 )
+      {
+        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_entity_destroy_hierarchy( node );
+      }
+    }
+    else if ( crude_string_cmp( crude_entity_get_name( node ), "eye_collision1" ) == 0 )
+    {
+      boss->health_eye_1 -= 0.15;
+      if ( boss->health_eye_1 < 0 )
+      {
+        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_entity_destroy_hierarchy( node );
+      }
+    }
+    else if ( crude_string_cmp( crude_entity_get_name( node ), "eye_collision2" ) == 0 )
+    {
+      boss->health_eye_2 -= 0.15;
+      if ( boss->health_eye_2 < 0 )
+      {
+        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_entity_destroy_hierarchy( node );
+      }
+    }
   }
 
-
-  if ( boss->health < 0 && boss_fight->type == 0 )
+  if ( boss->health_eye_0 < 0 && boss->health_eye_1 < 0 && boss->health_eye_2 < 0 && boss_fight->type == 0 )
   {
     game_push_load_scene_command( game, game->level_cutscene3_node_absolute_filepath );
   }
@@ -63,6 +94,9 @@ crude_boss_creation_observer_
     boss_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
     
     boss->health = 1.f;
+    boss->health_eye_0 = 1.f;
+    boss->health_eye_1 = 1.f;
+    boss->health_eye_2 = 1.f;
     boss->last_shot_time =222.f;
   }
 }

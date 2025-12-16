@@ -7,7 +7,7 @@
 	},
 	"components":	[{
 			"type":	"crude_level_boss_fight",
-			"level_type": 0
+			"level_type":	0
 		}],
 	"children":	[{
 			"name":	"collision0",
@@ -28,7 +28,7 @@
 		}, {
 			"name":	"collision1",
 			"transform":	{
-				"translation":	[80, 0.21429252624511719, 0],
+				"translation":	[50, 0.21429252624511719, 0],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -44,7 +44,7 @@
 		}, {
 			"name":	"collision2",
 			"transform":	{
-				"translation":	[0, 0, 80],
+				"translation":	[0, 0, 50],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -60,7 +60,7 @@
 		}, {
 			"name":	"collision3",
 			"transform":	{
-				"translation":	[-80, 0, 0],
+				"translation":	[-50, 0, 0],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -76,7 +76,7 @@
 		}, {
 			"name":	"collision4",
 			"transform":	{
-				"translation":	[0, 0, -80],
+				"translation":	[0, 0, -50],
 				"rotation":	[0, 1, 0, 0],
 				"scale":	[1, 1, 1]
 			},
@@ -94,7 +94,7 @@
 			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[3, 1, 3]
+				"scale":	[2, 1, 2]
 			},
 			"components":	[{
 					"type":	"crude_gltf",
@@ -105,7 +105,7 @@
 			"name":	"player",
 			"external":	"game\\nodes\\player.crude_node",
 			"transform":	{
-				"translation":	[0.74620562791824341, 1.4796220064163208, -70.993804931640625],
+				"translation":	[0.74620562791824341, 1.4796220064163208, -47.502468109130859],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[0.99999988079071045, 0.99999988079071045, 1]
 			},
@@ -170,7 +170,19 @@
 							"shape_type":	"box",
 							"half_extent":	[1, 1, 1]
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"eye_model",
+							"transform":	{
+								"translation":	[-0.3310467004776001, 0, 0.0977220833301544],
+								"rotation":	[0, 0.67391031980514526, 0, 0.73881310224533081],
+								"scale":	[6.00000238418579, 6, 6.00000238418579]
+							},
+							"components":	[{
+									"type":	"crude_gltf",
+									"path":	"game\\models\\boss_first_phase_eyes.gltf"
+								}],
+							"children":	[]
+						}]
 				}, {
 					"name":	"eye_collision1",
 					"transform":	{
@@ -186,7 +198,19 @@
 							"shape_type":	"box",
 							"half_extent":	[1, 1, 1]
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"eye_model",
+							"transform":	{
+								"translation":	[0.28689193725585938, -0.22008854150772095, 0.494983971118927],
+								"rotation":	[0.034441590309143066, 0.95274966955184937, 0.099963642656803131, 0.2847614586353302],
+								"scale":	[6.000025749206543, 5.9999995231628418, 6.0000147819519043]
+							},
+							"components":	[{
+									"type":	"crude_gltf",
+									"path":	"game\\models\\boss_first_phase_eyes.gltf"
+								}],
+							"children":	[]
+						}]
 				}, {
 					"name":	"eye_collision2",
 					"transform":	{
@@ -202,7 +226,19 @@
 							"shape_type":	"box",
 							"half_extent":	[1, 1, 1]
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"eye_model",
+							"transform":	{
+								"translation":	[0.49441909790039062, -0.22255939245224, 0.47343099117279053],
+								"rotation":	[-0.033287238329648972, 0.959280490875244, 0.25570380687713623, 0.11527562141418457],
+								"scale":	[6.0000004768371582, 5.9999899864196777, 5.9999957084655762]
+							},
+							"components":	[{
+									"type":	"crude_gltf",
+									"path":	"game\\models\\boss_first_phase_eyes.gltf"
+								}],
+							"children":	[]
+						}]
 				}, {
 					"name":	"model",
 					"transform":	{
@@ -212,7 +248,7 @@
 					},
 					"components":	[{
 							"type":	"crude_gltf",
-							"path":	"game\\models\\Boss_First_Phase.gltf"
+							"path":	"game\\models\\boss_first_phase_without_eyes.gltf"
 						}],
 					"children":	[]
 				}, {
