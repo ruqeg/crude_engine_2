@@ -1,3 +1,4 @@
+#if CRUDE_GPU_PROFILER
 #include <engine/graphics/gpu_profiler.h>
 
 void
@@ -145,3 +146,4 @@ crude_gfx_gpu_pipeline_statistics_reset
     statistics->statistics[ i ] = 0u;
   }
 }
+#endif /* CRUDE_GPU_PROFILER */

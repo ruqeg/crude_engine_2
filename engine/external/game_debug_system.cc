@@ -1,3 +1,4 @@
+#if CRUDE_DEVELOP
 #include <engine/scene/scene_debug_components.h>
 #include <engine/external/game_components.h>
 
@@ -113,3 +114,5 @@ crude_game_debug_system_import
     } );
   }
 }
+
+#endif

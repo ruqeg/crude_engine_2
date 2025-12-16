@@ -1,8 +1,6 @@
-#if CRUDE_DEVELOP
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
-#endif
 
 #include <engine/core/profiler.h>
 #include <engine/core/hash_map.h>
@@ -47,13 +45,11 @@ game_initialize_allocators_
   _In_ game_t                                             *game
 );
 
-#if CRUDE_DEVELOP
 static void
 game_initialize_imgui_
 (
   _In_ game_t                                             *game
 );
-#endif
 
 static void
 game_initialize_constant_strings_
@@ -210,6 +206,7 @@ game_initialize
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
 
+#if CRUDE_DEVELOP
   game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
   game->physics_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
   game->physics_debug_system_context.string_bufffer = &game->debug_strings_buffer;
@@ -220,7 +217,8 @@ game_initialize
   game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_debug_model_absolute_filepath;
   game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_debug_model_absolute_filepath;
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
-  
+#endif
+
   game_initialize_imgui_( game );
   game_initialize_platform_( game );
   game_initialize_audio_( game );
@@ -228,8 +226,10 @@ game_initialize
   crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_graphics_( game );
   game_initialize_scene_( game );
-
+  
+#if CRUDE_DEVELOP
   crude_devmenu_initialize( &game->devmenu );
+#endif
   crude_game_menu_initialize( &game->game_menu );
   
   crude_audio_device_wait_wait_till_uploaded( &game->audio_device );
@@ -256,7 +256,9 @@ game_postupdate
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "game_postupdate" );
+#if CRUDE_DEVELOP
   crude_devmenu_update( &game->devmenu );
+#endif
   crude_game_menu_update( &game->game_menu );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
@@ -271,8 +273,10 @@ game_postupdate
       
       crude_node_manager_clear( &game->node_manager );
       crude_physics_resources_manager_clear( &game->physics_resources_manager );
+#if CRUDE_DEVELOP
       crude_string_buffer_clear( &game->debug_strings_buffer );
-
+#endif
+      crude_string_buffer_clear( &game->game_strings_buffer );
       game_setup_custom_preload_nodes_( game );
       game->main_node = crude_node_manager_get_node( &game->node_manager, game->current_scene_absolute_filepath );
       game_setup_custom_postload_nodes_( game );
@@ -291,8 +295,11 @@ game_postupdate
       crude_node_manager_clear( &game->node_manager );
       crude_physics_resources_manager_clear( &game->physics_resources_manager );
       crude_gfx_model_renderer_resources_manager_clear( &game->model_renderer_resources_manager );
-      crude_string_buffer_clear( &game->debug_strings_buffer );
       
+#if CRUDE_DEVELOP
+      crude_string_buffer_clear( &game->debug_strings_buffer );
+#endif
+      crude_string_buffer_clear( &game->game_strings_buffer );
       game_setup_custom_preload_nodes_( game );
       game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].load_scene.absolute_filepath );
       game->current_scene_absolute_filepath = game->commands_queue[ i ].load_scene.absolute_filepath;
@@ -386,7 +393,9 @@ game_deinitialize
 {
   CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
   
+#if CRUDE_DEVELOP
   crude_devmenu_deinitialize( &game->devmenu );
+#endif
   crude_game_menu_deinitialize( &game->game_menu );
   crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
   game_deinitialize_audio_( game );
@@ -572,17 +581,17 @@ game_graphics_system_
     crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
   }
  
-#if CRUDE_DEVELOP
   {
     CRUDE_PROFILER_ZONE_NAME( "ImGui_NewFrame" );
     ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
     ImGui_ImplSDL3_NewFrame( );
     ImGui::NewFrame( );
     CRUDE_PROFILER_ZONE_END;
+#if CRUDE_DEVELOP
     crude_devmenu_draw( &game->devmenu );
+#endif
     crude_game_menu_draw( &game->game_menu );
   }
-#endif
 
   if ( game->gpu.swapchain_resized_last_frame )
   {
@@ -626,15 +635,15 @@ game_setup_custom_preload_nodes_
   char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
   char const *boss_bullet_node_relative_filepath = "game\\nodes\\boss_bullet.crude_node";
 
-  game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
+  game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
   game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
   crude_entity_enable_hierarchy( game->template_enemy_node, false );
 
-  game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
+  game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
   game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
   crude_entity_enable_hierarchy( game->template_serum_station_node, false );
 
-  game->boss_bullet_node_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_node_relative_filepath );
+  game->boss_bullet_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_node_relative_filepath );
   game->template_boss_bullet_node = crude_node_manager_get_node( &game->node_manager, game->boss_bullet_node_absolute_filepath );
   crude_entity_enable_hierarchy( game->template_boss_bullet_node, false );
 
@@ -703,31 +712,17 @@ game_input_system_
   crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
   crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
   
-#if CRUDE_DEVELOP
   ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input *input = &input_per_entity[ i ];
     crude_window_handle *window_handle = &window_handle_per_entity[ i ];
-
+#if CRUDE_DEVELOP
     crude_devmenu_handle_input( &game->devmenu, input );
+#endif
     crude_game_menu_handle_input( &game->game_menu, input );
-    //crude_devgui_handle_input( &editor->devgui, input );
-
-    //if ( input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
-    //{
-    //  SDL_GetMouseState( &game->last_unrelative_mouse_position.x, &game->last_unrelative_mouse_position.y );
-    //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), true );
-    //}
-    //
-    //if ( !input->mouse.right.current && input->mouse.right.current != input->prev_mouse.right.current )
-    //{
-    //  SDL_WarpMouseInWindow( CRUDE_CAST( SDL_Window*, window_handle->value ), editor->last_unrelative_mouse_position.x, editor->last_unrelative_mouse_position.y );
-    //  SDL_SetWindowRelativeMouseMode( CRUDE_CAST( SDL_Window*, window_handle->value ), false );
-    //}
   }
-  CRUDE_PROFILER_ZONE_END( "game_input_system_" );
-#endif /* CRUDE_DEVELOP */
+  CRUDE_PROFILER_ZONE_END;
 }
 
 bool
@@ -785,7 +780,6 @@ game_initialize_allocators_
   crude_stack_allocator_initialize( &game->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
 }
 
-#if CRUDE_DEVELOP
 void
 game_initialize_imgui_
 (
@@ -806,7 +800,6 @@ game_initialize_imgui_
   game->im_game_font = imgui_io->Fonts->AddFontFromFileTTF( game->game_font_absolute_filepath, 20.f );
   CRUDE_ASSERT( game->im_game_font );
 }
-#endif
 
 void
 game_initialize_constant_strings_
@@ -1015,13 +1008,17 @@ game_initialize_constant_strings_
 
   game->game_font_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, game_font_relative_filepath );
 
+#if CRUDE_DEVELOP
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+#endif
   crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
 
+#if CRUDE_DEVELOP
   game->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
   game->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
   game->syringe_serum_station_active_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
+#endif
 }
 
 void
@@ -1030,9 +1027,11 @@ game_deinitialize_constant_strings_
   _In_ game_t                                             *game
 )
 {
+#if CRUDE_DEVELOP
   crude_string_buffer_deinitialize( &game->debug_constant_strings_buffer );
-  crude_string_buffer_deinitialize( &game->constant_strings_buffer );
   crude_string_buffer_deinitialize( &game->debug_strings_buffer );
+#endif
+  crude_string_buffer_deinitialize( &game->constant_strings_buffer );
   crude_string_buffer_deinitialize( &game->game_strings_buffer );
 }
 
@@ -1176,7 +1175,7 @@ game_initialize_graphics_
 #if CRUDE_DEVELOP
   render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_develop.json" );
 #else
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph.json" );
+  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
 #endif
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
@@ -1186,9 +1185,7 @@ game_initialize_graphics_
   crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-#if CRUDE_DEVELOP
   crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-#endif
   crude_gfx_technique_load_from_file( "game/fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
@@ -1209,14 +1206,15 @@ game_initialize_graphics_
   scene_renderer_creation.temporary_allocator = &game->temporary_allocator;
   scene_renderer_creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
   scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
-#if CRUDE_DEVELOP
   scene_renderer_creation.imgui_pass_enalbed = true;
   scene_renderer_creation.imgui_context = game->imgui_context;
-#endif
   crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
 
+#if CRUDE_DEVELOP
   game->scene_renderer.options.hide_collision = true;
   game->scene_renderer.options.hide_debug_gltf = true;
+#endif
+
   game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   game->scene_renderer.options.ambient_intensity = 1.5f;
   game->scene_renderer.options.background_intensity = 0.f;

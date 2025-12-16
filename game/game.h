@@ -135,21 +135,13 @@ typedef struct game_t
   char const                                              *level_cutscene4_node_absolute_filepath;
   
   char const                                              *game_font_absolute_filepath;
-#if CRUDE_DEVELOP
-  char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
-  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
-  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
-#endif
 
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      game_strings_buffer;
-#if CRUDE_DEVELOP
-  crude_string_buffer                                      debug_strings_buffer;
-  crude_string_buffer                                      debug_constant_strings_buffer;
-#endif
+
   char const                                              *current_scene_absolute_filepath;
 
-  crude_devmenu                                            devmenu;
+
   crude_game_menu                                          game_menu;
 
   /* Common */
@@ -196,10 +188,6 @@ typedef struct game_t
   XMFLOAT4                                                 death_overlap_color;
   /* System Context */
   crude_physics_system_context                             physics_system_context;
-#if CRUDE_DEVELOP
-  crude_physics_debug_system_context                       physics_debug_system_context;
-  crude_game_debug_system_context                          game_debug_system_context;
-#endif
   /* Other */
   uint32                                                   framerate;
   float32                                                  last_graphics_update_time;
@@ -207,6 +195,20 @@ typedef struct game_t
   float32                                                  graphics_time;
 
   crude_game_queue_command                                *commands_queue;
+
+#if CRUDE_DEVELOP
+  crude_devmenu                                            devmenu;
+
+  crude_string_buffer                                      debug_strings_buffer;
+  crude_string_buffer                                      debug_constant_strings_buffer;
+
+  char const                                              *syringe_serum_station_active_debug_model_absolute_filepath;
+  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
+  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
+
+  crude_physics_debug_system_context                       physics_debug_system_context;
+  crude_game_debug_system_context                          game_debug_system_context;
+#endif
 } game_t;
 
 CRUDE_API void

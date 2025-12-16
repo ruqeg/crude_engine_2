@@ -27,9 +27,11 @@ crude_player_controller_creation_observer_
     crude_player_controller *player_controller = &player_controllers_per_entity[ i ];
     crude_entity node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
+#if CRUDE_DEVELOP
     player_controller->fly_mode = false;
-    player_controller->input_enabled = true;
     player_controller->fly_speed_scale = 5;
+#endif
+    player_controller->input_enabled = true;
     game->focused_camera_node = crude_ecs_lookup_entity_from_parent( node, "pivot.camera" );
   }
 }
@@ -146,6 +148,7 @@ crude_player_controller_update_system_
     pivot_to_world = crude_transform_node_to_world( pivot_node, pivot_node_transform );
     basis_pivot_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
 
+#if CRUDE_DEVELOP
     if ( player_controller->fly_mode )
     {
       XMVECTOR                                             input_dir, direction, pivot_node_rotation;
@@ -164,6 +167,7 @@ crude_player_controller_update_system_
       }
     }
     else
+#endif
     {
       XMVECTOR                                             input_dir, direction, basis_pivot_up, pivot_node_rotation;
       XMVECTOR                                             basis_node_right, basis_node_up, basis_node_forward;

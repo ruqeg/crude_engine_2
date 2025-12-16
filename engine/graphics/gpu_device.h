@@ -8,9 +8,11 @@
 #include <engine/core/assert.h>
 #include <engine/graphics/command_buffer.h>
 
+#if CRUDE_GPU_PROFILER
 typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
+#endif
 
 /************************************************
  *
@@ -27,9 +29,11 @@ typedef struct crude_gfx_resource_cache
 typedef struct crude_gfx_gpu_thread_frame_pools
 {
   VkCommandPool                                            vk_command_pool;
+#if CRUDE_GPU_PROFILER
   VkQueryPool                                              vk_timestamp_query_pool;
   VkQueryPool                                              vk_pipeline_stats_query_pool;
   crude_gfx_gpu_time_query_tree                           *time_queries;
+#endif
 } crude_gfx_gpu_thread_frame_pools;
 
 typedef struct crude_gfx_device_creation
@@ -175,8 +179,10 @@ typedef struct crude_gfx_device
   
   VkFence                                                  vk_immediate_fence;
 
+#if CRUDE_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
-  
+#endif
+
   PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
   PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
@@ -370,12 +376,14 @@ crude_gfx_resize_texture
   _In_ uint32                                              height
 );
 
+#if CRUDE_GPU_PROFILER
 CRUDE_API uint32
 crude_gfx_copy_gpu_timestamps
 (
   _In_ crude_gfx_device                                   *gpu,
   _Out_ crude_gfx_gpu_time_query                          *timestamps
 );
+#endif
 
 CRUDE_API void
 crude_gfx_gpu_set_timestamps_enable

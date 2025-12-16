@@ -64,6 +64,17 @@
         },
         {
           "type": "attachment",
+          "name": "gbuffer_mesh_draw_index",
+          "format": "VK_FORMAT_R16_UINT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
+          "type": "attachment",
           "name": "depth",
           "format": "VK_FORMAT_D32_SFLOAT",
           "resolution": [
@@ -149,6 +160,10 @@
         },
         {
           "type": "attachment",
+          "name": "gbuffer_mesh_draw_index"
+        },
+        {
+          "type": "attachment",
           "name": "depth"
         }
       ],
@@ -164,6 +179,10 @@
         {
           "type": "reference",
           "name": "gbuffer_roughness_metalness"
+        },
+        {
+          "type": "reference",
+          "name": "gbuffer_mesh_draw_index"
         },
         {
           "type": "reference",
@@ -239,11 +258,64 @@
       ]
     },
     {
-      "name": "postprocessing_pass",
+      "name": "transparent_pass",
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "pbr"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "reference",
+          "name": "final"
+        },
+        {
+          "type": "reference",
+          "name": "depth"
+        },
+        {
+          "type": "marker",
+          "name": "transparent_pass_marker"
+        }
+      ]
+    },
+    {
+      "name": "game_postprocessing_pass",
       "inputs": [
         {
           "type": "texture",
           "name": "pbr"
+        },
+        {
+          "type": "reference",
+          "name": "transparent_pass_marker"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "game_hdr_pre_tonemapping",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
+          "resolution": [
+            800,
+            600
+          ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
+      "name": "postprocessing_pass",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "game_hdr_pre_tonemapping"
         }
       ],
       "outputs": [
@@ -261,34 +333,58 @@
       ]
     },
     {
-      "name": "collision_visualizer_pass",
-      "inputs": [
-        {
-          "type": "attachment",
-          "name": "final"
-        },
-        {
-          "type": "attachment",
-          "name": "depth"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "marker",
-          "name": "collision_visualizer_marker"
-        }
-      ]
-    },
-    {
       "name": "debug_pass",
       "inputs": [
         {
           "type": "attachment",
           "name": "final"
-        },
+        }
+      ],
+      "outputs": [
         {
           "type": "reference",
-          "name": "collision_visualizer_marker"
+          "name": "final"
+        },
+        {
+          "type": "marker",
+          "name": "IMGUI_PASS_MARKER"
+        }
+      ]
+    },
+    {
+      "name": "imgui_pass",
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "IMGUI_PASS_MARKER"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_albedo"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_roughness_metalness"
+        },
+        {
+          "type": "texture",
+          "name": "depth"
+        },
+        {
+          "type": "texture",
+          "name": "pbr"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_mesh_draw_index"
+        },
+        {
+          "type": "attachment",
+          "name": "final"
         }
       ],
       "outputs": [

@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <imgui/imgui.h>
 
+#include <engine/core/color.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/profiler.h>
 #include <engine/platform/platform.h>

@@ -71,12 +71,15 @@ crude_level_01_creation_observer_
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_drug_model_absolute_filepath, NULL );
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_health_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_enabled_model_absolute_filepath, NULL );
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_disabled_model_absolute_filepath, NULL );
     crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->ammo_box_model_absolute_filepath, NULL );
+    
+#if CRUDE_DEVELOP
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
+#endif
 
     /* Setup sounds */
     {

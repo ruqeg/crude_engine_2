@@ -25,9 +25,7 @@ typedef struct crude_heap_allocator
   void                                                    *memory;
   sizet                                                    capacity;
   char const                                              *name;
-#if CRUDE_DEVELOP
   int64                                                    occupied;
-#endif
 } crude_heap_allocator;
 
 CRUDE_API void

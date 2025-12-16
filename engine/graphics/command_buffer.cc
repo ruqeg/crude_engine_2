@@ -1004,8 +1004,10 @@ crude_gfx_cmd_push_marker
   _In_ char const                                         *name
 )
 {
+#if CRUDE_GPU_PROFILER
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
+#endif
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
   vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
@@ -1024,8 +1026,10 @@ crude_gfx_cmd_pop_marker
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
+#if CRUDE_GPU_PROFILER
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
+#endif
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -1279,12 +1283,13 @@ crude_gfx_cmd_manager_get_primary_cmd
     CRUDE_ASSERT( current_used_buffer < cmd_manager->num_primary_cmd_buffers_per_thread );
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
     
+#if CRUDE_GPU_PROFILER
     crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
     crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
     vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count * 2 );
-
     vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
     vkCmdBeginQuery( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, 0 );
+#endif
   }
   
   return cmd;
