@@ -428,7 +428,7 @@ crude_player_update_visual_
     /* Drug Effect */
     pass_options->wave_size = CRUDE_LERP( 0, 0.1, pow( player->drug_withdrawal, 4.f ) );
     pass_options->wave_texcoord_scale = CRUDE_LERP( 0, 3.f, pow( player->drug_withdrawal, 4.f ) );
-    pass_options->wave_absolute_frame_scale = CRUDE_LERP( 0.02, 0.025, player->drug_withdrawal );
+    pass_options->wave_absolute_frame_scale = 100 * CRUDE_LERP( 0.02, 0.025, player->drug_withdrawal );
     pass_options->aberration_strength_scale = CRUDE_LERP( 0.f, 0.046f, pow( player->drug_withdrawal, 6.f ) );
     pass_options->aberration_strength_offset  = CRUDE_LERP( 0.0f, 0.015f, pow( player->drug_withdrawal, 6.f ) );;
     pass_options->aberration_strength_sin_affect = CRUDE_LERP( 0.01f, 0.02f, pow( player->drug_withdrawal, 2.f ) );
@@ -443,7 +443,7 @@ crude_player_update_visual_
   pass_options->pulse_color.w = CRUDE_LERP( 4.f, 0.5f, pow( player->health, 0.25f ) );
   pass_options->pulse_distance = CRUDE_LERP( 0.8f, 4.f, pow( player->health, 0.5f ) );
   pass_options->pulse_distance_coeff = 1.5f;
-  pass_options->pulse_frame_scale = CRUDE_LERP( 0.03f, 0.005f, pow( player->health, 0.25f ) );
+  pass_options->pulse_frame_scale = 100 * CRUDE_LERP( 0.03f, 0.005f, pow( player->health, 0.25f ) );
   pass_options->pulse_scale = 1.f - player->health;
 
   /* Death Screen */
