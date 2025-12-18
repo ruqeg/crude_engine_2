@@ -21,6 +21,7 @@ typedef struct crude_gfx_game_postprocessing_pass_options
   float32                                                  pulse_scale;
   float32                                                  pulse_distance_coeff;
   float32                                                  pulse_distance;
+  float32                                                  star_coeff;
 } crude_gfx_game_postprocessing_pass_options;
 
 typedef struct crude_gfx_game_postprocessing_pass

@@ -148,6 +148,7 @@ crude_level_cutscene_only_sound_creation_observer_
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
       game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
       game->game_postprocessing_pass.options.fog_distance = 1000.f;
+      game->game_postprocessing_pass.options.star_coeff = 1.f;
       break;
     }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE3:
@@ -160,6 +161,7 @@ crude_level_cutscene_only_sound_creation_observer_
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
       game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
       game->game_postprocessing_pass.options.fog_distance = 1000.f;
+      game->game_postprocessing_pass.options.star_coeff = 1.f;
       break;
     }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE4:
@@ -172,6 +174,7 @@ crude_level_cutscene_only_sound_creation_observer_
       level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
       game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
       game->game_postprocessing_pass.options.fog_distance = 1000.f;
+      game->game_postprocessing_pass.options.star_coeff = 1.f;
       break;
     }
     }

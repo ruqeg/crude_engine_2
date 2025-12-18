@@ -109,10 +109,14 @@ crude_game_menu_draw
     );
     ImGui::End();
 
-    ImGui::SetNextWindowPos( ImVec2( ImGui::GetIO( ).DisplaySize.x * 0.5f, ImGui::GetIO( ).DisplaySize.y * 0.5f ), ImGuiCond_Always, ImVec2( 0.5f, 0.5f ) );
+    ImGui::SetNextWindowPos( ImVec2( game->gpu.vk_swapchain_width * 0.5f - 150, game->gpu.vk_swapchain_height * 0.5f - 100 ) );
+    ImGui::SetNextWindowSize( ImVec2( 300, 200 ) );
     ImGui::Begin( "Game Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
-    ImGui::Text( "YOU ARE DEAD" );
-    ImGui::Text( "Press Space to restart..." );
+    ImGui::Text( "YOU ARE DEAD\n\n" );
+    ImGui::TextColored( ImVec4( 1, 0, 0, 1 ), "Reason: %s\n\n", game->death_reason );
+    ImGui::Text( "Press Space to restart...\n\n" );
+    ImGui::TextColored( ImVec4( 1, 1, 1, 0.5 ), "You should be more careful\nregarding information you receive" );
+    
     ImGui::End();
   }
 

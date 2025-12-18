@@ -41,6 +41,7 @@ layout(location = 0) out vec4 out_color;
 void main()
 {
   out_color = in_color * texture( global_textures[ nonuniformEXT( in_texture_id ) ], in_uv.st );
+  //out_color = vec4( out_color.b, out_color.g, out_color.r, out_color.a );
 }
 #endif /* CRUDE_STAGE_FRAGMENT */
 #endif /* IMGUI */

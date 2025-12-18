@@ -40,10 +40,10 @@ crude_recycle_station_start_recycle
         crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
         crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
 
-        crude_gltf *empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_empty" ), crude_gltf );
-        crude_gltf *loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_loaded" ), crude_gltf );
-        empty_gltf->hidden = false;
-        loaded_gltf->hidden = true;
+        crude_gltf *serum_loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_loaded" ), crude_gltf );
+        crude_gltf *serum_empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_empty" ), crude_gltf );
+        serum_loaded_gltf->hidden = true;
+        serum_empty_gltf->hidden = true;
         break;
       }
     }
@@ -65,10 +65,10 @@ crude_recycle_station_start_recycle
         crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
         crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
         
-        crude_gltf *empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_empty" ), crude_gltf );
-        crude_gltf *loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( crude_entity_get_parent( station_node ), "model_loaded" ), crude_gltf );
-        empty_gltf->hidden = true;
-        loaded_gltf->hidden = false;
+        crude_gltf *serum_loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_loaded" ), crude_gltf );
+        crude_gltf *serum_empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_empty" ), crude_gltf );
+        serum_loaded_gltf->hidden = false;
+        serum_empty_gltf->hidden = true;
         break;
       }
     }
@@ -119,6 +119,10 @@ crude_recycle_station_update_system_
     recycle_station->last_recycle_time += it->delta_time;
     if ( recycle_station->last_recycle_time > 6.0 && recycle_station->state == CRUDE_RECYCLE_STATION_STATE_ACTIVE )
     {
+      crude_gltf *serum_loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( recycle_station_node, "serum_loaded" ), crude_gltf );
+      crude_gltf *serum_empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( recycle_station_node, "serum_empty" ), crude_gltf );
+      serum_loaded_gltf->hidden = true;
+      serum_empty_gltf->hidden = false;
       recycle_station->state = CRUDE_RECYCLE_STATION_STATE_DONE;
     }
   }

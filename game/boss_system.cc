@@ -148,7 +148,7 @@ crude_boss_bullet_update_system_
     boss_bullet_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
     XMVECTOR dir = XMVector3Normalize( XMVectorSubtract( XMLoadFloat3( &boss_bullet->target ), XMLoadFloat3( &boss_bullet_transform->translation ) ) );
-    XMStoreFloat3( &boss_bullet_transform->translation, XMVectorAdd( XMLoadFloat3( &boss_bullet_transform->translation ), XMVectorScale( dir, boss_fight->type ? it->delta_time * 65.0f : it->delta_time * 50.0f ) ) ); 
+    XMStoreFloat3( &boss_bullet_transform->translation, XMVectorAdd( XMLoadFloat3( &boss_bullet_transform->translation ), XMVectorScale( dir, boss_fight->type ? it->delta_time * 70.0f : it->delta_time * 50.0f ) ) ); 
     boss_bullet->lifetime += it->delta_time;
 
     if ( boss_bullet->lifetime > 5.f )

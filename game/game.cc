@@ -201,6 +201,8 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
   ECS_IMPORT( game->engine->world, crude_boss_system );
   
+  srand( time( NULL ) );
+
   game_initialize_allocators_( game );
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   
@@ -340,8 +342,6 @@ game_postupdate
       crude_entity                                         serum_stations_spawn_points_parent_node;
       ecs_iter_t                                           serum_stations_spawn_points_it;
       uint32                                               serum_stations_count;
- 
-      srand( time( NULL ) );
 
       serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( game->main_node, "serum_station_spawn_points" );
 

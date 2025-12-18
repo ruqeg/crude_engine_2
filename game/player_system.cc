@@ -354,6 +354,18 @@ crude_player_update_system_
       player_controller->input_enabled = false;
 
       game->death_screen = true;
+      if ( player->health < 0.f )
+      {
+        game->death_reason = "Bleeding";
+      }
+      else if ( player->drug_withdrawal > 1.f )
+      {
+        game->death_reason = "Drug Withdrawal";
+      }
+      else if ( player->sanity < 0.f )
+      {
+        game->death_reason = "Cognitive Distortion";
+      }
       player->time_to_reload_scene = 3.f;
       crude_audio_device_sound_reset( &game->audio_device, game->death_sound_handle );
       crude_audio_device_sound_start( &game->audio_device, game->death_sound_handle );

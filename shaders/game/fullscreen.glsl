@@ -36,6 +36,7 @@ CRUDE_PUSH_CONSTANT( Constants )
   float                                                    pulse_scale;
   float                                                    pulse_distance_coeff;
   float                                                    pulse_distance;
+  float                                                    star_coeff;
 };
 
 #if defined( CRUDE_STAGE_VERTEX )
@@ -203,15 +204,16 @@ void main()
   vec3 pulse_radiance = mix( drunk_with_fog_radiance, pulse_color.rgb * pulse_color.a, pulse * clamp( pow( texcoord_to_center_length / pulse_distance, pulse_distance_coeff ), 0, 1 ) );
 
   /* Stars */
-  vec3 camera_direction = normalize( vec3( ( in_texcoord.x - 0.5 )  * scene.resolution_ratio, (0.5 - in_texcoord.y), 1 ) ) * mat3( scene.camera.view_to_world );
-  float noise = crude_simplex_noise3d( 200 * camera_direction );
+  vec3 pixel_direction = normalize( vec3( ( in_texcoord.x - 0.5 )  * scene.resolution_ratio, (0.5 - in_texcoord.y), 1 ) ) * mat3( scene.camera.view_to_world );
+  float noise = crude_simplex_noise3d( 200 * pixel_direction );
 
-  if ( drunk_depth.r == 1.f )
+  if ( ( star_coeff > 0.1f ) && (drunk_depth.r == 1.f) )
   {
     float star = ( clamp( noise, 0.8f, 1.f ) - 0.8 ) / 0.2f;
     pulse_radiance = vec3( star );
   }
   out_radiance = vec4( pulse_radiance, 1.f );
+  //out_radiance = vec4( out_radiance.b, out_radiance.g, out_radiance.r, out_radiance.a );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

@@ -25,6 +25,7 @@ typedef struct crude_gfx_game_postprocessing_push_constant
   float32                                                  pulse_scale;
   float32                                                  pulse_distance_coeff;
   float32                                                  pulse_distance;
+  float32                                                  star_coeff;
 } crude_gfx_game_postprocessing_push_constant;
 
 void
@@ -48,6 +49,7 @@ crude_gfx_game_postprocessing_pass_initialize
   pass->options.pulse_scale = 0.0f;
   pass->options.pulse_distance_coeff = 0.1f;
   pass->options.pulse_distance = 0.0f;
+  pass->options.star_coeff = 0.0f;
 
   pass->scene_renderer = scene_renderer;
   
@@ -116,6 +118,7 @@ crude_gfx_game_postprocessing_pass_render
     game_postprocessing_constant.pulse_scale = pass->options.pulse_scale;
     game_postprocessing_constant.pulse_distance_coeff = pass->options.pulse_distance_coeff;
     game_postprocessing_constant.pulse_distance = pass->options.pulse_distance;
+    game_postprocessing_constant.star_coeff = pass->options.star_coeff;
   }
 
   crude_gfx_cmd_push_constant( primary_cmd, &game_postprocessing_constant, sizeof( game_postprocessing_constant ) );

@@ -185,6 +185,7 @@ typedef struct game_t
 
   crude_sound_handle                                       death_sound_handle;
   bool                                                     death_screen;
+  char const                                              *death_reason;
   XMFLOAT4                                                 death_overlap_color;
   /* System Context */
   crude_physics_system_context                             physics_system_context;

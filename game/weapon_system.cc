@@ -123,10 +123,10 @@ crude_weapon_update_system_
         }
         else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 6 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 6 ) )
         {
-          crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
-          player->sanity = CRUDE_MIN( player->sanity + 0.05, 1.f );
-          crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
-          crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_DAMAGE, false );
+          //crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
+          //player->sanity = CRUDE_MIN( player->sanity + 0.05, 1.f );
+          //crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
+          //crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_DAMAGE, false );
           crude_audio_device_sound_set_translation( &game->audio_device, level->hit_basic_sound_handle, raycast_result.raycast_result.point );
           crude_audio_device_sound_start( &game->audio_device, level->hit_basic_sound_handle );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Default Hit" );

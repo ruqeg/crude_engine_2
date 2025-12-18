@@ -4030,7 +4030,7 @@ vk_create_swapchain_
 
   if ( available_formats_count == 0u )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format! (available_formats_count == 0u)" );
   }
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_formats, available_formats_count, temporary_allocator );
@@ -4039,6 +4039,7 @@ vk_create_swapchain_
   surface_format_found = false;
   for ( uint32 i = 0; i < available_formats_count; ++i )
   {
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Available surface formats: format %i color_space: %i", available_formats[ i ].format, available_formats[ i ].colorSpace );
     if ( available_formats[ i ].format == VK_FORMAT_R8G8B8A8_UNORM && available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
     {
       gpu->vk_surface_format = available_formats[ i ];
@@ -4048,7 +4049,7 @@ vk_create_swapchain_
 
   if ( !surface_format_found )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format" );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find requested surface format" );
     CRUDE_ARRAY_DEINITIALIZE( available_formats );
   }
   
