@@ -113,7 +113,22 @@ crude_game_menu_draw
     ImGui::SetNextWindowSize( ImVec2( 300, 200 ) );
     ImGui::Begin( "Game Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::Text( "YOU ARE DEAD\n\n" );
-    ImGui::TextColored( ImVec4( 1, 0, 0, 1 ), "Reason: %s\n\n", game->death_reason );
+    
+    ImVec4 death_color = ImVec4( 1, 0, 0, 1 );
+    if ( game->death_reason && crude_string_cmp( game->death_reason, "Bleeding" ) == 0 )
+    {
+      death_color = ImVec4( 1, 0, 0, 1 );
+    }
+    else if ( game->death_reason && crude_string_cmp( game->death_reason, "Drug Withdrawal" ) == 0 )
+    {
+      death_color = ImVec4( 1, 1, 0, 1 );
+    }
+    else
+    {
+      death_color = ImVec4( 0, 1, 1, 1 );
+    }
+
+    ImGui::TextColored( death_color, "Reason: %s\n\n", game->death_reason );
     ImGui::Text( "Press Space to restart...\n\n" );
     ImGui::TextColored( ImVec4( 1, 1, 1, 0.5 ), "You should be more careful\nregarding information you receive" );
     

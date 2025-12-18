@@ -554,6 +554,8 @@ game_graphics_system_
   final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
 
   game->last_graphics_update_time += it->delta_time;
+
+  game->graphics_time += it->delta_time;
   
   if ( !crude_entity_valid( game->focused_camera_node ) )
   {
@@ -563,8 +565,6 @@ game_graphics_system_
   {
     goto cleanup;
   }
-
-  game->graphics_time += CRUDE_MAX( 1.f / game->framerate, it->delta_time );
 
   game->last_graphics_update_time = 0.f;
 
