@@ -113,6 +113,7 @@ typedef struct game_t
   char const                                              *reload_sound_absolute_filepath;
   char const                                              *death_sound_absolute_filepath;
   char const                                              *heartbeat_sound_absolute_filepath;
+  char const                                              *ghost_sound_absolute_filepath;
   char const                                              *hit_0_sound_absolute_filepath;
   char const                                              *hit_1_sound_absolute_filepath;
   char const                                              *hit_2_sound_absolute_filepath;

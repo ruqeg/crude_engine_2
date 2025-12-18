@@ -92,9 +92,57 @@
 		}, {
 			"name":	"Moon",
 			"transform":	{
+				"translation":	[0, 0, -48.976001739501953],
+				"rotation":	[0.2770734429359436, 0, 0, 0.96084874868392944],
+				"scale":	[6, 0.99999964237213135, 1.9999992847442627]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Moon.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"moon1",
+			"transform":	{
 				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[2, 1, 2]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Moon.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"moon2",
+			"transform":	{
+				"translation":	[48.955848693847656, 0, 48.695354461669922],
+				"rotation":	[-0.0006733195623382926, 0.96084600687026978, -0.27707242965698242, -0.0023343346547335386],
+				"scale":	[6.0000567436218262, 0.99999880790710449, 2.00001072883606]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Moon.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"moon3",
+			"transform":	{
+				"translation":	[48.955848693847656, 0, 0.56119775772094727],
+				"rotation":	[0.19598513841629028, -0.67919880151748657, 0.19585573673248291, 0.67964649200439453],
+				"scale":	[6, 0.999999165534973, 1.9999964237213135]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Moon.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"moon4",
+			"transform":	{
+				"translation":	[-48.337451934814453, 0, 0.56119775772094727],
+				"rotation":	[0.19604423642158508, 0.6789931058883667, -0.19579628109931946, 0.679852068424225],
+				"scale":	[5.999995231628418, 0.99999862909317, 1.9999912977218628]
 			},
 			"components":	[{
 					"type":	"crude_gltf",

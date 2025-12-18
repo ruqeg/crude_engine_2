@@ -272,7 +272,7 @@ crude_level_cutscene_only_sound_update_system_
     {
       if ( input->keys[ SDL_SCANCODE_E ].current )
       {
-        //game_push_load_scene_command( game, game->level_intro_node_absolute_filepath );
+        game_push_load_scene_command( game, game->level_intro_node_absolute_filepath );
       }
       crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
       crude_transform *redball_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( game->main_node, "Red_Ball_christmas_hat" ), crude_transform );

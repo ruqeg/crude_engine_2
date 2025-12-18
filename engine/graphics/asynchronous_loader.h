@@ -18,11 +18,10 @@
  ***********************************************/
 typedef struct crude_gfx_file_load_request
 {
-  char                                                     path[ 512 ];
+  char                                                     path[ 1024 ];
   crude_gfx_texture_handle                                 texture;
   crude_gfx_buffer_handle                                  buffer;
 } crude_gfx_file_load_request;
-
 
 typedef struct crude_gfx_upload_request
 {
@@ -34,13 +33,12 @@ typedef struct crude_gfx_upload_request
   crude_gfx_buffer_handle                                  gpu_old_buffer;
 } crude_gfx_upload_request;
 
-
 typedef struct crude_gfx_asynchronous_loader
 {
   crude_gfx_device                                        *gpu;
 
-  crude_gfx_file_load_request                             *file_load_requests;//[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT ];
-  crude_gfx_upload_request                                *upload_requests;//[ CRUDE_GRAPHICS_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT ];
+  crude_gfx_file_load_request                             *file_load_requests;
+  crude_gfx_upload_request                                *upload_requests;
   
   crude_gfx_buffer                                        *staging_buffer;
   uint32                                                   staging_buffer_offset;

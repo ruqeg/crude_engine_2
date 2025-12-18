@@ -261,6 +261,16 @@ crude_player_creation_observer_
     crude_audio_device_sound_start( &game->audio_device, player->heartbeat_sound_handle );
     crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 0.f );
 
+    sound_creation = crude_sound_creation_empty( );
+    sound_creation.looping = true;
+    sound_creation.stream = true;
+    sound_creation.decode = true;
+    sound_creation.absolute_filepath = game->ghost_sound_absolute_filepath;
+    sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+    player->ghost_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    crude_audio_device_sound_start( &game->audio_device, player->ghost_sound_handle );
+    crude_audio_device_sound_set_volume( &game->audio_device, player->ghost_sound_handle, 0.f );
+    
     crude_audio_device_sound_start( &game->audio_device, player->walking_sound_handle );
     crude_audio_device_sound_set_volume( &game->audio_device, player->walking_sound_handle, 0.f );
   }
@@ -284,6 +294,7 @@ crude_player_destroy_observer_
     crude_audio_device_destroy_sound( &game->audio_device, player->syringe_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, player->reload_sound_handle );
     crude_audio_device_destroy_sound( &game->audio_device, player->heartbeat_sound_handle );
+    crude_audio_device_destroy_sound( &game->audio_device, player->ghost_sound_handle );
   }
 }
 
@@ -324,6 +335,7 @@ crude_player_update_system_
     }
     else
     {
+      crude_audio_device_sound_set_volume( &game->audio_device, player->ghost_sound_handle, 2 * pow( ( player->sanity > 0.5f ? 0.f : ( 1 -  2 * player->sanity ) ), 3.f ) );
       crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 3 * ( player->health > 0.5f ? 0.f : ( 1 -  2 * player->health ) ) );
       if ( player->inside_safe_zone )
       {
@@ -382,6 +394,7 @@ crude_player_update_system_
         crude_audio_device_sound_set_volume( &game->audio_device, level_boss->background_sound_handle, 0 );
       }
       crude_audio_device_sound_set_volume( &game->audio_device, player->heartbeat_sound_handle, 0 );
+      crude_audio_device_sound_set_volume( &game->audio_device, player->ghost_sound_handle, 0 );
     }
 
     if ( game->death_screen && player->time_to_reload_scene < 0 && input->keys[ SDL_SCANCODE_SPACE ].current )

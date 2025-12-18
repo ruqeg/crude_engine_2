@@ -837,6 +837,7 @@ game_initialize_constant_strings_
   char const *syringe_sound_relative_filepath = "game\\sounds\\syringe.wav";
   char const *reload_interaction_sound_relative_filepath = "game\\sounds\\reload.wav";
   char const *heartbeat_sound_relative_filepath = "game\\sounds\\heartbeat.wav";
+  char const *ghost_sound_relative_filepath = "game\\sounds\\ghost_sound.mp3";
   char const *death_sound_relative_filepath = "game\\sounds\\death_music.mp3";
   char const *shot_without_ammo_sound_relative_filepath = "game\\sounds\\shot_without_ammo.wav";
   char const *starting_room_background_sound_relative_filepath = "game\\sounds\\starting_room\\background.mp3";
@@ -941,6 +942,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene4_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_menu_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_menu_node_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( ghost_sound_relative_filepath );
   
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -974,6 +976,7 @@ game_initialize_constant_strings_
   game->syringe_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, syringe_sound_relative_filepath );
   game->reload_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, reload_interaction_sound_relative_filepath );
   game->heartbeat_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, heartbeat_sound_relative_filepath );
+  game->ghost_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, ghost_sound_relative_filepath );
   game->hit_0_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_0_sound_relative_filepath );
   game->hit_1_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_1_sound_relative_filepath );
   game->hit_2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, hit_2_sound_relative_filepath );

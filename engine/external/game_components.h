@@ -163,6 +163,7 @@ typedef struct crude_player
   crude_sound_handle                                       heartbeat_sound_handle;
   crude_sound_handle                                       syringe_sound_handle;
   crude_sound_handle                                       reload_sound_handle;
+  crude_sound_handle                                       ghost_sound_handle;
 } crude_player;
 
 typedef struct crude_player_controller
