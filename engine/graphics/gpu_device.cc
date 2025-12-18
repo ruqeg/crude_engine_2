@@ -3665,6 +3665,42 @@ vk_pick_physical_device_
   
   if ( selected_physical_devices == VK_NULL_HANDLE )
   {
+    for ( uint32 i = 0; i < available_physical_devices_count; ++i )
+    {
+      VkPhysicalDeviceProperties                             current_physical_properties;
+      VkPhysicalDevice                                       current_physical_device;
+
+      int32                                                  queue_family_index;
+
+      current_physical_device = available_physical_devices[ i ];
+      vkGetPhysicalDeviceProperties( current_physical_device, &current_physical_properties );
+      
+      if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator, NULL ) )
+      {
+        continue;
+      }
+      if ( !vk_check_swap_chain_adequate_( current_physical_device, gpu->vk_surface ) )
+      {
+        continue;
+      }
+      if ( !vk_check_support_required_features_( current_physical_device ) )
+      {
+        continue;
+      }
+      
+      queue_family_index = vk_get_supported_queue_family_index_( current_physical_device, gpu->vk_surface, temporary_allocator ); 
+      if ( queue_family_index == -1 )
+      {
+        continue;
+      }
+      
+      selected_physical_devices = current_physical_device;
+      break;
+    }
+  }
+
+  if ( selected_physical_devices == VK_NULL_HANDLE )
+  {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find suitable physical device! physical_devices_count: %i", available_physical_devices_count );
     
      for ( uint32 i = 0; i < available_physical_devices_count; ++i )
@@ -3679,12 +3715,6 @@ vk_pick_physical_device_
     
         not_supported_extension_name = "";
 
-        if ( current_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
-        {
-          CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device type isn't discrete GPU!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
-          continue;
-        }
-        
         if ( !vk_check_support_required_extensions_( current_physical_device, temporary_allocator, &not_supported_extension_name ) )
         {
           CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested extension \"%s\"!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown", not_supported_extension_name ? not_supported_extension_name : ""  );
@@ -3707,6 +3737,7 @@ vk_pick_physical_device_
           CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested queue family indices!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
           continue;
         }
+        
         CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "I don't fucking know why %s physical device doesn't supported!", current_physical_properties.deviceName ? current_physical_properties.deviceName : "Unknown" );
     }
 

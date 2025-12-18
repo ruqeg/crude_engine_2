@@ -847,6 +847,7 @@ game_initialize_constant_strings_
   char const *hit_2_sound_relative_filepath = "game\\sounds\\hit_2.wav";
   char const *level_intro_sound_relative_filepath = "game\\sounds\\intro\\background.wav";
   char const *level_intro_node_relative_filepath = "game\\nodes\\level_intro.crude_node";
+  char const *level_menu_node_relative_filepath = "game\\nodes\\level_menu.crude_node";
   char const *level_starting_room_node_relative_filepath = "game\\nodes\\level_starting_room.crude_node";
   char const *level_0_node_relative_filepath = "game\\nodes\\level0.crude_node";
   char const *level_boss_fight_0_node_relative_filepath = "game\\nodes\\level_boss_fight.crude_node";
@@ -865,6 +866,7 @@ game_initialize_constant_strings_
   char const *level_cutscene2_sound_relative_filepath = "game\\sounds\\cutscenes\\cutscene2.mp3";
   char const *level_cutscene3_sound_relative_filepath = "game\\sounds\\cutscenes\\cutscene3.mp3";
   char const *level_cutscene4_sound_relative_filepath = "game\\sounds\\cutscenes\\cutscene4.mp3";
+  char const *level_menu_sound_relative_filepath = "game\\sounds\\cutscenes\\menu.mp3";
   char const *show_2_sound_relative_filepath = "game\\sounds\\shot2.mp3";
   char const *super_criticlal_shot_sound_relative_filepath = "game\\sounds\\super_critical.mp3";
 
@@ -937,6 +939,8 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene2_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene3_sound_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_cutscene4_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_menu_sound_relative_filepath );
+  constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_menu_node_relative_filepath );
   
   crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
@@ -979,6 +983,7 @@ game_initialize_constant_strings_
   game->level_cutscene2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene2_sound_relative_filepath );
   game->level_cutscene3_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene3_sound_relative_filepath );
   game->level_cutscene4_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_cutscene4_sound_relative_filepath );
+  game->level_menu_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_menu_sound_relative_filepath );
   game->starting_room_voiceline0_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline0_sound_relative_filepath );;
   game->starting_room_voiceline1_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline1_sound_relative_filepath );;
   game->starting_room_voiceline2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, starting_room_voiceline2_sound_relative_filepath );;
@@ -986,6 +991,7 @@ game_initialize_constant_strings_
   game->show_2_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, show_2_sound_relative_filepath );
   game->super_criticlal_shot_sound_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, super_criticlal_shot_sound_relative_filepath );
   
+  game->level_menu_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_menu_node_relative_filepath );
   game->level_intro_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_intro_node_relative_filepath );
   game->level_starting_room_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_starting_room_node_relative_filepath );
   game->level_0_node_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, level_0_node_relative_filepath );
@@ -1172,11 +1178,11 @@ game_initialize_graphics_
   
   crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
   crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
-#if CRUDE_DEVELOP
+//#if CRUDE_DEVELOP
   render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_develop.json" );
-#else
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
-#endif
+//#else
+//  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
+//#endif
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
 

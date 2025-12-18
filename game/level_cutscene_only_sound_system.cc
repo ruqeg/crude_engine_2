@@ -89,6 +89,7 @@ crude_level_cutscene_only_sound_creation_observer_
       game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
 
       game->game_postprocessing_pass.options.fog_distance = 10.f;
+      game->game_postprocessing_pass.options.star_coeff = 0.f;
       break;
     }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE0:
@@ -177,6 +178,19 @@ crude_level_cutscene_only_sound_creation_observer_
       game->game_postprocessing_pass.options.star_coeff = 1.f;
       break;
     }
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_MENU:
+    {
+      sound_creation = crude_sound_creation_empty( );
+      sound_creation.stream = true;
+      sound_creation.looping = true;
+      sound_creation.absolute_filepath = game->level_menu_sound_absolute_filepath;
+      sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+      level->sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      game->focused_camera_node = crude_ecs_lookup_entity_from_parent( level_node, "camera" );
+      game->game_postprocessing_pass.options.fog_distance = 1000.f;
+      game->game_postprocessing_pass.options.star_coeff = 1.f;
+      break;
+    }
     }
 
     window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
@@ -193,6 +207,8 @@ crude_level_cutscene_only_sound_update_system_
   game_t *game = game_instance( );
   crude_level_cutscene_only_sound *leveles_per_entity = ecs_field( it, crude_level_cutscene_only_sound, 0 );
   
+  crude_input *input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_input );
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_player                                          *player;
@@ -231,6 +247,11 @@ crude_level_cutscene_only_sound_update_system_
         crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
         break;
       }
+      case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_MENU:
+      {
+        crude_audio_device_sound_start( &game->audio_device, level->sound_handle );
+        break;
+      }
       case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_CUTSCENE4:
       {
         crude_entity yellow_balls_node = crude_ecs_lookup_entity_from_parent( game->main_node, "yellow_balls_node" );
@@ -247,6 +268,46 @@ crude_level_cutscene_only_sound_update_system_
 
     switch ( level->type )
     {
+    case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_MENU:
+    {
+      if ( input->keys[ SDL_SCANCODE_E ].current )
+      {
+        //game_push_load_scene_command( game, game->level_intro_node_absolute_filepath );
+      }
+      crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );
+      crude_transform *redball_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( game->main_node, "Red_Ball_christmas_hat" ), crude_transform );
+      XMStoreFloat4( &redball_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &redball_transform->rotation ), XMQuaternionRotationRollPitchYaw( 0.1 * it->delta_time, -0.3 * it->delta_time, it->delta_time * 0.02 ) ) );
+      redball_transform->translation.y = 0.2 * sin( 0.2 * it->delta_time );
+      crude_transform *tree_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( game->main_node, "tree" ), crude_transform );
+      XMStoreFloat4( &tree_transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &tree_transform->rotation ), XMQuaternionRotationRollPitchYaw( 0.1 * it->delta_time, 0, 0 ) ) );
+
+      float32 time_from_start = crude_time_delta_seconds( level->time, crude_time_now( ) );
+      if ( time_from_start < 15 )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap0" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = time_from_start / 15;
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else if ( time_from_start > 15 && time_from_start < 30.f )
+      {
+        crude_entity from_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap1" );
+        crude_entity to_entity = crude_ecs_lookup_entity_from_parent( game->main_node, "ap0" );
+        crude_transform *from_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( from_entity, crude_transform );
+        crude_transform *to_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( to_entity, crude_transform );
+        float32 t = ( time_from_start - 15 ) / (30 - 15);
+        XMStoreFloat3( &camera_transform->translation, XMVectorLerp( XMLoadFloat3( &from_transform->translation ), XMLoadFloat3( &to_transform->translation ), t ) );
+        XMStoreFloat4( &camera_transform->rotation, XMQuaternionSlerp( XMLoadFloat4( &from_transform->rotation ), XMLoadFloat4( &to_transform->rotation ), t ) );
+      }
+      else
+      {
+        level->time = crude_time_now( );
+      }
+      break;
+    }
     case CRUDE_LEVEL_CUTSCENE_ONLY_SOUND_TYPE_INTRO:
     {
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
@@ -539,7 +600,7 @@ crude_level_cutscene_only_sound_update_system_
 
       if ( !crude_audio_device_sound_is_playing( &game->audio_device, level->sound_handle ) )
       {
-        game_push_load_scene_command( game, game->level_cutscene4_node_absolute_filepath );
+        game_push_load_scene_command( game, game->level_menu_node_absolute_filepath );
       }
 
       crude_transform *camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->focused_camera_node, crude_transform );

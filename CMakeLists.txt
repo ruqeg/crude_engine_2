@@ -24,7 +24,7 @@ endif()
 
 # Debug Configuration
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
-add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=0>")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
 
 # Develop Configuration

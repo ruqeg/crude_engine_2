@@ -100,6 +100,7 @@ typedef struct game_t
   char const                                              *level_cutscene2_sound_absolute_filepath;
   char const                                              *level_cutscene3_sound_absolute_filepath;
   char const                                              *level_cutscene4_sound_absolute_filepath;
+  char const                                              *level_menu_sound_absolute_filepath;
   char const                                              *recycle_sound_absolute_filepath;
   char const                                              *hit_critical_sound_absolute_filepath;
   char const                                              *hit_basic_sound_absolute_filepath;
@@ -123,6 +124,7 @@ typedef struct game_t
   char const                                              *super_criticlal_shot_sound_absolute_filepath;
 
   /* */
+  char const                                              *level_menu_node_absolute_filepath;
   char const                                              *level_intro_node_absolute_filepath;
   char const                                              *level_starting_room_node_absolute_filepath;
   char const                                              *level_0_node_absolute_filepath;
