@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/graphics/gpu_resources.h>
+#include <engine/graphics/gpu_memory.h>
 
 /************************************************
  *
@@ -18,15 +19,6 @@ typedef struct crude_gfx_cmd_buffer
   crude_gfx_framebuffer                                   *current_framebuffer;
   crude_gfx_pipeline                                      *current_pipeline;
   VkClearValue                                             clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
-  /**
-   * frame_descriptor_sets holds the resource pool for descriptor sets for the current frame.
-   * They will be automatically deallocated on the end of each frame.
-   * Can be allocated by crude_gfx_cmd_create_local_descriptor_set()
-   */
-#if CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS
-  crude_resource_pool                                      frame_descriptor_sets;
-  VkDescriptorPool                                         vk_descriptor_pool;
-#endif /* CRUDE_GRAPHICS_FRAME_DESCRIPTOR_SETS */
   VkCommandBuffer                                          vk_cmd_buffer;
 
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
@@ -146,12 +138,6 @@ crude_gfx_cmd_set_scissor
   _In_opt_ crude_gfx_rect2d_int const                     *rect
 );
 
-CRUDE_API void
-crude_gfx_cmd_bind_local_descriptor_set
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_descriptor_set_handle                     handle
-);
 
 CRUDE_API void
 crude_gfx_cmd_draw
@@ -229,13 +215,6 @@ crude_gfx_cmd_bind_index_buffer
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_buffer_handle                             handle,
   _In_ uint32                                              offset
-);
-
-CRUDE_API crude_gfx_descriptor_set_handle
-crude_gfx_cmd_create_local_descriptor_set
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_descriptor_set_creation const            *creation
 );
 
 CRUDE_API void
@@ -346,22 +325,21 @@ crude_gfx_cmd_global_debug_barrier
 );
 
 CRUDE_API void
-crude_gfx_cmd_upload_texture_data
+crude_gfx_cmd_memory_copy_to_texture
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_texture_handle                            texture_handle,
-  _In_ void                                               *texture_data,
-  _In_ crude_gfx_buffer_handle                             staging_buffer_handle,
-  _In_ uint64                                              staging_buffer_offset
+  _In_ crude_gfx_memory_allocation                         memory_allocation
 );
 
 CRUDE_API void
-crude_gfx_cmd_upload_buffer_data
+crude_gfx_cmd_memory_copy
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer_handle                             src_buffer,
-  _In_ crude_gfx_buffer_handle                             dst_buffer,
-  _In_ uint64                                              dst_buffer_offset
+  _In_ crude_gfx_memory_allocation                         src_memory_allocation,
+  _In_ crude_gfx_memory_allocation                         dst_memory_allocation,
+  _In_ uint64                                              src_offset,
+  _In_ uint64                                              dst_offset
 );
 
 CRUDE_API void

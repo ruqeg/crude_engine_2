@@ -604,7 +604,7 @@ void main()
 
 #if defined( CALCULATE_PROBE_OFFSETS )
 
-CRUDE_PUSH_CONSTANT( PushConstants )
+CRUDE_PUSH_CONSTANT
 {
   uint                                                     first_frame;
 };
@@ -721,7 +721,7 @@ CRUDE_UNIFORM( SceneConstant, 0 )
   crude_scene                                              scene;
 };
 
-CRUDE_PUSH_CONSTANT( PushConstants )
+CRUDE_PUSH_CONSTANT
 {
   uint                                                     output_resolution_half;
 };
@@ -795,7 +795,7 @@ void main()
 
 #if defined( PROBE_DEBUG )
 
-CRUDE_PUSH_CONSTANT( PushConstants )
+CRUDE_PUSH_CONSTANT
 {
   uint                                                     probe_debug_flags;
 };

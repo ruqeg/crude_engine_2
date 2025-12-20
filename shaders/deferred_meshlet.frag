@@ -1,62 +1,19 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define DEFERRED_MESHLET
-//#define COLLISION_VISUALIZER
-//#define TRANSPARENT_NO_CULL
+//#define DEFERRED_MESHLET
+#define TRANSPARENT_NO_CULL
 //#define CRUDE_STAGE_FRAGMENT
-#define CRUDE_STAGE_TASK
+#define CRUDE_STAGE_FRAGMENT
+//#define CRUDE_STAGE_FRAGMENT
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
 #include "crude/culling.glsli"
 #include "crude/light.glsli"
-#include "crude/light_impl.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-#if defined( DEFERRED_MESHLET ) || defined ( TRANSPARENT_NO_CULL ) 
-
-#extension GL_ARB_shader_draw_parameters : require
-#extension GL_KHR_shader_subgroup_ballot: require
-
-#if defined( DEFERRED_MESHLET ) 
-CRUDE_UNIFORM( SceneConstant, 0 ) 
-{
-  crude_scene                                              scene;
-};
-#endif
-
-CRUDE_RBUFFER( MeshDraws, 1 )
-{
-  crude_mesh_draw                                          mesh_draws[];
-};
-
-CRUDE_RBUFFER( MeshInstancesDraws, 2 )
-{
-  crude_mesh_instance_draw                                 mesh_instance_draws[];
-};
-
-CRUDE_RBUFFER( Meshlets, 3 )
-{
-  crude_meshlet                                            meshlets[];
-};
-
-CRUDE_RBUFFER( Vertices, 4 )
-{
-  crude_vertex                                             vertices[];
-};
-
-CRUDE_RBUFFER( TrianglesIndices, 5 )
-{
-  uint8_t                                                  triangles_indices[];
-};
-
-CRUDE_RBUFFER( VerticesIndices, 6 )
-{
-  uint                                                     vertices_indices[];
-};
-
-CRUDE_RBUFFER( VisibleMeshCount, 7 )
+CRUDE_RBUFFER_REF( VisibleMeshCountRef )
 {
   uint                                                     opaque_mesh_visible_early_count;
   uint                                                     opaque_mesh_visible_late_count;
@@ -74,10 +31,51 @@ CRUDE_RBUFFER( VisibleMeshCount, 7 )
   uint                                                     meshlet_instances_count;
 };
 
-CRUDE_RBUFFER( MeshDrawCommands, 8 )
+CRUDE_RBUFFER_REF( MeshDrawCommandsRef )
 {
-  crude_mesh_draw_command                                  mesh_draw_commands[];
+  crude_mesh_draw_command                                  data[];
 };
+
+#if defined( DEFERRED_MESHLET )
+CRUDE_PUSH_CONSTANT
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
+  VerticesRef                                              vertices;
+  TrianglesIndicesRef                                      triangles_indices;
+  VerticesIndicesRef                                       vertices_indices;
+  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+};
+#else
+CRUDE_PUSH_CONSTANT
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
+  VerticesRef                                              vertices;
+  TrianglesIndicesRef                                      triangles_indices;
+  VerticesIndicesRef                                       vertices_indices;
+  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+  LightsZBinsRef                                           zbins;
+  LightsTilesRef                                           lights_tiles;
+  LightsTrianglesIndicesRef                                lights_indices;
+  LightsVerticesIndicesRef                                 lights_vertices;
+  LightsRef                                                lights;
+  LightsShadowViewsRef                                     light_shadow_views;
+  float                                                    inv_radiance_texture_width;
+  float                                                    inv_radiance_texture_height;
+};
+#endif
+
+#if defined( DEFERRED_MESHLET ) || defined ( TRANSPARENT_NO_CULL ) 
+
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
 
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
@@ -87,14 +85,6 @@ taskPayloadSharedEXT struct
 } shared_data;
 #endif
 
-#if defined ( TRANSPARENT_NO_CULL )
-CRUDE_PUSH_CONSTANT( Constants )
-{
-  float                                                    inv_radiance_texture_width;
-  float                                                    inv_radiance_texture_height;
-};
-#endif
-
 #if defined( CRUDE_STAGE_TASK )
 
 layout(local_size_x=32) in;
@@ -102,50 +92,50 @@ layout(local_size_x=32) in;
 void main()
 {
 #if defined( DEFERRED_MESHLET )
-  uint draw_id = mesh_draw_commands[ gl_DrawIDARB ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSPARENT_NO_CULL */
-  uint draw_id = mesh_draw_commands[ gl_DrawIDARB + total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + total_mesh_count ].draw_id;
 #endif
-  uint mesh_draw_index = mesh_instance_draws[ draw_id ].mesh_draw_index;
-  uint meshlet_index = mesh_draws[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
+  uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
+  uint meshlet_index = mesh_draws.data[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
 
-  if ( meshlet_index >= mesh_draws[ mesh_draw_index ].meshletes_offset + mesh_draws[ mesh_draw_index ].meshletes_count )
+  if ( meshlet_index >= mesh_draws.data[ mesh_draw_index ].meshletes_offset + mesh_draws.data[ mesh_draw_index ].meshletes_count )
   {
     return;
   }
 
-  mat4 mesh_to_world = mesh_instance_draws[ draw_id ].mesh_to_world;
-  vec4 world_center = vec4( meshlets[ meshlet_index ].center, 1 ) * mesh_to_world;
+  mat4 mesh_to_world = mesh_instance_draws.data[ draw_id ].mesh_to_world;
+  vec4 world_center = vec4( meshlets.data[ meshlet_index ].center, 1 ) * mesh_to_world;
   float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
-  float radius = meshlets[ meshlet_index ].radius * scale * 1.1;
+  float radius = meshlets.data[ meshlet_index ].radius * scale * 1.1;
 
   vec3 cone_axis = vec3(
-    int( meshlets[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
-    int( meshlets[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
-    int( meshlets[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( mesh_to_world );
-  float cone_cutoff = int( meshlets[ meshlet_index ].cone_cutoff ) / 127.0;
+    int( meshlets.data[ meshlet_index ].cone_axis[ 0 ] ) / 127.0,
+    int( meshlets.data[ meshlet_index ].cone_axis[ 1 ]) / 127.0,
+    int( meshlets.data[ meshlet_index ].cone_axis[ 2 ]) / 127.0 ) * mat3( mesh_to_world );
+  float cone_cutoff = int( meshlets.data[ meshlet_index ].cone_cutoff ) / 127.0;
   
   bool accept = true;
 
 #if defined( DEFERRED_MESHLET )
-  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.camera.position );
+  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
   
-  vec4 view_center = world_center * scene.camera.world_to_view;
+  vec4 view_center = world_center * scene.data.camera.world_to_view;
 
   bool frustum_visible = true;
   for ( uint i = 0; i < 6; ++i )
   {
-    frustum_visible = frustum_visible && ( dot( scene.camera.frustum_planes_culling[ i ], view_center ) > -radius );
+    frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
   accept = accept && frustum_visible;
   
   bool occlusion_visible = false;
   if ( frustum_visible )
   {
-    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.camera.znear,
-      scene.camera.view_to_clip[ 0 ][ 0 ], scene.camera.view_to_clip[ 1 ][ 1 ],
-      depth_pyramid_texture_index,
-      world_center.xyz, scene.camera.position, scene.camera.world_to_clip
+    occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
+      scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
+      visible_mesh_count.depth_pyramid_texture_index,
+      world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip
     );
   }
   accept = accept && occlusion_visible;
@@ -188,50 +178,50 @@ void main()
   uint local_meshlet_index = gl_WorkGroupID.x;
   uint global_meshlet_index = shared_data.meshlet_indices[ local_meshlet_index ];
   uint mesh_instance_draw_index = shared_data.mesh_instance_draw_indices[ local_meshlet_index ];
-  uint mesh_draw_index = mesh_instance_draws[ mesh_instance_draw_index ].mesh_draw_index;
+  uint mesh_draw_index = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_draw_index;
   
-  uint mesh_index = meshlets[ global_meshlet_index ].mesh_index;
-  uint vertices_count = uint( meshlets[ global_meshlet_index ].vertices_count );
-  uint triangles_count = uint( meshlets[ global_meshlet_index ].triangles_count );
+  uint mesh_index = meshlets.data[ global_meshlet_index ].mesh_index;
+  uint vertices_count = uint( meshlets.data[ global_meshlet_index ].vertices_count );
+  uint triangles_count = uint( meshlets.data[ global_meshlet_index ].triangles_count );
   
-  uint vertices_offset = meshlets[ global_meshlet_index ].vertices_offset;
-  uint triangles_offset = meshlets[ global_meshlet_index ].triangles_offset;
+  uint vertices_offset = meshlets.data[ global_meshlet_index ].vertices_offset;
+  uint triangles_offset = meshlets.data[ global_meshlet_index ].triangles_offset;
 
-  mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_draw_index ].mesh_to_world;
+  mat4 mesh_to_world = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_to_world;
 
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
   float i8_inverse = 1.0 / 127.0;
   for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {
-    uint vertex_index = vertices_indices[ i + vertices_offset ];
-    vec4 model_position = vec4( vertices[ vertex_index ].position, 1.0 );
+    uint vertex_index = vertices_indices.data[ i + vertices_offset ];
+    vec4 model_position = vec4( vertices.data[ vertex_index ].position, 1.0 );
     vec4 world_position = model_position * mesh_to_world;
-    vec4 view_position = world_position * scene.camera.world_to_view;
+    vec4 view_position = world_position * scene.data.camera.world_to_view;
     
-    vec4 tangent = vec4( int( vertices[ vertex_index ].tx ), int( vertices[ vertex_index ].ty ), int( vertices[ vertex_index ].tz ),  int( vertices[ vertex_index ].tw ) ) * i8_inverse - 1.0;
-    vec3 normal = vec3( int( vertices[ vertex_index ].nx ), int( vertices[ vertex_index ].ny ), int( vertices[ vertex_index ].nz ) ) * i8_inverse - 1.0;
+    vec4 tangent = vec4( int( vertices.data[ vertex_index ].tx ), int( vertices.data[ vertex_index ].ty ), int( vertices.data[ vertex_index ].tz ),  int( vertices.data[ vertex_index ].tw ) ) * i8_inverse - 1.0;
+    vec3 normal = vec3( int( vertices.data[ vertex_index ].nx ), int( vertices.data[ vertex_index ].ny ), int( vertices.data[ vertex_index ].nz ) ) * i8_inverse - 1.0;
     normal = normal * mat3( mesh_to_world );
     tangent.xyz = tangent.xyz * mat3( mesh_to_world );
     vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
 
-    vec3 view_normal = normal * mat3( scene.camera.world_to_view );
+    vec3 view_normal = normal * mat3( scene.data.camera.world_to_view );
 
-    gl_MeshVerticesEXT[ i ].gl_Position = world_position * scene.camera.world_to_clip;
-    out_texcoord[ i ] = vec2( vertices[ vertex_index ].tu, vertices[ vertex_index ].tv );
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * scene.data.camera.world_to_clip;
+    out_texcoord[ i ] = vec2( vertices.data[ vertex_index ].tu, vertices.data[ vertex_index ].tv );
     out_normals[ i ] = normal;
     out_tangents[ i ] = tangent.xyz;
     out_bitangents[ i ] = bitangent;
     out_mesh_draw_index[ i ] = mesh_draw_index;
     out_world_positions[ i ] = world_position.xyz;
     out_view_surface_normal[ i ] = view_normal;
-    out_view_position[ i ] = scene.camera.position - world_position.xyz;
+    out_view_position[ i ] = scene.data.camera.position - world_position.xyz;
   }
   
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
   {
     uint triangle_index = uint( 3 * i + triangles_offset );
-    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices[ triangle_index ], triangles_indices[ triangle_index + 1 ], triangles_indices[ triangle_index + 2 ] );
+    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices.data[ triangle_index ], triangles_indices.data[ triangle_index + 1 ], triangles_indices.data[ triangle_index + 2 ] );
   }
 }
 #endif /* CRUDE_STAGE_MESH */
@@ -257,7 +247,7 @@ layout(location=5) in vec3 in_world_position;
 
 void main()
 {
-  crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
+  crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
 
   vec4 albedo = mesh_draw.albedo_color_factor;
   if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
@@ -309,7 +299,7 @@ layout(location=5) in vec3 in_world_position;
 
 void main()
 {
-  crude_mesh_draw mesh_draw = mesh_draws[ in_mesh_draw_index ];
+  crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
 
   vec4 albedo = mesh_draw.albedo_color_factor;
   if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
@@ -343,11 +333,13 @@ void main()
   vec3 radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
-    radiance = crude_calculate_lighting( albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.camera.position, screen_position, screen_texcoord );
+    radiance = crude_calculate_lighting( 
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
+      scene, zbins, lights_tiles, lights_indices, lights_vertices, lights, light_shadow_views );
   }
   else
   {
-    radiance = scene.background_color * scene.background_intensity;
+    radiance = scene.data.background_color * scene.data.background_intensity;
   }
 
   out_radiance = vec4( radiance, sqrt( albedo.a ) );

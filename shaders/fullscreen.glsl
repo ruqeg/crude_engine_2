@@ -89,7 +89,7 @@ void main()
 layout(location = 0) out vec4 out_color;
 layout(location=0) in vec2 in_texcoord;
 
-layout( push_constant ) uniform Constants
+CRUDE_PUSH_CONSTANT
 {
   uint                                                     luminance_average_texture_index;
   uint                                                     pbr_texture_index;

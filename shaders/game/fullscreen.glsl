@@ -17,7 +17,7 @@ CRUDE_UNIFORM( SceneConstant, 0 )
   crude_scene                                              scene;
 };
 
-CRUDE_PUSH_CONSTANT( Constants )
+CRUDE_PUSH_CONSTANT
 {
   vec3                                                     player_position;
   uint                                                     depth_texture_index;

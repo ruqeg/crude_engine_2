@@ -154,7 +154,7 @@ crude_gfx_debug_pass_on_techniques_reloaded
     ds_creation.name = "depth_lines3d_ds";
     ds_creation.layout = debug_line3d_dsl;
     
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_hga.buffer_handle, 0u );
     
     pass->depth_lines3d_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );
   }
@@ -167,7 +167,7 @@ crude_gfx_debug_pass_on_techniques_reloaded
     ds_creation.name = "depth_cube_ds";
     ds_creation.layout = debug_cube_dsl;
     
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_hga.buffer_handle, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->debug_cubes_instances_sb[ gpu->current_frame ], 1u );
     
     pass->depth_cube_ds[ i ] = crude_gfx_create_descriptor_set( gpu, &ds_creation );

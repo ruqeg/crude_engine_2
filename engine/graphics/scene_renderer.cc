@@ -95,29 +95,13 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity;
-  buffer_creation.name = "meshes_instances_draws_sb";
-  scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_scene_constant_gpu );
-  buffer_creation.name = "scene_cb";
-  scene_renderer->scene_cb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+  scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
+  scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene_constant_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene" );
+  scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
+  scene_renderer->mesh_task_indirect_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_draw_counts_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_count_hga" );
 
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu );
-    buffer_creation.name = "mesh_task_indirect_commands_sb";
-    buffer_creation.device_only = true;
-    scene_renderer->mesh_task_indirect_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -126,13 +110,6 @@ crude_gfx_scene_renderer_initialize
     buffer_creation.device_only = true;
     buffer_creation.name = "mesh_task_indirect_commands_culled_sb";
     scene_renderer->mesh_task_indirect_commands_culled_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-    buffer_creation.name = "mesh_task_indirect_count_sb";
-    scene_renderer->mesh_task_indirect_count_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
 
     buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -158,6 +135,8 @@ crude_gfx_scene_renderer_initialize
     scene_renderer->debug_cubes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
   }
 
+  crude_gfx_stack_allocator_initialize( &scene_renderer->gpu_temporary_allocator, scene_renderer->gpu, CRUDE_RMEGA( 512 ) , "scene_renderer_stack_allocator" );
+
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 }
 
@@ -168,8 +147,10 @@ crude_gfx_scene_renderer_deinitialize
 )
 {
   crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->scene_cb );
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_hga );
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
@@ -180,9 +161,7 @@ crude_gfx_scene_renderer_deinitialize
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_cubes_instances_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_commands_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_culled_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_sb[ i ] );
   }
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
@@ -218,41 +197,29 @@ crude_gfx_scene_renderer_update_instances_from_node
   {
     scene_renderer->total_meshes_instances_buffer_capacity = 4 * scene_renderer->total_meshes_instances_count; /* we need at least 2x because of transparency objects, so do 4x for extensions idk */
 
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->meshes_instances_draws_sb ) )
+    if ( crude_gfx_memory_allocation_valid( &scene_renderer->meshes_instances_draws_hga ) )
     {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->meshes_instances_draws_sb );
+      crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
+    }
+    
+    if ( crude_gfx_memory_allocation_valid( &scene_renderer->mesh_task_indirect_commands_hga ) )
+    {
+      crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
     }
 
     for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
     {
-      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_sb[ i ] ) )
-      {
-        crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_sb[ i ] );
-      }
-
       if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->mesh_task_indirect_commands_culled_sb[ i ] ) )
       {
         crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_culled_sb[ i ] );
       }
     }
 
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity;
-    buffer_creation.name = "meshes_instances_draws_sb";
-    scene_renderer->meshes_instances_draws_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
+    scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
+    scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
 
     for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
     {
-      buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-      buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-      buffer_creation.size = scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu );
-      buffer_creation.name = "mesh_task_indirect_commands_sb";
-      buffer_creation.device_only = true;
-      scene_renderer->mesh_task_indirect_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
       buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
       buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
@@ -537,170 +504,167 @@ update_dynamic_buffers_
 
   /* Update scene constant buffer*/
   {
-    crude_gfx_scene_constant_gpu                          *scene_constant;
+    crude_gfx_scene_constant_gpu                          *scene;
+    crude_gfx_memory_allocation                            scene_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
 
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = scene_renderer->scene_cb;
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_scene_constant_gpu );
-    scene_constant = CRUDE_CAST( crude_gfx_scene_constant_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-    if ( scene_constant )
-    {
-      *scene_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
-      scene_constant->flags = 0u;
-      scene_constant->camera_previous = scene_constant->camera;
-      scene_constant->resolution.x = scene_renderer->gpu->vk_swapchain_width;
-      scene_constant->resolution.y = scene_renderer->gpu->vk_swapchain_height;
-      scene_constant->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->vk_swapchain_width ) / scene_renderer->gpu->vk_swapchain_height;
-      crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene_constant->camera );
-      scene_constant->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
-      scene_constant->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
-      scene_constant->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
-      scene_constant->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
-      scene_constant->inv_shadow_map_size.y = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
+    scene_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_scene_constant_gpu ) );
+    scene = CRUDE_CAST( crude_gfx_scene_constant_gpu*, scene_tca.cpu_address );
+  
+    *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
+    scene->flags = 0u;
+    scene->camera_previous = scene->camera;
+    scene->resolution.x = scene_renderer->gpu->vk_swapchain_width;
+    scene->resolution.y = scene_renderer->gpu->vk_swapchain_height;
+    scene->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->vk_swapchain_width ) / scene_renderer->gpu->vk_swapchain_height;
+    crude_gfx_camera_to_camera_gpu( scene_renderer->options.camera_node, &scene->camera );
+    scene->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
+    scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
+    scene->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
+    scene->inv_shadow_map_size.y = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-      scene_constant->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
+    scene->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
 #else
-      scene_constant->indirect_light_texture_index = -1;
+    scene->indirect_light_texture_index = -1;
 #endif
-      scene_constant->background_color = scene_renderer->options.background_color;
-      scene_constant->background_intensity = scene_renderer->options.background_intensity;
-      scene_constant->ambient_color = scene_renderer->options.ambient_color;
-      scene_constant->ambient_intensity = scene_renderer->options.ambient_intensity;
-      scene_constant->absolute_time = scene_renderer->options.absolute_time;
-      scene_constant->absolute_frame = scene_renderer->gpu->absolute_frame;
-      crude_gfx_unmap_buffer( gpu, scene_renderer->scene_cb );
-    }
+    scene->background_color = scene_renderer->options.background_color;
+    scene->background_intensity = scene_renderer->options.background_intensity;
+    scene->ambient_color = scene_renderer->options.ambient_color;
+    scene->ambient_intensity = scene_renderer->options.ambient_intensity;
+    scene->absolute_time = scene_renderer->options.absolute_time;
+    scene->absolute_frame = scene_renderer->gpu->absolute_frame;
+
+    crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
+    
+    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
 
   /* Update meshes instanse draws buffers*/
   {
     crude_gfx_mesh_instance_draw_gpu                      *meshes_instances_draws;
+    crude_gfx_memory_allocation                            meshes_instances_draws_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
+
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
+    meshes_instances_draws_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_count );
+    meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, meshes_instances_draws_tca.cpu_address );
   
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = scene_renderer->meshes_instances_draws_sb;
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_count;
-    meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-  
-    if ( meshes_instances_draws )
+    scene_renderer->total_visible_meshes_instances_count = 0u;
+    for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
     {
-      scene_renderer->total_visible_meshes_instances_count = 0u;
-      for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
+      crude_gfx_model_renderer_resources_instance       *model_renderer_resources_instance;
+      XMMATRIX                                           model_to_custom_model;
+
+      model_to_custom_model = XMMatrixIdentity( );
+      model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
+      
+      switch ( model_renderer_resources_instance->type )
       {
-        crude_gfx_model_renderer_resources_instance       *model_renderer_resources_instance;
-        XMMATRIX                                           model_to_custom_model;
-
-        model_to_custom_model = XMMatrixIdentity( );
-        model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
-        
-        switch ( model_renderer_resources_instance->type )
+      case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF:
+      {
+        crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_gltf );
+        if ( gltf->hidden )
         {
-        case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF:
-        {
-          crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_gltf );
-          if ( gltf->hidden )
-          {
-            continue;
-          }
-          break;
+          continue;
         }
+        break;
+      }
 #if CRUDE_DEVELOP
-        case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF:
+      case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF:
+      {
+        crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf );
+        
+        if ( scene_renderer->options.hide_debug_gltf || !debug_gltf->visible )
         {
-          crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_gltf );
-          
-          if ( scene_renderer->options.hide_debug_gltf || !debug_gltf->visible )
-          {
-            continue;
-          }
-          break;
+          continue;
         }
-        case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION:
+        break;
+      }
+      case CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION:
+      {
+        crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision );
+        crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
+        
+        if ( scene_renderer->options.hide_collision || !debug_collision->visible )
         {
-          crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_debug_collision );
-          crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_physics_collision_shape );
-          
-          if ( scene_renderer->options.hide_collision || !debug_collision->visible )
-          {
-            continue;
-          }
+          continue;
+        }
 
-          if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-          {
-            model_to_custom_model = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
-          }
-          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-          {
-            model_to_custom_model = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
-          }
-          else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-          {
-            model_to_custom_model = XMMatrixIdentity( );
-          }
-          else
-          {
-            CRUDE_ASSERT( false );
-          }
-          break;
+        if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
+        {
+          model_to_custom_model = XMMatrixScalingFromVector( XMLoadFloat3( &collision_shape->box.half_extent ) );
         }
+        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
+        {
+          model_to_custom_model = XMMatrixScaling( collision_shape->sphere.radius, collision_shape->sphere.radius, collision_shape->sphere.radius );
+        }
+        else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
+        {
+          model_to_custom_model = XMMatrixIdentity( );
+        }
+        else
+        {
+          CRUDE_ASSERT( false );
+        }
+        break;
+      }
 #endif
-        }
+      }
 
-        for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
-        {
-          crude_transform const                             *mesh_transform, *model_transform;
-          XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
-          crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
-          
-          mesh_instance_cpu = &model_renderer_resources_instance->model_renderer_resources.meshes_instances[ model_mesh_instance_index ];
-          
-          mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
-          mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
-          mesh_to_model = XMMatrixMultiply( mesh_to_model, model_to_custom_model );
+      for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
+      {
+        crude_transform const                             *mesh_transform, *model_transform;
+        XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+        crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
+        
+        mesh_instance_cpu = &model_renderer_resources_instance->model_renderer_resources.meshes_instances[ model_mesh_instance_index ];
+        
+        mesh_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( mesh_instance_cpu->node, crude_transform );
+        mesh_to_model = crude_transform_node_to_world( mesh_instance_cpu->node, mesh_transform );
+        mesh_to_model = XMMatrixMultiply( mesh_to_model, model_to_custom_model );
 
-          model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_transform );
-          model_to_world = crude_transform_node_to_world( model_renderer_resources_instance->node, model_transform );
-          
-          mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
+        model_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( model_renderer_resources_instance->node, crude_transform );
+        model_to_world = crude_transform_node_to_world( model_renderer_resources_instance->node, model_transform );
+        
+        mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
 
-          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
-          XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
-          meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
+        XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
+        XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
+        meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
 
-          ++scene_renderer->total_visible_meshes_instances_count;
-        }
+        ++scene_renderer->total_visible_meshes_instances_count;
       }
     }
 
-    if ( meshes_instances_draws )
-    {
-      crude_gfx_unmap_buffer( gpu, scene_renderer->meshes_instances_draws_sb );
-    }
+    crude_gfx_cmd_memory_copy( primary_cmd, meshes_instances_draws_tca, scene_renderer->meshes_instances_draws_hga, 0, 0 );
+    
+    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update meshlets counes storage buffers*/
   {
     crude_gfx_mesh_draw_counts_gpu                        *mesh_draw_counts;
-    crude_gfx_mesh_draw_counts_gpu                        *mesh_draw_counts_late;
+    crude_gfx_memory_allocation                            mesh_task_indirect_count_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
 
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = scene_renderer->mesh_task_indirect_count_sb[ gpu->current_frame ];
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_mesh_draw_counts_gpu );
-    mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-    if ( mesh_draw_counts )
-    {
-      *mesh_draw_counts = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
-      mesh_draw_counts->opaque_mesh_visible_early_count = 0u;
-      mesh_draw_counts->opaque_mesh_culled_count = 0u;
-      mesh_draw_counts->opaque_mesh_visible_late_count = 0u;
-      mesh_draw_counts->transparent_mesh_visible_count = 0u;
-      mesh_draw_counts->transparent_mesh_culled_count = 0u;
-      mesh_draw_counts->total_mesh_count = scene_renderer->total_visible_meshes_instances_count;
-      mesh_draw_counts->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
-      crude_gfx_unmap_buffer( gpu, scene_renderer->mesh_task_indirect_count_sb[ gpu->current_frame ] );
-    }
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
+    mesh_task_indirect_count_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_mesh_draw_counts_gpu ) );
+    mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, mesh_task_indirect_count_tca.cpu_address );
+
+    *mesh_draw_counts = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
+    mesh_draw_counts->opaque_mesh_visible_early_count = 0u;
+    mesh_draw_counts->opaque_mesh_culled_count = 0u;
+    mesh_draw_counts->opaque_mesh_visible_late_count = 0u;
+    mesh_draw_counts->transparent_mesh_visible_count = 0u;
+    mesh_draw_counts->transparent_mesh_culled_count = 0u;
+    mesh_draw_counts->total_mesh_count = scene_renderer->total_visible_meshes_instances_count;
+    mesh_draw_counts->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
+
+    crude_gfx_cmd_memory_copy( primary_cmd, mesh_task_indirect_count_tca, scene_renderer->mesh_task_indirect_count_hga, 0, 0 );
+    
+    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update debug draw commands */

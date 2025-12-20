@@ -192,6 +192,7 @@ typedef struct crude_gfx_device
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
   PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
+  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
@@ -209,7 +210,6 @@ typedef struct crude_gfx_device
   PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
   PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
   PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
-  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 
@@ -235,7 +235,7 @@ crude_gfx_device_deinitialize
  *
  * GPU Device Common Functions
  * 
- ***********************************************/  
+ ***********************************************/
 CRUDE_API void                                     
 crude_gfx_set_resource_name                        
 (

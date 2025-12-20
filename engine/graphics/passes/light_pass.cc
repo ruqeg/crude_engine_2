@@ -118,7 +118,7 @@ crude_gfx_light_pass_on_techniques_reloaded
     ds_creation.layout = light_dsl;
     ds_creation.name = "light_pass_ds";
     
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_cb, 0u );
+    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->scene_hga.buffer_handle, 0u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_bins_sb[ gpu->current_frame ], 10u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_sb, 11u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_tiles_sb[ gpu->current_frame ], 12u );

@@ -8,8 +8,7 @@
 				"crude/platform.glsli",
 				"crude/debug.glsli",
 				"crude/scene.glsli",
-				"crude/light.glsli",
-				"crude/light_impl.glsli"
+				"crude/light.glsli"
 			]
 		}
 	],

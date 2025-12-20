@@ -84,15 +84,17 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
-  crude_gfx_buffer_handle                                  scene_cb;
+  crude_gfx_memory_allocation                              scene_hga;
   
+  crude_gfx_stack_allocator                                gpu_temporary_allocator;
+
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
   uint32                                                   total_meshes_instances_count;
-  crude_gfx_buffer_handle                                  meshes_instances_draws_sb;
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_memory_allocation                              meshes_instances_draws_hga;
+  crude_gfx_memory_allocation                              mesh_task_indirect_commands_hga;
+  crude_gfx_memory_allocation                              mesh_task_indirect_count_hga;
   crude_gfx_buffer_handle                                  mesh_task_indirect_commands_culled_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  mesh_task_indirect_count_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   
   uint32                                                   total_meshes_instances_buffer_capacity;
 

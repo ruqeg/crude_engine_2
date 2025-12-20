@@ -23,14 +23,32 @@
 #define CRUDE_UNIFORM( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std140) uniform name
 #define CRUDE_RBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) readonly buffer name
 #define CRUDE_RWBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) buffer name
-#define CRUDE_PUSH_CONSTANT( name ) layout(push_constant) uniform name
+#define CRUDE_PUSH_CONSTANT layout(push_constant) uniform _Crude_Push_Constant
 
 #define CRUDE_TEXTURE_FETCH( ti, uv, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 
+#define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
+#define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
+
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_control_flow_attributes : require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : require
+
+#define uint8 uint8_t
+#define uint16 uint16_t
+#define uint64 uint64_t
+
+#define crude_device_address uint64
 
 /* Read only */
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];

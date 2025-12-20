@@ -5,6 +5,7 @@
 #include <engine/scene/scene_components.h>
 #include <engine/graphics/model_renderer_resources.h>
 #include <engine/graphics/asynchronous_loader.h>
+#include <engine/graphics/gpu_memory.h>
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
@@ -32,7 +33,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    **********************/
   crude_gfx_sampler_handle                                *samplers;
   crude_gfx_texture_handle                                *images;
-  crude_gfx_buffer_handle                                 *buffers;
+  crude_gfx_memory_allocation                             *buffers;
   
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
@@ -45,12 +46,12 @@ typedef struct crude_gfx_model_renderer_resources_manager
 
   struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
 
-  crude_gfx_buffer_handle                                  meshlets_sb;
-  crude_gfx_buffer_handle                                  meshlets_vertices_sb;
-  crude_gfx_buffer_handle                                  meshlets_vertices_indices_sb;
-  crude_gfx_buffer_handle                                  meshlets_triangles_indices_sb;
-  crude_gfx_buffer_handle                                  meshes_draws_sb;
-  crude_gfx_buffer_handle                                  meshes_bounds_sb;
+  crude_gfx_memory_allocation                              meshlets_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_indices_hga;
+  crude_gfx_memory_allocation                              meshlets_triangles_indices_hga;
+  crude_gfx_memory_allocation                              meshes_draws_hga;
+  crude_gfx_memory_allocation                              meshes_bounds_hga;
 } crude_gfx_model_renderer_resources_manager;
 
 CRUDE_API void

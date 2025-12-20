@@ -236,7 +236,7 @@ void main()
 #if defined( LUMINANCE_AVERAGE_CALCULATION )
 layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT( Constants )
+CRUDE_PUSH_CONSTANT
 {
   float                                                    log_lum_range;
   float                                                    min_log_lum;
@@ -298,7 +298,7 @@ CRUDE_RWBUFFER( Histogram, 0 )
   uint                                                    histogram[];
 };
 
-CRUDE_PUSH_CONSTANT( Constants )
+CRUDE_PUSH_CONSTANT
 {
   float                                                    inverse_log_lum_range;
   float                                                    min_log_lum;

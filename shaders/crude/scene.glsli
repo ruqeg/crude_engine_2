@@ -2,34 +2,6 @@
 #ifndef CRUDE_SCENE_GLSL
 #define CRUDE_SCENE_GLSL
 
-#extension GL_EXT_shader_16bit_storage: require
-#extension GL_EXT_shader_8bit_storage: require
-#extension GL_ARB_shader_draw_parameters : require
-#extension GL_KHR_shader_subgroup_ballot: require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
-
-#ifdef CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-
-#extension GL_EXT_buffer_reference : require
-#extension GL_EXT_buffer_reference2 : require
-
-layout(buffer_reference, buffer_reference_align=4, std430) buffer vec2_array_type
-{
-  vec2                                                     v;
-};
-
-layout(buffer_reference, buffer_reference_align=2, std430) buffer int_array_type
-{
-  uint16_t                                                 v;
-};
-
-layout(buffer_reference, buffer_reference_align=4, std430) buffer float_array_type
-{
-  float                                                    v;
-};
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-
 struct crude_mesh_draw_command
 {
   uint                                                     draw_id;
@@ -130,6 +102,41 @@ struct crude_scene
   uint                                                     absolute_frame;
   float                                                    absolute_time;
   float                                                    resolution_ratio;
+};
+
+CRUDE_RBUFFER_REF( SceneRef ) 
+{
+  crude_scene                                              data;
+};
+
+CRUDE_RBUFFER_REF( MeshDrawsRef )
+{
+  crude_mesh_draw                                          data[];
+};
+
+CRUDE_RBUFFER_REF( MeshInstancesDrawsRef )
+{
+  crude_mesh_instance_draw                                 data[];
+};
+
+CRUDE_RBUFFER_REF( MeshletsRef )
+{
+  crude_meshlet                                            data[];
+};
+
+CRUDE_RBUFFER_REF( VerticesRef )
+{
+  crude_vertex                                             data[];
+};
+
+CRUDE_RBUFFER_REF( TrianglesIndicesRef )
+{
+  uint8_t                                                  data[];
+};
+
+CRUDE_RBUFFER_REF( VerticesIndicesRef )
+{
+  uint                                                     data[];
 };
 
 #endif /* CRUDE_SCENE_GLSL */
