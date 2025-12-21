@@ -1,9 +1,8 @@
-#include <imgui/imgui.h>
-
 #include <engine/core/string.h>
 #include <engine/core/memory.h>
 #include <engine/core/assert.h>
 #include <engine/physics/physics.h>
+#include <engine/graphics/imgui.h>
 #include <engine/scene/node_manager.h>
 
 #include <engine/physics/physics_components.h>

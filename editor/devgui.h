@@ -1,11 +1,10 @@
 #pragma once
 
-#include <imgui.h>
-
 #include <engine/core/ecs.h>
 #include <engine/platform/platform_components.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
+#include <engine/graphics/imgui_def.h>
 #include <engine/scene/node_manager.h>
 
 typedef struct crude_editor crude_editor;

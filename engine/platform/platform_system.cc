@@ -1,11 +1,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <imgui/backends/imgui_impl_sdl3.h>
 
 #include <engine/core/array.h>
 #include <engine/core/profiler.h>
 #include <engine/core/memory.h>
 #include <engine/core/assert.h>
+#include <engine/graphics/imgui.h>
 #include <engine/platform/platform_components.h>
 
 #include <engine/platform/platform_system.h>

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <imgui/imgui.h>
 #include <nfd.h>
 
 #include <engine/engine.h>
@@ -13,6 +12,7 @@
 #include <engine/physics/physics_system.h>
 #include <engine/external/game_debug_system.h>
 #include <engine/external/game_components.h>
+#include <engine/graphics/imgui.h>
 #include <engine/audio/audio_system.h>
 #include <game/graphics/passes/game_postprocessing_pass.h>
 #include <game/game_menu.h>

@@ -1,7 +1,7 @@
 #include <engine/core/assert.h>
-#include <imgui/imgui.h>
 
 #include <engine/scene/scene_components.h>
+#include <engine/graphics/imgui.h>
 #include <engine/physics/physics_components.h>
 #include <engine/scene/node_manager.h>
 

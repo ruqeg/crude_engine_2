@@ -1,7 +1,4 @@
-#include <imgui/imgui.h>
-#include <imgui/backends/imgui_impl_sdl3.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <ImGuizmo/ImGuizmo.h>
+#include <engine/graphics/imgui_def.h>
 
 #include <engine/core/hash_map.h>
 #include <engine/core/file.h>

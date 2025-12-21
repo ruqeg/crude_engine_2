@@ -85,8 +85,6 @@ typedef struct crude_gfx_scene_renderer
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_memory_allocation                              scene_hga;
-  
-  crude_gfx_stack_allocator                                gpu_temporary_allocator;
 
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;

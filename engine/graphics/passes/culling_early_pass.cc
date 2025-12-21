@@ -58,6 +58,9 @@ crude_gfx_culling_early_pass_render
 
   crude_gfx_cmd_bind_pipeline( primary_cmd, mesh_culling_pipeline );
   
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->scene_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->meshes_instances_draws_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );

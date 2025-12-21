@@ -28,6 +28,15 @@ typedef struct crude_gfx_stack_allocator
   char const                                              *name;
 } crude_gfx_stack_allocator;
 
+typedef struct crude_gfx_linear_allocator
+{
+  crude_gfx_device                                        *gpu;
+  crude_gfx_memory_allocation                              allocation;
+  sizet                                                    capacity;
+  sizet                                                    occupied;
+  char const                                              *name;
+} crude_gfx_linear_allocator;
+
 CRUDE_API void
 crude_gfx_stack_allocator_initialize
 (
@@ -61,6 +70,34 @@ crude_gfx_stack_allocator_free_marker
 (
   _In_ crude_gfx_stack_allocator                          *allocator,
   _In_ uint64                                              marker
+);
+
+CRUDE_API void
+crude_gfx_linear_allocator_initialize
+(
+  _In_ crude_gfx_linear_allocator                         *allocator,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ sizet                                               capacity,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_linear_allocator_deinitialize
+(
+  _In_ crude_gfx_linear_allocator                         *allocator
+);
+
+CRUDE_API crude_gfx_memory_allocation
+crude_gfx_linear_allocator_allocate
+( 
+  _In_ crude_gfx_linear_allocator                         *allocator,
+  _In_ uint64                                              size
+);
+
+CRUDE_API void
+crude_gfx_linear_allocator_clear
+(
+  _In_ crude_gfx_linear_allocator                         *allocator
 );
 
 CRUDE_API crude_gfx_memory_allocation

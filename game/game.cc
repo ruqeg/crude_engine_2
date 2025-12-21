@@ -1,7 +1,3 @@
-#include <imgui/imgui.h>
-#include <imgui/backends/imgui_impl_sdl3.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-
 #include <engine/core/profiler.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/file.h>
@@ -12,6 +8,7 @@
 #include <engine/scene/scene_components.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
+#include <engine/graphics/imgui.h>
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics_system.h>
@@ -200,6 +197,7 @@ game_initialize
   ECS_IMPORT( game->engine->world, crude_level_cutscene_only_sound_system );
   ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
   ECS_IMPORT( game->engine->world, crude_boss_system );
+  ECS_IMPORT( game->engine->world, crude_free_camera_system );
   
   srand( time( NULL ) );
 
@@ -657,7 +655,7 @@ game_setup_custom_postload_nodes_
 )
 {
   game->player_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
-  /*
+
     crude_entity editor_camera_node;
   {
     crude_transform                                        editor_camera_node_transform;
@@ -688,7 +686,7 @@ game_setup_custom_postload_nodes_
     CRUDE_ENTITY_SET_COMPONENT( editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
   }
 
-  game->focused_camera_node = editor_camera_node;*/
+  game->focused_camera_node = editor_camera_node;
 }
 
 void

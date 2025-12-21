@@ -1,4 +1,4 @@
-#include <imgui.h>
+#include <engine/graphics/imgui.h>
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 
@@ -84,7 +84,11 @@ crude_gfx_imgui_pass_pre_render
   crude_gfx_imgui_pass                                    *pass;
   crude_gfx_device                                        *gpu;
   ImDrawData                                              *imgui_draw_data;
-  int32                                                    draw_counts;
+  ImDrawVert                                              *im_draw_vertices;
+  ImDrawIdx                                               *im_draw_indices;
+  crude_gfx_memory_allocation                              im_draw_indices_tca;
+  crude_gfx_memory_allocation                              im_draw_vertices_tca;
+  uint64                                                   draw_counts, vertex_size, index_size;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
   
@@ -110,6 +114,41 @@ crude_gfx_imgui_pass_pre_render
       }
     }
   }
+  
+  /* Vulkan backend has a different origin than OpenGL. */
+  vertex_size = imgui_draw_data->TotalVtxCount * sizeof( ImDrawVert );
+  index_size = imgui_draw_data->TotalIdxCount * sizeof( ImDrawIdx );
+  
+  if ( vertex_size >= vertex_buffer_size_ || index_size >= index_buffer_size_ )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "ImGui Backend Error: vertex/index overflow!" );
+    return;
+  }
+  
+  if ( vertex_size == 0 && index_size == 0 )
+  {
+    return;
+  }
+
+  im_draw_vertices_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, vertex_size );
+  im_draw_indices_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, index_size );
+
+  im_draw_vertices = CRUDE_CAST( ImDrawVert*, im_draw_vertices_tca.cpu_address );
+  im_draw_indices = CRUDE_CAST( ImDrawIdx*, im_draw_indices_tca.cpu_address );
+  
+  for ( uint64 i = 0; i < imgui_draw_data->CmdListsCount; i++ )
+  {
+    ImDrawList const* cmd_list = imgui_draw_data->CmdLists[ i ];
+    
+    memcpy( im_draw_vertices, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof( ImDrawVert ) );
+    im_draw_vertices += cmd_list->VtxBuffer.Size;
+
+    memcpy( im_draw_indices, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof( ImDrawIdx ) );
+    im_draw_indices += cmd_list->IdxBuffer.Size;
+  }
+  
+  crude_gfx_cmd_memory_copy( primary_cmd, im_draw_vertices_tca, pass->vertex_hga, 0, 0 );
+  crude_gfx_cmd_memory_copy( primary_cmd, im_draw_indices_tca, pass->index_hga, 0, 0 );
 }
 
 void
@@ -137,7 +176,6 @@ crude_gfx_imgui_pass_render
   XMFLOAT4X4                                               ortho_projection;
   ImVec2                                                   clip_off, clip_scale;
   int32                                                    draw_counts, framebuffer_width, framebuffer_height;
-  size_t                                                   vertex_size, index_size;
   push_constant_                                           push_constant;
   bool                                                     clip_origin_lower_left;
 
@@ -159,62 +197,12 @@ crude_gfx_imgui_pass_render
   
   /* Vulkan backend has a different origin than OpenGL. */
   clip_origin_lower_left = false;
-  vertex_size = imgui_draw_data->TotalVtxCount * sizeof( ImDrawVert );
-  index_size = imgui_draw_data->TotalIdxCount * sizeof( ImDrawIdx );
   
-  if ( vertex_size >= vertex_buffer_size_ || index_size >= index_buffer_size_ )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "ImGui Backend Error: vertex/index overflow!" );
-    return;
-  }
-  
-  if ( vertex_size == 0 && index_size == 0 )
+  if ( imgui_draw_data->TotalVtxCount == 0 && imgui_draw_data->TotalIdxCount == 0 )
   {
     return;
   }
   
-  {
-    
-    ImDrawVert                                            *im_draw_vertices;
-    crude_gfx_memory_allocation                            im_draw_vertices_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
-
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &pass->scene_renderer->gpu_temporary_allocator );
-    im_draw_vertices_tca = crude_gfx_stack_allocator_allocate( &pass->scene_renderer->gpu_temporary_allocator, vertex_size );
-    im_draw_vertices = CRUDE_CAST( ImDrawVert*, im_draw_vertices_tca.cpu_address );
-    
-    for ( uint64 i = 0; i < imgui_draw_data->CmdListsCount; i++ )
-    {
-      ImDrawList const* cmd_list = imgui_draw_data->CmdLists[ i ];
-      memcpy( im_draw_vertices, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof( ImDrawVert ) );
-      im_draw_vertices += cmd_list->VtxBuffer.Size;
-    }
-    
-    crude_gfx_cmd_memory_copy( primary_cmd, im_draw_vertices_tca, pass->vertex_hga, 0, 0 );
-    crude_gfx_stack_allocator_free_marker( &pass->scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
-  }
-  
-  {
-    
-    ImDrawIdx                                             *im_draw_indices;
-    crude_gfx_memory_allocation                            im_draw_indices_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
-
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &pass->scene_renderer->gpu_temporary_allocator );
-    im_draw_indices_tca = crude_gfx_stack_allocator_allocate( &pass->scene_renderer->gpu_temporary_allocator, vertex_size );
-    im_draw_indices = CRUDE_CAST( ImDrawIdx*, im_draw_indices_tca.cpu_address );
-    
-    for ( uint64 i = 0; i < imgui_draw_data->CmdListsCount; i++ )
-    {
-      ImDrawList const* cmd_list = imgui_draw_data->CmdLists[ i ];
-      memcpy( im_draw_indices, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof( ImDrawIdx ) );
-      im_draw_indices += cmd_list->IdxBuffer.Size;
-    }
-    
-    crude_gfx_cmd_memory_copy( primary_cmd, im_draw_indices_tca, pass->index_hga, 0, 0 );
-    crude_gfx_stack_allocator_free_marker( &pass->scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
-  }
-
   // !TODO add the sorting
   imgui_pipeline = crude_gfx_access_technique_pass_by_name(pass->scene_renderer->gpu, "imgui", "imgui" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
@@ -229,7 +217,6 @@ crude_gfx_imgui_pass_render
     float32 r = imgui_draw_data->DisplayPos.x + imgui_draw_data->DisplaySize.x;
     float32 t = imgui_draw_data->DisplayPos.y;
     float32 b = imgui_draw_data->DisplayPos.y + imgui_draw_data->DisplaySize.y;
-    
     XMStoreFloat4x4( &ortho_projection, XMMatrixSet(
       2.0f / ( r - l ), 0.0f, 0.0f, 0.0f,
       0.0f, 2.0f / ( t - b ), 0.0f, 0.0f,

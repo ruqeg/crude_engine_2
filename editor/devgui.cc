@@ -1,6 +1,4 @@
 #include <nfd.h>
-#include <imgui/imgui.h>
-#include <ImGuizmo/ImGuizmo.h>
 
 #include <engine/core/hash_map.h>
 #include <engine/graphics/gpu_resources_loader.h>
@@ -9,6 +7,7 @@
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
 #include <engine/scene/scene_debug_components.h>
+#include <engine/graphics/imgui_def.h>
 #include <editor/editor.h>
 
 #include <editor/devgui.h>

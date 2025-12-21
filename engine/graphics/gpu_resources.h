@@ -516,9 +516,7 @@ typedef struct crude_gfx_buffer
   VkBufferUsageFlags                                       type_flags;
   crude_gfx_resource_usage_type                            usage;
   uint32                                                   size;
-  uint32                                                   global_offset;
   crude_gfx_buffer_handle                                  handle;
-  crude_gfx_buffer_handle                                  parent_buffer;
   char const                                              *name;
   uint8                                                   *mapped_data;
   bool                                                     ready;
@@ -648,23 +646,6 @@ typedef struct crude_gfx_shader_state
   crude_gfx_pipeline_type                                  pipeline_type;
   crude_gfx_shader_reflect                                 reflect;
 } crude_gfx_shader_state;
-
-typedef struct crude_gfx_buffer_description
-{
-  void                                                    *native_handle;
-  char const                                              *name;
-  VkBufferUsageFlags                                       type_flags;
-  crude_gfx_resource_usage_type                            usage;
-  uint32                                                   size;
-  crude_gfx_buffer_handle                                  parent_handle;
-} crude_gfx_buffer_description;
-
-typedef struct crude_gfx_map_buffer_parameters
-{
-  crude_gfx_buffer_handle                                  buffer;
-  uint32                                                   offset;
-  uint32                                                   size;
-} crude_gfx_map_buffer_parameters;
 
 typedef struct crude_gfx_resource_update
 {

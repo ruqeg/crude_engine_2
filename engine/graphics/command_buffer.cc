@@ -782,21 +782,9 @@ crude_gfx_cmd_fill_buffer
 )
 {
   crude_gfx_buffer                                        *buffer;
-  VkBuffer                                                 vk_buffer;
-  uint64                                                   offset;
 
   buffer = crude_gfx_access_buffer( cmd->gpu, handle );
-  vk_buffer = buffer->vk_buffer;
-  offset = 0u;
-
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
-  {
-    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
-    vk_buffer = parent_buffer->vk_buffer;
-    offset = buffer->global_offset;
-  }
-
-  vkCmdFillBuffer( cmd->vk_cmd_buffer, vk_buffer, offset, buffer->size, value );
+  vkCmdFillBuffer( cmd->vk_cmd_buffer, buffer->vk_buffer, 0, buffer->size, value );
 }
 
 void

@@ -12,17 +12,17 @@ struct imgui_vertex
 {
   vec2                                                     position;
   vec2                                                     uv;
-  uvec4                                                    color;
+  uint                                                     color;
 };
 
-CRUDE_RBUFFER_REF( ImguiVerticesRef )
+CRUDE_RBUFFER_REF_SCALAR( ImguiVerticesRef )
 {
   imgui_vertex                                             data[];
 };
 
-CRUDE_RBUFFER_REF( ImguiIndicesRef )
+CRUDE_RBUFFER_REF_SCALAR( ImguiIndicesRef )
 {
-  uint                                                     data[];
+  uint16_t                                                 data[];
 };
 
 #if defined( IMGUI )
@@ -47,7 +47,7 @@ void main()
 {
   imgui_vertex vertex = vertices.data[ vertex_offset + indices.data[ index_offset + gl_VertexIndex ] ];
   out_uv = vertex.uv;
-  out_color = vertex.color / 255.f;
+  out_color = crude_unpack_color_rgba( vertex.color );
   out_texture_id = texture_index;
   gl_Position = projection * vec4( vertex.position, 0, 1 );
 }

@@ -64,7 +64,7 @@ crude_gfx_gbuffer_late_pass_render
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   push_constant_                                           pust_constant;
-  return;
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_late_pass*, ctx );
 
   gpu = pass->scene_renderer->gpu;
@@ -72,7 +72,6 @@ crude_gfx_gbuffer_late_pass_render
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred_meshlet", "deferred_meshlet" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
-  
   pust_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
   pust_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
   pust_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;

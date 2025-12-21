@@ -72,11 +72,74 @@ crude_gfx_stack_allocator_free_marker
   _In_ uint64                                              marker
 )
 {
-  int64 difference = marker - allocator->occupied;
+  int64 difference = allocator->occupied - marker;
   if ( difference > 0u )
   {
     allocator->occupied = marker;
   }
+}
+
+void
+crude_gfx_linear_allocator_initialize
+(
+  _In_ crude_gfx_linear_allocator                         *allocator,
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ sizet                                               capacity,
+  _In_ char const                                         *name
+)
+{
+  allocator->gpu = gpu;
+  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name );
+  allocator->capacity = capacity;
+  allocator->occupied = 0u;
+  allocator->name = name;
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_MEMORY, "GPU Linear allocator of capacity %llu created", capacity );
+}
+
+void
+crude_gfx_linear_allocator_deinitialize
+(
+  _In_ crude_gfx_linear_allocator                         *allocator
+)
+{
+  CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocator->occupied == 0u, "GPU Linear allocator \"%s\" shutdown. Allocated memory detected. Allocated %llu, total %llu", allocator->name, allocator->occupied, allocator->capacity );
+  crude_gfx_memory_deallocate( allocator->gpu, allocator->allocation );
+}
+
+crude_gfx_memory_allocation
+crude_gfx_linear_allocator_allocate
+( 
+  _In_ crude_gfx_linear_allocator                         *allocator,
+  _In_ uint64                                              size
+)
+{
+  crude_gfx_memory_allocation                              allocation;
+
+  if ( allocator->occupied + size > allocator->capacity )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "GPU new memory block is too big for current linear allocator! %i occupied, %i requested size, %i capacity", allocator->occupied, size, allocator->capacity );
+  }
+
+  allocation = crude_gfx_memory_allocation_empty( );
+  allocation.cpu_address = CRUDE_CAST( uint8*, allocator->allocation.cpu_address ) + allocator->occupied;
+  allocation.gpu_address = allocator->allocation.gpu_address + allocator->occupied;
+  allocation.size = size;
+  allocation.type = CRUDE_GFX_MEMORY_TYPE_CPU_GPU;
+  allocation.buffer_handle = allocator->allocation.buffer_handle;
+  allocation.offset = allocator->occupied;
+
+  allocator->occupied += size;
+
+  return allocation;
+}
+
+void
+crude_gfx_linear_allocator_clear
+(
+  _In_ crude_gfx_linear_allocator                         *allocator
+)
+{
+  allocator->occupied = 0;
 }
 
 crude_gfx_memory_allocation

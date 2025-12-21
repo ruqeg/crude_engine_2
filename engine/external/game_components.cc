@@ -1,6 +1,5 @@
-#include <imgui/imgui.h>
-
 #include <engine/core/memory.h>
+#include <engine/graphics/imgui.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/external/game_components.h>
 

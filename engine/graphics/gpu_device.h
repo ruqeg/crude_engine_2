@@ -7,6 +7,7 @@
 #include <engine/core/string.h>
 #include <engine/core/assert.h>
 #include <engine/graphics/command_buffer.h>
+#include <engine/graphics/gpu_memory.h>
 
 #if CRUDE_GPU_PROFILER
 typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
@@ -63,16 +64,8 @@ typedef struct crude_gfx_device
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
   uint32                                                   absolute_frame;
-  /**
-   * Serves as the primary dynamic buffer.
-   * This buffer acts as a foundation for mapping 
-   * other buffers to its memory space.
-   */
-  crude_gfx_buffer_handle                                  dynamic_buffer;
-  uint8                                                   *dynamic_mapped_memory;
-  uint32                                                   dynamic_per_frame_size;
-  uint32                                                   dynamic_allocated_size;
-  uint32                                                   dynamic_max_per_frame_size;
+
+  crude_gfx_linear_allocator                               frame_linear_allocator;
   /**
    * Default sampler and texture references.
    * These fallback resources will be used when
@@ -278,27 +271,6 @@ crude_gfx_queue_cmd
 (                                                  
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
-                                                   
-CRUDE_API void*                                    
-crude_gfx_map_buffer                               
-(                                                  
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_map_buffer_parameters const              *parameters
-);
-                                                   
-CRUDE_API void                                     
-crude_gfx_unmap_buffer                             
-(                                                  
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_buffer_handle                             handle
-);
-                                                   
-CRUDE_API void*                                    
-crude_gfx_dynamic_allocate                         
-(                                                  
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              size
-);
 
 CRUDE_API void
 crude_gfx_link_texture_sampler
@@ -314,14 +286,6 @@ crude_gfx_get_descriptor_set_layout
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_pipeline_handle                           pipeline_handle,
   _In_ uint32                                              layout_index
-);
-
-CRUDE_API void
-crude_gfx_query_buffer 
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_buffer_handle                             buffer,
-  _Out_ crude_gfx_buffer_description                      *description
 );
 
 CRUDE_API bool

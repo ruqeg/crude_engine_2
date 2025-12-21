@@ -1,13 +1,13 @@
 #if CRUDE_DEVELOP
 
 #include <SDL3/SDL.h>
-#include <imgui/imgui.h>
 
 #include <engine/core/hash_map.h>
 #include <engine/platform/platform.h>
 #include <game/game.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/external/game_components.h>
+#include <engine/graphics/imgui.h>
 #include <engine/core/profiler.h>
 
 #include <game/devmenu.h>

@@ -100,8 +100,6 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
-  crude_gfx_stack_allocator_initialize( &scene_renderer->gpu_temporary_allocator, scene_renderer->gpu, CRUDE_RMEGA( 512 ) , "scene_renderer_stack_allocator" );
-
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 }
 
@@ -389,7 +387,6 @@ update_dynamic_buffers_
 )
 {
   crude_gfx_device                                        *gpu;
-  crude_gfx_map_buffer_parameters                          buffer_map;
 
   gpu = scene_renderer->gpu;
 
@@ -397,10 +394,8 @@ update_dynamic_buffers_
   {
     crude_gfx_scene_constant_gpu                          *scene;
     crude_gfx_memory_allocation                            scene_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
 
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
-    scene_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_scene_constant_gpu ) );
+    scene_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_scene_constant_gpu ) );
     scene = CRUDE_CAST( crude_gfx_scene_constant_gpu*, scene_tca.cpu_address );
   
     *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
@@ -428,18 +423,14 @@ update_dynamic_buffers_
     scene->absolute_frame = scene_renderer->gpu->absolute_frame;
 
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
-    
-    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
 
   /* Update meshes instanse draws buffers*/
   {
     crude_gfx_mesh_instance_draw_gpu                      *meshes_instances_draws;
     crude_gfx_memory_allocation                            meshes_instances_draws_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
 
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
-    meshes_instances_draws_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_count );
+    meshes_instances_draws_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_count );
     meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, meshes_instances_draws_tca.cpu_address );
   
     scene_renderer->total_visible_meshes_instances_count = 0u;
@@ -530,18 +521,14 @@ update_dynamic_buffers_
     }
 
     crude_gfx_cmd_memory_copy( primary_cmd, meshes_instances_draws_tca, scene_renderer->meshes_instances_draws_hga, 0, 0 );
-    
-    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update meshlets counes storage buffers*/
   {
     crude_gfx_mesh_draw_counts_gpu                        *mesh_draw_counts;
     crude_gfx_memory_allocation                            mesh_task_indirect_count_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
 
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
-    mesh_task_indirect_count_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_mesh_draw_counts_gpu ) );
+    mesh_task_indirect_count_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_draw_counts_gpu ) );
     mesh_draw_counts = CRUDE_CAST( crude_gfx_mesh_draw_counts_gpu*, mesh_task_indirect_count_tca.cpu_address );
 
     *mesh_draw_counts = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_draw_counts_gpu );
@@ -554,18 +541,14 @@ update_dynamic_buffers_
     mesh_draw_counts->depth_pyramid_texture_index = scene_renderer->depth_pyramid_pass.depth_pyramid_texture_handle.index;
 
     crude_gfx_cmd_memory_copy( primary_cmd, mesh_task_indirect_count_tca, scene_renderer->mesh_task_indirect_count_hga, 0, 0 );
-    
-    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update debug draw commands */
   {
     crude_gfx_debug_draw_command_gpu                      *debug_draw_command;
     crude_gfx_memory_allocation                            debug_draw_command_tca;
-    uint64                                                 gpu_temporary_allocator_marker;
 
-    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
-    debug_draw_command_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_debug_draw_command_gpu ) );
+    debug_draw_command_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_debug_draw_command_gpu ) );
     debug_draw_command = CRUDE_CAST( crude_gfx_debug_draw_command_gpu*, debug_draw_command_tca.cpu_address );
 
     *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
@@ -574,8 +557,6 @@ update_dynamic_buffers_
     debug_draw_command->draw_indirect_cube.vertexCount = 36u;
     
     crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
-    
-    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update lights buffers */

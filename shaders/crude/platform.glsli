@@ -29,6 +29,8 @@
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_IMAGE_STORE( ti, uv, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], uv, data )
 
+#define CRUDE_RBUFFER_REF_SCALAR( name ) layout(buffer_reference, row_major, scalar) readonly buffer name
+#define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
 #define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
 #define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
 

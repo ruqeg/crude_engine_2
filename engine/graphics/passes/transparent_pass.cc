@@ -56,7 +56,7 @@ crude_gfx_transparent_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_transparent_pass*, ctx );
 
   gpu = pass->scene_renderer->gpu;
-  return;
+  
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred_meshlet", "transparent_no_cull" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
@@ -70,7 +70,7 @@ crude_gfx_transparent_pass_render
   pust_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
   pust_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
   pust_constant.zbins = pass->scene_renderer->lights_bins_hga.gpu_address;
-  pust_constant.lights_tiles = pass->scene_renderer->lights_bins_hga.gpu_address;
+  pust_constant.lights_tiles = pass->scene_renderer->lights_tiles_hga.gpu_address;
   pust_constant.lights_indices = pass->scene_renderer->lights_indices_hga.gpu_address;
   pust_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
   pust_constant.light_shadow_views = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;

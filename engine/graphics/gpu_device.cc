@@ -387,27 +387,7 @@ crude_gfx_device_initialize
     gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   }
   
-  {
-    crude_gfx_map_buffer_parameters                        buffer_map;
-    crude_gfx_buffer_creation                              dynamic_buffer_creation;
-    
-    gpu->dynamic_allocated_size = 0;
-    gpu->dynamic_max_per_frame_size = 0;
-    gpu->dynamic_per_frame_size = 1024 * 1024 * 10;
-
-    dynamic_buffer_creation = crude_gfx_buffer_creation_empty();
-    dynamic_buffer_creation.name = "dynamic_persistent_buffer";
-    dynamic_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-    dynamic_buffer_creation.type_flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-    dynamic_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    dynamic_buffer_creation.size = gpu->dynamic_per_frame_size * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
-    gpu->dynamic_buffer = crude_gfx_create_buffer( gpu, &dynamic_buffer_creation );
-    
-    buffer_map = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { .buffer = gpu->dynamic_buffer } );
-    gpu->dynamic_mapped_memory = ( uint8* )crude_gfx_map_buffer( gpu, &buffer_map );
-  }
+  crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 512 ) , "frame_linear_allocator" );
 
   {
     VkPhysicalDeviceProperties2                             physical_device_properties_2;
@@ -453,8 +433,7 @@ crude_gfx_device_deinitialize
 {
   vkDeviceWaitIdle( gpu->vk_device );
   
-  crude_gfx_unmap_buffer( gpu, gpu->dynamic_buffer );
-  crude_gfx_destroy_buffer( gpu, gpu->dynamic_buffer );
+  crude_gfx_linear_allocator_deinitialize( &gpu->frame_linear_allocator );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
   crude_gfx_destroy_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
   crude_gfx_destroy_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
@@ -590,11 +569,8 @@ crude_gfx_new_frame
   
   crude_gfx_cmd_manager_reset( &gpu->cmd_buffer_manager, gpu->current_frame );
 
-  {
-    uint32 used_size = gpu->dynamic_allocated_size - ( gpu->dynamic_per_frame_size * gpu->previous_frame );
-    gpu->dynamic_max_per_frame_size = CRUDE_MAX( used_size, gpu->dynamic_max_per_frame_size );
-    gpu->dynamic_allocated_size = gpu->dynamic_per_frame_size * gpu->current_frame;
-  }
+  crude_gfx_linear_allocator_clear( &gpu->frame_linear_allocator );
+
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -942,64 +918,6 @@ crude_gfx_queue_cmd
   CRUDE_ARRAY_PUSH( cmd->gpu->queued_command_buffers, cmd );
 }
 
-void*
-crude_gfx_map_buffer
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_map_buffer_parameters const              *parameters
-)
-{
-  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( parameters->buffer ) )
-  {
-    return NULL;
-  }
-
-  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, parameters->buffer );
-  
-  if ( buffer->parent_buffer.index == gpu->dynamic_buffer.index )
-  {
-    buffer->global_offset = gpu->dynamic_allocated_size;
-    return crude_gfx_dynamic_allocate( gpu, parameters->size == 0 ? buffer->size : parameters->size );
-  }
-
-  void* data;
-  vmaMapMemory( gpu->vma_allocator, buffer->vma_allocation, &data );
-  return data;
-}
-
-void
-crude_gfx_unmap_buffer
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_buffer_handle                             handle
-)
-{
-  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
-  {
-    return;
-  }
-
-  crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
-  if ( buffer->parent_buffer.index == gpu->dynamic_buffer.index )
-  {
-    return;
-  }
-  
-  vmaUnmapMemory( gpu->vma_allocator, buffer->vma_allocation );
-}
-
-void*
-crude_gfx_dynamic_allocate
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              size
-)
-{
-  void *mapped_memory = gpu->dynamic_mapped_memory + gpu->dynamic_allocated_size;
-  gpu->dynamic_allocated_size += crude_memory_align( size, CRUDE_GRAPHICS_UBO_ALIGNMENT );
-  return mapped_memory;
-}
-
 void
 crude_gfx_link_texture_sampler
 (
@@ -1024,28 +942,6 @@ crude_gfx_get_descriptor_set_layout
 {
   crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, pipeline_handle );
   return pipeline->descriptor_set_layout_handle[ layout_index ];
-}
-
-void
-crude_gfx_query_buffer
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_gfx_buffer_handle                             buffer,
-  _Out_ crude_gfx_buffer_description                      *description
-)
-{
-  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( buffer ) )
-  {
-    return;
-  }
-
-  crude_gfx_buffer* buffer_data = crude_gfx_access_buffer( gpu, buffer );
-  description->name = buffer_data->name;
-  description->size = buffer_data->size;
-  description->type_flags = buffer_data->type_flags;
-  description->usage = buffer_data->usage;
-  description->parent_handle = buffer_data->parent_buffer;
-  description->native_handle = &buffer_data->vk_buffer;
 }
 
 void
@@ -2436,16 +2332,7 @@ crude_gfx_create_buffer
   buffer->type_flags = creation->type_flags;
   buffer->usage = creation->usage;
   buffer->handle = handle;
-  buffer->global_offset = 0;
-  buffer->parent_buffer = CRUDE_GFX_BUFFER_HANDLE_INVALID;
   buffer->ready = true;
-
-  bool use_global_buffer = ( creation->type_flags & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) ) != 0;
-  if ( creation->usage == CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC && use_global_buffer )
-  {
-    buffer->parent_buffer = gpu->dynamic_buffer;
-    return handle;
-  }
 
   VkBufferCreateInfo buffer_info = CRUDE_COMPOUNT_EMPTY( VkBufferCreateInfo );
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -2522,7 +2409,7 @@ crude_gfx_destroy_buffer_instant
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
 
-  if ( buffer && CRUDE_RESOURCE_HANDLE_IS_INVALID( buffer->parent_buffer ) )
+  if ( buffer )
   {
     vmaDestroyBuffer( gpu->vma_allocator, buffer->vk_buffer, buffer->vma_allocation );
   }
@@ -2741,16 +2628,7 @@ crude_gfx_create_descriptor_set
       crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
       CRUDE_ASSERT( buffer );
 
-      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
-      {
-        crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( gpu, buffer->parent_buffer );
-        buffer_info[ i ].buffer = parent_buffer->vk_buffer;
-      }
-      else
-      {
-        buffer_info[ i ].buffer = buffer->vk_buffer;
-      }
-
+      buffer_info[ i ].buffer = buffer->vk_buffer;
       buffer_info[ i ].offset = 0;
       buffer_info[ i ].range = buffer->size;
 
@@ -2763,15 +2641,7 @@ crude_gfx_create_descriptor_set
       crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, CRUDE_COMPOUNT( crude_gfx_buffer_handle, { creation->resources[ i ] } ) );
       CRUDE_ASSERT( buffer );
 
-      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
-      {
-        crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( gpu, buffer->parent_buffer );
-        buffer_info[ i ].buffer = parent_buffer->vk_buffer;
-      }
-      else
-      {
-        buffer_info[ i ].buffer = buffer->vk_buffer;
-      }
+      buffer_info[ i ].buffer = buffer->vk_buffer;
 
       buffer_info[ i ].offset = 0;
       buffer_info[ i ].range = buffer->size;
