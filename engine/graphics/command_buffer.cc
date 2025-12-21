@@ -420,20 +420,6 @@ crude_gfx_cmd_draw_inderect
 }
 
 void
-crude_gfx_cmd_draw_indexed
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ uint32                                              index_count,
-  _In_ uint32                                              instance_count,
-  _In_ uint32                                              first_index,
-  _In_ int32                                               vertex_offset,
-  _In_ uint32                                              first_instance
-)
-{
-  vkCmdDrawIndexed( cmd->vk_cmd_buffer, index_count, instance_count, first_index, vertex_offset, first_instance );
-}
-
-void
 crude_gfx_cmd_draw_mesh_task
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -473,90 +459,6 @@ crude_gfx_cmd_dispatch
 )
 {
   vkCmdDispatch( cmd->vk_cmd_buffer, group_count_x, group_count_y, group_count_z );
-}
-
-void
-crude_gfx_cmd_bind_vertex_buffer
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer_handle                             handle,
-  _In_ uint32                                              binding,
-  _In_ uint32                                              offset
-)
-{
-  crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, handle );
-  VkDeviceSize offsets[] = { offset };
-  
-  VkBuffer vk_buffer = buffer->vk_buffer;
-  
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
-  {
-    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
-    vk_buffer = parent_buffer->vk_buffer;
-    offsets[ 0 ] = buffer->global_offset;
-  }
-  
-  vkCmdBindVertexBuffers( cmd->vk_cmd_buffer, binding, 1, &vk_buffer, offsets );
-}
-
-CRUDE_API void
-crude_gfx_cmd_bind_index_buffer
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer_handle                             handle,
-  _In_ uint32                                              offset
-)
-{
-  crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, handle );
-  
-  VkBuffer vk_buffer = buffer->vk_buffer;
-  
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( buffer->parent_buffer ) )
-  {
-    crude_gfx_buffer *parent_buffer = crude_gfx_access_buffer( cmd->gpu, buffer->parent_buffer );
-    vk_buffer = parent_buffer->vk_buffer;
-    offset = buffer->global_offset;
-  }
-
-  vkCmdBindIndexBuffer( cmd->vk_cmd_buffer, vk_buffer, offset, VK_INDEX_TYPE_UINT16  );
-}
-
-void
-crude_gfx_cmd_bind_descriptor_set
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_descriptor_set_handle                     handle
-)
-{
-  crude_gfx_descriptor_set                                *bindless_descriptor_set;
-
-  bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
-
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( handle ) )
-  {
-    crude_gfx_descriptor_set                              *descriptor_set;
-    uint32                                                 offsets_cache[ 8 ];
-    uint32                                                 num_offsets;
-
-    num_offsets = 0u;
-    descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, handle );
-
-    for ( uint32 i = 0; i < descriptor_set->layout->num_bindings; ++i )
-    {
-      if ( descriptor_set->layout->bindings[ i ].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER )
-      {
-        crude_gfx_buffer_handle                              buffer_handle;
-        crude_gfx_buffer                                    *buffer;
-
-        CRUDE_ASSERT( num_offsets < CRUDE_COUNTOF( offsets_cache ) );
-        buffer_handle = CRUDE_COMPOUNT( crude_gfx_buffer_handle, { descriptor_set->resources[ i ] } );
-        buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
-        offsets_cache[ num_offsets++ ] = buffer->global_offset;
-      }
-    }
-    vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, num_offsets, offsets_cache );
-  }
 }
 
 void

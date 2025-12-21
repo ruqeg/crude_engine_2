@@ -1,10 +1,13 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
+//#define DEBUG_LINE2D
+//#define DEBUG_LINE3D
 #define DEBUG_CUBE
 #define CRUDE_STAGE_VERTEX
 
 #include "crude/platform.glsli"
+#include "crude/debug.glsli"
 #include "crude/scene.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
@@ -17,15 +20,19 @@
 #if defined( DEBUG_LINE2D )
 
 #if defined( CRUDE_STAGE_VERTEX )
-layout(location=0) in vec3 in_position;
-layout(location=1) in uint in_packed_color;
-
 layout(location=0) out vec4 out_color;
+
+CRUDE_PUSH_CONSTANT
+{
+  DebugLinesVerticesRef                                    debug_lines_vertices;
+  vec2                                                     _padding;
+};
 
 void main()
 {
-  out_color = crude_unpack_color_rgba( in_packed_color );
-  gl_Position = vec4( in_position, 1.0 );
+  crude_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
+  out_color = crude_unpack_color_rgba( vertex.color );
+  gl_Position = vec4( vertex.position, 1.0 );
 }
 #endif /* CRUDE_STAGE_VERTEX */
 
@@ -52,20 +59,19 @@ void main()
 
 #if defined( CRUDE_STAGE_VERTEX )
 
-layout(location=0) in vec3 in_position;
-layout(location=1) in uint in_packed_color;
-
 layout(location=0) out vec4 out_color;
 
-CRUDE_UNIFORM( SceneConstant, 0 ) 
+CRUDE_PUSH_CONSTANT
 {
-  crude_scene                                              scene;
+  SceneRef                                                 scene;
+  DebugLinesVerticesRef                                    debug_lines_vertices;
 };
 
 void main()
 {
-  out_color = crude_unpack_color_rgba( in_packed_color );
-  gl_Position = vec4( in_position, 1.0 ) * scene.camera.world_to_view * scene.camera.view_to_clip;
+  crude_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
+  out_color = crude_unpack_color_rgba( vertex.color );
+  gl_Position = vec4( vertex.position, 1.0 ) * scene.data.camera.world_to_view * scene.data.camera.view_to_clip;
 }
 
 #endif /* CRUDE_STAGE_VERTEX */
@@ -93,14 +99,10 @@ void main()
   *******************/
 #if defined( DEBUG_CUBE )
 
-CRUDE_UNIFORM( SceneConstant, 0 ) 
+CRUDE_PUSH_CONSTANT
 {
-  crude_scene                                              scene;
-};
-
-CRUDE_RBUFFER( CrudeDebugCubes, 1 )
-{
-  crude_debug_cube_instance                                debug_cube_instances[];
+  SceneRef                                                 scene;
+  DebugCubesInstancesRef                                   debug_cube_instances;
 };
 
 #if defined( CRUDE_STAGE_VERTEX )
@@ -149,16 +151,16 @@ layout(location=0) out vec4 out_color;
 
 void main()
 {
-  uint vertex_index = gl_VertexIndex;
+  uint vertex_index = gl_BaseVertex + gl_VertexIndex;
   int probe_index = gl_InstanceIndex;
 
   vec3 position = cube_vertices[ gl_VertexIndex ];
   
-  position = position * debug_cube_instances[ gl_InstanceIndex ].scale;
-  position = position + debug_cube_instances[ gl_InstanceIndex ].translation;
+  position = position * debug_cube_instances.data[ gl_InstanceIndex ].scale;
+  position = position + debug_cube_instances.data[ gl_InstanceIndex ].translation;
   
-  out_color = debug_cube_instances[ gl_InstanceIndex ].color;
-  gl_Position = vec4( position, 1 ) * scene.camera.world_to_clip;
+  out_color = debug_cube_instances.data[ gl_InstanceIndex ].color;
+  gl_Position = vec4( position, 1 ) * scene.data.camera.world_to_clip;
 }
 
 #endif /* CRUDE_STAGE_VERTEX */

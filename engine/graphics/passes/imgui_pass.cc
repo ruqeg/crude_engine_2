@@ -53,31 +53,9 @@ crude_gfx_imgui_pass_initialize
   /* Store our identifier */
   imgui_io->Fonts->TexID = CRUDE_CAST( ImTextureID, &pass->font_texture );
   
-  /* Create constant buffer */
-  cb_creation;
-  cb_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  cb_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  cb_creation.size = 64;
-  cb_creation.name = "cb_imgui";
-  pass->ui_cb = crude_gfx_create_buffer( gpu, &cb_creation );
-  
   /* Create vertex and index buffers */
-  vertex_buffer_creation = crude_gfx_buffer_creation_empty();
-  vertex_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  vertex_buffer_creation.type_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  vertex_buffer_creation.size = vertex_buffer_size_;
-  vertex_buffer_creation.name = "vertex_buffer_imgui";
-  pass->vertex_buffer = crude_gfx_create_buffer( gpu, &vertex_buffer_creation );
-  
-  index_buffer_creation = crude_gfx_buffer_creation_empty();
-  index_buffer_creation.type_flags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-  index_buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  index_buffer_creation.size = index_buffer_size_;
-  index_buffer_creation.name = "index_buffer_imgui";
-  pass->index_buffer = crude_gfx_create_buffer( gpu, &index_buffer_creation );
-
-  pass->imgui_ds = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
-  crude_gfx_imgui_pass_on_techniques_reloaded( pass );
+  pass->vertex_hga = crude_gfx_memory_allocate_with_name( gpu, vertex_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_vertex_hga" );
+  pass->index_hga = crude_gfx_memory_allocate_with_name( gpu, index_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_index_hga" );
 }
 
 void
@@ -90,11 +68,8 @@ crude_gfx_imgui_pass_deinitialize
   ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   ImGui_ImplSDL3_Shutdown( );
 
-  crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->imgui_ds );
-
-  crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->vertex_buffer );
-  crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->index_buffer );
-  crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->ui_cb );
+  crude_gfx_memory_deallocate( pass->scene_renderer->gpu, pass->vertex_hga );
+  crude_gfx_memory_deallocate( pass->scene_renderer->gpu, pass->index_hga );
   
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->font_texture );
 }
@@ -144,20 +119,26 @@ crude_gfx_imgui_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  ImDrawVert                                              *vtx_dst;
-  ImDrawIdx                                               *idx_dst;
+  CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
+  {
+    XMFLOAT4X4                                             projection;
+    VkDeviceAddress                                        vertices;
+    VkDeviceAddress                                        indices;
+    uint32                                                 index_offset;
+    uint32                                                 vertex_offset;
+    uint32                                                 texture_index;
+  };
+
   crude_gfx_imgui_pass                                    *pass;
   crude_gfx_device                                        *gpu;
   ImDrawData                                              *imgui_draw_data;
-  float32                                                 *cb_data;
   crude_gfx_pipeline_handle                                imgui_pipeline;
   crude_gfx_viewport                                       dev_viewport;
-  crude_gfx_map_buffer_parameters                          map_parameters;
   XMFLOAT4X4                                               ortho_projection;
   ImVec2                                                   clip_off, clip_scale;
   int32                                                    draw_counts, framebuffer_width, framebuffer_height;
-  float32                                                  l, r, t, b;
   size_t                                                   vertex_size, index_size;
+  push_constant_                                           push_constant;
   bool                                                     clip_origin_lower_left;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
@@ -192,70 +173,72 @@ crude_gfx_imgui_pass_render
     return;
   }
   
-  /* Upload data */
-  vtx_dst = NULL;
-  idx_dst = NULL;
-  
-  map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->vertex_buffer, 0, ( uint32 )vertex_size } );
-  vtx_dst = CRUDE_REINTERPRET_CAST( ImDrawVert*, crude_gfx_map_buffer( gpu, &map_parameters ) );
-  
-  if ( vtx_dst )
   {
-    for ( int i = 0; i < imgui_draw_data->CmdListsCount; i++ )
+    
+    ImDrawVert                                            *im_draw_vertices;
+    crude_gfx_memory_allocation                            im_draw_vertices_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
+
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &pass->scene_renderer->gpu_temporary_allocator );
+    im_draw_vertices_tca = crude_gfx_stack_allocator_allocate( &pass->scene_renderer->gpu_temporary_allocator, vertex_size );
+    im_draw_vertices = CRUDE_CAST( ImDrawVert*, im_draw_vertices_tca.cpu_address );
+    
+    for ( uint64 i = 0; i < imgui_draw_data->CmdListsCount; i++ )
     {
       ImDrawList const* cmd_list = imgui_draw_data->CmdLists[ i ];
-      memcpy( vtx_dst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof( ImDrawVert ) );
-      vtx_dst += cmd_list->VtxBuffer.Size;
+      memcpy( im_draw_vertices, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof( ImDrawVert ) );
+      im_draw_vertices += cmd_list->VtxBuffer.Size;
     }
     
-    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
+    crude_gfx_cmd_memory_copy( primary_cmd, im_draw_vertices_tca, pass->vertex_hga, 0, 0 );
+    crude_gfx_stack_allocator_free_marker( &pass->scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
-  map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->index_buffer, 0, ( uint32 )index_size } );
-  idx_dst = CRUDE_REINTERPRET_CAST( ImDrawIdx*, crude_gfx_map_buffer( gpu, &map_parameters ) );
-  
-  if ( idx_dst )
   {
-    for ( int i = 0; i < imgui_draw_data->CmdListsCount; i++ )
+    
+    ImDrawIdx                                             *im_draw_indices;
+    crude_gfx_memory_allocation                            im_draw_indices_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
+
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &pass->scene_renderer->gpu_temporary_allocator );
+    im_draw_indices_tca = crude_gfx_stack_allocator_allocate( &pass->scene_renderer->gpu_temporary_allocator, vertex_size );
+    im_draw_indices = CRUDE_CAST( ImDrawIdx*, im_draw_indices_tca.cpu_address );
+    
+    for ( uint64 i = 0; i < imgui_draw_data->CmdListsCount; i++ )
     {
       ImDrawList const* cmd_list = imgui_draw_data->CmdLists[ i ];
-      memcpy( idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof( ImDrawIdx ) );
-      idx_dst += cmd_list->IdxBuffer.Size;
+      memcpy( im_draw_indices, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof( ImDrawIdx ) );
+      im_draw_indices += cmd_list->IdxBuffer.Size;
     }
     
-    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
+    crude_gfx_cmd_memory_copy( primary_cmd, im_draw_indices_tca, pass->index_hga, 0, 0 );
+    crude_gfx_stack_allocator_free_marker( &pass->scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
-  
+
   // !TODO add the sorting
   imgui_pipeline = crude_gfx_access_technique_pass_by_name(pass->scene_renderer->gpu, "imgui", "imgui" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, imgui_pipeline );
-  crude_gfx_cmd_bind_vertex_buffer( primary_cmd, pass->vertex_buffer, 0u, 0u );
-  crude_gfx_cmd_bind_index_buffer( primary_cmd, pass->index_buffer, 0u );
   
   dev_viewport = { 0, 0, ( uint16 )framebuffer_width, ( uint16 )framebuffer_height, 0.0f, 1.0f };
   crude_gfx_cmd_set_viewport( primary_cmd, &dev_viewport ); 
   
   /* Setup dev_viewport, orthographic projection matrix */
   /* Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single dev_viewport apps. */
-  l = imgui_draw_data->DisplayPos.x;
-  r = imgui_draw_data->DisplayPos.x + imgui_draw_data->DisplaySize.x;
-  t = imgui_draw_data->DisplayPos.y;
-  b = imgui_draw_data->DisplayPos.y + imgui_draw_data->DisplaySize.y;
-  
-  XMStoreFloat4x4( &ortho_projection, XMMatrixSet(
-    2.0f / ( r - l ), 0.0f, 0.0f, 0.0f,
-    0.0f, 2.0f / ( t - b ), 0.0f, 0.0f,
-    0.0f, 0.0f, -1.0f, 0.0f,
-    ( r + l ) / ( l - r ), ( t + b ) / ( b - t ), 0.0f, 1.0f
-  ) );
-  
-  map_parameters = CRUDE_COMPOUNT( crude_gfx_map_buffer_parameters, { pass->ui_cb, 0, 0 } );
-  cb_data = ( float* )crude_gfx_map_buffer( gpu, &map_parameters );
-  if ( cb_data )
   {
-    memcpy( cb_data, &ortho_projection._11, sizeof( XMFLOAT4X4 ) );
-    crude_gfx_unmap_buffer( gpu, map_parameters.buffer );
+    float32 l = imgui_draw_data->DisplayPos.x;
+    float32 r = imgui_draw_data->DisplayPos.x + imgui_draw_data->DisplaySize.x;
+    float32 t = imgui_draw_data->DisplayPos.y;
+    float32 b = imgui_draw_data->DisplayPos.y + imgui_draw_data->DisplaySize.y;
+    
+    XMStoreFloat4x4( &ortho_projection, XMMatrixSet(
+      2.0f / ( r - l ), 0.0f, 0.0f, 0.0f,
+      0.0f, 2.0f / ( t - b ), 0.0f, 0.0f,
+      0.0f, 0.0f, -1.0f, 0.0f,
+      ( r + l ) / ( l - r ), ( t + b ) / ( b - t ), 0.0f, 1.0f
+    ) );
   }
+
+  crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
   
   /* Will project scissor/clipping rectangles into framebuffer space */
   clip_off = imgui_draw_data->DisplayPos;         /* (0,0) unless using multi-viewports */
@@ -263,8 +246,6 @@ crude_gfx_imgui_pass_render
   
   /* Render command lists */
   draw_counts = imgui_draw_data->CmdListsCount;
-
-  crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->imgui_ds );
   
   uint32_t vtx_buffer_offset = 0, index_buffer_offset = 0;
   for ( int32 n = 0; n < draw_counts; ++n )
@@ -304,39 +285,21 @@ crude_gfx_imgui_pass_render
           
           /* Retrieve */
           crude_gfx_texture_handle new_texture = *( crude_gfx_texture_handle* )( pcmd->TexRef.GetTexID() );
-          crude_gfx_cmd_draw_indexed( primary_cmd, pcmd->ElemCount, 1, index_buffer_offset + pcmd->IdxOffset, vtx_buffer_offset + pcmd->VtxOffset, new_texture.index );
+          push_constant.vertices = pass->vertex_hga.gpu_address;
+          push_constant.indices = pass->index_hga.gpu_address;
+          push_constant.projection = ortho_projection;
+          push_constant.index_offset = index_buffer_offset + pcmd->IdxOffset;
+          push_constant.vertex_offset = vtx_buffer_offset + pcmd->VtxOffset;
+          push_constant.texture_index = new_texture.index;
+          crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
+
+          crude_gfx_cmd_draw( primary_cmd, 0, pcmd->ElemCount, 0, 1 );
         }
       }
     }
     index_buffer_offset += cmd_list->IdxBuffer.Size;
     vtx_buffer_offset += cmd_list->VtxBuffer.Size;
   }
-}
-
-void
-crude_gfx_imgui_pass_on_techniques_reloaded
-(
-  _In_ void                                               *ctx
-)
-{
-  crude_gfx_imgui_pass                                    *pass;
-  crude_gfx_pipeline_handle                                imgui_pipeline;
-  crude_gfx_descriptor_set_creation                        ds_creation;
-  
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
-
-  imgui_pipeline = crude_gfx_access_technique_pass_by_name(pass->scene_renderer->gpu, "imgui", "imgui" )->pipeline;
-
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->imgui_ds) )
-  {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->imgui_ds );
-  }
-
-  ds_creation = crude_gfx_descriptor_set_creation_empty();
-  ds_creation.layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->gpu, imgui_pipeline, 1u );
-  ds_creation.name = "rl_imgui";
-  crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->ui_cb, 0u );
-  pass->imgui_ds = crude_gfx_create_descriptor_set( pass->scene_renderer->gpu, &ds_creation );
 }
 
 crude_gfx_render_graph_pass_container
@@ -349,6 +312,5 @@ crude_gfx_imgui_pass_pack
   container.ctx = pass;
   container.render = crude_gfx_imgui_pass_render;
   container.pre_render = crude_gfx_imgui_pass_pre_render;
-  container.on_techniques_reloaded = crude_gfx_imgui_pass_on_techniques_reloaded;
   return container;
 }

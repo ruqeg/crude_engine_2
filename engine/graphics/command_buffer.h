@@ -160,17 +160,6 @@ crude_gfx_cmd_draw_inderect
 );
 
 CRUDE_API void
-crude_gfx_cmd_draw_indexed
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ uint32                                              index_count,
-  _In_ uint32                                              instance_count,
-  _In_ uint32                                              first_index,
-  _In_ int32                                               vertex_offset,
-  _In_ uint32                                              first_instance
-);
-
-CRUDE_API void
 crude_gfx_cmd_draw_mesh_task
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -198,29 +187,6 @@ crude_gfx_cmd_dispatch
   _In_ uint32                                              group_count_x,
   _In_ uint32                                              group_count_y,
   _In_ uint32                                              group_count_z
-);
-
-CRUDE_API void
-crude_gfx_cmd_bind_vertex_buffer
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer_handle                             handle,
-  _In_ uint32                                              binding,
-  _In_ uint32                                              offset
-);
-
-CRUDE_API void
-crude_gfx_cmd_bind_index_buffer
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_buffer_handle                             handle,
-  _In_ uint32                                              offset
-);
-CRUDE_API void
-crude_gfx_cmd_bind_descriptor_set
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_descriptor_set_handle                     handle
 );
 
 CRUDE_API void

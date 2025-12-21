@@ -64,8 +64,6 @@ CRUDE_PUSH_CONSTANT
   
   LightsRef                                                lights;
   LightsShadowViewsRef                                     light_shadow_views;
-  
-  vec4                                                     _pust_constant_padding;
 };
 
 void main()

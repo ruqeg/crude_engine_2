@@ -27,6 +27,7 @@
 
 #define CRUDE_TEXTURE_FETCH( ti, uv, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
+#define CRUDE_IMAGE_STORE( ti, uv, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], uv, data )
 
 #define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
 #define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
@@ -47,6 +48,7 @@
 #define uint8 uint8_t
 #define uint16 uint16_t
 #define uint64 uint64_t
+#define uint32 uint
 
 #define crude_device_address uint64
 
@@ -57,6 +59,7 @@ layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler3D g
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform image2D global_images_2d[];
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform image3D global_images_3d[];
 layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform uimage2D global_uimages_2d[];
+layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES,r32f) uniform image2D global_images_2d_r32f[];
 
 uint crude_vec4_to_rgba( vec4 color )
 {
@@ -286,23 +289,5 @@ void crude_calculate_geometric_tbn
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 #extension GL_EXT_mesh_shader : require
 #endif /* CRUDE_STAGE_TASK || CRUDE_STAGE_MESH */
-
-// Debug Related
-#define CRUDE_DEBUG_2D_LINES_OFFSET ( 1000 )
-
-struct crude_debug_cube_instance
-{
-  vec3                                                     translation;
-  uint                                                     padding1;
-  vec4                                                     color;
-  vec3                                                     scale;
-  uint                                                     padding2;
-};
-
-struct crude_debug_line_vertex
-{
-  vec3                                                     position;
-  uint                                                     color;
-};
 
 #endif /* CRUDE_PLATFORM_GLSL */

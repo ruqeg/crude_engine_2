@@ -12,11 +12,6 @@ crude_gfx_culling_late_pass_initialize
 )
 {
   pass->scene_renderer = scene_renderer;
-  
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    pass->culling_late_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
-  }
 }
 
 void
@@ -25,10 +20,6 @@ crude_gfx_culling_late_pass_deinitialize
   _In_ crude_gfx_culling_late_pass                        *pass
 )
 {
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    crude_gfx_destroy_descriptor_set( pass->scene_renderer->gpu, pass->culling_late_ds[ i ] );
-  }
 }
 
 void

@@ -1,33 +1,55 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-#define CRUDE_STAGE_FRAGMENT
+#define IMGUI
+#define CRUDE_STAGE_VERTEX
+//#define CRUDE_STAGE_FRAGMENT
 
 #include "crude/platform.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
+struct imgui_vertex
+{
+  vec2                                                     position;
+  vec2                                                     uv;
+  uvec4                                                    color;
+};
+
+CRUDE_RBUFFER_REF( ImguiVerticesRef )
+{
+  imgui_vertex                                             data[];
+};
+
+CRUDE_RBUFFER_REF( ImguiIndicesRef )
+{
+  uint                                                     data[];
+};
+
 #if defined( IMGUI )
 #if defined( CRUDE_STAGE_VERTEX )
-
-layout(location=0) in vec2 in_position;
-layout(location=1) in vec2 in_uv;
-layout(location=2) in uvec4 in_color;
 
 layout(location=0) out vec2 out_uv;
 layout(location=1) out vec4 out_color;
 layout(location=2) flat out uint out_texture_id;
 
-layout(std140, set=1, binding=0) uniform LocalConstants
+CRUDE_PUSH_CONSTANT
 {
   mat4                                                     projection;
+  ImguiVerticesRef                                         vertices;
+  ImguiIndicesRef                                          indices;
+  uint32                                                   index_offset;
+  uint32                                                   vertex_offset;
+  uint32                                                   texture_index;
+  float                                                    _padding;
 };
 
 void main()
 {
- out_uv = in_uv;
- out_color = in_color / 255.f;
- out_texture_id = gl_InstanceIndex;
- gl_Position = projection * vec4( in_position.xy, 0, 1 );
+  imgui_vertex vertex = vertices.data[ vertex_offset + indices.data[ index_offset + gl_VertexIndex ] ];
+  out_uv = vertex.uv;
+  out_color = vertex.color / 255.f;
+  out_texture_id = texture_index;
+  gl_Position = projection * vec4( vertex.position, 0, 1 );
 }
 #endif /* CRUDE_STAGE_VERTEX */
 

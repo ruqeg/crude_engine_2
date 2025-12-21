@@ -1,10 +1,11 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-//#define LUMINANCE_HISTOGRAM_GENERATION
+//#define LUMINANCE_AVERAGE_CALCULATION
+#define LUMINANCE_HISTOGRAM_GENERATION
 //#define CULLING_EARLY
 //#define CULLING_LATE
-#define DEPTH_PYRAMID
+//#define DEPTH_PYRAMID
 #define CRUDE_COMPUTE
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -189,26 +190,30 @@ void main()
 
   float result = max( max( max( color00, color01 ), color10 ), color11 );
 
-  imageStore( global_images_2d[ dst_image_index ], ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
+  CRUDE_IMAGE_STORE( dst_image_index, ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
 }
 #endif /* DEPTH_PYRAMID */
+
+#if defined( LUMINANCE_AVERAGE_CALCULATION ) || defined( LUMINANCE_HISTOGRAM_GENERATION )
+CRUDE_RWBUFFER_REF( HistogramRef )
+{
+  uint                                                     data[];
+};
+#endif
 
 #if defined( LUMINANCE_AVERAGE_CALCULATION )
 layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
 
 CRUDE_PUSH_CONSTANT
 {
+  HistogramRef                                             histogram;
   float                                                    log_lum_range;
   float                                                    min_log_lum;
+
   float                                                    time_coeff;
-  uint                                                     num_pixels;
-};
-
-layout(set=CRUDE_MATERIAL_SET, binding=0, r32f) uniform image2D luminance_avarage_texture;
-
-CRUDE_RWBUFFER( Histogram, 1 )
-{
-  uint                                                    histogram[];
+  uint32                                                   num_pixels;
+  uint32                                                   luminance_avarage_texture;
+  uint32                                                   _padding;
 };
 
 shared uint histogram_shared[ 256 ];
@@ -217,12 +222,12 @@ void main()
 {
   uint local_index = gl_LocalInvocationIndex;
 
-  uint count_for_this_bin = histogram[ local_index ];
+  uint count_for_this_bin = histogram.data[ local_index ];
   histogram_shared[ local_index ] = count_for_this_bin * local_index;
 
   barrier( );
 
-  histogram[ local_index ] = 0;
+  histogram.data[ local_index ] = 0;
 
   /* Add all histogram_shared values to histogram_shared[0] in O(log(n)) instead of O(n) */ 
   [[unroll]]
@@ -241,9 +246,9 @@ void main()
     float weighted_log_average = ( histogram_shared[ 0 ] / max( num_pixels - float( count_for_this_bin ), 1.0 ) ) - 1.0;
 
     float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
-    float lum_last_frame = imageLoad( luminance_avarage_texture, ivec2( 0, 0 ) ).x;
+    float lum_last_frame = imageLoad( global_images_2d_r32f[ luminance_avarage_texture ], ivec2( 0, 0 ) ).x;
     float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
-    imageStore( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
+    imageStore( global_images_2d_r32f[ luminance_avarage_texture ], ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
   }
 }
 #endif /* LUMINANCE_AVERAGE_CALCULATION */
@@ -253,17 +258,14 @@ void main()
 /* Thanks to https://www.alextardif.com/HistogramLuminance.html */
 layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
 
-CRUDE_RWBUFFER( Histogram, 0 ) 
-{
-  uint                                                    histogram[];
-};
-
 CRUDE_PUSH_CONSTANT
 {
+  HistogramRef                                             histogram;
   float                                                    inverse_log_lum_range;
   float                                                    min_log_lum;
+
   uint                                                     hdr_color_texture_index;
-  uint                                                     _pust_constant_padding;
+  vec2                                                     _padding;
 };
 
 shared uint histogram_shared[ 256 ];
@@ -297,7 +299,7 @@ void main()
 
   barrier( );
   
-  atomicAdd( histogram[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
+  atomicAdd( histogram.data[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
 }
 
 #endif /* LUMINANCE_HISTOGRAM_GENERATION */

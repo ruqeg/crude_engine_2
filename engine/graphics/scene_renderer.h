@@ -101,9 +101,9 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Common Debug CPU & GPU Data
    **********************/
-  crude_gfx_buffer_handle                                  debug_cubes_instances_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_line_vertices_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  debug_commands_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_memory_allocation                              debug_cubes_instances_hga;
+  crude_gfx_memory_allocation                              debug_line_vertices_hga;
+  crude_gfx_memory_allocation                              debug_commands_hga;
   
   /***********************
    * Common Lights & Shadows CPU & GPU Data
@@ -211,17 +211,4 @@ CRUDE_API void
 crude_gfx_scene_renderer_on_resize
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
-);
-
-/**
- *
- * Renderer Scene Utils
- * 
- */
-CRUDE_API void
-crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
 );

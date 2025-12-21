@@ -104,7 +104,7 @@ crude_gfx_depth_pyramid_pass_render
   
   crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
 
-  for ( uint32 mip_index = 0; mip_index < depth_pyramid_texture->subresource.mip_level_count; ++mip_index )
+  for ( uint32 mip_index = 0; mip_index < 0; ++mip_index )
   {
     crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
     
@@ -128,8 +128,8 @@ crude_gfx_depth_pyramid_pass_render
     
     crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
     
-    width = ( width + 1 ) / 2;
-    height = ( height + 1 ) / 2;
+    width = width / 2 + width % 2;
+    height = height / 2 + height % 2;
   }
 
   depth_pyramid_texture->state = CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
@@ -151,23 +151,23 @@ crude_gfx_depth_pyramid_pass_on_resize
   crude_gfx_texture_creation                               depth_hierarchy_creation;
   crude_gfx_texture_view_creation                          depth_pyramid_view_creation;
   uint32                                                   depth_hierarchy_width, depth_hierarchy_height, width, height;
-  
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );
   
   depth_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name );
   depth_texture_handle = depth_resource->resource_info.texture.handle;
   depth_texture = crude_gfx_access_texture( pass->scene_renderer->gpu, depth_texture_handle );
 
-  depth_hierarchy_width = width = ( depth_texture->width + 1 ) / 2;
-  depth_hierarchy_height = height = ( depth_texture->height + 1 ) / 2;
+  depth_hierarchy_width = width = depth_texture->width / 2 + depth_texture->width % 2;
+  depth_hierarchy_height = height = depth_texture->height / 2 + depth_texture->height % 2;
   
   pass->depth_pyramid_levels = 0;
   while ( width >= 2 && height >= 2 )
   {
     pass->depth_pyramid_levels++;
     
-    width = ( width + 1 ) / 2;
-    height = ( height + 1 ) / 2;
+    width = width / 2 + width % 2;
+    height = height / 2 + height % 2;
   }
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->depth_pyramid_texture_handle ) )
@@ -198,7 +198,7 @@ crude_gfx_depth_pyramid_pass_on_resize
     {
       crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->depth_pyramid_views_handles[ i ] );
     }
-
+  
     depth_pyramid_view_creation.subresource.mip_base_level = i;
     pass->depth_pyramid_views_handles[ i ] = crude_gfx_create_texture_view( pass->scene_renderer->gpu, &depth_pyramid_view_creation );
   }
