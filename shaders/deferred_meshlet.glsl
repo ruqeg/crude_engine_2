@@ -3,8 +3,8 @@
 #extension GL_GOOGLE_include_directive : enable
 //#define DEFERRED_MESHLET
 #define TRANSPARENT_NO_CULL
+#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_FRAGMENT
-#define CRUDE_STAGE_FRAGMENT
 //#define CRUDE_STAGE_FRAGMENT
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -41,34 +41,46 @@ CRUDE_PUSH_CONSTANT
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
+
   MeshInstancesDrawsRef                                    mesh_instance_draws;
   MeshletsRef                                              meshlets;
+
   VerticesRef                                              vertices;
   TrianglesIndicesRef                                      triangles_indices;
+
   VerticesIndicesRef                                       vertices_indices;
   VisibleMeshCountRef                                      visible_mesh_count;
+
   MeshDrawCommandsRef                                      mesh_draw_commands;
+  vec2                                                     _pust_constant_padding;
 };
 #else
 CRUDE_PUSH_CONSTANT
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
+
   MeshInstancesDrawsRef                                    mesh_instance_draws;
   MeshletsRef                                              meshlets;
+
   VerticesRef                                              vertices;
   TrianglesIndicesRef                                      triangles_indices;
+
   VerticesIndicesRef                                       vertices_indices;
   VisibleMeshCountRef                                      visible_mesh_count;
+
   MeshDrawCommandsRef                                      mesh_draw_commands;
   LightsZBinsRef                                           zbins;
+
   LightsTilesRef                                           lights_tiles;
   LightsTrianglesIndicesRef                                lights_indices;
-  LightsVerticesIndicesRef                                 lights_vertices;
+
   LightsRef                                                lights;
   LightsShadowViewsRef                                     light_shadow_views;
+
   float                                                    inv_radiance_texture_width;
   float                                                    inv_radiance_texture_height;
+  vec2                                                     _pust_constant_padding;
 };
 #endif
 
@@ -94,7 +106,7 @@ void main()
 #if defined( DEFERRED_MESHLET )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSPARENT_NO_CULL */
-  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
   uint meshlet_index = mesh_draws.data[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
@@ -335,7 +347,7 @@ void main()
   {
     radiance = crude_calculate_lighting( 
       albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
-      scene, zbins, lights_tiles, lights_indices, lights_vertices, lights, light_shadow_views );
+      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
   }
   else
   {

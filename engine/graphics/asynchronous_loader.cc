@@ -290,14 +290,14 @@ crude_gfx_asynchronous_loader_update
     }
     else if ( crude_gfx_memory_allocation_valid( &request.cpu_allocation ) && crude_gfx_memory_allocation_valid( &request.gpu_allocation ) )
     {
-      CRUDE_ASSERT( crude_gfx_memory_allocation_valid( &asynloader->cpu_allocation_ready ) );
-      CRUDE_ASSERT( crude_gfx_memory_allocation_valid( &asynloader->gpu_allocation_ready ) );
+      CRUDE_ASSERT( !crude_gfx_memory_allocation_valid( &asynloader->cpu_allocation_ready ) );
+      CRUDE_ASSERT( !crude_gfx_memory_allocation_valid( &asynloader->gpu_allocation_ready ) );
       asynloader->cpu_allocation_ready = request.cpu_allocation;
       asynloader->gpu_allocation_ready = request.gpu_allocation;
       
       if ( crude_gfx_memory_allocation_valid( &request.gpu_old_allocation ) )
       {
-        CRUDE_ASSERT( crude_gfx_memory_allocation_valid( &asynloader->gpu_old_allocation_ready ) );
+        CRUDE_ASSERT( !crude_gfx_memory_allocation_valid( &asynloader->gpu_old_allocation_ready ) );
         asynloader->gpu_old_allocation_ready = request.gpu_old_allocation;
       }
     }

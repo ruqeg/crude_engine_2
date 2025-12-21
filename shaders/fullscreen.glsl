@@ -1,8 +1,8 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
-//#define CRUDE_STAGE_FRAGMENT
-#define POSTPROCESSING
+#define CRUDE_STAGE_FRAGMENT
+//#define POSTPROCESSING
 #define LIGHT_PBR
 
 #include "crude/platform.glsli"
@@ -10,7 +10,6 @@
 #include "crude/scene.glsli"
 #include "crude/light.glsli"
 #include "crude/culling.glsli"
-#include "crude/light_impl.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( CRUDE_STAGE_VERTEX )
@@ -53,9 +52,20 @@ layout(location = 0) out vec4 out_color;
 layout(location=0) in vec2 in_texcoord;
 
 
-CRUDE_UNIFORM( LightingConstants, 15 )
+CRUDE_PUSH_CONSTANT
 {
   uvec4                                                    textures;
+
+  SceneRef                                                 scene;
+  LightsZBinsRef                                           zbins;
+  
+  LightsTilesRef                                           lights_tiles;
+  LightsTrianglesIndicesRef                                lights_indices;
+  
+  LightsRef                                                lights;
+  LightsShadowViewsRef                                     light_shadow_views;
+  
+  vec4                                                     _pust_constant_padding;
 };
 
 void main()
@@ -66,18 +76,20 @@ void main()
   vec2 packed_roughness_metalness = texture( global_textures[ nonuniformEXT( textures.z ) ], in_texcoord.st ).xy;
   vec3 normal = crude_octahedral_decode( packed_normal );
 
-  vec3 pixel_world_position = crude_world_position_from_depth( in_texcoord, depth, scene.camera.clip_to_world );
+  vec3 pixel_world_position = crude_world_position_from_depth( in_texcoord, depth, scene.data.camera.clip_to_world );
 
   uvec2 position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
   
   vec3 radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
-    radiance = crude_calculate_lighting( albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.camera.position, position, in_texcoord.st );
+    radiance = crude_calculate_lighting(
+      albedo, packed_roughness_metalness.x, packed_roughness_metalness.y, normal, pixel_world_position, scene.data.camera.position, position, in_texcoord.st,
+      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
   }
   else
   {
-    radiance = scene.background_color * scene.background_intensity;
+    radiance = scene.data.background_color * scene.data.background_intensity;
   }
   out_color = vec4( radiance, 1.f );
 }
@@ -94,6 +106,7 @@ CRUDE_PUSH_CONSTANT
   uint                                                     luminance_average_texture_index;
   uint                                                     pbr_texture_index;
   float                                                    inv_gamma;
+  float                                                    _pust_constant_padding;
 };
 
 void main()

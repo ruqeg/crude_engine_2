@@ -23,20 +23,25 @@ CRUDE_PUSH_CONSTANT
   uint                                                     depth_texture_index;
   vec4                                                     fog_color;
   vec4                                                     pulse_color;
+
   uint                                                     pbr_texture_index;
   float                                                    fog_distance;
   float                                                    fog_coeff;
   float                                                    wave_size;
+
   float                                                    wave_texcoord_scale;
   float                                                    wave_absolute_frame_scale;
   float                                                    aberration_strength_scale;
   float                                                    aberration_strength_offset;
+
   float                                                    aberration_strength_sin_affect;
   float                                                    pulse_frame_scale;
   float                                                    pulse_scale;
   float                                                    pulse_distance_coeff;
+
   float                                                    pulse_distance;
   float                                                    star_coeff;
+  vec2                                                     _pust_constant_padding;
 };
 
 #if defined( CRUDE_STAGE_VERTEX )

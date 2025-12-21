@@ -303,6 +303,7 @@ CRUDE_PUSH_CONSTANT
   float                                                    inverse_log_lum_range;
   float                                                    min_log_lum;
   uint                                                     hdr_color_texture_index;
+  uint                                                     _pust_constant_padding;
 };
 
 shared uint histogram_shared[ 256 ];

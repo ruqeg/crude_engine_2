@@ -16,6 +16,7 @@ typedef struct crude_gfx_memory_allocation
   crude_gfx_buffer_handle                                  buffer_handle;
   crude_gfx_memory_type                                    type;
   uint64                                                   aligned_size;
+  uint64                                                   aligned_offset;
 } crude_gfx_memory_allocation;
 
 typedef struct crude_gfx_stack_allocator

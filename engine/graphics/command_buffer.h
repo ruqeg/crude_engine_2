@@ -216,12 +216,17 @@ crude_gfx_cmd_bind_index_buffer
   _In_ crude_gfx_buffer_handle                             handle,
   _In_ uint32                                              offset
 );
-
 CRUDE_API void
 crude_gfx_cmd_bind_descriptor_set
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
+CRUDE_API void
+crude_gfx_cmd_bind_bindless_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
 CRUDE_API void

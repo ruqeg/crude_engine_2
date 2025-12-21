@@ -560,6 +560,18 @@ crude_gfx_cmd_bind_descriptor_set
 }
 
 void
+crude_gfx_cmd_bind_bindless_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd
+)
+{
+  crude_gfx_descriptor_set                                *bindless_descriptor_set;
+
+  bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
+}
+
+void
 crude_gfx_cmd_add_buffer_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -797,13 +809,16 @@ crude_gfx_cmd_memory_copy
   src_buffer = crude_gfx_access_buffer( cmd->gpu, src_memory_allocation.buffer_handle );
   dst_buffer = crude_gfx_access_buffer( cmd->gpu, dst_memory_allocation.buffer_handle );
 
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, dst_buffer->size, "%s dst buffer size == 0", dst_buffer->name ? dst_buffer->name : "unknown" )
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_buffer->size <= dst_buffer->size, "%s src buffer size > %s dst buffer size", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
-  
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, dst_memory_allocation.aligned_size, "%s dst buffer size == 0", dst_buffer->name ? dst_buffer->name : "unknown" )
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_memory_allocation.aligned_size <= dst_memory_allocation.aligned_size, "%s src buffer size > %s dst buffer size", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
+
   vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );
-  vk_region.srcOffset = src_offset;
-  vk_region.dstOffset = dst_offset;
-  vk_region.size = src_buffer->size;
+  vk_region.srcOffset = src_offset + src_memory_allocation.aligned_offset;
+  vk_region.dstOffset = dst_offset + dst_memory_allocation.aligned_offset;
+  vk_region.size = src_memory_allocation.aligned_size;
+
+  //CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_memory_allocation.aligned_size - vk_region.srcOffset <= dst_memory_allocation.aligned_size - vk_region.dstOffset, "%s src buffer size < %s dst buffer size - offset", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
+
   vkCmdCopyBuffer( cmd->vk_cmd_buffer, src_buffer->vk_buffer, dst_buffer->vk_buffer, 1, &vk_region );
 }
 

@@ -561,10 +561,10 @@ crude_gfx_new_frame
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_new_frame" );
-  if ( gpu->absolute_frame >= CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES )
+  if ( gpu->absolute_frame )
   {
     CRUDE_PROFILER_ZONE_NAME( "wait for vk_graphics_semaphore" );
-    uint64 graphics_timeline_value = gpu->absolute_frame - ( CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES - 1 );
+    uint64 graphics_timeline_value = gpu->absolute_frame;
     uint64 wait_values[ ] = { graphics_timeline_value };
   
     VkSemaphore semaphores[] = { gpu->vk_graphics_semaphore };
@@ -706,7 +706,7 @@ crude_gfx_present
   
   {
     VkSemaphoreSubmitInfo wait_semaphores[] = {
-      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame - ( CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES - 1 ), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0 }
+      { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_graphics_semaphore, gpu->absolute_frame, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0 }
     };
       
     VkSemaphoreSubmitInfo signal_semaphores[] = {
@@ -721,7 +721,7 @@ crude_gfx_present
     
     VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
     submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
-    submit_info.waitSemaphoreInfoCount   = ( gpu->absolute_frame >= CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES );
+    submit_info.waitSemaphoreInfoCount   = gpu->absolute_frame ? 1 : 0;
     submit_info.pWaitSemaphoreInfos      = wait_semaphores;
     submit_info.commandBufferInfoCount   = CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers );
     submit_info.pCommandBufferInfos      = command_buffers;

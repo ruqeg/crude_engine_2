@@ -78,23 +78,18 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.hdr_pre_tonemapping_texture_name = "pbr";
   scene_renderer->options.depth_texture_name = "depth";
   scene_renderer->options.gamma = 2.2f;
-  
-  scene_renderer->lights_sb = CRUDE_GFX_BUFFER_HANDLE_INVALID;
 
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
   
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    scene_renderer->pointlight_world_to_clip_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-    scene_renderer->lights_indices_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-    scene_renderer->lights_bins_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-    scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-    scene_renderer->lights_tiles_sb[ i ] = CRUDE_GFX_BUFFER_HANDLE_INVALID;
-  }
-
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
+  scene_renderer->lights_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->lights_indices_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->lights_bins_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->lights_tiles_hga = crude_gfx_memory_allocation_empty( );
+
   scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
   scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene_constant_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene" );
   scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
@@ -146,18 +141,18 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_indices_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_cubes_instances_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_commands_sb[ i ] );
@@ -242,60 +237,37 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_buffer_creation                                buffer_creation;
-  
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Rebuild light GPU buffers" );
 
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_sb ) )
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_hga ) )
   {
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_sb );
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
+  }
+  
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_world_to_clip_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
+  }
+  
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_indices_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_indices_hga );
+  }
+  
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_bins_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
+  }
+  
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   }
 
-  buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-  buffer_creation.type_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.size = sizeof( crude_gfx_light_gpu ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 );
-  buffer_creation.name = "lights_sb";
-  scene_renderer->lights_sb = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->pointlight_world_to_clip_sb[ i ] ) )
-    {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->pointlight_world_to_clip_sb[ i ] );
-    }
-
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_indices_sb[ i ] ) )
-    {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_indices_sb[ i ] );
-    }
-
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_bins_sb[ i ] ) )
-    {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_bins_sb[ i ] );
-    }
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u;
-    buffer_creation.name = "pointlight_world_to_clip_sb";
-    scene_renderer->pointlight_world_to_clip_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( uint32 ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 );
-    buffer_creation.name = "lights_indices_sb";
-    scene_renderer->lights_indices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
-    buffer_creation.name = "lights_bins_sb";
-    scene_renderer->lights_bins_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
+  scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 ), CRUDE_GFX_MEMORY_TYPE_GPU, "lights" );
+  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );
+  scene_renderer->lights_indices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 ), CRUDE_GFX_MEMORY_TYPE_GPU, "lights_indices" );
+  scene_renderer->lights_bins_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_bins" );
 }
 
 void
@@ -432,7 +404,6 @@ crude_gfx_scene_renderer_register_passes
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
   crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
-  crude_gfx_light_pass_on_render_graph_registered( &scene_renderer->light_pass );
   crude_gfx_postprocessing_pass_on_render_graph_registered( &scene_renderer->postprocessing_pass );
 }
 
@@ -442,30 +413,18 @@ crude_gfx_scene_renderer_on_resize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_buffer_creation                                buffer_creation;
-  
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_on_resize" );
   /* Reinitialize light gpu data */
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_tiles_hga ) )
   {
-    if ( CRUDE_RESOURCE_HANDLE_IS_VALID( scene_renderer->lights_tiles_sb[ i ] ) )
-    {
-      crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->lights_tiles_sb[ i ] );
-    }
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
   }
+  
+  uint32 tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+  uint32 tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+  uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+  scene_renderer->lights_tiles_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * tiles_entry_count, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_tiles" );
 
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    uint32 tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    uint32 tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( uint32 ) * tiles_entry_count;
-    buffer_creation.name = "lights_tiles_sb";
-    scene_renderer->lights_tiles_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -756,286 +715,286 @@ update_dynamic_buffers_
     
     qsort( sorted_lights, CRUDE_ARRAY_LENGTH( scene_renderer->lights ), sizeof( crude_gfx_sorted_light ), crude_scene_renderer_sorting_light_fun_ );
 
-    /* Upload light to gpu */
-    {
-      crude_gfx_light_gpu                                 *lights_gpu_mapped;
-
-      buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      buffer_map.buffer = scene_renderer->lights_sb;
-      buffer_map.offset = 0;
-      buffer_map.size = sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
-      lights_gpu_mapped = CRUDE_CAST( crude_gfx_light_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-      if ( lights_gpu_mapped )
-      {
-        memcpy( lights_gpu_mapped, lights_gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights ) );
-        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_sb );
-      }
-    }
-    
-    /* Calculate lights clusters */
-    bin_size = 1.f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
-    
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
-    {
-      crude_gfx_sorted_light const                        *light;
-      uint32                                               min_bin, max_bin;
-  
-      light = &sorted_lights[ i ];
-  
-      if ( light->projected_z_min < 0.f && light->projected_z_max < 0.f )
-      {
-        bin_range_per_light[ i ] = UINT32_MAX;
-        continue;
-      }
-      min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( light->projected_z_min * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
-      max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( light->projected_z_max * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
-      bin_range_per_light[ i ] = ( min_bin & 0xffff ) | ( ( max_bin & 0xffff ) << 16 );
-    }
-  
-    for ( uint32 bin = 0; bin < CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS; ++bin )
-    {
-      float32                                              bin_min, bin_max;
-      uint32                                               min_light_id, max_light_id;
-  
-      min_light_id = CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 1;
-      max_light_id = 0;
-  
-      bin_min = bin_size * bin;
-      bin_max = bin_min + bin_size;
-  
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
-      {
-        crude_gfx_sorted_light const                      *light;
-        uint32                                             light_bins, min_bin, max_bin;
-  
-        light = &sorted_lights[ i ];
-        light_bins = bin_range_per_light[ i ];
-  
-        if ( light_bins == UINT32_MAX )
-        {
-          continue;
-        }
-  
-        min_bin = light_bins & 0xffff;
-        max_bin = light_bins >> 16;
-  
-        if ( bin >= min_bin && bin <= max_bin )
-        {
-          if ( i < min_light_id )
-          {
-            min_light_id = i;
-          }
-          if ( i > max_light_id )
-          {
-            max_light_id = i;
-          }
-        }
-      }
-  
-      lights_luts[ bin ] = min_light_id | ( max_light_id << 16 );
-    }
-   
-    /* Upload light indices */
-    {
-      uint32                                              *lights_indices_mapped;
-
-      buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      buffer_map.buffer = scene_renderer->lights_indices_sb[ gpu->current_frame ];
-      buffer_map.offset = 0;
-      buffer_map.size = sizeof( uint32 );
-      lights_indices_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-      if ( lights_indices_mapped )
-      {
-        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
-        {
-          lights_indices_mapped[ i ] = sorted_lights[ i ].light_index;
-        }
-        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_indices_sb[ gpu->current_frame ] );
-      }
-    }
-
-    /* Upload lights LUT */
-    {
-      uint32                                              *lights_luts_mapped;
-      buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-      buffer_map.buffer = scene_renderer->lights_bins_sb[ gpu->current_frame ];
-      buffer_map.offset = 0;
-      buffer_map.size = sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
-      lights_luts_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-      if ( lights_luts_mapped )
-      {
-        memcpy( lights_luts_mapped, lights_luts, CRUDE_ARRAY_LENGTH( lights_luts ) * sizeof( uint32 ) );
-        crude_gfx_unmap_buffer( gpu, scene_renderer->lights_bins_sb[ gpu->current_frame ] );
-      }
-    }
-  
-    {
-      uint32                                              *light_tiles_bits;
-      float32                                              tile_size_inv;
-      uint32                                               tile_x_count, tile_y_count, tiles_entry_count, buffer_size, tile_stride;
-
-      tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-      tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-      tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
-      buffer_size = tiles_entry_count * sizeof( uint32 );
-  
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( light_tiles_bits, tiles_entry_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-      memset( light_tiles_bits, 0, buffer_size );
-
-      znear = camera->near_z;
-      tile_size_inv = 1.0f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-      tile_stride = tile_x_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
-  
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
-      {
-        crude_gfx_light_gpu                               *light_gpu;
-        XMVECTOR                                           light_world_position, light_view_position;
-        XMVECTOR                                           aabb, minx, maxx, miny, maxy;
-        XMVECTOR                                           left, right, top, bottom;
-        float32                                            aabb_screen_width, aabb_screen_height;
-        float32                                            aabb_screen_min_x, aabb_screen_min_y, aabb_screen_max_x, aabb_screen_max_y;
-        float32                                            light_radius;
-        uint32                                             light_index;
-        bool                                               camera_visible, ty_camera_inside, tx_camera_inside;
-
-        light_index = sorted_lights[ i ].light_index;
-        light_gpu = &lights_gpu[ light_index ];
-  
-        /* Transform light in camera space */
-        light_world_position = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
-        light_radius = light_gpu->radius;
-  
-        light_view_position = XMVector4Transform( light_world_position, world_to_view );
-        camera_visible = -XMVectorGetZ( light_view_position ) - light_radius < znear;
-  
-        if ( !camera_visible )
-        {
-          continue;
-        }
-  
-        /* Compute projected sphere AABB */
-        {
-          XMVECTOR                                         aabb_min, aabb_max;
-
-          aabb_min = XMVectorSet( FLT_MAX, FLT_MAX, FLT_MAX, 0 );
-          aabb_max = XMVectorSet( -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 );
-  
-          for ( uint32 c = 0; c < 8; ++c )
-          {
-            XMVECTOR                                       corner, corner_vs, corner_ndc;
-
-            corner = XMVectorSet( ( c % 2 ) ? 1.f : -1.f, ( c & 2 ) ? 1.f : -1.f, ( c & 4 ) ? 1.f : -1.f, 1 );
-            corner = XMVectorScale( corner, light_radius );
-            corner = XMVectorAdd( corner, light_world_position );
-            corner = XMVectorSetW( corner, 1.f );
-
-            corner_vs = XMVector4Transform( corner, world_to_view );
-            corner_vs = XMVectorSetZ( corner_vs, CRUDE_MAX( znear, XMVectorGetZ( corner_vs ) ) );
-            corner_ndc = XMVector4Transform( corner_vs, view_to_clip );
-            corner_ndc = XMVectorScale( corner_ndc, 1.f / XMVectorGetW( corner_ndc ) );
-  
-            aabb_min = XMVectorMin( aabb_min, corner_ndc );
-            aabb_max = XMVectorMax( aabb_max, corner_ndc );
-          }
-  
-          aabb = XMVectorSet( XMVectorGetX( aabb_min ), -1.f * XMVectorGetY( aabb_max ), XMVectorGetX( aabb_max ), -1.f * XMVectorGetY( aabb_min ) );
-        }
-
-        {
-          float32                                         light_view_position_length;
-          bool                                            camera_inside;
-
-          light_view_position_length = XMVectorGetX( XMVector3Length( light_view_position ) );
-          camera_inside = ( light_view_position_length - light_radius ) < znear;
-  
-          if ( camera_inside )
-          {
-            aabb = { -1,-1, 1, 1 };
-          }
-        }
-  
-        {
-          XMVECTOR                                         aabb_screen;
-
-          aabb_screen = XMVectorSet(
-            ( XMVectorGetX( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
-            ( XMVectorGetY( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 ),
-            ( XMVectorGetZ( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
-            ( XMVectorGetW( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 )
-          );
-  
-          aabb_screen_width = XMVectorGetZ( aabb_screen ) - XMVectorGetX( aabb_screen );
-          aabb_screen_height = XMVectorGetW( aabb_screen ) - XMVectorGetY( aabb_screen );
-  
-          if ( aabb_screen_width < 0.0001f || aabb_screen_height < 0.0001f )
-          {
-            continue;
-          }
-  
-          aabb_screen_min_x = XMVectorGetX( aabb_screen );
-          aabb_screen_min_y = XMVectorGetY( aabb_screen );
-          
-          aabb_screen_max_x = aabb_screen_min_x + aabb_screen_width;
-          aabb_screen_max_y = aabb_screen_min_y + aabb_screen_height;
-        }
-
-        if ( aabb_screen_min_x > gpu->vk_swapchain_width || aabb_screen_min_y > gpu->vk_swapchain_height )
-        {
-          continue;
-        }
-  
-        if ( aabb_screen_max_x < 0.0f || aabb_screen_max_y < 0.0f )
-        {
-          continue;
-        }
-  
-        aabb_screen_min_x = CRUDE_MAX( aabb_screen_min_x, 0.0f );
-        aabb_screen_min_y = CRUDE_MAX( aabb_screen_min_y, 0.0f );
-  
-        aabb_screen_max_x = CRUDE_MIN( aabb_screen_max_x, gpu->vk_swapchain_width );
-        aabb_screen_max_y = CRUDE_MIN( aabb_screen_max_y, gpu->vk_swapchain_height );
-  
-        {
-          uint32                                           first_tile_x, last_tile_x, first_tile_y, last_tile_y;
-
-          first_tile_x = aabb_screen_min_x * tile_size_inv;
-          last_tile_x = CRUDE_MIN( tile_x_count - 1, aabb_screen_max_x * tile_size_inv );
-  
-          first_tile_y = aabb_screen_min_y * tile_size_inv;
-          last_tile_y = CRUDE_MIN( tile_y_count - 1, aabb_screen_max_y * tile_size_inv );
-  
-          for ( uint32 y = first_tile_y; y <= last_tile_y; ++y )
-          {
-            for ( uint32 x = first_tile_x; x <= last_tile_x; ++x )
-            {
-              uint32                                       array_index, word_index, bit_index;
-
-              array_index = y * tile_stride + x * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
-
-              word_index = i / 32;
-              bit_index = i % 32;
-  
-              light_tiles_bits[ array_index + word_index ] |= ( 1 << bit_index );
-            }
-          }
-        }
-      }
-      
-      {
-        uint32                                              *light_tiles_mapped;
-
-        buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-        buffer_map.buffer = scene_renderer->lights_tiles_sb[ gpu->current_frame ];
-        buffer_map.offset = 0;
-        buffer_map.size = sizeof( uint32 );
-        light_tiles_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-        if ( light_tiles_mapped )
-        {
-          memcpy( light_tiles_mapped, light_tiles_bits, CRUDE_ARRAY_LENGTH( light_tiles_bits ) * sizeof( uint32 ) );
-          crude_gfx_unmap_buffer( gpu, scene_renderer->lights_tiles_sb[ gpu->current_frame ] );
-        }
-      }
-    }
+    ///* Upload light to gpu */
+    //{
+    //  crude_gfx_light_gpu                                 *lights_gpu_mapped;
+    //
+    //  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    //  buffer_map.buffer = scene_renderer->lights_sb;
+    //  buffer_map.offset = 0;
+    //  buffer_map.size = sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    //  lights_gpu_mapped = CRUDE_CAST( crude_gfx_light_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+    //  if ( lights_gpu_mapped )
+    //  {
+    //    memcpy( lights_gpu_mapped, lights_gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_ARRAY_LENGTH( scene_renderer->lights ) );
+    //    crude_gfx_unmap_buffer( gpu, scene_renderer->lights_sb );
+    //  }
+    //}
+    //
+    ///* Calculate lights clusters */
+    //bin_size = 1.f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
+    //
+    //for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    //{
+    //  crude_gfx_sorted_light const                        *light;
+    //  uint32                                               min_bin, max_bin;
+    //
+    //  light = &sorted_lights[ i ];
+    //
+    //  if ( light->projected_z_min < 0.f && light->projected_z_max < 0.f )
+    //  {
+    //    bin_range_per_light[ i ] = UINT32_MAX;
+    //    continue;
+    //  }
+    //  min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( light->projected_z_min * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
+    //  max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( light->projected_z_max * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
+    //  bin_range_per_light[ i ] = ( min_bin & 0xffff ) | ( ( max_bin & 0xffff ) << 16 );
+    //}
+    //
+    //for ( uint32 bin = 0; bin < CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS; ++bin )
+    //{
+    //  float32                                              bin_min, bin_max;
+    //  uint32                                               min_light_id, max_light_id;
+    //
+    //  min_light_id = CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 1;
+    //  max_light_id = 0;
+    //
+    //  bin_min = bin_size * bin;
+    //  bin_max = bin_min + bin_size;
+    //
+    //  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    //  {
+    //    crude_gfx_sorted_light const                      *light;
+    //    uint32                                             light_bins, min_bin, max_bin;
+    //
+    //    light = &sorted_lights[ i ];
+    //    light_bins = bin_range_per_light[ i ];
+    //
+    //    if ( light_bins == UINT32_MAX )
+    //    {
+    //      continue;
+    //    }
+    //
+    //    min_bin = light_bins & 0xffff;
+    //    max_bin = light_bins >> 16;
+    //
+    //    if ( bin >= min_bin && bin <= max_bin )
+    //    {
+    //      if ( i < min_light_id )
+    //      {
+    //        min_light_id = i;
+    //      }
+    //      if ( i > max_light_id )
+    //      {
+    //        max_light_id = i;
+    //      }
+    //    }
+    //  }
+    //
+    //  lights_luts[ bin ] = min_light_id | ( max_light_id << 16 );
+    //}
+    //
+    ///* Upload light indices */
+    //{
+    //  uint32                                              *lights_indices_mapped;
+    //
+    //  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    //  buffer_map.buffer = scene_renderer->lights_indices_sb[ gpu->current_frame ];
+    //  buffer_map.offset = 0;
+    //  buffer_map.size = sizeof( uint32 );
+    //  lights_indices_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+    //  if ( lights_indices_mapped )
+    //  {
+    //    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    //    {
+    //      lights_indices_mapped[ i ] = sorted_lights[ i ].light_index;
+    //    }
+    //    crude_gfx_unmap_buffer( gpu, scene_renderer->lights_indices_sb[ gpu->current_frame ] );
+    //  }
+    //}
+    //
+    ///* Upload lights LUT */
+    //{
+    //  uint32                                              *lights_luts_mapped;
+    //  buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    //  buffer_map.buffer = scene_renderer->lights_bins_sb[ gpu->current_frame ];
+    //  buffer_map.offset = 0;
+    //  buffer_map.size = sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
+    //  lights_luts_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+    //  if ( lights_luts_mapped )
+    //  {
+    //    memcpy( lights_luts_mapped, lights_luts, CRUDE_ARRAY_LENGTH( lights_luts ) * sizeof( uint32 ) );
+    //    crude_gfx_unmap_buffer( gpu, scene_renderer->lights_bins_sb[ gpu->current_frame ] );
+    //  }
+    //}
+    //
+    //{
+    //  uint32                                              *light_tiles_bits;
+    //  float32                                              tile_size_inv;
+    //  uint32                                               tile_x_count, tile_y_count, tiles_entry_count, buffer_size, tile_stride;
+    //
+    //  tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    //  tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    //  tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+    //  buffer_size = tiles_entry_count * sizeof( uint32 );
+    //
+    //  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( light_tiles_bits, tiles_entry_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+    //  memset( light_tiles_bits, 0, buffer_size );
+    //
+    //  znear = camera->near_z;
+    //  tile_size_inv = 1.0f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    //  tile_stride = tile_x_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+    //
+    //  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++i )
+    //  {
+    //    crude_gfx_light_gpu                               *light_gpu;
+    //    XMVECTOR                                           light_world_position, light_view_position;
+    //    XMVECTOR                                           aabb, minx, maxx, miny, maxy;
+    //    XMVECTOR                                           left, right, top, bottom;
+    //    float32                                            aabb_screen_width, aabb_screen_height;
+    //    float32                                            aabb_screen_min_x, aabb_screen_min_y, aabb_screen_max_x, aabb_screen_max_y;
+    //    float32                                            light_radius;
+    //    uint32                                             light_index;
+    //    bool                                               camera_visible, ty_camera_inside, tx_camera_inside;
+    //
+    //    light_index = sorted_lights[ i ].light_index;
+    //    light_gpu = &lights_gpu[ light_index ];
+    //
+    //    /* Transform light in camera space */
+    //    light_world_position = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
+    //    light_radius = light_gpu->radius;
+    //
+    //    light_view_position = XMVector4Transform( light_world_position, world_to_view );
+    //    camera_visible = -XMVectorGetZ( light_view_position ) - light_radius < znear;
+    //
+    //    if ( !camera_visible )
+    //    {
+    //      continue;
+    //    }
+    //
+    //    /* Compute projected sphere AABB */
+    //    {
+    //      XMVECTOR                                         aabb_min, aabb_max;
+    //
+    //      aabb_min = XMVectorSet( FLT_MAX, FLT_MAX, FLT_MAX, 0 );
+    //      aabb_max = XMVectorSet( -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 );
+    //
+    //      for ( uint32 c = 0; c < 8; ++c )
+    //      {
+    //        XMVECTOR                                       corner, corner_vs, corner_ndc;
+    //
+    //        corner = XMVectorSet( ( c % 2 ) ? 1.f : -1.f, ( c & 2 ) ? 1.f : -1.f, ( c & 4 ) ? 1.f : -1.f, 1 );
+    //        corner = XMVectorScale( corner, light_radius );
+    //        corner = XMVectorAdd( corner, light_world_position );
+    //        corner = XMVectorSetW( corner, 1.f );
+    //
+    //        corner_vs = XMVector4Transform( corner, world_to_view );
+    //        corner_vs = XMVectorSetZ( corner_vs, CRUDE_MAX( znear, XMVectorGetZ( corner_vs ) ) );
+    //        corner_ndc = XMVector4Transform( corner_vs, view_to_clip );
+    //        corner_ndc = XMVectorScale( corner_ndc, 1.f / XMVectorGetW( corner_ndc ) );
+    //
+    //        aabb_min = XMVectorMin( aabb_min, corner_ndc );
+    //        aabb_max = XMVectorMax( aabb_max, corner_ndc );
+    //      }
+    //
+    //      aabb = XMVectorSet( XMVectorGetX( aabb_min ), -1.f * XMVectorGetY( aabb_max ), XMVectorGetX( aabb_max ), -1.f * XMVectorGetY( aabb_min ) );
+    //    }
+    //
+    //    {
+    //      float32                                         light_view_position_length;
+    //      bool                                            camera_inside;
+    //
+    //      light_view_position_length = XMVectorGetX( XMVector3Length( light_view_position ) );
+    //      camera_inside = ( light_view_position_length - light_radius ) < znear;
+    //
+    //      if ( camera_inside )
+    //      {
+    //        aabb = { -1,-1, 1, 1 };
+    //      }
+    //    }
+    //
+    //    {
+    //      XMVECTOR                                         aabb_screen;
+    //
+    //      aabb_screen = XMVectorSet(
+    //        ( XMVectorGetX( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
+    //        ( XMVectorGetY( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 ),
+    //        ( XMVectorGetZ( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
+    //        ( XMVectorGetW( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 )
+    //      );
+    //
+    //      aabb_screen_width = XMVectorGetZ( aabb_screen ) - XMVectorGetX( aabb_screen );
+    //      aabb_screen_height = XMVectorGetW( aabb_screen ) - XMVectorGetY( aabb_screen );
+    //
+    //      if ( aabb_screen_width < 0.0001f || aabb_screen_height < 0.0001f )
+    //      {
+    //        continue;
+    //      }
+    //
+    //      aabb_screen_min_x = XMVectorGetX( aabb_screen );
+    //      aabb_screen_min_y = XMVectorGetY( aabb_screen );
+    //      
+    //      aabb_screen_max_x = aabb_screen_min_x + aabb_screen_width;
+    //      aabb_screen_max_y = aabb_screen_min_y + aabb_screen_height;
+    //    }
+    //
+    //    if ( aabb_screen_min_x > gpu->vk_swapchain_width || aabb_screen_min_y > gpu->vk_swapchain_height )
+    //    {
+    //      continue;
+    //    }
+    //
+    //    if ( aabb_screen_max_x < 0.0f || aabb_screen_max_y < 0.0f )
+    //    {
+    //      continue;
+    //    }
+    //
+    //    aabb_screen_min_x = CRUDE_MAX( aabb_screen_min_x, 0.0f );
+    //    aabb_screen_min_y = CRUDE_MAX( aabb_screen_min_y, 0.0f );
+    //
+    //    aabb_screen_max_x = CRUDE_MIN( aabb_screen_max_x, gpu->vk_swapchain_width );
+    //    aabb_screen_max_y = CRUDE_MIN( aabb_screen_max_y, gpu->vk_swapchain_height );
+    //
+    //    {
+    //      uint32                                           first_tile_x, last_tile_x, first_tile_y, last_tile_y;
+    //
+    //      first_tile_x = aabb_screen_min_x * tile_size_inv;
+    //      last_tile_x = CRUDE_MIN( tile_x_count - 1, aabb_screen_max_x * tile_size_inv );
+    //
+    //      first_tile_y = aabb_screen_min_y * tile_size_inv;
+    //      last_tile_y = CRUDE_MIN( tile_y_count - 1, aabb_screen_max_y * tile_size_inv );
+    //
+    //      for ( uint32 y = first_tile_y; y <= last_tile_y; ++y )
+    //      {
+    //        for ( uint32 x = first_tile_x; x <= last_tile_x; ++x )
+    //        {
+    //          uint32                                       array_index, word_index, bit_index;
+    //
+    //          array_index = y * tile_stride + x * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+    //
+    //          word_index = i / 32;
+    //          bit_index = i % 32;
+    //
+    //          light_tiles_bits[ array_index + word_index ] |= ( 1 << bit_index );
+    //        }
+    //      }
+    //    }
+    //  }
+    //  
+    //  {
+    //    uint32                                              *light_tiles_mapped;
+    //
+    //    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
+    //    buffer_map.buffer = scene_renderer->lights_tiles_sb[ gpu->current_frame ];
+    //    buffer_map.offset = 0;
+    //    buffer_map.size = sizeof( uint32 );
+    //    light_tiles_mapped = CRUDE_CAST( uint32*, crude_gfx_map_buffer( gpu, &buffer_map ) );
+    //    if ( light_tiles_mapped )
+    //    {
+    //      memcpy( light_tiles_mapped, light_tiles_bits, CRUDE_ARRAY_LENGTH( light_tiles_bits ) * sizeof( uint32 ) );
+    //      crude_gfx_unmap_buffer( gpu, scene_renderer->lights_tiles_sb[ gpu->current_frame ] );
+    //    }
+    //  }
+    //}
     
     crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
   }

@@ -109,11 +109,11 @@ typedef struct crude_gfx_scene_renderer
    * Common Lights & Shadows CPU & GPU Data
    **********************/
   crude_gfx_light_cpu                                     *lights;
-  crude_gfx_buffer_handle                                  lights_sb;
-  crude_gfx_buffer_handle                                  lights_bins_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_tiles_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  lights_indices_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_buffer_handle                                  pointlight_world_to_clip_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_memory_allocation                              lights_hga;
+  crude_gfx_memory_allocation                              lights_bins_hga;
+  crude_gfx_memory_allocation                              lights_tiles_hga;
+  crude_gfx_memory_allocation                              lights_indices_hga;
+  crude_gfx_memory_allocation                              lights_world_to_clip_hga;
 
   /***********************
    * Ray Tracing CPU & GPU Data

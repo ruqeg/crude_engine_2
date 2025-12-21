@@ -83,6 +83,8 @@ crude_gfx_gbuffer_late_pass_render
   pust_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
   pust_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
   crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
+  
+  crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 
   crude_gfx_cmd_draw_mesh_task_indirect_count(
     primary_cmd,

@@ -1,3 +1,4 @@
+
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
@@ -141,11 +142,6 @@ CRUDE_RBUFFER_REF( LightsTrianglesIndicesRef )
   uint8_t                                                  data[];
 };
 
-CRUDE_RBUFFER_REF( LightsVerticesIndicesRef )
-{
-  uint                                                     data[];
-};
-
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 float
@@ -258,7 +254,6 @@ crude_calculate_lighting
   in LightsZBinsRef                                        zbins,
   in LightsTilesRef                                        lights_tiles,
   in LightsTrianglesIndicesRef                             lights_indices,
-  in LightsVerticesIndicesRef                              lights_vertices,
   in LightsRef                                             lights,
   in LightsShadowViewsRef                                  light_shadow_views
 )
