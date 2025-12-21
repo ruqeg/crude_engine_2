@@ -96,31 +96,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
   scene_renderer->mesh_task_indirect_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_draw_counts_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_count_hga" );
 
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-    buffer_creation.size = sizeof( crude_gfx_debug_draw_command_gpu );
-    buffer_creation.name = "debug_commands_sb";
-    scene_renderer->debug_commands_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-    
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_LINES * 2u; /* 2 vertices per line */
-    buffer_creation.device_only = true;
-    buffer_creation.name = "debug_line_vertices_sb";
-    scene_renderer->debug_line_vertices_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-
-    buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_buffer_creation );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES;
-    buffer_creation.device_only = true;
-    buffer_creation.name = "debug_cubes_instances_sb";
-    scene_renderer->debug_cubes_instances_sb[ i ] = crude_gfx_create_buffer( scene_renderer->gpu, &buffer_creation );
-  }
+  scene_renderer->debug_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "debug_commands_hga" );
+  scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
+  scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
   crude_gfx_stack_allocator_initialize( &scene_renderer->gpu_temporary_allocator, scene_renderer->gpu, CRUDE_RMEGA( 512 ) , "scene_renderer_stack_allocator" );
 
@@ -143,13 +121,9 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_indices_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
-  
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
-  {
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_cubes_instances_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_line_vertices_sb[ i ] );
-    crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->debug_commands_sb[ i ] );
-  }
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_commands_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_cubes_instances_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_line_vertices_hga );
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
@@ -381,9 +355,6 @@ crude_gfx_scene_renderer_register_passes
 #endif
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "indirect_light_pass", crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-
-  crude_gfx_depth_pyramid_pass_on_render_graph_registered( &scene_renderer->depth_pyramid_pass );
-  crude_gfx_postprocessing_pass_on_render_graph_registered( &scene_renderer->postprocessing_pass );
 }
 
 void
@@ -405,24 +376,6 @@ crude_gfx_scene_renderer_on_resize
   scene_renderer->lights_tiles_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * tiles_entry_count, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_tiles" );
 
   CRUDE_PROFILER_ZONE_END;
-}
-
-/**
- *
- * Renderer Scene Utils
- * 
- */
-void
-crude_gfx_scene_renderer_add_debug_resources_to_descriptor_set_creation
-(
-  _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ uint32                                              frame
-)
-{
-  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_commands_sb[ frame ], 50u );
-  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_line_vertices_sb[ frame ], 51u );
-  crude_gfx_descriptor_set_creation_add_buffer( creation, scene_renderer->debug_cubes_instances_sb[ frame ], 52u );
 }
 
 /**
@@ -608,20 +561,21 @@ update_dynamic_buffers_
   /* Update debug draw commands */
   {
     crude_gfx_debug_draw_command_gpu                      *debug_draw_command;
-  
-    buffer_map = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-    buffer_map.buffer = scene_renderer->debug_commands_sb[ gpu->current_frame ];
-    buffer_map.offset = 0;
-    buffer_map.size = sizeof( crude_gfx_debug_draw_command_gpu );
-    debug_draw_command = CRUDE_CAST( crude_gfx_debug_draw_command_gpu*, crude_gfx_map_buffer( gpu, &buffer_map ) );
-    if ( debug_draw_command )
-    {
-      *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
-      debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
-      debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
-      debug_draw_command->draw_indirect_cube.vertexCount = 36u;
-      crude_gfx_unmap_buffer( gpu, scene_renderer->debug_commands_sb[ gpu->current_frame ] );
-    }
+    crude_gfx_memory_allocation                            debug_draw_command_tca;
+    uint64                                                 gpu_temporary_allocator_marker;
+
+    gpu_temporary_allocator_marker = crude_gfx_stack_allocator_get_marker( &scene_renderer->gpu_temporary_allocator );
+    debug_draw_command_tca = crude_gfx_stack_allocator_allocate( &scene_renderer->gpu_temporary_allocator, sizeof( crude_gfx_debug_draw_command_gpu ) );
+    debug_draw_command = CRUDE_CAST( crude_gfx_debug_draw_command_gpu*, debug_draw_command_tca.cpu_address );
+
+    *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
+    debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
+    debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
+    debug_draw_command->draw_indirect_cube.vertexCount = 36u;
+    
+    crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
+    
+    crude_gfx_stack_allocator_free_marker( &scene_renderer->gpu_temporary_allocator, gpu_temporary_allocator_marker );
   }
   
   /* Update lights buffers */

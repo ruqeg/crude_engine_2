@@ -57,8 +57,9 @@ crude_gfx_light_pass_render
   pust_constant.textures.y = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" )->resource_info.texture.handle.index;
   pust_constant.textures.z = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_roughness_metalness" )->resource_info.texture.handle.index;
   pust_constant.textures.w = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
+  pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   pust_constant.zbins = pass->scene_renderer->lights_bins_hga.gpu_address;
-  pust_constant.lights_tiles = pass->scene_renderer->lights_bins_hga.gpu_address;
+  pust_constant.lights_tiles = pass->scene_renderer->lights_tiles_hga.gpu_address;
   pust_constant.lights_indices = pass->scene_renderer->lights_indices_hga.gpu_address;
   pust_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
   pust_constant.light_shadow_views = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;

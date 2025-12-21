@@ -28,12 +28,6 @@ crude_gfx_depth_pyramid_pass_deinitialize
 );
 
 CRUDE_API void
-crude_gfx_depth_pyramid_pass_on_render_graph_registered
-(
-  _In_ crude_gfx_depth_pyramid_pass                       *pass
-);
-
-CRUDE_API void
 crude_gfx_depth_pyramid_pass_render
 (
   _In_ void                                               *ctx,

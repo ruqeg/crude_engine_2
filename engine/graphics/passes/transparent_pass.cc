@@ -56,7 +56,7 @@ crude_gfx_transparent_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_transparent_pass*, ctx );
 
   gpu = pass->scene_renderer->gpu;
-
+  return;
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred_meshlet", "transparent_no_cull" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 

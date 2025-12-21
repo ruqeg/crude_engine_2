@@ -12,11 +12,6 @@
 
 #if defined( GAME_POSTPROCESSING ) 
 
-CRUDE_UNIFORM( SceneConstant, 0 ) 
-{
-  crude_scene                                              scene;
-};
-
 CRUDE_PUSH_CONSTANT
 {
   vec3                                                     player_position;
@@ -41,7 +36,7 @@ CRUDE_PUSH_CONSTANT
 
   float                                                    pulse_distance;
   float                                                    star_coeff;
-  vec2                                                     _pust_constant_padding;
+  SceneRef                                                 scene;
 };
 
 #if defined( CRUDE_STAGE_VERTEX )
@@ -166,12 +161,12 @@ void main()
   vec2 texcoord = in_texcoord * ( 1.f - 2.f * max_offset ) + max_offset;
 
   /* Drunk effect */
-  float wave_x = sin( texcoord.y * wave_texcoord_scale + scene.absolute_time * wave_absolute_frame_scale ) * wave_size;
-  float wave_y = cos( texcoord.x * wave_texcoord_scale + scene.absolute_time * wave_absolute_frame_scale ) * wave_size;
+  float wave_x = sin( texcoord.y * wave_texcoord_scale + scene.data.absolute_time * wave_absolute_frame_scale ) * wave_size;
+  float wave_y = cos( texcoord.x * wave_texcoord_scale + scene.data.absolute_time * wave_absolute_frame_scale ) * wave_size;
   
   vec2 drunk_texcoord = vec2( texcoord.x + wave_x, texcoord.y + wave_y ); 
   
-  float aberration_strength = sin( scene.absolute_time * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
+  float aberration_strength = sin( scene.data.absolute_time * aberration_strength_sin_affect ) * aberration_strength_scale + aberration_strength_offset;
 
   vec2 offset = vec2( aberration_strength, aberration_strength );
 
@@ -181,17 +176,17 @@ void main()
 
   vec3 drunk_radiance;
   vec3 drunk_depth;
-  drunk_depth.r = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_r_texcoord * ( scene.resolution - vec2( 1 ) ) ), 0 ).r;
-  drunk_depth.g = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_g_texcoord * ( scene.resolution - vec2( 1 ) ) ), 0 ).r;
-  drunk_depth.b = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_b_texcoord * ( scene.resolution - vec2( 1 ) ) ), 0 ).r;
+  drunk_depth.r = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_r_texcoord * ( scene.data.resolution - vec2( 1 ) ) ), 0 ).r;
+  drunk_depth.g = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_g_texcoord * ( scene.data.resolution - vec2( 1 ) ) ), 0 ).r;
+  drunk_depth.b = CRUDE_TEXTURE_FETCH( depth_texture_index, ivec2( drunk_with_aberration_b_texcoord * ( scene.data.resolution - vec2( 1 ) ) ), 0 ).r;
   drunk_radiance.r = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_with_aberration_r_texcoord, 0 ).r;
   drunk_radiance.g = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_with_aberration_g_texcoord, 0 ).g;
   drunk_radiance.b = CRUDE_TEXTURE_LOD( pbr_texture_index, drunk_with_aberration_b_texcoord, 0 ).b;
 
   /* Light effect */
-  vec3 drunk_pixel_world_position_r = crude_world_position_from_depth( drunk_with_aberration_r_texcoord, drunk_depth.r, scene.camera.clip_to_world );
-  vec3 drunk_pixel_world_position_g = crude_world_position_from_depth( drunk_with_aberration_g_texcoord, drunk_depth.g, scene.camera.clip_to_world );
-  vec3 drunk_pixel_world_position_b = crude_world_position_from_depth( drunk_with_aberration_b_texcoord, drunk_depth.b, scene.camera.clip_to_world );
+  vec3 drunk_pixel_world_position_r = crude_world_position_from_depth( drunk_with_aberration_r_texcoord, drunk_depth.r, scene.data.camera.clip_to_world );
+  vec3 drunk_pixel_world_position_g = crude_world_position_from_depth( drunk_with_aberration_g_texcoord, drunk_depth.g, scene.data.camera.clip_to_world );
+  vec3 drunk_pixel_world_position_b = crude_world_position_from_depth( drunk_with_aberration_b_texcoord, drunk_depth.b, scene.data.camera.clip_to_world );
 
   float drunk_visbility_r = length( player_position - drunk_pixel_world_position_r );
   float drunk_visbility_g = length( player_position - drunk_pixel_world_position_g );
@@ -204,12 +199,12 @@ void main()
   
   /* Pulse with heartbeat effect */
   vec2 texcoord_to_center = in_texcoord - vec2( 0.5 );
-  float texcoord_to_center_length = length( texcoord_to_center * scene.resolution_ratio );
-  float pulse = abs( cos( scene.absolute_time * pulse_frame_scale) ) * pulse_scale;
+  float texcoord_to_center_length = length( texcoord_to_center * scene.data.resolution_ratio );
+  float pulse = abs( cos( scene.data.absolute_time * pulse_frame_scale) ) * pulse_scale;
   vec3 pulse_radiance = mix( drunk_with_fog_radiance, pulse_color.rgb * pulse_color.a, pulse * clamp( pow( texcoord_to_center_length / pulse_distance, pulse_distance_coeff ), 0, 1 ) );
 
   /* Stars */
-  vec3 pixel_direction = normalize( vec3( ( in_texcoord.x - 0.5 )  * scene.resolution_ratio, (0.5 - in_texcoord.y), 1 ) ) * mat3( scene.camera.view_to_world );
+  vec3 pixel_direction = normalize( vec3( ( in_texcoord.x - 0.5 )  * scene.data.resolution_ratio, (0.5 - in_texcoord.y), 1 ) ) * mat3( scene.data.camera.view_to_world );
   float noise = crude_simplex_noise3d( 200 * pixel_direction );
 
   if ( ( star_coeff > 0.1f ) && (drunk_depth.r == 1.f) )

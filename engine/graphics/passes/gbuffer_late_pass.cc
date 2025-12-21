@@ -64,7 +64,7 @@ crude_gfx_gbuffer_late_pass_render
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   push_constant_                                           pust_constant;
-
+  return;
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_gbuffer_late_pass*, ctx );
 
   gpu = pass->scene_renderer->gpu;

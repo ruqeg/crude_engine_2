@@ -254,7 +254,7 @@ crude_gfx_asynchronous_loader_update
       if ( crude_gfx_memory_allocation_valid( &request.gpu_old_allocation ) )
       {
         crude_gfx_cmd_memory_copy( cmd, request.gpu_old_allocation, request.gpu_allocation, 0, 0 );
-        crude_gfx_cmd_memory_copy( cmd, request.cpu_allocation, request.gpu_allocation, 0, request.gpu_old_allocation.aligned_size );
+        crude_gfx_cmd_memory_copy( cmd, request.cpu_allocation, request.gpu_allocation, 0, request.gpu_old_allocation.size );
       }
       else
       {

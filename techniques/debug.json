@@ -6,6 +6,7 @@
 			"filename": "debug.glsl",
 			"includes" : [	
 				"crude/platform.glsli",
+				"crude/debug.glsli",
 				"crude/scene.glsli"
 			]
 		}

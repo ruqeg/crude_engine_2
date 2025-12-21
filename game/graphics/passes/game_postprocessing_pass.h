@@ -27,7 +27,6 @@ typedef struct crude_gfx_game_postprocessing_pass_options
 typedef struct crude_gfx_game_postprocessing_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          game_postprocessing_ds[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   crude_gfx_game_postprocessing_pass_options               options;
 } crude_gfx_game_postprocessing_pass;
 
@@ -49,12 +48,6 @@ crude_gfx_game_postprocessing_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
-);
-
-CRUDE_API void
-crude_gfx_game_postprocessing_pass_on_techniques_reloaded
-(
-  _In_ void                                               *ctx
 );
 
 CRUDE_API crude_gfx_render_graph_pass_container

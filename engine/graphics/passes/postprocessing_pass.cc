@@ -161,7 +161,7 @@ crude_gfx_postprocessing_pass_render
   pbr_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.hdr_pre_tonemapping_texture_name )->resource_info.texture.handle;
   
   postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
-  postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle[ gpu->current_frame ].index;
+  postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle.index;
   postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
   postprocessing_constant.inv_gamma = 1.f / pass->scene_renderer->options.gamma;
   crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );

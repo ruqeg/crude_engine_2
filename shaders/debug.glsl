@@ -2,8 +2,8 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define DEBUG_LINE2D
-//#define DEBUG_LINE3D
-#define DEBUG_CUBE
+#define DEBUG_LINE3D
+//#define DEBUG_CUBE
 #define CRUDE_STAGE_VERTEX
 
 #include "crude/platform.glsli"

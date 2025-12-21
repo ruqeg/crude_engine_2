@@ -37,11 +37,8 @@ crude_gfx_stack_allocator_allocate
 )
 {
   crude_gfx_memory_allocation                              allocation;
-  uint64                                                   aligned_size;
 
-  aligned_size = crude_memory_align( size, 16 );
-
-  if ( allocator->occupied + aligned_size > allocator->capacity )
+  if ( allocator->occupied + size > allocator->capacity )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_MEMORY, "GPU new memory block is too big for current stack allocator! %i occupied, %i requested size, %i capacity", allocator->occupied, size, allocator->capacity );
   }
@@ -49,12 +46,12 @@ crude_gfx_stack_allocator_allocate
   allocation = crude_gfx_memory_allocation_empty( );
   allocation.cpu_address = CRUDE_CAST( uint8*, allocator->allocation.cpu_address ) + allocator->occupied;
   allocation.gpu_address = allocator->allocation.gpu_address + allocator->occupied;
-  allocation.aligned_size = aligned_size;
+  allocation.size = size;
   allocation.type = CRUDE_GFX_MEMORY_TYPE_CPU_GPU;
   allocation.buffer_handle = allocator->allocation.buffer_handle;
-  allocation.aligned_offset = allocator->occupied;
+  allocation.offset = allocator->occupied;
 
-  allocator->occupied += aligned_size;
+  allocator->occupied += size;
 
   return allocation;
 }
@@ -123,11 +120,8 @@ crude_gfx_memory_allocate_with_name
 {
   crude_gfx_memory_allocation                              memory_allocation;
   crude_gfx_buffer_creation                                buffer_creation;
-  uint64                                                   aligned_size;
 
   memory_allocation = crude_gfx_memory_allocation_empty( );
-  
-  aligned_size = crude_memory_align( size, 16 );
 
   switch ( type )
   {
@@ -137,14 +131,14 @@ crude_gfx_memory_allocate_with_name
     buffer_creation.name = name;
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = aligned_size;
+    buffer_creation.size = size;
     buffer_creation.persistent = true;
 
     memory_allocation.buffer_handle = crude_gfx_create_buffer( gpu, &buffer_creation );
     memory_allocation.gpu_address = crude_gfx_get_buffer_device_address( gpu, memory_allocation.buffer_handle );
     memory_allocation.cpu_address = crude_gfx_access_buffer( gpu, memory_allocation.buffer_handle )->mapped_data;
     memory_allocation.type = type;
-    memory_allocation.aligned_size = aligned_size;
+    memory_allocation.size = size;
     break;
   }
   case CRUDE_GFX_MEMORY_TYPE_GPU:
@@ -153,13 +147,13 @@ crude_gfx_memory_allocate_with_name
     buffer_creation.name = name;
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = aligned_size;
+    buffer_creation.size = size;
     buffer_creation.device_only = true;
 
     memory_allocation.buffer_handle = crude_gfx_create_buffer( gpu, &buffer_creation );
     memory_allocation.gpu_address = crude_gfx_get_buffer_device_address( gpu, memory_allocation.buffer_handle );
     memory_allocation.type = type;
-    memory_allocation.aligned_size = aligned_size;
+    memory_allocation.size = size;
     break;
   }
   }

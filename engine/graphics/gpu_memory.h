@@ -15,8 +15,8 @@ typedef struct crude_gfx_memory_allocation
   VkDeviceAddress                                          gpu_address;
   crude_gfx_buffer_handle                                  buffer_handle;
   crude_gfx_memory_type                                    type;
-  uint64                                                   aligned_size;
-  uint64                                                   aligned_offset;
+  uint64                                                   size;
+  uint64                                                   offset;
 } crude_gfx_memory_allocation;
 
 typedef struct crude_gfx_stack_allocator

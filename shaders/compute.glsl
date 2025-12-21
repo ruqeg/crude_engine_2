@@ -178,6 +178,13 @@ CRUDE_PUSH_CONSTANT
 
 void main()
 {
+  ivec2 src_size = textureSize( global_textures[ nonuniformEXT( src_image_index ) ], 0 );
+
+  if ( all( greaterThan( ivec2( 2 * gl_GlobalInvocationID ), src_size - 2 ) ) )
+  {
+    return;
+  }
+
   ivec2 texel_position00 = ivec2( gl_GlobalInvocationID.xy ) * 2;
   ivec2 texel_position01 = texel_position00 + ivec2( 0, 1 );
   ivec2 texel_position10 = texel_position00 + ivec2( 1, 0 );
@@ -189,6 +196,31 @@ void main()
   float color11 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position11, 0 ).r;
 
   float result = max( max( max( color00, color01 ), color10 ), color11 );
+
+  // !TODO make better
+  /* Handle edge case when dimensions aren't divisible by 2, looks awful, but looks like minimal performance impact */
+  if ( 2 * gl_GlobalInvocationID.x == src_size.x - 3 )
+  {
+    ivec2 texel_position20 = texel_position10 + ivec2( 1, 0 );
+    ivec2 texel_position21 = texel_position11 + ivec2( 1, 0 );
+    float color20 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position20, 0 ).r;
+    float color21 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position21, 0 ).r;
+    result = max( result, max( color20, color21 ) );
+  }
+  if ( 2 * gl_GlobalInvocationID.y == src_size.y - 3 )
+  {
+    ivec2 texel_position02 = texel_position01 + ivec2( 0, 1 );
+    ivec2 texel_position12 = texel_position11 + ivec2( 0, 1 );
+    float color02 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position02, 0 ).r;
+    float color12 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position12, 0 ).r;
+    result = max( result, max( color02, color12 ) );
+  }
+  if ( 2 * gl_GlobalInvocationID.x == src_size.x - 3 && 2 * gl_GlobalInvocationID.y == src_size.y - 3 )
+  {
+    ivec2 texel_position22 = texel_position11 + ivec2( 1, 1 );
+    float color22 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position22, 0 ).r;
+    result = max( result, color22 );
+  }
 
   CRUDE_IMAGE_STORE( dst_image_index, ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
 }

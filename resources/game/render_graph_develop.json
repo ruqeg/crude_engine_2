@@ -272,7 +272,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "final"
+          "name": "pbr"
         },
         {
           "type": "reference",
