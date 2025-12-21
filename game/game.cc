@@ -656,6 +656,7 @@ game_setup_custom_postload_nodes_
 {
   game->player_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
 
+  /*
     crude_entity editor_camera_node;
   {
     crude_transform                                        editor_camera_node_transform;
@@ -686,7 +687,7 @@ game_setup_custom_postload_nodes_
     CRUDE_ENTITY_SET_COMPONENT( editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
   }
 
-  game->focused_camera_node = editor_camera_node;
+  game->focused_camera_node = editor_camera_node;*/
 }
 
 void

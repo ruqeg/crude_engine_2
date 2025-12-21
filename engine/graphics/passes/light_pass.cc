@@ -24,6 +24,22 @@ crude_gfx_light_pass_deinitialize
 }
 
 void
+crude_gfx_light_pass_pre_render
+(
+  _In_ void                                               *ctx,
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
+)
+{
+  crude_gfx_light_pass                                    *pass;
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_light_pass*, ctx );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_bins_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_tiles_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_indices_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_world_to_clip_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+}
+
+void
 crude_gfx_light_pass_render
 (
   _In_ void                                               *ctx,
@@ -79,5 +95,6 @@ crude_gfx_light_pass_pack
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
   container.render = crude_gfx_light_pass_render;
+  container.pre_render = crude_gfx_light_pass_pre_render;
   return container;
 }

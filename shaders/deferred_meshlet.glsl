@@ -306,52 +306,50 @@ layout(location=5) in vec3 in_world_position;
 
 void main()
 {
-//  crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
-//
-//  vec4 albedo = mesh_draw.albedo_color_factor;
-//  if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
-//  {
-//    albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
-//  }
-//
-//  vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
-//  if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
-//  {
-//    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
-//  }
-//  
-//  vec3 normal = normalize( in_normal );
-//  vec3 tangent = normalize( in_tangent );
-//  vec3 bitangent = normalize( in_bitangent );
-//
-//  crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
-//
-//  if ( mesh_draw.textures.z != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
-//  {
-//    const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
-//    const mat3 tbn = mat3( tangent, bitangent, normal );
-//    normal = normalize( tbn * normalize( bump_normal ) );
-//  }
-//
-//  uvec2 screen_position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
-//  float depth = gl_FragCoord.z;
-//  vec2 screen_texcoord = vec2( gl_FragCoord.x * inv_radiance_texture_width, gl_FragCoord * inv_radiance_texture_height );
-//  
-//  vec3 radiance = vec3( 0.f, 0.f, 0.f );
-//  if ( depth != 1.f )
-//  {
-//    radiance = crude_calculate_lighting( 
-//      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
-//      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
-//  }
-//  else
-//  {
-//    radiance = scene.data.background_color * scene.data.background_intensity;
-//  }
-//
-//  out_radiance = vec4( radiance, sqrt( albedo.a ) );
+  crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
 
-  out_radiance = vec4( 1, 1, 1, 1 );
+  vec4 albedo = mesh_draw.albedo_color_factor;
+  if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  {
+    albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
+  }
+
+  vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
+  if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  {
+    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
+  }
+  
+  vec3 normal = normalize( in_normal );
+  vec3 tangent = normalize( in_tangent );
+  vec3 bitangent = normalize( in_bitangent );
+
+  crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
+
+  if ( mesh_draw.textures.z != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  {
+    const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
+    const mat3 tbn = mat3( tangent, bitangent, normal );
+    normal = normalize( tbn * normalize( bump_normal ) );
+  }
+
+  uvec2 screen_position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
+  float depth = gl_FragCoord.z;
+  vec2 screen_texcoord = vec2( gl_FragCoord.x * inv_radiance_texture_width, gl_FragCoord * inv_radiance_texture_height );
+  
+  vec3 radiance = vec3( 0.f, 0.f, 0.f );
+  if ( depth != 1.f )
+  {
+    radiance = crude_calculate_lighting( 
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
+      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
+  }
+  else
+  {
+    radiance = scene.data.background_color * scene.data.background_intensity;
+  }
+
+  out_radiance = vec4( radiance, sqrt( albedo.a ) );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

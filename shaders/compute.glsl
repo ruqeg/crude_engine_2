@@ -131,33 +131,22 @@ void main()
     }
   }
 #else
-  if ( occlusion_visible )
+  if ( occlusion_visible && is_mesh_opaque ) /* Add only opaque objects for early draw */
   {
-    if ( is_mesh_opaque )
-    {
-      uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_visible_early_count, 1 );
-      write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
-    }
-    else
-    {
-      uint draw_index = atomicAdd( mesh_draw_count.transparent_mesh_visible_count, 1 ) + mesh_draw_count.total_mesh_count;
-      write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
-    }
+    uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_visible_early_count, 1 );
+    write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
+  }
+  else if ( is_mesh_opaque )
+  {
+    /* Add culled opaque object for re-test */
+    uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_culled_count, 1 );
+    write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
   else
   {
-    if ( is_mesh_opaque )
-    {
-      /* Add culled object for re-test */
-      uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_culled_count, 1 );
-      write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
-    }
-    else
-    {
-      /* Add culled object for re-test */
-      uint draw_index = atomicAdd( mesh_draw_count.transparent_mesh_culled_count, 1 ) + mesh_draw_count.total_mesh_count;
-      write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
-    }
+    /* Add culled transparent object for re-test */
+    uint draw_index = atomicAdd( mesh_draw_count.transparent_mesh_culled_count, 1 ) + mesh_draw_count.total_mesh_count;
+    write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
 #endif
 }

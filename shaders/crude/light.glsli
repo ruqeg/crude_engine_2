@@ -269,6 +269,13 @@ crude_calculate_lighting
 
   radiance = vec3( 0 );
 
+  radiance.xyz += albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
+
+  if ( scene.data.active_lights_count < 1 )
+  {
+    return radiance;
+  }
+
   view_position = vec4( vertex_position, 1.0 ) * scene.data.camera.world_to_view;
 
   linear_d = ( view_position.z - scene.data.camera.znear ) / ( scene.data.camera.zfar - scene.data.camera.znear );
@@ -283,7 +290,7 @@ crude_calculate_lighting
   stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( scene.data.resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
   address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
 
-  if ( ( scene.data.active_lights_count > 0 ) && min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
+  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
   {
     for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
     {
@@ -304,8 +311,6 @@ crude_calculate_lighting
   const float ao = 1.0f;
   radiance.xyz += indirect_diffuse * ao;
 #endif /* CRUDE_RAYTRACED_DDGI */
-
-  radiance.xyz += albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
   return radiance;
 }

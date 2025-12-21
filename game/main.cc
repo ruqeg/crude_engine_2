@@ -29,7 +29,7 @@ main
 #if CRUDE_DEVELOP
     game_creation.resources_relative_directory = "\\..\\..\\resources\\";
     game_creation.render_graph_relative_directory = "\\..\\..\\resources\\";
-    game_creation.scene_relative_filepath = "\\..\\..\\resources\\game\\nodes\\sponza.crude_node";
+    game_creation.scene_relative_filepath = "\\..\\..\\resources\\game\\nodes\\level_menu.crude_node";
     game_creation.shaders_relative_directory = "\\..\\..\\shaders\\";
     game_creation.techniques_relative_directory = "\\..\\..\\techniques\\";
     game_creation.compiled_shaders_relative_directory = "\\..\\..\\compiled_shaders\\";
