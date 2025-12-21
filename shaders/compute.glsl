@@ -3,8 +3,8 @@
 #extension GL_GOOGLE_include_directive : enable
 //#define LUMINANCE_HISTOGRAM_GENERATION
 //#define CULLING_EARLY
-#define CULLING_LATE
-//#define DEPTH_PYRAMID
+//#define CULLING_LATE
+#define DEPTH_PYRAMID
 #define CRUDE_COMPUTE
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -183,53 +183,28 @@ layout(set=CRUDE_MATERIAL_SET, binding=1) uniform writeonly image2D dst;
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
+CRUDE_PUSH_CONSTANT
+{
+  uint                                                     src_image_index;
+  uint                                                     dst_image_index;
+  vec2                                                     _padding;
+};
+
 void main()
 {
-  ivec2 src_size = textureSize( src, 0 );
-
-  if ( all( greaterThan( ivec2( 2 * gl_GlobalInvocationID ), src_size - 2 ) ) )
-  {
-    return;
-  }
-
   ivec2 texel_position00 = ivec2( gl_GlobalInvocationID.xy ) * 2;
   ivec2 texel_position01 = texel_position00 + ivec2( 0, 1 );
   ivec2 texel_position10 = texel_position00 + ivec2( 1, 0 );
   ivec2 texel_position11 = texel_position00 + ivec2( 1, 1 );
 
-  float color00 = texelFetch( src, texel_position00, 0 ).r;
-  float color01 = texelFetch( src, texel_position01, 0 ).r;
-  float color10 = texelFetch( src, texel_position10, 0 ).r;
-  float color11 = texelFetch( src, texel_position11, 0 ).r;
+  float color00 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position00, 0 ).r;
+  float color01 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position01, 0 ).r;
+  float color10 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position10, 0 ).r;
+  float color11 = CRUDE_TEXTURE_FETCH( src_image_index, texel_position11, 0 ).r;
 
   float result = max( max( max( color00, color01 ), color10 ), color11 );
 
-  // !TODO make better
-  /* Handle edge case when dimensions aren't divisible by 2, looks awful, but looks like minimal performance impact */
-  if ( 2 * gl_GlobalInvocationID.x == src_size.x - 3 )
-  {
-    ivec2 texel_position20 = texel_position10 + ivec2( 1, 0 );
-    ivec2 texel_position21 = texel_position11 + ivec2( 1, 0 );
-    float color20 = texelFetch( src, texel_position20, 0 ).r;
-    float color21 = texelFetch( src, texel_position21, 0 ).r;
-    result = max( result, max( color20, color21 ) );
-  }
-  if ( 2 * gl_GlobalInvocationID.y == src_size.y - 3 )
-  {
-    ivec2 texel_position02 = texel_position01 + ivec2( 0, 1 );
-    ivec2 texel_position12 = texel_position11 + ivec2( 0, 1 );
-    float color02 = texelFetch( src, texel_position02, 0 ).r;
-    float color12 = texelFetch( src, texel_position12, 0 ).r;
-    result = max( result, max( color02, color12 ) );
-  }
-  if ( 2 * gl_GlobalInvocationID.x == src_size.x - 3 && 2 * gl_GlobalInvocationID.y == src_size.y - 3 )
-  {
-    ivec2 texel_position22 = texel_position11 + ivec2( 1, 1 );
-    float color22 = texelFetch( src, texel_position22, 0 ).r;
-    result = max( result, color22 );
-  }
-
-  imageStore( dst, ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
+  imageStore( global_images_2d[ dst_image_index ], ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
 }
 #endif /* DEPTH_PYRAMID */
 

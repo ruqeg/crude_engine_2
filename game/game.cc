@@ -581,6 +581,7 @@ game_graphics_system_
     crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
   }
  
+  if (false) 
   {
     CRUDE_PROFILER_ZONE_NAME( "ImGui_NewFrame" );
     ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );

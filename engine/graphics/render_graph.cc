@@ -689,6 +689,11 @@ crude_gfx_render_graph_render
   {
     crude_gfx_render_graph_node                           *node;
 
+    if ( node_index == 3)
+    {
+      return;
+    }
+
     node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
     
     if ( !node->enabled )
