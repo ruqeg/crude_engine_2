@@ -139,4 +139,14 @@ CRUDE_RBUFFER_REF( VerticesIndicesRef )
   uint                                                     data[];
 };
 
+CRUDE_RBUFFER_REF( MeshDrawCommandsRef )
+{
+  crude_mesh_draw_command                                  data[];
+};
+
+CRUDE_RBUFFER_REF( MeshBoundsRef )
+{
+  vec4                                                     data[];
+};
+
 #endif /* CRUDE_SCENE_GLSL */

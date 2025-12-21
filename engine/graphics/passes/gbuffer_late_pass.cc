@@ -88,7 +88,7 @@ crude_gfx_gbuffer_late_pass_render
 
   crude_gfx_cmd_draw_mesh_task_indirect_count(
     primary_cmd,
-    pass->scene_renderer->mesh_task_indirect_commands_culled_sb[ gpu->current_frame ],
+    pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle,
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_command_gpu, indirect_meshlet ),
     pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
     CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_late_count ),

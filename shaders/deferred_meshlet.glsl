@@ -31,11 +31,6 @@ CRUDE_RBUFFER_REF( VisibleMeshCountRef )
   uint                                                     meshlet_instances_count;
 };
 
-CRUDE_RBUFFER_REF( MeshDrawCommandsRef )
-{
-  crude_mesh_draw_command                                  data[];
-};
-
 #if defined( DEFERRED_MESHLET )
 CRUDE_PUSH_CONSTANT
 {

@@ -679,8 +679,13 @@ crude_gfx_present
       CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
 
       ++current_write_index;
-
-      if ( texture->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE )
+      
+      bool has_compute_mask = texture->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE;
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( texture->parent_texture_handle ) )
+      {
+        has_compute_mask |= crude_gfx_access_texture( gpu, texture->parent_texture_handle )->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE;
+      }
+      if ( has_compute_mask )
       {
         VkWriteDescriptorSet *descriptor_write_image = &bindless_descriptor_writes[ current_write_index ];
         VkDescriptorImageInfo *descriptor_image_info_compute = &bindless_image_info[ current_write_index ];
@@ -1723,6 +1728,12 @@ crude_gfx_create_texture_view
   
   vk_create_texture_view_( gpu, creation, texture_view );
   
+  crude_gfx_resource_update texture_update_event = CRUDE_COMPOUNT_EMPTY( crude_gfx_resource_update );
+  texture_update_event.type = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE;
+  texture_update_event.handle = texture_handle.index;
+  texture_update_event.current_frame = gpu->current_frame;
+  CRUDE_ARRAY_PUSH( gpu->texture_to_update_bindless, texture_update_event );
+
   return texture_handle;
 }
 

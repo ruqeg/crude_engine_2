@@ -33,18 +33,6 @@ crude_gfx_culling_late_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
-CRUDE_API void
-crude_gfx_culling_late_pass_on_model_renderer_resources_updated
-(
-  _In_ void                                               *ctx
-);
-
-CRUDE_API void
-crude_gfx_culling_late_pass_on_techniques_reloaded
-(
-  _In_ void                                               *ctx
-);
-
 CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_culling_late_pass_pack
 (

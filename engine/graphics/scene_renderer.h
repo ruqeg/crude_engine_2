@@ -94,7 +94,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_memory_allocation                              meshes_instances_draws_hga;
   crude_gfx_memory_allocation                              mesh_task_indirect_commands_hga;
   crude_gfx_memory_allocation                              mesh_task_indirect_count_hga;
-  crude_gfx_buffer_handle                                  mesh_task_indirect_commands_culled_sb[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  crude_gfx_memory_allocation                              mesh_task_indirect_commands_culled_hga;
   
   uint32                                                   total_meshes_instances_buffer_capacity;
 
