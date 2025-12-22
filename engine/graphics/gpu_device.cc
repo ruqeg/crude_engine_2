@@ -388,7 +388,7 @@ crude_gfx_device_initialize
     gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   }
   
-  crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 512 ) , "frame_linear_allocator" );
+  crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ) , "frame_linear_allocator" );
 
   {
     VkPhysicalDeviceProperties2                             physical_device_properties_2;

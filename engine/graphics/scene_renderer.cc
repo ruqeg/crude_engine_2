@@ -390,18 +390,15 @@ update_dynamic_buffers_
 
   gpu = scene_renderer->gpu;
   
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_" );
   /* Update scene constant buffer*/
   {
     crude_gfx_scene_constant_gpu                          *scene;
     crude_gfx_memory_allocation                            scene_tca;
-      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ %i, %i", gpu->frame_linear_allocator.occupied, gpu->frame_linear_allocator.capacity );
 
     scene_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_scene_constant_gpu ) );
     scene = CRUDE_CAST( crude_gfx_scene_constant_gpu*, scene_tca.cpu_address );
-  
+
     *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ UUUU)" );
     scene->flags = 0u;
     scene->camera_previous = scene->camera;
     scene->resolution.x = scene_renderer->gpu->vk_swapchain_width;
@@ -427,7 +424,6 @@ update_dynamic_buffers_
 
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
   }
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ end" );
   
   /* Update meshes instanse draws buffers*/
   {
@@ -526,7 +522,6 @@ update_dynamic_buffers_
 
     crude_gfx_cmd_memory_copy( primary_cmd, meshes_instances_draws_tca, scene_renderer->meshes_instances_draws_hga, 0, 0 );
   }
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ end" );
   
   /* Update meshlets counes storage buffers*/
   {
@@ -547,7 +542,6 @@ update_dynamic_buffers_
 
     crude_gfx_cmd_memory_copy( primary_cmd, mesh_task_indirect_count_tca, scene_renderer->mesh_task_indirect_count_hga, 0, 0 );
   }
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ end" );
   
   /* Update debug draw commands */
   {
@@ -564,7 +558,6 @@ update_dynamic_buffers_
     
     crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
   }
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "update_dynamic_buffers_ end" );
 
   /* Update lights buffers */
   //if ( CRUDE_ARRAY_LENGTH( scene_renderer->lights ) )
