@@ -195,27 +195,6 @@
       ]
     },
     {
-      "name": "point_shadows_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "reference",
-          "name": "MESHLET_LATE_PASS_MARKER"
-        }
-      ],
-      "outputs": [
-        {
-            "type": "texture",
-            "name": "tetrahedron_shadow_texture",
-            "external": true
-        },
-        {
-          "type": "marker",
-          "name": "POINTLIGHT_SHADOW_MARKER"
-        }
-      ]
-    },
-    {
       "name": "light_pass",
       "inputs": [
         {
@@ -236,11 +215,7 @@
         },
         {
           "type": "reference",
-          "name": "POINTLIGHT_SHADOW_MARKER"
-        },
-        {
-          "type": "reference", 
-          "name": "tetrahedron_shadow_texture"
+          "name": "MESHLET_LATE_PASS_MARKER"
         }
       ],
       "outputs": [

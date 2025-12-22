@@ -66,6 +66,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
 {
   uint32                                                   draw_id;
   VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
+  VkDrawIndirectCommand                                    indirect_mesh;
 } crude_gfx_mesh_draw_command_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu

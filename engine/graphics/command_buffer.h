@@ -160,6 +160,18 @@ crude_gfx_cmd_draw_inderect
 );
 
 CRUDE_API void
+crude_gfx_cmd_draw_indirect_count
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             argument_buffer_handle,
+  _In_ uint32                                              argument_offset,
+  _In_ crude_gfx_buffer_handle                             count_buffer_handle,
+  _In_ uint32                                              count_offset,
+  _In_ uint32                                              max_draws,
+  _In_ uint32                                              stride
+);
+
+CRUDE_API void
 crude_gfx_cmd_draw_mesh_task
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

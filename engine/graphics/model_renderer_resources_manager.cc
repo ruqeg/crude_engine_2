@@ -151,6 +151,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->gpu = creation->async_loader->gpu;
   
   manager->total_meshes_count = 0;
+
   manager->total_meshlets_count = 0;
   manager->total_meshlets_vertices_count = 0;
   manager->total_meshlets_vertices_indices_count = 0;
@@ -160,6 +161,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->meshlets_vertices_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_vertices_indices_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_triangles_indices_hga = crude_gfx_memory_allocation_empty( );
+
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
   manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
 
@@ -209,6 +211,7 @@ crude_gfx_model_renderer_resources_manager_deintialize
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_vertices_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_vertices_indices_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_triangles_indices_hga );
+
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
 }
@@ -252,10 +255,12 @@ crude_gfx_model_renderer_resources_manager_clear
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_vertices_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_vertices_indices_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_triangles_indices_hga );
+
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
 
   manager->total_meshes_count = 0;
+
   manager->total_meshlets_count = 0;
   manager->total_meshlets_vertices_count = 0;
   manager->total_meshlets_vertices_indices_count = 0;
@@ -265,6 +270,7 @@ crude_gfx_model_renderer_resources_manager_clear
   manager->meshlets_vertices_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_vertices_indices_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_triangles_indices_hga = crude_gfx_memory_allocation_empty( );
+
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
   manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
 }
@@ -374,7 +380,10 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" meshes", gltf_path );
   crude_gfx_model_renderer_resources_manager_gltf_load_meshes_( manager, gltf, gltf_mesh_index_to_mesh_primitive_index, &temporary_string_buffer, gltf_directory, meshes, meshes_count, buffers_offset, images_offset, samplers_offset );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create \"%s\" meshlets", gltf_path );
-  crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes );
+  if ( manager->gpu->mesh_shaders_extension_present )
+  {
+    crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes );
+  }
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" nodes", gltf_path );
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
@@ -843,6 +852,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
         uint32 buffer_offset = mesh_primitive->attributes[ i ].data->offset + mesh_primitive->attributes[ i ].data->buffer_view->offset;
 
         // !TODO REMOVE
+        crude_gfx_memory_allocation gltf_hga = manager->buffers[ buffers_offset + cgltf_buffer_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view->buffer ) ];
         switch ( mesh_primitive->attributes[ i ].type )
         {
         case cgltf_attribute_type_position:
@@ -859,20 +869,33 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
           bounding_center = XMVectorAdd( position_min, position_min );
           bounding_center = XMVectorScale( bounding_center, 0.5f );
           bounding_radius = XMVectorGetX( XMVectorMax( XMVector3Length( position_max - bounding_center ), XMVector3Length( position_min - bounding_center ) ) );
+
+          mesh_draw.position_hga = gltf_hga;
+          mesh_draw.position_offset = buffer_offset;
           break;
         }
         case cgltf_attribute_type_tangent:
         {
           flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS;
+
+          mesh_draw.tangent_hga = gltf_hga;
+          mesh_draw.tangent_offset = buffer_offset;
           break;
         }
         case cgltf_attribute_type_normal:
         {
           flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL;
+
+          mesh_draw.normal_hga = gltf_hga;
+          mesh_draw.normal_offset = buffer_offset;
           break;
         }
         case cgltf_attribute_type_texcoord:
         {
+          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->component_type == cgltf_component_type_r_32f );
+          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->type == cgltf_type_vec2 );
+          mesh_draw.texcoord_hga = gltf_hga;
+          mesh_draw.texcoord_offset = buffer_offset;
           break;
         }
         }
@@ -880,14 +903,18 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       
       indices_accessor = mesh_primitive->indices;
       indices_buffer_view = indices_accessor->buffer_view;
-      
       indices_gpu_allocation = manager->buffers[ buffers_offset + cgltf_buffer_index( gltf, indices_accessor->buffer_view->buffer ) ];
 
       material_transparent = crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_( manager, gltf, mesh_primitive->material, &mesh_draw, images_offset, samplers_offset );
       
-      mesh_draw.index_allocation = indices_gpu_allocation;
+      if ( indices_accessor->component_type == cgltf_component_type_r_16u )
+      {
+        mesh_draw.flags |= CRUDE_GFX_MESH_DRAW_FLAGS_INDEX_16;
+      }
+
+      mesh_draw.index_hga = indices_gpu_allocation;
       mesh_draw.index_offset = indices_accessor->offset + indices_accessor->buffer_view->offset;
-      mesh_draw.primitive_count = indices_accessor->count;
+      mesh_draw.indices_count = indices_accessor->count;
       mesh_draw.gpu_mesh_index = mesh_primitive_index + manager->total_meshes_count;
 
       mesh_draw.bounding_sphere.x = XMVectorGetX( bounding_center );
@@ -1046,7 +1073,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   {
     meshlets_vertices_indices[ i ] += manager->total_meshlets_vertices_count; /* Yes, there are better solutions, but who gives a fuck */
   }
-
+  
   manager->total_meshlets_count += CRUDE_ARRAY_LENGTH( meshlets );
   manager->total_meshlets_vertices_count += CRUDE_ARRAY_LENGTH( meshlets_vertices );
   manager->total_meshlets_vertices_indices_count += CRUDE_ARRAY_LENGTH( meshlets_vertices_indices );
@@ -1096,7 +1123,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 void
 crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Out_ crude_gfx_mesh_cpu                                *meshes
 )
 {

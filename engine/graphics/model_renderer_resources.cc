@@ -17,10 +17,10 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
   mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
   mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  mesh_draw_gpu->position_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->position_buffer ) + mesh->position_offset;
-  mesh_draw_gpu->texcoord_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->texcoord_buffer ) + mesh->texcoord_offset;
-  mesh_draw_gpu->index_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->index_buffer ) + mesh->index_offset;
-  mesh_draw_gpu->normal_buffer = crude_gfx_get_buffer_device_address( gpu, mesh->normal_buffer ) + mesh->normal_offset;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+  mesh_draw_gpu->mesh_indices_count = mesh->indices_count;
+  mesh_draw_gpu->position_buffer = mesh->position_hga.gpu_address + mesh->position_offset;
+  mesh_draw_gpu->texcoord_buffer = mesh->texcoord_hga.gpu_address + mesh->texcoord_offset;
+  mesh_draw_gpu->index_buffer = mesh->index_hga.gpu_address + mesh->index_offset;
+  mesh_draw_gpu->normal_buffer = mesh->normal_hga.gpu_address + mesh->normal_offset;
+  mesh_draw_gpu->tangent_buffer = mesh->tangent_hga.gpu_address + mesh->tangent_offset;
 }

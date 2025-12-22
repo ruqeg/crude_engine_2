@@ -134,7 +134,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_gbuffer_late_pass                              gbuffer_late_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
-  crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
+  //crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_light_pass                                     light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;

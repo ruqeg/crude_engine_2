@@ -420,6 +420,24 @@ crude_gfx_cmd_draw_inderect
 }
 
 void
+crude_gfx_cmd_draw_indirect_count
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_buffer_handle                             argument_buffer_handle,
+  _In_ uint32                                              argument_offset,
+  _In_ crude_gfx_buffer_handle                             count_buffer_handle,
+  _In_ uint32                                              count_offset,
+  _In_ uint32                                              max_draws,
+  _In_ uint32                                              stride
+)
+{
+  crude_gfx_buffer *argument_buffer = crude_gfx_access_buffer( cmd->gpu, argument_buffer_handle );
+  crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
+  
+  vkCmdDrawIndirectCount( cmd->vk_cmd_buffer, argument_buffer->vk_buffer, argument_offset, count_buffer->vk_buffer, count_offset, max_draws, stride );
+}
+
+void
 crude_gfx_cmd_draw_mesh_task
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

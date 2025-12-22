@@ -602,7 +602,7 @@ crude_editor_initialize_graphics_
   crude_gfx_render_graph_compile( &editor->render_graph, &editor->temporary_allocator );
 
   crude_gfx_technique_load_from_file( "deferred_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
-  crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
+  //crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   crude_gfx_technique_load_from_file( "compute.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &editor->gpu, &editor->render_graph, &editor->temporary_allocator );

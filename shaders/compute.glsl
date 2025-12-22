@@ -60,6 +60,10 @@ void write_mesh_draw_command
   mesh_draw_command.indirect_meshlet_group_count_x = ( mesh_draws.data[ mesh_draw_index ].meshletes_count + 31 ) / 32;
   mesh_draw_command.indirect_meshlet_group_count_y = 1;
   mesh_draw_command.indirect_meshlet_group_count_z = 1;
+  mesh_draw_command.indirect_mesh_vertex_count = mesh_draws.data[ mesh_draw_index ].mesh_indices_count;
+  mesh_draw_command.indirect_mesh_instance_count = 1;
+  mesh_draw_command.indirect_mesh_first_vertex = 0;
+  mesh_draw_command.indirect_mesh_first_instance = 0;
 }
 
 void main()
@@ -216,10 +220,12 @@ void main()
 #endif /* DEPTH_PYRAMID */
 
 #if defined( LUMINANCE_AVERAGE_CALCULATION ) || defined( LUMINANCE_HISTOGRAM_GENERATION )
+
 CRUDE_RWBUFFER_REF( HistogramRef )
 {
   uint                                                     data[];
 };
+
 #endif
 
 #if defined( LUMINANCE_AVERAGE_CALCULATION )

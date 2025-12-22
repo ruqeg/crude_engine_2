@@ -2,12 +2,46 @@
 #ifndef CRUDE_SCENE_GLSL
 #define CRUDE_SCENE_GLSL
 
+CRUDE_RBUFFER_REF_SCALAR( MeshPositionsRef )
+{
+  vec3                                                     data[];
+};
+
+CRUDE_RBUFFER_REF_SCALAR( MeshTexcoordsRef )
+{
+  float                                                    data[];
+};
+
+CRUDE_RBUFFER_REF_SCALAR( MeshIndices16Ref )
+{
+  uint16                                                   data[];
+};
+
+CRUDE_RBUFFER_REF_SCALAR( MeshIndices32Ref )
+{
+  uint32                                                   data[];
+};
+
+CRUDE_RBUFFER_REF_SCALAR( MeshNormalsRef )
+{
+  vec3                                                     data[];
+};
+
+CRUDE_RBUFFER_REF_SCALAR( MeshTangentsRef )
+{
+  vec4                                                     data[];
+};
+
 struct crude_mesh_draw_command
 {
   uint                                                     draw_id;
   uint                                                     indirect_meshlet_group_count_x;
   uint                                                     indirect_meshlet_group_count_y;
   uint                                                     indirect_meshlet_group_count_z;
+  uint                                                     indirect_mesh_vertex_count;
+  uint                                                     indirect_mesh_instance_count;
+  uint                                                     indirect_mesh_first_vertex;
+  uint                                                     indirect_mesh_first_instance;
 };
 
 struct crude_mesh_draw
@@ -25,12 +59,16 @@ struct crude_mesh_draw
   uint                                                     meshletes_offset;
   uint                                                     meshletes_count;
   uint                                                     meshletes_index_count;
-  uint                                                     padding1;
+  uint                                                     mesh_indices_count;
 
-  uint64_t                                                 position_buffer;
-  uint64_t                                                 texcoord_buffer;
-  uint64_t                                                 index_buffer;
-  uint64_t                                                 normal_buffer;
+  MeshPositionsRef                                         positions;
+  MeshTexcoordsRef                                         texcoords;
+
+  uint64_t                                                 indices;
+  MeshNormalsRef                                           normals;
+
+  MeshTangentsRef                                          tangents;
+  vec2                                                     padding2;
 };
 
 struct crude_mesh_instance_draw

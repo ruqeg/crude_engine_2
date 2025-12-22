@@ -1,9 +1,12 @@
 
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
+//#define TRANSPARENT_NO_CULL_CLASSIC
 //#define DEFERRED_MESHLET
-#define TRANSPARENT_NO_CULL
-#define CRUDE_STAGE_MESH
+#define DEFERRED_CLASSIC
+//#define TRANSPARENT_NO_CULL
+//#define CRUDE_STAGE_MESH
+#define CRUDE_STAGE_VERTEX
 //#define CRUDE_STAGE_FRAGMENT
 //#define CRUDE_STAGE_FRAGMENT
 #include "crude/platform.glsli"
@@ -31,7 +34,41 @@ CRUDE_RBUFFER_REF( VisibleMeshCountRef )
   uint                                                     meshlet_instances_count;
 };
 
-#if defined( DEFERRED_MESHLET )
+#if defined( DEFERRED_CLASSIC ) 
+CRUDE_PUSH_CONSTANT
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  VisibleMeshCountRef                                      visible_mesh_count;
+
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+  vec2                                                     _padding;
+};
+#elif defined( TRANSPARENT_NO_CULL_CLASSIC ) 
+CRUDE_PUSH_CONSTANT
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  VisibleMeshCountRef                                      visible_mesh_count;
+
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+  LightsZBinsRef                                           zbins;
+
+  LightsTilesRef                                           lights_tiles;
+  LightsTrianglesIndicesRef                                lights_indices;
+
+  LightsRef                                                lights;
+  LightsShadowViewsRef                                     light_shadow_views;
+
+  float                                                    inv_radiance_texture_width;
+  float                                                    inv_radiance_texture_height;
+  vec2                                                     _pust_constant_padding;
+};
+#elif defined( DEFERRED_MESHLET )
 CRUDE_PUSH_CONSTANT
 {
   SceneRef                                                 scene;
@@ -49,7 +86,7 @@ CRUDE_PUSH_CONSTANT
   MeshDrawCommandsRef                                      mesh_draw_commands;
   vec2                                                     _pust_constant_padding;
 };
-#else
+#elif defined( TRANSPARENT_NO_CULL )
 CRUDE_PUSH_CONSTANT
 {
   SceneRef                                                 scene;
@@ -165,7 +202,7 @@ void main()
 }
 #endif /* CRUDE_STAGE_TASK */
 
-#if /* defined( DEFERRED_MESHLET ) && */ defined( CRUDE_STAGE_MESH )
+#if defined( CRUDE_STAGE_MESH )
 layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
@@ -232,10 +269,69 @@ void main()
   }
 }
 #endif /* CRUDE_STAGE_MESH */
-
 #endif /* DEFERRED_MESHLET || TRANSPARENT_NO_CULL */
 
-#if defined( DEFERRED_MESHLET )
+#if defined( CRUDE_STAGE_VERTEX ) && ( defined( DEFERRED_CLASSIC ) || defined( TRANSPARENT_NO_CULL_CLASSIC ) )
+
+layout(location=0) out vec2 out_texcoord;
+layout(location=1) out flat uint out_mesh_draw_index;
+layout(location=2) out vec3 out_normal;
+layout(location=3) out vec3 out_tangent;
+layout(location=4) out vec3 out_bitangent;
+layout(location=5) out vec3 out_world_position;
+layout(location=6) out vec3 out_view_surface_normal;
+layout(location=7) out vec3 out_view_position;
+
+void main()
+{
+#if defined( DEFERRED_CLASSIC )
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
+#else /* TRANSPARENT_NO_CULL_CLASSIC */
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.total_mesh_count ].draw_id;
+#endif
+  uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
+  crude_mesh_draw mesh_draw = mesh_draws.data[ mesh_draw_index ];
+
+  mat4 mesh_to_world = mesh_instance_draws.data[ draw_id ].mesh_to_world;
+
+  uint vertex_index = 0;
+  if ( ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_INDEX_16 ) == 0 ) )
+  {
+    vertex_index = MeshIndices32Ref( mesh_draw.indices ).data[ gl_VertexIndex ];
+  }
+  else
+  {
+    vertex_index = MeshIndices16Ref( mesh_draw.indices ).data[ gl_VertexIndex ];
+  }
+
+  vec4 model_position = vec4(
+    mesh_draw.positions.data[ vertex_index + 0 ],
+    1.0 );
+  vec4 world_position = model_position * mesh_to_world;
+  vec4 view_position = world_position * scene.data.camera.world_to_view;
+  
+  vec4 tangent = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_TANGENTS ) == 1 ) ? vec4(
+    mesh_draw.tangents.data[ vertex_index + 0 ]) : vec4( 0 );
+  vec3 normal = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_NORMAL ) == 1 ) ? vec3(
+    mesh_draw.normals.data[ vertex_index ] )  : vec3( 0 );
+  normal = normal * mat3( mesh_to_world );
+  tangent.xyz = tangent.xyz * mat3( mesh_to_world );
+  vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
+  vec3 view_normal = normal * mat3( scene.data.camera.world_to_view );
+
+  gl_Position = world_position * scene.data.camera.world_to_clip;
+  out_texcoord = vec2( mesh_draw.texcoords.data[ 2 * vertex_index ], mesh_draw.texcoords.data[ 2 * vertex_index + 1 ] );
+  out_normal = normal;
+  out_tangent = tangent.xyz;
+  out_bitangent = bitangent;
+  out_mesh_draw_index = mesh_draw_index;
+  out_world_position = world_position.xyz;
+  out_view_surface_normal = view_normal;
+  out_view_position = scene.data.camera.position - world_position.xyz;
+}
+#endif /* CRUDE_STAGE_VERTEX && ( DEFERRED_CLASSIC || TRANSPARENT_NO_CULL_CLASSIC ) */
+
+#if defined( DEFERRED_MESHLET ) || defined( DEFERRED_CLASSIC )
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_abledo;
@@ -290,9 +386,9 @@ void main()
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
-#endif /* DEFERRED_MESHLET */
+#endif /* DEFERRED_MESHLET || DEFERRED_CLASSIC*/
 
-#if defined( TRANSPARENT_NO_CULL )
+#if defined( TRANSPARENT_NO_CULL ) || defined( TRANSPARENT_NO_CULL_CLASSIC )
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_radiance;

@@ -168,7 +168,6 @@ typedef struct crude_gfx_device
   bool                                                     timestamps_enabled;
 
   bool                                                     mesh_shaders_extension_present;
-  bool                                                     shader_relaxed_extended_instruction_extension_present;
   
   VkFence                                                  vk_immediate_fence;
 

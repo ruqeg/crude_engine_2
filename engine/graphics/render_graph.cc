@@ -695,7 +695,7 @@ crude_gfx_render_graph_render
     {
       continue;
     }
-
+    
     crude_gfx_cmd_push_marker( gpu_commands, node->name );
     
     if ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS )

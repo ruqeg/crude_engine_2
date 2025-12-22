@@ -9,6 +9,7 @@ typedef enum crude_gfx_mesh_draw_flags
   CRUDE_GFX_MESH_DRAW_FLAGS_TRANSPARENT_MASK = ( 1 << 2 ),
   CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL = ( 1 << 3 ),
   CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS = ( 1 << 4 ),
+  CRUDE_GFX_MESH_DRAW_FLAGS_INDEX_16 = ( 1 << 5 )
 } crude_gfx_mesh_draw_flags;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_meshlet_gpu
@@ -39,12 +40,16 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_gpu
   uint32                                                   meshletes_offset;
   uint32                                                   meshletes_count;
   uint32                                                   meshletes_index_count;
-  uint32                                                   padding1;
+  uint32                                                   mesh_indices_count;
 
-  uint64                                                   position_buffer;
-  uint64                                                   texcoord_buffer;
-  uint64                                                   index_buffer;
-  uint64                                                   normal_buffer;
+  VkDeviceAddress                                          position_buffer;
+  VkDeviceAddress                                          texcoord_buffer;
+
+  VkDeviceAddress                                          index_buffer;
+  VkDeviceAddress                                          normal_buffer;
+
+  VkDeviceAddress                                          tangent_buffer;
+  XMFLOAT2                                                 padding2;
 } crude_gfx_mesh_draw_gpu;
 
 typedef struct crude_gfx_meshlet_vertex_gpu
@@ -59,17 +64,17 @@ typedef struct crude_gfx_meshlet_vertex_gpu
 typedef struct crude_gfx_mesh_cpu
 {
   XMFLOAT4                                                 bounding_sphere;
-  crude_gfx_memory_allocation                              index_allocation;
-  crude_gfx_buffer_handle                                  position_buffer;
-  crude_gfx_buffer_handle                                  tangent_buffer;
-  crude_gfx_buffer_handle                                  normal_buffer;
-  crude_gfx_buffer_handle                                  texcoord_buffer;
+  crude_gfx_memory_allocation                              index_hga;
+  crude_gfx_memory_allocation                              position_hga;
+  crude_gfx_memory_allocation                              tangent_hga;
+  crude_gfx_memory_allocation                              normal_hga;
+  crude_gfx_memory_allocation                              texcoord_hga;
   uint32                                                   index_offset;
   uint32                                                   position_offset;
   uint32                                                   tangent_offset;
   uint32                                                   normal_offset;
   uint32                                                   texcoord_offset;
-  uint32                                                   primitive_count;
+  uint32                                                   indices_count;
   XMFLOAT4                                                 albedo_color_factor;
   XMFLOAT3                                                 metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;

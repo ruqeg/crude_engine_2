@@ -1188,8 +1188,15 @@ game_initialize_graphics_
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
 
-  crude_gfx_technique_load_from_file( "deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  if ( game->gpu.mesh_shaders_extension_present )
+  {
+    crude_gfx_technique_load_from_file( "deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  }
+  else
+  {
+    crude_gfx_technique_load_from_file( "deferred_classic.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
+  }
+  //crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );

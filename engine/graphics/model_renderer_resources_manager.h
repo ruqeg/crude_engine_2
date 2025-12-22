@@ -38,20 +38,23 @@ typedef struct crude_gfx_model_renderer_resources_manager
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
-  uint64                                                   total_meshes_count;
+
+  struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
+
+  /* For meshlet pipelines */
+  crude_gfx_memory_allocation                              meshlets_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_indices_hga;
+  crude_gfx_memory_allocation                              meshlets_triangles_indices_hga;
   uint64                                                   total_meshlets_count;
   uint64                                                   total_meshlets_vertices_count;
   uint64                                                   total_meshlets_vertices_indices_count;
   uint64                                                   total_meshlets_triangles_indices_count;
 
-  struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
-
-  crude_gfx_memory_allocation                              meshlets_hga;
-  crude_gfx_memory_allocation                              meshlets_vertices_hga;
-  crude_gfx_memory_allocation                              meshlets_vertices_indices_hga;
-  crude_gfx_memory_allocation                              meshlets_triangles_indices_hga;
+  /* Common */
   crude_gfx_memory_allocation                              meshes_draws_hga;
   crude_gfx_memory_allocation                              meshes_bounds_hga;
+  uint64                                                   total_meshes_count;
 } crude_gfx_model_renderer_resources_manager;
 
 CRUDE_API void

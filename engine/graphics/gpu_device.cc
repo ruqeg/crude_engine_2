@@ -35,13 +35,15 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
-  VK_EXT_MESH_SHADER_EXTENSION_NAME,
   VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
   VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+  VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
+  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME,
+  VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -250,7 +252,6 @@ crude_gfx_device_initialize
   gpu->vk_swapchain_image_index = 0;
   gpu->swapchain_resized_last_frame = false;
   gpu->mesh_shaders_extension_present = false;
-  gpu->shader_relaxed_extended_instruction_extension_present = false;
   gpu->timestamps_enabled = false;
 
   gpu->working_absolute_directory = creation->working_absolute_directory;
@@ -693,6 +694,7 @@ crude_gfx_present
     VkSemaphoreSubmitInfo signal_semaphores[] = {
       { VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, NULL, gpu->vk_rendering_finished_semaphore[ gpu->vk_swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
     };
+
     VkCommandBufferSubmitInfo command_buffers[] = {
       { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, enqueued_command_buffers[ 0 ], 0 },
       { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, enqueued_command_buffers[ 1 ], 0 },
@@ -1070,13 +1072,13 @@ crude_gfx_compile_shader
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
 
 #if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
-    char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vulkan_binaries_path );
-    char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer,"spirv-opt.exe --preserve-bindings -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
+  char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vulkan_binaries_path );
+  char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
 
-    crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
-    crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
+  crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
+  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 #else
-    crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
+  crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 #endif
 
   if ( !spirv_code )
@@ -3623,17 +3625,13 @@ vk_pick_physical_device_
 
     for ( size_t i = 0; i < available_extensions_count; ++i )
     {
+#if !CRUDE_GRAPHICS_MESH_SHADER_DISBLED
       if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) == 0 )
       {
         gpu->mesh_shaders_extension_present = true;
         continue;
       }
-
-      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME ) == 0 )
-      {
-        gpu->shader_relaxed_extended_instruction_extension_present = true;
-        continue;
-      }
+#endif
     }
   }
 
@@ -3656,18 +3654,14 @@ vk_create_device_
   VkPhysicalDeviceRayTracingPipelineFeaturesKHR            physical_device_ray_tracing_pipeline_features;
   VkPhysicalDeviceAccelerationStructureFeaturesKHR         physical_device_acceleration_structure_features;
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  VkPhysicalDeviceBufferDeviceAddressFeaturesKHR           physical_device_buffer_defice_address_features;
   VkPhysicalDeviceShaderAtomicInt64Features                shader_atomic_int64_features;
   VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shader_relaxed_extended_instruction_features;
-  VkPhysicalDevice16BitStorageFeatures                     bit16_storage_features;
-  VkPhysicalDevice8BitStorageFeatures                      bit_storage_features;
   VkPhysicalDeviceSynchronization2Features                 synchronization_features;
   VkPhysicalDeviceDynamicRenderingFeaturesKHR              dynamic_rendering_features;
-  VkPhysicalDeviceDescriptorIndexingFeatures               indexing_features;
   VkPhysicalDeviceFeatures2                                physical_features2;
-  VkPhysicalDeviceTimelineSemaphoreFeatures                timeline_semaphore_features;
-  VkPhysicalDeviceMultiviewFeaturesKHR                     device_features_multivew;
   VkPhysicalDeviceFragmentShadingRateFeaturesKHR           device_features_fragment_shading_rate;
+  VkPhysicalDeviceVulkan11Features                         device_features_vulkan11;
+  VkPhysicalDeviceVulkan12Features                         device_features_vulkan12;
   VkPhysicalDeviceMeshShaderFeaturesEXT                    device_features_mesh;
   VkDeviceCreateInfo                                       device_create_info;
   VkDeviceQueueCreateInfo                                  queue_create_infos[ 2 ];
@@ -3729,9 +3723,6 @@ vk_create_device_
   //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
   //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
   
-  bit16_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice16BitStorageFeatures );
-  bit16_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
-
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
   physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
@@ -3764,69 +3755,46 @@ vk_create_device_
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 
-  bit16_storage_features.storageBuffer16BitAccess = VK_TRUE;
   
-  bit_storage_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDevice8BitStorageFeatures );
-  bit_storage_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
-  bit_storage_features.storageBuffer8BitAccess = VK_TRUE;
-
-  if ( gpu->shader_relaxed_extended_instruction_extension_present )
-  {
-    shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
-    shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
-    shader_relaxed_extended_instruction_features.pNext = &bit16_storage_features;
-    shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
-
-    bit_storage_features.pNext = &shader_relaxed_extended_instruction_features;
-  }
-  else
-  {
-    bit_storage_features.pNext = &bit16_storage_features;
-  }
+  shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
+  shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+  shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
 
   synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );
   synchronization_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-  synchronization_features.pNext = &bit_storage_features;
+  synchronization_features.pNext = &shader_relaxed_extended_instruction_features;
   synchronization_features.synchronization2 = VK_TRUE;
-  
-  physical_device_buffer_defice_address_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceBufferDeviceAddressFeatures );
-  physical_device_buffer_defice_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-  physical_device_buffer_defice_address_features.pNext = &synchronization_features;
-  physical_device_buffer_defice_address_features.bufferDeviceAddress = true;
-
-  device_features_multivew = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMultiviewFeaturesKHR );
-  device_features_multivew.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR;
-  device_features_multivew.pNext = &physical_device_buffer_defice_address_features;
-  device_features_multivew.multiview = VK_TRUE;
 
   device_features_fragment_shading_rate = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFragmentShadingRateFeaturesKHR );
   device_features_fragment_shading_rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
-  device_features_fragment_shading_rate.pNext = &device_features_multivew;
+  device_features_fragment_shading_rate.pNext = &synchronization_features;
   device_features_fragment_shading_rate.primitiveFragmentShadingRate = VK_TRUE;
+  
+  device_features_vulkan11 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan11Features );
+  device_features_vulkan11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  device_features_vulkan11.storageBuffer16BitAccess = true;
+  device_features_vulkan11.pNext = &device_features_fragment_shading_rate;
+
+  device_features_vulkan12 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan12Features );
+  device_features_vulkan12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  device_features_vulkan12.drawIndirectCount = true;
+  device_features_vulkan12.pNext = &device_features_vulkan11;
 
   device_features_mesh = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMeshShaderFeaturesEXT );
   device_features_mesh.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
-  device_features_mesh.pNext = &device_features_fragment_shading_rate;
+  device_features_mesh.pNext = &device_features_vulkan12;
   device_features_mesh.taskShader = VK_TRUE;
   device_features_mesh.meshShader = VK_TRUE;
   device_features_mesh.multiviewMeshShader = VK_TRUE;
   device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
   
-  timeline_semaphore_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceTimelineSemaphoreFeatures );
-  timeline_semaphore_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-  timeline_semaphore_features.pNext = &device_features_mesh;
-  
   dynamic_rendering_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDynamicRenderingFeaturesKHR );
   dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
-  dynamic_rendering_features.pNext = &timeline_semaphore_features;
-
-  indexing_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDescriptorIndexingFeatures );
-  indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-  indexing_features.pNext = &dynamic_rendering_features;
+  dynamic_rendering_features.pNext = &device_features_mesh;
 
   physical_features2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFeatures2 );
   physical_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-  physical_features2.pNext = &indexing_features;
+  physical_features2.pNext = &dynamic_rendering_features;
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( device_extensions, CRUDE_COUNTOF( vk_device_required_extensions ), temporary_allocator );
@@ -3838,11 +3806,6 @@ vk_create_device_
   if ( gpu->mesh_shaders_extension_present )
   {
     CRUDE_ARRAY_PUSH( device_extensions, VK_EXT_MESH_SHADER_EXTENSION_NAME );
-  }
-
-  if ( gpu->shader_relaxed_extended_instruction_extension_present )
-  {
-    CRUDE_ARRAY_PUSH( device_extensions, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME );
   }
 
   device_create_info = CRUDE_COMPOUNT_EMPTY( VkDeviceCreateInfo );

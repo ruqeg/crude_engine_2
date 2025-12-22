@@ -15,7 +15,7 @@
 	],
 	"pipelines" : [
 		{
-			"name" : "deferred_meshlet",
+			"name" : "deferred_classic",
 			"render_pass_output":
 			{
 				"reference": "gbuffer_early_pass" 
@@ -27,11 +27,7 @@
 			"cull" : "back",
 			"shaders" : [
 				{
-					"stage" : "mesh",
-					"buffer" : "deferred"
-				},
-				{
-					"stage" : "task",
+					"stage" : "vertex",
 					"buffer" : "deferred"
 				},
 				{
@@ -41,7 +37,7 @@
 			]
 		},
 		{
-			"name" : "transparent_no_cull",
+			"name" : "transparent_no_cull_classic",
 			"render_pass_output":
 			{
 				"reference": "transparent_pass" 
@@ -60,11 +56,7 @@
 	        ],
 			"shaders" : [
 				{
-					"stage" : "mesh",
-					"buffer" : "deferred"
-				},
-				{
-					"stage" : "task",
+					"stage" : "vertex",
 					"buffer" : "deferred"
 				},
 				{
