@@ -1082,16 +1082,16 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   allocation_size = sizeof*( meshlets_triangles_indices ) * CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
   cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
   crude_memory_copy( cpu_allocation.cpu_address, meshlets_triangles_indices, allocation_size );
-
+  
   old_gpu_allocation = manager->meshlets_triangles_indices_hga;
   manager->meshlets_triangles_indices_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof*( meshlets_triangles_indices ) * manager->total_meshlets_triangles_indices_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshlets_triangles_indices" );
-
+  
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshlets_triangles_indices_hga, old_gpu_allocation );
   
   allocation_size = sizeof*( meshlets ) * CRUDE_ARRAY_LENGTH( meshlets );
   cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
   crude_memory_copy( cpu_allocation.cpu_address, meshlets, allocation_size );
-
+  
   old_gpu_allocation = manager->meshlets_hga;
   manager->meshlets_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof*( meshlets ) * manager->total_meshlets_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshlet_sb" );
 

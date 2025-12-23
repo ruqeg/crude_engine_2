@@ -36,14 +36,11 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
   VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-  VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
   VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
   VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
-  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME,
-  VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
+  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -252,6 +249,9 @@ crude_gfx_device_initialize
   gpu->vk_swapchain_image_index = 0;
   gpu->swapchain_resized_last_frame = false;
   gpu->mesh_shaders_extension_present = false;
+  gpu->fragment_shading_rate_extension_present = false;
+  gpu->deferred_host_operations_extension_present = false;
+  gpu->shader_relaxed_extended_instruction_extension_present = false;
   gpu->timestamps_enabled = false;
 
   gpu->working_absolute_directory = creation->working_absolute_directory;
@@ -2410,7 +2410,7 @@ crude_gfx_destroy_buffer_instant
 )
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
-
+  
   if ( buffer )
   {
     vmaDestroyBuffer( gpu->vma_allocator, buffer->vk_buffer, buffer->vma_allocation );
@@ -3632,6 +3632,27 @@ vk_pick_physical_device_
         continue;
       }
 #endif
+#if !CRUDE_GRAPHICS_FRAGMENT_SHADING_RATE_DISBLED
+      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME ) == 0 )
+      {
+        gpu->fragment_shading_rate_extension_present = true;
+        continue;
+      }
+#endif
+#if !CRUDE_GRAPHICS_DEFERRED_HOST_OPERATIONS_DISBLED
+      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME ) == 0 )
+      {
+        gpu->deferred_host_operations_extension_present = true;
+        continue;
+      }
+#endif
+#if !CRUDE_GRAPHICS_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED
+      if ( crude_string_cmp( available_extensions[ i ].extensionName, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME ) == 0 )
+      {
+        gpu->shader_relaxed_extended_instruction_extension_present = true;
+        continue;
+      }
+#endif
     }
   }
 
@@ -3667,6 +3688,7 @@ vk_create_device_
   VkDeviceQueueCreateInfo                                  queue_create_infos[ 2 ];
   VkQueueFamilyProperties                                 *queue_families;
   char const                                             **device_extensions;
+  void                                                    *next_feature;
   uint32                                                   queue_family_count, main_queue_index, transfer_queue_index, compute_queue_index, present_queue_index;
 
   queue_family_count = 0;
@@ -3754,47 +3776,63 @@ vk_create_device_
   bit16_storage_features.pNext = &physical_device_buffer_defice_address_features;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-
   
-  shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
-  shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
-  shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
-
+  next_feature = NULL;
+  if ( gpu->shader_relaxed_extended_instruction_extension_present )
+  {
+    shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
+    shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+    shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
+    next_feature = &shader_relaxed_extended_instruction_features;
+  }
+  
   synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );
   synchronization_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-  synchronization_features.pNext = &shader_relaxed_extended_instruction_features;
+  synchronization_features.pNext = next_feature;
   synchronization_features.synchronization2 = VK_TRUE;
+  next_feature = &synchronization_features;
 
-  device_features_fragment_shading_rate = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFragmentShadingRateFeaturesKHR );
-  device_features_fragment_shading_rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
-  device_features_fragment_shading_rate.pNext = &synchronization_features;
-  device_features_fragment_shading_rate.primitiveFragmentShadingRate = VK_TRUE;
-  
+  if ( gpu->fragment_shading_rate_extension_present )
+  {
+    device_features_fragment_shading_rate = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFragmentShadingRateFeaturesKHR );
+    device_features_fragment_shading_rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+    device_features_fragment_shading_rate.pNext = next_feature;
+    device_features_fragment_shading_rate.primitiveFragmentShadingRate = VK_TRUE;
+    next_feature = &device_features_fragment_shading_rate;
+  }
+
   device_features_vulkan11 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan11Features );
   device_features_vulkan11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
   device_features_vulkan11.storageBuffer16BitAccess = true;
-  device_features_vulkan11.pNext = &device_features_fragment_shading_rate;
+  device_features_vulkan11.pNext = next_feature;
+  next_feature = &device_features_vulkan11;
 
   device_features_vulkan12 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan12Features );
   device_features_vulkan12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
   device_features_vulkan12.drawIndirectCount = true;
-  device_features_vulkan12.pNext = &device_features_vulkan11;
-
-  device_features_mesh = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMeshShaderFeaturesEXT );
-  device_features_mesh.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
-  device_features_mesh.pNext = &device_features_vulkan12;
-  device_features_mesh.taskShader = VK_TRUE;
-  device_features_mesh.meshShader = VK_TRUE;
-  device_features_mesh.multiviewMeshShader = VK_TRUE;
-  device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
+  device_features_vulkan12.pNext = next_feature;
+  next_feature = &device_features_vulkan12;
+  
+  if ( gpu->mesh_shaders_extension_present )
+  {
+    device_features_mesh = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMeshShaderFeaturesEXT );
+    device_features_mesh.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+    device_features_mesh.pNext = next_feature;
+    device_features_mesh.taskShader = VK_TRUE;
+    device_features_mesh.meshShader = VK_TRUE;
+    device_features_mesh.multiviewMeshShader = VK_TRUE;
+    device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
+    next_feature = &device_features_mesh;
+  }
   
   dynamic_rendering_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDynamicRenderingFeaturesKHR );
   dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
-  dynamic_rendering_features.pNext = &device_features_mesh;
+  dynamic_rendering_features.pNext = next_feature;
+  next_feature = &dynamic_rendering_features;
 
   physical_features2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFeatures2 );
   physical_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-  physical_features2.pNext = &dynamic_rendering_features;
+  physical_features2.pNext = next_feature;
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( device_extensions, CRUDE_COUNTOF( vk_device_required_extensions ), temporary_allocator );
@@ -3806,6 +3844,21 @@ vk_create_device_
   if ( gpu->mesh_shaders_extension_present )
   {
     CRUDE_ARRAY_PUSH( device_extensions, VK_EXT_MESH_SHADER_EXTENSION_NAME );
+  }
+
+  if ( gpu->fragment_shading_rate_extension_present )
+  {
+    CRUDE_ARRAY_PUSH( device_extensions, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME );
+  }
+
+  if ( gpu->deferred_host_operations_extension_present )
+  {
+    CRUDE_ARRAY_PUSH( device_extensions, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME );
+  }
+
+  if ( gpu->shader_relaxed_extended_instruction_extension_present )
+  {
+    CRUDE_ARRAY_PUSH( device_extensions, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME );
   }
 
   device_create_info = CRUDE_COMPOUNT_EMPTY( VkDeviceCreateInfo );

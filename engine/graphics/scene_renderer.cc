@@ -209,11 +209,6 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
   {
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
   }
-  
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
-  }
 
   scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 ), CRUDE_GFX_MEMORY_TYPE_GPU, "lights" );
   scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );

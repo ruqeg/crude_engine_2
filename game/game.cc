@@ -590,7 +590,7 @@ game_graphics_system_
 #endif
     crude_game_menu_draw( &game->game_menu );
   }
-
+  
   if ( game->gpu.swapchain_resized_last_frame )
   {
     crude_gfx_scene_renderer_on_resize( &game->scene_renderer );
@@ -1187,7 +1187,7 @@ game_initialize_graphics_
 //#endif
   crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
   crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
-
+  
   if ( game->gpu.mesh_shaders_extension_present )
   {
     crude_gfx_technique_load_from_file( "deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
@@ -1206,7 +1206,7 @@ game_initialize_graphics_
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-
+  
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
   model_renderer_resources_manager_creation.allocator = &game->allocator;
   model_renderer_resources_manager_creation.async_loader = &game->async_loader;
@@ -1236,7 +1236,7 @@ game_initialize_graphics_
   game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
 
   game->graphics_time = 0.f;
-
+  
   game_setup_custom_postload_model_resources_( game );
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
 

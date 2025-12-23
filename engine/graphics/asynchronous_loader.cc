@@ -52,7 +52,7 @@ crude_gfx_asynchronous_loader_initialize
   asynloader->texture_ready = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   asynloader->cpu_allocation_ready = crude_gfx_memory_allocation_empty( );
   asynloader->gpu_allocation_ready = crude_gfx_memory_allocation_empty( );
-  asynloader->gpu_allocation_ready = crude_gfx_memory_allocation_empty( );
+  asynloader->gpu_old_allocation_ready = crude_gfx_memory_allocation_empty( );
 
   asynloader->total_requests_count = 0;
 
