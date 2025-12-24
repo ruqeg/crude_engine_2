@@ -1,8 +1,7 @@
 #pragma once
 
-#include <TaskScheduler_c.h>
-
-#include <engine/graphics/asynchronous_loader.h>
+#include <engine/graphics/asynchronous_loader_manager.h>
+#include <engine/core/task_sheduler.h>
 #include <engine/core/ecs.h>
 #include <engine/core/memory.h>
 
@@ -13,11 +12,11 @@ typedef struct crude_engine_creation
 typedef struct crude_engine
 {
   ecs_world_t                                             *world;
-  bool                                                     running;
-  enkiTaskScheduler                                       *task_sheduler;
-  enkiPinnedTask                                          *pinned_task_loop;
+  
+  crude_task_sheduler                                      task_sheduler;
   crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
-  crude_heap_allocator                                     asynchronous_loader_manager_allocator;
+  
+  bool                                                     running;
   int64                                                    last_update_time;
 } crude_engine;
 

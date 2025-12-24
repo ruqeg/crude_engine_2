@@ -16,7 +16,7 @@ crude_ecs_init
 }
 
 int
-crude_ecs_fini
+crude_ecs_deinitalize
 (
   _In_ ecs_world_t                                        *world
 )
@@ -67,6 +67,16 @@ crude_ecs_lookup_entity_from_parent
   entity.world = parent.world;
   entity.handle = ecs_lookup_from( parent.world, parent.handle, path );
   return entity;
+}
+
+void
+crude_ecs_set_threads
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ uint64                                              threads_count
+)
+{
+  ecs_set_threads( world, threads_count );
 }
 
 /************************************************

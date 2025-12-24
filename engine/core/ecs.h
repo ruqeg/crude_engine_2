@@ -30,7 +30,7 @@ crude_ecs_init
 );
 
 CRUDE_API int
-crude_ecs_fini
+crude_ecs_deinitalize
 (
   _In_ ecs_world_t                                        *world
 );
@@ -62,6 +62,12 @@ crude_ecs_lookup_entity_from_parent
   _In_ char const                                         *path
 );
 
+CRUDE_API void
+crude_ecs_set_threads
+(
+  _In_ ecs_world_t                                        *world,
+  _In_ uint64                                              threads_count
+);
 /************************************************
  *
  * ECS Entity Functions Declaration 

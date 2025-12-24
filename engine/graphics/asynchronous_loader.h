@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/core/task_sheduler.h>
 #include <engine/graphics/gpu_device.h>
 #include <engine/graphics/gpu_memory.h>
 
@@ -66,26 +67,6 @@ typedef struct crude_gfx_asynchronous_loader
 
 /************************************************
  *
- * Asynchronous Loader Manager Structs
- * 
- ***********************************************/
-typedef struct crude_gfx_asynchronous_loader_manager_creation
-{
-  void                                                    *task_sheduler;
-  crude_heap_allocator                                    *allocator;
-} crude_gfx_asynchronous_loader_manager_creation;
-
-typedef struct crude_gfx_asynchronous_loader_manager
-{
-  crude_gfx_asynchronous_loader                          **async_loaders;
-  bool                                                     async_loaders_valid;
-  void                                                    *async_loader_task;
-  void                                                    *task_sheduler;
-  mtx_t                                                    task_mutex;
-} crude_gfx_asynchronous_loader_manager;
-
-/************************************************
- *
  * Asynchronous Functions Declaration
  * 
  ***********************************************/
@@ -137,36 +118,4 @@ CRUDE_API bool
 crude_gfx_asynchronous_loader_has_requests
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
-);
-
-/************************************************
- *
- * Asynchronous Loader Manager Functions Declaration
- * 
- ***********************************************/
-CRUDE_API void
-crude_gfx_asynchronous_loader_manager_intiailize
-(
-  _In_ crude_gfx_asynchronous_loader_manager                *manager,
-  _In_ crude_gfx_asynchronous_loader_manager_creation const *creation
-);
-
-CRUDE_API void
-crude_gfx_asynchronous_loader_manager_add_loader
-(
-  _In_ crude_gfx_asynchronous_loader_manager              *manager,
-  _In_ crude_gfx_asynchronous_loader                      *async_loader
-);
-
-CRUDE_API void
-crude_gfx_asynchronous_loader_manager_remove_loader
-(
-  _In_ crude_gfx_asynchronous_loader_manager              *manager,
-  _In_ crude_gfx_asynchronous_loader                      *async_loader
-);
-
-CRUDE_API void
-crude_gfx_asynchronous_loader_manager_deintiailize
-(
-  _In_ crude_gfx_asynchronous_loader_manager              *manager
 );
