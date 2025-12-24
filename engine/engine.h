@@ -33,7 +33,17 @@ typedef struct crude_engine
   crude_task_sheduler                                      task_sheduler;
   bool                                                     running;
   int64                                                    last_update_time;
-  
+
+  /******************************
+   *
+   * Constants
+   *
+   ******************************/
+  char                                                    *resources_absolute_directory;
+  char                                                    *shaders_absolute_directory;
+  char                                                    *techniques_absolute_directory;
+  char                                                    *compiled_shaders_absolute_directory;
+
   /******************************
    *
    * Allocators
@@ -84,6 +94,7 @@ typedef struct crude_engine
   float64                                                  graphics_absolute_time;
   crude_entity                                             graphics_focused_camera_node;
   uint32                                                   graphics_framerate;
+  crude_entity                                             graphics_main_node;
 
   /******************************
    *
@@ -111,6 +122,13 @@ typedef struct crude_engine
 #if CRUDE_DEVELOP
   crude_physics_debug_system_context                       physics_debug_system_context;
 #endif
+  
+  /******************************
+   *
+   * Synchronization
+   *
+   ******************************/
+  mtx_t                                                    nodes_mutex;
 
   /******************************
    *

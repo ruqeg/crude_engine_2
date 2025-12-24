@@ -466,7 +466,6 @@ crude_engine_initialize_graphics_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_window_handle                                     *window_handle;
   char const                                              *render_graph_file_path;
   crude_string_buffer                                      temporary_name_buffer;
   crude_gfx_model_renderer_resources_manager_creation      model_renderer_resources_manager_creation;
@@ -476,30 +475,29 @@ crude_engine_initialize_graphics_
   
   crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &engine->task_sheduler, 1u );
 
-  temporary_allocator_marker = crude_stack_allocator_get_marker( &game->temporary_allocator );
+  temporary_allocator_marker = crude_stack_allocator_get_marker( &engine->temporary_allocator );
   
-  crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
-
-  window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
+  crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &engine->temporary_allocator ) );
 
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
+  device_creation.sdl_window = engine->platform.sdl_window;
   device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-  device_creation.temporary_allocator = &game->temporary_allocator;
+  device_creation.allocator_container = crude_heap_allocator_pack( &engine->common_allocator );
+  device_creation.temporary_allocator = &engine->temporary_allocator;
   device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, game->engine->asynchronous_loader_manager.task_sheduler ) ) );
-  device_creation.shaders_absolute_directory = game->shaders_absolute_directory;
-  device_creation.techniques_absolute_directory = game->techniques_absolute_directory;
-  device_creation.compiled_shaders_absolute_directory = game->compiled_shaders_absolute_directory;
-  crude_gfx_device_initialize( &game->gpu, &device_creation );
+  device_creation.num_threads = engine->asynchronous_loader_manager.active_async_loaders_max_count;
+  device_creation.shaders_absolute_directory = engine->shaders_absolute_directory;
+  device_creation.techniques_absolute_directory = engine->techniques_absolute_directory;
+  device_creation.compiled_shaders_absolute_directory = engine->compiled_shaders_absolute_directory;
+  crude_gfx_device_initialize( &engine->gpu, &device_creation );
   
-  crude_gfx_render_graph_builder_initialize( &game->render_graph_builder, &game->gpu );
-  crude_gfx_render_graph_initialize( &game->render_graph, &game->render_graph_builder );
+  crude_gfx_render_graph_builder_initialize( &engine->render_graph_builder, &engine->gpu );
+  crude_gfx_render_graph_initialize( &engine->render_graph, &engine->render_graph_builder );
   
-  crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
-  crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
+  crude_gfx_asynchronous_loader_initialize( &engine->async_loader, &engine->gpu );
+  crude_gfx_asynchronous_loader_manager_add_loader( &engine->asynchronous_loader_manager, &engine->async_loader );
+
 //#if CRUDE_DEVELOP
   render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_develop.json" );
 //#else
@@ -561,7 +559,6 @@ crude_engine_initialize_graphics_
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
 
   crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
-  crude_gfx_game_postprocessing_pass_initialize( &game->game_postprocessing_pass, &game->scene_renderer );
   crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
   crude_gfx_render_graph_builder_register_render_pass( game->render_graph.builder, "game_postprocessing_pass", crude_gfx_game_postprocessing_pass_pack( &game->game_postprocessing_pass ) );
 
@@ -723,6 +720,7 @@ crude_engine_pinned_task_graphics_loop_
   crude_engine                                            *engine;
   crude_gfx_texture                                       *final_render_texture;
   float32                                                  last_graphics_update_delta;
+  bool                                                     new_buffers_recrteated_or_model_initialized;
   
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_pinned_task_graphics_loop_" );
   
@@ -735,6 +733,7 @@ crude_engine_pinned_task_graphics_loop_
   {
     goto cleanup;
   }
+
   if ( last_graphics_update_delta < 1.f / engine->graphics_framerate )
   {
     goto cleanup;
@@ -742,43 +741,39 @@ crude_engine_pinned_task_graphics_loop_
 
   engine->graphics_absolute_time += last_graphics_update_delta;
   
+  engine->last_graphics_update_time = crude_time_now( );
 
-  game->last_graphics_update_time = 0.f;
+  engine->scene_renderer.options.camera_node = engine->graphics_focused_camera_node;
+  engine->scene_renderer.options.absolute_time = engine->graphics_absolute_time;
 
-  game->scene_renderer.options.camera_node = game->focused_camera_node;
-  game->scene_renderer.options.absolute_time = game->graphics_time;
-  game->scene_renderer.options.background_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT3 );
-  game->scene_renderer.options.background_intensity = 0.f;
-
-  crude_gfx_new_frame( &game->gpu );
+  crude_gfx_new_frame( &engine->gpu );
   
-  if ( crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) )
+  mtx_lock( &engine->nodes_mutex );
+  new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->graphics_main_node );
+  mtx_unlock( &engine->nodes_mutex );
+  
+  if ( new_buffers_recrteated_or_model_initialized )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
-    crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
+    crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
   }
  
-  {
-    CRUDE_PROFILER_ZONE_NAME( "ImGui_NewFrame" );
-    ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
-    ImGui_ImplSDL3_NewFrame( );
-    ImGui::NewFrame( );
-    CRUDE_PROFILER_ZONE_END;
+  ImGui::SetCurrentContext( engine->imgui_context );
+  ImGui_ImplSDL3_NewFrame( );
+  ImGui::NewFrame( );
 #if CRUDE_DEVELOP
-    crude_devmenu_draw( &game->devmenu );
+  //crude_devmenu_draw( &game->devmenu );
 #endif
-    crude_game_menu_draw( &game->game_menu );
-  }
   
-  if ( game->gpu.swapchain_resized_last_frame )
+  if ( engine->gpu.swapchain_resized_last_frame )
   {
-    crude_gfx_scene_renderer_on_resize( &game->scene_renderer );
-    crude_gfx_render_graph_on_resize( &game->render_graph, game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height );
+    crude_gfx_scene_renderer_on_resize( &engine->scene_renderer );
+    crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.vk_swapchain_width, engine->gpu.vk_swapchain_height );
   }
 
-  crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
+  crude_gfx_scene_renderer_submit_draw_task( &engine->scene_renderer, false );
 
-  crude_gfx_present( &game->gpu, final_render_texture );
+  crude_gfx_present( &engine->gpu, final_render_texture );
 
 cleanup:
   CRUDE_PROFILER_ZONE_END;

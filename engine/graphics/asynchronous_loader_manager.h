@@ -13,6 +13,7 @@ typedef struct crude_gfx_asynchronous_loader_manager
   uint64                                                   async_loaders_count;
   bool                                                     async_loaders_valid;
   mtx_t                                                    task_mutex;
+  uint64                                                   active_async_loaders_max_count;
 } crude_gfx_asynchronous_loader_manager;
 
 /************************************************
