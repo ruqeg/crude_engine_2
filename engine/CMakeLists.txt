@@ -28,6 +28,7 @@ source_group(physics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/physics/*")
 source_group(audio REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/audio/*")
 source_group(gui REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/gui/*")
 source_group(external REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/external/*")
+source_group(engine REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/engine/*")
 source_group(engine FILES engine.cc engine.h)
 
 if(MSVC)

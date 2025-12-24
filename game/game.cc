@@ -36,17 +36,6 @@ CRUDE_ECS_SYSTEM_DECLARE( game_update_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_graphics_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( game_input_system_ );
 
-static void
-game_initialize_allocators_
-(
-  _In_ game_t                                             *game
-);
-
-static void
-game_initialize_imgui_
-(
-  _In_ game_t                                             *game
-);
 
 static void
 game_initialize_constant_strings_
@@ -67,11 +56,6 @@ game_deinitialize_constant_strings_
   _In_ game_t                                             *game
 );
 
-static void
-game_initialize_platform_
-(
-  _In_ game_t                                             *game
-);
 
 static void
 game_initialize_audio_
@@ -81,18 +65,6 @@ game_initialize_audio_
 
 static void
 game_deinitialize_audio_
-(
-  _In_ game_t                                             *game
-);
-
-static void
-game_initialize_physics_
-(
-  _In_ game_t                                             *game
-);
-
-static void
-game_initialize_scene_
 (
   _In_ game_t                                             *game
 );
@@ -122,12 +94,6 @@ game_input_system_
 );
 
 static void
-game_graphics_deinitialize_
-(
-  _In_ game_t                                             *game
-);
-
-static void
 game_setup_custom_preload_nodes_
 (
   _In_ game_t                                             *game
@@ -143,30 +109,6 @@ static void
 game_setup_custom_postload_model_resources_
 (
   _In_ game_t                                             *game
-);
-
-static bool
-game_parse_json_to_component_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-);
-
-static void
-game_parse_all_components_to_json_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json,
-  _In_ crude_node_manager                                 *manager
-);
-
-static void
-game_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
 );
 
 #include <miniaudio.h>
@@ -201,17 +143,9 @@ game_initialize
   
   srand( time( NULL ) );
 
-  game_initialize_allocators_( game );
   game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
   
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( game->commands_queue, 0, crude_heap_allocator_pack( &game->allocator ) );
-
 #if CRUDE_DEVELOP
-  game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
-  game->physics_debug_system_context.resources_absolute_directory = game->resources_absolute_directory;
-  game->physics_debug_system_context.string_bufffer = &game->debug_strings_buffer;
-  crude_physics_debug_system_import( game->engine->world, &game->physics_debug_system_context );
-  
   game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_debug_model_absolute_filepath;
   game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_debug_model_absolute_filepath;
@@ -219,13 +153,8 @@ game_initialize
   crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
 #endif
 
-  game_initialize_imgui_( game );
-  game_initialize_platform_( game );
   game_initialize_audio_( game );
-  game_initialize_physics_( game );
-  crude_collisions_resources_manager_initialize( &game->collision_resources_manager, &game->allocator, &game->cgltf_temporary_allocator );
   game_initialize_graphics_( game );
-  game_initialize_scene_( game );
   
 #if CRUDE_DEVELOP
   crude_devmenu_initialize( &game->devmenu );
@@ -235,8 +164,6 @@ game_initialize
   crude_audio_device_wait_wait_till_uploaded( &game->audio_device );
 
   crude_physics_enable_simulation( &game->physics, true );
-
-  game_push_load_scene_command( game, game->scene_absolute_filepath );
 
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
   CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsPreStore, game, { } );
@@ -261,125 +188,6 @@ game_postupdate
 #endif
   crude_game_menu_update( &game->game_menu );
   
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( game->commands_queue ); ++i )
-  {
-    switch ( game->commands_queue[ i ].type )
-    {
-    case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
-    {
-      bool                                                 buffer_recreated;
-
-      vkDeviceWaitIdle( game->gpu.vk_device );
-      
-      crude_node_manager_clear( &game->node_manager );
-      crude_physics_resources_manager_clear( &game->physics_resources_manager );
-#if CRUDE_DEVELOP
-      crude_string_buffer_clear( &game->debug_strings_buffer );
-#endif
-      crude_string_buffer_clear( &game->game_strings_buffer );
-      game_setup_custom_preload_nodes_( game );
-      game->main_node = crude_node_manager_get_node( &game->node_manager, game->current_scene_absolute_filepath );
-      game_setup_custom_postload_nodes_( game );
-
-      crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
-      
-      crude_audio_device_sound_stop( &game->audio_device, game->death_sound_handle );
-      game->death_screen = false;
-      game->death_overlap_color.w = 0;
-      break;
-    }
-    case CRUDE_GAME_QUEUE_COMMAND_TYPE_LOAD_SCENE:
-    {
-      vkDeviceWaitIdle( game->gpu.vk_device );
-
-      crude_node_manager_clear( &game->node_manager );
-      crude_physics_resources_manager_clear( &game->physics_resources_manager );
-      crude_gfx_model_renderer_resources_manager_clear( &game->model_renderer_resources_manager );
-      
-#if CRUDE_DEVELOP
-      crude_string_buffer_clear( &game->debug_strings_buffer );
-#endif
-      crude_string_buffer_clear( &game->game_strings_buffer );
-      game_setup_custom_preload_nodes_( game );
-      game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].load_scene.absolute_filepath );
-      game->current_scene_absolute_filepath = game->commands_queue[ i ].load_scene.absolute_filepath;
-      game_setup_custom_postload_nodes_( game );
-
-      bool buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
-      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
-
-      if ( buffer_recreated )
-      {
-        crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
-      }
-
-      crude_audio_device_sound_stop( &game->audio_device, game->death_sound_handle );
-      game->death_screen = false;
-      game->death_overlap_color.w = 0;
-      break;
-    }
-    case CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
-    {
-      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( game->gpu.resource_cache.techniques ); ++i )
-      {
-        if ( !crude_hashmap_backet_key_valid( game->gpu.resource_cache.techniques[ i ].key ) )
-        {
-          continue;
-        }
-        
-        crude_gfx_technique *technique = game->gpu.resource_cache.techniques[ i ].value; 
-        crude_gfx_destroy_technique_instant( &game->gpu, technique );
-        crude_gfx_technique_load_from_file( technique->technique_relative_filepath, &game->gpu, &game->render_graph, &game->temporary_allocator );
-      }
-
-      crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
-      break;
-    }
-    case CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION:
-    {
-      crude_entity                                         serum_stations_spawn_points_parent_node;
-      ecs_iter_t                                           serum_stations_spawn_points_it;
-      uint32                                               serum_stations_count;
-
-      serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( game->main_node, "serum_station_spawn_points" );
-
-      serum_stations_count = 0;
-      serum_stations_spawn_points_it = ecs_children( game->engine->world, serum_stations_spawn_points_parent_node.handle );
-      while ( ecs_children_next( &serum_stations_spawn_points_it ) )
-      {
-        uint32                                             serum_stations_spawn_points_random_index;
-        uint32                                             serum_stations_spawn_points_count;
-
-        serum_stations_spawn_points_count = serum_stations_spawn_points_it.count;
-        serum_stations_spawn_points_random_index = rand( ) % serum_stations_spawn_points_count;
-
-        while ( serum_stations_spawn_points_random_index < serum_stations_spawn_points_count )
-        {
-          crude_serum_station                             *serum_station_component;
-          crude_entity                                     serum_station_spawn_point_node;
-          char                                             serum_station_node_name_buffer[ 512 ];
-          
-          crude_snprintf( serum_station_node_name_buffer, sizeof( serum_station_node_name_buffer ), "serum_station_%i", serum_stations_spawn_points_random_index );
-
-          serum_station_spawn_point_node = crude_ecs_lookup_entity_from_parent( game->main_node, serum_station_node_name_buffer );
-
-          if ( serum_station_spawn_point_node.handle != game->commands_queue[ i ].enable_random_serum_station.ignored_serum_station.handle )
-          {
-            if ( !CRUDE_ENTITY_HAS_TAG( serum_station_spawn_point_node, crude_serum_station_enabled ) )
-            {
-              CRUDE_ENTITY_ADD_TAG( serum_station_spawn_point_node, crude_serum_station_enabled );
-              break;
-            }
-          }
-          serum_stations_spawn_points_random_index = ( serum_stations_spawn_points_random_index + 1 ) % serum_stations_spawn_points_count;
-        }
-      }
-      break;
-    }
-    }
-  }
-
-  CRUDE_ARRAY_SET_LENGTH( game->commands_queue, 0u );
   CRUDE_PROFILER_ZONE_END( "game_postupdate" );
 }
 
@@ -389,74 +197,12 @@ game_deinitialize
   _In_ game_t                                             *game
 )
 {
-  CRUDE_ARRAY_DEINITIALIZE( game->commands_queue );
-  
 #if CRUDE_DEVELOP
   crude_devmenu_deinitialize( &game->devmenu );
 #endif
   crude_game_menu_deinitialize( &game->game_menu );
-  crude_collisions_resources_manager_deinitialize( &game->collision_resources_manager );
   game_deinitialize_audio_( game );
-  game_graphics_deinitialize_( game );
-  crude_node_manager_deinitialize( &game->node_manager );
-  crude_physics_resources_manager_deinitialize( &game->physics_resources_manager );
-  crude_physics_deinitialize( &game->physics );
   game_deinitialize_constant_strings_( game );
-  crude_heap_allocator_deinitialize( &game->cgltf_temporary_allocator );
-  crude_heap_allocator_deinitialize( &game->allocator );
-  crude_heap_allocator_deinitialize( &game->resources_allocator );
-  crude_stack_allocator_deinitialize( &game->model_renderer_resources_manager_temporary_allocator );
-  crude_stack_allocator_deinitialize( &game->temporary_allocator );
-
-  ImGui::DestroyContext( ( ImGuiContext* )game->imgui_context );
-}
-
-void
-game_push_reload_scene_command
-(
-  _In_ game_t                                             *game
-)
-{
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
-  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE;
-  CRUDE_ARRAY_PUSH( game->commands_queue, command ); 
-}
-
-void
-game_push_load_scene_command
-(
-  _In_ game_t                                             *game,
-  _In_ char const                                         *absolute_filepath
-)
-{
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
-  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_LOAD_SCENE;
-  command.load_scene.absolute_filepath = absolute_filepath;
-  CRUDE_ARRAY_PUSH( game->commands_queue, command );
-}
-
-void
-game_push_reload_techniques_command
-(
-  _In_ game_t                                             *game
-)
-{
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
-  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
-  CRUDE_ARRAY_PUSH( game->commands_queue, command );
-}
-
-void
-game_push_enable_random_serum_station_command
-(
-  _In_ game_t                                             *game,
-  _In_ crude_entity                                        ignored_serum_station
-)
-{
-  crude_game_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_game_queue_command );
-  command.type = CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION;
-  command.enable_random_serum_station.ignored_serum_station = ignored_serum_station;
-  CRUDE_ARRAY_PUSH( game->commands_queue, command );
 }
 
 void
@@ -543,84 +289,6 @@ game_graphics_system_
   _In_ ecs_iter_t                                         *it
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "game_graphics_system_" );
-  game_t                                                  *game;
-  crude_gfx_texture                                       *final_render_texture;
-
-  game = ( game_t* )it->ctx;
-  
-  final_render_texture = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle );
-
-  game->last_graphics_update_time += it->delta_time;
-
-  game->graphics_time += it->delta_time;
-  
-  if ( !crude_entity_valid( game->focused_camera_node ) )
-  {
-    goto cleanup;
-  }
-  if ( game->last_graphics_update_time < 1.f / game->framerate )
-  {
-    goto cleanup;
-  }
-
-  game->last_graphics_update_time = 0.f;
-
-  game->scene_renderer.options.camera_node = game->focused_camera_node;
-  game->scene_renderer.options.absolute_time = game->graphics_time;
-  game->scene_renderer.options.background_color = CRUDE_COMPOUNT_EMPTY( XMFLOAT3 );
-  game->scene_renderer.options.background_intensity = 0.f;
-
-  crude_gfx_new_frame( &game->gpu );
-  
-  if ( crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node ) )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
-    crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
-  }
- 
-  {
-    CRUDE_PROFILER_ZONE_NAME( "ImGui_NewFrame" );
-    ImGui::SetCurrentContext( ( ImGuiContext* ) game->imgui_context );
-    ImGui_ImplSDL3_NewFrame( );
-    ImGui::NewFrame( );
-    CRUDE_PROFILER_ZONE_END;
-#if CRUDE_DEVELOP
-    crude_devmenu_draw( &game->devmenu );
-#endif
-    crude_game_menu_draw( &game->game_menu );
-  }
-  
-  if ( game->gpu.swapchain_resized_last_frame )
-  {
-    crude_gfx_scene_renderer_on_resize( &game->scene_renderer );
-    crude_gfx_render_graph_on_resize( &game->render_graph, game->gpu.vk_swapchain_width, game->gpu.vk_swapchain_height );
-  }
-
-  crude_gfx_scene_renderer_submit_draw_task( &game->scene_renderer, false );
-
-  crude_gfx_present( &game->gpu, final_render_texture );
-
-cleanup:
-  CRUDE_PROFILER_ZONE_END;
-}
-
-void
-game_graphics_deinitialize_
-(
-  _In_ game_t                                             *game
-)
-{
-  crude_gfx_asynchronous_loader_manager_remove_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
-  vkDeviceWaitIdle( game->gpu.vk_device );
-  crude_gfx_scene_renderer_deinitialize_passes( &game->scene_renderer );
-  crude_gfx_game_postprocessing_pass_deinitialize( &game->game_postprocessing_pass );
-  crude_gfx_scene_renderer_deinitialize( &game->scene_renderer );
-  crude_gfx_asynchronous_loader_deinitialize( &game->async_loader );
-  crude_gfx_model_renderer_resources_manager_deintialize( &game->model_renderer_resources_manager );
-  crude_gfx_render_graph_builder_deinitialize( &game->render_graph_builder );
-  crude_gfx_render_graph_deinitialize( &game->render_graph );
-  crude_gfx_device_deinitialize( &game->gpu );
 }
 
 void
@@ -722,82 +390,6 @@ game_input_system_
     crude_game_menu_handle_input( &game->game_menu, input );
   }
   CRUDE_PROFILER_ZONE_END;
-}
-
-bool
-game_parse_json_to_component_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-)
-{
-  return true;
-}
-
-void
-game_parse_all_components_to_json_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json,
-  _In_ crude_node_manager                                 *manager
-)
-{
-}
-
-void
-game_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
-)
-{
-  game_t *game = CRUDE_CAST( game_t*, ctx );
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
-  
-  bool should_process_sdl_events = game->game_menu.enabled;
-#if CRUDE_DEVELOP
-  should_process_sdl_events |= game->devmenu.enabled;
-#endif
-  if ( should_process_sdl_events )
-  {
-    ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  }
-}
-
-void
-game_initialize_allocators_
-(
-  _In_ game_t                                             *game
-)
-{
-  crude_heap_allocator_initialize( &game->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
-  crude_heap_allocator_initialize( &game->allocator, CRUDE_RMEGA( 16 ), "common_allocator" );
-  crude_heap_allocator_initialize( &game->resources_allocator, CRUDE_RMEGA( 16 ), "resources_allocator" );
-  crude_stack_allocator_initialize( &game->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
-  crude_stack_allocator_initialize( &game->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
-}
-
-void
-game_initialize_imgui_
-(
-  _In_ game_t                                             *game
-)
-{
-  ImGuiIO                                                 *imgui_io;
-
-  IMGUI_CHECKVERSION();
-  game->imgui_context = ImGui::CreateContext();
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
-  ImGui::StyleColorsDark();
-  imgui_io = &ImGui::GetIO();
-  imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  imgui_io->ConfigWindowsResizeFromEdges = true;
-  imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
-
-  game->im_game_font = imgui_io->Fonts->AddFontFromFileTTF( game->game_font_absolute_filepath, 20.f );
-  CRUDE_ASSERT( game->im_game_font );
 }
 
 void
@@ -1044,27 +636,6 @@ game_deinitialize_constant_strings_
 }
 
 void
-game_initialize_platform_
-(
-  _In_ game_t                                             *game
-)
-{
-  game->platform_node = crude_entity_create_empty( game->engine->world, "Red Ball: The Adventures of a Drug Addict! (CE2 REMAKE)" );
-
-  CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_window, { 
-    .width     = 800,
-    .height    = 600,
-    .maximized = false,
-    .flags     = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
-  });
-
-  CRUDE_ENTITY_SET_COMPONENT( game->platform_node, crude_input, {
-    .callback = game_input_callback_,
-    .ctx = game
-  } );
-}
-
-void
 game_initialize_audio_
 (
   _In_ game_t                                             *game
@@ -1072,14 +643,6 @@ game_initialize_audio_
 {
   crude_sound_creation                                     sound_creation;
 
-  game->volume = 1.f;
-
-  crude_audio_device_initialize( &game->audio_device, &game->allocator );
-  
-  game->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
-  game->audio_system_context.device = &game->audio_device;
-  crude_audio_system_import( game->engine->world, &game->audio_system_context );
-  
   sound_creation = crude_sound_creation_empty( );
   sound_creation.looping = true;
   sound_creation.stream = true;
@@ -1097,49 +660,6 @@ game_deinitialize_audio_
 )
 {
   crude_audio_device_destroy_sound( &game->audio_device, game->death_sound_handle );
-  crude_audio_device_deinitialize( &game->audio_device );
-}
-
-void
-game_initialize_physics_
-(
-  _In_ game_t                                             *game
-)
-{
-  crude_physics_resources_manager_creation physics_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_resources_manager_creation );
-  physics_resources_manager_creation.allocator = &game->allocator;
-  crude_physics_resources_manager_initialize( &game->physics_resources_manager, &physics_resources_manager_creation );
-
-  crude_physics_creation physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
-  physics_creation.collision_manager = &game->collision_resources_manager;
-  physics_creation.manager = &game->physics_resources_manager;
-  physics_creation.world = game->engine->world;
-  crude_physics_initialize( &game->physics, &physics_creation );
-
-  game->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
-  game->physics_system_context.physics = &game->physics;
-  crude_physics_system_import( game->engine->world, &game->physics_system_context );
-}
-
-void
-game_initialize_scene_
-(
-  _In_ game_t                                             *game
-)
-{
-  game->current_scene_absolute_filepath = game->scene_absolute_filepath;
-
-  crude_node_manager_creation                              node_manager_creation;
-  node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
-  node_manager_creation.world = game->engine->world;
-  node_manager_creation.resources_absolute_directory = game->resources_absolute_directory;
-  node_manager_creation.temporary_allocator = &game->temporary_allocator;
-  node_manager_creation.additional_parse_all_components_to_json_func = game_parse_all_components_to_json_;
-  node_manager_creation.additional_parse_json_to_component_func = game_parse_json_to_component_;
-  node_manager_creation.physics_resources_manager = &game->physics_resources_manager;
-  node_manager_creation.collisions_resources_manager = &game->collision_resources_manager;
-  node_manager_creation.allocator = &game->allocator;
-  crude_node_manager_initialize( &game->node_manager, &node_manager_creation );
 }
 
 void
@@ -1148,104 +668,6 @@ game_initialize_graphics_
   _In_ game_t                                            *game
 )
 {
-  crude_window_handle                                     *window_handle;
-  char const                                              *render_graph_file_path;
-  crude_string_buffer                                      temporary_name_buffer;
-  crude_gfx_model_renderer_resources_manager_creation      model_renderer_resources_manager_creation;
-  crude_gfx_device_creation                                device_creation;
-  crude_gfx_scene_renderer_creation                        scene_renderer_creation;
-  uint32                                                   temporary_allocator_marker;
-
-  temporary_allocator_marker = crude_stack_allocator_get_marker( &game->temporary_allocator );
-  
-  crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &game->temporary_allocator ) );
-
-  window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-
-  device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window = CRUDE_REINTERPRET_CAST( SDL_Window*, window_handle->value );
-  device_creation.vk_application_name = "CrudeEngine";
-  device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container = crude_heap_allocator_pack( &game->allocator );
-  device_creation.temporary_allocator = &game->temporary_allocator;
-  device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = CRUDE_STATIC_CAST( uint16, enkiGetNumTaskThreads( CRUDE_REINTERPRET_CAST( enkiTaskScheduler*, game->engine->asynchronous_loader_manager.task_sheduler ) ) );
-  device_creation.shaders_absolute_directory = game->shaders_absolute_directory;
-  device_creation.techniques_absolute_directory = game->techniques_absolute_directory;
-  device_creation.compiled_shaders_absolute_directory = game->compiled_shaders_absolute_directory;
-  crude_gfx_device_initialize( &game->gpu, &device_creation );
-  
-  crude_gfx_render_graph_builder_initialize( &game->render_graph_builder, &game->gpu );
-  crude_gfx_render_graph_initialize( &game->render_graph, &game->render_graph_builder );
-  
-  crude_gfx_asynchronous_loader_initialize( &game->async_loader, &game->gpu );
-  crude_gfx_asynchronous_loader_manager_add_loader( &game->engine->asynchronous_loader_manager, &game->async_loader );
-//#if CRUDE_DEVELOP
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_develop.json" );
-//#else
-//  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
-//#endif
-  crude_gfx_render_graph_parse_from_file( &game->render_graph, render_graph_file_path, &game->temporary_allocator );
-  crude_gfx_render_graph_compile( &game->render_graph, &game->temporary_allocator );
-  
-  if ( game->gpu.mesh_shaders_extension_present )
-  {
-    crude_gfx_technique_load_from_file( "deferred_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  }
-  else
-  {
-    crude_gfx_technique_load_from_file( "deferred_classic.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  }
-  //crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "compute.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "debug.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "imgui.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "game/fullscreen.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  
-  model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
-  model_renderer_resources_manager_creation.allocator = &game->allocator;
-  model_renderer_resources_manager_creation.async_loader = &game->async_loader;
-  model_renderer_resources_manager_creation.cgltf_temporary_allocator = &game->cgltf_temporary_allocator;
-  model_renderer_resources_manager_creation.temporary_allocator = &game->model_renderer_resources_manager_temporary_allocator;
-  model_renderer_resources_manager_creation.world = game->engine->world;
-  crude_gfx_model_renderer_resources_manager_intialize( &game->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
-
-  scene_renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-  scene_renderer_creation.async_loader = &game->async_loader;
-  scene_renderer_creation.allocator = &game->allocator;
-  scene_renderer_creation.temporary_allocator = &game->temporary_allocator;
-  scene_renderer_creation.task_scheduler = game->engine->asynchronous_loader_manager.task_sheduler;
-  scene_renderer_creation.model_renderer_resources_manager = &game->model_renderer_resources_manager;
-  scene_renderer_creation.imgui_pass_enalbed = true;
-  scene_renderer_creation.imgui_context = game->imgui_context;
-  crude_gfx_scene_renderer_initialize( &game->scene_renderer, &scene_renderer_creation );
-
-#if CRUDE_DEVELOP
-  game->scene_renderer.options.hide_collision = true;
-  game->scene_renderer.options.hide_debug_gltf = true;
-#endif
-
-  game->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  game->scene_renderer.options.ambient_intensity = 1.5f;
-  game->scene_renderer.options.background_intensity = 0.f;
-  game->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
-
-  game->graphics_time = 0.f;
-  
-  game_setup_custom_postload_model_resources_( game );
-  crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &game->scene_renderer );
-
-  crude_gfx_scene_renderer_initialize_pases( &game->scene_renderer );
-  crude_gfx_game_postprocessing_pass_initialize( &game->game_postprocessing_pass, &game->scene_renderer );
-  crude_gfx_scene_renderer_register_passes( &game->scene_renderer, &game->render_graph );
-  crude_gfx_render_graph_builder_register_render_pass( game->render_graph.builder, "game_postprocessing_pass", crude_gfx_game_postprocessing_pass_pack( &game->game_postprocessing_pass ) );
-
-  crude_stack_allocator_free_marker( &game->temporary_allocator, temporary_allocator_marker );
 }
 
 void

@@ -18,37 +18,6 @@
 #include <game/game_menu.h>
 #include <game/devmenu.h>
 
-typedef enum crude_game_queue_command_type
-{
-  CRUDE_GAME_QUEUE_COMMAND_TYPE_LOAD_SCENE,
-  CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
-  CRUDE_GAME_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
-  CRUDE_GAME_QUEUE_COMMAND_TYPE_ENABLE_RANDOM_SERUM_STATION, /* Wtf is it doing here ahaha */
-  CRUDE_GAME_QUEUE_COMMAND_TYPE_COUNT,
-} crude_game_queue_command_type;
-
-typedef struct crude_game_queue_command
-{
-  crude_game_queue_command_type                            type;
-  union
-  {
-    struct 
-    {
-    } reload_scene;
-    struct 
-    {
-      crude_entity                                         ignored_serum_station;
-    } enable_random_serum_station;
-    struct 
-    {
-    } reload_techniques;
-    struct 
-    {
-      char const                                          *absolute_filepath;
-    } load_scene;
-  };
-} crude_game_queue_command;
-
 typedef struct crude_game_creation
 {
   char const                                              *scene_relative_filepath;
@@ -148,11 +117,6 @@ typedef struct game_t
   crude_game_menu                                          game_menu;
 
   /* Common */
-  crude_heap_allocator                                     allocator;
-  crude_heap_allocator                                     resources_allocator;
-  crude_heap_allocator                                     cgltf_temporary_allocator;
-  crude_stack_allocator                                    temporary_allocator;
-  crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
   crude_entity                                             main_node;
   crude_entity                                             template_boss_bullet_node;
   crude_entity                                             template_enemy_node;
@@ -160,29 +124,6 @@ typedef struct game_t
   crude_entity                                             player_node;
   float32                                                  sensetivity;
 
-  /* Graphics */
-  crude_gfx_device                                         gpu;
-  crude_gfx_render_graph                                   render_graph;
-  crude_gfx_render_graph_builder                           render_graph_builder;
-  crude_gfx_asynchronous_loader                            async_loader;
-  crude_gfx_scene_renderer                                 scene_renderer;
-  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
-  crude_gfx_game_postprocessing_pass                       game_postprocessing_pass;
-  void                                                    *imgui_context;
-  ImFont                                                  *im_game_font;
-  /* Physics */
-  crude_physics_resources_manager                          physics_resources_manager;
-  crude_collisions_resources_manager                       collision_resources_manager;
-  crude_physics                                            physics;
-  /* Audio */
-  crude_audio_device                                       audio_device;
-  crude_audio_system_context                               audio_system_context;
-  float32                                                  volume;
-  /* Scene */
-  crude_node_manager                                       node_manager;
-  /* Window & Input */
-  crude_entity                                             platform_node;
-  XMFLOAT2                                                 last_unrelative_mouse_position;
   /* Game */
   crude_entity                                             focused_camera_node;
 
@@ -190,15 +131,8 @@ typedef struct game_t
   bool                                                     death_screen;
   char const                                              *death_reason;
   XMFLOAT4                                                 death_overlap_color;
-  /* System Context */
-  crude_physics_system_context                             physics_system_context;
   /* Other */
-  uint32                                                   framerate;
-  float32                                                  last_graphics_update_time;
   float32                                                  time;
-  float32                                                  graphics_time;
-
-  crude_game_queue_command                                *commands_queue;
 
 #if CRUDE_DEVELOP
   crude_devmenu                                            devmenu;
@@ -210,7 +144,6 @@ typedef struct game_t
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
   char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
 
-  crude_physics_debug_system_context                       physics_debug_system_context;
   crude_game_debug_system_context                          game_debug_system_context;
 #endif
 } game_t;
@@ -232,32 +165,6 @@ CRUDE_API void
 game_deinitialize
 (
   _In_ game_t                                             *game
-);
-
-CRUDE_API void
-game_push_reload_scene_command
-(
-  _In_ game_t                                             *game
-);
-
-CRUDE_API void
-game_push_load_scene_command
-(
-  _In_ game_t                                             *game,
-  _In_ char const                                         *absolute_filepath
-);
-
-CRUDE_API void
-game_push_reload_techniques_command
-(
-  _In_ game_t                                             *game
-);
-
-CRUDE_API void
-game_push_enable_random_serum_station_command
-(
-  _In_ game_t                                             *game,
-  _In_ crude_entity                                        ignored_serum_station
 );
 
 CRUDE_API void
