@@ -28,8 +28,8 @@ typedef enum crude_gfx_model_renderer_resoruces_instances_type
 
 typedef struct crude_gfx_model_renderer_resources_instance
 {
+  XMFLOAT4X4                                               model_to_world;
   crude_gfx_model_renderer_resources                       model_renderer_resources;
-  crude_entity                                             node;
   crude_gfx_model_renderer_resoruces_instances_type        type;
 } crude_gfx_model_renderer_resources_instance;
 
@@ -45,7 +45,8 @@ typedef struct crude_gfx_scene_renderer_creation
 
 typedef struct crude_gfx_scene_renderer_options
 {
-  crude_entity                                             camera_node;
+  crude_camera                                             camera;
+  XMFLOAT4X4                                               camera_view_to_world;
   XMFLOAT3                                                 background_color;
   float32                                                  background_intensity;
   XMFLOAT3                                                 ambient_color;

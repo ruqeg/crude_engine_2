@@ -1,7 +1,6 @@
 #pragma once
 
 #include <engine/graphics/gpu_device.h>
-#include <engine/core/ecs.h>
 
 typedef enum crude_gfx_mesh_draw_flags
 {
@@ -88,10 +87,15 @@ typedef struct crude_gfx_mesh_cpu
   uint32                                                   meshlets_count;
 } crude_gfx_mesh_cpu;
 
+typedef struct crude_gfx_node
+{
+  crude_gfx_node                                          *parent;
+} crude_gfx_node;
+
 typedef struct crude_gfx_mesh_instance_cpu
 {
+  XMFLOAT4X4                                               mesh_to_model;
   uint32                                                   mesh_gpu_index;
-  crude_entity                                             node;
 } crude_gfx_mesh_instance_cpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
@@ -104,7 +108,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_instance_draw_gpu
 
 typedef struct crude_gfx_model_renderer_resources
 {
-  crude_entity                                             main_node;
   crude_gfx_mesh_instance_cpu                             *meshes_instances;
 } crude_gfx_model_renderer_resources;
 

@@ -11,7 +11,7 @@ typedef struct crude_task_sheduler
 {
   enkiTaskScheduler                                       *enki_task_sheduler;
   enkiPinnedTask                                          *enki_pinned_task_loop;
-  enkiPinnedTask                                          *enki_pinned_tasks[ CRUDE_ENGINE_TASK_SHEDULER_PINNED_TASKS_MAX_COUNT ];
+  enkiPinnedTask                                          *enki_pinned_tasks[ CRUDE_ENGINE_TASK_SHEDULER_PINNED_TASK_ACTIVE_THREAD ];
   uint64                                                   enki_pinned_tasks_count;
   bool                                                     running;
 } crude_task_sheduler;
@@ -19,8 +19,7 @@ typedef struct crude_task_sheduler
 CRUDE_API void
 crude_task_sheduler_initialize
 (
-  _In_ crude_task_sheduler                                *sheduler,
-  _In_ uint64                                              total_threads_count
+  _In_ crude_task_sheduler                                *sheduler
 );
 
 CRUDE_API void

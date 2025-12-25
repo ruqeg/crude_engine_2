@@ -26,10 +26,10 @@ typedef struct crude_platform_creation
 typedef struct crude_platform
 {
   SDL_Window                                              *sdl_window;
-    uint64                                                 width;
-    uint64                                                 height;
-    uint64                                                 flags;
-    bool                                                   maximized;
+  uint64                                                   width;
+  uint64                                                   height;
+  uint64                                                   flags;
+  bool                                                     maximized;
   crude_input                                              input;
   crude_platform_quit_callback_function                    quit_callback;
   void                                                    *quit_callback_ctx;

@@ -13,6 +13,36 @@
 #include <engine/platform/platform.h>
 #include <engine/core/ecs.h>
 
+typedef struct crude_platform_thread_data
+{
+  crude_platform                                           platform;
+  mtx_t                                                    mutex;
+  bool                                                     running;
+} crude_platform_thread_data;
+
+typedef struct crude_graphics_thread_data
+{
+  /* Common */
+  bool                                                     running;
+
+  /* Graphics */
+  crude_gfx_device                                         gpu;
+  crude_gfx_render_graph                                   render_graph;
+  crude_gfx_render_graph_builder                           render_graph_builder;
+  crude_gfx_asynchronous_loader                            async_loader;
+  crude_gfx_scene_renderer                                 scene_renderer;
+  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
+  int64                                                    last_graphics_update_time;
+  float64                                                  absolute_time;
+  uint32                                                   framerate;
+  ImGuiContext                                            *imgui_context;
+
+  /* ecs */
+  crude_entity                                             focused_camera_node;
+  crude_entity                                             main_node;
+  mtx_t                                                    ecs_mutex;
+} crude_graphics_thread_data;
+
 typedef struct crude_engine
 {
   ecs_world_t                                             *world;
@@ -45,13 +75,15 @@ typedef struct crude_engine
    ******************************/
   crude_node_manager                                       node_manager;
   crude_engine_commands_manager                            commands_manager;
+  mtx_t                                                    ecs_mutex;
   
   /******************************
    *
    * Window & Input
    *
    ******************************/
-  crude_platform                                           platform;
+  crude_platform_thread_data                               platform_thread_data;
+  crude_platform                                           platform_copy;
   XMFLOAT2                                                 last_unrelative_mouse_position;
   
   /******************************
@@ -67,18 +99,8 @@ typedef struct crude_engine
    * Graphics
    *
    ******************************/
-  crude_gfx_device                                         gpu;
-  crude_gfx_render_graph                                   render_graph;
-  crude_gfx_render_graph_builder                           render_graph_builder;
-  crude_gfx_asynchronous_loader                            async_loader;
-  crude_gfx_scene_renderer                                 scene_renderer;
-  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
   crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
-  int64                                                    last_graphics_update_time;
-  float64                                                  graphics_absolute_time;
-  crude_entity                                             graphics_focused_camera_node;
-  uint32                                                   graphics_framerate;
-  crude_entity                                             graphics_main_node;
+  crude_graphics_thread_data                               graphics_thread_data;
 
   /******************************
    *
@@ -106,13 +128,6 @@ typedef struct crude_engine
 #if CRUDE_DEVELOP
   //crude_physics_debug_system_context                       physics_debug_system_context;
 #endif
-  
-  /******************************
-   *
-   * Synchronization
-   *
-   ******************************/
-  mtx_t                                                    nodes_mutex;
 
   /******************************
    *

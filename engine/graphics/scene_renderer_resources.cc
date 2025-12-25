@@ -3,14 +3,12 @@
 void
 crude_gfx_camera_to_camera_gpu
 (
-  _In_ crude_entity                                        camera_node,
+  _In_ crude_camera                                       *camera,
+  _In_ XMFLOAT4X4                                          camera_view_to_world,
   _Out_ crude_gfx_camera_gpu                              *camera_gpu
 )
 {
-  crude_camera const *camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( camera_node, crude_camera );
-  crude_transform const *transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( camera_node, crude_transform );
-  
-  XMMATRIX view_to_world = crude_transform_node_to_world( camera_node, transform );
+  XMMATRIX view_to_world = XMLoadFloat4x4( &camera_view_to_world );
   XMMATRIX world_to_view = XMMatrixInverse( NULL, view_to_world );
   XMMATRIX view_to_clip = crude_camera_view_to_clip( camera );
   XMMATRIX clip_to_view = XMMatrixInverse( NULL, view_to_clip );

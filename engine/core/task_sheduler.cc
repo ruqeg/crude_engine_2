@@ -13,13 +13,16 @@ crude_task_sheduler_pinned_task_run_loop_
 void
 crude_task_sheduler_initialize
 (
-  _In_ crude_task_sheduler                                *sheduler,
-  _In_ uint64                                              total_threads_count
+  _In_ crude_task_sheduler                                *sheduler
 )
 {
   struct enkiTaskSchedulerConfig                           config;
-  
+  uint64                                                   total_threads_count;
+
+  total_threads_count = CRUDE_COUNTOF( sheduler->enki_pinned_tasks ); 
+
   sheduler->enki_pinned_tasks_count = 0u;
+  sheduler->running = true;
 
   sheduler->enki_task_sheduler = enkiNewTaskScheduler( );
   config = enkiGetTaskSchedulerConfig( sheduler->enki_task_sheduler );
@@ -38,6 +41,7 @@ crude_task_sheduler_deinitialize
   _In_ crude_task_sheduler                                *sheduler
 )
 {
+  sheduler->running = false;
   enkiWaitforAllAndShutdown( sheduler->enki_task_sheduler );
   enkiDeletePinnedTask( sheduler->enki_task_sheduler, sheduler->enki_pinned_task_loop );
   enkiDeleteTaskScheduler( sheduler->enki_task_sheduler );

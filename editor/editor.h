@@ -16,11 +16,6 @@ typedef struct crude_editor
 {
   crude_engine                                            *engine;
 
-#if CRUDE_DEVELOP
-  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
-  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
-#endif
-
   crude_string_buffer                                      constant_strings_buffer;
   crude_string_buffer                                      dynamic_strings_buffer;
   crude_string_buffer                                      debug_strings_buffer;
@@ -32,7 +27,6 @@ typedef struct crude_editor
   /* Dev */
   crude_devgui                                             devgui;
   /* Game */
-  crude_entity                                             focused_camera_node;
   crude_entity                                             editor_camera_node;
   crude_entity                                             selected_node;
   crude_devgui_added_node_data                             added_node_data;
@@ -50,7 +44,8 @@ CRUDE_API void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
-  _In_ crude_engine                                       *engine
+  _In_ crude_engine                                       *engine,
+  _In_ char const                                         *working_directory
 );
 
 CRUDE_API void

@@ -113,7 +113,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources,
   _In_ cgltf_data                                         *gltf,
-  _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
   _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
@@ -227,7 +226,6 @@ crude_gfx_model_renderer_resources_manager_clear
     if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
     {
       crude_gfx_model_renderer_resources resource = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
-      crude_entity_destroy_hierarchy( resource.main_node );
       CRUDE_ARRAY_DEINITIALIZE( resource.meshes_instances );
     }
     manager->model_hashed_name_to_model_renderer_resource[ i ].key = 0;
@@ -366,7 +364,6 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   
   model_renderer_resouces = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
-  model_renderer_resouces.main_node = crude_entity_create_empty( CRUDE_CAST( ecs_world_t*, manager->world ), gltf_path );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( model_renderer_resouces.meshes_instances, 0u, crude_heap_allocator_pack( manager->allocator ) );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" images", gltf_path );
@@ -388,7 +385,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" nodes", gltf_path );
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, model_renderer_resouces.main_node, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index );
   }
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "\"%s\" loading finished", gltf_path );
   
@@ -1167,10 +1164,9 @@ crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources,
   _In_ cgltf_data                                         *gltf,
-  _In_ crude_entity                                        parent_node,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
   _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
@@ -1178,11 +1174,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 { 
   for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
   {
-    crude_entity                                           node;
     crude_transform                                        transform;
-    
-    node = crude_entity_create_empty( parent_node.world, gltf_nodes[ i ]->name );
-    crude_entity_set_parent( node, parent_node );
     
     if ( gltf_nodes[ i ]->has_translation )
     {
@@ -1228,9 +1220,9 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       XMStoreFloat3( &transform.scale, decompose_scale );
     }
 
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
-      transform.translation, transform.rotation, transform.scale
-    } );
+   // CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
+   //   transform.translation, transform.rotation, transform.scale
+   // } );
     
     if ( gltf_nodes[ i ]->mesh )
     {
@@ -1239,12 +1231,11 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       {
         crude_gfx_mesh_instance_cpu mesh_instance;
         mesh_instance.mesh_gpu_index = mesh_index_offset + pi + manager->total_meshes_count;
-        mesh_instance.node = node;
         CRUDE_ARRAY_PUSH( model_renderer_resources->meshes_instances, mesh_instance );
       }
     }
 
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, node, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index );
   }
 }
 

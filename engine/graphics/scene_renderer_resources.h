@@ -1,6 +1,5 @@
 #pragma once
 
-#include <engine/core/ecs.h>
 #include <engine/scene/scene_components.h>
 #include <engine/graphics/gpu_resources.h>
 
@@ -89,7 +88,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 
 typedef struct crude_gfx_light_cpu
 {
-  crude_entity                                             node;
 } crude_gfx_light_cpu;
 
 typedef struct crude_gfx_light_gpu
@@ -111,6 +109,7 @@ typedef struct crude_gfx_sorted_light
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (
-  _In_ crude_entity                                        camera_node,
+  _In_ crude_camera                                       *camera,
+  _In_ XMFLOAT4X4                                          camera_view_to_world,
   _Out_ crude_gfx_camera_gpu                              *camera_gpu
 );

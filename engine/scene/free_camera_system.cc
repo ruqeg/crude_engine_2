@@ -25,7 +25,7 @@ crude_free_camera_update_system
       continue;
     }
 
-    crude_input const *input;// = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].input_node, crude_input );
+    crude_input const *input = &free_cameras[ i ].platform->input;
 
     int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
     int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;

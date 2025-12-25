@@ -30,9 +30,6 @@ crude_gfx_imgui_pass_initialize
 
   ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   
-  /* Setup Platform/Renderer bindings */
-  ImGui_ImplSDL3_InitForVulkan( gpu->sdl_window );
-  
   imgui_io = &ImGui::GetIO();
   imgui_io->BackendRendererName = "Raptor_ImGui";
   imgui_io->BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
@@ -64,10 +61,6 @@ crude_gfx_imgui_pass_deinitialize
   _In_ crude_gfx_imgui_pass                               *pass
 )
 {
-
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
-  ImGui_ImplSDL3_Shutdown( );
-
   crude_gfx_memory_deallocate( pass->scene_renderer->gpu, pass->vertex_hga );
   crude_gfx_memory_deallocate( pass->scene_renderer->gpu, pass->index_hga );
   

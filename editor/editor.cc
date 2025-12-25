@@ -5,6 +5,7 @@
 #include <engine/scene/free_camera_system.h>
 #include <engine/scene/scene_components.h>
 #include <engine/scene/scripts_components.h>
+#include <engine/scene/scene_debug_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/physics/physics_components.h>
 #include <engine/physics/physics_debug_system.h>
@@ -15,20 +16,6 @@
 crude_editor                                              *crude_editor_instance_;
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_editor_input_system_ );
-
-
-static void
-crude_editor_initialize_constant_strings_
-(
-  _In_ crude_editor                                       *editor,
-  _In_ char const                                         *scene_relative_filepath,
-  _In_ char const                                         *render_graph_relative_directory,
-  _In_ char const                                         *resources_relative_directory,
-  _In_ char const                                         *shaders_relative_directory,
-  _In_ char const                                         *techniques_relative_directory,
-  _In_ char const                                         *compiled_shaders_relative_directory,
-  _In_ char const                                         *working_absolute_directory
-);
 
 static void
 crude_editor_deinitialize_constant_strings_
@@ -59,9 +46,12 @@ void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
-  _In_ crude_engine                                       *engine
+  _In_ crude_engine                                       *engine,
+  _In_ char const                                         *working_directory
 )
 {
+  char                                                     starting_node_absolute_filepath[ 4096 ];
+
   editor->engine = engine;
 
   editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
@@ -73,20 +63,21 @@ crude_editor_initialize
   ECS_IMPORT( editor->engine->world, crude_free_camera_system );
   ECS_IMPORT( editor->engine->world, crude_game_components );
   ECS_IMPORT( editor->engine->world, crude_physics_components );
+  ECS_IMPORT( editor->engine->world, crude_scene_debug_components );
 
-  crude_editor_initialize_constant_strings_( editor, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
-
-  editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
-  editor->physics_debug_system_context.resources_absolute_directory = editor->resources_absolute_directory;
-  editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
-  crude_physics_debug_system_import( editor->engine->world, &editor->physics_debug_system_context );
+  //editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
+  //editor->physics_debug_system_context.resources_absolute_directory = editor->engine->environment.directories.resources_absolute_directory;
+  //editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
+  //crude_physics_debug_system_import( editor->engine->world, &editor->physics_debug_system_context );
+  //
+  //editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
+  //editor->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = editor->enemy_spawnpoint_debug_model_absolute_filepath;
+  //editor->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = editor->syringe_spawnpoint_debug_model_absolute_filepath;
+  //crude_game_debug_system_import( editor->engine->world, &editor->game_debug_system_context );
   
-  editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
-  editor->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = editor->enemy_spawnpoint_debug_model_absolute_filepath;
-  editor->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = editor->syringe_spawnpoint_debug_model_absolute_filepath;
-  crude_game_debug_system_import( editor->engine->world, &editor->game_debug_system_context );
-  
-  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, editor->scene_absolute_filepath );
+  crude_snprintf( starting_node_absolute_filepath, sizeof( starting_node_absolute_filepath ), "%s\\%s", editor->engine->environment.directories.resources_absolute_directory, "game\\nodes\\level0.crude_node" );
+  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, starting_node_absolute_filepath );
+  editor->engine->graphics_thread_data.main_node = editor->main_node;
   editor->selected_node = editor->main_node;
   
   crude_devgui_initialize( &editor->devgui );
@@ -116,18 +107,18 @@ crude_editor_input_system_
 
   ImGui::SetCurrentContext( editor->engine->imgui_context );
     
-  crude_devgui_handle_input( &editor->devgui, &editor->engine->platform.input );
+  crude_devgui_handle_input( &editor->devgui, &editor->engine->platform_copy.input );
 
-  if ( editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
+  if ( editor->engine->platform_copy.input.mouse.right.current && editor->engine->platform_copy.input.mouse.right.current != editor->engine->platform_copy.input.prev_mouse.right.current )
   {
     SDL_GetMouseState( &editor->engine->last_unrelative_mouse_position.x, &editor->engine->last_unrelative_mouse_position.y );
-    crude_platform_hide_cursor( &editor->engine->platform );
+    crude_platform_hide_cursor( &editor->engine->platform_copy );
   }
   
-  if ( !editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
+  if ( !editor->engine->platform_copy.input.mouse.right.current && editor->engine->platform_copy.input.mouse.right.current != editor->engine->platform_copy.input.prev_mouse.right.current )
   {
-    SDL_WarpMouseInWindow( editor->engine->platform.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
-    crude_platform_show_cursor( &editor->engine->platform );
+    SDL_WarpMouseInWindow( editor->engine->platform_copy.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
+    crude_platform_show_cursor( &editor->engine->platform_copy );
   }
 }
 
@@ -164,47 +155,6 @@ crude_editor_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 )
 {
-}
-
-
-void
-crude_editor_initialize_constant_strings_
-(
-  _In_ crude_editor                                       *editor,
-  _In_ char const                                         *scene_relative_filepath,
-  _In_ char const                                         *render_graph_relative_directory,
-  _In_ char const                                         *resources_relative_directory,
-  _In_ char const                                         *shaders_relative_directory,
-  _In_ char const                                         *techniques_relative_directory,
-  _In_ char const                                         *compiled_shaders_relative_directory,
-  _In_ char const                                         *working_absolute_directory
-)
-{
-  uint64 working_directory_length = crude_string_length( working_absolute_directory ) + 1;
-  uint64 resources_directory_length = working_directory_length + crude_string_length( resources_relative_directory );
-  uint64 shaders_directory_length = working_directory_length + crude_string_length( shaders_relative_directory );
-  uint64 render_graph_directory_length = working_directory_length + crude_string_length( render_graph_relative_directory );
-  uint64 scene_filepath_length = working_directory_length + crude_string_length( scene_relative_filepath );
-  uint64 techniques_relative_directory_length = working_directory_length + crude_string_length( techniques_relative_directory );
-  uint64 compiled_shaders_relative_directory_length = working_directory_length + crude_string_length( compiled_shaders_relative_directory );
-
-  uint64 constant_string_buffer_size = working_directory_length + resources_directory_length + shaders_directory_length + render_graph_directory_length + scene_filepath_length + techniques_relative_directory_length + compiled_shaders_relative_directory_length;
-  
-  crude_string_buffer_initialize( &editor->dynamic_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
-  crude_string_buffer_initialize( &editor->debug_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
-  crude_string_buffer_initialize( &editor->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
-
-  crude_string_buffer_initialize( &editor->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
-  editor->working_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s", working_absolute_directory );
-  editor->resources_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, resources_relative_directory );
-  editor->shaders_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, shaders_relative_directory );
-  editor->scene_absolute_filepath = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, scene_relative_filepath );
-  editor->render_graph_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, render_graph_relative_directory );
-  editor->techniques_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, techniques_relative_directory );
-  editor->compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &editor->constant_strings_buffer, "%s%s", editor->working_absolute_directory, compiled_shaders_relative_directory );
-
-  editor->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &editor->debug_constant_strings_buffer, "%s%s", editor->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
-  editor->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &editor->debug_constant_strings_buffer, "%s%s", editor->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
 }
 
 void
@@ -250,7 +200,7 @@ crude_editor_setup_custom_nodes_to_scene_
     editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
     editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
     editor_camera_node_crude_free_camera.input_enabled = true;
-    editor_camera_node_crude_free_camera.platformn = &editor->engine->platform;
+    editor_camera_node_crude_free_camera.platform = &editor->engine->platform_copy;
 
     editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
@@ -259,7 +209,7 @@ crude_editor_setup_custom_nodes_to_scene_
   }
 
   editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->main_node, "editor_camera" );
-  editor->focused_camera_node = editor->editor_camera_node;
+  editor->engine->graphics_thread_data.focused_camera_node = editor->editor_camera_node;
 }
 
 void

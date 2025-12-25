@@ -9,7 +9,7 @@ typedef struct crude_free_camera
 {
   float32                                                  moving_speed_multiplier;
   float32                                                  rotating_speed_multiplier;
-  crude_platform                                          *platformn;
+  crude_platform const                                    *platform;
   bool                                                     input_enabled;
 } crude_free_camera;
 
