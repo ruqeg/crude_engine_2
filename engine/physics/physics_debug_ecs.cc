@@ -1,11 +1,16 @@
 #if CRUDE_DEVELOP
 
 #include <engine/core/assert.h>
-#include <engine/physics/physics_components.h>
+#include <engine/physics/physics_ecs.h>
 #include <engine/scene/scene_debug_components.h>
 
-#include <engine/physics/physics_debug_system.h>
+#include <engine/physics/physics_debug_ecs.h>
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_debug_system );
 
 CRUDE_ECS_OBSERVER_DECLARE( crude_engine_physics_collision_shape_create_observer_ );
@@ -60,7 +65,7 @@ crude_physics_debug_system_import
   _In_ crude_physics_debug_system_context                  *ctx
 )
 {
-  CRUDE_ECS_IMPORT( world, crude_physics_components );
+  crude_physics_components_import( world );
   CRUDE_ECS_IMPORT( world, crude_scene_debug_components );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_engine_physics_collision_shape_create_observer_, EcsOnSet, ctx, { 

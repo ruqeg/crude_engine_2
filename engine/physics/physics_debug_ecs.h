@@ -5,6 +5,11 @@
 #include <engine/core/ecs.h>
 #include <engine/core/string.h>
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 typedef struct crude_physics_debug_system_context
 {
   crude_ecs                                               *world;

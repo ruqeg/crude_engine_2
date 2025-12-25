@@ -1,7 +1,13 @@
 #pragma once
 
 #include <engine/core/ecs.h>
+#include <engine/platform/platform.h>
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 typedef struct crude_free_camera_system_context
 {
   crude_ecs                                               *world;

@@ -1,11 +1,16 @@
 #include <engine/core/log.h>
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
-#include <engine/scene/scene_components.h>
+#include <engine/scene/scene_ecs.h>
 #include <engine/platform/platform.h>
 
-#include <engine/scene/free_camera_system.h>
+#include <engine/scene/free_camera_ecs.h>
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system );
 
 static void
@@ -80,8 +85,7 @@ crude_free_camera_system_import
 )
 {
   CRUDE_ECS_MODULE( world, crude_free_camera_system );
-  CRUDE_ECS_IMPORT( world, crude_scripts_components );
-  CRUDE_ECS_IMPORT( world, crude_scene_components );
+  crude_scene_components_import( world );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, ctx, {
     { .id = ecs_id( crude_transform ) },

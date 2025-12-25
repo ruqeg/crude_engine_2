@@ -4,6 +4,11 @@
 #include <engine/core/ecs.h>
 #include <engine/scene/components_serialization.h>
 
+/**********************************************************
+ *
+ *                 Components
+ *
+ *********************************************************/
 typedef struct crude_node_external
 {
   char const                                              *path;
@@ -42,12 +47,21 @@ typedef struct crude_gltf
   bool                                                     hidden;
 } crude_gltf;
 
+typedef struct crude_free_camera
+{
+  float32                                                  moving_speed_multiplier;
+  float32                                                  rotating_speed_multiplier;
+  crude_platform const                                    *platform;
+  bool                                                     input_enabled;
+} crude_free_camera;
+
 CRUDE_API ECS_COMPONENT_DECLARE( crude_transform );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_camera );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_gltf );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_light );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_node_external );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_node_runtime );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_free_camera );
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera );
@@ -57,12 +71,15 @@ CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light );
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera );
 
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_camera );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_node_runtime );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_free_camera );
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_runtime );
 
@@ -96,4 +113,8 @@ crude_transform_parent_to_world
   _In_ crude_entity                                        node
 );
 
-CRUDE_ECS_MODULE_IMPORT_DECL( crude_scene_components );
+CRUDE_API void
+crude_scene_components_import
+(
+  _In_ crude_ecs                                          *world
+);

@@ -3,19 +3,27 @@
 #if CRUDE_DEVELOP
 
 #include <engine/core/assert.h>
-
-#include <engine/scene/scene_debug_components.h>
-#include <engine/graphics/imgui.h>
-#include <engine/physics/physics_components.h>
+#include <engine/scene/scene_debug_ecs.h>
 #include <engine/scene/node_manager.h>
+#include <engine/physics/physics_debug_ecs.h>
+#include <engine/graphics/imgui.h>
 
+/**********************************************************
+ *
+ *                 Components
+ *
+ *********************************************************/
 ECS_COMPONENT_DECLARE( crude_debug_collision );
 ECS_COMPONENT_DECLARE( crude_debug_gltf );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_debug_collision, "crude_debug_collision" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_debug_gltf, "crude_debug_gltf" );
 
-CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scene_debug_components )
+void
+crude_scene_debug_components_import
+(
+  _In_ crude_ecs                                          *world
+)
 {
   CRUDE_ECS_MODULE( world, crude_scene_debug_components );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_debug_collision );
