@@ -4,9 +4,9 @@ project(crude_editor)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
-file(GLOB_RECURSE HEADERS *.crude_environment)
+file(GLOB_RECURSE ENVIROMENT *.crude_environment)
 
-set(CRUDE_SOURCES ${SRC} ${HEADERS})
+set(CRUDE_SOURCES ${SRC} ${HEADERS} ${ENVIROMENT})
 
 add_executable(${PROJECT_NAME} ${CRUDE_SOURCES})
 

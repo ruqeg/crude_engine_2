@@ -12,52 +12,10 @@
 #include <engine/physics/physics_debug_system.h>
 #include <engine/external/game_debug_system.h>
 
-typedef enum crude_editor_queue_command_type
-{
-  CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
-  CRUDE_EDITOR_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
-  CRUDE_EDITOR_QUEUE_COMMAND_TYPE_COUNT,
-} crude_editor_queue_command_type;
-
-typedef struct crude_editor_queue_command
-{
-  crude_editor_queue_command_type                          type;
-  union
-  {
-    struct 
-    {
-      nfdu8char_t                                         *filepath;
-    } reload_scene;
-    struct 
-    {
-    } reload_techniques;
-  };
-} crude_editor_queue_command;
-
-typedef struct crude_editor_creation
-{
-  char const                                              *scene_relative_filepath;
-  char const                                              *render_graph_relative_directory;
-  char const                                              *resources_relative_directory;
-  char const                                              *techniques_relative_directory;
-  char const                                              *shaders_relative_directory;
-  char const                                              *compiled_shaders_relative_directory;
-  char const                                              *working_absolute_directory;
-  crude_engine                                            *engine;
-  uint32                                                   framerate;
-} crude_editor_creation;
-
 typedef struct crude_editor
 {
   crude_engine                                            *engine;
-  
-  char const                                              *scene_absolute_filepath;
-  char const                                              *render_graph_absolute_directory;
-  char const                                              *techniques_absolute_directory;
-  char const                                              *resources_absolute_directory;
-  char const                                              *shaders_absolute_directory;
-  char const                                              *compiled_shaders_absolute_directory;
-  char const                                              *working_absolute_directory;
+
 #if CRUDE_DEVELOP
   char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
   char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
@@ -92,7 +50,7 @@ CRUDE_API void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
-  _In_ crude_editor_creation const                        *creation
+  _In_ crude_engine                                       *engine
 );
 
 CRUDE_API void

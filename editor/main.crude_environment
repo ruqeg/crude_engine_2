@@ -12,5 +12,6 @@
     "title": "Paprika",
     "width": 800,
     "height": 600
-  }
+  },
+  "initial_node": "\\..\\..\\resources\\game\\nodes\\level0.crude_node"
 }

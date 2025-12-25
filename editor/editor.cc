@@ -59,10 +59,10 @@ void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
-  _In_ crude_editor_creation const                        *creation
+  _In_ crude_engine                                       *engine
 )
 {
-  editor->engine = creation->engine;
+  editor->engine = engine;
 
   editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   editor->added_node_data = CRUDE_COMPOUNT_EMPTY( crude_devgui_added_node_data );

@@ -43,7 +43,7 @@ crude_environment_initialize
     char const *techniques_relative_directory = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( directories_json, "techniques_relative_directory" ) );
     char const *shaders_relative_directory = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( directories_json, "shaders_relative_directory" ) );
     char const *compiled_shaders_relative_directory = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( directories_json, "compiled_shaders_relative_directory" ) );
-    
+
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( render_graph_relative_directory );
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( resources_relative_directory );
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( techniques_relative_directory );
@@ -66,7 +66,7 @@ crude_environment_initialize
     environment->window.initial_width = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( window_json, "width" ) );
     environment->window.initial_height = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( window_json, "height" ) );
   }
-  
+
   cJSON_Delete( json );
 cleanup:
   crude_stack_allocator_free_marker( temporary_allocator, allocated_marker );
