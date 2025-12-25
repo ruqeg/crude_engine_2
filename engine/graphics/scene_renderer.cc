@@ -64,7 +64,6 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->temporary_allocator = creation->temporary_allocator;
   scene_renderer->gpu = creation->async_loader->gpu;
   scene_renderer->async_loader = creation->async_loader;
-  scene_renderer->task_scheduler = creation->task_scheduler;
   scene_renderer->imgui_context = creation->imgui_context;
   scene_renderer->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   scene_renderer->imgui_pass_enalbed = creation->imgui_pass_enalbed;
@@ -101,6 +100,29 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
+
+  if ( scene_renderer->imgui_pass_enalbed )
+  {
+    crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
+  }
+  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
+  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
+  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
+  //crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
+  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
+  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
+  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
+  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
+  crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
+  crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
+#endif
+  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
 }
 
 void
@@ -109,6 +131,49 @@ crude_gfx_scene_renderer_deinitialize
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
+  crude_gfx_render_graph_builder_unregister_all_render_passes( scene_renderer->render_graph->builder );
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
+#endif
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
+#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+  
+  if ( scene_renderer->imgui_pass_enalbed )
+  {
+    crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
+  }
+  crude_gfx_gbuffer_early_pass_deinitialize( &scene_renderer->gbuffer_early_pass );
+  crude_gfx_gbuffer_late_pass_deinitialize( &scene_renderer->gbuffer_late_pass );
+  crude_gfx_depth_pyramid_pass_deinitialize( &scene_renderer->depth_pyramid_pass );
+  //crude_gfx_pointlight_shadow_pass_deinitialize( &scene_renderer->pointlight_shadow_pass );
+  crude_gfx_culling_early_pass_deinitialize( &scene_renderer->culling_early_pass );
+  crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
+  crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
+  crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
+  crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
+  crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
+#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
+#endif
+  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->blases_buffers ); ++i )
+  {
+    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->blases_buffers[ i ] );
+    scene_renderer->renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, scene_renderer->vk_blases[ i ], scene_renderer->renderer->gpu->vk_allocation_callbacks );
+  }
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->blases_buffers );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->vk_blases );
+
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_buffer );
+  scene_renderer->renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->renderer->gpu->vk_allocation_callbacks );
+
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_scratch_buffer_handle );
+  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_instances_buffer_handle );
+#endif
+
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
@@ -214,87 +279,6 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
   scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );
   scene_renderer->lights_indices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_MAX( CRUDE_ARRAY_LENGTH( scene_renderer->lights ), 1 ), CRUDE_GFX_MEMORY_TYPE_GPU, "lights_indices" );
   scene_renderer->lights_bins_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_bins" );
-}
-
-void
-crude_gfx_scene_renderer_initialize_pases
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-)
-{
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
-
-  if ( scene_renderer->imgui_pass_enalbed )
-  {
-    crude_gfx_imgui_pass_initialize( &scene_renderer->imgui_pass, scene_renderer );
-  }
-  crude_gfx_gbuffer_early_pass_initialize( &scene_renderer->gbuffer_early_pass, scene_renderer );
-  crude_gfx_gbuffer_late_pass_initialize( &scene_renderer->gbuffer_late_pass, scene_renderer );
-  crude_gfx_depth_pyramid_pass_initialize( &scene_renderer->depth_pyramid_pass, scene_renderer );
-  //crude_gfx_pointlight_shadow_pass_initialize( &scene_renderer->pointlight_shadow_pass, scene_renderer );
-  crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
-  crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
-  crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
-  crude_gfx_light_pass_initialize( &scene_renderer->light_pass, scene_renderer );
-  crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
-  crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
-  crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
-#endif
-  crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-}
-
-void
-crude_gfx_scene_renderer_deinitialize_passes
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-)
-{
-  crude_gfx_render_graph_builder_unregister_all_render_passes( scene_renderer->render_graph->builder );
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
-#endif
-  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  
-  if ( scene_renderer->imgui_pass_enalbed )
-  {
-    crude_gfx_imgui_pass_deinitialize( &scene_renderer->imgui_pass );
-  }
-  crude_gfx_gbuffer_early_pass_deinitialize( &scene_renderer->gbuffer_early_pass );
-  crude_gfx_gbuffer_late_pass_deinitialize( &scene_renderer->gbuffer_late_pass );
-  crude_gfx_depth_pyramid_pass_deinitialize( &scene_renderer->depth_pyramid_pass );
-  //crude_gfx_pointlight_shadow_pass_deinitialize( &scene_renderer->pointlight_shadow_pass );
-  crude_gfx_culling_early_pass_deinitialize( &scene_renderer->culling_early_pass );
-  crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
-  crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
-  crude_gfx_light_pass_deinitialize( &scene_renderer->light_pass );
-  crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
-  crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
-  crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
-#endif
-  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
-
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->blases_buffers ); ++i )
-  {
-    crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->blases_buffers[ i ] );
-    scene_renderer->renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, scene_renderer->vk_blases[ i ], scene_renderer->renderer->gpu->vk_allocation_callbacks );
-  }
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->blases_buffers );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->vk_blases );
-
-  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_buffer );
-  scene_renderer->renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->renderer->gpu->vk_allocation_callbacks );
-
-  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_scratch_buffer_handle );
-  crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scene_renderer->tlas_instances_buffer_handle );
-#endif
-
 }
 
 void

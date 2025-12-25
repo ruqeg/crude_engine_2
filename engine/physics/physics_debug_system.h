@@ -3,10 +3,11 @@
 #if CRUDE_DEVELOP
 
 #include <engine/core/ecs.h>
+#include <engine/core/string.h>
 
 typedef struct crude_physics_debug_system_context
 {
-  crude_string_buffer                                      *string_bufffer;
+  crude_string_buffer                                     *string_bufffer;
   char const                                              *resources_absolute_directory;
 } crude_physics_debug_system_context;
 

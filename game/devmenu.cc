@@ -119,7 +119,7 @@ crude_devmenu_draw
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
   {
-    ImGui::SetNextWindowSize( ImVec2( game->gpu.vk_swapchain_width, 25 ) );
+    ImGui::SetNextWindowSize( ImVec2( game->engine->gpu.vk_swapchain_width, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
@@ -197,26 +197,26 @@ crude_devmenu_handle_input
   {
     devmenu->enabled = !devmenu->enabled;
     
-    crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
-    if ( devmenu->enabled )
-    {
-      crude_platform_show_cursor( *window_handle );
-    }
-    else
-    {
-      crude_platform_hide_cursor( *window_handle );
-    }
-    
-    crude_player_controller *player_controller = NULL;
-    if ( crude_entity_valid( player_controller_node ) )
-    {
-      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
-    }
-    if ( player_controller )
-    {
-      player_controller->input_enabled = !devmenu->enabled;
-    }
+    //crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
+    //crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
+    //if ( devmenu->enabled )
+    //{
+    //  crude_platform_show_cursor( *window_handle );
+    //}
+    //else
+    //{
+    //  crude_platform_hide_cursor( *window_handle );
+    //}
+    //
+    //crude_player_controller *player_controller = NULL;
+    //if ( crude_entity_valid( player_controller_node ) )
+    //{
+    //  player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
+    //}
+    //if ( player_controller )
+    //{
+    //  player_controller->input_enabled = !devmenu->enabled;
+    //}
   }
 
   for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
@@ -240,7 +240,7 @@ crude_devmenu_debug_gltf_view_callback
 )
 {
   game_t *game = game_instance( );
-  game->scene_renderer.options.hide_debug_gltf = !game->scene_renderer.options.hide_debug_gltf;
+  //game->scene_renderer.options.hide_debug_gltf = !game->scene_renderer.options.hide_debug_gltf;
 }
 
 
@@ -260,7 +260,7 @@ crude_devmenu_collisions_view_callback
 )
 {
   game_t *game = game_instance( );
-  game->scene_renderer.options.hide_collision = !game->scene_renderer.options.hide_collision;
+  //game->scene_renderer.options.hide_collision = !game->scene_renderer.options.hide_collision;
 }
 
 bool
@@ -282,7 +282,7 @@ crude_devmenu_free_camera_callback
   crude_entity player_controller_node = crude_ecs_lookup_entity_from_parent( game->main_node, "player" );
   crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( player_controller_node, crude_player_controller );
   player_controller->fly_mode = !player_controller->fly_mode;
-  crude_physics_enable_simulation( &game->physics, !game->physics.simulation_enabled );
+  //crude_physics_enable_simulation( &game->physics, !game->physics.simulation_enabled );
 }
 
 bool
@@ -300,7 +300,7 @@ crude_devmenu_reload_techniques_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  game_push_reload_techniques_command( game_instance( ) );
+  //game_push_reload_techniques_command( game_instance( ) );
 }
 
 bool
@@ -325,22 +325,22 @@ crude_devmenu_gpu_visual_profiler_initialize
 
   game = game_instance( );
 
-  dev_gpu_profiler->gpu = &game->gpu;
-  dev_gpu_profiler->enabled = false;
-  dev_gpu_profiler->max_duration = 16.666f;
-  dev_gpu_profiler->max_frames = 100u;
-  dev_gpu_profiler->current_frame = 0u;
-  dev_gpu_profiler->max_visible_depth = 2;
-  dev_gpu_profiler->max_queries_per_frame = 32;
-  dev_gpu_profiler->allocator = &game->allocator;
-  dev_gpu_profiler->paused = false;
-  dev_gpu_profiler->pipeline_statistics = NULL;
-  dev_gpu_profiler->timestamps = CRUDE_CAST( crude_gfx_gpu_time_query*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( crude_gfx_gpu_time_query ) * dev_gpu_profiler->max_frames * dev_gpu_profiler->max_queries_per_frame ) );
-  dev_gpu_profiler->per_frame_active = CRUDE_CAST( uint16*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( uint16 ) * dev_gpu_profiler->max_frames, allocator ) );
-  dev_gpu_profiler->framebuffer_pixel_count = 0u;
-  dev_gpu_profiler->initial_frames_paused = 15;
-  memset( dev_gpu_profiler->per_frame_active, 0, sizeof( uint16 ) * dev_gpu_profiler->max_frames );
-  CRUDE_HASHMAP_INITIALIZE( dev_gpu_profiler->name_hashed_to_color_index, crude_heap_allocator_pack( dev_gpu_profiler->allocator ) );
+  //dev_gpu_profiler->gpu = &game->gpu;
+  //dev_gpu_profiler->enabled = false;
+  //dev_gpu_profiler->max_duration = 16.666f;
+  //dev_gpu_profiler->max_frames = 100u;
+  //dev_gpu_profiler->current_frame = 0u;
+  //dev_gpu_profiler->max_visible_depth = 2;
+  //dev_gpu_profiler->max_queries_per_frame = 32;
+  //dev_gpu_profiler->allocator = &game->allocator;
+  //dev_gpu_profiler->paused = false;
+  //dev_gpu_profiler->pipeline_statistics = NULL;
+  //dev_gpu_profiler->timestamps = CRUDE_CAST( crude_gfx_gpu_time_query*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( crude_gfx_gpu_time_query ) * dev_gpu_profiler->max_frames * dev_gpu_profiler->max_queries_per_frame ) );
+  //dev_gpu_profiler->per_frame_active = CRUDE_CAST( uint16*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( uint16 ) * dev_gpu_profiler->max_frames, allocator ) );
+  //dev_gpu_profiler->framebuffer_pixel_count = 0u;
+  //dev_gpu_profiler->initial_frames_paused = 15;
+  //memset( dev_gpu_profiler->per_frame_active, 0, sizeof( uint16 ) * dev_gpu_profiler->max_frames );
+  //CRUDE_HASHMAP_INITIALIZE( dev_gpu_profiler->name_hashed_to_color_index, crude_heap_allocator_pack( dev_gpu_profiler->allocator ) );
 }
 
 void
@@ -689,15 +689,15 @@ crude_devmenu_memory_visual_profiler_initialize
   game_t *game = game_instance( );
 
   dev_mem_profiler->enabled = false;
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( dev_mem_profiler->allocators_containers, 16, crude_heap_allocator_pack( &game->allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->engine->asynchronous_loader_manager_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->cgltf_temporary_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->model_renderer_resources_manager_temporary_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->resources_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->temporary_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->render_graph.linear_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->node_manager.string_linear_allocator ) );
+  //CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( dev_mem_profiler->allocators_containers, 16, crude_heap_allocator_pack( &game->allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->engine->asynchronous_loader_manager_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->cgltf_temporary_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->model_renderer_resources_manager_temporary_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &game->resources_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &game->temporary_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->render_graph.linear_allocator ) );
+  //CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &game->node_manager.string_linear_allocator ) );
 }
 
 void
@@ -850,7 +850,7 @@ crude_devmenu_texture_inspector_initialize
   game = game_instance( );
 
   dev_texture_inspector->enabled = false;
-  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle )->handle;
+  //dev_texture_inspector->texture_handle = crude_gfx_access_texture( &game->gpu, crude_gfx_render_graph_builder_access_resource_by_name( game->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle )->handle;
 }
 
 void
@@ -898,52 +898,52 @@ crude_devmenu_texture_inspector_draw
   preview_texture_name = "Unknown";
   id = 0;
 
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
-  {
-    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &game->gpu, dev_texture_inspector->texture_handle );
-    if ( selected_texture && selected_texture->name )
-    {
-      preview_texture_name = selected_texture->name;
-    };
-  }
-
-  if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
-  {
-    for ( uint32 t = 0; t < game->gpu.textures.pool_size; ++t )
-    {
-      crude_gfx_texture                                   *texture;
-      crude_gfx_texture_handle                             texture_handle;
-      bool                                                 is_selected;
-
-      texture_handle = CRUDE_CAST( crude_gfx_texture_handle, t );
-      if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_handle ) )
-      {
-        continue;
-      }
-      
-      texture = crude_gfx_access_texture( &game->gpu, texture_handle );
-      if ( !texture || !texture->name )
-      {
-        continue;
-      }
-      
-      ImGui::PushID( id++ );
-
-      is_selected = ( dev_texture_inspector->texture_handle.index == texture_handle.index );
-      if ( ImGui::Selectable( texture->name ) )
-      {
-        dev_texture_inspector->texture_handle = texture_handle;
-      }
-      
-      ImGui::PopID( );
-      if ( is_selected )
-      {
-        ImGui::SetItemDefaultFocus();
-      }
-    }
-    ImGui::EndCombo();
-  }
-
+  //if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
+  //{
+  //  crude_gfx_texture *selected_texture = crude_gfx_access_texture( &game->gpu, dev_texture_inspector->texture_handle );
+  //  if ( selected_texture && selected_texture->name )
+  //  {
+  //    preview_texture_name = selected_texture->name;
+  //  };
+  //}
+  //
+  //if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
+  //{
+  //  for ( uint32 t = 0; t < game->gpu.textures.pool_size; ++t )
+  //  {
+  //    crude_gfx_texture                                   *texture;
+  //    crude_gfx_texture_handle                             texture_handle;
+  //    bool                                                 is_selected;
+  //
+  //    texture_handle = CRUDE_CAST( crude_gfx_texture_handle, t );
+  //    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_handle ) )
+  //    {
+  //      continue;
+  //    }
+  //    
+  //    texture = crude_gfx_access_texture( &game->gpu, texture_handle );
+  //    if ( !texture || !texture->name )
+  //    {
+  //      continue;
+  //    }
+  //    
+  //    ImGui::PushID( id++ );
+  //
+  //    is_selected = ( dev_texture_inspector->texture_handle.index == texture_handle.index );
+  //    if ( ImGui::Selectable( texture->name ) )
+  //    {
+  //      dev_texture_inspector->texture_handle = texture_handle;
+  //    }
+  //    
+  //    ImGui::PopID( );
+  //    if ( is_selected )
+  //    {
+  //      ImGui::SetItemDefaultFocus();
+  //    }
+  //  }
+  //  ImGui::EndCombo();
+  //}
+  //
   ImGui::End( );
 }
 
@@ -1004,31 +1004,31 @@ crude_devmenu_render_graph_draw
   {
     if ( ImGui::CollapsingHeader( "Nodes" ) )
     {
-      for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( game->render_graph.nodes ); ++n )
-      {
-        crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( game->render_graph.builder, game->render_graph.nodes[ n ] );
-
-        ImGui::Separator( );
-        ImGui::Text( "Pass: %s", node->name );
-
-        ImGui::Text( "\tInputs" );
-        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
-        {
-          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->inputs[ i ] );
-          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
-        }
-
-        ImGui::Text( "\tOutputs" );
-        for ( uint32 o = 0; o < CRUDE_ARRAY_LENGTH( node->outputs ); ++o )
-        {
-          crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->outputs[ o ] );
-          ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
-        }
-
-        ImGui::PushID( n );
-        ImGui::Checkbox( "Enabled", &node->enabled );
-        ImGui::PopID( );
-      }
+      //for ( uint32 n = 0; n < CRUDE_ARRAY_LENGTH( game->render_graph.nodes ); ++n )
+      //{
+      //  crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( game->render_graph.builder, game->render_graph.nodes[ n ] );
+      //
+      //  ImGui::Separator( );
+      //  ImGui::Text( "Pass: %s", node->name );
+      //
+      //  ImGui::Text( "\tInputs" );
+      //  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+      //  {
+      //    crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->inputs[ i ] );
+      //    ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
+      //  }
+      //
+      //  ImGui::Text( "\tOutputs" );
+      //  for ( uint32 o = 0; o < CRUDE_ARRAY_LENGTH( node->outputs ); ++o )
+      //  {
+      //    crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( game->render_graph.builder, node->outputs[ o ] );
+      //    ImGui::Text( "\t\t%s %u", resource->name, resource->resource_info.texture.handle.index );
+      //  }
+      //
+      //  ImGui::PushID( n );
+      //  ImGui::Checkbox( "Enabled", &node->enabled );
+      //  ImGui::PopID( );
+      //}
     }
   }
   ImGui::End( );
@@ -1101,7 +1101,7 @@ crude_devmenu_gpu_pool_draw
   uint64                                                   memory_used, memory_allocated;
 
   crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
-  vmaGetHeapBudgets( game->gpu.vma_allocator, gpu_memory_heap_budgets );
+  //vmaGetHeapBudgets( game->gpu.vma_allocator, gpu_memory_heap_budgets );
  
   memory_used = memory_allocated = 0;
   for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
@@ -1110,21 +1110,21 @@ crude_devmenu_gpu_pool_draw
     memory_allocated += gpu_memory_heap_budgets[ i ].budget;
   }
    
-  vkGetPhysicalDeviceProperties( game->gpu.vk_physical_device, &vk_physical_properties );
-
-  ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
-  ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
-
-  ImGui::Separator();
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.buffers, "Buffers" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.textures, "Textures" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.pipelines, "Pipelines" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.samplers, "Samplers" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_sets, "DescriptorSets" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_set_layouts, "DescriptorSetLayouts" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.framebuffers, "Framebuffers" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.render_passes, "RenderPasses" );
-  crude_devmenu_gpu_pool_draw_pool_( &game->gpu.shaders, "Shaders" );
+  //vkGetPhysicalDeviceProperties( game->gpu.vk_physical_device, &vk_physical_properties );
+  //
+  //ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
+  //ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
+  //
+  //ImGui::Separator();
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.buffers, "Buffers" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.textures, "Textures" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.pipelines, "Pipelines" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.samplers, "Samplers" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_sets, "DescriptorSets" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.descriptor_set_layouts, "DescriptorSetLayouts" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.framebuffers, "Framebuffers" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.render_passes, "RenderPasses" );
+  //crude_devmenu_gpu_pool_draw_pool_( &game->gpu.shaders, "Shaders" );
 }
 
 void
@@ -1179,56 +1179,56 @@ crude_devmenu_scene_renderer_draw
     return;
   }
 
-  ImGui::Begin( "Scene Renderer" );
-  if ( ImGui::CollapsingHeader( "Background" ) )
-  {
-    ImGui::ColorEdit3( "Background Color", &game->scene_renderer.options.background_color.x );
-    ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
-  }
-  if ( ImGui::CollapsingHeader( "Fog" ) )
-  {
-    ImGui::ColorEdit3( "Fog Color", &game->game_postprocessing_pass.options.fog_color.x );
-    ImGui::DragFloat( "Fog Intensity", &game->game_postprocessing_pass.options.fog_color.w, 1.f, 0.f );
-    ImGui::DragFloat( "Fog Distance", &game->game_postprocessing_pass.options.fog_distance, 1.f, 0.f );
-    ImGui::DragFloat( "Fog Coeff", &game->game_postprocessing_pass.options.fog_coeff, 1.f, 0.f );
-  }
-  if ( ImGui::CollapsingHeader( "Drunk Effect" ) )
-  {
-    ImGui::DragFloat( "Wave Size", &game->game_postprocessing_pass.options.wave_size, 1.f, 0.f );
-    ImGui::DragFloat( "Wave Texcoord Scale", &game->game_postprocessing_pass.options.wave_texcoord_scale, 1.f, 0.f );
-    ImGui::DragFloat( "Wave Absolute Frame Scale", &game->game_postprocessing_pass.options.wave_absolute_frame_scale, 1.f, 0.f );
-    ImGui::DragFloat( "Aberration Strength Scale", &game->game_postprocessing_pass.options.aberration_strength_scale, 1.f, 0.f );
-    ImGui::DragFloat( "Aberration Strength Offset", &game->game_postprocessing_pass.options.aberration_strength_offset, 1.f, 0.f );
-    ImGui::DragFloat( "Aberration Strength Sin Affect", &game->game_postprocessing_pass.options.aberration_strength_sin_affect, 1.f, 0.f );
-  }
-  if ( ImGui::CollapsingHeader( "Health Pulse Effect" ) )
-  {
-    ImGui::ColorEdit3( "Pulse Color", &game->game_postprocessing_pass.options.pulse_color.x );
-    ImGui::DragFloat( "Pulse Intensity", &game->game_postprocessing_pass.options.pulse_color.w, 1.f, 0.f );
-    ImGui::DragFloat( "Pulse Frame Scale", &game->game_postprocessing_pass.options.pulse_frame_scale, 1.f, 0.f );
-    ImGui::DragFloat( "Pulse Scale", &game->game_postprocessing_pass.options.pulse_scale, 1.f, 0.f );
-    ImGui::DragFloat( "Pulse Coeff", &game->game_postprocessing_pass.options.pulse_distance_coeff, 1.f, 0.f );
-    ImGui::DragFloat( "Pulse Distance", &game->game_postprocessing_pass.options.pulse_distance, 1.f, 0.f );
-  }
-  if ( ImGui::CollapsingHeader( "Global Illumination" ) )
-  {
-    ImGui::ColorEdit3( "Ambient Color", &game->scene_renderer.options.ambient_color.x );
-    ImGui::DragFloat( "Ambient Intensity", &game->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-    ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
-    ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
-    ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
-    ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
-    ImGui::SliderFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis, 0.0, 1.0 );
-    ImGui::DragFloat( "Shadow Weight Power", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.shadow_weight_power );
-    ImGui::SliderFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier, 0.0, 1.0 );
-    ImGui::DragInt( "Probe Update Per Frame", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_update_per_frame );
-    ImGui::Text( "Probe Debug Flags" );
-    ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
-    ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
-    ImGui::CheckboxFlags( "Probe Index | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 4 );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  }
+  //ImGui::Begin( "Scene Renderer" );
+  //if ( ImGui::CollapsingHeader( "Background" ) )
+  //{
+  //  ImGui::ColorEdit3( "Background Color", &game->scene_renderer.options.background_color.x );
+  //  ImGui::DragFloat( "Background Intensity", &game->scene_renderer.options.background_intensity, 1.f, 0.f );
+  //}
+  //if ( ImGui::CollapsingHeader( "Fog" ) )
+  //{
+  //  ImGui::ColorEdit3( "Fog Color", &game->game_postprocessing_pass.options.fog_color.x );
+  //  ImGui::DragFloat( "Fog Intensity", &game->game_postprocessing_pass.options.fog_color.w, 1.f, 0.f );
+  //  ImGui::DragFloat( "Fog Distance", &game->game_postprocessing_pass.options.fog_distance, 1.f, 0.f );
+  //  ImGui::DragFloat( "Fog Coeff", &game->game_postprocessing_pass.options.fog_coeff, 1.f, 0.f );
+  //}
+  //if ( ImGui::CollapsingHeader( "Drunk Effect" ) )
+  //{
+  //  ImGui::DragFloat( "Wave Size", &game->game_postprocessing_pass.options.wave_size, 1.f, 0.f );
+  //  ImGui::DragFloat( "Wave Texcoord Scale", &game->game_postprocessing_pass.options.wave_texcoord_scale, 1.f, 0.f );
+  //  ImGui::DragFloat( "Wave Absolute Frame Scale", &game->game_postprocessing_pass.options.wave_absolute_frame_scale, 1.f, 0.f );
+  //  ImGui::DragFloat( "Aberration Strength Scale", &game->game_postprocessing_pass.options.aberration_strength_scale, 1.f, 0.f );
+  //  ImGui::DragFloat( "Aberration Strength Offset", &game->game_postprocessing_pass.options.aberration_strength_offset, 1.f, 0.f );
+  //  ImGui::DragFloat( "Aberration Strength Sin Affect", &game->game_postprocessing_pass.options.aberration_strength_sin_affect, 1.f, 0.f );
+  //}
+  //if ( ImGui::CollapsingHeader( "Health Pulse Effect" ) )
+  //{
+  //  ImGui::ColorEdit3( "Pulse Color", &game->game_postprocessing_pass.options.pulse_color.x );
+  //  ImGui::DragFloat( "Pulse Intensity", &game->game_postprocessing_pass.options.pulse_color.w, 1.f, 0.f );
+  //  ImGui::DragFloat( "Pulse Frame Scale", &game->game_postprocessing_pass.options.pulse_frame_scale, 1.f, 0.f );
+  //  ImGui::DragFloat( "Pulse Scale", &game->game_postprocessing_pass.options.pulse_scale, 1.f, 0.f );
+  //  ImGui::DragFloat( "Pulse Coeff", &game->game_postprocessing_pass.options.pulse_distance_coeff, 1.f, 0.f );
+  //  ImGui::DragFloat( "Pulse Distance", &game->game_postprocessing_pass.options.pulse_distance, 1.f, 0.f );
+  //}
+//  if ( ImGui::CollapsingHeader( "Global Illumination" ) )
+//  {
+//    ImGui::ColorEdit3( "Ambient Color", &game->scene_renderer.options.ambient_color.x );
+//    ImGui::DragFloat( "Ambient Intensity", &game->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
+//#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+//    ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
+//    ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
+//    ImGui::DragFloat( "Max Probe Offset", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.max_probe_offset );
+//    ImGui::DragFloat( "Self Shadow Bias", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.self_shadow_bias );
+//    ImGui::SliderFloat( "Hysteresis", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.hysteresis, 0.0, 1.0 );
+//    ImGui::DragFloat( "Shadow Weight Power", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.shadow_weight_power );
+//    ImGui::SliderFloat( "Infinite Bounces Multiplier", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.infinite_bounces_multiplier, 0.0, 1.0 );
+//    ImGui::DragInt( "Probe Update Per Frame", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_update_per_frame );
+//    ImGui::Text( "Probe Debug Flags" );
+//    ImGui::CheckboxFlags( "Statues | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 1 );
+//    ImGui::CheckboxFlags( "Radiance | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 2 );
+//    ImGui::CheckboxFlags( "Probe Index | OV", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_debug_flags, 4 );
+//#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+//  }
   
   ImGui::End( );
 }

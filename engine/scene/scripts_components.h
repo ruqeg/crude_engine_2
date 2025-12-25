@@ -2,13 +2,14 @@
 
 #include <engine/core/math.h>
 #include <engine/core/ecs.h>
+#include <engine/platform/platform.h>
 #include <engine/scene/components_serialization.h>
 
 typedef struct crude_free_camera
 {
   float32                                                  moving_speed_multiplier;
   float32                                                  rotating_speed_multiplier;
-  crude_entity                                             input_node;
+  crude_platform                                          *platformn;
   bool                                                     input_enabled;
 } crude_free_camera;
 

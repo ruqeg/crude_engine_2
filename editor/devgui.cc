@@ -7,7 +7,7 @@
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
 #include <engine/scene/scene_debug_components.h>
-#include <engine/graphics/imgui_def.h>
+#include <engine/engine/engine_commands_manager.h>
 #include <editor/editor.h>
 
 #include <editor/devgui.h>
@@ -47,7 +47,7 @@ crude_devgui_draw
 {
   crude_editor *editor = crude_editor_instance( );
 
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, editor->imgui_context ) );
+  ImGui::SetCurrentContext( editor->engine->imgui_context );
 
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
   {
@@ -66,7 +66,7 @@ crude_devgui_draw
         result = NFD_OpenDialogU8_With( &out_path, &args );
         if ( result == NFD_OKAY )
         {
-          crude_editor_push_reload_scene_command( crude_editor_instance( ), out_path );
+          crude_engine_commands_manager_push_reload_scene_command( &editor->engine->commands_manager );
         }
       }
       if ( ImGui::MenuItem( "Save Scene" ) )
@@ -82,7 +82,7 @@ crude_devgui_draw
         result = NFD_SaveDialogU8_With( &out_path, &args );
         if ( result == NFD_OKAY )
         {
-          crude_node_manager_save_node_to_file( &editor->node_manager, editor->main_node, out_path );
+          crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->main_node, out_path );
           NFD_FreePathU8( out_path );
         }
       }
@@ -109,19 +109,19 @@ crude_devgui_draw
     {
       if ( ImGui::MenuItem( "Show All Collision" ) )
       {
-        editor->scene_renderer.options.hide_collision = false;
+        editor->engine->scene_renderer.options.hide_collision = false;
       }
       if ( ImGui::MenuItem( "Hide All Collision" ) )
       {
-        editor->scene_renderer.options.hide_collision = true;
+        editor->engine->scene_renderer.options.hide_collision = true;
       }
       if ( ImGui::MenuItem( "Show All Debug GLTF" ) )
       {
-        editor->scene_renderer.options.hide_debug_gltf = false;
+        editor->engine->scene_renderer.options.hide_debug_gltf = false;
       }
       if ( ImGui::MenuItem( "Hide All Debug GLTF" ) )
       {
-        editor->scene_renderer.options.hide_debug_gltf = true;
+        editor->engine->scene_renderer.options.hide_debug_gltf = true;
       }
       ImGui::EndMenu( );
     }
@@ -434,73 +434,73 @@ crude_devgui_node_inspector_draw
   crude_level_starting_room *level_starting_room = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_level_starting_room );
   if ( level_starting_room && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_starting_room )( editor->selected_node, level_starting_room, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_starting_room )( editor->selected_node, level_starting_room, &editor->engine->node_manager );
   }
 
   crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_level_01 );
   if ( level_01 && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_01 ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( editor->selected_node, level_01, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( editor->selected_node, level_01, &editor->engine->node_manager );
   }
   
   crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_physics_character_body_handle );
   if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( editor->selected_node, dynamic_body, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( editor->selected_node, dynamic_body, &editor->engine->node_manager );
   }
   
   crude_physics_static_body_handle *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_physics_static_body_handle );
   if ( static_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( editor->selected_node, static_body, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( editor->selected_node, static_body, &editor->engine->node_manager );
   }
   
   crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_physics_collision_shape );
   if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( editor->selected_node, collision_shape, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( editor->selected_node, collision_shape, &editor->engine->node_manager );
   }
   
   crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_player_controller );
   if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( editor->selected_node, player_controller, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( editor->selected_node, player_controller, &editor->engine->node_manager );
   }
   
   crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_enemy );
   if ( enemy && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_enemy ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( editor->selected_node, enemy, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( editor->selected_node, enemy, &editor->engine->node_manager );
   }
   
   crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_weapon );
   if ( weapon && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_weapon ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_weapon )( editor->selected_node, weapon, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_weapon )( editor->selected_node, weapon, &editor->engine->node_manager );
   }
   
   crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_debug_collision );
   if ( debug_collision && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_collision ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_collision )( editor->selected_node, debug_collision, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_collision )( editor->selected_node, debug_collision, &editor->engine->node_manager );
   }
 
   crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_debug_gltf );
   if ( debug_gltf && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_gltf ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_gltf )( editor->selected_node, debug_gltf, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_gltf )( editor->selected_node, debug_gltf, &editor->engine->node_manager );
   }
 
   crude_node_runtime *runtime_node = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_node_runtime );
   if ( runtime_node && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_node_runtime ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( editor->selected_node, runtime_node, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( editor->selected_node, runtime_node, &editor->engine->node_manager );
   }
 
   crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->selected_node, crude_recycle_station );
   if ( recycle_station && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_recycle_station ) ) )
   {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_recycle_station )( editor->selected_node, recycle_station, &editor->node_manager );
+    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_recycle_station )( editor->selected_node, recycle_station, &editor->engine->node_manager );
   }
   
   ImGui::End( );
@@ -532,7 +532,7 @@ crude_devgui_viewport_initialize
 )
 {
   crude_editor *editor = crude_editor_instance( );
-  devgui_viewport->selected_texture = crude_gfx_render_graph_builder_access_resource_by_name( editor->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle;
+  devgui_viewport->selected_texture = crude_gfx_render_graph_builder_access_resource_by_name( editor->engine->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle;
 }
 
 void
@@ -574,7 +574,7 @@ crude_devgui_viewport_draw_viewport_texture_
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
-    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &editor->gpu, devgui_viewport->selected_texture );
+    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &editor->engine->gpu, devgui_viewport->selected_texture );
     if ( selected_texture && selected_texture->name )
     {
       preview_texture_name = selected_texture->name;
@@ -583,7 +583,7 @@ crude_devgui_viewport_draw_viewport_texture_
 
   if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
   {
-    for ( uint32 t = 0; t < editor->gpu.textures.pool_size; ++t )
+    for ( uint32 t = 0; t < editor->engine->gpu.textures.pool_size; ++t )
     {
       crude_gfx_texture                                   *texture;
       crude_gfx_texture_handle                             texture_handle;
@@ -595,7 +595,7 @@ crude_devgui_viewport_draw_viewport_texture_
         continue;
       }
       
-      texture = crude_gfx_access_texture( &editor->gpu, texture_handle );
+      texture = crude_gfx_access_texture( &editor->engine->gpu, texture_handle );
       if ( !texture || !texture->name )
       {
         continue;

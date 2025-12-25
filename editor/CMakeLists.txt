@@ -4,6 +4,7 @@ project(crude_editor)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
+file(GLOB_RECURSE HEADERS *.crude_environment)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
 

@@ -27,21 +27,20 @@ crude_level_01_destroy_observer_
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_level_01                                        *level;
-    crude_window_handle                                   *window_handle;
     crude_entity                                           level_node;
     
     level = &enemies_per_entity[ i ];
     level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    crude_audio_device_destroy_sound( &game->audio_device, level->ambient_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->save_theme_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->shot_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->shot_without_ammo_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->recycle_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->hit_critical_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->hit_basic_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->take_serum_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, level->recycle_interaction_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->ambient_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->save_theme_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->shot_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->shot_without_ammo_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->recycle_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->hit_critical_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->hit_basic_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->take_serum_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, level->recycle_interaction_sound_handle );
   }
 }
 static void
@@ -59,7 +58,6 @@ crude_level_01_creation_observer_
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_level_01                                        *level;
-    crude_window_handle                                   *window_handle;
     crude_entity                                           level_node;
     
     level = &enemies_per_entity[ i ];
@@ -68,17 +66,17 @@ crude_level_01_creation_observer_
     level->editor_camera_controller_enabled = true;
     
     /* Preload models */
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_drug_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_health_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_enabled_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_station_disabled_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->ammo_box_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->syringe_drug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->syringe_health_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->serum_station_enabled_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->serum_station_disabled_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->ammo_box_model_absolute_filepath, NULL );
     
 #if CRUDE_DEVELOP
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->syringe_spawnpoint_debug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->enemy_spawnpoint_debug_model_absolute_filepath, NULL );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->engine->model_renderer_resources_manager, game->syringe_serum_station_active_debug_model_absolute_filepath, NULL );
 #endif
 
     /* Setup sounds */
@@ -89,7 +87,7 @@ crude_level_01_creation_observer_
       sound_creation.decode = true;
       sound_creation.absolute_filepath = game->ambient_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-      level->ambient_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->ambient_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
       
       sound_creation = crude_sound_creation_empty( );
       sound_creation.looping = true;
@@ -97,46 +95,46 @@ crude_level_01_creation_observer_
       sound_creation.decode = true;
       sound_creation.absolute_filepath = game->save_theme_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-      level->save_theme_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->save_theme_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
 
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->shot_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-      level->shot_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->shot_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
 
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->shot_without_ammo_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-      level->shot_without_ammo_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->shot_without_ammo_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
       
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->recycle_sound_absolute_filepath;
       sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-      level->recycle_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-      crude_audio_device_sound_set_volume( &game->audio_device, level->recycle_sound_handle, 1.5f );
+      level->recycle_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, level->recycle_sound_handle, 1.5f );
 
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->hit_critical_sound_absolute_filepath;
       sound_creation.rolloff = 0.15;
-      level->hit_critical_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-      crude_audio_device_sound_set_volume( &game->audio_device, level->hit_critical_sound_handle, 5.0f );
+      level->hit_critical_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, level->hit_critical_sound_handle, 5.0f );
       
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->hit_basic_sound_absolute_filepath;
       sound_creation.rolloff = 0.15;
-      level->hit_basic_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-      crude_audio_device_sound_set_volume( &game->audio_device, level->hit_basic_sound_handle, 5.0f );
+      level->hit_basic_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, level->hit_basic_sound_handle, 5.0f );
 
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
       sound_creation.absolute_filepath = game->take_serum_sound_absolute_filepath;
       sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
-      level->take_serum_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->take_serum_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
 
       sound_creation = crude_sound_creation_empty( );
       sound_creation.async_loading = true;
@@ -144,12 +142,12 @@ crude_level_01_creation_observer_
       sound_creation.min_distance = 1.0;
       sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
       sound_creation.rolloff = 0.25;
-      level->recycle_interaction_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+      level->recycle_interaction_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
 
-      crude_audio_device_sound_start( &game->audio_device, level->ambient_sound_handle );
-      crude_audio_device_sound_start( &game->audio_device, level->save_theme_sound_handle );
-      crude_audio_device_sound_set_volume( &game->audio_device, level->save_theme_sound_handle, 0.f );
-      crude_audio_device_sound_set_volume( &game->audio_device, level->ambient_sound_handle, 1.f );
+      crude_audio_device_sound_start( &game->engine->audio_device, level->ambient_sound_handle );
+      crude_audio_device_sound_start( &game->engine->audio_device, level->save_theme_sound_handle );
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, level->save_theme_sound_handle, 0.f );
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, level->ambient_sound_handle, 1.f );
     }
 
     /* Setup enemies*/
@@ -242,13 +240,13 @@ crude_level_01_creation_observer_
       }
     }
 
-    for ( uint32 i = 0; i < CRUDE_GAME_SERUM_STATION_MAX_ACTIVE_COUNT; ++i )
-    {
-      game_push_enable_random_serum_station_command( game, CRUDE_COMPOUNT_EMPTY( crude_entity ) );
-    }
+    //for ( uint32 i = 0; i < CRUDE_GAME_SERUM_STATION_MAX_ACTIVE_COUNT; ++i )
+    //{
+    //  game_push_enable_random_serum_station_command( game, CRUDE_COMPOUNT_EMPTY( crude_entity ) );
+    //}
 
-    window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    crude_platform_hide_cursor( *window_handle );
+    //window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
+    crude_platform_hide_cursor( &game->engine->platform );
   }
 }
 

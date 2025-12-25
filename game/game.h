@@ -6,7 +6,6 @@
 #include <engine/scene/node_manager.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/core/ecs.h>
-#include <engine/platform/platform_components.h>
 #include <engine/scene/collisions_resources_manager.h>
 #include <engine/physics/physics_debug_system.h>
 #include <engine/physics/physics_system.h>

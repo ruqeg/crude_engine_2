@@ -2,7 +2,6 @@
 
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
-#include <engine/platform/platform_components.h>
 
 typedef struct game_t game_t;
 

@@ -3,7 +3,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
@@ -33,8 +32,8 @@ crude_enemy_deal_damage_to_player
     player->health -= CRUDE_GAME_PLAYER_HEALTH_DAMAGE_FROM_ENEMY;
     player->sanity -= CRUDE_GAME_PLAYER_SANITY_DAMAGE_FROM_ENEMY;
 
-    crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_attack_sound_handle, enemy_translation );
-    crude_audio_device_sound_start( &game->audio_device, enemy->enemy_attack_sound_handle );
+    //crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_attack_sound_handle, enemy_translation );
+    //crude_audio_device_sound_start( &game->audio_device, enemy->enemy_attack_sound_handle );
 
   }
 }
@@ -81,7 +80,7 @@ crude_enemy_search_player
   bool player_visible_in_fog = XMVectorGetX( XMVector3Length( XMVectorSubtract( player_look_ray_origin_world_translation, player_translation ) ) ) < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
   if ( player_visible_in_fog )
   {
-    bool enemy_see_body = crude_physics_cast_ray( &game_instance( )->physics, player_look_ray_origin_world_translation, player_look_ray_direction, 1, &raycast_result );
+    bool enemy_see_body ;//= crude_physics_cast_ray( &game_instance( )->physics, player_look_ray_origin_world_translation, player_look_ray_direction, 1, &raycast_result );
     if ( enemy_see_body )
     {
       bool enemy_can_see_player = XMVectorGetX( XMVector3LengthSq( player_look_ray_origin_to_player ) ) < XMVectorGetX( XMVector3LengthSq( XMVectorSubtract( player_look_ray_origin_world_translation, raycast_result.raycast_result.point ) ) );
@@ -159,15 +158,15 @@ crude_enemy_creation_observer_
     sound_creation.rolloff = 0.25;
     sound_creation.min_distance = 2.0;
     sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
-    enemy->enemy_idle_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    enemy->enemy_idle_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
 
     sound_creation = crude_sound_creation_empty( );
     sound_creation.async_loading = true;
     sound_creation.absolute_filepath = game->enemy_notice_sound_absolute_filepath;
     sound_creation.rolloff = 0.5;
     sound_creation.min_distance = 2.0;
-    enemy->enemy_notice_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
-    crude_audio_device_sound_set_volume( &game->audio_device, enemy->enemy_notice_sound_handle, 2.0 );
+    enemy->enemy_notice_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
+    crude_audio_device_sound_set_volume( &game->engine->audio_device, enemy->enemy_notice_sound_handle, 2.0 );
     
     sound_creation = crude_sound_creation_empty( );
     sound_creation.async_loading = true;
@@ -175,7 +174,7 @@ crude_enemy_creation_observer_
     sound_creation.rolloff = 0.25;
     sound_creation.min_distance = 2.0;
     sound_creation.max_distance = CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE;
-    enemy->enemy_attack_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+    enemy->enemy_attack_sound_handle = crude_audio_device_create_sound( &game->engine->audio_device, &sound_creation );
   }
 }
 
@@ -198,9 +197,9 @@ crude_enemy_destroy_observer_
     enemy = &enemies_per_entity[ i ];
     enemy_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
 
-    crude_audio_device_destroy_sound( &game->audio_device, enemy->enemy_idle_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, enemy->enemy_notice_sound_handle );
-    crude_audio_device_destroy_sound( &game->audio_device, enemy->enemy_attack_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, enemy->enemy_idle_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, enemy->enemy_notice_sound_handle );
+    crude_audio_device_destroy_sound( &game->engine->audio_device, enemy->enemy_attack_sound_handle );
   }
 }
 
@@ -241,20 +240,20 @@ crude_enemy_update_system_
     player_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->player_node, crude_transform );
     distance_to_player = XMVectorGetX( XMVector2Length( XMVectorSubtract( XMVectorSet( enemy_transform->translation.x, enemy_transform->translation.z, 0, 0 ), XMVectorSet( player_transform->translation.x, player_transform->translation.z, 0, 0 ) ) ) );
 
-    if ( ( game->death_screen || player->inside_safe_zone || distance_to_player > CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
+    if ( ( game->death_screen || player->inside_safe_zone || distance_to_player > CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && crude_audio_device_sound_is_playing( &game->engine->audio_device, enemy->enemy_idle_sound_handle ) )
     {
-      crude_audio_device_sound_stop( &game->audio_device, enemy->enemy_idle_sound_handle );
+      crude_audio_device_sound_stop( &game->engine->audio_device, enemy->enemy_idle_sound_handle );
     }
     
-    if ( ( !game->death_screen && !player->inside_safe_zone && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && !crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) )
+    if ( ( !game->death_screen && !player->inside_safe_zone && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE ) && !crude_audio_device_sound_is_playing( &game->engine->audio_device, enemy->enemy_idle_sound_handle ) )
     {
-      crude_audio_device_sound_reset( &game->audio_device, enemy->enemy_idle_sound_handle );
-      crude_audio_device_sound_start( &game->audio_device, enemy->enemy_idle_sound_handle );
+      crude_audio_device_sound_reset( &game->engine->audio_device, enemy->enemy_idle_sound_handle );
+      crude_audio_device_sound_start( &game->engine->audio_device, enemy->enemy_idle_sound_handle );
     }
 
-    if ( crude_audio_device_sound_is_playing( &game->audio_device, enemy->enemy_idle_sound_handle ) && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE )
+    if ( crude_audio_device_sound_is_playing( &game->engine->audio_device, enemy->enemy_idle_sound_handle ) && distance_to_player < CRUDE_GAME_PLAYER_MAX_FOG_DISTANCE )
     {
-      crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_idle_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+      crude_audio_device_sound_set_translation( &game->engine->audio_device, enemy->enemy_idle_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
     }
     
     switch ( enemy->state )
@@ -264,8 +263,8 @@ crude_enemy_update_system_
       if ( crude_enemy_search_player( enemy ) )
       {
         enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
-        crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
-        crude_audio_device_sound_start( &game->audio_device, enemy->enemy_notice_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+        crude_audio_device_sound_start( &game->engine->audio_device, enemy->enemy_notice_sound_handle );
       }
       else
       {
@@ -282,8 +281,8 @@ crude_enemy_update_system_
 
         if ( enemy->player_last_visible_translation_updated_time > 0.75f )
         {
-          crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
-          crude_audio_device_sound_start( &game->audio_device, enemy->enemy_notice_sound_handle );
+          crude_audio_device_sound_set_translation( &game->engine->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+          crude_audio_device_sound_start( &game->engine->audio_device, enemy->enemy_notice_sound_handle );
         }
         enemy->player_last_visible_time = 0.f;
         enemy->player_last_visible_translation_updated_time = 0.f;
@@ -314,8 +313,8 @@ crude_enemy_update_system_
       if ( crude_enemy_search_player( enemy ) )
       {
         enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
-        crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
-        crude_audio_device_sound_start( &game->audio_device, enemy->enemy_notice_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+        crude_audio_device_sound_start( &game->engine->audio_device, enemy->enemy_notice_sound_handle );
       }
       else
       {
@@ -335,8 +334,8 @@ crude_enemy_update_system_
       if ( enemy->stanned_time_left < 0.f )
       {
         enemy->state = CRUDE_ENEMY_STATE_FOLLOW_PLAYER;
-        crude_audio_device_sound_set_translation( &game->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
-        crude_audio_device_sound_start( &game->audio_device, enemy->enemy_notice_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, enemy->enemy_notice_sound_handle, XMLoadFloat3( &enemy_transform->translation ) );
+        crude_audio_device_sound_start( &game->engine->audio_device, enemy->enemy_notice_sound_handle );
       }
       break;
     }

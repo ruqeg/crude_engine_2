@@ -11,12 +11,12 @@ main
 
   /* Initialization */
   {
-    char                                                   working_directory[ 2048 ];
-    crude_engine_creation                                  engine_creation;
+    char                                                   working_directory[ 4096 ];
     crude_editor_creation                                  editor_creation;
     
-    engine_creation = CRUDE_COMPOUNT_EMPTY( crude_engine_creation );
-    crude_engine_initialize( &engine, &engine_creation );
+    crude_get_current_working_directory( working_directory, sizeof( working_directory ) );
+    crude_engine_initialize( &engine, working_directory );
+
     crude_editor_instance_intialize( );
 
     editor_creation = CRUDE_COMPOUNT_EMPTY( crude_editor_creation );
@@ -36,7 +36,6 @@ main
    while ( engine.running )
    {
      crude_engine_update( &engine );
-     crude_editor_postupdate( crude_editor_instance( ) );
    }
    
   /* Deinitialization */

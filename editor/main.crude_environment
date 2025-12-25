@@ -1,0 +1,16 @@
+{
+  "directories":
+  {
+    "render_graph_relative_directory": "\\..\\..\\resources\\",
+    "resources_relative_directory": "\\..\\..\\resources\\",
+    "techniques_relative_directory": "\\..\\..\\techniques\\",
+    "shaders_relative_directory": "\\..\\..\\shaders\\",
+    "compiled_shaders_relative_directory": "\\..\\..\\compiled_shaders\\"
+  },
+  "window":
+  {
+    "title": "Paprika",
+    "width": 800,
+    "height": 600
+  }
+}

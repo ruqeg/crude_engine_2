@@ -52,7 +52,8 @@ crude_platform_intialize
   uint64                                                   flags;
   int32                                                    actual_width, actual_height;
 
-  if ( !creation->window.title )
+  title = creation->window.title;
+  if ( !title )
   {
     title = "CE2";
   }

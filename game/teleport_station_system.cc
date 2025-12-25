@@ -3,7 +3,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
@@ -52,8 +51,8 @@ crude_teleport_station_set_serum
             crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
             crude_transform                               *serum_transform;
             serum_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( serum_node, crude_transform );
-            crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, crude_transform_node_to_world( serum_node, serum_transform ).r[ 3 ] );
-            crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
+            crude_audio_device_sound_set_translation( &game->engine->audio_device, level->recycle_interaction_sound_handle, crude_transform_node_to_world( serum_node, serum_transform ).r[ 3 ] );
+            crude_audio_device_sound_start( &game->engine->audio_device, level->recycle_interaction_sound_handle );
             game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
             serum_gltf->hidden = false;
             break;
@@ -64,7 +63,7 @@ crude_teleport_station_set_serum
     }
   }
   
-  game_push_load_scene_command( game, game->level_cutscene1_node_absolute_filepath );
+  //game_push_load_scene_command( game, game->level_cutscene1_node_absolute_filepath );
 }
 
 static void

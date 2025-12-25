@@ -1,5 +1,7 @@
 #pragma once
 
+#include <engine/engine/environment.h>
+#include <engine/engine/engine_commands_manager.h>
 #include <engine/graphics/asynchronous_loader_manager.h>
 #include <engine/graphics/imgui.h>
 #include <engine/graphics/scene_renderer.h>
@@ -10,16 +12,6 @@
 #include <engine/physics/physics_system.h>
 #include <engine/platform/platform.h>
 #include <engine/core/ecs.h>
-
-typedef struct crude_engine_creation
-{
-  struct
-  {
-    char const                                              *title;
-    uint64                                                   width;
-    uint64                                                   height;
-  } window;
-} crude_engine_creation;
 
 typedef struct crude_engine
 {
@@ -33,16 +25,7 @@ typedef struct crude_engine
   crude_task_sheduler                                      task_sheduler;
   bool                                                     running;
   int64                                                    last_update_time;
-
-  /******************************
-   *
-   * Constants
-   *
-   ******************************/
-  char                                                    *resources_absolute_directory;
-  char                                                    *shaders_absolute_directory;
-  char                                                    *techniques_absolute_directory;
-  char                                                    *compiled_shaders_absolute_directory;
+  crude_environment                                        environment;
 
   /******************************
    *
@@ -61,6 +44,7 @@ typedef struct crude_engine
    *
    ******************************/
   crude_node_manager                                       node_manager;
+  crude_engine_commands_manager                            commands_manager;
   
   /******************************
    *
@@ -120,7 +104,7 @@ typedef struct crude_engine
    *
    ******************************/
 #if CRUDE_DEVELOP
-  crude_physics_debug_system_context                       physics_debug_system_context;
+  //crude_physics_debug_system_context                       physics_debug_system_context;
 #endif
   
   /******************************
@@ -143,7 +127,7 @@ CRUDE_API void
 crude_engine_initialize
 (
   _In_ crude_engine                                       *engine,
-  _In_ crude_engine_creation const                        *creation
+  _In_ char const                                         *working_directory
 );
 
 CRUDE_API void

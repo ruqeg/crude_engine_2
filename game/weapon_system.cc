@@ -2,7 +2,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/physics/physics.h>
 #include <engine/external/game_components.h>
@@ -45,7 +44,7 @@ crude_weapon_update_system_
   CRUDE_PROFILER_ZONE_NAME( "crude_weapon_update_system_" );
   game_t *game = game_instance( );
 
-  crude_input *input = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_input );
+  crude_input *input;// = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_input );
   crude_weapon *weapon_per_entity = ecs_field( it, crude_weapon, 0 );
   crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 1 );
   
@@ -102,33 +101,33 @@ crude_weapon_update_system_
         ray_origin = weapon_shot_to_world.r[ 3 ];
         ray_direction = XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), weapon_shot_to_world );
         
-        if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, ( 1 << 10 ), &raycast_result ) )
+        if ( crude_physics_cast_ray( &game_instance( )->engine->physics, ray_origin, ray_direction, ( 1 << 10 ), &raycast_result ) )
         {
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_boss *boss = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( raycast_result.node ), crude_boss );
           crude_boss_receive_damage( boss, raycast_result.node );
-          crude_audio_device_sound_set_translation( &game->audio_device, level_boss_fight->hit_critical_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->hit_critical_sound_handle );
+          crude_audio_device_sound_set_translation( &game->engine->audio_device, level_boss_fight->hit_critical_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->engine->audio_device, level_boss_fight->hit_critical_sound_handle );
           player->sanity = CRUDE_MIN( player->sanity + 0.15, 1.f );
         }
-        else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 5 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 5 ) )
+        else if ( crude_physics_cast_ray( &game_instance( )->engine->physics, ray_origin, ray_direction, 1 | ( 1 << 5 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 5 ) )
         {
           crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_CRITICAL_DAMAGE, true );
-          crude_audio_device_sound_set_translation( &game->audio_device, level->hit_critical_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, level->hit_critical_sound_handle );
+          crude_audio_device_sound_set_translation( &game->engine->audio_device, level->hit_critical_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->engine->audio_device, level->hit_critical_sound_handle );
           player->sanity = CRUDE_MIN( player->sanity + 0.15, 1.f );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Critical hit" );
         }
-        else if ( crude_physics_cast_ray( &game_instance( )->physics, ray_origin, ray_direction, 1 | ( 1 << 6 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 6 ) )
+        else if ( crude_physics_cast_ray( &game_instance( )->engine->physics, ray_origin, ray_direction, 1 | ( 1 << 6 ), &raycast_result ) && raycast_result.body_layer & ( 1 << 6 ) )
         {
           //crude_player *player = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player );
           //player->sanity = CRUDE_MIN( player->sanity + 0.05, 1.f );
           //crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_entity_get_parent( crude_entity_get_parent( raycast_result.node ) ), crude_enemy );
           //crude_enemy_receive_damage( enemy, CRUDE_GAME_WEAPON_DAMAGE, false );
-          crude_audio_device_sound_set_translation( &game->audio_device, level->hit_basic_sound_handle, raycast_result.raycast_result.point );
-          crude_audio_device_sound_start( &game->audio_device, level->hit_basic_sound_handle );
+          crude_audio_device_sound_set_translation( &game->engine->audio_device, level->hit_basic_sound_handle, raycast_result.raycast_result.point );
+          crude_audio_device_sound_start( &game->engine->audio_device, level->hit_basic_sound_handle );
           CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "Default Hit" );
         }
 
@@ -143,26 +142,26 @@ crude_weapon_update_system_
 
         if ( level_boss_fight )
         {
-          crude_audio_device_sound_stop( &game->audio_device, level_boss_fight->shot_sound_handle );
-          crude_audio_device_sound_reset( &game->audio_device, level_boss_fight->shot_sound_handle );
-          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->shot_sound_handle );
+          crude_audio_device_sound_stop( &game->engine->audio_device, level_boss_fight->shot_sound_handle );
+          crude_audio_device_sound_reset( &game->engine->audio_device, level_boss_fight->shot_sound_handle );
+          crude_audio_device_sound_start( &game->engine->audio_device, level_boss_fight->shot_sound_handle );
         }
         else
         {
-          crude_audio_device_sound_stop( &game->audio_device, level->shot_sound_handle );
-          crude_audio_device_sound_reset( &game->audio_device, level->shot_sound_handle );
-          crude_audio_device_sound_start( &game->audio_device, level->shot_sound_handle );
+          crude_audio_device_sound_stop( &game->engine->audio_device, level->shot_sound_handle );
+          crude_audio_device_sound_reset( &game->engine->audio_device, level->shot_sound_handle );
+          crude_audio_device_sound_start( &game->engine->audio_device, level->shot_sound_handle );
         }
       }
       else
       {
         if ( level_boss_fight )
         {
-          crude_audio_device_sound_start( &game->audio_device, level_boss_fight->shot_without_ammo_sound_handle );
+          crude_audio_device_sound_start( &game->engine->audio_device, level_boss_fight->shot_without_ammo_sound_handle );
         }
         else
         {
-          crude_audio_device_sound_start( &game->audio_device, level->shot_without_ammo_sound_handle );
+          crude_audio_device_sound_start( &game->engine->audio_device, level->shot_without_ammo_sound_handle );
         }
       }
     }

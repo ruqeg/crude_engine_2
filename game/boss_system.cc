@@ -3,7 +3,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
@@ -39,8 +38,8 @@ crude_boss_receive_damage
       boss->health_eye_0 -= 0.15;
       if ( boss->health_eye_0 < 0 )
       {
-        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
-        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle );
         crude_entity_destroy_hierarchy( node );
       }
     }
@@ -49,8 +48,8 @@ crude_boss_receive_damage
       boss->health_eye_1 -= 0.15;
       if ( boss->health_eye_1 < 0 )
       {
-        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
-        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle );
         crude_entity_destroy_hierarchy( node );
       }
     }
@@ -59,8 +58,8 @@ crude_boss_receive_damage
       boss->health_eye_2 -= 0.15;
       if ( boss->health_eye_2 < 0 )
       {
-        crude_audio_device_sound_set_translation( &game->audio_device, boss_fight->destroy_critical_sound_handle, translation );
-        crude_audio_device_sound_start( &game->audio_device, boss_fight->destroy_critical_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle, translation );
+        crude_audio_device_sound_start( &game->engine->audio_device, boss_fight->destroy_critical_sound_handle );
         crude_entity_destroy_hierarchy( node );
       }
     }
@@ -68,11 +67,11 @@ crude_boss_receive_damage
 
   if ( boss->health_eye_0 < 0 && boss->health_eye_1 < 0 && boss->health_eye_2 < 0 && boss_fight->type == 0 )
   {
-    game_push_load_scene_command( game, game->level_cutscene3_node_absolute_filepath );
+    //game_push_load_scene_command( game, game->level_cutscene3_node_absolute_filepath );
   }
   if ( boss->health < 0 && boss_fight->type == 1 )
   {
-    game_push_load_scene_command( game, game->level_cutscene4_node_absolute_filepath );
+    //game_push_load_scene_command( game, game->level_cutscene4_node_absolute_filepath );
   }
 }
 

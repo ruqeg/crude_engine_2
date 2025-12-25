@@ -2,7 +2,7 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
+#include <engine/platform/platform.h>
 
 #include <engine/scene/free_camera_system.h>
 
@@ -25,7 +25,7 @@ crude_free_camera_update_system
       continue;
     }
 
-    crude_input const *input = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].input_node, crude_input );
+    crude_input const *input;// = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( free_cameras[ i ].input_node, crude_input );
 
     int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
     int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
@@ -76,7 +76,6 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
   ECS_MODULE( world, crude_free_camera_system );
   ECS_IMPORT( world, crude_scripts_components );
   ECS_IMPORT( world, crude_scene_components );
-  ECS_IMPORT( world, crude_platform_components );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, NULL, {
     { .id = ecs_id( crude_transform ) },

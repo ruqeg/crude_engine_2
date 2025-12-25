@@ -3,7 +3,7 @@
 #include <engine/core/alias.h>
 #include <engine/core/memory.h>
 
-typedef crude_engine crude_engine;
+typedef struct crude_engine crude_engine;
 
 typedef enum crude_engine_commands_manager_queue_command_type
 {

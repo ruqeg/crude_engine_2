@@ -3,7 +3,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
@@ -37,8 +36,8 @@ crude_recycle_station_start_recycle
         game_player_set_item( game, player, i, station->game_item );
         
         crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
-        crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
-        crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
+        crude_audio_device_sound_start( &game->engine->audio_device, level->recycle_interaction_sound_handle );
 
         crude_gltf *serum_loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_loaded" ), crude_gltf );
         crude_gltf *serum_empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_empty" ), crude_gltf );
@@ -60,10 +59,10 @@ crude_recycle_station_start_recycle
         game_player_set_item( game, player, i, CRUDE_GAME_ITEM_NONE );
         
         crude_level_01 *level = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->main_node, crude_level_01 );
-        crude_audio_device_sound_start( &game->audio_device, level->recycle_sound_handle );
+        crude_audio_device_sound_start( &game->engine->audio_device, level->recycle_sound_handle );
 
-        crude_audio_device_sound_set_translation( &game->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
-        crude_audio_device_sound_start( &game->audio_device, level->recycle_interaction_sound_handle );
+        crude_audio_device_sound_set_translation( &game->engine->audio_device, level->recycle_interaction_sound_handle, station_node_to_world.r[ 3 ] );
+        crude_audio_device_sound_start( &game->engine->audio_device, level->recycle_interaction_sound_handle );
         
         crude_gltf *serum_loaded_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_loaded" ), crude_gltf );
         crude_gltf *serum_empty_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( crude_ecs_lookup_entity_from_parent( station_node, "serum_empty" ), crude_gltf );

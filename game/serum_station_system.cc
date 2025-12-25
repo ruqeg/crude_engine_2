@@ -3,7 +3,6 @@
 #include <engine/core/profiler.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_components.h>
-#include <engine/platform/platform_components.h>
 #include <engine/physics/physics_components.h>
 #include <engine/external/game_components.h>
 #include <engine/physics/physics.h>
@@ -70,7 +69,7 @@ crude_serum_station_update_system_
 
     CRUDE_ASSERT( crude_entity_valid( game->player_node ) );
     
-    serum_station_static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *serum_station_static_body_handle );
+    //serum_station_static_body = crude_physics_resources_manager_access_static_body( &game->physics_resources_manager, *serum_station_static_body_handle );
   }
   CRUDE_PROFILER_ZONE_END;
 }

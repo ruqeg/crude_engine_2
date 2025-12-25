@@ -3,8 +3,6 @@
 #include <engine/core/file.h>
 #include <engine/core/memory.h>
 #include <engine/core/process.h>
-#include <engine/platform/platform_system.h>
-#include <engine/platform/platform_components.h>
 #include <engine/scene/scene_components.h>
 #include <engine/scene/scripts_components.h>
 #include <engine/graphics/gpu_resources_loader.h>
@@ -119,61 +117,61 @@ game_initialize
   _In_ crude_game_creation const                          *creation
 )
 {
-  game->engine = creation->engine;
-  game->framerate = creation->framerate;
-  game->last_graphics_update_time = 0.f;
-  game->time = 0.f;
-  game->sensetivity = 1.f;
-  game->death_screen = false;
-  game->focused_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
-
-  ECS_IMPORT( game->engine->world, crude_platform_system );
-  ECS_IMPORT( game->engine->world, crude_player_controller_system );
-  ECS_IMPORT( game->engine->world, crude_enemy_system );
-  ECS_IMPORT( game->engine->world, crude_level_01_system );
-  ECS_IMPORT( game->engine->world, crude_player_system );
-  ECS_IMPORT( game->engine->world, crude_serum_station_system );
-  ECS_IMPORT( game->engine->world, crude_weapon_system );
-  ECS_IMPORT( game->engine->world, crude_recycle_station_system );
-  ECS_IMPORT( game->engine->world, crude_level_starting_room_system );
-  ECS_IMPORT( game->engine->world, crude_level_cutscene_only_sound_system );
-  ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
-  ECS_IMPORT( game->engine->world, crude_boss_system );
+//  game->engine = creation->engine;
+//  game->framerate = creation->framerate;
+//  game->last_graphics_update_time = 0.f;
+//  game->time = 0.f;
+//  game->sensetivity = 1.f;
+//  game->death_screen = false;
+//  game->focused_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+//
+//  ECS_IMPORT( game->engine->world, crude_platform_system );
+//  ECS_IMPORT( game->engine->world, crude_player_controller_system );
+//  ECS_IMPORT( game->engine->world, crude_enemy_system );
+//  ECS_IMPORT( game->engine->world, crude_level_01_system );
+//  ECS_IMPORT( game->engine->world, crude_player_system );
+//  ECS_IMPORT( game->engine->world, crude_serum_station_system );
+//  ECS_IMPORT( game->engine->world, crude_weapon_system );
+//  ECS_IMPORT( game->engine->world, crude_recycle_station_system );
+//  ECS_IMPORT( game->engine->world, crude_level_starting_room_system );
+//  ECS_IMPORT( game->engine->world, crude_level_cutscene_only_sound_system );
+//  ECS_IMPORT( game->engine->world, crude_level_boss_fight_system );
+//  ECS_IMPORT( game->engine->world, crude_boss_system );
   ECS_IMPORT( game->engine->world, crude_free_camera_system );
-  
-  srand( time( NULL ) );
-
-  game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
-  
-#if CRUDE_DEVELOP
-  game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
-  game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_debug_model_absolute_filepath;
-  game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_debug_model_absolute_filepath;
-  game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_debug_model_absolute_filepath;
-  crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
-#endif
-
-  game_initialize_audio_( game );
-  game_initialize_graphics_( game );
-  
-#if CRUDE_DEVELOP
-  crude_devmenu_initialize( &game->devmenu );
-#endif
-  crude_game_menu_initialize( &game->game_menu );
-  
-  crude_audio_device_wait_wait_till_uploaded( &game->audio_device );
-
-  crude_physics_enable_simulation( &game->physics, true );
-
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsPreStore, game, { } );
-  
-  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
-    { .id = ecs_id( crude_input ) },
-    { .id = ecs_id( crude_window_handle ) },
-  } );
-
-  game->engine->last_update_time = crude_time_now( );
+//  
+//  srand( time( NULL ) );
+//
+//  game_initialize_constant_strings_( game, creation->scene_relative_filepath, creation->render_graph_relative_directory, creation->resources_relative_directory, creation->shaders_relative_directory, creation->techniques_relative_directory, creation->compiled_shaders_relative_directory, creation->working_absolute_directory );
+//  
+//#if CRUDE_DEVELOP
+//  game->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
+//  game->game_debug_system_context.enemy_spawnpoint_model_absolute_filepath = game->enemy_spawnpoint_debug_model_absolute_filepath;
+//  game->game_debug_system_context.syringe_serum_station_active_model_absolute_filepath = game->syringe_serum_station_active_debug_model_absolute_filepath;
+//  game->game_debug_system_context.syringe_spawnpoint_model_absolute_filepath = game->syringe_spawnpoint_debug_model_absolute_filepath;
+//  crude_game_debug_system_import( game->engine->world, &game->game_debug_system_context );
+//#endif
+//
+//  game_initialize_audio_( game );
+//  game_initialize_graphics_( game );
+//  
+//#if CRUDE_DEVELOP
+//  crude_devmenu_initialize( &game->devmenu );
+//#endif
+//  crude_game_menu_initialize( &game->game_menu );
+//  
+//  crude_audio_device_wait_wait_till_uploaded( &game->audio_device );
+//
+//  crude_physics_enable_simulation( &game->physics, true );
+//
+//  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_graphics_system_, EcsPreStore, game, { } );
+//  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_update_system_, EcsPreStore, game, { } );
+//  
+//  CRUDE_ECS_SYSTEM_DEFINE( game->engine->world, game_input_system_, EcsOnUpdate, game, {
+//    { .id = ecs_id( crude_input ) },
+//    { .id = ecs_id( crude_window_handle ) },
+//  } );
+//
+//  game->engine->last_update_time = crude_time_now( );
 }
 
 void
@@ -297,23 +295,23 @@ game_setup_custom_preload_nodes_
   _In_ game_t                                             *game
 )
 {
-  char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
-  char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
-  char const *boss_bullet_node_relative_filepath = "game\\nodes\\boss_bullet.crude_node";
-
-  game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
-  game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
-  crude_entity_enable_hierarchy( game->template_enemy_node, false );
-
-  game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
-  game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
-  crude_entity_enable_hierarchy( game->template_serum_station_node, false );
-
-  game->boss_bullet_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_node_relative_filepath );
-  game->template_boss_bullet_node = crude_node_manager_get_node( &game->node_manager, game->boss_bullet_node_absolute_filepath );
-  crude_entity_enable_hierarchy( game->template_boss_bullet_node, false );
-
-  game->focused_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+//  char const *enemy_node_relative_filepath = "game\\nodes\\enemy.crude_node";
+//  char const *serum_station_node_relative_filepath = "game\\nodes\\serum_station.crude_node";
+//  char const *boss_bullet_node_relative_filepath = "game\\nodes\\boss_bullet.crude_node";
+//
+//  game->enemy_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, enemy_node_relative_filepath );
+//  game->template_enemy_node = crude_node_manager_get_node( &game->node_manager, game->enemy_node_absolute_filepath );
+//  crude_entity_enable_hierarchy( game->template_enemy_node, false );
+//
+//  game->serum_station_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, serum_station_node_relative_filepath );
+//  game->template_serum_station_node = crude_node_manager_get_node( &game->node_manager, game->serum_station_node_absolute_filepath );
+//  crude_entity_enable_hierarchy( game->template_serum_station_node, false );
+//
+//  game->boss_bullet_node_absolute_filepath = crude_string_buffer_append_use_f( &game->game_strings_buffer, "%s%s", game->resources_absolute_directory, boss_bullet_node_relative_filepath );
+//  game->template_boss_bullet_node = crude_node_manager_get_node( &game->node_manager, game->boss_bullet_node_absolute_filepath );
+//  crude_entity_enable_hierarchy( game->template_boss_bullet_node, false );
+//
+//  game->focused_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
 }
 
 void
@@ -365,7 +363,7 @@ game_setup_custom_postload_model_resources_
 )
 {
   // small hack
-  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
+//  crude_gfx_model_renderer_resources_manager_get_gltf_model( &game->model_renderer_resources_manager, game->serum_model_absolute_filepath , NULL );
 }
 
 void
@@ -374,22 +372,22 @@ game_input_system_
   _In_ ecs_iter_t                                         *it
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "game_input_system_" );
-  game_t *game = ( game_t* )it->ctx;
-  crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
-  crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
-  
-  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-    crude_input *input = &input_per_entity[ i ];
-    crude_window_handle *window_handle = &window_handle_per_entity[ i ];
-#if CRUDE_DEVELOP
-    crude_devmenu_handle_input( &game->devmenu, input );
-#endif
-    crude_game_menu_handle_input( &game->game_menu, input );
-  }
-  CRUDE_PROFILER_ZONE_END;
+//  CRUDE_PROFILER_ZONE_NAME( "game_input_system_" );
+//  game_t *game = ( game_t* )it->ctx;
+//  crude_input *input_per_entity = ecs_field( it, crude_input, 0 );
+//  crude_window_handle *window_handle_per_entity = ecs_field( it, crude_window_handle, 1 );
+//  
+//  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, game->imgui_context ) );
+//  for ( uint32 i = 0; i < it->count; ++i )
+//  {
+//    crude_input *input = &input_per_entity[ i ];
+//    crude_window_handle *window_handle = &window_handle_per_entity[ i ];
+//#if CRUDE_DEVELOP
+//    crude_devmenu_handle_input( &game->devmenu, input );
+//#endif
+//    crude_game_menu_handle_input( &game->game_menu, input );
+//  }
+//  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -535,7 +533,7 @@ game_initialize_constant_strings_
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( level_menu_node_relative_filepath );
   constant_string_buffer_size += resources_absolute_directory_length + crude_string_length( ghost_sound_relative_filepath );
   
-  crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
+  //crude_string_buffer_initialize( &game->constant_strings_buffer, constant_string_buffer_size, crude_heap_allocator_pack( &game->allocator ) );
   
   game->working_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s", working_absolute_directory );
   game->shaders_absolute_directory = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->working_absolute_directory, shaders_relative_directory );
@@ -608,17 +606,17 @@ game_initialize_constant_strings_
 
   game->game_font_absolute_filepath = crude_string_buffer_append_use_f( &game->constant_strings_buffer, "%s%s", game->resources_absolute_directory, game_font_relative_filepath );
 
-#if CRUDE_DEVELOP
-  crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
-  crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
-#endif
-  crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
-
-#if CRUDE_DEVELOP
-  game->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
-  game->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
-  game->syringe_serum_station_active_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
-#endif
+//#if CRUDE_DEVELOP
+//  crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+//  crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+//#endif
+//  crude_string_buffer_initialize( &game->game_strings_buffer, 4096, crude_heap_allocator_pack( &game->allocator ) );
+//
+//#if CRUDE_DEVELOP
+//  game->syringe_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_spawnpoint_model.gltf" );
+//  game->enemy_spawnpoint_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\enemy_spawnpoint_model.gltf" );
+//  game->syringe_serum_station_active_debug_model_absolute_filepath = crude_string_buffer_append_use_f( &game->debug_constant_strings_buffer, "%s%s", game->resources_absolute_directory, "debug\\models\\syringe_serum_station_active_model.gltf" );
+//#endif
 }
 
 void
@@ -641,15 +639,15 @@ game_initialize_audio_
   _In_ game_t                                             *game
 )
 {
-  crude_sound_creation                                     sound_creation;
-
-  sound_creation = crude_sound_creation_empty( );
-  sound_creation.looping = true;
-  sound_creation.stream = true;
-  sound_creation.decode = true;
-  sound_creation.absolute_filepath = game->death_sound_absolute_filepath;
-  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
-  game->death_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
+//  crude_sound_creation                                     sound_creation;
+//
+//  sound_creation = crude_sound_creation_empty( );
+//  sound_creation.looping = true;
+//  sound_creation.stream = true;
+//  sound_creation.decode = true;
+//  sound_creation.absolute_filepath = game->death_sound_absolute_filepath;
+//  sound_creation.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+//  game->death_sound_handle = crude_audio_device_create_sound( &game->audio_device, &sound_creation );
 }
 
 
@@ -659,7 +657,7 @@ game_deinitialize_audio_
   _In_ game_t                                             *game
 )
 {
-  crude_audio_device_destroy_sound( &game->audio_device, game->death_sound_handle );
+//  crude_audio_device_destroy_sound( &game->audio_device, game->death_sound_handle );
 }
 
 void

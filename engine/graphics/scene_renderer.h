@@ -38,7 +38,6 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
   void                                                    *imgui_context;
   crude_gfx_asynchronous_loader                           *async_loader;
-  void                                                    *task_scheduler;
   crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
   bool                                                     imgui_pass_enalbed;
@@ -66,7 +65,6 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Context 
    **********************/
-  void                                                    *task_scheduler;
   void                                                    *imgui_context;
   crude_gfx_device                                        *gpu;
   crude_gfx_render_graph                                  *render_graph;
@@ -175,18 +173,6 @@ crude_gfx_scene_renderer_update_instances_from_node
 
 CRUDE_API void
 crude_gfx_scene_renderer_rebuild_light_gpu_buffers
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_initialize_pases
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer
-);
-
-CRUDE_API void
-crude_gfx_scene_renderer_deinitialize_passes
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
