@@ -105,6 +105,8 @@ crude_gfx_asynchronous_loader_deinitialize
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
+  mtx_destroy( &asynloader->request_mutex );
+
   vkDestroyFence( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence, asynloader->gpu->vk_allocation_callbacks );
   
   crude_linear_allocator_deinitialize( &asynloader->linear_allocator );

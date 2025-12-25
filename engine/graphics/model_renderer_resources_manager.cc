@@ -142,7 +142,6 @@ crude_gfx_model_renderer_resources_manager_intialize
 {
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize model resources manager." );
 
-  manager->world = creation->world;
   manager->async_loader = creation->async_loader;
   manager->allocator = creation->allocator;
   manager->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;

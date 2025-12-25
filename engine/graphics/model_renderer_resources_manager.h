@@ -9,7 +9,6 @@
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
-  void                                                    *world;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
@@ -21,7 +20,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
   /***********************
    * Context 
    **********************/
-  void                                                    *world;
   crude_gfx_device                                        *gpu;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_heap_allocator                                    *allocator;

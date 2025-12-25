@@ -35,21 +35,21 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_boss_bullet, "crude_boss_bullet" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
 {
-  ECS_MODULE( world, crude_game_components );
-  ECS_COMPONENT_DEFINE( world, crude_serum_station );
-  ECS_COMPONENT_DEFINE( world, crude_enemy );
-  ECS_COMPONENT_DEFINE( world, crude_boss );
-  ECS_COMPONENT_DEFINE( world, crude_weapon );
-  ECS_COMPONENT_DEFINE( world, crude_level_01 );
-  ECS_COMPONENT_DEFINE( world, crude_level_starting_room );
-  ECS_COMPONENT_DEFINE( world, crude_player_controller );
-  ECS_COMPONENT_DEFINE( world, crude_player );
-  ECS_COMPONENT_DEFINE( world, crude_recycle_station );
-  ECS_COMPONENT_DEFINE( world, crude_teleport_station );
-  ECS_COMPONENT_DEFINE( world, crude_level_cutscene_only_sound );
-  ECS_COMPONENT_DEFINE( world, crude_level_boss_fight );
-  ECS_COMPONENT_DEFINE( world, crude_boss_bullet );
-  ECS_TAG_DEFINE( world, crude_serum_station_enabled );
+  CRUDE_ECS_MODULE( world, crude_game_components );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_serum_station );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_enemy );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_boss );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_weapon );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_01 );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_starting_room );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_player_controller );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_player );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_recycle_station );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_teleport_station );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_cutscene_only_sound );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_boss_fight );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_boss_bullet );
+  CRUDE_ECS_TAG_DEFINE( world, crude_serum_station_enabled );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_serum_station )

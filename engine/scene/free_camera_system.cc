@@ -15,6 +15,7 @@ crude_free_camera_update_system
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_free_camera_update_system" );
+  crude_free_camera_system_context *ctx = CRUDE_CAST( crude_free_camera_system_context*, it->ctx );
   crude_transform *transforms = ecs_field( it, crude_transform, 0 );
   crude_free_camera *free_cameras = ecs_field( it, crude_free_camera, 1 );
   
@@ -25,14 +26,14 @@ crude_free_camera_update_system
       continue;
     }
 
-    crude_input const *input = &free_cameras[ i ].platform->input;
+    crude_input const *input = &ctx->platform->input;
 
     int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
     int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
     int32 moving_right = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
 
     XMVECTOR translation = XMLoadFloat3( &transforms[ i ].translation );
-    XMMATRIX node_to_world = crude_transform_node_to_world( CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } ), &transforms[ i ] );
+    XMMATRIX node_to_world = crude_transform_node_to_world( crude_entity_from_iterator( it, ctx->world, i ), &transforms[ i ] );
 
     XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
     XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
@@ -71,13 +72,18 @@ crude_free_camera_update_system
   CRUDE_PROFILER_ZONE_END;
 }
 
-CRUDE_ECS_MODULE_IMPORT_IMPL( crude_free_camera_system )
+void
+crude_free_camera_system_import
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_free_camera_system_context                   *ctx
+)
 {
-  ECS_MODULE( world, crude_free_camera_system );
-  ECS_IMPORT( world, crude_scripts_components );
-  ECS_IMPORT( world, crude_scene_components );
+  CRUDE_ECS_MODULE( world, crude_free_camera_system );
+  CRUDE_ECS_IMPORT( world, crude_scripts_components );
+  CRUDE_ECS_IMPORT( world, crude_scene_components );
 
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, NULL, {
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, ctx, {
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_free_camera ) },
   } );

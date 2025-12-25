@@ -611,7 +611,7 @@ crude_node_manager_node_to_json_hierarchy_
     
     if ( !is_gltf_node && !is_external_node )
     {
-      ecs_iter_t it = ecs_children( node.world, node.handle );
+      ecs_iter_t it = crude_ecs_children( node );
       while ( ecs_children_next( &it ) )
       {
         for ( size_t i = 0; i < it.count; ++i )
@@ -642,7 +642,7 @@ crude_node_destroy_hierarchy_
     return;
   }
 
-  ecs_iter_t it = ecs_children( node.world, node.handle );
+  ecs_iter_t it = crude_ecs_children( node );
   while ( ecs_children_next( &it ) )
   {
     for ( size_t i = 0; i < it.count; ++i )

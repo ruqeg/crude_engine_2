@@ -47,7 +47,7 @@ crude_engine_physics_collision_shape_create_observer_
   
     debug_model_absolute_filename = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, debug_model_relative_filename );
 
-    node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    node = crude_entity_from_iterator( it, ctx->world, i );
     CRUDE_ENTITY_SET_COMPONENT( node, crude_debug_collision, { debug_model_absolute_filename, true } );
   }
 }
@@ -56,12 +56,12 @@ crude_engine_physics_collision_shape_create_observer_
 void
 crude_physics_debug_system_import
 (
-  _In_ ecs_world_t                                        *world,
+  _In_ crude_ecs                                          *world,
   _In_ crude_physics_debug_system_context                  *ctx
 )
 {
-  ECS_IMPORT( world, crude_physics_components );
-  ECS_IMPORT( world, crude_scene_debug_components );
+  CRUDE_ECS_IMPORT( world, crude_physics_components );
+  CRUDE_ECS_IMPORT( world, crude_scene_debug_components );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_engine_physics_collision_shape_create_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_physics_collision_shape ) },

@@ -869,7 +869,7 @@ crude_scene_renderer_register_nodes_instances_
   bool                                                     local_model_initialized;
   XMMATRIX                                                 model_to_custom_model;
 
-  children_it = ecs_children( node.world, node.handle );
+  children_it = crude_ecs_children( node );
   local_model_initialized = false;
 
   model_to_custom_model = XMMatrixIdentity( );

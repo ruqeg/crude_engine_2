@@ -17,10 +17,10 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_physics_collision_shape, "crude_physics_col
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_physics_components )
 {
-  ECS_MODULE( world, crude_physics_components );
-  ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
-  ECS_COMPONENT_DEFINE( world, crude_physics_character_body_handle );
-  ECS_COMPONENT_DEFINE( world, crude_physics_collision_shape );
+  CRUDE_ECS_MODULE( world, crude_physics_components );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character_body_handle );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_collision_shape );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )

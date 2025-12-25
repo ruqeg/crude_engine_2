@@ -139,14 +139,14 @@ crude_devgui_draw
     ImGui::InputText( "Name", editor->added_node_data.buffer, sizeof( editor->added_node_data.buffer ) );
     if ( ImGui::Button( "Node3d" ) )
     {
-      crude_entity new_node = crude_entity_create_empty( editor->engine->world, editor->added_node_data.buffer );
+      crude_entity new_node = crude_entity_create_empty( &editor->engine->ecs_thread_data.world, editor->added_node_data.buffer );
       CRUDE_ENTITY_SET_COMPONENT( new_node, crude_transform, { crude_transform_empty( ) } );
       crude_entity_set_parent( new_node, editor->node_to_add );
       editor->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
     }
     if ( ImGui::Button( "Physics Static Collision Box" ) )
     {
-      crude_entity new_node = crude_entity_create_empty( editor->engine->world, editor->added_node_data.buffer );
+      crude_entity new_node = crude_entity_create_empty( &editor->engine->ecs_thread_data.world, editor->added_node_data.buffer );
       CRUDE_ENTITY_SET_COMPONENT( new_node, crude_transform, { crude_transform_empty( ) } );
       CRUDE_ENTITY_SET_COMPONENT( new_node, crude_physics_collision_shape, {
         .type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX,
@@ -261,7 +261,7 @@ crude_devgui_nodes_tree_draw_internal_
   {
     can_open_children_nodes = false;
 
-    ecs_iter_t it = ecs_children( node.world, node.handle );
+    ecs_iter_t it = crude_ecs_children( node );
     if ( !CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) && !CRUDE_ENTITY_HAS_COMPONENT( node, crude_node_external ) && ecs_children_next( &it ) )
     {
       if ( it.count )
@@ -324,14 +324,12 @@ crude_devgui_nodes_tree_draw_internal_
   {
     if ( can_open_children_nodes )
     {
-      ecs_iter_t it = ecs_children( node.world, node.handle );
+      ecs_iter_t it = crude_ecs_children( node );
       while ( ecs_children_next( &it ) )
       {
         for (int i = 0; i < it.count; i ++)
         {
-          crude_entity child = CRUDE_COMPOUNT_EMPTY( crude_entity );
-          child.world = it.world;
-          child.handle = it.entities[ i ];
+          crude_entity child = crude_entity_from_iterator( &it, &editor->engine->ecs_thread_data.world, i );
           crude_devgui_nodes_tree_draw_internal_( devgui_nodes_tree, child, current_node_index );
         }
       }

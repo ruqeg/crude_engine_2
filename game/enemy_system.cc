@@ -348,9 +348,9 @@ CRUDE_ECS_MODULE_IMPORT_IMPL( crude_enemy_system )
 {
   ECS_MODULE( world, crude_enemy_system );
   
-  ECS_IMPORT( world, crude_scene_components );
-  ECS_IMPORT( world, crude_physics_components );
-  ECS_IMPORT( world, crude_game_components );
+  CRUDE_ECS_IMPORT( world, crude_scene_components );
+  CRUDE_ECS_IMPORT( world, crude_physics_components );
+  CRUDE_ECS_IMPORT( world, crude_game_components );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_enemy_creation_observer_, EcsOnSet, NULL, { 
     { .id = ecs_id( crude_enemy ) },

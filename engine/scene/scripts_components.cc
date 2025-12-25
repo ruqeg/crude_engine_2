@@ -10,8 +10,8 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_free_camera, "crude_free_camera" );
 
 CRUDE_ECS_MODULE_IMPORT_IMPL( crude_scripts_components )
 {
-  ECS_MODULE( world, crude_scripts_components );
-  ECS_COMPONENT_DEFINE( world, crude_free_camera );
+  CRUDE_ECS_MODULE( world, crude_scripts_components );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_free_camera );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )

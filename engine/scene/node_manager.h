@@ -25,7 +25,7 @@ typedef void (*crude_scene_parse_all_components_to_json_func)
 
 typedef struct crude_node_manager_creation
 {
-  ecs_world_t                                             *world;
+  crude_ecs                                               *world;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
@@ -38,7 +38,7 @@ typedef struct crude_node_manager_creation
 typedef struct crude_node_manager
 {
   /* Context */
-  ecs_world_t                                             *world;
+  crude_ecs                                               *world;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;

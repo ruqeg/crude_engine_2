@@ -181,7 +181,7 @@ crude_engine_parse_all_components_to_json_
 );
 
 static void
-crude_engine_pinned_task_platform_loop_
+crude_engine_pinned_task_ecs_loop_
 (
   _In_ void                                               *ctx
 );
@@ -219,11 +219,16 @@ crude_engine_initialize
   crude_engine_initialize_scene_( engine );
 
   engine->running = true;
-  engine->platform_thread_data.running = true;
+  engine->ecs_thread_data.running = true;
+  engine->ecs_thread_data.platform_copy = engine->platform;
+  engine->ecs_thread_data.platform_unsafe = &engine->platform;
+  engine->ecs_thread_data.platform_mutex = &engine->platform_mutex;
+
   engine->graphics_thread_data.running = true;
+  engine->graphics_thread_data.ecs_mutex = &engine->ecs_thread_data.mutex;
 
   crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_graphics_loop_, &engine->graphics_thread_data, CRUDE_GRAPHICS_ACTIVE_THREAD  );  
-  crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_platform_loop_, &engine->platform_thread_data, CRUDE_PLATFORM_ACTIVE_THREAD );
+  crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_ecs_loop_, &engine->ecs_thread_data, CRUDE_ECS_ACTIVE_THREAD );
 }
 
 void
@@ -261,28 +266,13 @@ crude_engine_update
 
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   
-  should_not_quit = true;
-  if ( crude_ecs_should_quit( engine->world ) )
-  {
-    should_not_quit = false;
-    goto cleanup;
-  }
-  
-  mtx_lock( &engine->platform_thread_data.mutex );
-  engine->platform_copy = engine->platform_thread_data.platform;
-  mtx_unlock( &engine->platform_thread_data.mutex );
-
-  current_time = crude_time_now();
-  delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
-  
-  mtx_lock( &engine->graphics_thread_data.ecs_mutex );
-  crude_ecs_progress( engine->world, delta_time );
-  mtx_unlock( &engine->graphics_thread_data.ecs_mutex );
-  engine->last_update_time = current_time;
+  mtx_lock( &engine->platform_mutex );
+  crude_platform_update( &engine->platform );
+  mtx_unlock( &engine->platform_mutex );
 
 cleanup:
   CRUDE_PROFILER_ZONE_END;
-  return true;
+  return engine->running;
 }
 
 void
@@ -336,12 +326,13 @@ crude_engine_initialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
-  engine->world = crude_ecs_init();
+  crude_ecs_initialize( &engine->ecs_thread_data.world );
   engine->last_update_time = crude_time_now();
-
-  ECS_TAG_DEFINE( engine->world, crude_entity_tag );
   
-  crude_ecs_set_threads( engine->world, 1 );
+  CRUDE_ECS_TAG_DEFINE( &engine->ecs_thread_data.world, crude_entity_tag );
+  
+  crude_ecs_set_threads( &engine->ecs_thread_data.world, 1 );
+  mtx_init( &engine->ecs_thread_data.mutex, mtx_plain );
 }
 
 static void
@@ -350,7 +341,8 @@ crude_engine_deinitialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_ecs_deinitalize( engine->world );
+  mtx_destroy( &engine->ecs_thread_data.mutex );
+  crude_ecs_deinitalize( &engine->ecs_thread_data.world );
 }
 
 void
@@ -389,7 +381,7 @@ crude_engine_initialize_imgui_
   imgui_io->ConfigWindowsResizeFromEdges = true;
   imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
   
-  ImGui_ImplSDL3_InitForVulkan( engine->platform_thread_data.platform.sdl_window );
+  ImGui_ImplSDL3_InitForVulkan( engine->platform.sdl_window );
 
   engine->pub_engine_should_proccess_imgui_input = true;
 
@@ -442,7 +434,7 @@ crude_engine_initialize_audio_
   
   engine->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
   engine->audio_system_context.device = &engine->audio_device;
-  crude_audio_system_import( engine->world, &engine->audio_system_context );
+  crude_audio_system_import( &engine->ecs_thread_data.world, &engine->audio_system_context );
 }
 
 static void
@@ -475,10 +467,9 @@ crude_engine_initialize_platform_
   creation.window.maximized = false;
   creation.input_callback = crude_engine_input_callback_;
   creation.input_callback_ctx = engine;
-
-  crude_platform_intialize( &engine->platform_thread_data.platform, &creation );
-
-  mtx_init( &engine->platform_thread_data.mutex, mtx_plain );
+  crude_platform_intialize( &engine->platform, &creation );
+  
+  mtx_init( &engine->platform_mutex, mtx_plain );
 }
 
 void
@@ -487,7 +478,8 @@ crude_engine_deinitialize_platform_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_platform_deintialize( &engine->platform_thread_data.platform );
+  mtx_destroy( &engine->platform_mutex );
+  crude_platform_deintialize( &engine->platform );
 }
 
 void
@@ -513,13 +505,13 @@ crude_engine_initialize_graphics_
   crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &engine->temporary_allocator ) );
 
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window = engine->platform_thread_data.platform.sdl_window;
+  device_creation.sdl_window = engine->platform.sdl_window;
   device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
   device_creation.allocator_container = crude_heap_allocator_pack( &engine->common_allocator );
   device_creation.temporary_allocator = &engine->temporary_allocator;
   device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = engine->asynchronous_loader_manager.active_async_loaders_max_count;
+  device_creation.num_threads = 3;
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
   device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
@@ -532,7 +524,7 @@ crude_engine_initialize_graphics_
   crude_gfx_asynchronous_loader_manager_add_loader( &engine->asynchronous_loader_manager, &graphics->async_loader );
 
 //#if CRUDE_DEVELOP
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", engine->environment.directories.render_graph_absolute_directory, "game\\render_graph_develop.json" );
+  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.json" );
 //#else
 //  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
 //#endif
@@ -563,7 +555,6 @@ crude_engine_initialize_graphics_
   model_renderer_resources_manager_creation.async_loader = &graphics->async_loader;
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
-  model_renderer_resources_manager_creation.world = engine->world;
   crude_gfx_model_renderer_resources_manager_intialize( &graphics->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
 
   scene_renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
@@ -583,13 +574,15 @@ crude_engine_initialize_graphics_
   graphics->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   graphics->scene_renderer.options.ambient_intensity = 1.5f;
   graphics->scene_renderer.options.background_intensity = 0.f;
-  graphics->scene_renderer.options.hdr_pre_tonemapping_texture_name = "game_hdr_pre_tonemapping";
+  graphics->scene_renderer.options.hdr_pre_tonemapping_texture_name = "pbr";
 
   graphics->framerate = 120;
 
   graphics->absolute_time = 0.f;
 
-  mtx_init( &graphics->ecs_mutex, mtx_plain );
+  graphics->imgui_context = engine->imgui_context;
+
+  graphics->ecs_mutex = &engine->ecs_thread_data.mutex;
   
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &graphics->scene_renderer );
 
@@ -656,12 +649,12 @@ crude_engine_initialize_physics_
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &engine->collision_resources_manager;
   physics_creation.manager = &engine->physics_resources_manager;
-  physics_creation.world = engine->world;
+  physics_creation.world = &engine->ecs_thread_data.world;
   crude_physics_initialize( &engine->physics, &physics_creation );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;
-  crude_physics_system_import( engine->world, &engine->physics_system_context );
+  crude_physics_system_import( &engine->ecs_thread_data.world, &engine->physics_system_context );
 }
 
 void
@@ -696,7 +689,7 @@ crude_engine_initialize_scene_
 {
   crude_node_manager_creation                              node_manager_creation;
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
-  node_manager_creation.world = engine->world;
+  node_manager_creation.world = &engine->ecs_thread_data.world;
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
   node_manager_creation.additional_parse_all_components_to_json_func = crude_engine_parse_all_components_to_json_;
@@ -739,17 +732,26 @@ crude_engine_parse_all_components_to_json_
 }
 
 void
-crude_engine_pinned_task_platform_loop_
+crude_engine_pinned_task_ecs_loop_
 (
   _In_ void                                               *ctx
 )
 {
-  crude_platform_thread_data *data = CRUDE_REINTERPRET_CAST( crude_platform_thread_data*, ctx );
+  crude_ecs_thread_data *data = CRUDE_REINTERPRET_CAST( crude_ecs_thread_data*, ctx );
   while ( data->running )
   {
+    int64 current_time = crude_time_now( );
+    float64 delta_time = crude_time_delta_seconds( data->last_update_time, current_time );
+  
+    mtx_lock( data->platform_mutex );
+    data->platform_copy = *data->platform_unsafe;
+    mtx_unlock( data->platform_mutex );
+
     mtx_lock( &data->mutex );
-    crude_platform_update( &data->platform );
+    crude_ecs_progress( &data->world, delta_time );
     mtx_unlock( &data->mutex );
+    
+    data->last_update_time = current_time;
   }
 }
 
@@ -793,11 +795,11 @@ crude_engine_pinned_task_graphics_loop_
 
     crude_gfx_new_frame( &graphics->gpu );
   
-    mtx_lock( &graphics->ecs_mutex );
+    mtx_lock( graphics->ecs_mutex );
     new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &graphics->scene_renderer, graphics->main_node );
     graphics->scene_renderer.options.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_camera );
     XMStoreFloat4x4( &graphics->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( graphics->focused_camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_transform ) ) );
-    mtx_unlock( &graphics->ecs_mutex );
+    mtx_unlock( graphics->ecs_mutex );
   
     if ( new_buffers_recrteated_or_model_initialized )
     {

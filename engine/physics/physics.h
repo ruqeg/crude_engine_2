@@ -11,14 +11,14 @@ typedef struct crude_physics_raycast_result
 
 typedef struct crude_physics_creation
 {
-  ecs_world_t                                             *world;
+  crude_ecs                                               *world;
   crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
-  ecs_world_t                                             *world;
+  crude_ecs                                               *world;
   ecs_query_t                                             *static_body_handle_query;
   crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;

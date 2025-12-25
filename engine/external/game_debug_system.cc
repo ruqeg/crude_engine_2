@@ -23,30 +23,30 @@ crude_level_01_creation_observer_
     crude_entity                                           level_node;
     
     level = &enemies_per_entity[ i ];
-    level_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    level_node = crude_entity_from_iterator( it, ctx->world, i );
 
     level->editor_camera_controller_enabled = true;
     level->enemies_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "enemies_spawnpoints" );
     level->serum_stations_spawn_points_parent_node = crude_ecs_lookup_entity_from_parent( level_node, "serum_station_spawn_points" );
 
-    ecs_iter_t entity_swapnpoint_it = ecs_children( it->world, level->enemies_spawn_points_parent_node.handle );
+    ecs_iter_t entity_swapnpoint_it = crude_ecs_children( level->enemies_spawn_points_parent_node );
     while ( ecs_children_next( &entity_swapnpoint_it ) )
     {
-      for ( size_t i = 0; i < entity_swapnpoint_it.count; ++i )
+      for ( size_t j = 0; j < entity_swapnpoint_it.count; ++j )
       {
         crude_entity                                       entity_swapnpoint_node;
-        entity_swapnpoint_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_swapnpoint_it.entities[ i ], .world = it->world } );
+        entity_swapnpoint_node = crude_entity_from_iterator( &entity_swapnpoint_it, ctx->world, j );
         CRUDE_ENTITY_SET_COMPONENT( entity_swapnpoint_node, crude_debug_gltf, { ctx->enemy_spawnpoint_model_absolute_filepath, true } );
       }
     }
 
-    ecs_iter_t entity_syringe_spawn_point_it = ecs_children( it->world, level->serum_stations_spawn_points_parent_node.handle );
+    ecs_iter_t entity_syringe_spawn_point_it = crude_ecs_children( level->serum_stations_spawn_points_parent_node );
     while ( ecs_children_next( &entity_syringe_spawn_point_it ) )
     {
-      for ( size_t i = 0; i < entity_syringe_spawn_point_it.count; ++i )
+      for ( size_t j = 0; j < entity_syringe_spawn_point_it.count; ++j )
       {
         crude_entity                                       entity_spawn_point_node;
-        entity_spawn_point_node = CRUDE_COMPOUNT( crude_entity, { .handle = entity_syringe_spawn_point_it.entities[ i ], .world = it->world } );
+        entity_spawn_point_node = crude_entity_from_iterator( &entity_syringe_spawn_point_it, ctx->world, j );
         CRUDE_ENTITY_SET_COMPONENT( entity_spawn_point_node, crude_debug_gltf, { ctx->syringe_spawnpoint_model_absolute_filepath, true } );
       }
     }
@@ -65,7 +65,7 @@ crude_serum_station_enabled_creation_observer_
   {
     crude_entity                                           serum_station_node;
     
-    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    serum_station_node = crude_entity_from_iterator( it, ctx->world, i );
 
     CRUDE_ENTITY_SET_COMPONENT( serum_station_node, crude_debug_gltf, { ctx->syringe_serum_station_active_model_absolute_filepath, true } );
   }
@@ -83,7 +83,7 @@ crude_serum_station_enabled_destroy_observer_
   {
     crude_entity                                           serum_station_node;
     
-    serum_station_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    serum_station_node = crude_entity_from_iterator( it, ctx->world, i );
 
     CRUDE_ENTITY_REMOVE_COMPONENT( serum_station_node, crude_debug_gltf );
   }
@@ -92,7 +92,7 @@ crude_serum_station_enabled_destroy_observer_
 void
 crude_game_debug_system_import
 (
-  _In_ ecs_world_t                                        *world,
+  _In_ crude_ecs                                          *world,
   _In_ crude_game_debug_system_context                    *ctx
 )
 {

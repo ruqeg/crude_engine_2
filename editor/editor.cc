@@ -15,8 +15,6 @@
 
 crude_editor                                              *crude_editor_instance_;
 
-CRUDE_ECS_SYSTEM_DECLARE( crude_editor_input_system_ );
-
 static void
 crude_editor_deinitialize_constant_strings_
 (
@@ -24,9 +22,9 @@ crude_editor_deinitialize_constant_strings_
 );
 
 static void
-crude_editor_input_system_
+crude_editor_update_input_
 (
-  _In_ ecs_iter_t                                         *it
+  _In_ crude_editor                                       *editor
 );
 
 static void
@@ -59,11 +57,15 @@ crude_editor_initialize
   editor->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
   editor->node_to_dublicate = CRUDE_COMPOUNT_EMPTY( crude_entity );
   editor->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  
+  editor->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
+  editor->free_camera_system_context.world = &editor->engine->ecs_thread_data.world;
+  editor->free_camera_system_context.platform = &editor->engine->ecs_thread_data.platform_copy;
 
-  ECS_IMPORT( editor->engine->world, crude_free_camera_system );
-  ECS_IMPORT( editor->engine->world, crude_game_components );
-  ECS_IMPORT( editor->engine->world, crude_physics_components );
-  ECS_IMPORT( editor->engine->world, crude_scene_debug_components );
+  crude_free_camera_system_import( &editor->engine->ecs_thread_data.world, &editor->free_camera_system_context );
+  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_game_components );
+  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_physics_components );
+  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_scene_debug_components );
 
   //editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
   //editor->physics_debug_system_context.resources_absolute_directory = editor->engine->environment.directories.resources_absolute_directory;
@@ -81,8 +83,6 @@ crude_editor_initialize
   editor->selected_node = editor->main_node;
   
   crude_devgui_initialize( &editor->devgui );
-  
-  CRUDE_ECS_SYSTEM_DEFINE( editor->engine->world, crude_editor_input_system_, EcsOnUpdate, editor, {} );
 
   crude_editor_setup_custom_nodes_to_scene_( editor );
 }
@@ -98,27 +98,25 @@ crude_editor_deinitialize
 }
 
 void
-crude_editor_input_system_
+crude_editor_update_input_
 (
-  _In_ ecs_iter_t                                         *it
+  _In_ crude_editor                                       *editor
 )
 {
-  crude_editor *editor = ( crude_editor* )it->ctx;
-
   ImGui::SetCurrentContext( editor->engine->imgui_context );
     
-  crude_devgui_handle_input( &editor->devgui, &editor->engine->platform_copy.input );
+  crude_devgui_handle_input( &editor->devgui, &editor->engine->platform.input );
 
-  if ( editor->engine->platform_copy.input.mouse.right.current && editor->engine->platform_copy.input.mouse.right.current != editor->engine->platform_copy.input.prev_mouse.right.current )
+  if ( editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
   {
     SDL_GetMouseState( &editor->engine->last_unrelative_mouse_position.x, &editor->engine->last_unrelative_mouse_position.y );
-    crude_platform_hide_cursor( &editor->engine->platform_copy );
+    crude_platform_hide_cursor( &editor->engine->platform );
   }
   
-  if ( !editor->engine->platform_copy.input.mouse.right.current && editor->engine->platform_copy.input.mouse.right.current != editor->engine->platform_copy.input.prev_mouse.right.current )
+  if ( !editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
   {
-    SDL_WarpMouseInWindow( editor->engine->platform_copy.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
-    crude_platform_show_cursor( &editor->engine->platform_copy );
+    SDL_WarpMouseInWindow( editor->engine->platform.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
+    crude_platform_show_cursor( &editor->engine->platform );
   }
 }
 
@@ -200,9 +198,9 @@ crude_editor_setup_custom_nodes_to_scene_
     editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
     editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
     editor_camera_node_crude_free_camera.input_enabled = true;
-    editor_camera_node_crude_free_camera.platform = &editor->engine->platform_copy;
+    editor_camera_node_crude_free_camera.platform = &editor->engine->ecs_thread_data.platform_copy;
 
-    editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
+    editor->editor_camera_node = crude_entity_create_empty( &editor->engine->ecs_thread_data.world, "editor_camera" );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
     CRUDE_ENTITY_SET_COMPONENT( editor->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );

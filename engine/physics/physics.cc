@@ -28,7 +28,7 @@ crude_physics_initialize
   query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body_handle );
   query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
   query_desc.terms[ 2 ].id = ecs_id( crude_transform );
-  physics->static_body_handle_query = ecs_query_init( creation->world, &query_desc );
+  physics->static_body_handle_query = crude_ecs_query_create( creation->world, &query_desc );
 }
 
 void
@@ -74,7 +74,7 @@ crude_physics_cast_ray
 
   nearest_t = FLT_MAX;
 
-  static_body_handle_it = ecs_query_iter( physics->world, physics->static_body_handle_query );
+  static_body_handle_it = ecs_query_iter( physics->world->handle, physics->static_body_handle_query );
   while ( ecs_query_next( &static_body_handle_it ) )
   {
     crude_physics_collision_shape                         *second_collision_shape_per_entity;
@@ -100,7 +100,7 @@ crude_physics_cast_ray
       second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
       second_transform = &second_transform_per_entity[ static_body_index ];
       second_body_handle = &second_body_handle_per_entity[ static_body_index ];
-      static_body_node = CRUDE_COMPOUNT( crude_entity, { static_body_handle_it.entities[ static_body_index ], static_body_handle_it.world } );
+      static_body_node = crude_entity_from_iterator( &static_body_handle_it, physics->world, static_body_index );
     
       second_body = crude_physics_resources_manager_access_static_body( physics->manager, *second_body_handle );
   

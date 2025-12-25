@@ -85,7 +85,7 @@ crude_physics_update_system_
     collision_shape = &collision_shape_per_entity[ i ];
     transform = &transform_per_entity[ i ];
 
-    character_body_node = CRUDE_COMPOUNT( crude_entity, { it->entities[ i ], it->world } );
+    character_body_node = crude_entity_from_iterator( it, ctx->physics->world, i );
 
     character_body = crude_physics_resources_manager_access_character_body( ctx->physics->manager, character_body_handle );
 
@@ -124,7 +124,7 @@ crude_physics_update_system_
         second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
         second_transform = &second_transform_per_entity[ static_body_index ];
         second_body_handle = &second_body_handle_per_entity[ static_body_index ];
-        second_body_node = CRUDE_COMPOUNT( crude_entity, { static_body_handle_it.entities[ static_body_index ], static_body_handle_it.world } );
+        second_body_node = crude_entity_from_iterator( &static_body_handle_it, ctx->physics->world, static_body_index );
      
         second_body = crude_physics_resources_manager_access_static_body( ctx->physics->manager, *second_body_handle );
 
@@ -194,11 +194,11 @@ cleanup:
 void
 crude_physics_system_import
 (
-  _In_ ecs_world_t                                        *world,
+  _In_ crude_ecs                                           *world,
   _In_ crude_physics_system_context                       *ctx
 )
 {
-  ECS_IMPORT( world, crude_physics_components );
+  CRUDE_ECS_IMPORT( world, crude_physics_components );
 
   //CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_handle_destroy_observer_, EcsOnRemove, ctx, { 
   //  { .id = ecs_id( crude_physics_static_body_handle ) }

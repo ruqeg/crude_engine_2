@@ -34,6 +34,7 @@ typedef struct crude_editor
   crude_entity                                             node_to_remove;
   crude_entity                                             node_to_dublicate;
   /* System Context */
+  crude_free_camera_system_context                         free_camera_system_context;
 #if CRUDE_DEVELOP
   crude_physics_debug_system_context                       physics_debug_system_context;
   crude_game_debug_system_context                          game_debug_system_context;

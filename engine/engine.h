@@ -7,18 +7,11 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/scene/node_manager.h>
 #include <engine/audio/audio_device.h>
-#include <engine/audio/audio_system.h>
+#include <engine/audio/audio_ecs.h>
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_system.h>
 #include <engine/platform/platform.h>
 #include <engine/core/ecs.h>
-
-typedef struct crude_platform_thread_data
-{
-  crude_platform                                           platform;
-  mtx_t                                                    mutex;
-  bool                                                     running;
-} crude_platform_thread_data;
 
 typedef struct crude_graphics_thread_data
 {
@@ -40,12 +33,21 @@ typedef struct crude_graphics_thread_data
   /* ecs */
   crude_entity                                             focused_camera_node;
   crude_entity                                             main_node;
-  mtx_t                                                    ecs_mutex;
+  mtx_t                                                   *ecs_mutex;
 } crude_graphics_thread_data;
+
+typedef struct crude_ecs_thread_data
+{
+  crude_ecs                                                world;
+  bool                                                     running;
+  int64                                                    last_update_time;
+  mtx_t                                                   *platform_mutex;
+  crude_platform                                          *platform_unsafe;
+  crude_platform                                           platform_copy;
+} crude_ecs_thread_data;
 
 typedef struct crude_engine
 {
-  ecs_world_t                                             *world;
   
   /******************************
    *
@@ -75,15 +77,21 @@ typedef struct crude_engine
    ******************************/
   crude_node_manager                                       node_manager;
   crude_engine_commands_manager                            commands_manager;
-  mtx_t                                                    ecs_mutex;
   
+  /******************************
+   *
+   * ECS
+   *
+   ******************************/
+  crude_ecs_thread_data                                    ecs_thread_data;
+
   /******************************
    *
    * Window & Input
    *
    ******************************/
-  crude_platform_thread_data                               platform_thread_data;
-  crude_platform                                           platform_copy;
+  crude_platform                                           platform;
+  mtx_t                                                    platform_mutex;
   XMFLOAT2                                                 last_unrelative_mouse_position;
   
   /******************************

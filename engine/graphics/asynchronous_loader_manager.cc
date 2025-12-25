@@ -83,7 +83,7 @@ crude_gfx_asynchronous_loader_manager_pinned_task_asynchronous_loader_loop_
   while ( ctx->async_loaders_valid )
   {
     mtx_lock( &ctx->task_mutex );
-    for ( uint64 i = 0; i < CRUDE_ARRAY_LENGTH( ctx->async_loaders ); ++i )
+    for ( uint64 i = 0; i < ctx->async_loaders_count; ++i )
     {
       crude_gfx_asynchronous_loader_update( ctx->async_loaders[ i ] );
     }
