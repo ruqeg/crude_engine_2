@@ -1,10 +1,34 @@
 #include <engine/core/log.h>
 #include <engine/core/profiler.h>
-#include <engine/scene/scripts_components.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/platform/platform.h>
 
-#include <engine/scene/free_camera_ecs.h>
+#include <engine/scene/scripts/free_camera_ecs.h>
+
+/**********************************************************
+ *
+ *                 Component
+ *
+ *********************************************************/
+ECS_COMPONENT_DECLARE( crude_free_camera );
+CRUDE_COMPONENT_STRING_DEFINE( crude_free_camera, "crude_free_camera" );
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )
+{
+  crude_memory_set( component, 0, sizeof( crude_free_camera ) );
+  component->moving_speed_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) );
+  component->rotating_speed_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera )
+{
+  cJSON *free_camera_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_free_camera" ) );
+  cJSON_AddItemToObject( free_camera_json, "moving_speed_multiplier", cJSON_CreateNumber( component->moving_speed_multiplier ) );
+  cJSON_AddItemToObject( free_camera_json, "rotating_speed_multiplier", cJSON_CreateNumber( component->rotating_speed_multiplier ) );
+  return free_camera_json;
+}
 
 /**********************************************************
  *
@@ -13,10 +37,10 @@
  *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system );
 
-static void
-crude_free_camera_update_system
+void
+crude_free_camera_update_system_
 (
-  _In_ ecs_iter_t *it
+  _In_ ecs_iter_t                                         *it
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_free_camera_update_system" );
@@ -69,8 +93,8 @@ crude_free_camera_update_system
       XMVECTOR rotation = XMLoadFloat4( &transforms[ i ].rotation );
       XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
 
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.y ) );
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.x ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel_sum.y ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel_sum.x ) );
       XMStoreFloat4( &transforms[ i ].rotation, rotation );
     }
   }
@@ -85,6 +109,9 @@ crude_free_camera_system_import
 )
 {
   CRUDE_ECS_MODULE( world, crude_free_camera_system );
+  
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_free_camera );
+
   crude_scene_components_import( world );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, ctx, {

@@ -17,14 +17,12 @@ ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
 ECS_COMPONENT_DECLARE( crude_node_runtime );
-ECS_COMPONENT_DECLARE( crude_free_camera );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_runtime, "crude_node_runtime" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_free_camera, "crude_free_camera" );
 
 void
 crude_scene_components_import
@@ -39,7 +37,6 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_gltf );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_runtime );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_free_camera );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
@@ -126,23 +123,6 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_runtime )
 {
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )
-{
-  crude_memory_set( component, 0, sizeof( crude_free_camera ) );
-  component->moving_speed_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) );
-  component->rotating_speed_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "rotating_speed_multiplier" ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera )
-{
-  cJSON *free_camera_json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_free_camera" ) );
-  cJSON_AddItemToObject( free_camera_json, "moving_speed_multiplier", cJSON_CreateNumber( component->moving_speed_multiplier ) );
-  cJSON_AddItemToObject( free_camera_json, "rotating_speed_multiplier", cJSON_CreateNumber( component->rotating_speed_multiplier ) );
-  return free_camera_json;
 }
 
 XMMATRIX

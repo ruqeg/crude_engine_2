@@ -5,8 +5,8 @@
 #include <engine/core/array.h>
 #include <engine/core/hash_map.h>
 #include <engine/core/assert.h>
-#include <engine/scene/scene_components.h>
-#include <engine/physics/physics_components.h>
+#include <engine/scene/scene_ecs.h>
+#include <engine/physics/physics_ecs.h>
 
 #include <engine/physics/physics.h>
 

@@ -1,9 +1,15 @@
 #if CRUDE_DEVELOP
-#include <engine/scene/scene_debug_components.h>
-#include <engine/external/game_components.h>
 
-#include <engine/external/game_debug_system.h>
+#include <engine/scene/scene_debug_ecs.h>
+#include <engine/external/game_ecs.h>
 
+#include <engine/external/game_debug_ecs.h>
+
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 CRUDE_ECS_OBSERVER_DECLARE( crude_level_01_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_creation_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_serum_station_enabled_destroy_observer_ );

@@ -5,7 +5,7 @@
 #include <engine/core/ecs.h>
 #include <engine/core/file.h>
 #include <engine/platform/platform.h>
-#include <engine/physics/physics_debug_system.h>
+#include <engine/physics/physics_debug_ecs.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/engine/environment.h>
 
@@ -225,7 +225,7 @@ crude_engine_initialize
   engine->ecs_thread_data.platform_mutex = &engine->platform_mutex;
 
   engine->graphics_thread_data.running = true;
-  engine->graphics_thread_data.ecs_mutex = &engine->ecs_thread_data.mutex;
+  engine->graphics_thread_data.world = &engine->ecs_thread_data.world;
 
   crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_graphics_loop_, &engine->graphics_thread_data, CRUDE_GRAPHICS_ACTIVE_THREAD  );  
   crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_ecs_loop_, &engine->ecs_thread_data, CRUDE_ECS_ACTIVE_THREAD );
@@ -332,7 +332,6 @@ crude_engine_initialize_ecs_
   CRUDE_ECS_TAG_DEFINE( &engine->ecs_thread_data.world, crude_entity_tag );
   
   crude_ecs_set_threads( &engine->ecs_thread_data.world, 1 );
-  mtx_init( &engine->ecs_thread_data.mutex, mtx_plain );
 }
 
 static void
@@ -341,7 +340,6 @@ crude_engine_deinitialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
-  mtx_destroy( &engine->ecs_thread_data.mutex );
   crude_ecs_deinitalize( &engine->ecs_thread_data.world );
 }
 
@@ -581,8 +579,6 @@ crude_engine_initialize_graphics_
   graphics->absolute_time = 0.f;
 
   graphics->imgui_context = engine->imgui_context;
-
-  graphics->ecs_mutex = &engine->ecs_thread_data.mutex;
   
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &graphics->scene_renderer );
 
@@ -747,9 +743,7 @@ crude_engine_pinned_task_ecs_loop_
     data->platform_copy = *data->platform_unsafe;
     mtx_unlock( data->platform_mutex );
 
-    mtx_lock( &data->mutex );
     crude_ecs_progress( &data->world, delta_time );
-    mtx_unlock( &data->mutex );
     
     data->last_update_time = current_time;
   }
@@ -795,11 +789,11 @@ crude_engine_pinned_task_graphics_loop_
 
     crude_gfx_new_frame( &graphics->gpu );
   
-    mtx_lock( graphics->ecs_mutex );
+    mtx_lock( &graphics->world->mutex );
     new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &graphics->scene_renderer, graphics->main_node );
     graphics->scene_renderer.options.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_camera );
     XMStoreFloat4x4( &graphics->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( graphics->focused_camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_transform ) ) );
-    mtx_unlock( graphics->ecs_mutex );
+    mtx_unlock( &graphics->world->mutex );
   
     if ( new_buffers_recrteated_or_model_initialized )
     {

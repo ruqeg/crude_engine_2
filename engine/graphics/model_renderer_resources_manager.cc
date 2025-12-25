@@ -115,7 +115,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ cgltf_data                                         *gltf,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ XMMATRIX                                            parent_to_model
 );
 
 static void
@@ -384,7 +385,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" nodes", gltf_path );
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, XMMatrixIdentity( ) );
   }
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "\"%s\" loading finished", gltf_path );
   
@@ -1168,13 +1169,15 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ cgltf_data                                         *gltf,
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
+  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ XMMATRIX                                            parent_to_model
 )
 { 
   for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
   {
+    XMMATRIX                                               model_to_model;
     crude_transform                                        transform;
-    
+
     if ( gltf_nodes[ i ]->has_translation )
     {
       XMStoreFloat3( &transform.translation, XMVectorSet( gltf_nodes[ i ]->translation[ 0 ], gltf_nodes[ i ]->translation[ 1 ], gltf_nodes[ i ]->translation[ 2 ], 1 ));
@@ -1219,10 +1222,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       XMStoreFloat3( &transform.scale, decompose_scale );
     }
 
-   // CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, {
-   //   transform.translation, transform.rotation, transform.scale
-   // } );
-    
+    model_to_model = XMMatrixMultiply( parent_to_model, crude_transform_node_to_parent( &transform ) );
     if ( gltf_nodes[ i ]->mesh )
     {
       uint32 mesh_index_offset = gltf_mesh_index_to_mesh_primitive_index[ cgltf_mesh_index( gltf, gltf_nodes[ i ]->mesh ) ];
@@ -1230,11 +1230,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       {
         crude_gfx_mesh_instance_cpu mesh_instance;
         mesh_instance.mesh_gpu_index = mesh_index_offset + pi + manager->total_meshes_count;
+        XMStoreFloat4x4( &mesh_instance.mesh_to_model, model_to_model );
         CRUDE_ARRAY_PUSH( model_renderer_resources->meshes_instances, mesh_instance );
       }
     }
 
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index, model_to_model );
   }
 }
 

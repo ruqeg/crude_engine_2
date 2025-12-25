@@ -2,11 +2,10 @@
 
 #include <engine/core/hash_map.h>
 #include <engine/graphics/gpu_resources_loader.h>
-#include <engine/scene/scripts_components.h>
-#include <engine/physics/physics_components.h>
+#include <engine/physics/physics_ecs.h>
 #include <engine/physics/physics.h>
-#include <engine/external/game_components.h>
-#include <engine/scene/scene_debug_components.h>
+#include <engine/external/game_ecs.h>
+#include <engine/scene/scene_debug_ecs.h>
 #include <engine/engine/engine_commands_manager.h>
 #include <editor/editor.h>
 

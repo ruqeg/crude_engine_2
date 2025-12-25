@@ -2,14 +2,13 @@
 #include <engine/core/file.h>
 #include <engine/core/memory.h>
 #include <engine/core/process.h>
-#include <engine/scene/free_camera_system.h>
-#include <engine/scene/scene_components.h>
-#include <engine/scene/scripts_components.h>
-#include <engine/scene/scene_debug_components.h>
+#include <engine/scene/free_camera_ecs.h>
+#include <engine/scene/scene_ecs.h>
+#include <engine/scene/scene_debug_ecs.h>
 #include <engine/graphics/gpu_resources_loader.h>
-#include <engine/physics/physics_components.h>
-#include <engine/physics/physics_debug_system.h>
-#include <engine/external/game_components.h>
+#include <engine/physics/physics_ecs.h>
+#include <engine/physics/physics_debug_ecs.h>
+#include <engine/external/game_ecs.h>
 
 #include <editor/editor.h>
 
@@ -63,9 +62,10 @@ crude_editor_initialize
   editor->free_camera_system_context.platform = &editor->engine->ecs_thread_data.platform_copy;
 
   crude_free_camera_system_import( &editor->engine->ecs_thread_data.world, &editor->free_camera_system_context );
-  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_game_components );
-  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_physics_components );
-  CRUDE_ECS_IMPORT( &editor->engine->ecs_thread_data.world, crude_scene_debug_components );
+  crude_physics_components_import( &editor->engine->ecs_thread_data.world );
+  crude_physics_components_import( &editor->engine->ecs_thread_data.world );
+  crude_scene_debug_components_import( &editor->engine->ecs_thread_data.world );
+  crude_game_components_import( &editor->engine->ecs_thread_data.world );
 
   //editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
   //editor->physics_debug_system_context.resources_absolute_directory = editor->engine->environment.directories.resources_absolute_directory;

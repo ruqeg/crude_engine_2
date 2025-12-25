@@ -5,8 +5,9 @@ project(crude_editor)
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
 file(GLOB_RECURSE ENVIROMENT *.crude_environment)
+file(COPY ${ENVIROMENT} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-set(CRUDE_SOURCES ${SRC} ${HEADERS} ${ENVIROMENT})
+set(CRUDE_SOURCES ${SRC} ${HEADERS})
 
 add_executable(${PROJECT_NAME} ${CRUDE_SOURCES})
 

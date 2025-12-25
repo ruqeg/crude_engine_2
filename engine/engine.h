@@ -9,7 +9,7 @@
 #include <engine/audio/audio_device.h>
 #include <engine/audio/audio_ecs.h>
 #include <engine/physics/physics.h>
-#include <engine/physics/physics_system.h>
+#include <engine/physics/physics_ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/core/ecs.h>
 
@@ -33,7 +33,7 @@ typedef struct crude_graphics_thread_data
   /* ecs */
   crude_entity                                             focused_camera_node;
   crude_entity                                             main_node;
-  mtx_t                                                   *ecs_mutex;
+  crude_ecs                                               *world;
 } crude_graphics_thread_data;
 
 typedef struct crude_ecs_thread_data

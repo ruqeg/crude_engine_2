@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 
 #include <engine/core/memory.h>
-#include <engine/external/game_components.h>
+#include <engine/external/game_ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/audio/audio_device.h>
 #include <game/game.h>

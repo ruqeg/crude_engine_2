@@ -6,6 +6,11 @@
 #include <engine/core/string.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 typedef struct crude_game_debug_system_context
 {
   crude_ecs                                               *world;

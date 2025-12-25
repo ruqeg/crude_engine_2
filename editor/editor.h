@@ -9,8 +9,11 @@
 #include <engine/scene/collisions_resources_manager.h>
 #include <editor/devgui.h>
 #include <engine/physics/physics_resources_manager.h>
-#include <engine/physics/physics_debug_system.h>
-#include <engine/external/game_debug_system.h>
+#include <engine/physics/physics_debug_ecs.h>
+#include <engine/scene/scene_ecs.h>
+#include <engine/scene/free_camera_ecs.h>
+#include <engine/external/game_ecs.h>
+#include <engine/external/game_debug_ecs.h>
 
 typedef struct crude_editor
 {

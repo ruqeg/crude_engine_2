@@ -1,4 +1,4 @@
-#include <engine/scene/scene_components.h>
+#include <engine/scene/scene_ecs.h>
 
 #include <engine/audio/audio_ecs.h>
 
@@ -70,7 +70,7 @@ crude_audio_system_import
 )
 {
   crude_audio_components_import( world );
-  CRUDE_ECS_IMPORT( world, crude_scene_components );
+  crude_scene_components_import( world );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_listener_update_system_, EcsOnUpdate, ctx, { 
     { .id = ecs_id( crude_transform ) },

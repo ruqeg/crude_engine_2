@@ -2,7 +2,7 @@
 
 #include <engine/core/assert.h>
 #include <engine/physics/physics_ecs.h>
-#include <engine/scene/scene_debug_components.h>
+#include <engine/scene/scene_debug_ecs.h>
 
 #include <engine/physics/physics_debug_ecs.h>
 
@@ -66,7 +66,7 @@ crude_physics_debug_system_import
 )
 {
   crude_physics_components_import( world );
-  CRUDE_ECS_IMPORT( world, crude_scene_debug_components );
+  crude_scene_debug_components_import( world );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_engine_physics_collision_shape_create_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_physics_collision_shape ) },

@@ -1,7 +1,7 @@
 #include <engine/core/memory.h>
 #include <engine/graphics/imgui.h>
-#include <engine/scene/scripts_components.h>
-#include <engine/external/game_components.h>
+#include <engine/scene/scene_ecs.h>
+#include <engine/external/game_ecs.h>
 
 ECS_TAG_DECLARE( crude_serum_station_enabled );
 
@@ -33,7 +33,11 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_level_cutscene_only_sound, "crude_level_cut
 CRUDE_COMPONENT_STRING_DEFINE( crude_level_boss_fight, "crude_level_boss_fight" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_boss_bullet, "crude_boss_bullet" );
 
-CRUDE_ECS_MODULE_IMPORT_IMPL( crude_game_components )
+void
+crude_game_components_import
+(
+  _In_ crude_ecs                                          *world
+)
 {
   CRUDE_ECS_MODULE( world, crude_game_components );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_serum_station );

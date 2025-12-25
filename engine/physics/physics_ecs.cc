@@ -5,7 +5,7 @@
 #include <engine/graphics/imgui.h>
 #include <engine/scene/node_manager.h>
 #include <engine/core/profiler.h>
-#include <engine/scene/scene_components.h>
+#include <engine/scene/scene_ecs.h>
 
 #include <engine/physics/physics_ecs.h>
 

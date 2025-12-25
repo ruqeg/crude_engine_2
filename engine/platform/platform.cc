@@ -106,6 +106,7 @@ crude_platform_intialize
 
   platform->quit_callback = creation->quit_callback;
   platform->quit_callback_ctx = creation->quit_callback_ctx;
+  platform->input = CRUDE_COMPOUNT_EMPTY( crude_input );
   platform->input.callback = creation->input_callback;
   platform->input.ctx = creation->input_callback_ctx;
 }
@@ -208,8 +209,8 @@ crude_platform_update
       {
         platform->input.mouse.wnd.x = sdl_event.motion.x;
         platform->input.mouse.wnd.y = sdl_event.motion.y;
-        platform->input.mouse.rel.x = sdl_event.motion.xrel;
-        platform->input.mouse.rel.y = sdl_event.motion.yrel;
+        platform->input.mouse.rel.x += sdl_event.motion.xrel;
+        platform->input.mouse.rel.y += sdl_event.motion.yrel;
       }
       else if ( sdl_event.type == SDL_EVENT_MOUSE_WHEEL )
       {

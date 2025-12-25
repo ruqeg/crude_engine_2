@@ -6,6 +6,11 @@
 #include <engine/external/game_resources.h>
 #include <engine/audio/audio_device_resources.h>
 
+/**********************************************************
+ *
+ *                 Components
+ *
+ *********************************************************/
 typedef enum crude_enemy_state
 {
   CRUDE_ENEMY_STATE_IDLE,
@@ -263,4 +268,8 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_teleport_station );
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_teleport_station );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_teleport_station );
 
-CRUDE_ECS_MODULE_IMPORT_DECL( crude_game_components );
+CRUDE_API void
+crude_game_components_import
+(
+  _In_ crude_ecs                                          *world
+);

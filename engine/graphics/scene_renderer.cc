@@ -8,9 +8,9 @@
 #include <engine/core/file.h>
 #include <engine/core/hash_map.h>
 
-#include <engine/scene/scene_components.h>
-#include <engine/physics/physics_components.h>
-#include <engine/scene/scene_debug_components.h>
+#include <engine/scene/scene_ecs.h>
+#include <engine/physics/physics_ecs.h>
+#include <engine/scene/scene_debug_ecs.h>
 
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
@@ -886,6 +886,7 @@ crude_scene_renderer_register_nodes_instances_
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF;
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }
@@ -922,6 +923,7 @@ crude_scene_renderer_register_nodes_instances_
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_debug_collision->absolute_filepath, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION;
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }
@@ -936,6 +938,7 @@ crude_scene_renderer_register_nodes_instances_
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF;
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }

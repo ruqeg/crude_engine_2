@@ -2,7 +2,7 @@
 
 #include <engine/graphics/gpu_device.h>
 
-#include <engine/scene/scene_components.h>
+#include <engine/scene/scene_ecs.h>
 #include <engine/graphics/model_renderer_resources.h>
 #include <engine/graphics/asynchronous_loader.h>
 #include <engine/graphics/gpu_memory.h>

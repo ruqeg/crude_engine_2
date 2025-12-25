@@ -4,12 +4,11 @@
 #include <engine/core/file.h>
 #include <engine/core/string.h>
 #include <engine/core/array.h>
-#include <engine/scene/scene_components.h>
-#include <engine/scene/scripts_components.h>
+#include <engine/scene/scene_ecs.h>
 #include <engine/core/hash_map.h>
-#include <engine/physics/physics_components.h>
-#include <engine/physics/physics_components.h>
-#include <engine/external/game_components.h>
+#include <engine/physics/physics_ecs.h>
+#include <engine/physics/physics_ecs.h>
+#include <engine/external/game_ecs.h>
 
 #include <engine/scene/node_manager.h>
 
