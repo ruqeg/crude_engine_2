@@ -434,6 +434,7 @@ crude_gfx_device_deinitialize
 {
   vkDeviceWaitIdle( gpu->vk_device );
   
+  crude_gfx_linear_allocator_clear( &gpu->frame_linear_allocator );
   crude_gfx_linear_allocator_deinitialize( &gpu->frame_linear_allocator );
   crude_gfx_destroy_sampler( gpu, gpu->default_sampler );
   crude_gfx_destroy_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
@@ -472,6 +473,8 @@ crude_gfx_device_deinitialize
   }
   
   vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_bindless_descriptor_pool, gpu->vk_allocation_callbacks );
+  vkDestroyDescriptorPool( gpu->vk_device, gpu->vk_descriptor_pool, gpu->vk_allocation_callbacks );
+
   vk_destroy_swapchain_( gpu );
 
   CRUDE_ARRAY_DEINITIALIZE( gpu->queued_command_buffers );
@@ -4075,6 +4078,7 @@ vk_create_descriptor_pool_
       pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes );
       pool_info.pPoolSizes = pool_sizes;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_descriptor_pool ), "Failed create descriptor pool" );
+      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_DESCRIPTOR_POOL, CRUDE_CAST( uint64, gpu->vk_descriptor_pool ), "vk_descriptor_pool " );
     }
     {
       VkDescriptorPoolSize pool_sizes_bindless[] = {
@@ -4088,6 +4092,7 @@ vk_create_descriptor_pool_
       pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.pPoolSizes    = pool_sizes_bindless;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
+      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_DESCRIPTOR_POOL, CRUDE_CAST( uint64, gpu->vk_bindless_descriptor_pool ), "vk_bindless_descriptor_pool " );
     }
   }
   {

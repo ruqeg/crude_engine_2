@@ -111,6 +111,8 @@ crude_gfx_asynchronous_loader_deinitialize
   
   crude_linear_allocator_deinitialize( &asynloader->linear_allocator );
  
+  crude_gfx_memory_deallocate( asynloader->gpu, asynloader->staging_allocation );
+
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     vkDestroyCommandPool( asynloader->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->gpu->vk_allocation_callbacks );  

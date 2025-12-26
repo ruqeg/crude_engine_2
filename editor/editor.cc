@@ -181,8 +181,6 @@ crude_editor_deinitialize_constant_strings_
   _In_ crude_editor                                       *editor
 )
 {
-  crude_string_buffer_deinitialize( &editor->constant_strings_buffer );
-  crude_string_buffer_deinitialize( &editor->dynamic_strings_buffer );
   crude_string_buffer_deinitialize( &editor->debug_strings_buffer );
   crude_string_buffer_deinitialize( &editor->debug_constant_strings_buffer );
 }

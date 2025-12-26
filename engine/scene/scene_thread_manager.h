@@ -75,3 +75,9 @@ crude_scene_thread_manager_get_input_copy_ptr
 (
   _In_ crude_scene_thread_manager                         *manager
 );
+
+void
+crude_scene_thread_manager_stop
+(
+  _In_ crude_scene_thread_manager                         *manager
+);

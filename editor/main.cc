@@ -30,8 +30,8 @@ main
   /* Deinitialization */
   {
     crude_editor_deinitialize( crude_editor_instance( ) );
-    crude_editor_instance_deintialize( );
     crude_engine_deinitialize( &engine );
+    crude_editor_instance_deintialize( );
   }
 
   return 0;

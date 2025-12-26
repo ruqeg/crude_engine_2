@@ -19,8 +19,6 @@ typedef struct crude_editor
 {
   crude_engine                                            *engine;
 
-  crude_string_buffer                                      constant_strings_buffer;
-  crude_string_buffer                                      dynamic_strings_buffer;
   crude_string_buffer                                      debug_strings_buffer;
   crude_string_buffer                                      debug_constant_strings_buffer;
 

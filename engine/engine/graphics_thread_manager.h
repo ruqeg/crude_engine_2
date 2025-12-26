@@ -50,3 +50,9 @@ crude_graphics_thread_manager_deinitialize
 (
   _In_ crude_graphics_thread_manager                      *manager
 );
+
+CRUDE_API void
+crude_graphics_thread_manager_stop
+(
+  _In_ crude_graphics_thread_manager                      *manager
+);

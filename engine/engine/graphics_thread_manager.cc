@@ -152,6 +152,17 @@ crude_graphics_thread_manager_deinitialize
 }
 
 void
+crude_graphics_thread_manager_stop
+(
+  _In_ crude_graphics_thread_manager                      *manager
+)
+{
+  mtx_lock( &manager->mutex );
+  manager->running = false;
+  mtx_unlock( &manager->mutex );
+}
+
+void
 crude_graphics_thread_manager_pinned_task_graphics_loop_
 (
   _In_ void                                               *ctx

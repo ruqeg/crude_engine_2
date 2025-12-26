@@ -163,6 +163,12 @@ crude_engine_input_callback_
   _In_ void                                               *sdl_event
 );
 
+void
+crude_engine_quit_callback_
+(
+  _In_ void                                               *ctx
+);
+
 static bool
 crude_engine_parse_json_to_component_
 ( 
@@ -216,6 +222,9 @@ crude_engine_deinitialize
 )
 {
   engine->running = false;
+
+  crude_graphics_thread_manager_stop( &engine->___graphics_thread_manager );
+  crude_scene_thread_manager_stop( &engine->___scene_thread_manager );
 
   crude_engine_deinitialize_scene_( engine );
   crude_engine_deinitialize_physics_( engine );
@@ -438,6 +447,8 @@ crude_engine_initialize_platform_
   creation.window.maximized = false;
   creation.input_callback = crude_engine_input_callback_;
   creation.input_callback_ctx = engine;
+  creation.quit_callback = crude_engine_quit_callback_;
+  creation.quit_callback_ctx = engine;
   crude_platform_intialize( &engine->platform, &creation );
   crude_input_thread_data_initialize( &engine->__input_thread_data );
 }
@@ -525,6 +536,18 @@ crude_engine_deinitialize_physics_
   _In_ crude_engine                                       *engine
 )
 {
+  crude_physics_deinitialize( &engine->physics );
+  crude_physics_resources_manager_deinitialize( &engine->physics_resources_manager );
+}
+
+void
+crude_engine_quit_callback_
+(
+  _In_ void                                               *ctx
+)
+{
+  crude_engine *engine = CRUDE_CAST( crude_engine*, ctx );
+  engine->running = false;
 }
 
 void

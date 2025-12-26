@@ -107,6 +107,17 @@ crude_scene_thread_manager_get_input_copy_ptr
 }
 
 void
+crude_scene_thread_manager_stop
+(
+  _In_ crude_scene_thread_manager                         *manager
+)
+{
+  mtx_lock( &manager->mutex );
+  manager->running = false;
+  mtx_unlock( &manager->mutex );
+}
+
+void
 crude_scene_thread_manager_pinned_task_ecs_loop_
 (
   _In_ void                                               *ctx
