@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(IMGUIZMO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo")
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} STATIC
   ${IMGUIZMO_SOURCE_DIR}/GraphEditor.cpp
   ${IMGUIZMO_SOURCE_DIR}/GraphEditor.h
   ${IMGUIZMO_SOURCE_DIR}/ImCurveEdit.cpp

@@ -21,12 +21,6 @@ crude_editor_deinitialize_constant_strings_
 );
 
 static void
-crude_editor_update_input_
-(
-  _In_ crude_editor                                       *editor
-);
-
-static void
 crude_editor_input_callback_
 (
   _In_ void                                               *ctx,
@@ -38,6 +32,12 @@ crude_editor_setup_custom_nodes_to_scene_
 ( 
   _In_ crude_editor                                       *editor,
   _In_ crude_ecs                                          *world
+);
+
+void
+crude_editor_update_input_
+(
+  _In_ crude_editor                                       *editor
 );
 
 void
@@ -115,6 +115,7 @@ crude_editor_imgui_custom_draw
 )
 {
   crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
+  ImGui::SetCurrentContext( editor->engine->imgui_context );
   crude_devgui_draw( &editor->devgui, world );
 }
 
@@ -143,10 +144,6 @@ crude_editor_update_input_
   _In_ crude_editor                                       *editor
 )
 {
-  ImGui::SetCurrentContext( editor->engine->imgui_context );
-    
-  crude_devgui_handle_input( &editor->devgui, &editor->engine->platform.input );
-
   if ( editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
   {
     SDL_GetMouseState( &editor->engine->last_unrelative_mouse_position.x, &editor->engine->last_unrelative_mouse_position.y );
@@ -168,9 +165,11 @@ crude_editor_input_callback_
 )
 {
   crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
-
-  ImGui::SetCurrentContext( editor->engine->imgui_context );
-  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  
+  //mtx_lock( &editor->engine->imgui_mutex );
+  //ImGui::SetCurrentContext( editor->engine->imgui_context );
+  //ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  //mtx_unlock( &editor->engine->imgui_mutex );
 }
 
 bool

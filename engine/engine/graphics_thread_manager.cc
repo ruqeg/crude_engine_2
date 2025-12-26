@@ -19,6 +19,7 @@ crude_graphics_thread_manager_initialize
   _In_ crude_task_sheduler                                *task_sheduler,
   _In_ crude_gfx_asynchronous_loader_manager              *___asynchronous_loader_manager,
   _In_ crude_scene_thread_manager                         *___scene_thread_manager,
+  _In_ mtx_t                                              *___imgui_mutex,
   _In_ ImGuiContext                                       *imgui_context,
   _In_ crude_heap_allocator                               *cgltf_temporary_allocator,
   _In_ crude_stack_allocator                              *model_renderer_resources_manager_temporary_allocator,
@@ -118,6 +119,7 @@ crude_graphics_thread_manager_initialize
   manager->absolute_time = 0.f;
 
   manager->imgui_context = imgui_context;
+  manager->___imgui_mutex = ___imgui_mutex;
 
   manager->running = true;
 
@@ -222,7 +224,9 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
       XMStoreFloat4x4( &manager->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( world, camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, camera_node, crude_transform ) ) );
     }
     crude_scene_thread_manager_unlock_world( manager->___scene_thread_manager );
-
+    
+    mtx_lock( manager->___imgui_mutex );
+    ImGui::SetCurrentContext( manager->imgui_context );
     manager->absolute_time += last_graphics_update_delta;
   
     manager->last_graphics_update_time = crude_time_now( );
@@ -237,7 +241,6 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &manager->model_renderer_resources_manager );
     }
  
-    ImGui::SetCurrentContext( manager->imgui_context );
     ImGui_ImplSDL3_NewFrame( );
     ImGui::NewFrame( );
     
@@ -257,6 +260,7 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
     crude_gfx_scene_renderer_submit_draw_task( &manager->scene_renderer, false );
 
     crude_gfx_present( &manager->gpu, final_render_texture );
+    mtx_unlock( manager->___imgui_mutex );
 
 cleanup:
     mtx_unlock( &manager->mutex );

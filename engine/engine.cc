@@ -362,6 +362,7 @@ crude_engine_initialize_imgui_
 
   engine->pub_engine_should_proccess_imgui_input = true;
 
+  mtx_init( &engine->imgui_mutex, mtx_plain );
   //engine->imgui_font = imgui_io->Fonts->AddFontFromFileTTF( /* TODO */ game->game_font_absolute_filepath, 20.f );
   //CRUDE_ASSERT( engine->imgui_font );
 }
@@ -372,6 +373,7 @@ crude_engine_deinitialize_imgui_
   _In_ crude_engine                                       *engine
 )
 {
+  mtx_destroy( &engine->imgui_mutex );
   engine->pub_engine_should_proccess_imgui_input = false;
   ImGui_ImplSDL3_Shutdown( );
   ImGui::DestroyContext( engine->imgui_context );
@@ -470,7 +472,7 @@ crude_engine_initialize_graphics_
 )
 {
   crude_gfx_asynchronous_loader_manager_intiailize( &engine->___asynchronous_loader_manager, &engine->task_sheduler, 1u );
-  crude_graphics_thread_manager_initialize( &engine->___graphics_thread_manager, &engine->environment, engine->platform.sdl_window, &engine->task_sheduler, &engine->___asynchronous_loader_manager, &engine->___scene_thread_manager, engine->imgui_context, &engine->cgltf_temporary_allocator, &engine->model_renderer_resources_manager_temporary_allocator, &engine->common_allocator, &engine->temporary_allocator );
+  crude_graphics_thread_manager_initialize( &engine->___graphics_thread_manager, &engine->environment, engine->platform.sdl_window, &engine->task_sheduler, &engine->___asynchronous_loader_manager, &engine->___scene_thread_manager, &engine->imgui_mutex, engine->imgui_context, &engine->cgltf_temporary_allocator, &engine->model_renderer_resources_manager_temporary_allocator, &engine->common_allocator, &engine->temporary_allocator );
 }
 
 
@@ -558,12 +560,15 @@ crude_engine_input_callback_
 )
 {
   crude_engine *engine = CRUDE_CAST( crude_engine*, ctx );
-  ImGui::SetCurrentContext( engine->imgui_context );
   
-  if ( engine->pub_engine_should_proccess_imgui_input )
-  {
-    ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  }
+  //mtx_lock( &engine->imgui_mutex );
+  //ImGui::SetCurrentContext( engine->imgui_context );
+  //
+  //if ( engine->pub_engine_should_proccess_imgui_input )
+  //{
+  //  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  //}
+  //mtx_unlock( &engine->imgui_mutex );
 }
 
 void

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <threads.h>
+
 #include <engine/graphics/asynchronous_loader.h>
 #include <engine/graphics/scene_renderer_resources.h>
 #include <engine/graphics/passes/imgui_pass.h>

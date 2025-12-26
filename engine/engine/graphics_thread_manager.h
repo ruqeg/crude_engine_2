@@ -36,6 +36,7 @@ typedef struct crude_graphics_thread_manager
   /* Ctx */
   crude_gfx_asynchronous_loader_manager                   *___asynchronous_loader_manager;
   crude_scene_thread_manager                              *___scene_thread_manager;
+  mtx_t                                                   *___imgui_mutex;
 } crude_graphics_thread_manager;
 
 CRUDE_API void
@@ -47,6 +48,7 @@ crude_graphics_thread_manager_initialize
   _In_ crude_task_sheduler                                *task_sheduler,
   _In_ crude_gfx_asynchronous_loader_manager              *___asynchronous_loader_manager,
   _In_ crude_scene_thread_manager                         *___scene_thread_manager,
+  _In_ mtx_t                                              *___imgui_mutex,
   _In_ ImGuiContext                                       *imgui_context,
   _In_ crude_heap_allocator                               *cgltf_temporary_allocator,
   _In_ crude_stack_allocator                              *model_renderer_resources_manager_temporary_allocator,

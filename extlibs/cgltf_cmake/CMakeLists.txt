@@ -5,7 +5,7 @@ project(cgltf C)
 set(CMAKE_C_STANDARD 11)
 
 set(CGLTF_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cgltf")
-add_library(${PROJECT_NAME} ${CGLTF_SOURCE_DIR}/cgltf.h cgltf_implementation.c)
+add_library(${PROJECT_NAME} STATIC ${CGLTF_SOURCE_DIR}/cgltf.h cgltf_implementation.c)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CGLTF_SOURCE_DIR})
 
 if(MSVC)

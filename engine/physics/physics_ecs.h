@@ -23,9 +23,9 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_static_body_handle );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_character_body_handle );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_collision_shape );
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle );
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_handle );
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_handle );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape );
 
 CRUDE_API void
 crude_physics_components_import

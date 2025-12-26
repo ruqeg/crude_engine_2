@@ -5,7 +5,7 @@ project(spirv_reflect C)
 set(CMAKE_C_STANDARD 11)
 
 set(SPIRV_REFLECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Reflect")
-add_library(${PROJECT_NAME} ${SPIRV_REFLECT_SOURCE_DIR}/spirv_reflect.c)
+add_library(${PROJECT_NAME} STATIC ${SPIRV_REFLECT_SOURCE_DIR}/spirv_reflect.c)
 target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRV_REFLECT_SOURCE_DIR})
 
 if(MSVC)

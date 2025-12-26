@@ -14,7 +14,7 @@ void
 crude_gfx_imgui_pass_initialize
 (
   _In_ crude_gfx_imgui_pass                               *pass,
-  crude_gfx_scene_renderer                                *scene_renderer
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
   crude_gfx_device                                        *gpu;
@@ -27,9 +27,8 @@ crude_gfx_imgui_pass_initialize
 
   pass->scene_renderer = scene_renderer;
   gpu = scene_renderer->gpu;
-
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, pass->scene_renderer->imgui_context ) );
   imgui_io = &ImGui::GetIO();
   imgui_io->BackendRendererName = "Raptor_ImGui";
   imgui_io->BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
@@ -87,8 +86,8 @@ crude_gfx_imgui_pass_pre_render
   
   gpu = pass->scene_renderer->gpu;
   
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
-  
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, pass->scene_renderer->imgui_context ) );
+
   ImGui::Render();
   imgui_draw_data = ImGui::GetDrawData();
   
@@ -168,6 +167,7 @@ crude_gfx_imgui_pass_render
   crude_gfx_viewport                                       dev_viewport;
   XMFLOAT4X4                                               ortho_projection;
   ImVec2                                                   clip_off, clip_scale;
+  uint64                                                   vtx_buffer_offset, index_buffer_offset;
   int32                                                    draw_counts, framebuffer_width, framebuffer_height;
   push_constant_                                           push_constant;
   bool                                                     clip_origin_lower_left;
@@ -175,9 +175,8 @@ crude_gfx_imgui_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
   
   gpu = pass->scene_renderer->gpu;
-
-  ImGui::SetCurrentContext( ( ImGuiContext* )pass->scene_renderer->imgui_context );
   
+  ImGui::SetCurrentContext( CRUDE_CAST( ImGuiContext*, pass->scene_renderer->imgui_context ) );
   imgui_draw_data = ImGui::GetDrawData();
   
   /* Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates) */
@@ -227,7 +226,8 @@ crude_gfx_imgui_pass_render
   /* Render command lists */
   draw_counts = imgui_draw_data->CmdListsCount;
   
-  uint32_t vtx_buffer_offset = 0, index_buffer_offset = 0;
+  vtx_buffer_offset = 0;
+  index_buffer_offset = 0;
   for ( int32 n = 0; n < draw_counts; ++n )
   {
     ImDrawList const *cmd_list = imgui_draw_data->CmdLists[ n ];

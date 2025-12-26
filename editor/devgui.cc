@@ -46,7 +46,7 @@ crude_devgui_draw
 )
 {
   crude_editor *editor = crude_editor_instance( );
-
+  
   ImGui::SetCurrentContext( editor->engine->imgui_context );
 
   if ( devgui->menubar_enabled && ImGui::BeginMainMenuBar( ) )
@@ -177,16 +177,6 @@ crude_devgui_draw
   }
 
   //ImGui::ShowDemoWindow( );
-}
-
-void
-crude_devgui_handle_input
-(
-  _In_ crude_devgui                                       *devgui,
-  _In_ crude_input                                        *input
-)
-{
-  crude_devgui_viewport_input( &devgui->dev_viewport, input );
 }
 
 void
@@ -549,6 +539,7 @@ crude_devgui_viewport_draw
   ImGui::Begin( "Viewport" );
   
   crude_entity camera_node = crude_scene_thread_manager_get_camera_node_UNSAFE( &editor->engine->___scene_thread_manager );
+  ImGuiContext *cc = ImGui::GetCurrentContext( );
   crude_devgui_viewport_draw_viewport_texture_( devgui_viewport, camera_node, editor->selected_node );
   crude_devgui_viewport_draw_viewport_imguizmo_( devgui_viewport, world, camera_node, editor->selected_node );
   ImGui::End();
@@ -570,7 +561,7 @@ crude_devgui_viewport_draw_viewport_texture_
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devgui_viewport->selected_texture ) )
   {
-    ImGui::Image( CRUDE_CAST( ImTextureRef, &devgui_viewport->selected_texture.index ), ImGui::GetContentRegionAvail( ) );
+    //ImGui::Image( CRUDE_CAST( ImTextureRef, &devgui_viewport->selected_texture.index ), ImGui::GetContentRegionAvail( ) );
   }
 
   ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
@@ -731,14 +722,6 @@ crude_devgui_viewport_draw_viewport_imguizmo_
   //ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
 }
 
-void
-crude_devgui_viewport_input
-(
-  _In_ crude_devgui_viewport                              *devgui_viewport,
-  _In_ crude_input                                        *input
-)
-{
-}
 
 /******************************
  * 

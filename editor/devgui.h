@@ -69,13 +69,6 @@ crude_devgui_draw
 );
 
 CRUDE_API void
-crude_devgui_handle_input
-(
-  _In_ crude_devgui                                       *devgui,
-  _In_ crude_input                                        *input
-);
-
-CRUDE_API void
 crude_devgui_on_resize
 (
   _In_ crude_devgui                                       *devgui
@@ -139,13 +132,6 @@ crude_devgui_viewport_draw
 (
   _In_ crude_devgui_viewport                              *devgui_viewport,
   _In_ crude_ecs                                          *world
-);
-
-CRUDE_API void
-crude_devgui_viewport_input
-(
-  _In_ crude_devgui_viewport                              *devgui_viewport,
-  _In_ crude_input                                        *input
 );
 
 /******************************

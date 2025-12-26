@@ -67,6 +67,7 @@ typedef struct crude_engine
    ******************************/
   ImGuiContext                                            *imgui_context;
   ImFont                                                  *imgui_font;
+  mtx_t                                                    imgui_mutex;
 
   /******************************
    *
