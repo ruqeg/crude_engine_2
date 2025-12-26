@@ -30,6 +30,7 @@ bool crude_parse_json_to_component_func##component_type\
 (\
   _Out_ component_type                                    *component,\
   _In_ cJSON const                                        *component_json,\
+  _In_ crude_ecs                                          *world,\
   _In_ crude_entity                                        node,\
   _In_ crude_node_manager                                 *manager\
 )
@@ -44,6 +45,7 @@ cJSON* crude_parse_component_to_json_func##component_type\
 #define CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( component_type )\
 void crude_parse_component_to_imgui_func##component_type\
 (\
+  _In_ crude_ecs                                          *world,\
   _In_ crude_entity                                        node,\
   _In_ component_type                                     *component,\
   _In_ crude_node_manager                                 *manager\

@@ -3,48 +3,14 @@
 #include <engine/engine/environment.h>
 #include <engine/engine/engine_commands_manager.h>
 #include <engine/graphics/asynchronous_loader_manager.h>
-#include <engine/graphics/imgui.h>
-#include <engine/graphics/scene_renderer.h>
 #include <engine/scene/node_manager.h>
 #include <engine/audio/audio_device.h>
 #include <engine/audio/audio_ecs.h>
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/platform/platform.h>
-#include <engine/core/ecs.h>
-
-typedef struct crude_graphics_thread_data
-{
-  /* Common */
-  bool                                                     running;
-
-  /* Graphics */
-  crude_gfx_device                                         gpu;
-  crude_gfx_render_graph                                   render_graph;
-  crude_gfx_render_graph_builder                           render_graph_builder;
-  crude_gfx_asynchronous_loader                            async_loader;
-  crude_gfx_scene_renderer                                 scene_renderer;
-  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
-  int64                                                    last_graphics_update_time;
-  float64                                                  absolute_time;
-  uint32                                                   framerate;
-  ImGuiContext                                            *imgui_context;
-
-  /* ecs */
-  crude_entity                                             focused_camera_node;
-  crude_entity                                             main_node;
-  crude_ecs                                               *world;
-} crude_graphics_thread_data;
-
-typedef struct crude_ecs_thread_data
-{
-  crude_ecs                                                world;
-  bool                                                     running;
-  int64                                                    last_update_time;
-  mtx_t                                                   *platform_mutex;
-  crude_platform                                          *platform_unsafe;
-  crude_platform                                           platform_copy;
-} crude_ecs_thread_data;
+#include <engine/engine/graphics_thread_manager.h>
+#include <engine/scene/scene_thread_manager.h>
 
 typedef struct crude_engine
 {
@@ -66,8 +32,8 @@ typedef struct crude_engine
    ******************************/
   crude_heap_allocator                                     common_allocator;
   crude_heap_allocator                                     resources_allocator;
-  crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    temporary_allocator;
+  crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
 
   /******************************
@@ -83,7 +49,7 @@ typedef struct crude_engine
    * ECS
    *
    ******************************/
-  crude_ecs_thread_data                                    ecs_thread_data;
+  crude_scene_thread_manager                               ___scene_thread_manager;
 
   /******************************
    *
@@ -91,7 +57,7 @@ typedef struct crude_engine
    *
    ******************************/
   crude_platform                                           platform;
-  mtx_t                                                    platform_mutex;
+  crude_input_thread_data                                  __input_thread_data;
   XMFLOAT2                                                 last_unrelative_mouse_position;
   
   /******************************
@@ -107,8 +73,9 @@ typedef struct crude_engine
    * Graphics
    *
    ******************************/
-  crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
-  crude_graphics_thread_data                               graphics_thread_data;
+  // !TODO MOVE TO SEP MANAGER
+  crude_gfx_asynchronous_loader_manager                    ___asynchronous_loader_manager;
+  crude_graphics_thread_manager                            ___graphics_thread_manager;
 
   /******************************
    *
@@ -128,15 +95,6 @@ typedef struct crude_engine
   crude_audio_device                                       audio_device;
   crude_audio_system_context                               audio_system_context;
   
-  /******************************
-   *
-   * Develop
-   *
-   ******************************/
-#if CRUDE_DEVELOP
-  //crude_physics_debug_system_context                       physics_debug_system_context;
-#endif
-
   /******************************
    *
    * Public

@@ -64,7 +64,8 @@ crude_devgui_deinitialize
 CRUDE_API void
 crude_devgui_draw
 (
-  _In_ crude_devgui                                       *devgui
+  _In_ crude_devgui                                       *devgui,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void
@@ -100,7 +101,8 @@ crude_devgui_nodes_tree_initialize
 CRUDE_API void
 crude_devgui_nodes_tree_draw
 (
-  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree
+  _In_ crude_devgui_nodes_tree                            *devgui_nodes_tree,
+  _In_ crude_ecs                                          *world
 );
 
 /******************************
@@ -117,7 +119,8 @@ crude_devgui_node_inspector_initialize
 CRUDE_API void
 crude_devgui_node_inspector_draw
 (
-  _In_ crude_devgui_node_inspector                        *devgui_inspector
+  _In_ crude_devgui_node_inspector                        *devgui_inspector,
+  _In_ crude_ecs                                          *world
 );
 
 /******************************
@@ -134,7 +137,8 @@ crude_devgui_viewport_initialize
 CRUDE_API void
 crude_devgui_viewport_draw
 (
-  _In_ crude_devgui_viewport                              *devgui_viewport
+  _In_ crude_devgui_viewport                              *devgui_viewport,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void
@@ -158,5 +162,6 @@ crude_devgui_editor_camera_initialize
 CRUDE_API void
 crude_devgui_editor_camera_draw
 (
-  _In_ crude_devgui_editor_camera                         *dev_editor_camera
+  _In_ crude_devgui_editor_camera                         *dev_editor_camera,
+  _In_ crude_ecs                                          *world
 );

@@ -36,7 +36,7 @@ crude_physics_components_import
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
 {
-  crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_static_body_handle );
+  crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body_handle );
   if ( previous_handle )
   {
     crude_physics_resources_manager_destroy_static_body( manager->physics_resources_manager, *previous_handle );
@@ -61,7 +61,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_handle )
 {
-  crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_character_body_handle );
+  crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character_body_handle );
   if ( previous_handle )
   {
     crude_physics_resources_manager_destroy_character_body( manager->physics_resources_manager, *previous_handle );
@@ -192,7 +192,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape )
     ImGui::Text( "Type: Box" );
     if ( ImGui::DragFloat3( "Half Extent", &component->box.half_extent.x, 0.01 ) )
     {
-      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_physics_collision_shape );
+      CRUDE_ENTITY_COMPONENT_MODIFIED( world, node, crude_physics_collision_shape );
     }
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
@@ -200,7 +200,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape )
     ImGui::Text( "Type: Sphere" );
     if ( ImGui::DragFloat( "Radius", &component->sphere.radius, 0.01 ) )
     {
-      CRUDE_ENTITY_COMPONENT_MODIFIED( node, crude_physics_collision_shape );
+      CRUDE_ENTITY_COMPONENT_MODIFIED( world, node, crude_physics_collision_shape );
     }
   }
 }
@@ -290,13 +290,13 @@ crude_physics_update_system_
     collision_shape = &collision_shape_per_entity[ i ];
     transform = &transform_per_entity[ i ];
 
-    character_body_node = crude_entity_from_iterator( it, ctx->physics->world, i );
+    character_body_node = crude_entity_from_iterator( it, i );
 
     character_body = crude_physics_resources_manager_access_character_body( ctx->physics->manager, character_body_handle );
 
     velocity = XMLoadFloat3( &character_body->velocity );
     
-    parent_to_world = crude_transform_parent_to_world( character_body_node );
+    parent_to_world = crude_transform_parent_to_world( it->world, character_body_node );
     node_to_parent = crude_transform_node_to_parent( transform );
     node_to_world = XMMatrixMultiply( node_to_parent, parent_to_world );
     
@@ -329,7 +329,7 @@ crude_physics_update_system_
         second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
         second_transform = &second_transform_per_entity[ static_body_index ];
         second_body_handle = &second_body_handle_per_entity[ static_body_index ];
-        second_body_node = crude_entity_from_iterator( &static_body_handle_it, ctx->physics->world, static_body_index );
+        second_body_node = crude_entity_from_iterator( &static_body_handle_it, static_body_index );
      
         second_body = crude_physics_resources_manager_access_static_body( ctx->physics->manager, *second_body_handle );
 
@@ -343,7 +343,7 @@ crude_physics_update_system_
           continue;
         }
 
-        second_transform_mesh_to_world = crude_transform_node_to_world( second_body_node, second_transform );
+        second_transform_mesh_to_world = crude_transform_node_to_world( it->world, second_body_node, second_transform );
         second_translation = second_transform_mesh_to_world.r[ 3 ];
 
         if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )

@@ -11,7 +11,7 @@
 #include <engine/physics/physics_resources_manager.h>
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
-#include <engine/scene/free_camera_ecs.h>
+#include <engine/scene/scripts/free_camera_ecs.h>
 #include <engine/external/game_ecs.h>
 #include <engine/external/game_debug_ecs.h>
 
@@ -26,6 +26,9 @@ typedef struct crude_editor
 
   /* Common */
   crude_entity                                             main_node;
+  
+  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
+  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
 
   /* Dev */
   crude_devgui                                             devgui;
@@ -38,10 +41,8 @@ typedef struct crude_editor
   crude_entity                                             node_to_dublicate;
   /* System Context */
   crude_free_camera_system_context                         free_camera_system_context;
-#if CRUDE_DEVELOP
   crude_physics_debug_system_context                       physics_debug_system_context;
   crude_game_debug_system_context                          game_debug_system_context;
-#endif
 } crude_editor;
 
 CRUDE_API void
@@ -54,6 +55,12 @@ crude_editor_initialize
 
 CRUDE_API void
 crude_editor_deinitialize
+(
+  _In_ crude_editor                                       *editor
+);
+
+CRUDE_API void
+crude_editor_update
 (
   _In_ crude_editor                                       *editor
 );

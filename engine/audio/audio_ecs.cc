@@ -51,12 +51,12 @@ crude_audio_listener_update_system_
     
     transform = &transform_per_entity[ i ];
     listener = &listener_per_entity[ i ];
-    listener_node = crude_entity_from_iterator( it, ctx->world, i );
+    listener_node = crude_entity_from_iterator( it, i );
 
     listener->last_local_to_world_update_time += it->delta_time;
     if ( listener->last_local_to_world_update_time > 0.016f )
     {
-      crude_audio_device_listener_set_local_to_world( ctx->device, crude_transform_node_to_world( listener_node, transform ) );
+      crude_audio_device_listener_set_local_to_world( ctx->device, crude_transform_node_to_world( it->world, listener_node, transform ) );
       listener->last_local_to_world_update_time = 0.f;
     }
   }

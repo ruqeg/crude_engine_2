@@ -169,6 +169,7 @@ CRUDE_API bool
 crude_gfx_scene_renderer_update_instances_from_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        main_node
 );
 

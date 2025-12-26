@@ -13,7 +13,7 @@ typedef struct crude_free_camera
 {
   float32                                                  moving_speed_multiplier;
   float32                                                  rotating_speed_multiplier;
-  crude_platform const                                    *platform;
+  crude_input const                                       *input;
   bool                                                     input_enabled;
 } crude_free_camera;
 
@@ -29,8 +29,7 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_free_camera );
  *********************************************************/
 typedef struct crude_free_camera_system_context
 {
-  crude_ecs                                               *world;
-  crude_platform                                          *platform;
+  crude_input const                                       *input;
 } crude_free_camera_system_context;
 
 CRUDE_API void

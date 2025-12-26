@@ -1,3 +1,5 @@
+#include <engine/core/profiler.h>
+
 #include <engine/graphics/asynchronous_loader_manager.h>
 
 static void
@@ -79,6 +81,8 @@ crude_gfx_asynchronous_loader_manager_pinned_task_asynchronous_loader_loop_
 )
 {
   crude_gfx_asynchronous_loader_manager *ctx = CRUDE_REINTERPRET_CAST( crude_gfx_asynchronous_loader_manager*, args );
+  
+  CRUDE_PROFILER_SET_THREAD_NAME( "crude_gfx_asynchronous_loader_manager_pinned_task_asynchronous_loader_loop_" );
 
   while ( ctx->async_loaders_valid )
   {

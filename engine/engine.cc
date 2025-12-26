@@ -180,18 +180,6 @@ crude_engine_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 );
 
-static void
-crude_engine_pinned_task_ecs_loop_
-(
-  _In_ void                                               *ctx
-);
-
-static void
-crude_engine_pinned_task_graphics_loop_
-(
-  _In_ void                                               *ctx
-);
-
 void
 crude_engine_initialize
 (
@@ -207,9 +195,9 @@ crude_engine_initialize
   crude_engine_initialize_services_( );
   crude_engine_initialize_allocators_( engine );
   crude_environment_initialize( &engine->environment, environment_absolute_filepath, working_directory, &engine->common_allocator, &engine->temporary_allocator );
-  crude_engine_initialize_ecs_( engine );
   crude_engine_initialize_tash_sheduler_( engine );
   crude_engine_initialize_platform_( engine, engine->environment.window.initial_title, engine->environment.window.initial_width, engine->environment.window.initial_height );
+  crude_engine_initialize_ecs_( engine );
   crude_engine_initialize_imgui_( engine );
   crude_engine_initialize_debug_( engine );
   crude_engine_initialize_audio_( engine );
@@ -219,16 +207,6 @@ crude_engine_initialize
   crude_engine_initialize_scene_( engine );
 
   engine->running = true;
-  engine->ecs_thread_data.running = true;
-  engine->ecs_thread_data.platform_copy = engine->platform;
-  engine->ecs_thread_data.platform_unsafe = &engine->platform;
-  engine->ecs_thread_data.platform_mutex = &engine->platform_mutex;
-
-  engine->graphics_thread_data.running = true;
-  engine->graphics_thread_data.world = &engine->ecs_thread_data.world;
-
-  crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_graphics_loop_, &engine->graphics_thread_data, CRUDE_GRAPHICS_ACTIVE_THREAD  );  
-  crude_task_sheduler_add_pinned_task( &engine->task_sheduler, crude_engine_pinned_task_ecs_loop_, &engine->ecs_thread_data, CRUDE_ECS_ACTIVE_THREAD );
 }
 
 void
@@ -246,9 +224,9 @@ crude_engine_deinitialize
   crude_engine_deinitialize_audio_( engine );
   crude_engine_deinitialize_debug_( engine );
   crude_engine_deinitialize_imgui_( engine );
+  crude_engine_deinitialize_ecs_( engine );
   crude_engine_deinitialize_platform_( engine );
   crude_engine_deinitialize_task_sheduler_( engine );
-  crude_engine_deinitialize_ecs_( engine );
   crude_environment_deinitialize( &engine->environment );
   crude_engine_deinitialize_allocators_( engine );
   crude_engine_deinitialize_services_( );
@@ -266,9 +244,8 @@ crude_engine_update
 
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   
-  mtx_lock( &engine->platform_mutex );
   crude_platform_update( &engine->platform );
-  mtx_unlock( &engine->platform_mutex );
+  crude_input_thread_data_affect_by_input( &engine->__input_thread_data, &engine->platform.input );
 
 cleanup:
   CRUDE_PROFILER_ZONE_END;
@@ -300,10 +277,10 @@ crude_engine_initialize_allocators_
   _In_ crude_engine                                       *engine
 )
 { 
-  crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
   crude_heap_allocator_initialize( &engine->common_allocator, CRUDE_RMEGA( 16 ), "common_allocator" );
   crude_heap_allocator_initialize( &engine->resources_allocator, CRUDE_RMEGA( 16 ), "resources_allocator" );
   crude_stack_allocator_initialize( &engine->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
+  crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
   crude_stack_allocator_initialize( &engine->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
 }
 
@@ -313,11 +290,9 @@ crude_engine_deinitialize_allocators_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_heap_allocator_deinitialize( &engine->cgltf_temporary_allocator );
   crude_heap_allocator_deinitialize( &engine->common_allocator );
   crude_heap_allocator_deinitialize( &engine->resources_allocator );
   crude_stack_allocator_deinitialize( &engine->temporary_allocator );
-  crude_stack_allocator_deinitialize( &engine->model_renderer_resources_manager_temporary_allocator );
 }
 
 void
@@ -326,12 +301,7 @@ crude_engine_initialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_ecs_initialize( &engine->ecs_thread_data.world );
-  engine->last_update_time = crude_time_now();
-  
-  CRUDE_ECS_TAG_DEFINE( &engine->ecs_thread_data.world, crude_entity_tag );
-  
-  crude_ecs_set_threads( &engine->ecs_thread_data.world, 1 );
+  crude_scene_thread_manager_initialize( &engine->___scene_thread_manager, &engine->task_sheduler, &engine->__input_thread_data );
 }
 
 static void
@@ -340,7 +310,7 @@ crude_engine_deinitialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_ecs_deinitalize( &engine->ecs_thread_data.world );
+  crude_scene_thread_manager_deinitialize( &engine->___scene_thread_manager );
 }
 
 void
@@ -432,7 +402,10 @@ crude_engine_initialize_audio_
   
   engine->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
   engine->audio_system_context.device = &engine->audio_device;
-  crude_audio_system_import( &engine->ecs_thread_data.world, &engine->audio_system_context );
+
+  crude_ecs *world = crude_scene_thread_manager_lock_world( &engine->___scene_thread_manager );
+  crude_audio_system_import( world, &engine->audio_system_context );
+  crude_scene_thread_manager_unlock_world( &engine->___scene_thread_manager );
 }
 
 static void
@@ -466,8 +439,7 @@ crude_engine_initialize_platform_
   creation.input_callback = crude_engine_input_callback_;
   creation.input_callback_ctx = engine;
   crude_platform_intialize( &engine->platform, &creation );
-  
-  mtx_init( &engine->platform_mutex, mtx_plain );
+  crude_input_thread_data_initialize( &engine->__input_thread_data );
 }
 
 void
@@ -476,7 +448,7 @@ crude_engine_deinitialize_platform_
   _In_ crude_engine                                       *engine
 )
 {
-  mtx_destroy( &engine->platform_mutex );
+  crude_input_thread_data_deinitialize( &engine->__input_thread_data );
   crude_platform_deintialize( &engine->platform );
 }
 
@@ -486,106 +458,8 @@ crude_engine_initialize_graphics_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_graphics_thread_data                              *graphics;
-  char const                                              *render_graph_file_path;
-  crude_string_buffer                                      temporary_name_buffer;
-  crude_gfx_model_renderer_resources_manager_creation      model_renderer_resources_manager_creation;
-  crude_gfx_device_creation                                device_creation;
-  crude_gfx_scene_renderer_creation                        scene_renderer_creation;
-  uint32                                                   temporary_allocator_marker;
-  
-  graphics = &engine->graphics_thread_data;
-
-  crude_gfx_asynchronous_loader_manager_intiailize( &engine->asynchronous_loader_manager, &engine->task_sheduler, 1u );
-
-  temporary_allocator_marker = crude_stack_allocator_get_marker( &engine->temporary_allocator );
-  
-  crude_string_buffer_initialize( &temporary_name_buffer, 1024, crude_stack_allocator_pack( &engine->temporary_allocator ) );
-
-  device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
-  device_creation.sdl_window = engine->platform.sdl_window;
-  device_creation.vk_application_name = "CrudeEngine";
-  device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container = crude_heap_allocator_pack( &engine->common_allocator );
-  device_creation.temporary_allocator = &engine->temporary_allocator;
-  device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = 3;
-  device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
-  device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
-  device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
-  crude_gfx_device_initialize( &graphics->gpu, &device_creation );
-  
-  crude_gfx_render_graph_builder_initialize( &graphics->render_graph_builder, &graphics->gpu );
-  crude_gfx_render_graph_initialize( &graphics->render_graph, &graphics->render_graph_builder );
-  
-  crude_gfx_asynchronous_loader_initialize( &graphics->async_loader, &graphics->gpu );
-  crude_gfx_asynchronous_loader_manager_add_loader( &engine->asynchronous_loader_manager, &graphics->async_loader );
-
-//#if CRUDE_DEVELOP
-  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.json" );
-//#else
-//  render_graph_file_path = crude_string_buffer_append_use_f( &temporary_name_buffer, "%s%s", game->render_graph_absolute_directory, "game\\render_graph_production.json" );
-//#endif
-  crude_gfx_render_graph_parse_from_file( &graphics->render_graph, render_graph_file_path, &engine->temporary_allocator );
-  crude_gfx_render_graph_compile( &graphics->render_graph, &engine->temporary_allocator );
-  
-  if ( graphics->gpu.mesh_shaders_extension_present )
-  {
-    crude_gfx_technique_load_from_file( "deferred_meshlet.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  }
-  else
-  {
-    crude_gfx_technique_load_from_file( "deferred_classic.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  }
-  //crude_gfx_technique_load_from_file( "pointshadow_meshlet.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-  crude_gfx_technique_load_from_file( "compute.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "debug.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "fullscreen.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "imgui.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "game/fullscreen.json", &graphics->gpu, &graphics->render_graph, &engine->temporary_allocator );
-  
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &game->temporary_allocator );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
-  
-  model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
-  model_renderer_resources_manager_creation.allocator = &engine->common_allocator;
-  model_renderer_resources_manager_creation.async_loader = &graphics->async_loader;
-  model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
-  model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
-  crude_gfx_model_renderer_resources_manager_intialize( &graphics->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
-
-  scene_renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );
-  scene_renderer_creation.async_loader = &graphics->async_loader;
-  scene_renderer_creation.allocator = &engine->common_allocator;
-  scene_renderer_creation.temporary_allocator = &engine->temporary_allocator;
-  scene_renderer_creation.model_renderer_resources_manager = &graphics->model_renderer_resources_manager;
-  scene_renderer_creation.imgui_pass_enalbed = true;
-  scene_renderer_creation.imgui_context = engine->imgui_context;
-  crude_gfx_scene_renderer_initialize( &graphics->scene_renderer, &scene_renderer_creation );
-
-#if CRUDE_DEVELOP
-  graphics->scene_renderer.options.hide_collision = true;
-  graphics->scene_renderer.options.hide_debug_gltf = true;
-#endif
-
-  graphics->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  graphics->scene_renderer.options.ambient_intensity = 1.5f;
-  graphics->scene_renderer.options.background_intensity = 0.f;
-  graphics->scene_renderer.options.hdr_pre_tonemapping_texture_name = "pbr";
-
-  graphics->framerate = 120;
-
-  graphics->absolute_time = 0.f;
-
-  graphics->imgui_context = engine->imgui_context;
-  
-  crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &graphics->scene_renderer );
-
-  crude_gfx_scene_renderer_register_passes( &graphics->scene_renderer, &graphics->render_graph );
-  //crude_gfx_render_graph_builder_register_render_pass( engine->render_graph.builder, "game_postprocessing_pass", crude_gfx_game_postprocessing_pass_pack( &game->game_postprocessing_pass ) );
-  
-  crude_stack_allocator_free_marker( &engine->temporary_allocator, temporary_allocator_marker );
+  crude_gfx_asynchronous_loader_manager_intiailize( &engine->___asynchronous_loader_manager, &engine->task_sheduler, 1u );
+  crude_graphics_thread_manager_initialize( &engine->___graphics_thread_manager, &engine->environment, engine->platform.sdl_window, &engine->task_sheduler, &engine->___asynchronous_loader_manager, &engine->___scene_thread_manager, engine->imgui_context, &engine->cgltf_temporary_allocator, &engine->model_renderer_resources_manager_temporary_allocator, &engine->common_allocator, &engine->temporary_allocator );
 }
 
 
@@ -595,20 +469,8 @@ crude_engine_deinitialize_graphics_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_graphics_thread_data                              *graphics;
-
-  graphics = &engine->graphics_thread_data;
-
-  crude_gfx_asynchronous_loader_manager_remove_loader( &engine->asynchronous_loader_manager, &graphics->async_loader );
-  vkDeviceWaitIdle( graphics->gpu.vk_device );
-  //crude_gfx_game_postprocessing_pass_deinitialize( &engine->game_postprocessing_pass );
-  crude_gfx_scene_renderer_deinitialize( &graphics->scene_renderer );
-  crude_gfx_asynchronous_loader_deinitialize( &graphics->async_loader );
-  crude_gfx_model_renderer_resources_manager_deintialize( &graphics->model_renderer_resources_manager );
-  crude_gfx_render_graph_builder_deinitialize( &graphics->render_graph_builder );
-  crude_gfx_render_graph_deinitialize( &graphics->render_graph );
-  crude_gfx_device_deinitialize( &graphics->gpu );
-  crude_gfx_asynchronous_loader_manager_deintiailize( &engine->asynchronous_loader_manager );
+  crude_gfx_asynchronous_loader_manager_deintiailize( &engine->___asynchronous_loader_manager );
+  crude_graphics_thread_manager_deinitialize( &engine->___graphics_thread_manager );
 }
 
 void
@@ -635,6 +497,7 @@ crude_engine_initialize_physics_
   _In_ crude_engine                                       *engine
 )
 {
+  crude_ecs                                               *world;
   crude_physics_resources_manager_creation                 physics_resources_manager_creation;
   crude_physics_creation                                   physics_creation;
 
@@ -645,12 +508,15 @@ crude_engine_initialize_physics_
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &engine->collision_resources_manager;
   physics_creation.manager = &engine->physics_resources_manager;
-  physics_creation.world = &engine->ecs_thread_data.world;
-  crude_physics_initialize( &engine->physics, &physics_creation );
+  
+  world = crude_scene_thread_manager_lock_world( &engine->___scene_thread_manager );
+  crude_physics_initialize( &engine->physics, &physics_creation, world );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;
-  crude_physics_system_import( &engine->ecs_thread_data.world, &engine->physics_system_context );
+  
+  crude_physics_system_import( world, &engine->physics_system_context );
+  crude_scene_thread_manager_unlock_world( &engine->___scene_thread_manager );
 }
 
 void
@@ -685,7 +551,6 @@ crude_engine_initialize_scene_
 {
   crude_node_manager_creation                              node_manager_creation;
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
-  node_manager_creation.world = &engine->ecs_thread_data.world;
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
   node_manager_creation.additional_parse_all_components_to_json_func = crude_engine_parse_all_components_to_json_;
@@ -725,99 +590,4 @@ crude_engine_parse_all_components_to_json_
   _In_ crude_node_manager                                 *manager
 )
 {
-}
-
-void
-crude_engine_pinned_task_ecs_loop_
-(
-  _In_ void                                               *ctx
-)
-{
-  crude_ecs_thread_data *data = CRUDE_REINTERPRET_CAST( crude_ecs_thread_data*, ctx );
-  while ( data->running )
-  {
-    int64 current_time = crude_time_now( );
-    float64 delta_time = crude_time_delta_seconds( data->last_update_time, current_time );
-  
-    mtx_lock( data->platform_mutex );
-    data->platform_copy = *data->platform_unsafe;
-    mtx_unlock( data->platform_mutex );
-
-    crude_ecs_progress( &data->world, delta_time );
-    
-    data->last_update_time = current_time;
-  }
-}
-
-void
-crude_engine_pinned_task_graphics_loop_
-(
-  _In_ void                                               *ctx
-)
-{
-  crude_graphics_thread_data *graphics = CRUDE_REINTERPRET_CAST( crude_graphics_thread_data*, ctx );
-
-  while ( graphics->running )
-  {
-    crude_gfx_texture                                       *final_render_texture;
-    float32                                                  last_graphics_update_delta;
-    bool                                                     new_buffers_recrteated_or_model_initialized;
-  
-    CRUDE_PROFILER_ZONE_NAME( "crude_engine_pinned_task_graphics_loop_" );
-  
-    final_render_texture = crude_gfx_access_texture( &graphics->gpu, crude_gfx_render_graph_builder_access_resource_by_name( graphics->scene_renderer.render_graph->builder, CRUDE_GRAPHICS_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
-
-    last_graphics_update_delta = crude_time_delta_seconds( graphics->last_graphics_update_time, crude_time_now( ) );
-
-    if ( !crude_entity_valid( graphics->focused_camera_node ) )
-    {
-      CRUDE_PROFILER_ZONE_END;
-      continue;
-    }
-
-    if ( last_graphics_update_delta < 1.f / graphics->framerate )
-    {
-      CRUDE_PROFILER_ZONE_END;
-      continue;
-    }
-
-    graphics->absolute_time += last_graphics_update_delta;
-  
-    graphics->last_graphics_update_time = crude_time_now( );
-
-    graphics->scene_renderer.options.absolute_time = graphics->absolute_time;
-
-    crude_gfx_new_frame( &graphics->gpu );
-  
-    mtx_lock( &graphics->world->mutex );
-    new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &graphics->scene_renderer, graphics->main_node );
-    graphics->scene_renderer.options.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_camera );
-    XMStoreFloat4x4( &graphics->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( graphics->focused_camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( graphics->focused_camera_node, crude_transform ) ) );
-    mtx_unlock( &graphics->world->mutex );
-  
-    if ( new_buffers_recrteated_or_model_initialized )
-    {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
-      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &graphics->model_renderer_resources_manager );
-    }
- 
-    ImGui::SetCurrentContext( graphics->imgui_context );
-    ImGui_ImplSDL3_NewFrame( );
-    ImGui::NewFrame( );
-#if CRUDE_DEVELOP
-    //crude_devmenu_draw( &game->devmenu );
-#endif
-  
-    if ( graphics->gpu.swapchain_resized_last_frame )
-    {
-      crude_gfx_scene_renderer_on_resize( &graphics->scene_renderer );
-      crude_gfx_render_graph_on_resize( &graphics->render_graph, graphics->gpu.vk_swapchain_width, graphics->gpu.vk_swapchain_height );
-    }
-
-    crude_gfx_scene_renderer_submit_draw_task( &graphics->scene_renderer, false );
-
-    crude_gfx_present( &graphics->gpu, final_render_texture );
-
-    CRUDE_PROFILER_ZONE_END;
-  }
 }

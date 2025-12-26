@@ -24,6 +24,7 @@ main
    while ( engine.running )
    {
      crude_engine_update( &engine );
+     crude_editor_update( crude_editor_instance( ) );
    }
    
   /* Deinitialization */

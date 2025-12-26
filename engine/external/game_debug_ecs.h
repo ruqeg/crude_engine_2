@@ -13,7 +13,6 @@
  *********************************************************/
 typedef struct crude_game_debug_system_context
 {
-  crude_ecs                                               *world;
   char const                                              *syringe_serum_station_active_model_absolute_filepath;
   char const                                              *syringe_spawnpoint_model_absolute_filepath;
   char const                                              *enemy_spawnpoint_model_absolute_filepath;

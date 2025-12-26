@@ -52,8 +52,8 @@ crude_engine_physics_collision_shape_create_observer_
   
     debug_model_absolute_filename = crude_string_buffer_append_use_f( ctx->string_bufffer, "%s%s", ctx->resources_absolute_directory, debug_model_relative_filename );
 
-    node = crude_entity_from_iterator( it, ctx->world, i );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_debug_collision, { debug_model_absolute_filename, true } );
+    node = crude_entity_from_iterator( it, i );
+    CRUDE_ENTITY_SET_COMPONENT( it->world, node, crude_debug_collision, { debug_model_absolute_filename, true } );
   }
 }
 

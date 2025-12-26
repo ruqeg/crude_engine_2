@@ -86,6 +86,7 @@ crude_transform_empty
 CRUDE_API XMMATRIX
 crude_transform_node_to_world
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_opt_ crude_transform const                          *transform
 );
@@ -99,6 +100,7 @@ crude_transform_node_to_parent
 CRUDE_API XMMATRIX
 crude_transform_parent_to_world
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node
 );
 

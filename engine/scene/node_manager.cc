@@ -7,7 +7,7 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/core/hash_map.h>
 #include <engine/physics/physics_ecs.h>
-#include <engine/physics/physics_ecs.h>
+#include <engine/scene/scripts/free_camera_ecs.h>
 #include <engine/external/game_ecs.h>
 
 #include <engine/scene/node_manager.h>
@@ -16,14 +16,16 @@ static crude_entity
 crude_node_manager_load_node_from_file_
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *absolute_filepath
+  _In_ char const                                         *absolute_filepath,
+  _In_ crude_ecs                                          *world
 );
 
 static crude_entity
 crude_node_manager_load_node_from_json_
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ cJSON                                              *node_json
+  _In_ cJSON                                              *node_json,
+  _In_ crude_ecs                                          *world
 );
 
 static cJSON*
@@ -37,12 +39,14 @@ static cJSON*
 crude_node_manager_node_to_json_hierarchy_
 (
   _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node
 );
 
 void
 crude_node_destroy_hierarchy_
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
@@ -53,7 +57,6 @@ crude_node_manager_initialize
   _In_ crude_node_manager_creation const                  *creation
 )
 {
-  manager->world = creation->world;
   manager->temporary_allocator = creation->temporary_allocator;
   manager->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
   manager->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
@@ -81,14 +84,15 @@ crude_node_manager_deinitialize
 void
 crude_node_manager_clear
 (
-  _In_ crude_node_manager                                 *manager
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world
 )
 {
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->hashed_absolute_filepath_to_node ); ++i )
   {
     if ( crude_hashmap_backet_key_valid( manager->hashed_absolute_filepath_to_node[ i ].key ) )
     {
-      crude_node_destroy_hierarchy_( manager->hashed_absolute_filepath_to_node[ i ].value );
+      crude_node_destroy_hierarchy_( world, manager->hashed_absolute_filepath_to_node[ i ].value );
     }
     manager->hashed_absolute_filepath_to_node[ i ].key = 0;
   }
@@ -101,7 +105,8 @@ crude_entity
 crude_node_manager_get_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath
+  _In_ char const                                         *node_absolute_filepath,
+  _In_ crude_ecs                                          *world
 )
 {
   crude_entity                                             node_template;
@@ -112,7 +117,7 @@ crude_node_manager_get_node
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
   if ( node_index == -1 )
   {
-    node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath );
+    node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath, world );
     CRUDE_HASHMAP_SET( manager->hashed_absolute_filepath_to_node, filename_hashed, node_template );
   }
   else
@@ -127,7 +132,8 @@ void
 crude_node_manager_remove_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath
+  _In_ char const                                         *node_absolute_filepath,
+  _In_ crude_ecs                                          *world
 )
 {
   int64                                                    node_index;
@@ -140,7 +146,7 @@ crude_node_manager_remove_node
     return;
   }
   
-  crude_node_destroy_hierarchy_( manager->hashed_absolute_filepath_to_node[ node_index ].value );
+  crude_node_destroy_hierarchy_( world, manager->hashed_absolute_filepath_to_node[ node_index ].value );
   CRUDE_HASHMAP_REMOVE( manager->hashed_absolute_filepath_to_node, filename_hashed );
 }
 
@@ -149,7 +155,8 @@ crude_node_manager_save_node_by_file_to_file
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_absolute_filepath,
-  _In_ char const                                         *saved_absolute_filepath
+  _In_ char const                                         *saved_absolute_filepath,
+  _In_ crude_ecs                                          *world
 )
 {
   int64                                                    node_index;
@@ -162,20 +169,21 @@ crude_node_manager_save_node_by_file_to_file
     return;
   }
   
-  crude_node_manager_save_node_to_file( manager, manager->hashed_absolute_filepath_to_node[ node_index ].value, saved_absolute_filepath );
+  crude_node_manager_save_node_to_file( manager, world, manager->hashed_absolute_filepath_to_node[ node_index ].value, saved_absolute_filepath );
 }
 
 void
 crude_node_manager_save_node_to_file
 (
   _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_ char const                                         *saved_absolute_filepath
 )
 {
   cJSON                                                   *node_json;
   char const                                              *node_str;
-  node_json = crude_node_manager_node_to_json_hierarchy_( manager, node );
+  node_json = crude_node_manager_node_to_json_hierarchy_( manager, world, node );
   node_str = cJSON_Print( node_json );
   crude_write_file( saved_absolute_filepath, node_str, strlen( node_str ) ); // TODO
   cJSON_Delete( node_json );
@@ -185,7 +193,8 @@ crude_entity
 crude_node_manager_load_node_from_file_
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *absolute_filepath
+  _In_ char const                                         *absolute_filepath,
+  _In_ crude_ecs                                          *world
 )
 {
   cJSON                                                   *node_json;
@@ -200,7 +209,8 @@ crude_node_manager_load_node_from_file_
   {
     return CRUDE_COMPOUNT_EMPTY( crude_entity );
   }
-  node = crude_node_manager_load_node_from_json_( manager, node_json );
+
+  node = crude_node_manager_load_node_from_json_( manager, node_json, world );
 
   cJSON_Delete( node_json );
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocated_marker );
@@ -212,7 +222,8 @@ crude_entity
 crude_node_manager_load_node_from_json_
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ cJSON                                              *node_json
+  _In_ cJSON                                              *node_json,
+  _In_ crude_ecs                                          *world
 )
 {
   crude_entity                                             node;
@@ -236,16 +247,16 @@ crude_node_manager_load_node_from_json_
     node_external_json_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     
     node_external_json = crude_node_manager_parse_json_( manager, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", manager->resources_absolute_directory, node_external_json_filepath ) );
-    node = crude_node_manager_load_node_from_json_( manager, node_external_json );
-    crude_entity_set_name( node, node_name );
+    node = crude_node_manager_load_node_from_json_( manager, node_external_json, world );
+    crude_entity_set_name( world, node, node_name );
 
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_node_external, { crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", node_external_json_filepath ) } );
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", node_external_json_filepath ) } );
 
     crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
   }
   else
   {
-    node = crude_entity_create_empty( manager->world, node_name );
+    node = crude_entity_create_empty( world, node_name );
   }
   
   if ( !is_node_external )
@@ -257,8 +268,8 @@ crude_node_manager_load_node_from_json_
     for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( children_json ); ++child_index )
     {
       child_json = cJSON_GetArrayItem( children_json, child_index );
-      crude_entity child_node = crude_node_manager_load_node_from_json_( manager, child_json );
-      crude_entity_set_parent( child_node, node );
+      crude_entity child_node = crude_node_manager_load_node_from_json_( manager, child_json, world );
+      crude_entity_set_parent( world, child_node, node );
     }
   }
 
@@ -272,8 +283,8 @@ crude_node_manager_load_node_from_json_
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
     node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
 
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( node, crude_transform, { transform } );
+    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, world, node, manager );
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_transform, { transform } );
 
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
     {
@@ -288,110 +299,110 @@ crude_node_manager_load_node_from_json_
       if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_gltf ) ) == 0 )
       {
         crude_gltf                                         gltf;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_gltf, { gltf } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_gltf, { gltf } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_camera ) ) == 0 )
       {
         crude_camera                                       camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_camera, { camera } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_camera, { camera } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_free_camera ) ) == 0 )
       {
         crude_free_camera                                  free_camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_free_camera, { free_camera } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_free_camera, { free_camera } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_light ) ) == 0 )
       {
         crude_light                                        light;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_light, { light } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_light, { light } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) == 0 )
       {
         crude_physics_static_body_handle                   static_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_static_body_handle, { static_body } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_static_body_handle, { static_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) == 0 )
       {
         crude_physics_character_body_handle                dynamic_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_character_body_handle, { dynamic_body } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_character_body_handle, { dynamic_body } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) == 0 )
       {
         crude_physics_collision_shape                      collision_shape;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_physics_collision_shape, { collision_shape } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_collision_shape, { collision_shape } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
       {
         crude_player_controller                            player_controller;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_player_controller, { player_controller } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_player_controller, { player_controller } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
       {
         crude_enemy                                        enemy;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_enemy, { enemy } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_enemy, { enemy } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_weapon ) ) == 0 )
       {
         crude_weapon                                       weapon;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_weapon )( &weapon, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_weapon, { weapon } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_weapon )( &weapon, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_weapon, { weapon } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
       {
         crude_level_01                                     level01;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_01, { level01 } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_01, { level01 } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) == 0 )
       {
         crude_level_starting_room                          level_starting_room;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_starting_room )( &level_starting_room, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_starting_room, { level_starting_room } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_starting_room )( &level_starting_room, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_starting_room, { level_starting_room } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
       {
         crude_player                                       player;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_player, { player } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_player, { player } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_recycle_station ) ) == 0 )
       {
         crude_recycle_station                              recycle_station;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_recycle_station )( &recycle_station, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_recycle_station, { recycle_station } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_recycle_station )( &recycle_station, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_recycle_station, { recycle_station } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_teleport_station ) ) == 0 )
       {
         crude_teleport_station                             teleport_station;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_teleport_station )( &teleport_station, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_teleport_station, { teleport_station } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_teleport_station )( &teleport_station, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_teleport_station, { teleport_station } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_cutscene_only_sound ) ) == 0 )
       {
         crude_level_cutscene_only_sound                    level_cutscene_only_sound;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_cutscene_only_sound )( &level_cutscene_only_sound, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_cutscene_only_sound, { level_cutscene_only_sound } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_cutscene_only_sound )( &level_cutscene_only_sound, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_cutscene_only_sound, { level_cutscene_only_sound } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) == 0 )
       {
         crude_level_boss_fight                             level_boss_fight;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_boss_fight )( &level_boss_fight, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_level_boss_fight, { level_boss_fight } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_boss_fight )( &level_boss_fight, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_boss_fight, { level_boss_fight } );
       }
       else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_boss ) ) == 0 )
       {
         crude_boss                                         boss;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_boss )( &boss, component_json, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( node, crude_boss, { boss } );
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_boss )( &boss, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_boss, { boss } );
       }
       else
       {
@@ -434,6 +445,7 @@ cJSON*
 crude_node_manager_node_to_json_hierarchy_
 (
   _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node
 )
 {
@@ -444,17 +456,17 @@ crude_node_manager_node_to_json_hierarchy_
 
   node_json = cJSON_CreateObject( );
   
-  cJSON_AddItemToObject( node_json, "name", cJSON_CreateString( crude_entity_get_name( node ) ) );
+  cJSON_AddItemToObject( node_json, "name", cJSON_CreateString( crude_entity_get_name( world, node ) ) );
 
-  is_external_node = CRUDE_ENTITY_HAS_COMPONENT( node, crude_node_external );
+  is_external_node = CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_node_external );
   if ( is_external_node )
   {
-    cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_node_external )->path ) );
+    cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external )->path ) );
   }
 
   {
     crude_transform const                                 *node_transform;
-    node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform );
+    node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform );
 
     if ( node_transform )
     {
@@ -491,110 +503,110 @@ crude_node_manager_node_to_json_hierarchy_
     
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
-    node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_camera );
+    node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_camera );
     if ( node_camera )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_camera )( node_camera, manager ) );
     }
     
-    node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
+    node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
     if ( node_gltf )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_gltf )( node_gltf, manager ) );
       is_gltf_node = true;
     }
     
-    node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_free_camera );
+    node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_free_camera );
     if ( node_free_camera )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_free_camera )( node_free_camera, manager ) );
     }
 
-    node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_light );
+    node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_light );
     if ( node_light )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light, manager ) );
     }
     
-    static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_static_body_handle );
+    static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_static_body_handle );
     if ( static_body )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body_handle )( static_body, manager ) );
     }
     
-    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_character_body_handle );
+    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_character_body_handle );
     if ( dynamic_body )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_character_body_handle )( dynamic_body, manager ) );
     }
     
-    collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_physics_collision_shape );
+    collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_collision_shape );
     if ( collision_shape )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_collision_shape )( collision_shape, manager ) );
     }
   
-    player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player_controller );
+    player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player_controller );
     if ( player_component )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
     }
     
-    enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_enemy );
+    enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_enemy );
     if ( enemy )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
     }
     
-    weapon = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_weapon );
+    weapon = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_weapon );
     if ( weapon )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_weapon )( weapon, manager ) );
     }
     
-    level_starting_room = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_starting_room );
+    level_starting_room = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_starting_room );
     if ( level_starting_room )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_starting_room )( level_starting_room, manager ) );
     }
     
-    level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_01 );
+    level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_01 );
     if ( level01 )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
     }
     
-    player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_player );
+    player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player );
     if ( player )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
     }
     
-    recycle_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_recycle_station );
+    recycle_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_recycle_station );
     if ( recycle_station )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_recycle_station )( recycle_station, manager ) );
     }
     
-    teleport_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_teleport_station );
+    teleport_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_teleport_station );
     if ( teleport_station )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_teleport_station )( teleport_station, manager ) );
     }
     
-    level_cutscene_only_sound = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_cutscene_only_sound );
+    level_cutscene_only_sound = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_cutscene_only_sound );
     if ( level_cutscene_only_sound )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_cutscene_only_sound )( level_cutscene_only_sound, manager ) );
     }
     
-    level_boss_fight = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_level_boss_fight );
+    level_boss_fight = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_boss_fight );
     if ( level_boss_fight )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_boss_fight )( level_boss_fight, manager ) );
     }
     
-    boss = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_boss );
+    boss = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_boss );
     if ( boss )
     {
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_boss )( boss, manager ) );
@@ -610,17 +622,17 @@ crude_node_manager_node_to_json_hierarchy_
     
     if ( !is_gltf_node && !is_external_node )
     {
-      ecs_iter_t it = crude_ecs_children( node );
+      ecs_iter_t it = crude_ecs_children( world, node );
       while ( ecs_children_next( &it ) )
       {
         for ( size_t i = 0; i < it.count; ++i )
         {
           crude_entity                                       child;
 
-          child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-          if ( !CRUDE_ENTITY_HAS_COMPONENT( child, crude_node_runtime ) )
+          child = crude_entity_from_iterator( &it, i );
+          if ( !CRUDE_ENTITY_HAS_COMPONENT( world, child, crude_node_runtime ) )
           {
-            cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, child ) );
+            cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, world, child ) );
           }
         }
       }
@@ -633,23 +645,24 @@ crude_node_manager_node_to_json_hierarchy_
 void
 crude_node_destroy_hierarchy_
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node
 )
 {
-  if ( !crude_entity_valid( node ) )
+  if ( !crude_entity_valid( world, node ) )
   {
     return;
   }
 
-  ecs_iter_t it = crude_ecs_children( node );
+  ecs_iter_t it = crude_ecs_children( world, node );
   while ( ecs_children_next( &it ) )
   {
     for ( size_t i = 0; i < it.count; ++i )
     {
-      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = it.entities[ i ], .world = node.world } );
-      crude_entity_destroy_hierarchy( child );
+      crude_entity child = crude_entity_from_iterator( &it, i );
+      crude_entity_destroy_hierarchy( world, child );
     }
   }
 
-  crude_entity_destroy( node );
+  crude_entity_destroy( world, node );
 }

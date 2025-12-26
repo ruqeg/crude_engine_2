@@ -5,20 +5,8 @@
 
 #include <engine/core/alias.h>
 
-typedef struct crude_ecs
-{
-  mtx_t                                                    mutex;
-  ecs_world_t                                             *handle;
-} crude_ecs;
-
-typedef struct crude_entity
-{
-  ecs_entity_t                                             handle;
-  crude_ecs                                               *world;
-} crude_entity;
-
-#define CRUDE_ECS_MODULE_IMPORT_DECL( fnname ) CRUDE_API void fnname##Import( crude_ecs* world )
-#define CRUDE_ECS_MODULE_IMPORT_IMPL( fnname ) void fnname##Import( crude_ecs* world )
+typedef ecs_world_t crude_ecs;
+typedef ecs_entity_t crude_entity;
 
 /************************************************
  *
@@ -32,14 +20,13 @@ CRUDE_API ECS_TAG_DECLARE( crude_entity_tag );
  * ECS World Functions Declaration 
  * 
  ***********************************************/
-CRUDE_API void
-crude_ecs_initialize
+CRUDE_API crude_ecs*
+crude_ecs_create
 (
-  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API int
-crude_ecs_deinitalize
+crude_ecs_destroy
 (
   _In_ crude_ecs                                          *world
 );
@@ -67,6 +54,7 @@ crude_ecs_lookup_entity
 CRUDE_API crude_entity
 crude_ecs_lookup_entity_from_parent
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        parent,
   _In_ char const                                         *path
 );
@@ -88,6 +76,7 @@ crude_ecs_query_create
 CRUDE_API ecs_iter_t
 crude_ecs_children
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        parent
 );
 
@@ -100,7 +89,6 @@ CRUDE_API crude_entity
 crude_entity_from_iterator
 (
   _In_ ecs_iter_t                                         *it,
-  _In_ crude_ecs                                          *world,
   _In_ uint64                                              index
 );
 
@@ -120,18 +108,21 @@ crude_entity_create_empty
 CRUDE_API void
 crude_entity_destroy
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
 CRUDE_API bool
 crude_entity_valid
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
 CRUDE_API void
 crude_entity_set_parent
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ crude_entity                                        parent
 );
@@ -139,18 +130,21 @@ crude_entity_set_parent
 CRUDE_API crude_entity
 crude_entity_get_parent
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
 CRUDE_API char const*
 crude_entity_get_name
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
 CRUDE_API void
 crude_entity_set_name
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ char const                                         *name
 );
@@ -158,12 +152,14 @@ crude_entity_set_name
 CRUDE_API void
 crude_entity_destroy_hierarchy
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
 );
 
 CRUDE_API crude_entity
 crude_entity_copy
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        src,
   _In_ bool                                                copy_value
 );
@@ -171,6 +167,7 @@ crude_entity_copy
 CRUDE_API crude_entity
 crude_entity_copy_hierarchy
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        src,
   _In_ char const                                         *name,
   _In_ bool                                                copy_value,
@@ -180,6 +177,7 @@ crude_entity_copy_hierarchy
 CRUDE_API void
 crude_entity_enable
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ bool                                                enabled
 );
@@ -187,6 +185,7 @@ crude_entity_enable
 CRUDE_API void
 crude_entity_enable_hierarchy
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ bool                                                enabled
 );
@@ -194,6 +193,7 @@ crude_entity_enable_hierarchy
 CRUDE_API void
 crude_entity_add_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -201,6 +201,7 @@ crude_entity_add_component
 CRUDE_API void
 crude_entity_set_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id,
   _In_ uint64                                              size,
@@ -210,6 +211,7 @@ crude_entity_set_component
 CRUDE_API void*
 crude_entity_get_or_add_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -217,6 +219,7 @@ crude_entity_get_or_add_component
 CRUDE_API void const*
 crude_entity_get_immutable_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -224,6 +227,7 @@ crude_entity_get_immutable_component
 CRUDE_API void*
 crude_entity_get_mutable_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -231,6 +235,7 @@ crude_entity_get_mutable_component
 CRUDE_API bool
 crude_entity_has_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -238,6 +243,7 @@ crude_entity_has_component
 CRUDE_API void
 crude_entity_remove_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -245,6 +251,7 @@ crude_entity_remove_component
 CRUDE_API void
 crude_entity_modified_component
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -252,6 +259,7 @@ crude_entity_modified_component
 CRUDE_API bool
 crude_entity_has_id
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -259,6 +267,7 @@ crude_entity_has_id
 CRUDE_API void
 crude_entity_add_id
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -266,6 +275,7 @@ crude_entity_add_id
 CRUDE_API void
 crude_entity_remove_id
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
   _In_ ecs_id_t                                            id
 );
@@ -275,60 +285,60 @@ crude_entity_remove_id
  * ECS Macros
  * 
  ***********************************************/
-#define CRUDE_ENTITY_ADD_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_ADD_COMPONENT( world, entity, component )\
 {\
-  crude_entity_add_component( entity, ecs_id( component ) );\
+  crude_entity_add_component( world, entity, ecs_id( component ) );\
 }
 
-#define CRUDE_ENTITY_SET_COMPONENT( entity, component, ... )\
+#define CRUDE_ENTITY_SET_COMPONENT( world, entity, component, ... )\
 {\
   component tmp = CRUDE_COMPOUNT( component, ##__VA_ARGS__ );\
-  crude_entity_set_component( entity, ecs_id( component ), sizeof( component ), &tmp );\
+  crude_entity_set_component( world, entity, ecs_id( component ), sizeof( component ), &tmp );\
 }
 
-#define CRUDE_ENTITY_GET_OR_ADD_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_GET_OR_ADD_COMPONENT( world, entity, component )\
 (\
-  ( component* )( crude_entity_get_or_add_component( entity, ecs_id( component ) ) )\
+  ( component* )( crude_entity_get_or_add_component( world, entity, ecs_id( component ) ) )\
 )
 
-#define CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, entity, component )\
 (\
-  ( component const* )( crude_entity_get_immutable_component( entity, ecs_id( component ) ) )\
+  ( component const* )( crude_entity_get_immutable_component( world, entity, ecs_id( component ) ) )\
 )
 
-#define CRUDE_ENTITY_GET_MUTABLE_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, entity, component )\
 (\
-  ( component* )( crude_entity_get_mutable_component( entity, ecs_id( component ) ) )\
+  ( component* )( crude_entity_get_mutable_component( world, entity, ecs_id( component ) ) )\
 )
 
-#define CRUDE_ENTITY_HAS_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_HAS_COMPONENT( world, entity, component )\
 (\
-  crude_entity_has_component( entity, ecs_id( component ) )\
+  crude_entity_has_component( world, entity, ecs_id( component ) )\
 )
 
-#define CRUDE_ENTITY_REMOVE_COMPONENT( entity, component )\
+#define CRUDE_ENTITY_REMOVE_COMPONENT( world, entity, component )\
 (\
-  crude_entity_remove_component( entity, ecs_id( component ) )\
+  crude_entity_remove_component( world, entity, ecs_id( component ) )\
 )
 
-#define CRUDE_ENTITY_COMPONENT_MODIFIED( entity, component )\
+#define CRUDE_ENTITY_COMPONENT_MODIFIED( world, entity, component )\
 {\
-  crude_entity_modified_component( entity, ecs_id( component ) );\
+  crude_entity_modified_component( world, entity, ecs_id( component ) );\
 }
 
-#define CRUDE_ENTITY_HAS_TAG( entity, tag )\
+#define CRUDE_ENTITY_HAS_TAG( world, entity, tag )\
 (\
-  crude_entity_has_id( entity, tag )\
+  crude_entity_has_id( world, entity, tag )\
 )
 
-#define CRUDE_ENTITY_ADD_TAG( entity, tag )\
+#define CRUDE_ENTITY_ADD_TAG( world, entity, tag )\
 (\
-  crude_entity_add_id( entity, tag )\
+  crude_entity_add_id( world, entity, tag )\
 )
 
-#define CRUDE_ENTITY_REMOVE_TAG( entity, tag )\
+#define CRUDE_ENTITY_REMOVE_TAG( world, entity, tag )\
 (\
-  crude_entity_remove_id( entity, tag )\
+  crude_entity_remove_id( world, entity, tag )\
 )
 
 #define CRUDE_ECS_SYSTEM_DECLARE( id )\
@@ -350,13 +360,11 @@ crude_entity_remove_id
       .terms = ##__VA_ARGS__\
     }\
   };\
-  mtx_lock( &(world)->mutex );\
-  desc.entity = ecs_entity_init( (world)->handle, &edesc );\
+  desc.entity = ecs_entity_init( world, &edesc );\
   desc.callback = id_;\
   desc.ctx = ctx_;\
-  ecs_id(id_) = ecs_system_init( (world)->handle, &desc );\
+  ecs_id(id_) = ecs_system_init( world, &desc );\
   ecs_assert(ecs_id(id_) != 0, ECS_INVALID_PARAMETER, "failed to create system %s", #id_);\
-  mtx_unlock( &(world)->mutex );\
 }
 
 #define CRUDE_ECS_OBSERVER_DECLARE( id )\
@@ -372,40 +380,30 @@ crude_entity_remove_id
       .terms = ##__VA_ARGS__\
     }\
   };\
-  mtx_lock( &(world)->mutex );\
-  desc.entity = ecs_entity_init( (world)->handle, &edesc ); \
+  desc.entity = ecs_entity_init( world, &edesc ); \
   desc.callback = id_;\
   desc.events[0] = kind;\
   desc.ctx = ctx_;\
-  ecs_id( id_ ) = ecs_observer_init( (world)->handle, &desc );\
+  ecs_id( id_ ) = ecs_observer_init( world, &desc );\
   ecs_assert( ecs_id( id_ ) != 0, ECS_INVALID_PARAMETER, "failed to create observer %s", #id_ );\
-  mtx_unlock( &(world)->mutex );\
 }
 
 #define CRUDE_ECS_IMPORT(world, id)\
 {\
-  mtx_lock( &(world)->mutex );\
-  ECS_IMPORT((world)->handle, id);\
-  mtx_unlock( &(world)->mutex );\
+  ECS_IMPORT(world, id);\
 }
 
 #define CRUDE_ECS_MODULE(world, id)\
 {\
-  mtx_lock( &(world)->mutex );\
-  ECS_MODULE((world)->handle, id);\
-  mtx_unlock( &(world)->mutex );\
+  ECS_MODULE(world, id);\
 }
 
 #define CRUDE_ECS_TAG_DEFINE(world, id)\
 {\
-  mtx_lock( &(world)->mutex );\
-  ECS_TAG_DEFINE((world)->handle, id);\
-  mtx_unlock( &(world)->mutex );\
+  ECS_TAG_DEFINE(world, id);\
 }
 
 #define CRUDE_ECS_COMPONENT_DEFINE(world, id)\
 {\
-  mtx_lock( &(world)->mutex );\
-  ECS_COMPONENT_DEFINE((world)->handle, id);\
-  mtx_unlock( &(world)->mutex );\
+  ECS_COMPONENT_DEFINE(world, id);\
 }

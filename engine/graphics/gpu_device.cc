@@ -1329,8 +1329,7 @@ crude_gfx_add_texture_update_commands
   
   if ( gpu->num_textures_to_update == 0 )
   {
-    mtx_unlock( &gpu->texture_update_mutex );
-    return;
+    goto cleanup;
   }
   
   // !TODO this is a temporary fix, should just queue_cmd
@@ -1359,6 +1358,7 @@ crude_gfx_add_texture_update_commands
   
   gpu->num_textures_to_update = 0;
 
+cleanup:
   mtx_unlock( &gpu->texture_update_mutex );
 }
 

@@ -35,7 +35,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera )
  *                 System
  *
  *********************************************************/
-CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system );
+CRUDE_ECS_SYSTEM_DECLARE( crude_free_camera_update_system_ );
 
 void
 crude_free_camera_update_system_
@@ -55,14 +55,14 @@ crude_free_camera_update_system_
       continue;
     }
 
-    crude_input const *input = &ctx->platform->input;
+    crude_input const *input = ctx->input;
 
     int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
     int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
     int32 moving_right = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
 
     XMVECTOR translation = XMLoadFloat3( &transforms[ i ].translation );
-    XMMATRIX node_to_world = crude_transform_node_to_world( crude_entity_from_iterator( it, ctx->world, i ), &transforms[ i ] );
+    XMMATRIX node_to_world = crude_transform_node_to_world( it->world, crude_entity_from_iterator( it, i ), &transforms[ i ] );
 
     XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
     XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
@@ -93,8 +93,8 @@ crude_free_camera_update_system_
       XMVECTOR rotation = XMLoadFloat4( &transforms[ i ].rotation );
       XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
 
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel_sum.y ) );
-      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel_sum.x ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.y ) );
+      rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -free_cameras[ i ].rotating_speed_multiplier * input->mouse.rel.x ) );
       XMStoreFloat4( &transforms[ i ].rotation, rotation );
     }
   }
@@ -114,7 +114,7 @@ crude_free_camera_system_import
 
   crude_scene_components_import( world );
 
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system, EcsOnUpdate, ctx, {
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system_, EcsOnUpdate, ctx, {
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_free_camera ) },
   } );

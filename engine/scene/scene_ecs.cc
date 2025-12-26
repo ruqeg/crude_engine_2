@@ -149,21 +149,22 @@ crude_transform_empty
 XMMATRIX
 crude_transform_node_to_world
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_opt_ crude_transform const                          *transform
 )
 {
   if ( transform == NULL )
   {
-    transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform );
+    transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform );
   }
 
-  crude_entity parent = crude_entity_get_parent( node );
+  crude_entity parent = crude_entity_get_parent( world, node );
   
-  if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
+  if ( crude_entity_valid( world, parent ) && CRUDE_ENTITY_HAS_COMPONENT( world, parent, crude_transform ) )
   {
-    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
-    return XMMatrixMultiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( parent, parent_transform ) );
+    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, parent, crude_transform );
+    return XMMatrixMultiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( world, parent, parent_transform ) );
   }
   return crude_transform_node_to_parent( transform );
 }
@@ -180,15 +181,16 @@ crude_transform_node_to_parent
 XMMATRIX
 crude_transform_parent_to_world
 (
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node
 )
 {
-  crude_entity parent = crude_entity_get_parent( node );
+  crude_entity parent = crude_entity_get_parent( world, node );
   
-  if ( crude_entity_valid( parent ) && CRUDE_ENTITY_HAS_COMPONENT( parent, crude_transform ) )
+  if ( crude_entity_valid( world, parent ) && CRUDE_ENTITY_HAS_COMPONENT( world, parent, crude_transform ) )
   {
-    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( parent, crude_transform );
-    return crude_transform_node_to_world( parent, parent_transform );
+    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, parent, crude_transform );
+    return crude_transform_node_to_world( world, parent, parent_transform );
   }
 
   return XMMatrixIdentity( ) ;

@@ -39,6 +39,7 @@ static void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _Out_opt_ bool                                          *model_initialized
 );
@@ -196,6 +197,7 @@ bool
 crude_gfx_scene_renderer_update_instances_from_node
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        main_node
 )
 {
@@ -207,7 +209,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   model_initialized = false;
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
-  crude_scene_renderer_register_nodes_instances_( scene_renderer, main_node, &model_initialized );
+  crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node, &model_initialized );
   
   scene_renderer->total_meshes_instances_count = 0u;
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
@@ -861,6 +863,7 @@ void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _Out_opt_ bool                                          *model_initialized
 )
@@ -869,37 +872,37 @@ crude_scene_renderer_register_nodes_instances_
   bool                                                     local_model_initialized;
   XMMATRIX                                                 model_to_custom_model;
 
-  children_it = crude_ecs_children( node );
+  children_it = crude_ecs_children( world, node );
   local_model_initialized = false;
 
   model_to_custom_model = XMMatrixIdentity( );
   
-  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_gltf ) )
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
   {
     crude_gltf const                                  *child_gltf;
     crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
   
-    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_gltf );
+    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
   
     if ( !child_gltf->hidden )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF;
-      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }
 
 #if CRUDE_DEVELOP
-  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_debug_collision ) && CRUDE_ENTITY_HAS_COMPONENT( node, crude_physics_collision_shape ) )
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_debug_collision ) && CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_collision_shape ) )
   {
     crude_debug_collision const                       *child_debug_collision;
     crude_physics_collision_shape const               *collision_shape;
     crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
     
-    child_debug_collision = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_debug_collision );
-    collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( node, crude_physics_collision_shape );
+    child_debug_collision = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_debug_collision );
+    collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_collision_shape );
         
     if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
     {
@@ -923,28 +926,28 @@ crude_scene_renderer_register_nodes_instances_
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_debug_collision->absolute_filepath, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION;
-      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }
-  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_debug_gltf ) )
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_debug_gltf ) )
   {
     crude_debug_gltf const                            *child_gltf;
     crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
     
-    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_debug_gltf );
+    child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_debug_gltf );
     if ( !scene_renderer->options.hide_debug_gltf && child_gltf->visible )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF;
-      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( node, crude_transform ) ) ) );
+      XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );
     }
   }
 #endif
 
-  if ( CRUDE_ENTITY_HAS_COMPONENT( node, crude_light ) )
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )
   {
     crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
@@ -956,9 +959,8 @@ crude_scene_renderer_register_nodes_instances_
   {
     for ( size_t i = 0; i < children_it.count; ++i )
     {
-      crude_entity child = CRUDE_COMPOUNT( crude_entity, { .handle = children_it.entities[ i ], .world = node.world } );
-
-      crude_scene_renderer_register_nodes_instances_( scene_renderer, child, &local_model_initialized );
+      crude_entity child = crude_entity_from_iterator( &children_it, i );
+      crude_scene_renderer_register_nodes_instances_( scene_renderer, world, child, &local_model_initialized );
       *model_initialized |= local_model_initialized;
     }
   }

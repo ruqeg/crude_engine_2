@@ -1,5 +1,7 @@
 #pragma once
 
+#include <threads.h>
+
 #include <engine/platform/platform_resources.h>
 
 typedef void ( *crude_platform_quit_callback_function )
@@ -34,6 +36,38 @@ typedef struct crude_platform
   crude_platform_quit_callback_function                    quit_callback;
   void                                                    *quit_callback_ctx;
 } crude_platform;
+
+typedef struct crude_input_thread_data
+{
+  crude_input                                              input;
+  mtx_t                                                    mutex;
+} crude_input_thread_data;
+
+CRUDE_API void
+crude_input_thread_data_initialize
+(
+  _In_ crude_input_thread_data                            *thread_data
+);
+
+CRUDE_API void
+crude_input_thread_data_deinitialize
+(
+  _In_ crude_input_thread_data                            *thread_data
+);
+
+CRUDE_API void
+crude_input_thread_data_flush_input
+(
+  _In_ crude_input_thread_data                            *thread_data,
+  _Out_ crude_input                                       *input
+);
+
+CRUDE_API void
+crude_input_thread_data_affect_by_input
+(
+  _In_ crude_input_thread_data                            *thread_data,
+  _In_ crude_input const                                  *input
+);
 
 CRUDE_API void
 crude_platform_service_initialize

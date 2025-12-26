@@ -5,6 +5,7 @@
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
 #include <engine/physics/physics_resources_manager.h>
+#include <engine/scene/scene_thread_manager.h>
 
 typedef struct crude_node_manager crude_node_manager;
 
@@ -25,7 +26,6 @@ typedef void (*crude_scene_parse_all_components_to_json_func)
 
 typedef struct crude_node_manager_creation
 {
-  crude_ecs                                               *world;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
@@ -38,7 +38,6 @@ typedef struct crude_node_manager_creation
 typedef struct crude_node_manager
 {
   /* Context */
-  crude_ecs                                               *world;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
@@ -68,21 +67,24 @@ crude_node_manager_deinitialize
 CRUDE_API void
 crude_node_manager_clear
 (
-  _In_ crude_node_manager                                 *manager
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API crude_entity
 crude_node_manager_get_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath
+  _In_ char const                                         *node_absolute_filepath,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void
 crude_node_manager_remove_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath
+  _In_ char const                                         *node_absolute_filepath,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void
@@ -90,13 +92,15 @@ crude_node_manager_save_node_by_file_to_file
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_absolute_filepath,
-  _In_ char const                                         *saved_absolute_filepath
+  _In_ char const                                         *saved_absolute_filepath,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void
 crude_node_manager_save_node_to_file
 (
   _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_ char const                                         *saved_absolute_filepath
 );

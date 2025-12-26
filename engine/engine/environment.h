@@ -26,15 +26,15 @@ typedef struct crude_environment
 CRUDE_API void
 crude_environment_initialize
 (
-	_In_ crude_environment																	*environment,
-	_In_ char const																					*absolute_filepath,
+  _In_ crude_environment                                  *environment,
+  _In_ char const                                         *absolute_filepath,
   _In_ char const                                         *working_absolute_directory,
-	_In_ crude_heap_allocator															  *heap_allocator,
-	_In_ crude_stack_allocator															*temporary_allocator
+  _In_ crude_heap_allocator                               *heap_allocator,
+  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API void
 crude_environment_deinitialize
 (
-	_In_ crude_environment																	*environment
+  _In_ crude_environment                                  *environment
 );
