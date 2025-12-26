@@ -41,6 +41,13 @@ crude_editor_setup_custom_nodes_to_scene_
 );
 
 void
+crude_editor_imgui_custom_draw
+(
+  _In_ void                                               *ctx,
+  _In_ crude_ecs                                          *world
+);
+
+void
 crude_editor_initialize
 (
   _In_ crude_editor                                       *editor,
@@ -96,6 +103,19 @@ crude_editor_initialize
 
   crude_editor_setup_custom_nodes_to_scene_( editor, world );
   crude_scene_thread_manager_unlock_world( &editor->engine->___scene_thread_manager );
+
+  crude_graphics_thread_manager_set_imgui_custom_draw( &editor->engine->___graphics_thread_manager, crude_editor_imgui_custom_draw, editor );
+}
+
+void
+crude_editor_imgui_custom_draw
+(
+  _In_ void                                               *ctx,
+  _In_ crude_ecs                                          *world
+)
+{
+  crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
+  crude_devgui_draw( &editor->devgui, world );
 }
 
 void

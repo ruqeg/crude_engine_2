@@ -6,6 +6,12 @@
 #include <engine/scene/scene_thread_manager.h>
 #include <engine/graphics/imgui.h>
 
+typedef void (*crude_graphics_thread_manager_imgui_draw_custom_fun)
+(
+  _In_ void                                               *ctx,
+  _In_ crude_ecs                                          *world
+);
+
 typedef struct crude_graphics_thread_manager
 {
   /* Common */
@@ -23,6 +29,9 @@ typedef struct crude_graphics_thread_manager
   float64                                                  absolute_time;
   uint32                                                   framerate;
   ImGuiContext                                            *imgui_context;
+
+  crude_graphics_thread_manager_imgui_draw_custom_fun      imgui_draw_custom_fn;
+  void                                                    *imgui_draw_custom_ctx;
 
   /* Ctx */
   crude_gfx_asynchronous_loader_manager                   *___asynchronous_loader_manager;
@@ -55,4 +64,12 @@ CRUDE_API void
 crude_graphics_thread_manager_stop
 (
   _In_ crude_graphics_thread_manager                      *manager
+);
+
+CRUDE_API void
+crude_graphics_thread_manager_set_imgui_custom_draw
+(
+  _In_ crude_graphics_thread_manager                      *manager,
+  _In_ crude_graphics_thread_manager_imgui_draw_custom_fun imgui_draw_custom_fn,
+  _In_ void                                               *imgui_draw_custom_ctx
 );

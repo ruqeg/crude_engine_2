@@ -163,6 +163,20 @@ crude_graphics_thread_manager_stop
 }
 
 void
+crude_graphics_thread_manager_set_imgui_custom_draw
+(
+  _In_ crude_graphics_thread_manager                      *manager,
+  _In_ crude_graphics_thread_manager_imgui_draw_custom_fun imgui_draw_custom_fn,
+  _In_ void                                               *imgui_draw_custom_ctx
+)
+{
+  mtx_lock( &manager->mutex );
+  manager->imgui_draw_custom_fn = imgui_draw_custom_fn;
+  manager->imgui_draw_custom_ctx = imgui_draw_custom_ctx;
+  mtx_unlock( &manager->mutex );
+}
+
+void
 crude_graphics_thread_manager_pinned_task_graphics_loop_
 (
   _In_ void                                               *ctx
@@ -226,9 +240,13 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
     ImGui::SetCurrentContext( manager->imgui_context );
     ImGui_ImplSDL3_NewFrame( );
     ImGui::NewFrame( );
-#if CRUDE_DEVELOP
-    //crude_devmenu_draw( &game->devmenu );
-#endif
+    
+    if ( manager->imgui_draw_custom_fn )
+    {
+      world = crude_scene_thread_manager_lock_world( manager->___scene_thread_manager );
+      manager->imgui_draw_custom_fn( manager->imgui_draw_custom_ctx, world );
+      crude_scene_thread_manager_unlock_world( manager->___scene_thread_manager );
+    }
   
     if ( manager->gpu.swapchain_resized_last_frame )
     {
