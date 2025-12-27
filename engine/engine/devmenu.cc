@@ -157,14 +157,14 @@ crude_devmenu_draw
   //}
   
   crude_devmenu_viewport_draw( &devmenu->viewport, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_render_graph_draw( &devmenu->render_graph, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree, world, graphics_thread_manager, scene_thread_manager );
-  //crude_devmenu_node_inspector_draw( &devmenu->node_inspector, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_render_graph_draw( &devmenu->render_graph, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_node_inspector_draw( &devmenu->node_inspector, world, graphics_thread_manager, scene_thread_manager );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -1639,98 +1639,98 @@ crude_devmenu_viewport_draw
   XMFLOAT4X4                                               camera_view_to_clip, selected_node_to_parent, selected_parent_to_camera_view;
   XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
   
-  //ImGui::SetCursorPos( ImVec2( 0, 0 ) );
-  //ImGui::SetNextWindowSize( ImVec2( graphics_thread_manager->gpu.vk_swapchain_width, graphics_thread_manager->gpu.vk_swapchain_height )  );
-  //ImGui::Begin( "Viewport", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
+  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+  ImGui::SetNextWindowSize( ImVec2( graphics_thread_manager->gpu.vk_swapchain_width, graphics_thread_manager->gpu.vk_swapchain_height )  );
+  ImGui::Begin( "Viewport", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs );
 
-  //camera_node = crude_scene_thread_manager_get_camera_node_UNSAFE( scene_thread_manager );
-  //selected_node = dev_viewport->devmenu->nodes_tree.selected_node;
-  //if ( !crude_entity_valid( world, selected_node ) )
-  //{
-  //  goto cleanup;
-  //}
-  //
-  //selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
-  //camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_camera  );
-  //camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_transform  );
-  //selected_node_parent = crude_entity_get_parent( world, selected_node );
-  //
-  //if ( selected_node_transform == NULL )
-  //{
-  //  goto cleanup;
-  //}
-  //
-  //if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
-  //{
-  //  selected_gizmo_operation = ImGuizmo::TRANSLATE;
-  //}
-  //
-  //if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
-  //{
-  //  selected_gizmo_operation = ImGuizmo::ROTATE;
-  //}
-  //if ( ImGui::IsKeyPressed( ImGuiKey_C ) ) // r Key
-  //{
-  //  selected_gizmo_operation = ImGuizmo::SCALE;
-  //}
-  //
-  //if ( ImGui::RadioButton( "Translate", selected_gizmo_operation == ImGuizmo::TRANSLATE ) )
-  //{
-  //  selected_gizmo_operation = ImGuizmo::TRANSLATE;
-  //}
-  //
-  //ImGui::SameLine();
-  //
-  //if ( ImGui::RadioButton( "Rotate", selected_gizmo_operation == ImGuizmo::ROTATE ) )
-  //{
-  //  selected_gizmo_operation = ImGuizmo::ROTATE;
-  //}
-  //ImGui::SameLine();
-  //if ( ImGui::RadioButton( "Scale", selected_gizmo_operation == ImGuizmo::SCALE ) )
-  //{
-  //  selected_gizmo_operation = ImGuizmo::SCALE;
-  //}
-  //
-  //ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  //ImGuizmo::SetDrawlist( );
-  //ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
-  //
-  //if ( crude_entity_valid( world, selected_node_parent ) )
-  //{
-  //  selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node_parent, crude_transform  );
-  //}
-  //else
-  //{
-  //  selected_node_parent_transform = NULL;
-  //}
-  //
-  //if ( selected_node_parent_transform )
-  //{
-  //  XMStoreFloat4x4( &selected_parent_to_camera_view, DirectX::XMMatrixMultiply( crude_transform_node_to_world( world, selected_node_parent, selected_node_parent_transform ), XMMatrixInverse( NULL, crude_transform_node_to_world( world, camera_node, camera_transform ) ) ) );
-  //}
-  //else
-  //{
-  //  XMStoreFloat4x4( &selected_parent_to_camera_view, XMMatrixIdentity( ) );
-  //}
-  //
-  //XMStoreFloat4x4( &camera_view_to_clip, crude_camera_view_to_clip( camera ) );
-  //XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
-  //
-  //ImGuizmo::SetID( 0 );
-  //if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL ) )
-  //{
-  //  XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
-  //
-  //  XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
-  //  XMStoreFloat3( &selected_node_transform->scale, new_scale );
-  //  XMStoreFloat3( &selected_node_transform->translation, new_translation );
-  //
-  //  CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
-  //}
+  camera_node = crude_scene_thread_manager_get_camera_node_UNSAFE( scene_thread_manager );
+  selected_node = dev_viewport->devmenu->nodes_tree.selected_node;
+  if ( !crude_entity_valid( world, selected_node ) )
+  {
+    goto cleanup;
+  }
+  
+  selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
+  camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_camera  );
+  camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_transform  );
+  selected_node_parent = crude_entity_get_parent( world, selected_node );
+  
+  if ( selected_node_transform == NULL )
+  {
+    goto cleanup;
+  }
+  
+  if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
+  {
+    selected_gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+  
+  if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
+  {
+    selected_gizmo_operation = ImGuizmo::ROTATE;
+  }
+  if ( ImGui::IsKeyPressed( ImGuiKey_C ) ) // r Key
+  {
+    selected_gizmo_operation = ImGuizmo::SCALE;
+  }
+  
+  if ( ImGui::RadioButton( "Translate", selected_gizmo_operation == ImGuizmo::TRANSLATE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::TRANSLATE;
+  }
+  
+  ImGui::SameLine();
+  
+  if ( ImGui::RadioButton( "Rotate", selected_gizmo_operation == ImGuizmo::ROTATE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::ROTATE;
+  }
+  ImGui::SameLine();
+  if ( ImGui::RadioButton( "Scale", selected_gizmo_operation == ImGuizmo::SCALE ) )
+  {
+    selected_gizmo_operation = ImGuizmo::SCALE;
+  }
+  
+  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
+  ImGuizmo::SetDrawlist( );
+  ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+  
+  if ( crude_entity_valid( world, selected_node_parent ) )
+  {
+    selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node_parent, crude_transform  );
+  }
+  else
+  {
+    selected_node_parent_transform = NULL;
+  }
+  
+  if ( selected_node_parent_transform )
+  {
+    XMStoreFloat4x4( &selected_parent_to_camera_view, DirectX::XMMatrixMultiply( crude_transform_node_to_world( world, selected_node_parent, selected_node_parent_transform ), XMMatrixInverse( NULL, crude_transform_node_to_world( world, camera_node, camera_transform ) ) ) );
+  }
+  else
+  {
+    XMStoreFloat4x4( &selected_parent_to_camera_view, XMMatrixIdentity( ) );
+  }
+  
+  XMStoreFloat4x4( &camera_view_to_clip, crude_camera_view_to_clip( camera ) );
+  XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
+  
+  ImGuizmo::SetID( 0 );
+  if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL ) )
+  {
+    XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
+  
+    XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
+    XMStoreFloat3( &selected_node_transform->scale, new_scale );
+    XMStoreFloat3( &selected_node_transform->translation, new_translation );
+  
+    CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
+  }
   //ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
 
-//cleanup:
-  //ImGui::End( );
+cleanup:
+  ImGui::End( );
 }
 
 void
