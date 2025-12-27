@@ -21,6 +21,7 @@ crude_engine_commands_manager_deinitialize
   _In_ crude_engine_commands_manager                      *manager
 )
 {
+  CRUDE_ARRAY_DEINITIALIZE( manager->commands_queue );
 }
 
 void
@@ -69,23 +70,28 @@ crude_engine_commands_manager_update
 //    {
 //      bool                                                 buffer_recreated;
 //
-//      vkDeviceWaitIdle( manager->engine->gpu.vk_device );
+//      crude_graphics_thread_manager_lock( &manager->engine->___graphics_thread_manager );
+//      crude_ecs *world = crude_scene_thread_manager_lock_world( &manager->engine->___scene_thread_manager );
+//      vkDeviceWaitIdle( manager->engine->___graphics_thread_manager.gpu.vk_device );
 //      
-//      crude_node_manager_clear( &manager->engine->node_manager );
+//      crude_node_manager_clear( &manager->engine->node_manager, world );
 //      crude_physics_resources_manager_clear( &manager->engine->physics_resources_manager );
 //#if CRUDE_DEVELOP
-//      //crude_string_buffer_clear( &manager->engine->debug_strings_buffer );
+//      crude_string_buffer_clear( &manager->engine->debug_strings_buffer );
 //#endif
-//      //crude_string_buffer_clear( &manager->engine->game_strings_buffer );
-//      //game_setup_custom_preload_nodes_( game );
-//      //game->main_node = crude_node_manager_get_node( &manager->engine->node_manager, game->current_scene_absolute_filepath );
-//      //game_setup_custom_postload_nodes_( game );
+//      crude_string_buffer_clear( &manager->engine->game_strings_buffer );
+//      game_setup_custom_preload_nodes_( game );
+//      game->main_node = crude_node_manager_get_node( &manager->engine->node_manager, game->current_scene_absolute_filepath );
+//      game_setup_custom_postload_nodes_( game );
 //
 //      crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
 //      
 //      crude_audio_device_sound_stop( &game->audio_device, game->death_sound_handle );
 //      game->death_screen = false;
 //      game->death_overlap_color.w = 0;
+//
+//      crude_graphics_thread_manager_unlock( &manager->engine->___graphics_thread_manager );
+//      crude_scene_thread_manager_unlock_world( &manager->engine->___scene_thread_manager );
 //      break;
 //    }
 //    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_SCENE:
@@ -138,5 +144,5 @@ crude_engine_commands_manager_update
 //    }
 //  }
 //
-//  CRUDE_ARRAY_SET_LENGTH( game->commands_queue, 0u );
+//  CRUDE_ARRAY_SET_LENGTH( manager->commands_queue, 0u );
 }

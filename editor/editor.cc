@@ -63,10 +63,6 @@ crude_editor_initialize
   world = crude_scene_thread_manager_lock_world( &editor->engine->___scene_thread_manager );
   
   editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  editor->added_node_data = CRUDE_COMPOUNT_EMPTY( crude_devgui_added_node_data );
-  editor->node_to_add = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  editor->node_to_dublicate = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  editor->node_to_remove = CRUDE_COMPOUNT_EMPTY( crude_entity );
   
   editor->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
   editor->free_camera_system_context.input = crude_scene_thread_manager_get_input_copy_ptr( &editor->engine->___scene_thread_manager );
@@ -97,10 +93,6 @@ crude_editor_initialize
 
   crude_scene_thread_manager_set_main_node_UNSAFE( &editor->engine->___scene_thread_manager, editor->main_node );
   
-  editor->selected_node = editor->main_node;
-  
-  crude_devgui_initialize( &editor->devgui );
-
   crude_editor_setup_custom_nodes_to_scene_( editor, world );
   crude_scene_thread_manager_unlock_world( &editor->engine->___scene_thread_manager );
 
@@ -114,9 +106,6 @@ crude_editor_imgui_custom_draw
   _In_ crude_ecs                                          *world
 )
 {
-  crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
-  ImGui::SetCurrentContext( editor->engine->imgui_context );
-  crude_devgui_draw( &editor->devgui, world );
 }
 
 void
@@ -125,7 +114,6 @@ crude_editor_deinitialize
   _In_ crude_editor                                             *editor
 )
 {
-  crude_devgui_deinitialize( &editor->devgui );
   crude_editor_deinitialize_constant_strings_( editor );
 }
 
@@ -166,10 +154,10 @@ crude_editor_input_callback_
 {
   crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
   
-  //mtx_lock( &editor->engine->imgui_mutex );
-  //ImGui::SetCurrentContext( editor->engine->imgui_context );
-  //ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  //mtx_unlock( &editor->engine->imgui_mutex );
+  mtx_lock( &editor->engine->imgui_mutex );
+  ImGui::SetCurrentContext( editor->engine->imgui_context );
+  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  mtx_unlock( &editor->engine->imgui_mutex );
 }
 
 bool

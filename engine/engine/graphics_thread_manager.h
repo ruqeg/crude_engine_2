@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/engine/devmenu.h>
 #include <engine/engine/environment.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/asynchronous_loader_manager.h>
@@ -29,6 +30,7 @@ typedef struct crude_graphics_thread_manager
   float64                                                  absolute_time;
   uint32                                                   framerate;
   ImGuiContext                                            *imgui_context;
+  crude_devmenu                                           *devmenu;
 
   crude_graphics_thread_manager_imgui_draw_custom_fun      imgui_draw_custom_fn;
   void                                                    *imgui_draw_custom_ctx;
@@ -53,7 +55,8 @@ crude_graphics_thread_manager_initialize
   _In_ crude_heap_allocator                               *cgltf_temporary_allocator,
   _In_ crude_stack_allocator                              *model_renderer_resources_manager_temporary_allocator,
   _In_ crude_heap_allocator                               *common_allocator,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_stack_allocator                              *temporary_allocator,
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -64,6 +67,24 @@ crude_graphics_thread_manager_deinitialize
 
 CRUDE_API void
 crude_graphics_thread_manager_stop
+(
+  _In_ crude_graphics_thread_manager                      *manager
+);
+
+CRUDE_API void
+crude_graphics_thread_manager_start
+(
+  _In_ crude_graphics_thread_manager                      *manager
+);
+
+CRUDE_API void
+crude_graphics_thread_manager_lock
+(
+  _In_ crude_graphics_thread_manager                      *manager
+);
+
+CRUDE_API void
+crude_graphics_thread_manager_unlock
 (
   _In_ crude_graphics_thread_manager                      *manager
 );

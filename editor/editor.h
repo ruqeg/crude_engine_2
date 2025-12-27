@@ -7,7 +7,6 @@
 #include <engine/core/ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/scene/collisions_resources_manager.h>
-#include <editor/devgui.h>
 #include <engine/physics/physics_resources_manager.h>
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
@@ -29,14 +28,8 @@ typedef struct crude_editor
   char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
 
   /* Dev */
-  crude_devgui                                             devgui;
-  /* Game */
   crude_entity                                             editor_camera_node;
-  crude_entity                                             selected_node;
-  crude_devgui_added_node_data                             added_node_data;
-  crude_entity                                             node_to_add;
-  crude_entity                                             node_to_remove;
-  crude_entity                                             node_to_dublicate;
+
   /* System Context */
   crude_free_camera_system_context                         free_camera_system_context;
   crude_physics_debug_system_context                       physics_debug_system_context;

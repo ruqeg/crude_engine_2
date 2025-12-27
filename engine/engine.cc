@@ -157,6 +157,18 @@ crude_engine_deinitialize_scene_
 );
 
 static void
+crude_engine_initialize_devmenu_
+(
+  _In_ crude_engine                                       *engine
+);
+
+static void
+crude_engine_deinitialize_devmenu_
+(
+  _In_ crude_engine                                       *engine
+);
+
+static void
 crude_engine_input_callback_
 (
   _In_ void                                               *ctx,
@@ -211,6 +223,8 @@ crude_engine_initialize
   crude_engine_initialize_collisions_( engine );
   crude_engine_initialize_physics_( engine );
   crude_engine_initialize_scene_( engine );
+  crude_engine_commands_manager_initialize( &engine->commands_manager, engine, &engine->common_allocator );
+  crude_engine_initialize_devmenu_( engine );
 
   engine->running = true;
 }
@@ -225,7 +239,9 @@ crude_engine_deinitialize
 
   crude_graphics_thread_manager_stop( &engine->___graphics_thread_manager );
   crude_scene_thread_manager_stop( &engine->___scene_thread_manager );
-
+  
+  crude_engine_deinitialize_devmenu_( engine );
+  crude_engine_commands_manager_deinitialize( &engine->commands_manager );
   crude_engine_deinitialize_scene_( engine );
   crude_engine_deinitialize_physics_( engine );
   crude_engine_deinitialize_collisions_( engine );
@@ -253,6 +269,8 @@ crude_engine_update
 
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   
+  crude_devmenu_update( &engine->devmenu );
+  crude_engine_commands_manager_update( &engine->commands_manager );
   crude_platform_update( &engine->platform );
   crude_input_thread_data_affect_by_input( &engine->__input_thread_data, &engine->platform.input );
 
@@ -354,7 +372,7 @@ crude_engine_initialize_imgui_
   ImGui::StyleColorsDark();
   imgui_io = &ImGui::GetIO();
   imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  //imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   imgui_io->ConfigWindowsResizeFromEdges = true;
   imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
   
@@ -385,12 +403,6 @@ crude_engine_initialize_debug_
   _In_ crude_engine                                       *engine
 )
 {
-#if CRUDE_DEVELOP
-  //engine->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
-  //engine->physics_debug_system_context.resources_absolute_directory = engine->resources_absolute_directory;
-  ////engine->physics_debug_system_context.string_bufffer = &engine->debug_strings_buffer;
-  //crude_physics_debug_system_import( engine->world, &engine->physics_debug_system_context );
-#endif
 }
 
 void
@@ -472,7 +484,7 @@ crude_engine_initialize_graphics_
 )
 {
   crude_gfx_asynchronous_loader_manager_intiailize( &engine->___asynchronous_loader_manager, &engine->task_sheduler, 1u );
-  crude_graphics_thread_manager_initialize( &engine->___graphics_thread_manager, &engine->environment, engine->platform.sdl_window, &engine->task_sheduler, &engine->___asynchronous_loader_manager, &engine->___scene_thread_manager, &engine->imgui_mutex, engine->imgui_context, &engine->cgltf_temporary_allocator, &engine->model_renderer_resources_manager_temporary_allocator, &engine->common_allocator, &engine->temporary_allocator );
+  crude_graphics_thread_manager_initialize( &engine->___graphics_thread_manager, &engine->environment, engine->platform.sdl_window, &engine->task_sheduler, &engine->___asynchronous_loader_manager, &engine->___scene_thread_manager, &engine->imgui_mutex, engine->imgui_context, &engine->cgltf_temporary_allocator, &engine->model_renderer_resources_manager_temporary_allocator, &engine->common_allocator, &engine->temporary_allocator, &engine->devmenu );
 }
 
 
@@ -561,14 +573,16 @@ crude_engine_input_callback_
 {
   crude_engine *engine = CRUDE_CAST( crude_engine*, ctx );
   
-  //mtx_lock( &engine->imgui_mutex );
-  //ImGui::SetCurrentContext( engine->imgui_context );
-  //
-  //if ( engine->pub_engine_should_proccess_imgui_input )
-  //{
-  //  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  //}
-  //mtx_unlock( &engine->imgui_mutex );
+  mtx_lock( &engine->imgui_mutex );
+  ImGui::SetCurrentContext( engine->imgui_context );
+
+  if ( engine->pub_engine_should_proccess_imgui_input )
+  {
+    ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
+  }
+  mtx_unlock( &engine->imgui_mutex );
+  
+  crude_devmenu_handle_input( &engine->devmenu, &engine->platform.input, engine->___scene_thread_manager.world, &engine->___graphics_thread_manager, &engine->___scene_thread_manager );
 }
 
 void
@@ -596,6 +610,26 @@ crude_engine_deinitialize_scene_
 )
 {
   crude_node_manager_deinitialize( &engine->node_manager );
+}
+
+void
+crude_engine_initialize_devmenu_
+(
+  _In_ crude_engine                                       *engine
+)
+{
+  crude_ecs *world = crude_scene_thread_manager_lock_world( &engine->___scene_thread_manager );
+  crude_devmenu_initialize( &engine->devmenu, engine, world, &engine->___graphics_thread_manager, &engine->___scene_thread_manager );
+  crude_scene_thread_manager_unlock_world( &engine->___scene_thread_manager );
+}
+
+void
+crude_engine_deinitialize_devmenu_
+(
+  _In_ crude_engine                                       *engine
+)
+{
+  crude_devmenu_deinitialize( &engine->devmenu );
 }
 
 bool

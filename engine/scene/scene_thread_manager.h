@@ -7,7 +7,7 @@
 typedef struct crude_scene_thread_manager
 {
   crude_input_thread_data                                 *___input_thread_data;
-
+  
   crude_ecs                                               *world;
   bool                                                     running;
   mtx_t                                                    mutex;
@@ -16,6 +16,7 @@ typedef struct crude_scene_thread_manager
 
   crude_entity                                             main_node;
   crude_entity                                             camera_node;
+  crude_entity                                             player_controller_node;
 } crude_scene_thread_manager;
 
 CRUDE_API void
@@ -40,6 +41,12 @@ crude_scene_thread_manager_lock_world
 
 CRUDE_API void
 crude_scene_thread_manager_unlock_world
+(
+  _In_ crude_scene_thread_manager                         *manager
+);
+
+CRUDE_API crude_entity
+crude_scene_thread_manager_get_player_controller_node_UNSAFE
 (
   _In_ crude_scene_thread_manager                         *manager
 );

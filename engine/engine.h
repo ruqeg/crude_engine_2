@@ -11,6 +11,7 @@
 #include <engine/platform/platform.h>
 #include <engine/engine/graphics_thread_manager.h>
 #include <engine/scene/scene_thread_manager.h>
+#include <engine/engine/devmenu.h>
 
 typedef struct crude_engine
 {
@@ -96,6 +97,15 @@ typedef struct crude_engine
   crude_audio_device                                       audio_device;
   crude_audio_system_context                               audio_system_context;
   
+  /******************************
+   *
+   * Develop
+   *
+   ******************************/
+#if CRUDE_DEVELOP
+  crude_devmenu                                            devmenu;
+#endif
+
   /******************************
    *
    * Public

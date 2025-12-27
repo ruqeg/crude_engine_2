@@ -20,6 +20,7 @@ crude_scene_thread_manager_initialize
 {
   manager->running = true;
   manager->last_update_time = crude_time_now();
+  manager->player_controller_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   manager->___input_thread_data = ___input_thread_data;
   mtx_init( &manager->mutex, mtx_plain );
 
@@ -48,6 +49,15 @@ crude_scene_thread_manager_lock_world
 {
   mtx_lock( &manager->mutex );
   return manager->world;
+}
+
+crude_entity
+crude_scene_thread_manager_get_player_controller_node_UNSAFE
+(
+  _In_ crude_scene_thread_manager                         *manager
+)
+{
+  return manager->player_controller_node;
 }
 
 void

@@ -24,7 +24,8 @@ crude_graphics_thread_manager_initialize
   _In_ crude_heap_allocator                               *cgltf_temporary_allocator,
   _In_ crude_stack_allocator                              *model_renderer_resources_manager_temporary_allocator,
   _In_ crude_heap_allocator                               *common_allocator,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_stack_allocator                              *temporary_allocator,
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   char const                                              *render_graph_file_path;
@@ -37,6 +38,7 @@ crude_graphics_thread_manager_initialize
   manager->___asynchronous_loader_manager = ___asynchronous_loader_manager;
   manager->___scene_thread_manager = ___scene_thread_manager;
   manager->imgui_context = imgui_context;
+  manager->devmenu = devmenu;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
   
@@ -165,6 +167,35 @@ crude_graphics_thread_manager_stop
 }
 
 void
+crude_graphics_thread_manager_start
+(
+  _In_ crude_graphics_thread_manager                      *manager
+)
+{
+  mtx_lock( &manager->mutex );
+  manager->running = true;
+  mtx_unlock( &manager->mutex );
+}
+
+void
+crude_graphics_thread_manager_lock
+(
+  _In_ crude_graphics_thread_manager                      *manager
+)
+{
+  mtx_lock( &manager->mutex );
+}
+
+void
+crude_graphics_thread_manager_unlock
+(
+  _In_ crude_graphics_thread_manager                      *manager
+)
+{
+  mtx_unlock( &manager->mutex );
+}
+
+void
 crude_graphics_thread_manager_set_imgui_custom_draw
 (
   _In_ crude_graphics_thread_manager                      *manager,
@@ -223,10 +254,10 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
       manager->scene_renderer.options.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, camera_node, crude_camera );
       XMStoreFloat4x4( &manager->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( world, camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, camera_node, crude_transform ) ) );
     }
-    crude_scene_thread_manager_unlock_world( manager->___scene_thread_manager );
     
     mtx_lock( manager->___imgui_mutex );
     ImGui::SetCurrentContext( manager->imgui_context );
+    ImGuizmo::SetImGuiContext( manager->imgui_context );
     manager->absolute_time += last_graphics_update_delta;
   
     manager->last_graphics_update_time = crude_time_now( );
@@ -243,13 +274,16 @@ crude_graphics_thread_manager_pinned_task_graphics_loop_
  
     ImGui_ImplSDL3_NewFrame( );
     ImGui::NewFrame( );
-    
+    ImGuizmo::SetOrthographic( false );
+    ImGuizmo::BeginFrame();
+    //ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
+
+    crude_devmenu_draw( manager->devmenu, world, manager, manager->___scene_thread_manager );
     if ( manager->imgui_draw_custom_fn )
     {
-      world = crude_scene_thread_manager_lock_world( manager->___scene_thread_manager );
       manager->imgui_draw_custom_fn( manager->imgui_draw_custom_ctx, world );
-      crude_scene_thread_manager_unlock_world( manager->___scene_thread_manager );
     }
+    crude_scene_thread_manager_unlock_world( manager->___scene_thread_manager );
   
     if ( manager->gpu.swapchain_resized_last_frame )
     {
