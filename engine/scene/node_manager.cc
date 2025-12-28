@@ -344,65 +344,11 @@ crude_node_manager_load_node_from_json_
         CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, world, node, manager );
         CRUDE_ENTITY_SET_COMPONENT( world, node, crude_player_controller, { player_controller } );
       }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_enemy ) ) == 0 )
+      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_mars ) ) == 0 )
       {
-        crude_enemy                                        enemy;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_enemy )( &enemy, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_enemy, { enemy } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_weapon ) ) == 0 )
-      {
-        crude_weapon                                       weapon;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_weapon )( &weapon, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_weapon, { weapon } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_01 ) ) == 0 )
-      {
-        crude_level_01                                     level01;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_01 )( &level01, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_01, { level01 } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) == 0 )
-      {
-        crude_level_starting_room                          level_starting_room;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_starting_room )( &level_starting_room, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_starting_room, { level_starting_room } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_player ) ) == 0 )
-      {
-        crude_player                                       player;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player )( &player, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_player, { player } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_recycle_station ) ) == 0 )
-      {
-        crude_recycle_station                              recycle_station;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_recycle_station )( &recycle_station, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_recycle_station, { recycle_station } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_teleport_station ) ) == 0 )
-      {
-        crude_teleport_station                             teleport_station;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_teleport_station )( &teleport_station, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_teleport_station, { teleport_station } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_cutscene_only_sound ) ) == 0 )
-      {
-        crude_level_cutscene_only_sound                    level_cutscene_only_sound;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_cutscene_only_sound )( &level_cutscene_only_sound, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_cutscene_only_sound, { level_cutscene_only_sound } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) == 0 )
-      {
-        crude_level_boss_fight                             level_boss_fight;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_boss_fight )( &level_boss_fight, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_boss_fight, { level_boss_fight } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_boss ) ) == 0 )
-      {
-        crude_boss                                         boss;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_boss )( &boss, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_boss, { boss } );
+        crude_level_mars                                   level_mars;
+        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_mars )( &level_mars, component_json, world, node, manager );
+        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_mars, { level_mars } );
       }
       else
       {
@@ -489,18 +435,9 @@ crude_node_manager_node_to_json_hierarchy_
     crude_physics_static_body_handle const                *static_body;
     crude_physics_character_body_handle const             *dynamic_body;
     crude_physics_collision_shape const                   *collision_shape;
-    crude_player_controller const                         *player_component;
-    crude_player const                                    *player;
-    crude_enemy const                                     *enemy;
-    crude_weapon const                                    *weapon;
-    crude_level_01 const                                  *level01;
-    crude_recycle_station const                           *recycle_station;
-    crude_teleport_station const                          *teleport_station;
-    crude_level_starting_room const                       *level_starting_room;
-    crude_level_cutscene_only_sound const                 *level_cutscene_only_sound;
-    crude_level_boss_fight const                          *level_boss_fight;
-    crude_boss const                                      *boss;
-    
+    crude_player_controller const                         *player_controller_component;
+    crude_level_mars const                                *level_mars;
+
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
     node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_camera );
@@ -546,70 +483,16 @@ crude_node_manager_node_to_json_hierarchy_
       cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_collision_shape )( collision_shape, manager ) );
     }
   
-    player_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player_controller );
-    if ( player_component )
+    player_controller_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player_controller );
+    if ( player_controller_component )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_component, manager ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_controller_component, manager ) );
     }
-    
-    enemy = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_enemy );
-    if ( enemy )
+  
+    level_mars = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_mars );
+    if ( level_mars )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_enemy )( enemy, manager ) );
-    }
-    
-    weapon = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_weapon );
-    if ( weapon )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_weapon )( weapon, manager ) );
-    }
-    
-    level_starting_room = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_starting_room );
-    if ( level_starting_room )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_starting_room )( level_starting_room, manager ) );
-    }
-    
-    level01 = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_01 );
-    if ( level01 )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_01 )( level01, manager ) );
-    }
-    
-    player = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player );
-    if ( player )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player )( player, manager ) );
-    }
-    
-    recycle_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_recycle_station );
-    if ( recycle_station )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_recycle_station )( recycle_station, manager ) );
-    }
-    
-    teleport_station = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_teleport_station );
-    if ( teleport_station )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_teleport_station )( teleport_station, manager ) );
-    }
-    
-    level_cutscene_only_sound = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_cutscene_only_sound );
-    if ( level_cutscene_only_sound )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_cutscene_only_sound )( level_cutscene_only_sound, manager ) );
-    }
-    
-    level_boss_fight = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_boss_fight );
-    if ( level_boss_fight )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_boss_fight )( level_boss_fight, manager ) );
-    }
-    
-    boss = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_boss );
-    if ( boss )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_boss )( boss, manager ) );
+      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_mars )( level_mars, manager ) );
     }
     
     manager->additional_parse_all_components_to_json_func( node, node_components_json, manager );

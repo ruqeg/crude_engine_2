@@ -5,7 +5,6 @@
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
 #include <engine/physics/physics_resources_manager.h>
-#include <engine/scene/scene_thread_manager.h>
 
 typedef struct crude_node_manager crude_node_manager;
 

@@ -23,9 +23,6 @@ typedef struct crude_editor
 
   /* Common */
   crude_entity                                             main_node;
-  
-  char const                                              *syringe_spawnpoint_debug_model_absolute_filepath;
-  char const                                              *enemy_spawnpoint_debug_model_absolute_filepath;
 
   /* Dev */
   crude_entity                                             editor_camera_node;

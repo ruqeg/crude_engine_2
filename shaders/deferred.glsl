@@ -171,7 +171,8 @@ void main()
   {
     frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
-  accept = accept && frustum_visible;
+  accept = true;
+  frustum_visible = true;
   
   bool occlusion_visible = false;
   if ( frustum_visible )

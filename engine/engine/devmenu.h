@@ -7,8 +7,6 @@
 
 typedef struct crude_engine crude_engine;
 typedef struct crude_devmenu crude_devmenu;
-typedef struct crude_graphics_thread_manager crude_graphics_thread_manager;
-typedef struct crude_scene_thread_manager crude_scene_thread_manager;
 
 typedef struct crude_devmenu_texture_inspector
 {
@@ -115,10 +113,7 @@ CRUDE_API void
 crude_devmenu_initialize
 (
   _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_engine                                       *engine,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_engine                                       *engine
 );
 
 CRUDE_API void
@@ -130,10 +125,7 @@ crude_devmenu_deinitialize
 CRUDE_API void
 crude_devmenu_draw
 (
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -145,11 +137,7 @@ crude_devmenu_update
 CRUDE_API void
 crude_devmenu_handle_input
 (
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_input                                        *input,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 /***********************
@@ -214,10 +202,7 @@ CRUDE_API void
 crude_devmenu_gpu_visual_profiler_initialize
 (
   _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -235,10 +220,7 @@ crude_devmenu_gpu_visual_profiler_update
 CRUDE_API void
 crude_devmenu_gpu_visual_profiler_draw
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 );
 
 CRUDE_API void
@@ -256,10 +238,7 @@ CRUDE_API void
 crude_devmenu_memory_visual_profiler_initialize
 (
   _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -277,10 +256,7 @@ crude_devmenu_memory_visual_profiler_update
 CRUDE_API void
 crude_devmenu_memory_visual_profiler_draw
 (
-  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler
 );
 
 CRUDE_API void
@@ -298,10 +274,7 @@ CRUDE_API void
 crude_devmenu_texture_inspector_initialize
 (
   _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -319,10 +292,7 @@ crude_devmenu_texture_inspector_update
 CRUDE_API void
 crude_devmenu_texture_inspector_draw
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 );
 
 CRUDE_API void
@@ -340,10 +310,7 @@ CRUDE_API void
 crude_devmenu_render_graph_initialize
 (
   _In_ crude_devmenu_render_graph                         *dev_render_graph,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -361,10 +328,7 @@ crude_devmenu_render_graph_update
 CRUDE_API void
 crude_devmenu_render_graph_draw
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
 );
 
 CRUDE_API void
@@ -382,10 +346,7 @@ CRUDE_API void
 crude_devmenu_gpu_pool_initialize
 (
   _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -403,10 +364,7 @@ crude_devmenu_gpu_pool_update
 CRUDE_API void
 crude_devmenu_gpu_pool_draw
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
 );
 
 CRUDE_API void
@@ -424,10 +382,7 @@ CRUDE_API void
 crude_devmenu_scene_renderer_initialize
 (
   _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -445,10 +400,7 @@ crude_devmenu_scene_renderer_update
 CRUDE_API void
 crude_devmenu_scene_renderer_draw
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
 );
 
 CRUDE_API void
@@ -466,10 +418,7 @@ CRUDE_API void
 crude_devmenu_nodes_tree_initialize
 (
   _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -487,10 +436,7 @@ crude_devmenu_nodes_tree_update
 CRUDE_API void
 crude_devmenu_nodes_tree_draw
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
 );
 
 CRUDE_API void
@@ -508,10 +454,7 @@ CRUDE_API void
 crude_devmenu_node_inspector_initialize
 (
   _In_ crude_devmenu_node_inspector                       *dev_node_inspector,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -529,10 +472,7 @@ crude_devmenu_node_inspector_update
 CRUDE_API void
 crude_devmenu_node_inspector_draw
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_node_inspector                       *dev_node_inspector
 );
 
 CRUDE_API void
@@ -550,10 +490,7 @@ CRUDE_API void
 crude_devmenu_viewport_initialize
 (
   _In_ crude_devmenu_viewport                             *dev_viewport,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 );
 
 CRUDE_API void
@@ -571,10 +508,7 @@ crude_devmenu_viewport_update
 CRUDE_API void
 crude_devmenu_viewport_draw
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_viewport                             *dev_viewport
 );
 
 CRUDE_API void

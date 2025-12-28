@@ -9,9 +9,14 @@
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/platform/platform.h>
-#include <engine/engine/graphics_thread_manager.h>
-#include <engine/scene/scene_thread_manager.h>
 #include <engine/engine/devmenu.h>
+#include <engine/graphics/scene_renderer.h>
+#include <engine/graphics/imgui.h>
+
+typedef void (*crude_engine_imgui_draw_custom_fun)
+(
+  _In_ void                                               *ctx
+);
 
 typedef struct crude_engine
 {
@@ -50,7 +55,11 @@ typedef struct crude_engine
    * ECS
    *
    ******************************/
-  crude_scene_thread_manager                               ___scene_thread_manager;
+  crude_ecs                                               *world;
+
+  crude_entity                                             main_node;
+  crude_entity                                             camera_node;
+  crude_entity                                             player_controller_node;
 
   /******************************
    *
@@ -58,7 +67,6 @@ typedef struct crude_engine
    *
    ******************************/
   crude_platform                                           platform;
-  crude_input_thread_data                                  __input_thread_data;
   XMFLOAT2                                                 last_unrelative_mouse_position;
   
   /******************************
@@ -68,16 +76,28 @@ typedef struct crude_engine
    ******************************/
   ImGuiContext                                            *imgui_context;
   ImFont                                                  *imgui_font;
-  mtx_t                                                    imgui_mutex;
 
   /******************************
    *
    * Graphics
    *
    ******************************/
-  // !TODO MOVE TO SEP MANAGER
-  crude_gfx_asynchronous_loader_manager                    ___asynchronous_loader_manager;
-  crude_graphics_thread_manager                            ___graphics_thread_manager;
+  crude_gfx_asynchronous_loader_manager                    asynchronous_loader_manager;
+
+  crude_task_set_handle                                    graphics_task_set_handle;
+
+  crude_gfx_device                                         gpu;
+  crude_gfx_render_graph                                   render_graph;
+  crude_gfx_render_graph_builder                           render_graph_builder;
+  crude_gfx_asynchronous_loader                            async_loader;
+  crude_gfx_scene_renderer                                 scene_renderer;
+  crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
+  int64                                                    last_graphics_update_time;
+  uint32                                                   framerate;
+  float32                                                  graphics_absolute_time;
+
+  crude_engine_imgui_draw_custom_fun                       imgui_draw_custom_fn;
+  void                                                    *imgui_draw_custom_ctx;
 
   /******************************
    *

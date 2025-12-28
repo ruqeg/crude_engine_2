@@ -12,7 +12,6 @@
 #include <engine/graphics/imgui.h>
 #include <engine/engine.h>
 #include <engine/core/profiler.h>
-#include <engine/engine/graphics_thread_manager.h>
 
 #include <engine/engine/devmenu.h>
 
@@ -70,9 +69,6 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Node Inspector", crude_devmenu_node_inspector_callback
-  },
-  {
-    "Viewport", crude_devmenu_viewport_callback
   }
 };
 
@@ -80,10 +76,7 @@ void
 crude_devmenu_initialize
 (
   _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_engine                                       *engine,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_engine                                       *engine
 )
 {
   devmenu->engine = engine;
@@ -91,15 +84,15 @@ crude_devmenu_initialize
   devmenu->selected_option = 0;
   devmenu->previous_framerate = 0.f;
   devmenu->current_framerate = 0.f;
-  crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_viewport_initialize( &devmenu->viewport, devmenu, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu );
+  crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
+  crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
+  crude_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu );
+  crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu );
+  crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu );
+  crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu );
+  crude_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu );
+  crude_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
 }
 
 void
@@ -122,10 +115,7 @@ crude_devmenu_deinitialize
 void
 crude_devmenu_draw
 (
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_devmenu_draw" );
@@ -133,7 +123,7 @@ crude_devmenu_draw
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
   {
-    ImGui::SetNextWindowSize( ImVec2( graphics_thread_manager->gpu.vk_swapchain_width, 25 ) );
+    ImGui::SetNextWindowSize( ImVec2( devmenu->engine->gpu.vk_swapchain_width, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
@@ -156,15 +146,15 @@ crude_devmenu_draw
   //  ImGui::End( );
   //}
   
-  crude_devmenu_viewport_draw( &devmenu->viewport, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_render_graph_draw( &devmenu->render_graph, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree, world, graphics_thread_manager, scene_thread_manager );
-  crude_devmenu_node_inspector_draw( &devmenu->node_inspector, world, graphics_thread_manager, scene_thread_manager );
+  crude_devmenu_viewport_draw( &devmenu->viewport );
+  crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
+  crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
+  crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
+  crude_devmenu_render_graph_draw( &devmenu->render_graph );
+  crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
+  crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
+  crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
+  crude_devmenu_node_inspector_draw( &devmenu->node_inspector );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -199,18 +189,16 @@ crude_devmenu_update
 void
 crude_devmenu_handle_input
 (
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_input                                        *input,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
+  crude_input *input = &devmenu->engine->platform.input;
+
   if ( input->keys[ SDL_SCANCODE_F4 ].pressed )
   {
     devmenu->enabled = !devmenu->enabled;
     
-    crude_entity player_controller_node = crude_scene_thread_manager_get_player_controller_node_UNSAFE( scene_thread_manager );
+    crude_entity player_controller_node = devmenu->engine->player_controller_node;
     if ( devmenu->enabled )
     {
       crude_platform_show_cursor( &devmenu->engine->platform );
@@ -221,9 +209,9 @@ crude_devmenu_handle_input
     }
     
     crude_player_controller *player_controller = NULL;
-    if ( crude_entity_valid( world, player_controller_node ) )
+    if ( crude_entity_valid( devmenu->engine->world, player_controller_node ) )
     {
-      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, player_controller_node, crude_player_controller );
+      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( devmenu->engine->world, player_controller_node, crude_player_controller );
     }
     if ( player_controller )
     {
@@ -251,7 +239,7 @@ crude_devmenu_debug_gltf_view_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  devmenu->engine->___graphics_thread_manager.scene_renderer.options.hide_debug_gltf = !devmenu->engine->___graphics_thread_manager.scene_renderer.options.hide_debug_gltf;
+  devmenu->engine->scene_renderer.options.hide_debug_gltf = !devmenu->engine->scene_renderer.options.hide_debug_gltf;
 }
 
 
@@ -270,7 +258,7 @@ crude_devmenu_collisions_view_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  devmenu->engine->___graphics_thread_manager.scene_renderer.options.hide_collision = !devmenu->engine->___graphics_thread_manager.scene_renderer.options.hide_collision;
+  devmenu->engine->scene_renderer.options.hide_collision = !devmenu->engine->scene_renderer.options.hide_collision;
 }
 
 bool
@@ -288,12 +276,10 @@ crude_devmenu_free_camera_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  crude_ecs *world = crude_scene_thread_manager_lock_world( &devmenu->engine->___scene_thread_manager );
-  crude_entity player_controller_node = crude_scene_thread_manager_get_player_controller_node_UNSAFE( &devmenu->engine->___scene_thread_manager );
-  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, player_controller_node, crude_player_controller );
+  crude_entity player_controller_node = devmenu->engine->player_controller_node;
+  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( devmenu->engine->world, player_controller_node, crude_player_controller );
   player_controller->fly_mode = !player_controller->fly_mode;
   crude_physics_enable_simulation( &devmenu->engine->physics, !devmenu->engine->physics.simulation_enabled );
-  crude_scene_thread_manager_unlock_world( &devmenu->engine->___scene_thread_manager );
 }
 
 bool
@@ -311,7 +297,7 @@ crude_devmenu_reload_techniques_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  //game_push_reload_techniques_command( game_instance( ) );
+  crude_engine_commands_manager_push_reload_techniques_command( &devmenu->engine->commands_manager );
 }
 
 bool
@@ -330,14 +316,11 @@ void
 crude_devmenu_gpu_visual_profiler_initialize
 (
   _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_gpu_profiler->devmenu = devmenu;
-  dev_gpu_profiler->gpu = &graphics_thread_manager->gpu;
+  dev_gpu_profiler->gpu = &devmenu->engine->gpu;
   dev_gpu_profiler->enabled = false;
   dev_gpu_profiler->max_duration = 16.666f;
   dev_gpu_profiler->max_frames = 100u;
@@ -430,10 +413,7 @@ crude_devmenu_gpu_visual_profiler_update
 void
 crude_devmenu_gpu_visual_profiler_draw
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
 )
 {
   if ( !dev_gpu_profiler->enabled )
@@ -687,10 +667,7 @@ void
 crude_devmenu_memory_visual_profiler_initialize
 (
   _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_mem_profiler->devmenu = devmenu;
@@ -701,7 +678,7 @@ crude_devmenu_memory_visual_profiler_initialize
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &devmenu->engine->model_renderer_resources_manager_temporary_allocator ) );
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &devmenu->engine->resources_allocator ) );
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &devmenu->engine->temporary_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &graphics_thread_manager->render_graph.linear_allocator ) );
+  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &devmenu->engine->render_graph.linear_allocator ) );
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &devmenu->engine->node_manager.string_linear_allocator ) );
 }
 
@@ -725,10 +702,7 @@ crude_devmenu_memory_visual_profiler_update
 void
 crude_devmenu_memory_visual_profiler_draw
 (
-  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler
 )
 {
   if ( !dev_mem_profiler->enabled )
@@ -847,15 +821,12 @@ void
 crude_devmenu_texture_inspector_initialize
 (
   _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_texture_inspector->devmenu = devmenu;
   dev_texture_inspector->enabled = false;
-  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &graphics_thread_manager->gpu, crude_gfx_render_graph_builder_access_resource_by_name( graphics_thread_manager->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle )->handle;
+  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &devmenu->engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( devmenu->engine->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle )->handle;
 }
 
 void
@@ -877,10 +848,7 @@ crude_devmenu_texture_inspector_update
 void
 crude_devmenu_texture_inspector_draw
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
 )
 {
   char const                                              *preview_texture_name;
@@ -905,7 +873,7 @@ crude_devmenu_texture_inspector_draw
 
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
   {
-    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &graphics_thread_manager->gpu, dev_texture_inspector->texture_handle );
+    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &dev_texture_inspector->devmenu->engine->gpu, dev_texture_inspector->texture_handle );
     if ( selected_texture && selected_texture->name )
     {
       preview_texture_name = selected_texture->name;
@@ -914,7 +882,7 @@ crude_devmenu_texture_inspector_draw
   
   if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
   {
-    for ( uint32 t = 0; t < graphics_thread_manager->gpu.textures.pool_size; ++t )
+    for ( uint32 t = 0; t < dev_texture_inspector->devmenu->engine->gpu.textures.pool_size; ++t )
     {
       crude_gfx_texture                                   *texture;
       crude_gfx_texture_handle                             texture_handle;
@@ -926,7 +894,7 @@ crude_devmenu_texture_inspector_draw
         continue;
       }
       
-      texture = crude_gfx_access_texture( &graphics_thread_manager->gpu, texture_handle );
+      texture = crude_gfx_access_texture( &dev_texture_inspector->devmenu->engine->gpu, texture_handle );
       if ( !texture || !texture->name )
       {
         continue;
@@ -971,10 +939,7 @@ void
 crude_devmenu_render_graph_initialize
 (
   _In_ crude_devmenu_render_graph                         *dev_render_graph,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_render_graph->devmenu = devmenu;
@@ -1000,10 +965,7 @@ crude_devmenu_render_graph_update
 void
 crude_devmenu_render_graph_draw
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_render_graph                         *dev_render_graph
 )
 {
   if ( !dev_render_graph->enabled )
@@ -1074,10 +1036,7 @@ void
 crude_devmenu_gpu_pool_initialize
 (
   _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_gpu_pool->devmenu = devmenu;
@@ -1103,10 +1062,7 @@ crude_devmenu_gpu_pool_update
 void
 crude_devmenu_gpu_pool_draw
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
 )
 {
   if ( !dev_gpu_pool->enabled )
@@ -1119,7 +1075,7 @@ crude_devmenu_gpu_pool_draw
   uint64                                                   memory_used, memory_allocated;
 
   crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
-  vmaGetHeapBudgets( graphics_thread_manager->gpu.vma_allocator, gpu_memory_heap_budgets );
+  vmaGetHeapBudgets( dev_gpu_pool->devmenu->engine->gpu.vma_allocator, gpu_memory_heap_budgets );
  
   memory_used = memory_allocated = 0;
   for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
@@ -1128,21 +1084,21 @@ crude_devmenu_gpu_pool_draw
     memory_allocated += gpu_memory_heap_budgets[ i ].budget;
   }
    
-  vkGetPhysicalDeviceProperties( graphics_thread_manager->gpu.vk_physical_device, &vk_physical_properties );
+  vkGetPhysicalDeviceProperties( dev_gpu_pool->devmenu->engine->gpu.vk_physical_device, &vk_physical_properties );
   
   ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
   ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
   
   ImGui::Separator();
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.buffers, "Buffers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.textures, "Textures", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.pipelines, "Pipelines", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.samplers, "Samplers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.descriptor_sets, "DescriptorSets", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.descriptor_set_layouts, "DescriptorSetLayouts", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.framebuffers, "Framebuffers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.render_passes, "RenderPasses", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &graphics_thread_manager->gpu.shaders, "Shaders", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.buffers, "Buffers", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.textures, "Textures", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.pipelines, "Pipelines", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.samplers, "Samplers", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_sets, "DescriptorSets", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_set_layouts, "DescriptorSetLayouts", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.framebuffers, "Framebuffers", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.render_passes, "RenderPasses", dev_gpu_pool->devmenu );
+  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.shaders, "Shaders", dev_gpu_pool->devmenu );
 }
 
 void
@@ -1163,10 +1119,7 @@ void
 crude_devmenu_scene_renderer_initialize
 (
   _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_scene_rendere->devmenu = devmenu;
@@ -1192,10 +1145,7 @@ crude_devmenu_scene_renderer_update
 void
 crude_devmenu_scene_renderer_draw
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
 )
 {
   if ( !dev_scene_rendere->enabled )
@@ -1206,13 +1156,13 @@ crude_devmenu_scene_renderer_draw
   ImGui::Begin( "Scene Renderer" );
   if ( ImGui::CollapsingHeader( "Background" ) )
   {
-    ImGui::ColorEdit3( "Background Color", &graphics_thread_manager->scene_renderer.options.background_color.x );
-    ImGui::DragFloat( "Background Intensity", &graphics_thread_manager->scene_renderer.options.background_intensity, 1.f, 0.f );
+    ImGui::ColorEdit3( "Background Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.background_color.x );
+    ImGui::DragFloat( "Background Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.background_intensity, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
-    ImGui::ColorEdit3( "Ambient Color", &graphics_thread_manager->scene_renderer.options.ambient_color.x );
-    ImGui::DragFloat( "Ambient Intensity", &graphics_thread_manager->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
+    ImGui::ColorEdit3( "Ambient Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ambient_color.x );
+    ImGui::DragFloat( "Ambient Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
     ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
@@ -1250,9 +1200,6 @@ void
 crude_devmenu_nodes_tree_draw_internal_
 (
   _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager,
   _In_ crude_entity                                        node,
   _In_ uint32                                             *current_node_index
 )
@@ -1265,8 +1212,8 @@ crude_devmenu_nodes_tree_draw_internal_
   {
     can_open_children_nodes = false;
 
-    ecs_iter_t it = ecs_children( world, node );
-    if ( !CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) && ecs_children_next( &it ) )
+    ecs_iter_t it = ecs_children( dev_nodes_tree->devmenu->engine->world, node );
+    if ( !CRUDE_ENTITY_HAS_COMPONENT( dev_nodes_tree->devmenu->engine->world, node, crude_gltf ) && ecs_children_next( &it ) )
     {
       if ( it.count )
       {
@@ -1287,7 +1234,7 @@ crude_devmenu_nodes_tree_draw_internal_
     tree_node_flags |= ImGuiTreeNodeFlags_Selected;
   }
 
-  tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( world, node ) );
+  tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
   if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
   {
     dev_nodes_tree->selected_node = node;
@@ -1295,13 +1242,13 @@ crude_devmenu_nodes_tree_draw_internal_
 
   if ( ImGui::IsItemClicked( 1 ) && !ImGui::IsItemToggledOpen( ) )
   {
-    ImGui::OpenPopup( crude_entity_get_name( world, node ) );
+    ImGui::OpenPopup( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
   }
 
   if (ImGui::BeginDragDropSource( ) )
   {
-    ImGui::SetDragDropPayload( crude_entity_get_name( world, node ), NULL, 0 );
-    ImGui::Text( crude_entity_get_name( world, node ) );
+    ImGui::SetDragDropPayload( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ), NULL, 0 );
+    ImGui::Text( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
     ImGui::EndDragDropSource( );
   }
 
@@ -1310,13 +1257,13 @@ crude_devmenu_nodes_tree_draw_internal_
   {
     if ( can_open_children_nodes )
     {
-      ecs_iter_t it = ecs_children( world, node );
+      ecs_iter_t it = ecs_children( dev_nodes_tree->devmenu->engine->world, node );
       while ( ecs_children_next( &it ) )
       {
         for ( int32 i = 0; i < it.count; ++i )
         {
           crude_entity child = crude_entity_from_iterator( &it, i );
-          crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, world, graphics_thread_manager, scene_thread_manager, child, current_node_index );
+          crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, child, current_node_index );
         }
       }
     }
@@ -1331,14 +1278,11 @@ void
 crude_devmenu_nodes_tree_initialize
 (
   _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_nodes_tree->devmenu = devmenu;
-  dev_nodes_tree->selected_node = crude_scene_thread_manager_get_main_node_UNSAFE( scene_thread_manager );
+  dev_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   dev_nodes_tree->enabled = false;
 }
 
@@ -1361,10 +1305,7 @@ crude_devmenu_nodes_tree_update
 void
 crude_devmenu_nodes_tree_draw
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
 )
 {
   if ( !dev_nodes_tree->enabled )
@@ -1372,13 +1313,13 @@ crude_devmenu_nodes_tree_draw
     return;
   }
 
-  if ( !crude_entity_valid( world, dev_nodes_tree->selected_node ) )
+  if ( !crude_entity_valid( dev_nodes_tree->devmenu->engine->world, dev_nodes_tree->selected_node ) )
   {
-    dev_nodes_tree->selected_node = crude_scene_thread_manager_get_main_node_UNSAFE( scene_thread_manager );
+    dev_nodes_tree->selected_node = dev_nodes_tree->devmenu->engine->main_node;
   }
 
   uint32 current_node_index = 0u;
-  crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, world, graphics_thread_manager, scene_thread_manager, crude_scene_thread_manager_get_main_node_UNSAFE( scene_thread_manager ), &current_node_index );
+  crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, dev_nodes_tree->devmenu->engine->main_node, &current_node_index );
 }
 
 void
@@ -1400,10 +1341,7 @@ void
 crude_devmenu_node_inspector_initialize
 (
   _In_ crude_devmenu_node_inspector                       *dev_node_inspector,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_node_inspector->devmenu = devmenu;
@@ -1429,12 +1367,10 @@ crude_devmenu_node_inspector_update
 void
 crude_devmenu_node_inspector_draw
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_node_inspector                       *dev_node_inspector
 )
 {
+  crude_ecs *world = dev_node_inspector->devmenu->engine->world;
   crude_entity selected_node = dev_node_inspector->devmenu->nodes_tree.selected_node;
   if ( !crude_entity_valid( world, selected_node ) )
   {
@@ -1479,7 +1415,7 @@ crude_devmenu_node_inspector_draw
     ImGui::InputFloat( "Aspect Ratio", &camera->aspect_ratio );
     if ( ImGui::Button( "Set Active" ) )
     {
-      crude_scene_thread_manager_set_camera_node_UNSAFE( scene_thread_manager, selected_node );
+      dev_node_inspector->devmenu->engine->camera_node = selected_node;
     }
   }
   
@@ -1497,18 +1433,6 @@ crude_devmenu_node_inspector_draw
     ImGui::Text( "Relative Path \"%s\"", gltf->original_path );
     ImGui::Text( "Absolute Path \"%s\"", gltf->path );
     ImGui::Checkbox( "Hidden", &gltf->hidden );
-  }
-  
-  crude_level_starting_room *level_starting_room = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_level_starting_room );
-  if ( level_starting_room && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_starting_room )( world, selected_node, level_starting_room, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-
-  crude_level_01 *level_01 = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_level_01 );
-  if ( level_01 && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_level_01 ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_level_01 )( world, selected_node, level_01, &dev_node_inspector->devmenu->engine->node_manager );
   }
   
   crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_physics_character_body_handle );
@@ -1535,18 +1459,6 @@ crude_devmenu_node_inspector_draw
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( world, selected_node, player_controller, &dev_node_inspector->devmenu->engine->node_manager );
   }
   
-  crude_enemy *enemy = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_enemy );
-  if ( enemy && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_enemy ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_enemy )( world, selected_node, enemy, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  crude_weapon *weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_weapon );
-  if ( weapon && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_weapon ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_weapon )( world, selected_node, weapon, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
   crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_debug_collision );
   if ( debug_collision && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_collision ) ) )
   {
@@ -1563,12 +1475,6 @@ crude_devmenu_node_inspector_draw
   if ( runtime_node && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_node_runtime ) ) )
   {
     CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( world, selected_node, runtime_node, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-
-  crude_recycle_station *recycle_station = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_recycle_station );
-  if ( recycle_station && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_recycle_station ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_recycle_station )( world, selected_node, recycle_station, &dev_node_inspector->devmenu->engine->node_manager );
   }
   
   ImGui::End( );
@@ -1592,10 +1498,7 @@ void
 crude_devmenu_viewport_initialize
 (
   _In_ crude_devmenu_viewport                             *dev_viewport,
-  _In_ crude_devmenu                                      *devmenu,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu                                      *devmenu
 )
 {
   dev_viewport->devmenu = devmenu;
@@ -1621,10 +1524,7 @@ crude_devmenu_viewport_update
 void
 crude_devmenu_viewport_draw
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_graphics_thread_manager                      *graphics_thread_manager,
-  _In_ crude_scene_thread_manager                         *scene_thread_manager
+  _In_ crude_devmenu_viewport                             *dev_viewport
 )
 {
   static ImGuizmo::OPERATION                               selected_gizmo_operation = ImGuizmo::TRANSLATE;
@@ -1632,6 +1532,7 @@ crude_devmenu_viewport_draw
   
   crude_entity                                             camera_node, selected_node;
   crude_camera                                            *camera;
+  crude_ecs                                               *world;
   crude_transform                                         *camera_transform;
   crude_transform                                         *selected_node_transform;
   crude_transform                                         *selected_node_parent_transform;
@@ -1640,10 +1541,12 @@ crude_devmenu_viewport_draw
   XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
   
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-  ImGui::SetNextWindowSize( ImVec2( graphics_thread_manager->gpu.vk_swapchain_width, graphics_thread_manager->gpu.vk_swapchain_height )  );
+  ImGui::SetNextWindowSize( ImVec2( dev_viewport->devmenu->engine->gpu.vk_swapchain_width, dev_viewport->devmenu->engine->gpu.vk_swapchain_height )  );
   ImGui::Begin( "Viewport", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs );
 
-  camera_node = crude_scene_thread_manager_get_camera_node_UNSAFE( scene_thread_manager );
+  world = dev_viewport->devmenu->engine->world;
+
+  camera_node = dev_viewport->devmenu->engine->camera_node;
   selected_node = dev_viewport->devmenu->nodes_tree.selected_node;
   if ( !crude_entity_valid( world, selected_node ) )
   {

@@ -79,3 +79,49 @@ crude_task_sheduler_pinned_task_run_loop_
     enkiRunPinnedTasks( sheduler->enki_task_sheduler );
   }
 }
+
+crude_task_set_handle
+crude_task_sheduler_create_task_set
+(
+  _In_ crude_task_sheduler                                *sheduler,
+  _In_ crude_task_sheduler_set_task_fn                     task_set_fn,
+  _In_ void                                               *ctx
+)
+{
+  enkiTaskSet *task_set = enkiCreateTaskSet( sheduler->enki_task_sheduler, task_set_fn );
+  enkiSetArgsTaskSet( task_set, ctx );
+  return CRUDE_COMPOUNT( crude_task_set_handle, { task_set } );
+}
+
+void
+crude_task_sheduler_destroy_task_set
+(
+  _In_ crude_task_sheduler                                *sheduler,
+  _In_ crude_task_set_handle                               handle
+)
+{
+  enkiTaskSet *task_set = CRUDE_CAST( enkiTaskSet*, handle.data );
+  enkiDeleteTaskSet( sheduler->enki_task_sheduler, task_set );
+}
+
+void
+crude_task_sheduler_wait_task_set
+(
+  _In_ crude_task_sheduler                                *sheduler,
+  _In_ crude_task_set_handle                               handle
+)
+{
+  enkiTaskSet *task_set = CRUDE_CAST( enkiTaskSet*, handle.data );
+  enkiWaitForTaskSet( sheduler->enki_task_sheduler, task_set );
+}
+
+void
+crude_task_sheduler_start_task_set
+(
+  _In_ crude_task_sheduler                                *sheduler,
+  _In_ crude_task_set_handle                               handle
+)
+{
+  enkiTaskSet *task_set = CRUDE_CAST( enkiTaskSet*, handle.data );
+  enkiAddTaskSet( sheduler->enki_task_sheduler, task_set );
+}

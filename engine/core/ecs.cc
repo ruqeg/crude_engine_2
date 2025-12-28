@@ -1,3 +1,5 @@
+#include <engine/core/profiler.h>
+
 #include <engine/core/ecs.h>
 
 ECS_DECLARE( crude_entity_tag );
@@ -41,7 +43,10 @@ crude_ecs_progress
   _In_ float32                                             delta_time
 )
 {
-  return ecs_progress( world, delta_time );
+  CRUDE_PROFILER_ZONE_NAME( "crude_ecs_progress" );
+  bool result = ecs_progress( world, delta_time );
+  CRUDE_PROFILER_ZONE_END;
+  return result;
 }
 
 crude_entity

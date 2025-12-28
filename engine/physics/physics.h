@@ -1,7 +1,6 @@
 #pragma once
 
 #include <engine/physics/physics_resources_manager.h>
-#include <engine/scene/scene_thread_manager.h>
 
 typedef struct crude_physics_raycast_result
 {

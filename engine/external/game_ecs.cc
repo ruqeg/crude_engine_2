@@ -3,35 +3,11 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/external/game_ecs.h>
 
-ECS_TAG_DECLARE( crude_serum_station_enabled );
-
-ECS_COMPONENT_DECLARE( crude_serum_station );
-ECS_COMPONENT_DECLARE( crude_enemy );
-ECS_COMPONENT_DECLARE( crude_boss );
-ECS_COMPONENT_DECLARE( crude_weapon );
-ECS_COMPONENT_DECLARE( crude_level_01 );
-ECS_COMPONENT_DECLARE( crude_level_starting_room );
 ECS_COMPONENT_DECLARE( crude_player_controller );
-ECS_COMPONENT_DECLARE( crude_player );
-ECS_COMPONENT_DECLARE( crude_recycle_station );
-ECS_COMPONENT_DECLARE( crude_teleport_station );
-ECS_COMPONENT_DECLARE( crude_level_cutscene_only_sound );
-ECS_COMPONENT_DECLARE( crude_level_boss_fight );
-ECS_COMPONENT_DECLARE( crude_boss_bullet );
+ECS_COMPONENT_DECLARE( crude_level_mars );
 
-CRUDE_COMPONENT_STRING_DEFINE( crude_serum_station, "crude_serum_station" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_enemy, "crude_enemy" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_boss, "crude_boss" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_weapon, "crude_weapon" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_level_01, "crude_level_01" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_level_starting_room, "crude_level_starting_room" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_player_controller, "crude_player_controller" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_player, "crude_player" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_recycle_station, "crude_recycle_station" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_teleport_station, "crude_teleport_station" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_level_cutscene_only_sound, "crude_level_cutscene_only_sound" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_level_boss_fight, "crude_level_boss_fight" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_boss_bullet, "crude_boss_bullet" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_level_mars, "crude_level_mars" );
 
 void
 crude_game_components_import
@@ -40,181 +16,8 @@ crude_game_components_import
 )
 {
   CRUDE_ECS_MODULE( world, crude_game_components );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_serum_station );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_enemy );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_boss );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_weapon );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_01 );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_starting_room );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_player_controller );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_player );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_recycle_station );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_teleport_station );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_cutscene_only_sound );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_boss_fight );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_boss_bullet );
-  CRUDE_ECS_TAG_DEFINE( world, crude_serum_station_enabled );
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_serum_station )
-{
-  crude_memory_set( component, 0, sizeof( crude_serum_station ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_serum_station )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_serum_station ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_serum_station )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_enemy )
-{
-  crude_memory_set( component, 0, sizeof( crude_enemy ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_enemy )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_enemy ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_enemy )
-{
-  ImGui::DragFloat( "Moving Speed", &component->moving_speed, 0.01 );
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss )
-{
-  crude_memory_set( component, 0, sizeof( crude_boss ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_boss ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_boss_bullet )
-{
-  crude_memory_set( component, 0, sizeof( crude_boss_bullet ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_boss_bullet )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_boss_bullet ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_boss_bullet )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_weapon )
-{
-  crude_memory_set( component, 0, sizeof( crude_weapon ) );
-  component->max_ammo = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_ammo" ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_weapon )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_weapon ) ) );
-  cJSON_AddItemToObject( json, "max_ammo", cJSON_CreateNumber( component->max_ammo ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_weapon )
-{
-  ImGui::DragInt( "Max Ammo", &component->max_ammo, 0.01 );
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_starting_room )
-{
-  crude_memory_set( component, 0, sizeof( crude_level_starting_room ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_starting_room )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_starting_room ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_starting_room )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_cutscene_only_sound )
-{
-  crude_memory_set( component, 0, sizeof( crude_level_cutscene_only_sound ) );
-  component->type = CRUDE_CAST( crude_level_cutscene_only_sound_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "level_type" ) ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_cutscene_only_sound )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_cutscene_only_sound ) ) );
-  cJSON_AddItemToObject( json, "level_type", cJSON_CreateNumber( component->type ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_cutscene_only_sound )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_01 )
-{
-  crude_memory_set( component, 0, sizeof( crude_level_01 ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_01 )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_01 ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_01 )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_boss_fight )
-{
-  crude_memory_set( component, 0, sizeof( crude_level_boss_fight ) );
-  component->type = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "level_type" ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_boss_fight )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_boss_fight ) ) );
-  cJSON_AddItemToObject( json, "level_type", cJSON_CreateNumber( component->type ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_boss_fight )
-{
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_mars );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )
@@ -255,59 +58,19 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controller )
   ImGui::DragFloat( "Weight", &component->weight, 0.01 );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_level_mars )
 {
-  crude_memory_set( component, 0, sizeof( crude_player ) );
+  crude_memory_set( component, 0, sizeof( crude_level_mars ) );
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_mars )
 {
   cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_player ) ) );
+  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_level_mars ) ) );
   return json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player )
-{
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_recycle_station )
-{
-  crude_memory_set( component, 0, sizeof( crude_recycle_station ) );
-  component->game_item = CRUDE_CAST( crude_game_item, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "game_item" ) ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_recycle_station )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_recycle_station ) ) );
-  cJSON_AddItemToObject( json, "game_item", cJSON_CreateNumber( component->game_item  ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_recycle_station )
-{
-  const char* items[] = { crude_game_item_to_string( CRUDE_GAME_ITEM_NONE ), crude_game_item_to_string( CRUDE_GAME_ITEM_SERUM ), crude_game_item_to_string( CRUDE_GAME_ITEM_SYRINGE_HEALTH ), crude_game_item_to_string( CRUDE_GAME_ITEM_SYRINGE_DRUG ), crude_game_item_to_string( CRUDE_GAME_ITEM_AMMUNITION ) };
-  int32 item_current = component->game_item;
-  ImGui::Combo( "item", &item_current, items, IM_ARRAYSIZE( items ) );
-  component->game_item = CRUDE_CAST( crude_game_item, item_current );
-}
-
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_teleport_station )
-{
-  crude_memory_set( component, 0, sizeof( crude_teleport_station ) );
-  return true;
-}
-
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_teleport_station )
-{
-  cJSON *json = cJSON_CreateObject( );
-  cJSON_AddItemToObject( json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_teleport_station ) ) );
-  return json;
-}
-
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_teleport_station )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_mars )
 {
 }

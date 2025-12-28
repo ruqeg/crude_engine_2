@@ -1,0 +1,62 @@
+{
+	"name":	"level_mars",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_level_mars"
+		}],
+	"children":	[
+		{
+			"name":	"dna",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[
+				{
+					"name":	"dna_part1_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+						"type":	"crude_gltf",
+						"path":	"game\\models\\DNA_Part1.gltf"
+					}],
+					"children":	[]
+				},
+				{
+					"name":	"dna_part2_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+						"type":	"crude_gltf",
+						"path":	"game\\models\\DNA_Part2.gltf"
+					}],
+					"children":	[]
+				}
+			]
+		},
+		{
+			"name":	"model",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Map.gltf"
+				}],
+			"children":	[]
+		}]
+}

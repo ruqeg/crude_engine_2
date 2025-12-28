@@ -9,57 +9,6 @@
 #include <engine/platform/platform.h>
 
 void
-crude_input_thread_data_initialize
-(
-  _In_ crude_input_thread_data                            *thread_data
-)
-{
-  thread_data->input = CRUDE_COMPOUNT_EMPTY( crude_input );
-  mtx_init( &thread_data->mutex, mtx_plain );
-}
-
-CRUDE_API void
-crude_input_thread_data_deinitialize
-(
-  _In_ crude_input_thread_data                            *thread_data
-)
-{
-  mtx_destroy( &thread_data->mutex );
-}
-
-void
-crude_input_thread_data_flush_input
-(
-  _In_ crude_input_thread_data                            *thread_data,
-  _Out_ crude_input                                       *input
-)
-{
-  mtx_lock( &thread_data->mutex );
-  
-  *input = thread_data->input;
-  thread_data->input.mouse.rel.x = 0;
-  thread_data->input.mouse.rel.y = 0;
-  mtx_unlock( &thread_data->mutex );
-}
-
-void
-crude_input_thread_data_affect_by_input
-(
-  _In_ crude_input_thread_data                            *thread_data,
-  _In_ crude_input const                                  *input
-)
-{
-  mtx_lock( &thread_data->mutex );
-  
-  crude_mouse_input old_rel = thread_data->input.mouse.rel;
-  thread_data->input = *input;
-  thread_data->input.mouse.rel.x += old_rel.x;
-  thread_data->input.mouse.rel.y += old_rel.y;
-
-  mtx_unlock( &thread_data->mutex );
-}
-
-void
 crude_platform_service_initialize
 (
 )

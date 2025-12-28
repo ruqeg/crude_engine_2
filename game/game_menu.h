@@ -3,8 +3,6 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
 
-typedef struct game_t game_t;
-
 typedef struct crude_game_menu
 {
   bool                                                     enabled;

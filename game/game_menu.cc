@@ -6,8 +6,8 @@
 #include <engine/platform/platform.h>
 #include <game/game.h>
 #include <engine/graphics/imgui.h>
-#include <engine/scene/scripts_components.h>
-#include <engine/external/game_components.h>
+#include <engine/scene/scripts/free_camera_ecs.h>
+#include <engine/external/game_ecs.h>
 
 #include <game/game_menu.h>
 
@@ -34,10 +34,8 @@ crude_game_menu_draw
   _In_ crude_game_menu                                    *menu
 )
 {
-  game_t                                                  *game;
-  
   CRUDE_PROFILER_ZONE_NAME( "crude_game_menu_draw" );
-  game = game_instance( );
+  //game = game_instance( );
 
   //ImGui::PushFont( game->im_game_font );
   //
@@ -218,7 +216,6 @@ crude_game_menu_update
   _In_ crude_game_menu                                    *menu
 )
 {
-  game_t *game = game_instance( );
 }
 
 void
@@ -228,32 +225,32 @@ crude_game_menu_handle_input
   _In_ crude_input                                        *input
 )
 {
-  game_t                                                  *game;
-
-  game = game_instance( );
-  
-  if ( input->keys[ SDL_SCANCODE_ESCAPE ].pressed )
-  {
-    menu->enabled = !menu->enabled;
-
-    //crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
-    //if ( menu->enabled )
-    //{
-    //  crude_platform_show_cursor( *window_handle );
-    //}
-    //else
-    //{
-    //  crude_platform_hide_cursor( *window_handle );
-    //}
-    
-    crude_player_controller *player_controller = NULL;
-    if ( crude_entity_valid( game->player_node ) )
-    {
-      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
-    }
-    if ( player_controller )
-    {
-      player_controller->input_enabled = !menu->enabled;
-    }
-  }
+  //game_t                                                  *game;
+  //
+  //game = game_instance( );
+  //
+  //if ( input->keys[ SDL_SCANCODE_ESCAPE ].pressed )
+  //{
+  //  menu->enabled = !menu->enabled;
+  //
+  //  //crude_window_handle *window_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->platform_node, crude_window_handle );
+  //  //if ( menu->enabled )
+  //  //{
+  //  //  crude_platform_show_cursor( *window_handle );
+  //  //}
+  //  //else
+  //  //{
+  //  //  crude_platform_hide_cursor( *window_handle );
+  //  //}
+  //  
+  //  crude_player_controller *player_controller = NULL;
+  //  if ( crude_entity_valid( game->player_node ) )
+  //  {
+  //    player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->player_node, crude_player_controller );
+  //  }
+  //  if ( player_controller )
+  //  {
+  //    player_controller->input_enabled = !menu->enabled;
+  //  }
+  //}
 }

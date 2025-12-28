@@ -1,6 +1,7 @@
 #include <engine/engine.h>
 
 #include <engine/core/array.h>
+#include <engine/graphics/gpu_resources_loader.h>
 
 #include <engine/engine/engine_commands_manager.h>
 
@@ -12,6 +13,7 @@ crude_engine_commands_manager_initialize
   _In_ crude_heap_allocator                               *allocator
 )
 {
+  manager->engine = engine;
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( manager->commands_queue, 0, crude_heap_allocator_pack( allocator ) );
 }
 
@@ -54,6 +56,9 @@ crude_engine_commands_manager_push_reload_techniques_command
   _In_ crude_engine_commands_manager                      *manager
 )
 {
+  crude_engine_commands_manager_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_engine_commands_manager_queue_command );
+  command.type = CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES;
+  CRUDE_ARRAY_PUSH( manager->commands_queue, command );
 }
 
 void
@@ -62,10 +67,10 @@ crude_engine_commands_manager_update
   _In_ crude_engine_commands_manager                      *manager
 )
 {
-//  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->commands_queue ); ++i )
-//  {
-//    switch ( manager->commands_queue[ i ].type )
-//    {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->commands_queue ); ++i )
+  {
+    switch ( manager->commands_queue[ i ].type )
+    {
 //    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_SCENE:
 //    {
 //      bool                                                 buffer_recreated;
@@ -124,25 +129,25 @@ crude_engine_commands_manager_update
 //      game->death_overlap_color.w = 0;
 //      break;
 //    }
-//    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
-//    {
-//      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( game->gpu.resource_cache.techniques ); ++i )
-//      {
-//        if ( !crude_hashmap_backet_key_valid( game->gpu.resource_cache.techniques[ i ].key ) )
-//        {
-//          continue;
-//        }
-//        
-//        crude_gfx_technique *technique = game->gpu.resource_cache.techniques[ i ].value; 
-//        crude_gfx_destroy_technique_instant( &game->gpu, technique );
-//        crude_gfx_technique_load_from_file( technique->technique_relative_filepath, &game->gpu, &game->render_graph, &game->temporary_allocator );
-//      }
-//
-//      crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
-//      break;
-//    }
-//    }
-//  }
-//
-//  CRUDE_ARRAY_SET_LENGTH( manager->commands_queue, 0u );
+    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
+    {
+      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->engine->gpu.resource_cache.techniques ); ++i )
+      {
+        if ( !crude_hashmap_backet_key_valid( manager->engine->gpu.resource_cache.techniques[ i ].key ) )
+        {
+          continue;
+        }
+        
+        crude_gfx_technique *technique = manager->engine->gpu.resource_cache.techniques[ i ].value; 
+        crude_gfx_destroy_technique_instant( &manager->engine->gpu, technique );
+        crude_gfx_technique_load_from_file( technique->technique_relative_filepath, &manager->engine->gpu, &manager->engine->render_graph, &manager->engine->temporary_allocator );
+      }
+      
+      crude_gfx_render_graph_on_techniques_reloaded( &manager->engine->render_graph );
+      break;
+    }
+    }
+  }
+
+  CRUDE_ARRAY_SET_LENGTH( manager->commands_queue, 0u );
 }
