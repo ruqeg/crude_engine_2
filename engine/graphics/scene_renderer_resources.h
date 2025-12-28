@@ -88,6 +88,8 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 
 typedef struct crude_gfx_light_cpu
 {
+  crude_light                                              light;
+  XMFLOAT3                                                 translation;
 } crude_gfx_light_cpu;
 
 typedef struct crude_gfx_light_gpu

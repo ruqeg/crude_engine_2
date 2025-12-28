@@ -58,5 +58,20 @@
 					"path":	"game\\models\\Map.gltf"
 				}],
 			"children":	[]
+		},
+		{
+			"name":	"light1",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_light",
+					"color": [ 1, 1, 1 ],
+					"intensity": 1,
+					"radius": 5
+				}],
+			"children":	[]
 		}]
 }

@@ -604,6 +604,7 @@ crude_engine_deinitialize_graphics_
 )
 {
   vkDeviceWaitIdle( engine->gpu.vk_device );
+  crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   crude_task_sheduler_destroy_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   crude_gfx_asynchronous_loader_manager_remove_loader( &engine->asynchronous_loader_manager, &engine->async_loader );
   crude_gfx_scene_renderer_deinitialize( &engine->scene_renderer );

@@ -112,32 +112,32 @@ crude_get_tetrahedron_face_index
   return index;
 }
 
-CRUDE_RBUFFER_REF( LightsZBinsRef ) 
+CRUDE_RBUFFER_REF_SCALAR( LightsZBinsRef ) 
 {
   uint                                                     data[];
 };
 
-CRUDE_RBUFFER_REF( LightsRef )
+CRUDE_RBUFFER_REF_SCALAR( LightsRef )
 {
   crude_light                                              data[];
 };
 
-CRUDE_RBUFFER_REF( LightsTilesRef )
+CRUDE_RBUFFER_REF_SCALAR( LightsTilesRef )
 {
   uint                                                     data[];
 };
 
-CRUDE_RBUFFER_REF( LightsIndicesRef )
+CRUDE_RBUFFER_REF_SCALAR( LightsIndicesRef )
 {
   uint                                                     data[];
 };
 
-CRUDE_RBUFFER_REF( LightsShadowViewsRef )
+CRUDE_RBUFFER_REF_SCALAR( LightsShadowViewsRef )
 {
   mat4                                                      data[];
 };
 
-CRUDE_RBUFFER_REF( LightsTrianglesIndicesRef )
+CRUDE_RBUFFER_REF_SCALAR( LightsTrianglesIndicesRef )
 {
   uint8_t                                                  data[];
 };
@@ -282,28 +282,28 @@ crude_calculate_lighting
   bin_index = int( linear_d * CRUDE_LIGHT_BINS_COUNT );
   bin_value = zbins.data[ bin_index ];
 
-  min_light_id = bin_value & 0xFFFF;
-  max_light_id = ( bin_value >> 16 ) & 0xFFFF;
-
-  tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
-
-  stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( scene.data.resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
-  address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
-
-  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
-  {
-    for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
-    {
-      uint word_id = light_id / 32;
-      uint bit_id = light_id % 32;
-
-      if ( ( lights_tiles.data[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
-      {
-        uint global_light_index = lights_indices.data[ light_id ];
-        radiance += crude_calculate_point_light_shadow_contribution( lights.data[ global_light_index ], vertex_position, scene, light_shadow_views ) * crude_calculate_point_light_contribution( lights.data[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
-      }
-    }
-  }
+//  min_light_id = bin_value & 0xFFFF;
+//  max_light_id = ( bin_value >> 16 ) & 0xFFFF;
+//
+//  tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
+//
+//  stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( scene.data.resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
+//  address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
+//
+//  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
+//  {
+//    for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
+//    {
+//      uint word_id = light_id / 32;
+//      uint bit_id = light_id % 32;
+//
+//      if ( ( lights_tiles.data[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
+//      {
+//        uint global_light_index = lights_indices.data[ light_id ];
+//        radiance += crude_calculate_point_light_contribution( lights.data[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+//      }
+//    }
+//  }
 
 #ifdef CRUDE_RAYTRACED_DDGI
   indirect_irradiance = CRUDE_TEXTURE_LOD( scene.data.indirect_light_texture_index, screen_texcoord, 0 ).rgb;

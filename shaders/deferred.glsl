@@ -162,17 +162,15 @@ void main()
   bool accept = true;
 
 #if defined( DEFERRED_MESHLET )
-  accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
+  accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
   
   vec4 view_center = world_center * scene.data.camera.world_to_view;
 
-  bool frustum_visible = true;
+  bool frustum_visible = accept;
   for ( uint i = 0; i < 6; ++i )
   {
     frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
-  accept = true;
-  frustum_visible = true;
   
   bool occlusion_visible = false;
   if ( frustum_visible )
@@ -183,7 +181,7 @@ void main()
       world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip
     );
   }
-  accept = accept && occlusion_visible;
+  accept = occlusion_visible;
 #endif
 
   uvec4 ballot = subgroupBallot( accept );
