@@ -59,6 +59,10 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   uint32                                                   absolute_frame;
   float32                                                  absolute_time;
   float32                                                  resolution_ratio;
+#if CRUDE_DEVELOP
+  uint32                                                   debug_mode;
+  XMFLOAT3                                                 padding;
+#endif
 } crude_gfx_scene_constant_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu

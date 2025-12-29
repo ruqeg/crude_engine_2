@@ -209,6 +209,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   model_initialized = false;
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
+  CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node, &model_initialized );
   
   scene_renderer->total_meshes_instances_count = 0u;

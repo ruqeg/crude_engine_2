@@ -114,7 +114,7 @@ void main()
   
   float luminance = crude_rgb_to_luminance( color.xyz );
   color.xyz = color.xyz * ( luminance / ( 9.6 * luminance_average ) );
-  color.xyz = crude_uncharted2_tonemap( color.xyz );
+  color.xyz = crude_aces_fitted( color.xyz );
   color.xyz = pow( color.xyz, vec3( inv_gamma ) );
   out_color = color;
 }

@@ -1207,8 +1207,6 @@ crude_devmenu_nodes_tree_draw_internal_
   ImGuiTreeNodeFlags                                       tree_node_flags;
   bool                                                     can_open_children_nodes, tree_node_opened;
   
-  ImGui::Begin( "Scene Node Tree" );
-  
   {
     can_open_children_nodes = false;
 
@@ -1235,9 +1233,15 @@ crude_devmenu_nodes_tree_draw_internal_
   }
 
   tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
-  if ( ImGui::IsItemClicked( ) && !ImGui::IsItemToggledOpen( ) )
+  if ( ImGui::IsItemClicked( ImGuiMouseButton_Left ) && !ImGui::IsItemToggledOpen( ) )
   {
     dev_nodes_tree->selected_node = node;
+  }
+
+  if ( ImGui::IsItemClicked( ImGuiMouseButton_Right ) )
+  {
+    dev_nodes_tree->dublicate_node_reference = node;
+    crude_string_copy( dev_nodes_tree->dublicate_node_name, crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ), sizeof( dev_nodes_tree->dublicate_node_reference ) );
   }
 
   if ( ImGui::IsItemClicked( 1 ) && !ImGui::IsItemToggledOpen( ) )
@@ -1270,8 +1274,6 @@ crude_devmenu_nodes_tree_draw_internal_
     
     ImGui::TreePop( );
   }
-
-  ImGui::End( );
 }
 
 void
@@ -1283,6 +1285,7 @@ crude_devmenu_nodes_tree_initialize
 {
   dev_nodes_tree->devmenu = devmenu;
   dev_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  dev_nodes_tree->dublicate_node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
   dev_nodes_tree->enabled = false;
 }
 
@@ -1308,18 +1311,40 @@ crude_devmenu_nodes_tree_draw
   _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
 )
 {
+  crude_ecs                                               *world;
+  uint32                                                   current_node_index;
+
   if ( !dev_nodes_tree->enabled )
   {
     return;
   }
 
-  if ( !crude_entity_valid( dev_nodes_tree->devmenu->engine->world, dev_nodes_tree->selected_node ) )
+  world = dev_nodes_tree->devmenu->engine->world;
+
+  if ( !crude_entity_valid( world, dev_nodes_tree->selected_node ) )
   {
     dev_nodes_tree->selected_node = dev_nodes_tree->devmenu->engine->main_node;
   }
-
-  uint32 current_node_index = 0u;
+  
+  if ( crude_entity_valid( world, dev_nodes_tree->dublicate_node_reference ) )
+  {
+    ImGui::Begin( "Dublicate Node" );
+    ImGui::Text( "Reference \"%s\"", crude_entity_get_name( world, dev_nodes_tree->dublicate_node_reference ) );
+    ImGui::InputText( "Name", dev_nodes_tree->dublicate_node_name, sizeof( dev_nodes_tree ) );
+    if ( ImGui::Button( "Dublicate" ) )
+    {
+      crude_entity new_node = crude_entity_copy_hierarchy( world, dev_nodes_tree->dublicate_node_reference, dev_nodes_tree->dublicate_node_name, true, true );
+      crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, dev_nodes_tree->dublicate_node_reference ) );
+      dev_nodes_tree->dublicate_node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
+      dev_nodes_tree->selected_node = new_node;
+    }
+    ImGui::End( );
+  }
+  
+  ImGui::Begin( "Scene Node Tree" );
+  current_node_index = 0u;
   crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, dev_nodes_tree->devmenu->engine->main_node, &current_node_index );
+  ImGui::End( );
 }
 
 void

@@ -312,7 +312,7 @@ void main()
   vec4 tangent = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_TANGENTS ) == 1 ) ? vec4(
     mesh_draw.tangents.data[ vertex_index + 0 ]) : vec4( 0 );
   vec3 normal = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_NORMAL ) == 1 ) ? vec3(
-    mesh_draw.normals.data[ vertex_index ] )  : vec3( 0 );
+    mesh_draw.normals.data[ vertex_index ] ) : vec3( 0 );
   normal = normal * mat3( mesh_to_world );
   tangent.xyz = tangent.xyz * mat3( mesh_to_world );
   vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;

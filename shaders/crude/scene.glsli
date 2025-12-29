@@ -140,6 +140,10 @@ struct crude_scene
   uint                                                     absolute_frame;
   float                                                    absolute_time;
   float                                                    resolution_ratio;
+#if CRUDE_DEVELOP
+  uint                                                     debug_mode;
+  vec3                                                     padding;
+#endif
 };
 
 CRUDE_RBUFFER_REF( SceneRef ) 

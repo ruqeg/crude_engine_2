@@ -69,8 +69,12 @@ typedef struct crude_devmenu_scene_renderer
 typedef struct crude_devmenu_nodes_tree
 {
   crude_devmenu                                           *devmenu;
-  crude_entity                                             selected_node;
   bool                                                     enabled;
+  
+  crude_entity                                             selected_node;
+
+  char                                                     dublicate_node_name[ 512 ];
+  crude_entity                                             dublicate_node_reference;
 } crude_devmenu_nodes_tree;
 
 typedef struct crude_devmenu_node_inspector
