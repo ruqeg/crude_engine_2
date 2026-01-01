@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #define CRUDE_STAGE_FRAGMENT
 //#define POSTPROCESSING
-#define LIGHT_PBR
+#define COMPOSE
 
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -38,7 +38,7 @@ void main()
 #endif /* CRUDE_STAGE_VERTEX */
 
 
-#if defined( LIGHT_PBR ) && defined( CRUDE_STAGE_FRAGMENT ) 
+#if defined( COMPOSE ) && defined( CRUDE_STAGE_FRAGMENT ) 
 
 #if defined ( CRUDE_RAYTRACED_SHADOWS )
 #extension GL_EXT_ray_tracing : require
@@ -60,7 +60,7 @@ CRUDE_PUSH_CONSTANT
   LightsZBinsRef                                           zbins;
   
   LightsTilesRef                                           lights_tiles;
-  LightsTrianglesIndicesRef                                lights_indices;
+  LightsIndicesRef                                         lights_indices;
   
   LightsRef                                                lights;
   LightsShadowViewsRef                                     light_shadow_views;
@@ -92,7 +92,7 @@ void main()
   out_color = vec4( radiance, 1.f );
 }
 
-#endif /* LIGHT_PBR && CRUDE_STAGE_FRAGMENT */
+#endif /* COMPOSE && CRUDE_STAGE_FRAGMENT */
 
 #if defined( POSTPROCESSING ) && defined( CRUDE_STAGE_FRAGMENT ) 
 

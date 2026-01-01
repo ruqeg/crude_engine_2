@@ -104,14 +104,6 @@ typedef struct crude_gfx_light_gpu
   float32                                                  intensity;
 } crude_gfx_light_gpu;
 
-typedef struct crude_gfx_sorted_light
-{
-  uint32                                                   light_index;
-  float32                                                  projected_z;
-  float32                                                  projected_z_min;
-  float32                                                  projected_z_max;
-} crude_gfx_sorted_light;
-
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (

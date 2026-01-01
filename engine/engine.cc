@@ -554,7 +554,6 @@ crude_engine_initialize_graphics_
   crude_gfx_technique_load_from_file( "debug.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "imgui.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "game/fullscreen.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &&engine->temporary_allocator );

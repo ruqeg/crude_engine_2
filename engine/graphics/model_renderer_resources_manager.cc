@@ -426,10 +426,10 @@ crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_
   mesh_draw->metallic_roughness_occlusion_factor.x = 1;
   mesh_draw->metallic_roughness_occlusion_factor.y = 0;
   mesh_draw->alpha_cutoff = 0;
-  mesh_draw->albedo_texture_handle.index = CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED;
-  mesh_draw->metallic_roughness_texture_handle.index = CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED;
-  mesh_draw->occlusion_texture_handle.index = CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED;
-  mesh_draw->normal_texture_handle.index = CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED;
+  mesh_draw->albedo_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
+  mesh_draw->metallic_roughness_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
+  mesh_draw->occlusion_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
+  mesh_draw->normal_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
 
   if ( material == NULL )
   {

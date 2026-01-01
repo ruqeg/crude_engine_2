@@ -2,6 +2,33 @@
   "name": "main_graph",
   "passes": [
     {
+      "name": "light_lut_pass",
+      "type": "compute",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "marker",
+          "name": "lights_hga"
+        },
+        {
+          "type": "marker",
+          "name": "lights_bins_hga"
+        },
+        {
+          "type": "marker",
+          "name": "lights_tiles_hga"
+        },
+        {
+          "type": "marker",
+          "name": "lights_indices_hga"
+        },
+        {
+          "type": "marker",
+          "name": "lights_world_to_clip_hga"
+        }
+      ]
+    },
+    {
       "name": "culling_early_pass",
       "type": "compute",
       "inputs": [],
@@ -195,7 +222,7 @@
       ]
     },
     {
-      "name": "light_pass",
+      "name": "compose_pass",
       "inputs": [
         {
           "type": "texture",
@@ -216,6 +243,26 @@
         {
           "type": "reference",
           "name": "MESHLET_LATE_PASS_MARKER"
+        },
+        {
+          "type": "reference",
+          "name": "lights_hga"
+        },
+        {
+          "type": "reference",
+          "name": "lights_bins_hga"
+        },
+        {
+          "type": "reference",
+          "name": "lights_tiles_hga"
+        },
+        {
+          "type": "reference",
+          "name": "lights_indices_hga"
+        },
+        {
+          "type": "reference",
+          "name": "lights_world_to_clip_hga"
         }
       ],
       "outputs": [

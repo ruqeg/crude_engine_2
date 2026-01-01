@@ -2,7 +2,8 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define LUMINANCE_AVERAGE_CALCULATION
-#define LUMINANCE_HISTOGRAM_GENERATION
+#define LIGHT_LUT
+//#define LUMINANCE_HISTOGRAM_GENERATION
 //#define CULLING_EARLY
 //#define CULLING_LATE
 //#define DEPTH_PYRAMID
@@ -330,3 +331,14 @@ void main()
 }
 
 #endif /* LUMINANCE_HISTOGRAM_GENERATION */
+
+#if defined( LIGHT_LUT )
+
+// !TODO
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+void main()
+{
+}
+
+#endif /* LIGHT_LUT */

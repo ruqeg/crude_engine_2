@@ -11,12 +11,13 @@
 #include <engine/graphics/passes/culling_early_pass.h>
 #include <engine/graphics/passes/culling_late_pass.h>
 #include <engine/graphics/passes/debug_pass.h>
-#include <engine/graphics/passes/light_pass.h>
+#include <engine/graphics/passes/compose_pass.h>
 #include <engine/graphics/passes/pointlight_shadow_pass.h>
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
 #include <engine/graphics/passes/indirect_light_pass.h>
 #include <engine/graphics/passes/transparent_pass.h>
+#include <engine/graphics/passes/light_lut_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef enum crude_gfx_model_renderer_resoruces_instances_type
@@ -57,6 +58,7 @@ typedef struct crude_gfx_scene_renderer_options
   char const                                              *hdr_pre_tonemapping_texture_name;
   char const                                              *depth_texture_name;
   float32                                                  gamma;
+  uint32                                                   debug_mode;
 #if CRUDE_DEVELOP
   bool                                                     hide_collision;
   bool                                                     hide_debug_gltf;
@@ -113,6 +115,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_memory_allocation                              lights_tiles_hga;
   crude_gfx_memory_allocation                              lights_indices_hga;
   crude_gfx_memory_allocation                              lights_world_to_clip_hga;
+  uint32                                                   total_visible_lights_count;
 
   /***********************
    * Ray Tracing CPU & GPU Data
@@ -137,9 +140,10 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   //crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
-  crude_gfx_light_pass                                     light_pass;
+  crude_gfx_compose_pass                                   compose_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
   crude_gfx_transparent_pass                               transparent_pass;
+  crude_gfx_light_lut_pass                                 light_lut_pass;
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;

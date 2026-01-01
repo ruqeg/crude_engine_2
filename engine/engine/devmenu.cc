@@ -1154,6 +1154,15 @@ crude_devmenu_scene_renderer_draw
   }
 
   ImGui::Begin( "Scene Renderer" );
+  
+  if ( ImGui::CollapsingHeader( "Debug" ) )
+  {
+    char const *debug_modes_str[] = { "None", "Lights Per Pixel" };
+    int32 debug_mode = dev_scene_rendere->devmenu->engine->scene_renderer.options.debug_mode;
+    ImGui::Combo( "Mode", &debug_mode, debug_modes_str, IM_ARRAYSIZE( debug_modes_str ) );
+    dev_scene_rendere->devmenu->engine->scene_renderer.options.debug_mode = debug_mode;
+  }
+
   if ( ImGui::CollapsingHeader( "Background" ) )
   {
     ImGui::ColorEdit3( "Background Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.background_color.x );

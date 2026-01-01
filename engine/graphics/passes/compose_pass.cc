@@ -3,12 +3,12 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/scene_renderer.h>
 
-#include <engine/graphics/passes/light_pass.h>
+#include <engine/graphics/passes/compose_pass.h>
 
 void
-crude_gfx_light_pass_initialize
+crude_gfx_compose_pass_initialize
 (
-  _In_ crude_gfx_light_pass                               *pass,
+  _In_ crude_gfx_compose_pass                             *pass,
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
@@ -16,22 +16,22 @@ crude_gfx_light_pass_initialize
 }
 
 void
-crude_gfx_light_pass_deinitialize
+crude_gfx_compose_pass_deinitialize
 (
-  _In_ crude_gfx_light_pass                               *pass
+  _In_ crude_gfx_compose_pass                             *pass
 )
 {
 }
 
 void
-crude_gfx_light_pass_pre_render
+crude_gfx_compose_pass_pre_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  crude_gfx_light_pass                                    *pass;
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_light_pass*, ctx );
+  crude_gfx_compose_pass                                  *pass;
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_compose_pass*, ctx );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_bins_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_tiles_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_indices_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
@@ -40,7 +40,7 @@ crude_gfx_light_pass_pre_render
 }
 
 void
-crude_gfx_light_pass_render
+crude_gfx_compose_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
@@ -57,15 +57,15 @@ crude_gfx_light_pass_render
     VkDeviceAddress                                        light_shadow_views;
   };
   
-  crude_gfx_light_pass                                    *pass;
+  crude_gfx_compose_pass                                  *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   push_constant_                                           pust_constant;
 
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_light_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_compose_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
-  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "fullscreen", "light_pbr" )->pipeline;
+  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "fullscreen", "compose" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   
   pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
@@ -87,14 +87,14 @@ crude_gfx_light_pass_render
 }
 
 crude_gfx_render_graph_pass_container
-crude_gfx_light_pass_pack
+crude_gfx_compose_pass_pack
 (
-  _In_ crude_gfx_light_pass                               *pass
+  _In_ crude_gfx_compose_pass                             *pass
 )
 {
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.render = crude_gfx_light_pass_render;
-  container.pre_render = crude_gfx_light_pass_pre_render;
+  container.render = crude_gfx_compose_pass_render;
+  container.pre_render = crude_gfx_compose_pass_pre_render;
   return container;
 }

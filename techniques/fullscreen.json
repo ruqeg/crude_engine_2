@@ -14,10 +14,10 @@
 	],
 	"pipelines" : [
 		{
-			"name" : "light_pbr",
+			"name" : "compose",
 			"render_pass_output":
 			{
-				"reference": "light_pass" 
+				"reference": "compose_pass" 
 			},
 			"shaders" : [
 				{

@@ -59,7 +59,7 @@ CRUDE_PUSH_CONSTANT
   LightsZBinsRef                                           zbins;
 
   LightsTilesRef                                           lights_tiles;
-  LightsTrianglesIndicesRef                                lights_indices;
+  LightsIndicesRef                                         lights_indices;
 
   LightsRef                                                lights;
   LightsShadowViewsRef                                     light_shadow_views;
@@ -105,7 +105,7 @@ CRUDE_PUSH_CONSTANT
   LightsZBinsRef                                           zbins;
 
   LightsTilesRef                                           lights_tiles;
-  LightsTrianglesIndicesRef                                lights_indices;
+  LightsIndicesRef                                         lights_indices;
 
   LightsRef                                                lights;
   LightsShadowViewsRef                                     light_shadow_views;
