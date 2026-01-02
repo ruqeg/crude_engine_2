@@ -29,7 +29,7 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_gpu
   XMUINT4                                                  textures;
   XMFLOAT4                                                 emissive;
   XMFLOAT4                                                 albedo_color_factor;
-  XMFLOAT4                                                 metallic_roughness_occlusion_factor;
+  XMFLOAT3A                                                metallic_roughness_occlusion_factor;
 
   uint32                                                   flags;
   float32                                                  alpha_cutoff;

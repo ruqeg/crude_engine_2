@@ -13,6 +13,9 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   mesh_draw_gpu->textures.z = mesh->normal_texture_handle.index;
   mesh_draw_gpu->textures.w = mesh->occlusion_texture_handle.index;
   mesh_draw_gpu->albedo_color_factor = mesh->albedo_color_factor;
+  mesh_draw_gpu->metallic_roughness_occlusion_factor.x = mesh->metallic_roughness_occlusion_factor.x;
+  mesh_draw_gpu->metallic_roughness_occlusion_factor.y = mesh->metallic_roughness_occlusion_factor.y;
+  mesh_draw_gpu->metallic_roughness_occlusion_factor.z = mesh->metallic_roughness_occlusion_factor.z;
   mesh_draw_gpu->flags = mesh->flags;
   mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
   mesh_draw_gpu->meshletes_count = mesh->meshlets_count;

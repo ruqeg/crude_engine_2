@@ -360,7 +360,7 @@ void main()
   vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
   if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
   {
-    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
+    roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).rg;
   }
   
   vec3 normal = normalize( in_normal );
