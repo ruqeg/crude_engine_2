@@ -26,6 +26,7 @@
 #define CRUDE_RWBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) buffer name
 #define CRUDE_PUSH_CONSTANT layout(push_constant) uniform _Crude_Push_Constant
 
+#define CRUDE_TEXTURE( ti, uv ) texture( global_textures[ nonuniformEXT( ti ) ], uv )
 #define CRUDE_TEXTURE_FETCH( ti, uv, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_IMAGE_STORE( ti, uv, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], uv, data )

@@ -130,8 +130,7 @@ typedef struct crude_gfx_device
    */
   VkImage                                                  vk_swapchain_images[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
   uint32                                                   vk_swapchain_images_count;
-  uint16                                                   vk_swapchain_width;
-  uint16                                                   vk_swapchain_height;
+  XMFLOAT2                                                 vk_swapchain_size;
   uint32                                                   vk_swapchain_image_index;
   VkPresentModeKHR                                         vk_selected_present_mode;
   bool                                                     swapchain_resized_last_frame;
@@ -159,6 +158,8 @@ typedef struct crude_gfx_device
   /**
    * !TODO 
    */
+  XMFLOAT2                                                 renderer_size;
+
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
 
   uint32                                                   num_threads;

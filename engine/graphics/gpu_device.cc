@@ -733,7 +733,9 @@ crude_gfx_present
     region.dstSubresource.baseArrayLayer = 0;
     region.dstSubresource.layerCount = 1;
     region.dstOffset = CRUDE_COMPOUNT( VkOffset3D, { 0 } );
-    region.extent = CRUDE_COMPOUNT( VkExtent3D, { gpu->vk_swapchain_width, gpu->vk_swapchain_height, 1 } );
+    region.extent.width = gpu->renderer_size.x;
+    region.extent.height = gpu->renderer_size.y;
+    region.extent.depth = 1;
     
     cmd = crude_gfx_get_primary_cmd( gpu, 1, false );
 
@@ -2144,14 +2146,15 @@ crude_gfx_create_pipeline
     vk_viewport = CRUDE_COMPOUNT_EMPTY( VkViewport );
     vk_viewport.x = 0.0f;
     vk_viewport.y = 0.0f;
-    vk_viewport.width = CRUDE_STATIC_CAST( float32, gpu->vk_swapchain_width );
-    vk_viewport.height = CRUDE_STATIC_CAST( float32, gpu->vk_swapchain_height );
+    vk_viewport.width = CRUDE_STATIC_CAST( float32, gpu->renderer_size.x );
+    vk_viewport.height = CRUDE_STATIC_CAST( float32, gpu->renderer_size.y );
     vk_viewport.minDepth = 0.0f;
     vk_viewport.maxDepth = 1.0f;
     
     vk_scissor = CRUDE_COMPOUNT_EMPTY( VkRect2D );
     vk_scissor.offset = { 0, 0 };
-    vk_scissor.extent = { gpu->vk_swapchain_width, gpu->vk_swapchain_height };
+    vk_scissor.extent.width = gpu->renderer_size.x;
+    vk_scissor.extent.height = gpu->renderer_size.y;
 
     vk_viewport_state = CRUDE_COMPOUNT_EMPTY( VkPipelineViewportStateCreateInfo ); 
     vk_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -3938,8 +3941,11 @@ vk_create_swapchain_
     swapchain_extent.height = CRUDE_CLAMP( swapchain_extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height );
   }
 
-  gpu->vk_swapchain_width  = swapchain_extent.width;
-  gpu->vk_swapchain_height = swapchain_extent.height;
+  gpu->vk_swapchain_size.x  = swapchain_extent.width;
+  gpu->vk_swapchain_size.y = swapchain_extent.height;
+
+  gpu->renderer_size.x = gpu->vk_swapchain_size.x;
+  gpu->renderer_size.y = gpu->vk_swapchain_size.y;
   
   available_formats_count;
   vkGetPhysicalDeviceSurfaceFormatsKHR( gpu->vk_physical_device, gpu->vk_surface, &available_formats_count, NULL );

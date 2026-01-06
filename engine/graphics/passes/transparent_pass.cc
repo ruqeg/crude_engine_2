@@ -78,8 +78,8 @@ crude_gfx_transparent_pass_render
     pust_constant.lights_indices = pass->scene_renderer->lights_indices_hga.gpu_address;
     pust_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
     pust_constant.light_shadow_views = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;
-    pust_constant.inv_radiance_texture_width = 1.f / gpu->vk_swapchain_width;
-    pust_constant.inv_radiance_texture_height = 1.f / gpu->vk_swapchain_height;
+    pust_constant.inv_radiance_texture_width = 1.f / gpu->renderer_size.x;
+    pust_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
 
     crude_gfx_cmd_draw_mesh_task_indirect_count(
@@ -121,8 +121,8 @@ crude_gfx_transparent_pass_render
     pust_constant.lights_indices = pass->scene_renderer->lights_indices_hga.gpu_address;
     pust_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
     pust_constant.light_shadow_views = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;
-    pust_constant.inv_radiance_texture_width = 1.f / gpu->vk_swapchain_width;
-    pust_constant.inv_radiance_texture_height = 1.f / gpu->vk_swapchain_height;
+    pust_constant.inv_radiance_texture_width = 1.f / gpu->renderer_size.x;
+    pust_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
 
     crude_gfx_cmd_draw_indirect_count(

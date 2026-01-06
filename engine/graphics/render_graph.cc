@@ -175,18 +175,18 @@ crude_gfx_render_graph_parse_from_file
         {
           cJSON const                                     *output_format;
           cJSON const                                     *output_load_op;
-          cJSON const                                     *output_resolution;
+          cJSON const                                     *output_scale;
           
           output_format = cJSON_GetObjectItemCaseSensitive( pass_output, "format" );
           output_load_op = cJSON_GetObjectItemCaseSensitive( pass_output, "op" );
-          output_resolution = cJSON_GetObjectItemCaseSensitive( pass_output, "resolution" );
-          CRUDE_ASSERT( output_format && output_load_op && output_resolution );
-          CRUDE_ASSERT( cJSON_GetArraySize( output_resolution ) == 2 );
+          output_scale = cJSON_GetObjectItemCaseSensitive( pass_output, "scale" );
+          CRUDE_ASSERT( output_format && output_load_op && output_scale );
+          CRUDE_ASSERT( cJSON_GetArraySize( output_scale ) == 2 );
 
           output_creation.resource_info.texture.format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( output_format ) );
           output_creation.resource_info.texture.load_op = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
-          output_creation.resource_info.texture.width = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 0 ) );
-          output_creation.resource_info.texture.height = cJSON_GetNumberValue( cJSON_GetArrayItem( output_resolution, 1 ) );
+          output_creation.resource_info.texture.scale.x = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 0 ) );
+          output_creation.resource_info.texture.scale.y = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 1 ) );
           output_creation.resource_info.texture.depth = 1;
 
           if ( crude_gfx_has_depth( output_creation.resource_info.texture.format ) )
@@ -465,8 +465,8 @@ crude_gfx_render_graph_compile
             output_resource_texture_creation.name = output_resource->name;
             output_resource_texture_creation.format = output_resource_info->texture.format;
             output_resource_texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-            output_resource_texture_creation.width = output_resource_info->texture.width;
-            output_resource_texture_creation.height = output_resource_info->texture.height;
+            output_resource_texture_creation.width = render_graph->builder->gpu->renderer_size.x * output_resource_info->texture.scale.x;
+            output_resource_texture_creation.height = render_graph->builder->gpu->renderer_size.y * output_resource_info->texture.scale.y;
             output_resource_texture_creation.depth = output_resource_info->texture.depth;
             output_resource_texture_creation.flags = ( node->type != CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS ) ? ( CRUDE_GFX_TEXTURE_MASK_COMPUTE | CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) : CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
             output_resource_texture_creation.alias = ( CRUDE_ARRAY_LENGTH( free_list ) > 0 ) ? CRUDE_ARRAY_POP( free_list ) : CRUDE_GFX_TEXTURE_HANDLE_INVALID;
@@ -596,20 +596,20 @@ crude_gfx_render_graph_compile
 
         if ( width == 0 )
         {
-          width = output_resource_info->texture.width;
+          width = render_graph->builder->gpu->renderer_size.x * output_resource_info->texture.scale.x;
         }
         else
         {
-          CRUDE_ASSERT( width == output_resource_info->texture.width );
+          CRUDE_ASSERT( width == render_graph->builder->gpu->renderer_size.x * output_resource_info->texture.scale.x );
         }
 
         if ( height == 0 )
         {
-          height = output_resource_info->texture.height;
+          height = render_graph->builder->gpu->renderer_size.y * output_resource_info->texture.scale.y;
         }
         else
         {
-          CRUDE_ASSERT( height == output_resource_info->texture.height );
+          CRUDE_ASSERT( height == render_graph->builder->gpu->renderer_size.y * output_resource_info->texture.scale.y );
         }
 
         if ( crude_gfx_has_depth_or_stencil( output_resource_info->texture.format ) )
@@ -638,20 +638,20 @@ crude_gfx_render_graph_compile
 
         if ( width == 0 )
         {
-          width = info->texture.width;
+          width = render_graph->builder->gpu->renderer_size.x * info->texture.scale.x;
         }
         else
         {
-          CRUDE_ASSERT( width == info->texture.width );
+          CRUDE_ASSERT( width == render_graph->builder->gpu->renderer_size.x * info->texture.scale.x );
         }
 
         if ( height == 0 )
         {
-          height = info->texture.height;
+          height = render_graph->builder->gpu->renderer_size.y * info->texture.scale.y;
         }
         else
         {
-          CRUDE_ASSERT( height == info->texture.height );
+          CRUDE_ASSERT( height == render_graph->builder->gpu->renderer_size.y * info->texture.scale.y );
         }
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )

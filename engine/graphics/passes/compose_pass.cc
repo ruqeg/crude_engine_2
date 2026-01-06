@@ -69,10 +69,10 @@ crude_gfx_compose_pass_render
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   
   pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
-  pust_constant.textures.x = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_albedo" )->resource_info.texture.handle.index;
-  pust_constant.textures.y = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" )->resource_info.texture.handle.index;
-  pust_constant.textures.z = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_roughness_metalness" )->resource_info.texture.handle.index;
-  pust_constant.textures.w = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name )->resource_info.texture.handle.index;
+  pust_constant.textures.x = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.gbuffer_albedo );
+  pust_constant.textures.y = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.gbuffer_normal );
+  pust_constant.textures.z = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.gbuffer_roughness_metalness );
+  pust_constant.textures.w = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.gbuffer_depth );
   pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   pust_constant.zbins = pass->scene_renderer->lights_bins_hga.gpu_address;
   pust_constant.lights_tiles = pass->scene_renderer->lights_tiles_hga.gpu_address;

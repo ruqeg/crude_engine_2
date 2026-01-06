@@ -89,7 +89,7 @@ crude_gfx_postprocessing_pass_pre_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_postprocessing_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
   
-  hdr_color_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.hdr_pre_tonemapping_texture_name )->resource_info.texture.handle;
+  hdr_color_texture_handle = CRUDE_GFX_PASS_TEXTURE_HANDLE( postprocessing_pass.hdr_pre_tonemapping );
   hdr_color_texture = crude_gfx_access_texture( gpu, hdr_color_texture_handle );
 
   luminance_avarge_last_update_delta_time = crude_time_delta_seconds( pass->luminance_avarge_last_update_time, crude_time_now( ) );
@@ -158,12 +158,12 @@ crude_gfx_postprocessing_pass_render
   crude_gfx_cmd_bind_pipeline( primary_cmd, postprocessing_pipeline );
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 
-  pbr_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.hdr_pre_tonemapping_texture_name )->resource_info.texture.handle;
+  pbr_texture_handle = CRUDE_GFX_PASS_TEXTURE_HANDLE( postprocessing_pass.hdr_pre_tonemapping );
   
   postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
   postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle.index;
   postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
-  postprocessing_constant.inv_gamma = 1.f / pass->scene_renderer->options.gamma;
+  postprocessing_constant.inv_gamma = 1.f / pass->scene_renderer->options.postprocessing_pass.gamma;
   crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
 

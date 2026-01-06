@@ -60,10 +60,7 @@
           "type": "attachment",
           "name": "gbuffer_albedo",
           "format": "VK_FORMAT_R8G8B8A8_UNORM",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
         },
@@ -71,10 +68,7 @@
           "type": "attachment",
           "name": "gbuffer_normal",
           "format": "VK_FORMAT_R16G16_SNORM",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 1, 1, 1, 1 ]
         },
@@ -82,10 +76,7 @@
           "type": "attachment",
           "name": "gbuffer_roughness_metalness",
           "format": "VK_FORMAT_R16G16_SNORM",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 1, 1, 1, 1 ]
         },
@@ -93,10 +84,7 @@
           "type": "attachment",
           "name": "gbuffer_mesh_draw_index",
           "format": "VK_FORMAT_R16_UINT",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
         },
@@ -104,10 +92,7 @@
           "type": "attachment",
           "name": "depth",
           "format": "VK_FORMAT_D32_SFLOAT",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_depth": 1.0
         }
@@ -270,10 +255,27 @@
           "type": "attachment",
           "name": "pbr",
           "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
+      "name": "ssr_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "pbr"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "pbr_with_ssr",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
         }
@@ -284,7 +286,7 @@
       "inputs": [
         {
           "type": "attachment",
-          "name": "pbr"
+          "name": "pbr_with_ssr"
         },
         {
           "type": "attachment",
@@ -294,7 +296,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "pbr"
+          "name": "pbr_with_ssr"
         },
         {
           "type": "reference",
@@ -311,7 +313,7 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "pbr"
+          "name": "pbr_with_ssr"
         }
       ],
       "outputs": [
@@ -319,10 +321,7 @@
           "type": "attachment",
           "name": "final",
           "format": "VK_FORMAT_R8G8B8A8_UNORM",
-          "resolution": [
-            800,
-            600
-          ],
+          "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
         }
@@ -372,7 +371,7 @@
         },
         {
           "type": "texture",
-          "name": "pbr"
+          "name": "pbr_with_ssr"
         },
         {
           "type": "texture",

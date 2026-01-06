@@ -64,14 +64,34 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->total_visible_meshes_instances_count = 0u;
 
   scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
-  scene_renderer->options.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
-  scene_renderer->options.background_intensity = 1.f;
-  scene_renderer->options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
-  scene_renderer->options.ambient_intensity = 1.f;
-  scene_renderer->options.hdr_pre_tonemapping_texture_name = "pbr";
-  scene_renderer->options.depth_texture_name = "depth";
-  scene_renderer->options.gamma = 2.2f;
-  scene_renderer->options.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
+
+  scene_renderer->options.compose_pass.gbuffer_albedo = "gbuffer_albedo";
+  scene_renderer->options.compose_pass.gbuffer_normal = "gbuffer_normal";
+  scene_renderer->options.compose_pass.gbuffer_roughness_metalness = "gbuffer_roughness_metalness";
+  scene_renderer->options.compose_pass.gbuffer_depth = "depth";
+
+  scene_renderer->options.depth_pyramid_pass.depth = "depth";
+
+  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "pbr_with_ssr";
+  scene_renderer->options.postprocessing_pass.gamma = 2.2;
+  
+  scene_renderer->options.ssr_pass.max_steps = 100;
+  scene_renderer->options.ssr_pass.max_distance = 100;
+  
+  scene_renderer->options.ssr_pass.stride_zcutoff = 1.0 / 200.0;
+  scene_renderer->options.ssr_pass.stride = 20;
+  scene_renderer->options.ssr_pass.z_thickness = 0;
+  scene_renderer->options.ssr_pass.depth_texture = "depth";
+  scene_renderer->options.ssr_pass.normal_texture = "gbuffer_normal";
+  scene_renderer->options.ssr_pass.pbr_without_ssr_texture = "pbr";
+  scene_renderer->options.ssr_pass.pbr_with_ssr_texture = "pbr_with_ssr";
+
+  scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
+  scene_renderer->options.scene.background_intensity = 1.f;
+  scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
+  scene_renderer->options.scene.ambient_intensity = 1.f;
+
+  scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
 
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
   
@@ -113,6 +133,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
+  crude_gfx_ssr_pass_initialize( &scene_renderer->ssr_pass, scene_renderer );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
@@ -150,6 +171,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
   crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
+  crude_gfx_ssr_pass_deinitialize( &scene_renderer->ssr_pass );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
@@ -325,6 +347,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "transparent_pass", crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_lut_pass", crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ssr_pass", crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "point_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
@@ -347,8 +370,8 @@ crude_gfx_scene_renderer_on_resize
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
   }
   
-  uint32 tile_x_count = scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-  uint32 tile_y_count = scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+  uint32 tile_x_count = scene_renderer->gpu->renderer_size.x / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+  uint32 tile_y_count = scene_renderer->gpu->renderer_size.y / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
   uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
   scene_renderer->lights_tiles_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * tiles_entry_count, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_tiles" );
 
@@ -380,10 +403,10 @@ update_dynamic_buffers_
     *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
     scene->flags = 0u;
     scene->camera_previous = scene->camera;
-    scene->resolution.x = scene_renderer->gpu->vk_swapchain_width;
-    scene->resolution.y = scene_renderer->gpu->vk_swapchain_height;
-    scene->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->vk_swapchain_width ) / scene_renderer->gpu->vk_swapchain_height;
-    crude_gfx_camera_to_camera_gpu( &scene_renderer->options.camera, scene_renderer->options.camera_view_to_world, &scene->camera );
+    scene->resolution.x = scene_renderer->gpu->renderer_size.x;
+    scene->resolution.y = scene_renderer->gpu->renderer_size.y;
+    scene->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->renderer_size.x ) / scene_renderer->gpu->renderer_size.y;
+    crude_gfx_camera_to_camera_gpu( &scene_renderer->options.scene.camera, scene_renderer->options.scene.camera_view_to_world, &scene->camera );
     scene->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
     scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
     //scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
@@ -394,13 +417,13 @@ update_dynamic_buffers_
 #else
     scene->indirect_light_texture_index = -1;
 #endif
-    scene->background_color = scene_renderer->options.background_color;
-    scene->background_intensity = scene_renderer->options.background_intensity;
-    scene->ambient_color = scene_renderer->options.ambient_color;
-    scene->ambient_intensity = scene_renderer->options.ambient_intensity;
+    scene->background_color = scene_renderer->options.scene.background_color;
+    scene->background_intensity = scene_renderer->options.scene.background_intensity;
+    scene->ambient_color = scene_renderer->options.scene.ambient_color;
+    scene->ambient_intensity = scene_renderer->options.scene.ambient_intensity;
     scene->absolute_time = scene_renderer->options.absolute_time;
     scene->absolute_frame = scene_renderer->gpu->absolute_frame;
-    scene->debug_mode = scene_renderer->options.debug_mode;
+    scene->debug_mode = scene_renderer->options.debug.debug_mode;
 
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
   }
@@ -544,7 +567,7 @@ crude_scene_renderer_register_nodes_instances_
       CRUDE_ASSERT( false );
     }
     
-    if ( !scene_renderer->options.hide_collision && child_debug_collision->visible )
+    if ( !scene_renderer->options.debug.hide_collision && child_debug_collision->visible )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_debug_collision->absolute_filepath, &local_model_initialized );
@@ -559,7 +582,7 @@ crude_scene_renderer_register_nodes_instances_
     crude_gfx_model_renderer_resources_instance        model_renderer_resources_instant;
     
     child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_debug_gltf );
-    if ( !scene_renderer->options.hide_debug_gltf && child_gltf->visible )
+    if ( !scene_renderer->options.debug.hide_debug_gltf && child_gltf->visible )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->absolute_filepath, &local_model_initialized );

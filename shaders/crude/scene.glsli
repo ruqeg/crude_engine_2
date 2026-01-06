@@ -122,6 +122,7 @@ struct crude_scene
 {
   crude_camera                                             camera;
   crude_camera                                             camera_previous;
+
   vec2                                                     resolution;
   uint                                                     flags;
   uint                                                     meshes_instances_count;

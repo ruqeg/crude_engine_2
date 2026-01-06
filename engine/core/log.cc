@@ -11,6 +11,7 @@
 
 char                                                       message_buffer_[ CRUDE_RKILO( 8 ) ];
 char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];
+uint64                                                     loged_bytes_ = 0;
 FILE                                                      *log_file_ = NULL;
 
 static char const*
@@ -94,8 +95,10 @@ crude_log_common_va
   _In_ va_list                                             args
 )
 {
+  int32                                                    message_length;
+
   crude_snprintf( format_buffer_, CRUDE_COUNTOF( message_buffer_ ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
-  crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
+  message_length = crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
 #ifdef _WIN32
   OutputDebugStringA( ( LPCSTR )message_buffer_ );
 #endif
@@ -108,4 +111,20 @@ crude_log_common_va
     }
   }
   printf( "%s", message_buffer_ );
+
+  loged_bytes_ += message_length;
+
+  if ( loged_bytes_ > CRUDE_RMEGA( 1 ) )
+  {
+    if ( log_file_ )
+    {
+      fseek( log_file_, 0, SEEK_SET );  
+      fprintf( log_file_, "\n=== LOG ROTATED AT %zu bytes ===\n\n", loged_bytes_ );
+    }
+
+    system("clear || cls");
+    printf( "\n=== LOG ROTATED AT %zu bytes ===\n\n", loged_bytes_ );
+
+    loged_bytes_ = 0;
+  }
 }

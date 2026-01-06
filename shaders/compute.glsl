@@ -2,11 +2,12 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define LUMINANCE_AVERAGE_CALCULATION
-#define LIGHT_LUT
+//#define LIGHT_LUT
 //#define LUMINANCE_HISTOGRAM_GENERATION
 //#define CULLING_EARLY
 //#define CULLING_LATE
 //#define DEPTH_PYRAMID
+#define SSR
 #define CRUDE_COMPUTE
 #include "crude/platform.glsli"
 #include "crude/debug.glsli"
@@ -342,3 +343,213 @@ void main()
 }
 
 #endif /* LIGHT_LUT */
+
+#if defined( SSR )
+
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+float linearize_depth( float d, float znear, float zfar )
+{
+  return znear * zfar / (zfar + d * (znear - zfar));
+}
+
+CRUDE_PUSH_CONSTANT
+{
+  SceneRef                                                 scene;
+  float                                                    ssr_max_steps;
+  float                                                    ssr_max_distance;
+
+  float                                                    ssr_stride;
+  float                                                    ssr_z_thickness;
+  float                                                    ssr_stride_zcutoff;
+  uint                                                     depth_texture_index;
+
+  vec2                                                     depth_texture_size;
+  uint                                                     normal_texture_index;
+  uint                                                     pbr_without_ssr_texture_index;
+
+  uint                                                     pbr_with_ssr_texture_index;
+  vec3                                                     _padding;
+};
+
+float distance_squared( vec2 a, vec2 b )
+{
+  a -= b;
+  return dot( a, a );
+}
+
+bool intersects_depth_buffer( float z, float min_z, float max_z )
+{
+  /*
+   * Based on how far away from the camera the depth is,
+   * adding a bit of extra thickness can help improve some
+   * artifacts. Driving this value up too high can cause
+   * artifacts of its own.
+   */
+  float depth_scale = min( 1.0f, z * ssr_stride_zcutoff );
+  z += ssr_z_thickness + mix( 0.0f, 2.0f, depth_scale );
+  return ( max_z >= z ) && ( min_z - ssr_z_thickness <= z );
+}
+
+void swap(inout float a, inout float b)
+{
+  float t = a;
+  a = b;
+  b = t;
+}
+
+bool trace_screen_space_ray(
+    vec3 csOrig,
+    vec3 csDir,
+    float jitter,
+    out vec2 hitPixel,
+    out vec3 hitPoint,
+    out vec3 test)
+{
+    // Clip to the near plane
+    float rayLength = ( (csOrig.z + csDir.z * ssr_max_distance ) < scene.data.camera.znear ) ? (scene.data.camera.znear - csOrig.z) / csDir.z : ssr_max_distance;
+    vec3 csEndPoint = csOrig + csDir * rayLength;
+
+    // Project into homogeneous clip space
+    mat4x4 viewToTextureSpaceMatrix = scene.data.camera.view_to_clip;
+
+    vec4 H0 = vec4(csOrig, 1.0f) * scene.data.camera.view_to_clip;
+    H0.xy *= depth_texture_size;
+    vec4 H1 = vec4(csEndPoint, 1.0f) * scene.data.camera.view_to_clip;
+    H1.xy *= depth_texture_size;
+
+    float k0 = 1.0f / H0.w;
+    float k1 = 1.0f / H1.w;
+
+    // The interpolated homogeneous version of the camera-space points
+    vec3 Q0 = csOrig * k0;
+    vec3 Q1 = csEndPoint * k1;
+
+    // Screen-space endpoints
+    vec2 P0 = H0.xy * k0;
+    vec2 P1 = H1.xy * k1;
+
+    // If the line is degenerate, make it cover at least one pixel
+    // to avoid handling zero-pixel extent as a special case later
+    P1 += (distance_squared(P0, P1) < 0.0001f) ? vec2(0.01f, 0.01f) : vec2(0.0f);
+    vec2 delta = P1 - P0;
+
+    // Permute so that the primary iteration is in x to collapse
+    // all quadrant-specific DDA cases later
+    bool permute = false;
+    if(abs(delta.x) < abs(delta.y))
+    {
+        // This is a more-vertical line
+        permute = true;
+        delta = delta.yx;
+        P0 = P0.yx;
+        P1 = P1.yx;
+    }
+
+    float stepDir = sign(delta.x);
+    float invdx = stepDir / delta.x;
+
+    // Track the derivatives of Q and k
+    vec3 dQ = (Q1 - Q0) * invdx;
+    float dk = (k1 - k0) * invdx;
+    vec2 dP = vec2(stepDir, delta.y * invdx);
+
+    // Scale derivatives by the desired pixel stride and then
+    // offset the starting values by the jitter fraction
+    float strideScale = 1.0f - min(1.0f, csOrig.z * ssr_stride_zcutoff);
+    float stride = 1.0f + strideScale * ssr_stride;
+    dP *= stride;
+    dQ *= stride;
+    dk *= stride;
+
+    P0 += dP * jitter;
+    Q0 += dQ * jitter;
+    k0 += dk * jitter;
+
+    // Slide P from P0 to P1, (now-homogeneous) Q from Q0 to Q1, k from k0 to k1
+    vec4 PQk = vec4(P0, Q0.z, k0);
+    vec4 dPQk = vec4(dP, dQ.z, dk);
+    vec3 Q = Q0; 
+
+    // Adjust end condition for iteration direction
+    float end = P1.x * stepDir;
+
+    float stepCount = 0.0f;
+    float prevZMaxEstimate = csOrig.z;
+    float rayZMin = prevZMaxEstimate;
+    float rayZMax = prevZMaxEstimate;
+    float sceneZMax = rayZMax + 100.0f;
+    
+    for(;
+        ((PQk.x * stepDir) <= end) && (stepCount < ssr_max_steps) &&
+        !intersects_depth_buffer(sceneZMax, rayZMin, rayZMax) &&
+        (sceneZMax != 0.0f);
+        ++stepCount)
+    {
+      rayZMin = prevZMaxEstimate;
+      rayZMax =(dQ.z * 0.5+PQk.z)/(dPQk.w * 0.5 + PQk.w);
+
+      prevZMaxEstimate = rayZMax;
+      if(rayZMin > rayZMax)
+      {
+        swap(rayZMin, rayZMax);
+      }
+
+      hitPixel = permute ? PQk.yx : PQk.xy;
+      hitPixel = hitPixel * 0.5 + depth_texture_size * 0.5;
+      hitPixel.y = depth_texture_size.y - hitPixel.y;
+      sceneZMax = CRUDE_TEXTURE_FETCH(depth_texture_index, ivec2(hitPixel),0).x;
+      test = vec3(sceneZMax );
+      sceneZMax = linearize_depth( sceneZMax, scene.data.camera.znear, scene.data.camera.zfar );
+
+      PQk += dPQk;
+    }
+
+    // Advance Q based on the number of steps
+    Q.xy += dQ.xy * stepCount;
+    hitPoint = Q * (1.0f / PQk.w);
+    return intersects_depth_buffer(sceneZMax, rayZMin, rayZMax);
+}
+
+void main()
+{
+  ivec2 coords = ivec2( gl_GlobalInvocationID.xy );
+  float depth1 = CRUDE_TEXTURE_FETCH( depth_texture_index, coords, 0 ).r;
+  vec2 packed_normal = CRUDE_TEXTURE_FETCH( normal_texture_index, coords, 0 ).xy;
+  vec2 screen_uv = crude_uv_nearest( coords, scene.data.resolution );
+
+  vec3 pixel_view_position = crude_world_position_from_depth( screen_uv, depth1, scene.data.camera.clip_to_view );
+  vec3 normal = crude_octahedral_decode( packed_normal ) * mat3( scene.data.camera.world_to_view );
+
+  vec3 to_ray_origin = normalize( pixel_view_position );
+  vec3 ray_origin = pixel_view_position;
+  vec3 ray_direction = reflect( to_ray_origin, normal );
+
+  // output rDotV to the alpha channel for use in determining how much to fade the ray
+  float rDotV = dot(ray_direction, to_ray_origin);
+
+    // out parameters
+  vec2 hitPixel = vec2(0.0f, 0.0f);
+  vec3 hitPoint = vec3(0.0f, 0.0f, 0.0f);
+
+  float jitter = 0.f;// ssr_stride > 1.0f ? float(int(pIn.posH.x + pIn.posH.y) & 1) * 0.5f : 0.0f;
+
+  // perform ray tracing - true if hit found, false otherwise
+  vec3 test;
+  bool intersection = trace_screen_space_ray( ray_origin, ray_direction, jitter, hitPixel, hitPoint, test );
+
+  if( hitPixel.x > depth_texture_size.x || hitPixel.x < 0.0 || hitPixel.y > depth_texture_size.y || hitPixel.y < 0.0 )
+  {
+    intersection = false;
+  }
+
+  vec3 pbr = CRUDE_TEXTURE_FETCH( pbr_without_ssr_texture_index, coords, 0 ).xyz;
+  vec3 ssr = intersection ? CRUDE_TEXTURE_FETCH( pbr_without_ssr_texture_index, ivec2( hitPixel ), 0 ).xyz : vec3( 0 );
+  CRUDE_IMAGE_STORE( pbr_with_ssr_texture_index, coords, vec4( pbr + ssr, 1 ) );
+  //CRUDE_IMAGE_STORE( pbr_with_ssr_texture_index, coords, vec4( test, 1 ) );
+  //CRUDE_IMAGE_STORE( pbr_with_ssr_texture_index, coords, vec4( intersection ? test : vec3( 1, 0, 0), 1 ) );
+  //CRUDE_IMAGE_STORE( pbr_with_ssr_texture_index, coords, vec4( intersection ? vec3( 0, 1, 0 ) : vec3( 1, 0, 0), 1 ) );
+  //return vec4(hitPixel, depth, rDotV) * (intersection ? 1.0f : 0.0f);
+}
+
+#endif /* SSR */

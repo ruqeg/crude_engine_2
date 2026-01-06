@@ -18,6 +18,7 @@
 #include <engine/graphics/passes/indirect_light_pass.h>
 #include <engine/graphics/passes/transparent_pass.h>
 #include <engine/graphics/passes/light_lut_pass.h>
+#include <engine/graphics/passes/ssr_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef enum crude_gfx_model_renderer_resoruces_instances_type
@@ -48,22 +49,60 @@ typedef struct crude_gfx_scene_renderer_creation
 
 typedef struct crude_gfx_scene_renderer_options
 {
-  crude_camera                                             camera;
-  XMFLOAT4X4                                               camera_view_to_world;
-  XMFLOAT3                                                 background_color;
-  float32                                                  background_intensity;
-  XMFLOAT3                                                 ambient_color;
-  float32                                                  ambient_intensity;
-  float32                                                  absolute_time;
-  char const                                              *hdr_pre_tonemapping_texture_name;
-  char const                                              *depth_texture_name;
-  float32                                                  gamma;
-  uint32                                                   debug_mode;
+  struct 
+  {
+    char const                                            *gbuffer_albedo;
+    char const                                            *gbuffer_normal;
+    char const                                            *gbuffer_roughness_metalness;
+    char const                                            *gbuffer_depth;
+  } compose_pass;
+  struct 
+  {
+    char const                                            *depth;
+  } depth_pyramid_pass;
+  struct 
+  {
+    char const                                            *hdr_pre_tonemapping;
+    
+    float32                                                gamma;
+  } postprocessing_pass;
+  struct
+  {
+    float32                                                max_steps;
+    float32                                                max_distance;
+
+    float32                                                stride_zcutoff;
+    float32                                                stride;
+    float32                                                z_thickness;
+    char const                                            *depth_texture;
+    char const                                            *normal_texture;
+    char const                                            *pbr_without_ssr_texture;
+    char const                                            *pbr_with_ssr_texture;
+  } ssr_pass;
+  struct 
+  {
+    crude_camera                                           camera;
+    XMFLOAT4X4                                             camera_view_to_world;
+    XMFLOAT3                                               background_color;
+    float32                                                background_intensity;
+    XMFLOAT3                                               ambient_color;
+    float32                                                ambient_intensity;
+  } scene;
+  
 #if CRUDE_DEVELOP
+  struct 
+  {
+  uint32                                                   debug_mode;
   bool                                                     hide_collision;
   bool                                                     hide_debug_gltf;
+  } debug;
 #endif
+  float32                                                  absolute_time;
 } crude_gfx_scene_renderer_options;
+
+typedef struct crude_gfx_scene_renderer_common_options
+{
+} crude_gfx_scene_renderer_common_options;
 
 typedef struct crude_gfx_scene_renderer
 {
@@ -144,6 +183,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_postprocessing_pass                            postprocessing_pass;
   crude_gfx_transparent_pass                               transparent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
+  crude_gfx_ssr_pass                                       ssr_pass;
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
@@ -204,3 +244,12 @@ crude_gfx_scene_renderer_on_resize
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
+
+/* Utils */
+#define CRUDE_GFX_PASS_TEXTURE_HANDLE( name )\
+  crude_gfx_render_graph_builder_access_resource_by_name(\
+    pass->scene_renderer->render_graph->builder,\
+    pass->scene_renderer->options.name\
+  )->resource_info.texture.handle
+
+#define CRUDE_GFX_PASS_TEXTURE_INDEX( name ) CRUDE_GFX_PASS_TEXTURE_HANDLE( name ).index

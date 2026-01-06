@@ -576,14 +576,13 @@ crude_engine_initialize_graphics_
   crude_gfx_scene_renderer_initialize( &engine->scene_renderer, &scene_renderer_creation );
 
 #if CRUDE_DEVELOP
-  engine->scene_renderer.options.hide_collision = true;
-  engine->scene_renderer.options.hide_debug_gltf = true;
+  engine->scene_renderer.options.debug.hide_collision = true;
+  engine->scene_renderer.options.debug.hide_debug_gltf = true;
 #endif
 
-  engine->scene_renderer.options.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  engine->scene_renderer.options.ambient_intensity = 1.5f;
-  engine->scene_renderer.options.background_intensity = 0.f;
-  engine->scene_renderer.options.hdr_pre_tonemapping_texture_name = "pbr";
+  engine->scene_renderer.options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
+  engine->scene_renderer.options.scene.ambient_intensity = 0.f;
+  engine->scene_renderer.options.scene.background_intensity = 0.f;
 
   engine->graphics_absolute_time = 0.f;
   engine->framerate = 120;
@@ -799,8 +798,8 @@ crude_engine_graphics_main_thread_loop_
   crude_gfx_new_frame( &engine->gpu );
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
-  engine->scene_renderer.options.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );
-  XMStoreFloat4x4( &engine->scene_renderer.options.camera_view_to_world, crude_transform_node_to_world( engine->world, engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_transform ) ) );
+  engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );
+  XMStoreFloat4x4( &engine->scene_renderer.options.scene.camera_view_to_world, crude_transform_node_to_world( engine->world, engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_transform ) ) );
 
   if ( new_buffers_recrteated_or_model_initialized )
   {
@@ -845,7 +844,7 @@ crude_engine_graphics_task_set_thread_loop_
   if ( engine->gpu.swapchain_resized_last_frame )
   {
     crude_gfx_scene_renderer_on_resize( &engine->scene_renderer );
-    crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.vk_swapchain_width, engine->gpu.vk_swapchain_height );
+    crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.renderer_size.x, engine->gpu.renderer_size.y );
   }
 
   crude_gfx_scene_renderer_submit_draw_task( &engine->scene_renderer, false );

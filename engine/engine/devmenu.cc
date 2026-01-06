@@ -123,7 +123,7 @@ crude_devmenu_draw
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
   {
-    ImGui::SetNextWindowSize( ImVec2( devmenu->engine->gpu.vk_swapchain_width, 25 ) );
+    ImGui::SetNextWindowSize( ImVec2( devmenu->engine->gpu.renderer_size.x, 25 ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
@@ -239,7 +239,7 @@ crude_devmenu_debug_gltf_view_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  devmenu->engine->scene_renderer.options.hide_debug_gltf = !devmenu->engine->scene_renderer.options.hide_debug_gltf;
+  devmenu->engine->scene_renderer.options.debug.hide_debug_gltf = !devmenu->engine->scene_renderer.options.debug.hide_debug_gltf;
 }
 
 
@@ -258,7 +258,7 @@ crude_devmenu_collisions_view_callback
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  devmenu->engine->scene_renderer.options.hide_collision = !devmenu->engine->scene_renderer.options.hide_collision;
+  devmenu->engine->scene_renderer.options.debug.hide_collision = !devmenu->engine->scene_renderer.options.debug.hide_collision;
 }
 
 bool
@@ -372,7 +372,7 @@ crude_devmenu_gpu_visual_profiler_update
 
   dev_gpu_profiler->per_frame_active[ dev_gpu_profiler->current_frame ] = active_timestamps;
   
-  dev_gpu_profiler->framebuffer_pixel_count = dev_gpu_profiler->gpu->vk_swapchain_width * dev_gpu_profiler->gpu->vk_swapchain_height;
+  dev_gpu_profiler->framebuffer_pixel_count = dev_gpu_profiler->gpu->renderer_size.x * dev_gpu_profiler->gpu->renderer_size.y;
 
   dev_gpu_profiler->pipeline_statistics = &dev_gpu_profiler->gpu->gpu_time_queries_manager->frame_pipeline_statistics;
 
@@ -1158,20 +1158,29 @@ crude_devmenu_scene_renderer_draw
   if ( ImGui::CollapsingHeader( "Debug" ) )
   {
     char const *debug_modes_str[] = { "None", "Lights Per Pixel" };
-    int32 debug_mode = dev_scene_rendere->devmenu->engine->scene_renderer.options.debug_mode;
+    int32 debug_mode = dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.debug_mode;
     ImGui::Combo( "Mode", &debug_mode, debug_modes_str, IM_ARRAYSIZE( debug_modes_str ) );
-    dev_scene_rendere->devmenu->engine->scene_renderer.options.debug_mode = debug_mode;
+    dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.debug_mode = debug_mode;
   }
 
   if ( ImGui::CollapsingHeader( "Background" ) )
   {
-    ImGui::ColorEdit3( "Background Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.background_color.x );
-    ImGui::DragFloat( "Background Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.background_intensity, 1.f, 0.f );
+    ImGui::ColorEdit3( "Background Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.scene.background_color.x );
+    ImGui::DragFloat( "Background Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.scene.background_intensity, 1.f, 0.f );
+  }
+  
+  if ( ImGui::CollapsingHeader( "SSR" ) )
+  { 
+    ImGui::DragFloat( "Max Steps", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.max_steps, 1.f, 0.f );
+    ImGui::DragFloat( "Max Distance", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.max_distance, 1.f, 0.f );
+    ImGui::DragFloat( "Stride zcutoff", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.stride_zcutoff, 1.f, 0.f );
+    ImGui::DragFloat( "Stride", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.stride, 1.f, 0.f );
+    ImGui::DragFloat( "Zthickness", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.z_thickness, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {
-    ImGui::ColorEdit3( "Ambient Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ambient_color.x );
-    ImGui::DragFloat( "Ambient Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ambient_intensity, 0.1f, 0.f );
+    ImGui::ColorEdit3( "Ambient Color", &dev_scene_rendere->devmenu->engine->scene_renderer.options.scene.ambient_color.x );
+    ImGui::DragFloat( "Ambient Intensity", &dev_scene_rendere->devmenu->engine->scene_renderer.options.scene.ambient_intensity, 0.1f, 0.f );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     ImGui::DragFloat3( "Probe Grid Position", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_grid_position.x );
     ImGui::DragFloat3( "Probe Spacing", &dev_scene_renderer->scene_renderer->indirect_light_pass.options.probe_spacing.x );
@@ -1575,7 +1584,7 @@ crude_devmenu_viewport_draw
   XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
   
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-  ImGui::SetNextWindowSize( ImVec2( dev_viewport->devmenu->engine->gpu.vk_swapchain_width, dev_viewport->devmenu->engine->gpu.vk_swapchain_height )  );
+  ImGui::SetNextWindowSize( ImVec2( dev_viewport->devmenu->engine->gpu.renderer_size.x, dev_viewport->devmenu->engine->gpu.renderer_size.y )  );
   ImGui::Begin( "Viewport", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs );
 
   world = dev_viewport->devmenu->engine->world;

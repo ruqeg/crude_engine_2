@@ -325,9 +325,9 @@ crude_gfx_cmd_set_viewport
     }
     else
     {
-      vk_viewport.width = cmd->gpu->vk_swapchain_width * 1.f;
-      vk_viewport.y = cmd->gpu->vk_swapchain_height * 1.f;
-      vk_viewport.height = -cmd->gpu->vk_swapchain_height * 1.f;
+      vk_viewport.width = cmd->gpu->renderer_size.x * 1.f;
+      vk_viewport.y = cmd->gpu->renderer_size.y * 1.f;
+      vk_viewport.height = -cmd->gpu->renderer_size.y * 1.f;
     }
     vk_viewport.minDepth = 0.0f;
     vk_viewport.maxDepth = 1.0f;
@@ -385,8 +385,8 @@ crude_gfx_cmd_set_scissor
   {
     vk_scissor.offset.x = 0;
     vk_scissor.offset.y = 0;
-    vk_scissor.extent.width = cmd->gpu->vk_swapchain_width;
-    vk_scissor.extent.height = cmd->gpu->vk_swapchain_height;
+    vk_scissor.extent.width = cmd->gpu->renderer_size.x;
+    vk_scissor.extent.height = cmd->gpu->renderer_size.y;
   }
   
   vkCmdSetScissor( cmd->vk_cmd_buffer, 0, 1, &vk_scissor );

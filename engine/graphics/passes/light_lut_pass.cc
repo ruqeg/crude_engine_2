@@ -83,8 +83,8 @@ crude_gfx_light_lut_pass_render
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_gpu, pass->scene_renderer->total_visible_lights_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
   
-  camera = &pass->scene_renderer->options.camera;
-  view_to_world = XMLoadFloat4x4( &pass->scene_renderer->options.camera_view_to_world );
+  camera = &pass->scene_renderer->options.scene.camera;
+  view_to_world = XMLoadFloat4x4( &pass->scene_renderer->options.scene.camera_view_to_world );
 
   world_to_view = XMMatrixInverse( NULL, view_to_world );
   view_to_clip = crude_camera_view_to_clip( camera );
@@ -232,8 +232,8 @@ crude_gfx_light_lut_pass_render
     float32                                              tile_size_inv;
     uint32                                               tile_x_count, tile_y_count, tiles_entry_count, buffer_size, tile_stride;
   
-    tile_x_count = pass->scene_renderer->gpu->vk_swapchain_width / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    tile_y_count = pass->scene_renderer->gpu->vk_swapchain_height / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    tile_x_count = pass->scene_renderer->gpu->renderer_size.x / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
+    tile_y_count = pass->scene_renderer->gpu->renderer_size.y / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
     tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
     buffer_size = tiles_entry_count * sizeof( uint32 );
   
@@ -315,10 +315,10 @@ crude_gfx_light_lut_pass_render
         XMVECTOR                                         aabb_screen;
   
         aabb_screen = XMVectorSet(
-          ( XMVectorGetX( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
-          ( XMVectorGetY( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 ),
-          ( XMVectorGetZ( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_width - 1 ),
-          ( XMVectorGetW( aabb ) * 0.5f + 0.5f ) * ( gpu->vk_swapchain_height - 1 )
+          ( XMVectorGetX( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.x - 1 ),
+          ( XMVectorGetY( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.y - 1 ),
+          ( XMVectorGetZ( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.x - 1 ),
+          ( XMVectorGetW( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.y - 1 )
         );
   
         aabb_screen_width = XMVectorGetZ( aabb_screen ) - XMVectorGetX( aabb_screen );
@@ -336,7 +336,7 @@ crude_gfx_light_lut_pass_render
         aabb_screen_max_y = aabb_screen_min_y + aabb_screen_height;
       }
   
-      if ( aabb_screen_min_x > gpu->vk_swapchain_width || aabb_screen_min_y > gpu->vk_swapchain_height )
+      if ( aabb_screen_min_x > gpu->renderer_size.x || aabb_screen_min_y > gpu->renderer_size.y )
       {
         continue;
       }
@@ -349,8 +349,8 @@ crude_gfx_light_lut_pass_render
       aabb_screen_min_x = CRUDE_MAX( aabb_screen_min_x, 0.0f );
       aabb_screen_min_y = CRUDE_MAX( aabb_screen_min_y, 0.0f );
   
-      aabb_screen_max_x = CRUDE_MIN( aabb_screen_max_x, gpu->vk_swapchain_width );
-      aabb_screen_max_y = CRUDE_MIN( aabb_screen_max_y, gpu->vk_swapchain_height );
+      aabb_screen_max_x = CRUDE_MIN( aabb_screen_max_x, gpu->renderer_size.x );
+      aabb_screen_max_y = CRUDE_MIN( aabb_screen_max_y, gpu->renderer_size.y );
   
       {
         uint32                                           first_tile_x, last_tile_x, first_tile_y, last_tile_y;
