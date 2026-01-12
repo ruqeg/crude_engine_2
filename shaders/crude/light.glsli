@@ -264,7 +264,7 @@ crude_calculate_lighting
   int                                                      bin_index;
   uint                                                     bin_value, min_light_id, max_light_id, stride, address;
 
-  vec3 f0 = vec3( 0.04f );
+  vec3 f0 = CRUDE_DEAFULT_F0;
 
   radiance = vec3( 0 );
 

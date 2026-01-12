@@ -27,14 +27,17 @@
 #define CRUDE_PUSH_CONSTANT layout(push_constant) uniform _Crude_Push_Constant
 
 #define CRUDE_TEXTURE( ti, uv ) texture( global_textures[ nonuniformEXT( ti ) ], uv )
-#define CRUDE_TEXTURE_FETCH( ti, uv, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], uv, mip )
+#define CRUDE_TEXTURE_FETCH( ti, coords, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], coords, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
-#define CRUDE_IMAGE_STORE( ti, uv, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], uv, data )
+#define CRUDE_IMAGE_STORE( ti, coords, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], coords, data )
 
 #define CRUDE_RBUFFER_REF_SCALAR( name ) layout(buffer_reference, row_major, scalar) readonly buffer name
 #define CRUDE_RBUFFER_REF_ALIGNED( name, align ) layout(buffer_reference, row_major, std430, buffer_reference_align=align) readonly buffer name
 #define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
 #define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
+
+#define CRUDE_DEAFULT_F0 vec3( 0.04f )
+#define CRUDE_SATURATE( v ) clamp( v, 0, 1 )
 
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
@@ -152,6 +155,7 @@ crude_uv_nearest
   vec2 uv = pixel + .5;
   return uv / texture_size;
 }
+
 float
 crude_calculate_scale_from_matrix
 (
@@ -159,6 +163,29 @@ crude_calculate_scale_from_matrix
 )
 {
   return max( length( m[ 0 ] ), max( length( m[ 1 ] ), length( m[ 2 ] ) ) );
+}
+
+float
+crude_linearize_depth
+(
+  in float                                                 d,
+  in float                                                 znear,
+  in float                                                 zfar
+)
+{
+  return znear * zfar / ( zfar + d * ( znear - zfar ) );
+}
+
+void
+crude_swap
+(
+  inout float a,
+  inout float b
+)
+{
+  float t = a;
+  a = b;
+  b = t;
 }
 
 /* https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl */

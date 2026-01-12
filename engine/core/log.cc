@@ -3,6 +3,8 @@
 #include <stdio.h>
 #endif
 
+#include <threads.h>
+
 #include <engine/core/file.h>
 #include <engine/core/string.h>
 #include <engine/core/assert.h>
@@ -13,6 +15,7 @@ char                                                       message_buffer_[ CRUD
 char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];
 uint64                                                     loged_bytes_ = 0;
 FILE                                                      *log_file_ = NULL;
+mtx_t                                                      log_mutex_;
 
 static char const*
 get_verbosity_string_
@@ -58,12 +61,14 @@ crude_log_initialize
 ()
 {
   log_file_ = fopen( "crude_log.txt", "w" );
+  mtx_init( &log_mutex_, mtx_plain );
 }
 
 CRUDE_API void
 crude_log_deinitialize
 ()
 {
+  mtx_destroy( &log_mutex_ );
   fclose( log_file_ );
 }
 
@@ -97,6 +102,8 @@ crude_log_common_va
 {
   int32                                                    message_length;
 
+  mtx_lock( &log_mutex_ );
+
   crude_snprintf( format_buffer_, CRUDE_COUNTOF( message_buffer_ ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
   message_length = crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
 #ifdef _WIN32
@@ -127,4 +134,6 @@ crude_log_common_va
 
     loged_bytes_ = 0;
   }
+
+  mtx_unlock( &log_mutex_ );
 }

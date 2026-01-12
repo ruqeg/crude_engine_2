@@ -84,7 +84,7 @@ crude_gfx_render_graph_parse_from_file
     return;
   }
 
-  crude_string_buffer_initialize( &string_buffer, CRUDE_RKILO( 2 ), crude_linear_allocator_pack( &render_graph->linear_allocator ) );
+  crude_string_buffer_initialize( &string_buffer, CRUDE_RKILO( 4 ), crude_linear_allocator_pack( &render_graph->linear_allocator ) );
 
   temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
   crude_read_file( render_graph_absolute_filepath, crude_stack_allocator_pack( temporary_allocator ), &render_graph_json_buffer, &render_graph_json_buffer_size );

@@ -72,20 +72,20 @@ crude_gfx_scene_renderer_initialize
 
   scene_renderer->options.depth_pyramid_pass.depth = "depth";
 
-  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "pbr_with_ssr";
+  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "direct_radiance";
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
   
   scene_renderer->options.ssr_pass.max_steps = 100;
   scene_renderer->options.ssr_pass.max_distance = 100;
   
-  scene_renderer->options.ssr_pass.stride_zcutoff = 1.0 / 200.0;
+  scene_renderer->options.ssr_pass.stride_zcutoff = 0.011;
   scene_renderer->options.ssr_pass.stride = 20;
-  scene_renderer->options.ssr_pass.z_thickness = 0;
+  scene_renderer->options.ssr_pass.z_thickness = 0.6;
   scene_renderer->options.ssr_pass.depth_texture = "depth";
   scene_renderer->options.ssr_pass.normal_texture = "gbuffer_normal";
-  scene_renderer->options.ssr_pass.pbr_without_ssr_texture = "pbr";
-  scene_renderer->options.ssr_pass.pbr_with_ssr_texture = "pbr_with_ssr";
-
+  scene_renderer->options.ssr_pass.ssr_texture = "ssr";
+  scene_renderer->options.ssr_pass.direct_radiance_texture = "direct_radiance";
+   
   scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
   scene_renderer->options.scene.background_intensity = 1.f;
   scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
@@ -339,7 +339,8 @@ crude_gfx_scene_renderer_register_passes
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_late_pass", crude_gfx_gbuffer_late_pass_pack( &scene_renderer->gbuffer_late_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_early_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_late_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );

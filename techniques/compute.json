@@ -59,7 +59,25 @@
 			]
 		},
 	  	{
-			"name": "ssr",
+			"name": "ssr_hit_calculation",
+			"shaders": [
+		  		{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+		},
+	  	{
+			"name": "ssr_convolve_vertical",
+			"shaders": [
+		  		{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+		},
+	  	{
+			"name": "ssr_convolve_horizontal",
 			"shaders": [
 		  		{
 					"stage": "compute",

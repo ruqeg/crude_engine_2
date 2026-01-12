@@ -106,6 +106,14 @@ crude_gfx_cmd_bind_pipeline
 );
 
 CRUDE_API void
+crude_gfx_cmd_copy_texture
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture_handle                            src_handle,
+  _In_ crude_gfx_texture_handle                            dst_handle
+);
+
+CRUDE_API void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

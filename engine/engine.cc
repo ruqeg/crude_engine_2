@@ -289,8 +289,11 @@ crude_engine_update
   crude_ecs_progress( engine->world, delta_time );
   engine->last_update_time = current_time;
 
-  crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
-
+  {
+    CRUDE_PROFILER_ZONE_NAME( "crude_task_sheduler_wait_task_set ( engine->graphics_task_set_handle )" );
+    crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
+    CRUDE_PROFILER_ZONE_END;
+  }
   crude_engine_commands_manager_update( &engine->commands_manager );
   
   if ( crude_engine_graphics_main_thread_loop_( engine )  )

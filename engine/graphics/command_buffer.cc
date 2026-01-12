@@ -296,6 +296,41 @@ crude_gfx_cmd_bind_pipeline
 }
 
 void
+crude_gfx_cmd_copy_texture
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture_handle                            src_handle,
+  _In_ crude_gfx_texture_handle                            dst_handle
+)
+{
+  crude_gfx_texture                                       *src;
+  crude_gfx_texture                                       *dst;
+  VkImageCopy                                              region;
+
+  src = crude_gfx_access_texture( cmd->gpu, src_handle );
+  dst = crude_gfx_access_texture( cmd->gpu, dst_handle );
+
+  region = CRUDE_COMPOUNT_EMPTY( VkImageCopy );
+  region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.srcSubresource.mipLevel = 0;
+  region.srcSubresource.baseArrayLayer = 0;
+  region.srcSubresource.layerCount = 1;
+  region.srcOffset = CRUDE_COMPOUNT( VkOffset3D, { 0 } );
+  region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.dstSubresource.mipLevel = 0;
+  region.dstSubresource.baseArrayLayer = 0;
+  region.dstSubresource.layerCount = 1;
+  region.dstOffset = CRUDE_COMPOUNT( VkOffset3D, { 0 } );
+  region.extent.width = dst->width;
+  region.extent.height = dst->height;
+  region.extent.depth = 1;
+
+  CRUDE_ASSERT( src->width == dst->width && src->height == dst->height );
+
+  vkCmdCopyImage( cmd->vk_cmd_buffer, src->vk_image, crude_gfx_resource_state_to_vk_image_layout2( src->state ), dst->vk_image, crude_gfx_resource_state_to_vk_image_layout2( dst->state ), 1u, &region );
+}
+
+void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

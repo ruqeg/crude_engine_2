@@ -75,9 +75,9 @@ typedef struct crude_gfx_scene_renderer_options
     float32                                                stride;
     float32                                                z_thickness;
     char const                                            *depth_texture;
+    char const                                            *direct_radiance_texture;
     char const                                            *normal_texture;
-    char const                                            *pbr_without_ssr_texture;
-    char const                                            *pbr_with_ssr_texture;
+    char const                                            *ssr_texture;
   } ssr_pass;
   struct 
   {
