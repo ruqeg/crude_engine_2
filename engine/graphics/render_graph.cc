@@ -512,13 +512,13 @@ crude_gfx_render_graph_compile
   for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
   {
     crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
-    if ( !node->enabled || node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE )
+    if ( !node->enabled )
     {
       continue;
     }
     
     /* Create render pass */
-    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node->render_pass ) )
+    if ( ( node->type != CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE ) && CRUDE_RESOURCE_HANDLE_IS_INVALID( node->render_pass ) )
     {
       crude_gfx_render_pass_creation render_pass_creation = crude_gfx_render_pass_creation_empty();
       render_pass_creation.name = node->name;
@@ -581,7 +581,6 @@ crude_gfx_render_graph_compile
       width = height = 0;
 
       framebuffer_creation = crude_gfx_framebuffer_creation_empty();
-      framebuffer_creation.render_pass = node->render_pass;
       framebuffer_creation.name = crude_string_buffer_append_use_f( &render_graph->builder->gpu->objects_names_string_buffer, "%s", node->name );
 
       for ( uint32 output_index = 0; output_index < CRUDE_ARRAY_LENGTH( node->outputs ); ++output_index )

@@ -767,7 +767,8 @@ void main()
   float fade_on_roughness = CRUDE_SATURATE( mix( 0.0f, 1.0f, gloss * 4.0f ) );
   float totalFade = fade_on_border * fade_on_distance * fade_on_perpendicular * fade_on_roughness * ( 1.0f - CRUDE_SATURATE( remaining_alpha ) );
 
-  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
+  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( total_color.rgb, 1.0f ) );
+  //CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
 }
 
 #endif /* SSR_COMPOSE */

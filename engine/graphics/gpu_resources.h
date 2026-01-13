@@ -319,7 +319,6 @@ typedef struct crude_gfx_render_pass_creation
 
 typedef struct crude_gfx_framebuffer_creation
 {
-  crude_gfx_render_pass_handle                             render_pass;
   char const                                              *name;
   crude_gfx_texture_handle                                 output_textures[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
   crude_gfx_texture_handle                                 depth_stencil_texture;
@@ -622,7 +621,6 @@ typedef struct crude_gfx_render_pass
 
 typedef struct crude_gfx_framebuffer
 {
-  crude_gfx_render_pass_handle                             render_pass;
   uint32                                                   width;
   uint32                                                   height;
   float32                                                  scale_x;
