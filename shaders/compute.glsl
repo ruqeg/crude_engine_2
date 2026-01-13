@@ -7,7 +7,7 @@
 //#define CULLING_EARLY
 //#define CULLING_LATE
 //#define DEPTH_PYRAMID
-//#define SSR_COMPOSE
+#define SSR_COMPOSE
 //#define SSR_CONVOLVE_VERTICAL
 //#define SSR_CONVOLVE_HORIZONTAL
 //#define SSR_HIT_CALCULATION
@@ -16,6 +16,7 @@
 #include "crude/debug.glsli"
 #include "crude/scene.glsli"
 #include "crude/culling.glsli"
+#include "crude/light.glsli"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( CULLING_EARLY ) || defined( CULLING_LATE )
@@ -654,40 +655,28 @@ cone_sample_weighted_color
   in float                                                 gloss
 )
 {
-  // TODO IT HAVE TO HAVE sampTrilinearClamp SAMPLER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  /* samp trilinear clamp */
   vec3 sample_radiance = CRUDE_TEXTURE_LOD( radiance_texture_index, sample_pos, mip_channel ).rgb;
   return vec4( sample_radiance * gloss, gloss );
 }
 CRUDE_PUSH_CONSTANT
 {
   SceneRef                                                 scene;
+  vec2                                                     depth_texture_size;
+
   uint                                                     ssr_hit_uv_depth_rdotv_texture_index;
   uint                                                     output_texture_index;
   uint                                                     depth_texture_index;
-  uint                                                     color_texture_index;
-  vec2                                                     depth_texture_size;
-  uint                                                     packed_roughness_metalness;
-  uint                                                     cb_numMips;
-  float                                                    cb_fadeEnd;
-  float                                                    cb_fadeStart;
-  float                                                    cb_maxDistance;
-
-
-
-
-
-
-
-
-  float                                                    ssr_max_steps;
-  float                                                    ssr_max_distance;
-
-  float                                                    ssr_stride;
-  float                                                    ssr_z_thickness;
-  float                                                    ssr_stride_zcutoff;
-
   uint                                                     normal_texture_index;
-  uint                                                     ssr_texture_index;
+
+  uint                                                     radiance_hierarchy_texture_index;
+  uint                                                     packed_roughness_metalness_texture_index;
+  uint                                                     radiance_hierarchy_mips_count;
+  float                                                    fade_end;
+
+  float                                                    fade_start;
+  float                                                    max_distance;
+  vec2                                                     _padding;
 };
 
 void main()
@@ -719,7 +708,7 @@ void main()
   vec3 pixel_vs = crude_world_position_from_depth( screen_uv, depth, scene.data.camera.clip_to_view );
   vec3 to_position_vs = normalize( pixel_vs );
   vec3 normal_vs = crude_octahedral_decode( packed_normal ) * mat3( scene.data.camera.world_to_view );
-  float roughness = CRUDE_TEXTURE_FETCH( packed_roughness_metalness, coords, 0 ).x;
+  float roughness = CRUDE_TEXTURE_FETCH( packed_roughness_metalness_texture_index, coords, 0 ).x;
 
   float gloss = 1.0f - roughness;
   float specular_power = roughness; //roughnessToSpecularPower(roughness);
@@ -732,7 +721,7 @@ void main()
 
   vec4 total_color = vec4( 0.0f, 0.0f, 0.0f, 0.0f );
   float remaining_alpha = 1.0f;
-  float max_mip_level = float( cb_numMips ) - 1.0f;
+  float max_mip_level = float( radiance_hierarchy_mips_count ) - 1.0f;
 
   float gloss_mult = gloss;
   
@@ -744,7 +733,7 @@ void main()
     vec2 sample_pos = screen_uv + adjacent_unit * ( adjacent_length - incircle_size );
     float mip_channel = clamp( log2( incircle_size * max( depth_texture_size.x, depth_texture_size.y ) ), 0.0f, max_mip_level );
 
-    vec4 new_color = cone_sample_weighted_color(color_texture_index, sample_pos, mip_channel, gloss_mult );
+    vec4 new_color = cone_sample_weighted_color( radiance_hierarchy_texture_index, sample_pos, mip_channel, gloss_mult );
 
     remaining_alpha -= new_color.a;
     if ( remaining_alpha < 0.0f )
@@ -763,17 +752,17 @@ void main()
   }
 
   vec3 to_eye = -to_position_vs;
-  vec3 specular = vec3(0);//calculateFresnelTerm(CRUDE_DEAFULT_F0, abs(dot(normal, toEye))) * CNST_1DIVPI;
+  vec3 specular = crude_schlick_fresnel( CRUDE_DEAFULT_F0, abs( dot( normal_vs, to_eye ) ) ) * CRUDE_1DIVPI;
 
   // fade rays close to screen edge
   vec2 boundary = abs( ssr_hit_uv.xy - vec2( 0.5f, 0.5f ) ) * 2.0f;
-  const float fade_diff_rcp = 1.0f / ( cb_fadeEnd - cb_fadeStart );
-  float fade_on_border = 1.0f - CRUDE_SATURATE( ( boundary.x - cb_fadeStart ) * fade_diff_rcp );
-  fade_on_border *= 1.0f - CRUDE_SATURATE( ( boundary.y - cb_fadeStart ) * fade_diff_rcp );
+  const float fade_diff_rcp = 1.0f / ( fade_end - fade_start );
+  float fade_on_border = 1.0f - CRUDE_SATURATE( ( boundary.x - fade_start ) * fade_diff_rcp );
+  fade_on_border *= 1.0f - CRUDE_SATURATE( ( boundary.y - fade_start ) * fade_diff_rcp );
   fade_on_border = smoothstep( 0.0f, 1.0f, fade_on_border );
   
-  vec3 ray_hit_position_vs = vec3(0);//viewSpacePositionFromDepth(raySS.xy, raySS.z);
-  float fade_on_distance = 1.0f - CRUDE_SATURATE( distance( ray_hit_position_vs, pixel_vs ) / cb_maxDistance );
+  vec3 ray_hit_position_vs = crude_world_position_from_depth( ssr_hit_uv, ssr_hit_depth, scene.data.camera.clip_to_view );
+  float fade_on_distance = 1.0f - CRUDE_SATURATE( distance( ray_hit_position_vs, pixel_vs ) / max_distance );
   float fade_on_perpendicular = CRUDE_SATURATE( mix( 0.0f, 1.0f, CRUDE_SATURATE( ssr_hit_rdotv * 4.0f ) ) );
   float fade_on_roughness = CRUDE_SATURATE( mix( 0.0f, 1.0f, gloss * 4.0f ) );
   float totalFade = fade_on_border * fade_on_distance * fade_on_perpendicular * fade_on_roughness * ( 1.0f - CRUDE_SATURATE( remaining_alpha ) );

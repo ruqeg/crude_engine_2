@@ -309,6 +309,14 @@
       "outputs": [
         {
           "type": "attachment",
+          "name": "ssr_hit_uv_depth_rdotv",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
+          "type": "attachment",
           "name": "ssr",
           "format": "VK_FORMAT_R8G8B8A8_UNORM",
           "scale": [ 1, 1 ],
@@ -416,6 +424,10 @@
         {
           "type": "texture",
           "name": "direct_radiance"
+        },
+        {
+          "type": "texture",
+          "name": "ssr_hit_uv_depth_rdotv"
         },
         {
           "type": "texture",

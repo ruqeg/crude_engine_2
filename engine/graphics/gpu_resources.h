@@ -662,7 +662,7 @@ typedef struct crude_gfx_technique_pass_creation
 typedef struct crude_gfx_technique_creation
 {
   char const                                              *technique_relative_filepath;
-  crude_gfx_technique_pass_creation                        passes[ 8 ];
+  crude_gfx_technique_pass_creation                        passes[ 32 ];
   uint32                                                   passes_count;
   char const                                              *name;
 } crude_gfx_technique_creation;

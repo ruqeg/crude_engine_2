@@ -70,6 +70,8 @@ typedef struct crude_gfx_scene_renderer_options
   {
     float32                                                max_steps;
     float32                                                max_distance;
+    float32                                                fade_start;
+    float32                                                fade_end;
 
     float32                                                stride_zcutoff;
     float32                                                stride;
@@ -77,6 +79,8 @@ typedef struct crude_gfx_scene_renderer_options
     char const                                            *depth_texture;
     char const                                            *direct_radiance_texture;
     char const                                            *normal_texture;
+    char const                                            *roughness_metalness_texture;
+    char const                                            *ssr_hit_uv_depth_rdotv_texture;
     char const                                            *ssr_texture;
   } ssr_pass;
   struct 

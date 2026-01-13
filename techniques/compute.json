@@ -8,7 +8,8 @@
 				"crude/platform.glsli",
 				"crude/scene.glsli",
 				"crude/debug.glsli",
-				"crude/culling.glsli"
+				"crude/culling.glsli",
+				"crude/light.glsli"
 			]
 		}
 	],
@@ -78,6 +79,15 @@
 		},
 	  	{
 			"name": "ssr_convolve_horizontal",
+			"shaders": [
+		  		{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
+		},
+	  	{
+			"name": "ssr_compose",
 			"shaders": [
 		  		{
 					"stage": "compute",

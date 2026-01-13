@@ -77,12 +77,16 @@ crude_gfx_scene_renderer_initialize
   
   scene_renderer->options.ssr_pass.max_steps = 100;
   scene_renderer->options.ssr_pass.max_distance = 100;
+  scene_renderer->options.ssr_pass.fade_end = 0.2;
+  scene_renderer->options.ssr_pass.fade_start = 100;
   
   scene_renderer->options.ssr_pass.stride_zcutoff = 0.011;
   scene_renderer->options.ssr_pass.stride = 20;
   scene_renderer->options.ssr_pass.z_thickness = 0.6;
   scene_renderer->options.ssr_pass.depth_texture = "depth";
   scene_renderer->options.ssr_pass.normal_texture = "gbuffer_normal";
+  scene_renderer->options.ssr_pass.roughness_metalness_texture = "gbuffer_roughness_metalness";
+  scene_renderer->options.ssr_pass.ssr_hit_uv_depth_rdotv_texture = "ssr_hit_uv_depth_rdotv";
   scene_renderer->options.ssr_pass.ssr_texture = "ssr";
   scene_renderer->options.ssr_pass.direct_radiance_texture = "direct_radiance";
    
@@ -92,7 +96,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.scene.ambient_intensity = 1.f;
 
   scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
-
+  
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
