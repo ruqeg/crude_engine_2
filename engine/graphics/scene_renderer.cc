@@ -71,9 +71,6 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.compose_pass.gbuffer_depth = "depth";
 
   scene_renderer->options.depth_pyramid_pass.depth = "depth";
-
-  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "direct_radiance";
-  scene_renderer->options.postprocessing_pass.gamma = 2.2;
   
   scene_renderer->options.ssr_pass.max_steps = 100;
   scene_renderer->options.ssr_pass.max_distance = 100;
@@ -89,14 +86,26 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.ssr_pass.ssr_hit_uv_depth_rdotv_texture = "ssr_hit_uv_depth_rdotv";
   scene_renderer->options.ssr_pass.ssr_texture = "ssr";
   scene_renderer->options.ssr_pass.direct_radiance_texture = "direct_radiance";
+  
+  scene_renderer->options.compose_light_pass.direct_radiance_texture = "direct_radiance";
+  scene_renderer->options.compose_light_pass.ssr_texture = "ssr";
+  scene_renderer->options.compose_light_pass.output_texture = "radiance";
+
+  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
+  scene_renderer->options.postprocessing_pass.gamma = 2.2;
    
   scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
   scene_renderer->options.scene.background_intensity = 1.f;
-  scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 0, 0, 0 } );
-  scene_renderer->options.scene.ambient_intensity = 1.f;
+  scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
+  scene_renderer->options.scene.ambient_intensity = 2.f;
 
+#if CRUDE_DEVELOP
   scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
-  
+  scene_renderer->options.debug.flags1 = 0;
+  scene_renderer->options.debug.force_roughness = 1;
+  scene_renderer->options.debug.force_metalness = 0;
+#endif /* CRUDE_DEVELOP */
+
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
@@ -133,7 +142,8 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
   crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
   crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
-  crude_gfx_compose_pass_initialize( &scene_renderer->compose_pass, scene_renderer );
+  crude_gfx_compose_direct_light_pass_initialize( &scene_renderer->compose_direct_light_pass, scene_renderer );
+  crude_gfx_compose_light_pass_initialize( &scene_renderer->compose_light_pass, scene_renderer );
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
@@ -171,7 +181,8 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_culling_early_pass_deinitialize( &scene_renderer->culling_early_pass );
   crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
-  crude_gfx_compose_pass_deinitialize( &scene_renderer->compose_pass );
+  crude_gfx_compose_direct_light_pass_deinitialize( &scene_renderer->compose_direct_light_pass );
+  crude_gfx_compose_light_pass_deinitialize( &scene_renderer->compose_light_pass );
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
   crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
@@ -348,7 +359,8 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "compose_pass", crude_gfx_compose_pass_pack( &scene_renderer->compose_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "compose_direct_light_pass", crude_gfx_compose_direct_light_pass_pack( &scene_renderer->compose_direct_light_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "compose_light_pass", crude_gfx_compose_light_pass_pack( &scene_renderer->compose_light_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "transparent_pass", crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_lut_pass", crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );

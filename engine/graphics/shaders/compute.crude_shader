@@ -7,16 +7,17 @@
 //#define CULLING_EARLY
 //#define CULLING_LATE
 //#define DEPTH_PYRAMID
-#define SSR_COMPOSE
+//#define SSR_COMPOSE
 //#define SSR_CONVOLVE_VERTICAL
 //#define SSR_CONVOLVE_HORIZONTAL
 //#define SSR_HIT_CALCULATION
+#define COMPOSE_LIGHT
 #define CRUDE_COMPUTE
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
-#include "crude/culling.glsli"
-#include "crude/light.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( CULLING_EARLY ) || defined( CULLING_LATE )
@@ -599,6 +600,15 @@ void main()
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
 float
+roughness_to_specular_power
+(
+  in float                                                 r
+)
+{
+  return 2 / ( pow( r, 4 ) ) - 2;
+}
+
+float
 specular_power_to_cone_angle
 (
   in float                                                 specular_power
@@ -711,7 +721,7 @@ void main()
   float roughness = CRUDE_TEXTURE_FETCH( packed_roughness_metalness_texture_index, coords, 0 ).x;
 
   float gloss = 1.0f - roughness;
-  float specular_power = roughness; //roughnessToSpecularPower(roughness);
+  float specular_power = roughness_to_specular_power( roughness );
 
   float cone_theta = specular_power_to_cone_angle( specular_power ) * 0.5f;
 
@@ -767,8 +777,30 @@ void main()
   float fade_on_roughness = CRUDE_SATURATE( mix( 0.0f, 1.0f, gloss * 4.0f ) );
   float totalFade = fade_on_border * fade_on_distance * fade_on_perpendicular * fade_on_roughness * ( 1.0f - CRUDE_SATURATE( remaining_alpha ) );
 
-  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( total_color.rgb, 1.0f ) );
-  //CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
+  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
 }
 
 #endif /* SSR_COMPOSE */
+
+#if defined( COMPOSE_LIGHT )
+
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
+
+CRUDE_PUSH_CONSTANT
+{
+  uint                                                     direct_radiance_texture_index;
+  uint                                                     ssr_texture_index;
+  uint                                                     output_texture_index;
+  float                                                    _padding;
+};
+
+void main()
+{
+  ivec2 coords = ivec2( gl_GlobalInvocationID.xy );
+
+  vec3 direct_radiance = CRUDE_TEXTURE_FETCH( direct_radiance_texture_index, coords, 0 ).xyz;
+  vec3 ssr_data_packed = CRUDE_TEXTURE_FETCH( ssr_texture_index, coords, 0 ).xyz;
+  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( direct_radiance + ssr_data_packed, 1.0f ) );
+}
+
+#endif /* COMPOSE_LIGHT */

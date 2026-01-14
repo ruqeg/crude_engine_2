@@ -4,7 +4,7 @@ project(crude_engine)
 
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE SRC *.cc)
+file(GLOB_RECURSE SRC *.cc *.crude_shader *.crude_techniques)
 file(GLOB_RECURSE HEADERS *.h *.inl)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
@@ -18,6 +18,9 @@ source_group(core REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/core/*")
 source_group(platform REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/platform/*")
 source_group(graphics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/*")
 source_group(graphics/passes REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/passes/*")
+source_group(graphics/shaders/common REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/common/*")
+source_group(graphics/shaders REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/*")
+source_group(graphics/techniques REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/graphics/techniques/*")
 source_group(scene REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/*")
 source_group(scene/scripts REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/scene/scripts/*")
 source_group(physics REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/physics/*")

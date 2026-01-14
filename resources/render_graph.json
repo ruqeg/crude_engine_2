@@ -207,7 +207,7 @@
       ]
     },
     {
-      "name": "compose_pass",
+      "name": "compose_direct_light_pass",
       "inputs": [
         {
           "type": "texture",
@@ -330,11 +330,35 @@
       ]
     },
     {
+      "name": "compose_light_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "texture",
+          "name": "ssr"
+        },
+        {
+          "type": "texture",
+          "name": "direct_radiance"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "radiance",
+          "format": "VK_FORMAT_R16G16B16A16_UNORM",
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
       "name": "transparent_pass",
       "inputs": [
         {
           "type": "attachment",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "attachment",
@@ -348,7 +372,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "reference",
@@ -365,7 +389,7 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "direct_radiance"
+          "name": "radiance"
         }
       ],
       "outputs": [

@@ -61,7 +61,9 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
   float32                                                  resolution_ratio;
 #if CRUDE_DEVELOP
   uint32                                                   debug_mode;
-  XMFLOAT3                                                 padding;
+  uint32                                                   debug_flags1;
+  float32                                                  debug_force_roughness;
+  float32                                                  debug_force_metalness;
 #endif
 } crude_gfx_scene_constant_gpu;
 

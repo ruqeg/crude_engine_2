@@ -584,7 +584,7 @@ crude_engine_initialize_graphics_
 #endif
 
   engine->scene_renderer.options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  engine->scene_renderer.options.scene.ambient_intensity = 0.f;
+  //engine->scene_renderer.options.scene.ambient_intensity = 0.f;
   engine->scene_renderer.options.scene.background_intensity = 0.f;
 
   engine->graphics_absolute_time = 0.f;

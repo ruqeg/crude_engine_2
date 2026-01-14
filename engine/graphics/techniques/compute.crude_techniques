@@ -94,6 +94,15 @@
 					"buffer": "compute"
 		  		}
 			]
+		},
+		{
+			"name": "compose_light",
+			"shaders": [
+		  		{
+					"stage": "compute",
+					"buffer": "compute"
+		  		}
+			]
 		}
 	]
 }

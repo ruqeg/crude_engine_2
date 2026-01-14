@@ -14,10 +14,10 @@
 	],
 	"pipelines" : [
 		{
-			"name" : "compose",
+			"name" : "compose_direct_light",
 			"render_pass_output":
 			{
-				"reference": "compose_pass" 
+				"reference": "compose_direct_light_pass" 
 			},
 			"shaders" : [
 				{

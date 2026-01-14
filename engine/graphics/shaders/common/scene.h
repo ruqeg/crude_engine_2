@@ -143,7 +143,9 @@ struct crude_scene
   float                                                    resolution_ratio;
 #if CRUDE_DEVELOP
   uint                                                     debug_mode;
-  vec3                                                     padding;
+  uint                                                     debug_flags1;
+  float                                                    debug_force_roughness;
+  float                                                    debug_force_metalness;
 #endif
 };
 
@@ -191,5 +193,23 @@ CRUDE_RBUFFER_REF( MeshBoundsRef )
 {
   vec4                                                     data[];
 };
+
+bool
+crude_scene_force_roughness
+(
+  in SceneRef                                              scene_ref
+)
+{
+  return ( scene_ref.data.debug_flags1 & ( 1 << 0 ) );
+}
+
+bool
+crude_scene_force_metalness
+(
+  in SceneRef                                              scene_ref
+)
+{
+  return ( scene_ref.data.debug_flags1 & ( 1 << 1 ) );
+}
 
 #endif /* CRUDE_SCENE_GLSL */

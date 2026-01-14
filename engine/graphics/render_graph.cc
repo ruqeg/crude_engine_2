@@ -568,7 +568,7 @@ crude_gfx_render_graph_compile
           }
         }
       }
-
+      
       node->render_pass =  crude_gfx_create_render_pass( render_graph->builder->gpu, &render_pass_creation );
     }
     

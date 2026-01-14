@@ -1161,6 +1161,11 @@ crude_devmenu_scene_renderer_draw
     int32 debug_mode = dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.debug_mode;
     ImGui::Combo( "Mode", &debug_mode, debug_modes_str, IM_ARRAYSIZE( debug_modes_str ) );
     dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.debug_mode = debug_mode;
+
+    ImGui::CheckboxFlags( "Force Roughness", &dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.flags1, 1 << 0 );
+    ImGui::CheckboxFlags( "Force Metalness", &dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.flags1, 1 << 1 );
+    ImGui::DragFloat( "Force Roughness Value", &dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.force_roughness, 1.f, 0.f, 1.f );
+    ImGui::DragFloat( "Force Metalness Value", &dev_scene_rendere->devmenu->engine->scene_renderer.options.debug.force_metalness, 1.f, 0.f, 1.f );
   }
 
   if ( ImGui::CollapsingHeader( "Background" ) )
@@ -1176,6 +1181,8 @@ crude_devmenu_scene_renderer_draw
     ImGui::DragFloat( "Stride zcutoff", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.stride_zcutoff, 1.f, 0.f );
     ImGui::DragFloat( "Stride", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.stride, 1.f, 0.f );
     ImGui::DragFloat( "Zthickness", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.z_thickness, 1.f, 0.f );
+    ImGui::DragFloat( "Fade Start", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.fade_start, 1.f, 0.f );
+    ImGui::DragFloat( "Fade End", &dev_scene_rendere->devmenu->engine->scene_renderer.options.ssr_pass.fade_end, 1.f, 0.f );
   }
   if ( ImGui::CollapsingHeader( "Global Illumination" ) )
   {

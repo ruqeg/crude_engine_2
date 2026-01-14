@@ -11,7 +11,8 @@
 #include <engine/graphics/passes/culling_early_pass.h>
 #include <engine/graphics/passes/culling_late_pass.h>
 #include <engine/graphics/passes/debug_pass.h>
-#include <engine/graphics/passes/compose_pass.h>
+#include <engine/graphics/passes/compose_direct_light_pass.h>
+#include <engine/graphics/passes/compose_light_pass.h>
 #include <engine/graphics/passes/pointlight_shadow_pass.h>
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
@@ -83,6 +84,12 @@ typedef struct crude_gfx_scene_renderer_options
     char const                                            *ssr_hit_uv_depth_rdotv_texture;
     char const                                            *ssr_texture;
   } ssr_pass;
+  struct
+  {
+    char const                                            *direct_radiance_texture;
+    char const                                            *ssr_texture;
+    char const                                            *output_texture;
+  } compose_light_pass;
   struct 
   {
     crude_camera                                           camera;
@@ -96,9 +103,12 @@ typedef struct crude_gfx_scene_renderer_options
 #if CRUDE_DEVELOP
   struct 
   {
-  uint32                                                   debug_mode;
-  bool                                                     hide_collision;
-  bool                                                     hide_debug_gltf;
+    uint32                                                 debug_mode;
+    bool                                                   hide_collision;
+    bool                                                   hide_debug_gltf;
+    uint32                                                 flags1;
+    float32                                                force_roughness;
+    float32                                                force_metalness;
   } debug;
 #endif
   float32                                                  absolute_time;
@@ -183,7 +193,8 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   //crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
-  crude_gfx_compose_pass                                   compose_pass;
+  crude_gfx_compose_direct_light_pass                      compose_direct_light_pass;
+  crude_gfx_compose_light_pass                             compose_light_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
   crude_gfx_transparent_pass                               transparent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;

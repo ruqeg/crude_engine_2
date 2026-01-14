@@ -25,7 +25,6 @@ add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENAB
 # Develop Configuration
 set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
-add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
