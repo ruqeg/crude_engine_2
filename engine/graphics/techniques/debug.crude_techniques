@@ -1,15 +1,15 @@
 {
     "name": "debug",
     "buffers": [
-		{
-			"name": "debug",
-			"filename": "debug.glsl",
-			"includes" : [	
-				"crude/platform.glsli",
-				"crude/debug.glsli",
-				"crude/scene.glsli"
-			]
-		}
+			{
+				"name": "debug",
+				"filename": "debug.crude_shader",
+				"includes": [
+					"common/platform.h",
+					"common/debug.h",
+					"common/scene.h"
+				]
+			}
 	],
     "pipelines": [
         {

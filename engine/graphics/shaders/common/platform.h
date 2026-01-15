@@ -2,29 +2,44 @@
 #ifndef CRUDE_PLATFORM_GLSL
 #define CRUDE_PLATFORM_GLSL
 
-//#define CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-//#define CRUDE_RAYTRACED_SHADOWS
-//#define CRUDE_RAYTRACED_DDGI
+#define CRUDE_SHADER_DEVELOP 1
 
-#define CRUDE_GLOBAL_SET 0
-#define CRUDE_MATERIAL_SET 1
+#define CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX 0
+#define CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX 1
 
-#define CRUDE_BINDLESS_BINDING 10
-#define CRUDE_BINDLESS_IMAGES 11
+#define CRUDE_BINDLESS_TEXTURE_BINDING 10
+#define CRUDE_BINDLESS_IMAGE_BINDING 11
 
-#define PI 3.1415926538
-#define CRUDE_1DIVPI 3.1415926538
-#define CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED 0xffffffff
+#define CRUDE_PI 3.1415926538
+#define CRUDE_1DIVPI 0.318309886f
+#define CRUDE_SHADER_TEXTURE_UNDEFINED 0xffffffff
 
-#define CRUDE_DRAW_FLAGS_ALPHA_MASK ( 1 << 1 )
-#define CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ( 1 << 2 )
-#define CRUDE_DRAW_FLAGS_HAS_NORMAL ( 1 << 3 )
-#define CRUDE_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
-#define CRUDE_DRAW_FLAGS_INDEX_16 ( 1 << 5 )
+#define CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK ( 1 << 1 )
+#define CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ( 1 << 2 )
+#define CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ( 1 << 3 )
+#define CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
+#define CRUDE_MESH_DRAW_FLAGS_INDEX_16 ( 1 << 5 )
 
-#define CRUDE_UNIFORM( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std140) uniform name
-#define CRUDE_RBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) readonly buffer name
-#define CRUDE_RWBUFFER( name, bind ) layout(set=CRUDE_MATERIAL_SET, binding=bind, row_major, std430) buffer name
+#ifndef __cplusplus
+
+#define uint8 uint8_t
+#define uint16 uint16_t
+#define uint64 uint64_t
+#define uint32 uint
+
+#extension GL_EXT_debug_printf : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_control_flow_attributes : require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : require
+
 #define CRUDE_PUSH_CONSTANT layout(push_constant) uniform _Crude_Push_Constant
 
 #define CRUDE_TEXTURE( ti, uv ) texture( global_textures[ nonuniformEXT( ti ) ], uv )
@@ -40,34 +55,17 @@
 #define CRUDE_DEAFULT_F0 vec3( 0.04f )
 #define CRUDE_SATURATE( v ) clamp( v, 0, 1 )
 
-#extension GL_EXT_debug_printf : require
-#extension GL_EXT_nonuniform_qualifier : require
-#extension GL_EXT_control_flow_attributes : require
-#extension GL_EXT_shader_16bit_storage: require
-#extension GL_EXT_shader_8bit_storage: require
-#extension GL_ARB_shader_draw_parameters : require
-#extension GL_KHR_shader_subgroup_ballot: require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
-#extension GL_EXT_buffer_reference : require
-#extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_scalar_block_layout : require
-
-#define uint8 uint8_t
-#define uint16 uint16_t
-#define uint64 uint64_t
-#define uint32 uint
-
 #define crude_device_address uint64
 
 /* Read only */
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler2D global_textures[];
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_BINDING) uniform sampler3D global_textures_3d[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_TEXTURE_BINDING) uniform sampler2D global_textures[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_TEXTURE_BINDING) uniform sampler3D global_textures_3d[];
 
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform image2D global_images_2d[];
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform image3D global_images_3d[];
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES) writeonly uniform uimage2D global_uimages_2d[];
-layout(set=CRUDE_GLOBAL_SET, binding=CRUDE_BINDLESS_IMAGES,r32f) uniform image2D global_images_2d_r32f[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING) writeonly uniform image2D global_images_2d[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING) writeonly uniform image3D global_images_3d[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING) writeonly uniform uimage2D global_uimages_2d[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING,r32f) uniform image2D global_images_2d_r32f[];
+
 
 uint crude_vec4_to_rgba( vec4 color )
 {
@@ -252,7 +250,7 @@ vec3 crude_spherical_fibonacci( float i, float n )
 {
   float PHI = sqrt( 5.0f ) * 0.5 + 0.5;
 #define madfrac( A, B ) ( ( A ) * ( B )-floor( ( A ) * ( B ) ) )
-  float phi = 2.0 * PI * madfrac( i, PHI - 1 );
+  float phi = 2.0 * CRUDE_PI * madfrac( i, PHI - 1 );
   float cos_theta = 1.0 - ( 2.0 * i + 1.0 ) * ( 1.0 / n );
   float sin_theta = sqrt( clamp( 1.0 - cos_theta * cos_theta, 0.0f, 1.0f ) );
   return vec3( cos( phi ) * sin_theta, sin( phi ) * sin_theta, cos_theta );
@@ -288,14 +286,14 @@ void crude_calculate_geometric_tbn
 {
   vec3 normal = normalize( vertex_normal );
   
-  if ( ( flags & CRUDE_DRAW_FLAGS_HAS_NORMAL ) == 0 )
+  if ( ( flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
   {
     normal = normalize( cross( dFdx( vertex_world_position ), dFdy( vertex_world_position ) ) );
   }
 
   vec3 tangent = normalize( vertex_tangent );
   vec3 bitangent = normalize( vertex_bitangent );
-  if ( ( flags & CRUDE_DRAW_FLAGS_HAS_TANGENTS ) == 0 )
+  if ( ( flags & CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ) == 0 )
   {
     vec3 uv_dx = dFdx( vec3( uv, 0.0 ) );
     vec3 uv_dy = dFdy( vec3( uv, 0.0 ) );
@@ -321,5 +319,7 @@ void crude_calculate_geometric_tbn
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 #extension GL_EXT_mesh_shader : require
 #endif /* CRUDE_STAGE_TASK || CRUDE_STAGE_MESH */
+
+#endif
 
 #endif /* CRUDE_PLATFORM_GLSL */

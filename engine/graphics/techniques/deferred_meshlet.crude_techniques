@@ -3,13 +3,13 @@
 	"buffers": [
 		{
 			"name": "deferred",
-			"filename": "deferred.glsl"	,
-			"includes" : [	
-				"crude/platform.glsli",
-				"crude/debug.glsli",
-				"crude/scene.glsli",
-				"crude/culling.glsli",
-				"crude/light.glsli"
+			"filename": "deferred.crude_shader",
+			"includes": [
+				"common/platform.h",
+				"common/debug.h",
+				"common/scene.h",
+				"common/culling.h",
+				"common/light.h"
 			]
 		}
 	],

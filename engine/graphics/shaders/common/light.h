@@ -2,14 +2,16 @@
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
-#define CRUDE_LIGHT_BINS_COUNT                         ( 16 )
-#define CRUDE_LIGHTS_MAX_COUNT                         ( 256 )
-#define CRUDE_LIGHT_TILE_SIZE                          ( 8 )
-#define CRUDE_LIGHT_WORDS_COUNT                        ( ( CRUDE_LIGHTS_MAX_COUNT + 31 ) / 32 )
-#define CRUDE_MAX_MESHLETS_PER_LIGHT                   ( 45000 )
+#define CRUDE_MAX_MESHLETS_PER_LIGHT  ( 45000 )
+#define CRUDE_LIGHT_Z_BINS            ( 16 )
+#define CRUDE_LIGHTS_MAX_COUNT        ( 256 )
+#define CRUDE_LIGHT_TILE_SIZE         ( 8 )
+#define CRUDE_LIGHT_WORDS_COUNT       ( ( CRUDE_LIGHTS_MAX_COUNT + 31 ) / 32 )
 
-#define CRUDE_SHADOW_FILTER_NUM_SAMPLES 16
-#define CRUDE_SHADOW_FILTER_RADIUS 1.5
+#define CRUDE_SHADOW_FILTER_NUM_SAMPLES ( 16 )
+#define CRUDE_SHADOW_FILTER_RADIUS ( 1.5 )
+
+#ifndef __cplusplus
 
 const vec2 filter_kernel[ CRUDE_SHADOW_FILTER_NUM_SAMPLES ] =
 {
@@ -61,7 +63,7 @@ crude_trowbridge_reitz_distribution
   in float                                                 r2
 )
 {
-  float x1 = max( PI * ( 1.f + ndotm * ndotm * ( r2 - 1.f ) ), 0.0001f );
+  float x1 = max( CRUDE_PI * ( 1.f + ndotm * ndotm * ( r2 - 1.f ) ), 0.0001f );
   float x2 = sign( max( ndotm, 0.f ) ) * r2;
   return x2 / x1;
 }
@@ -234,8 +236,8 @@ crude_calculate_point_light_contribution
 
   f = crude_schlick_fresnel( f0, hdotl );
   spec = f * crude_trowbridge_reitz_distribution( ndoth, roughness * roughness ) * crude_hammon_smith_g_approximation( abs( ndotl ), abs( ndotv ), roughness );
-  diff = ( 1.f - f ) * albedo / PI;
-  return radiance * max( ndotl, 0.f ) * ( diff + spec );
+  diff = ( 1.f - f ) * albedo / CRUDE_PI;
+  return radiance * max( ndotl, 0.f ) * ( ( 1.f - metalness ) * diff + spec );
 }
 
 vec3
@@ -268,7 +270,7 @@ crude_calculate_lighting
 
   radiance = vec3( 0 );
 
-  radiance.xyz += albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
+  radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
   if ( scene.data.active_lights_count < 1 )
   {
@@ -278,7 +280,7 @@ crude_calculate_lighting
   view_position = vec4( vertex_position, 1.0 ) * scene.data.camera.world_to_view;
 
   linear_d = ( view_position.z - scene.data.camera.znear ) / ( scene.data.camera.zfar - scene.data.camera.znear );
-  bin_index = int( linear_d * CRUDE_LIGHT_BINS_COUNT );
+  bin_index = int( linear_d * CRUDE_LIGHT_Z_BINS );
   bin_value = zbins.data[ bin_index ];
 
   min_light_id = bin_value & 0xFFFF;
@@ -315,5 +317,7 @@ crude_calculate_lighting
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
+
+#endif
 
 #endif /* CRUDE_LIGHT_GLSLI */

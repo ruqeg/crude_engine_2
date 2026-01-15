@@ -359,7 +359,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   }
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -382,7 +382,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_visibility" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -399,7 +399,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   }
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -417,7 +417,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
 
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_debug" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -432,7 +432,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   }
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "calculate_probe_offsets" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
@@ -447,7 +447,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   }
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "sample_irradiance" );
-  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;

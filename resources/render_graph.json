@@ -340,6 +340,10 @@
         {
           "type": "texture",
           "name": "direct_radiance"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_roughness_metalness"
         }
       ],
       "outputs": [

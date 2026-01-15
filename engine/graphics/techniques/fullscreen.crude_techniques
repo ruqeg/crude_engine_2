@@ -3,12 +3,12 @@
 	"buffers": [
 		{
 			"name": "fullscreen",
-			"filename": "fullscreen.glsl"	,
-			"includes" : [	
-				"crude/platform.glsli",
-				"crude/debug.glsli",
-				"crude/scene.glsli",
-				"crude/light.glsli"
+			"filename": "fullscreen.crude_shader",
+			"includes": [
+				"common/platform.h",
+				"common/debug.h",
+				"common/scene.h",
+				"common/light.h"
 			]
 		}
 	],

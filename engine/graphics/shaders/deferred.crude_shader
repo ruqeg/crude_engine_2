@@ -8,11 +8,11 @@
 //#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
 #define CRUDE_STAGE_FRAGMENT
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
-#include "crude/culling.glsli"
-#include "crude/light.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 CRUDE_RBUFFER_REF( VisibleMeshCountRef )
@@ -293,7 +293,7 @@ void main()
   mat4 mesh_to_world = mesh_instance_draws.data[ draw_id ].mesh_to_world;
 
   uint vertex_index = 0;
-  if ( ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_INDEX_16 ) == 0 ) )
+  if ( ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_INDEX_16 ) == 0 ) )
   {
     vertex_index = MeshIndices32Ref( mesh_draw.indices ).data[ gl_VertexIndex ];
   }
@@ -308,9 +308,9 @@ void main()
   vec4 world_position = model_position * mesh_to_world;
   vec4 view_position = world_position * scene.data.camera.world_to_view;
   
-  vec4 tangent = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_TANGENTS ) == 1 ) ? vec4(
+  vec4 tangent = ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ) == 1 ) ? vec4(
     mesh_draw.tangents.data[ vertex_index + 0 ]) : vec4( 0 );
-  vec3 normal = ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_NORMAL ) == 1 ) ? vec3(
+  vec3 normal = ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 1 ) ? vec3(
     mesh_draw.normals.data[ vertex_index ] ) : vec3( 0 );
   normal = normal * mat3( mesh_to_world );
   tangent.xyz = tangent.xyz * mat3( mesh_to_world );
@@ -335,7 +335,7 @@ void main()
 layout(location = 0) out vec4 out_abledo;
 layout(location = 1) out vec2 out_normal;
 layout(location = 2) out vec2 out_roughness_metalness;
-#if CRUDE_DEVELOP
+#if CRUDE_SHADER_DEVELOP
 layout(location = 3) out uint out_mesh_draw_index;
 #endif
 
@@ -351,24 +351,26 @@ void main()
   crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
 
   vec4 albedo = mesh_draw.albedo_color_factor;
-  if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.x != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
   }
 
   vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
-  if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.y != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).rg;
   }
   
+  roughness_metalness = vec2( crude_scene_force_roughness( scene ) ? scene.data.debug_force_roughness : roughness_metalness.x, crude_scene_force_metalness( scene ) ? scene.data.debug_force_metalness : roughness_metalness.y );
+
   vec3 normal = normalize( in_normal );
   vec3 tangent = normalize( in_tangent );
   vec3 bitangent = normalize( in_bitangent );
 
   crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
 
-  if ( mesh_draw.textures.z != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.z != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
     const mat3 tbn = mat3( tangent, bitangent, normal );
@@ -378,7 +380,7 @@ void main()
   out_abledo = albedo;
   out_normal = crude_octahedral_encode( normal );
   out_roughness_metalness = roughness_metalness;
-#if CRUDE_DEVELOP
+#if CRUDE_SHADER_DEVELOP
   out_mesh_draw_index = in_mesh_draw_index;
 #endif
 }
@@ -403,13 +405,13 @@ void main()
   crude_mesh_draw mesh_draw = mesh_draws.data[ in_mesh_draw_index ];
 
   vec4 albedo = mesh_draw.albedo_color_factor;
-  if ( mesh_draw.textures.x != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.x != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], in_texcoord0 ) * albedo, vec4( 2.2 ) );
   }
 
   vec2 roughness_metalness = mesh_draw.metallic_roughness_occlusion_factor.yx;
-  if ( mesh_draw.textures.y != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.y != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     roughness_metalness = texture( global_textures[ nonuniformEXT( mesh_draw.textures.y ) ], in_texcoord0 ).gb;
   }
@@ -420,7 +422,7 @@ void main()
 
   crude_calculate_geometric_tbn( normal, tangent, bitangent, in_texcoord0, in_world_position, mesh_draw.flags );
 
-  if ( mesh_draw.textures.z != CRUDE_GRAPHICS_SHADER_TEXTURE_UNDEFINED )
+  if ( mesh_draw.textures.z != CRUDE_SHADER_TEXTURE_UNDEFINED )
   {
     const vec3 bump_normal = normalize( texture( global_textures[ nonuniformEXT( mesh_draw.textures.z ) ], in_texcoord0 ).rgb * 2.0 - 1.0 );
     const mat3 tbn = mat3( tangent, bitangent, normal );

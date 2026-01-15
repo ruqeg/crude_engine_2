@@ -7,12 +7,12 @@
 #include <engine/core/log.h>
 
 #define CRUDE_PROFILER_ZONE                            TracyCZone( _ctx, 1 )
-#define CRUDE_PROFILER_ZONE_NAME( name )							 \
+#define CRUDE_PROFILER_ZONE_NAME( name )\
 TracyCZoneN( _ctx, name, 1 );\
-//static char const *____crude_zone_name = name; CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] start", name ); 
-#define CRUDE_PROFILER_ZONE_END                        \
+static char const *____crude_zone_name = name; CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] start", name ); 
+#define CRUDE_PROFILER_ZONE_END\
 TracyCZoneEnd( _ctx );\
-//CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] end", ____crude_zone_name );
+CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] end", ____crude_zone_name );
 #define CRUDE_PROFILER_MARK_FRAME                      TracyCFrameMark
 #define CRUDE_PROFILER_SET_THREAD_NAME( name )         TracyCSetThreadName( name )
 

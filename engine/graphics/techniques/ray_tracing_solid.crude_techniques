@@ -3,13 +3,13 @@
 	"buffers": [
 		{
 			"name": "ray_tracing_solid",
-			"filename": "ray_tracing_solid.glsl",
-			"includes" : [ "crude/platform.glsli", "crude/debug.glsli", "crude/scene.glsli" ]
+			"filename": "ray_tracing_solid.crude_shader",
+			"includes": [ "common/platform.h", "common/debug.h", "common/scene.h" ]
 		},
 		{
 			"name": "ddgi",
-			"filename": "ddgi.glsl"	,
-			"includes" : ["crude/platform.glsli", "crude/debug.glsli", "crude/scene.glsli", "crude/light.glsli"]
+			"filename": "ddgi.crude_shader",
+			"includes": [ "common/platform.h", "common/debug.h", "common/scene.h", "common/light.h" ]
 		}
 	],
 	"pipelines" : [

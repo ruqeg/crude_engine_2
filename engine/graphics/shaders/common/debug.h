@@ -2,8 +2,9 @@
 #ifndef CRUDE_DEBUG_GLSLI
 #define CRUDE_DEBUG_GLSLI
 
-#define CRUDE_DEBUG_2D_LINES_OFFSET ( 1000 )
+#define CRUDE_DEBUG_LINE_2D_OFFSET 1000
 
+#ifndef __cplusplus
 struct crude_debug_cube_instance
 {
   vec3                                                     translation;
@@ -118,7 +119,7 @@ void crude_debug_draw_line_2d_coloru
   in uint                                                  start_color,
   in uint                                                  end_color )
 {
-  uint offset = CRUDE_DEBUG_2D_LINES_OFFSET + atomicAdd( debug_counts.debug_lines_2d_vertices_count, 2 );
+  uint offset = CRUDE_DEBUG_LINE_2D_OFFSET + atomicAdd( debug_counts.debug_lines_2d_vertices_count, 2 );
 
   debug_line_vertices.data[ offset ].position = vec3( start.xy, 0 );
   debug_line_vertices.data[ offset ].color = start_color;
@@ -172,5 +173,7 @@ void crude_debug_draw_cube
   debug_cube_instances.data[ offset ].scale = scale;
   debug_cube_instances.data[ offset ].color = color;
 }
+
+#endif
 
 #endif /* CRUDE_DEBUG_GLSLI */

@@ -450,11 +450,11 @@ crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_
   
   if ( material->alpha_mode == cgltf_alpha_mode_mask )
   {
-    mesh_draw->flags |= CRUDE_GFX_MESH_DRAW_FLAGS_ALPHA_MASK;
+    mesh_draw->flags |= CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK;
   }
   else if ( material->alpha_mode == cgltf_alpha_mode_blend )
   {
-    mesh_draw->flags |= CRUDE_GFX_MESH_DRAW_FLAGS_TRANSPARENT_MASK;
+    mesh_draw->flags |= CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK;
   }
 
   if ( material->pbr_metallic_roughness.base_color_texture.texture )
@@ -873,7 +873,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
         }
         case cgltf_attribute_type_tangent:
         {
-          flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_TANGENTS;
+          flags |= CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS;
 
           mesh_draw.tangent_hga = gltf_hga;
           mesh_draw.tangent_offset = buffer_offset;
@@ -881,7 +881,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
         }
         case cgltf_attribute_type_normal:
         {
-          flags |= CRUDE_GFX_MESH_DRAW_FLAGS_HAS_NORMAL;
+          flags |= CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL;
 
           mesh_draw.normal_hga = gltf_hga;
           mesh_draw.normal_offset = buffer_offset;
@@ -906,7 +906,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       
       if ( indices_accessor->component_type == cgltf_component_type_r_16u )
       {
-        mesh_draw.flags |= CRUDE_GFX_MESH_DRAW_FLAGS_INDEX_16;
+        mesh_draw.flags |= CRUDE_MESH_DRAW_FLAGS_INDEX_16;
       }
 
       mesh_draw.index_hga = indices_gpu_allocation;

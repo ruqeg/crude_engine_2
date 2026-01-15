@@ -3,9 +3,9 @@
 	"buffers": [
 		{
 			"name": "imgui",
-			"filename": "imgui.glsl",
-			"includes" : [	
-				"crude/platform.glsli"
+			"filename": "imgui.crude_shader",
+			"includes": [
+				"common/platform.h"
 			]
 		}
 	],

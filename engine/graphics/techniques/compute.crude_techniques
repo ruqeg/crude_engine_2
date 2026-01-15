@@ -3,13 +3,13 @@
 	"buffers": [
 		{
 			"name": "compute",
-			"filename": "compute.glsl"	,
-			"includes" : [
-				"crude/platform.glsli",
-				"crude/scene.glsli",
-				"crude/debug.glsli",
-				"crude/culling.glsli",
-				"crude/light.glsli"
+			"filename": "compute.crude_shader",
+			"includes": [
+				"common/platform.h",
+				"common/scene.h",
+				"common/debug.h",
+				"common/culling.h",
+				"common/light.h"
 			]
 		}
 	],

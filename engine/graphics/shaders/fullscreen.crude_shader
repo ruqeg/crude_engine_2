@@ -6,11 +6,11 @@
 //#define COMPOSE_DIRECT_LIGHT
 #define SSR
 
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
-#include "crude/light.glsli"
-#include "crude/culling.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/light.h"
+#include "common/culling.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( CRUDE_STAGE_VERTEX )

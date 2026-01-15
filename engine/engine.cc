@@ -547,19 +547,19 @@ crude_engine_initialize_graphics_
   
   if ( engine->gpu.mesh_shaders_extension_present )
   {
-    crude_gfx_technique_load_from_file( "deferred_meshlet.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+    crude_gfx_technique_load_from_file( "deferred_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   }
   else
   {
-    crude_gfx_technique_load_from_file( "deferred_classic.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+    crude_gfx_technique_load_from_file( "deferred_classic.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   }
-  crude_gfx_technique_load_from_file( "compute.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "debug.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "fullscreen.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
-  crude_gfx_technique_load_from_file( "imgui.json", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+  crude_gfx_technique_load_from_file( "compute.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+  crude_gfx_technique_load_from_file( "debug.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+  crude_gfx_technique_load_from_file( "fullscreen.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+  crude_gfx_technique_load_from_file( "imgui.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.json", &game->gpu, &game->render_graph, &&engine->temporary_allocator );
+  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.crude_techniques", &game->gpu, &game->render_graph, &&engine->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );

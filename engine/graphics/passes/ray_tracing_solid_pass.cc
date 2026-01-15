@@ -112,7 +112,7 @@ crude_gfx_ray_tracing_solid_pass_on_techniques_reloaded
 
   pass = CRUDE_CAST( crude_gfx_ray_tracing_solid_pass*, ctx );
   ray_tracing_pass = crude_gfx_renderer_access_technique_pass_by_name( pass->scene_renderer->renderer, "ray_tracing", "ray_tracing_solid" );
-  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_GRAPHICS_MATERIAL_DESCRIPTOR_SET_INDEX );
+  layout = crude_gfx_get_descriptor_set_layout( pass->scene_renderer->renderer->gpu, ray_tracing_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
   
   for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
   {

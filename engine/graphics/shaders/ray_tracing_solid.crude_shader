@@ -6,11 +6,11 @@
 #define CRUDE_CLOSEST_HIT
 //#define CRUDE_STAGE_FRAGMENT
 
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
-#include "crude/culling.glsli"
-#include "crude/light.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #extension GL_EXT_ray_tracing : enable
@@ -127,7 +127,7 @@ void main()
   p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
   p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
 
-  if ( ( mesh_draw.flags & CRUDE_DRAW_FLAGS_HAS_NORMAL ) == 0 )
+  if ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
   {
     normal_buffer = float_array_type( mesh_draw.normal_buffer );
     n0_model = vec3( normal_buffer[ i0 * 3 + 0 ].v, normal_buffer[ i0 * 3 + 1 ].v, normal_buffer[ i0 * 3 + 2 ].v );

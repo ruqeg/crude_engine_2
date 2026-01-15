@@ -5,7 +5,7 @@
 #define CRUDE_STAGE_VERTEX
 //#define CRUDE_STAGE_FRAGMENT
 
-#include "crude/platform.glsli"
+#include "common/platform.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 struct imgui_vertex

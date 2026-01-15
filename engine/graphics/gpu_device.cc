@@ -635,7 +635,7 @@ crude_gfx_present
       descriptor_write->dstArrayElement = texture_to_update->handle;
       descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       descriptor_write->dstSet = bindless_descriptor_set->vk_descriptor_set;
-      descriptor_write->dstBinding = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING;
+      descriptor_write->dstBinding = CRUDE_BINDLESS_TEXTURE_BINDING;
       
       descriptor_image_info = &bindless_image_info[ current_write_index ];    
       if ( texture->sampler )
@@ -675,7 +675,7 @@ crude_gfx_present
 
         descriptor_image_info_compute->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-        descriptor_write_image->dstBinding = CRUDE_GRAPHICS_BINDLESS_IMAGE_BINDING;
+        descriptor_write_image->dstBinding = CRUDE_BINDLESS_IMAGE_BINDING;
         descriptor_write_image->descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         descriptor_write_image->pImageInfo = descriptor_image_info_compute;
 
@@ -1945,7 +1945,7 @@ crude_gfx_create_pipeline
   for ( uint32 i = 0; i < shader_state->reflect.descriptor.sets_count; ++i )
   {
     /* First set for bindless */
-    if ( i == CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
+    if ( i == CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX )
     {
       crude_gfx_descriptor_set_layout *bindless_descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
       vk_layouts[ i ] = bindless_descriptor_set_layout->vk_descriptor_set_layout;
@@ -2299,7 +2299,7 @@ crude_gfx_destroy_pipeline_instant
   {
     for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
     {
-      if ( i != CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
+      if ( i != CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX )
       {
         crude_gfx_destroy_descriptor_set_layout( gpu, pipeline->descriptor_set_layout_handle[ i ] );
       }
@@ -2613,7 +2613,7 @@ crude_gfx_create_descriptor_set
   {
     crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ descriptor_set_layout->binding_to_index[ creation->bindings[ i ] ] ];
     
-    if ( binding->set == CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
+    if ( binding->set == CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
     {
       continue;
     }
@@ -4107,12 +4107,12 @@ vk_create_descriptor_pool_
     creation.set_index = 0u;
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      .start = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING,
+      .start = CRUDE_BINDLESS_TEXTURE_BINDING,
       .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
     } ) );
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-      .start = CRUDE_GRAPHICS_BINDLESS_TEXTURE_BINDING + 1,
+      .start = CRUDE_BINDLESS_TEXTURE_BINDING + 1,
       .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
     } ) );
     gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &creation );
@@ -4509,7 +4509,7 @@ vk_reflect_shader_
 
       spv_binding = spv_descriptor_set->bindings[ binding_index ];
 
-      if ( set_index != CRUDE_GRAPHICS_BINDLESS_DESCRIPTOR_SET_INDEX )
+      if ( set_index != CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX )
       {
         //CRUDE_ASSERT( spv_binding->accessed );
         //if ( !spv_binding->accessed )

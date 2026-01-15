@@ -35,7 +35,7 @@ crude_gfx_compose_light_pass_render
     uint32                                                 direct_radiance_texture_index;
     uint32                                                 ssr_texture_index;
     uint32                                                 output_texture_index;
-    float32                                                padding;
+    uint32                                                 packed_roughness_metalness_texture_index;
   };
   
   crude_gfx_compose_direct_light_pass                     *pass;
@@ -53,6 +53,7 @@ crude_gfx_compose_light_pass_render
   pust_constant.direct_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_light_pass.direct_radiance_texture );
   pust_constant.ssr_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_light_pass.ssr_texture );
   pust_constant.output_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_light_pass.output_texture );
+  pust_constant.packed_roughness_metalness_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_light_pass.packed_roughness_metalness_texture );
   crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

@@ -7,11 +7,11 @@
 //#define CULLING_EARLY
 //#define CULLING_LATE
 //#define DEPTH_PYRAMID
-//#define SSR_COMPOSE
+#define SSR_COMPOSE
 //#define SSR_CONVOLVE_VERTICAL
 //#define SSR_CONVOLVE_HORIZONTAL
 //#define SSR_HIT_CALCULATION
-#define COMPOSE_LIGHT
+//#define COMPOSE_LIGHT
 #define CRUDE_COMPUTE
 #include "common/platform.h"
 #include "common/debug.h"
@@ -126,7 +126,7 @@ void main()
     );
   }
 
-  bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_DRAW_FLAGS_ALPHA_MASK | CRUDE_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
+  bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
 #if defined( CULLING_LATE )
   if ( occlusion_visible )
   {
@@ -164,8 +164,6 @@ void main()
 #endif /* CULLING_EARLY || CULLING_LATE */
 
 #if defined( DEPTH_PYRAMID )
-layout(set=CRUDE_MATERIAL_SET, binding=0) uniform sampler2D src;
-layout(set=CRUDE_MATERIAL_SET, binding=1) uniform writeonly image2D dst;
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
@@ -776,8 +774,11 @@ void main()
   float fade_on_perpendicular = CRUDE_SATURATE( mix( 0.0f, 1.0f, CRUDE_SATURATE( ssr_hit_rdotv * 4.0f ) ) );
   float fade_on_roughness = CRUDE_SATURATE( mix( 0.0f, 1.0f, gloss * 4.0f ) );
   float totalFade = fade_on_border * fade_on_distance * fade_on_perpendicular * fade_on_roughness * ( 1.0f - CRUDE_SATURATE( remaining_alpha ) );
-
-  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
+  
+  
+  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( total_color.rgb * specular, 1 ) );
+  //CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( fade_on_border.xxx, 1 ) );
+  //CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( mix( fallback_color, total_color.rgb * specular, totalFade ), 1.0f ) );
 }
 
 #endif /* SSR_COMPOSE */
@@ -791,7 +792,7 @@ CRUDE_PUSH_CONSTANT
   uint                                                     direct_radiance_texture_index;
   uint                                                     ssr_texture_index;
   uint                                                     output_texture_index;
-  float                                                    _padding;
+  uint                                                     packed_roughness_metalness_texture_index;
 };
 
 void main()
@@ -799,8 +800,9 @@ void main()
   ivec2 coords = ivec2( gl_GlobalInvocationID.xy );
 
   vec3 direct_radiance = CRUDE_TEXTURE_FETCH( direct_radiance_texture_index, coords, 0 ).xyz;
-  vec3 ssr_data_packed = CRUDE_TEXTURE_FETCH( ssr_texture_index, coords, 0 ).xyz;
-  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( direct_radiance + ssr_data_packed, 1.0f ) );
+  vec3 ssr = CRUDE_TEXTURE_FETCH( ssr_texture_index, coords, 0 ).xyz;
+  float metalness = CRUDE_TEXTURE_FETCH( packed_roughness_metalness_texture_index, coords, 0 ).y;
+  CRUDE_IMAGE_STORE( output_texture_index, coords, vec4( direct_radiance + ssr, 1.0f ) );
 }
 
 #endif /* COMPOSE_LIGHT */

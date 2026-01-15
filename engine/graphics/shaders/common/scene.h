@@ -2,6 +2,8 @@
 #ifndef CRUDE_SCENE_GLSL
 #define CRUDE_SCENE_GLSL
 
+#ifndef __cplusplus
+
 CRUDE_RBUFFER_REF_SCALAR( MeshPositionsRef )
 {
   vec3                                                     data[];
@@ -141,7 +143,7 @@ struct crude_scene
   uint                                                     absolute_frame;
   float                                                    absolute_time;
   float                                                    resolution_ratio;
-#if CRUDE_DEVELOP
+#if CRUDE_SHADER_DEVELOP
   uint                                                     debug_mode;
   uint                                                     debug_flags1;
   float                                                    debug_force_roughness;
@@ -200,7 +202,7 @@ crude_scene_force_roughness
   in SceneRef                                              scene_ref
 )
 {
-  return ( scene_ref.data.debug_flags1 & ( 1 << 0 ) );
+  return ( scene_ref.data.debug_flags1 & ( 1 << 0 ) ) != 0;
 }
 
 bool
@@ -209,7 +211,9 @@ crude_scene_force_metalness
   in SceneRef                                              scene_ref
 )
 {
-  return ( scene_ref.data.debug_flags1 & ( 1 << 1 ) );
+  return ( scene_ref.data.debug_flags1 & ( 1 << 1 ) ) != 0;
 }
+
+#endif
 
 #endif /* CRUDE_SCENE_GLSL */

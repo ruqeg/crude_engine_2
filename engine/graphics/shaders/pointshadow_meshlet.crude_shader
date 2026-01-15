@@ -4,11 +4,11 @@
 #define POINTSHADOW_COMMANDS_GENERATION
 //#define CRUDE_STAGE_FRAGMENT
 
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
-#include "crude/culling.glsli"
-#include "crude/light.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( POINTSHADOW_CULLING )

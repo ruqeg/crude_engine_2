@@ -9,6 +9,8 @@
 #include <engine/graphics/command_buffer.h>
 #include <engine/graphics/gpu_memory.h>
 
+#include <engine/graphics/shaders/common/platform.h>
+
 #if CRUDE_GPU_PROFILER
 typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;

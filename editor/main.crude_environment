@@ -3,14 +3,14 @@
   {
     "render_graph_relative_directory": "\\..\\..\\resources\\",
     "resources_relative_directory": "\\..\\..\\resources\\",
-    "techniques_relative_directory": "\\..\\..\\techniques\\",
-    "shaders_relative_directory": "\\..\\..\\shaders\\",
+    "techniques_relative_directory": "\\..\\..\\engine\\graphics\\techniques\\",
+    "shaders_relative_directory": "\\..\\..\\engine\\graphics\\shaders\\",
     "compiled_shaders_relative_directory": "\\..\\..\\compiled_shaders\\"
   },
   "window":
   {
     "title": "Paprika",
-    "width": 800,
+    "width": 600,
     "height": 600
   },
   "initial_node": "\\..\\..\\resources\\game\\nodes\\level0.crude_node"

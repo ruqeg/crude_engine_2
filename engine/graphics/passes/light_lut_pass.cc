@@ -80,7 +80,7 @@ crude_gfx_light_lut_pass_render
   temporary_allocator_marker = crude_stack_allocator_get_marker( pass->scene_renderer->temporary_allocator );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, pass->scene_renderer->total_visible_lights_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( bin_range_per_light, pass->scene_renderer->total_visible_lights_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_luts, CRUDE_LIGHT_Z_BINS, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( lights_gpu, pass->scene_renderer->total_visible_lights_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
   
   camera = &pass->scene_renderer->options.scene.camera;
@@ -140,7 +140,7 @@ crude_gfx_light_lut_pass_render
   }
     
   /* Calculate lights clusters */
-  bin_size = 1.f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS;
+  bin_size = 1.f / CRUDE_LIGHT_Z_BINS;
     
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( sorted_lights ); ++i )
   {
@@ -154,17 +154,17 @@ crude_gfx_light_lut_pass_render
       bin_range_per_light[ i ] = UINT32_MAX;
       continue;
     }
-    min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( sorted_light->projected_z_min * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
-    max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( sorted_light->projected_z_max * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS ) );
+    min_bin = CRUDE_MAX( 0u, CRUDE_FLOOR( sorted_light->projected_z_min * CRUDE_LIGHT_Z_BINS ) );
+    max_bin = CRUDE_MAX( 0u, CRUDE_CEIL( sorted_light->projected_z_max * CRUDE_LIGHT_Z_BINS ) );
     bin_range_per_light[ i ] = ( min_bin & 0xffff ) | ( ( max_bin & 0xffff ) << 16 );
   }
     
-  for ( uint32 bin = 0; bin < CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS; ++bin )
+  for ( uint32 bin = 0; bin < CRUDE_LIGHT_Z_BINS; ++bin )
   {
     float32                                              bin_min, bin_max;
     uint32                                               min_light_id, max_light_id;
   
-    min_light_id = CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT + 1;
+    min_light_id = CRUDE_LIGHTS_MAX_COUNT + 1;
     max_light_id = 0;
   
     bin_min = bin_size * bin;
@@ -222,7 +222,7 @@ crude_gfx_light_lut_pass_render
   {
     crude_gfx_memory_allocation                          lights_luts_tca;
     
-    lights_luts_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS );
+    lights_luts_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( uint32 ) * CRUDE_LIGHT_Z_BINS );
     crude_memory_copy( lights_luts_tca.cpu_address, lights_luts, CRUDE_ARRAY_LENGTH( lights_luts ) * sizeof( uint32 ) );
     crude_gfx_cmd_memory_copy( primary_cmd, lights_luts_tca, pass->scene_renderer->lights_bins_hga, 0, 0 );
   }
@@ -232,16 +232,16 @@ crude_gfx_light_lut_pass_render
     float32                                              tile_size_inv;
     uint32                                               tile_x_count, tile_y_count, tiles_entry_count, buffer_size, tile_stride;
   
-    tile_x_count = pass->scene_renderer->gpu->renderer_size.x / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    tile_y_count = pass->scene_renderer->gpu->renderer_size.y / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+    tile_x_count = pass->scene_renderer->gpu->renderer_size.x / CRUDE_LIGHT_TILE_SIZE;
+    tile_y_count = pass->scene_renderer->gpu->renderer_size.y / CRUDE_LIGHT_TILE_SIZE;
+    tiles_entry_count = tile_x_count * tile_y_count * CRUDE_LIGHT_WORDS_COUNT;
     buffer_size = tiles_entry_count * sizeof( uint32 );
   
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( light_tiles_bits, tiles_entry_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
     memset( light_tiles_bits, 0, buffer_size );
   
-    tile_size_inv = 1.0f / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-    tile_stride = tile_x_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+    tile_size_inv = 1.0f / CRUDE_LIGHT_TILE_SIZE;
+    tile_stride = tile_x_count * CRUDE_LIGHT_WORDS_COUNT;
   
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( lights_gpu ); ++i )
     {
@@ -367,7 +367,7 @@ crude_gfx_light_lut_pass_render
           {
             uint32                                       array_index, word_index, bit_index;
   
-            array_index = y * tile_stride + x * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+            array_index = y * tile_stride + x * CRUDE_LIGHT_WORDS_COUNT;
   
             word_index = i / 32;
             bit_index = i % 32;

@@ -3,6 +3,8 @@
 #include <engine/graphics/render_graph.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
+#include <engine/graphics/shaders/common/light.h>
+
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef struct crude_gfx_light_lut_pass

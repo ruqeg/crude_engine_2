@@ -38,6 +38,19 @@ To edit shaders in VS download the [GLSL language integration (for VS2022)](http
 glslangValidator.exe
 ```
 
+To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visualstudio.com/items?itemName=dtoplak.vscode-glsllint) extension and configure custom glslangValidatorArgs
+```
+"glsllint.glslangValidatorArgs": [
+	"--target-env",
+	"vulkan1.2",
+	"--glsl-version",
+	"460",
+	"-DCRUDE_VALIDATOR_LINTING"
+    "-e"
+    "GL_GOOGLE_include_directive"
+],
+```
+
 ## TODO
 - Normal Memory mang PLEASE
 - Physics full rework

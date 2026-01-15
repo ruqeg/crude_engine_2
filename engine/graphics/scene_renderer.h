@@ -89,6 +89,7 @@ typedef struct crude_gfx_scene_renderer_options
     char const                                            *direct_radiance_texture;
     char const                                            *ssr_texture;
     char const                                            *output_texture;
+    char const                                            *packed_roughness_metalness_texture;
   } compose_light_pass;
   struct 
   {

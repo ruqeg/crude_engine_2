@@ -2,6 +2,8 @@
 #ifndef CRUDE_CULLING_GLSL
 #define CRUDE_CULLING_GLSL
 
+#ifndef __cplusplus
+
 bool
 crude_clustered_backface_culling
 (
@@ -159,5 +161,7 @@ crude_get_cube_face_mask
 
   return fpx | ( fnx << 1 ) | ( fpy << 2 ) | ( fny << 3 ) | ( fpz << 4 ) | ( fnz << 5 );
 }
+
+#endif
 
 #endif /* CRUDE_CULLING_GLSL */

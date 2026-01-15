@@ -6,9 +6,9 @@
 //#define DEBUG_CUBE
 #define CRUDE_STAGE_VERTEX
 
-#include "crude/platform.glsli"
-#include "crude/debug.glsli"
-#include "crude/scene.glsli"
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
 /********************

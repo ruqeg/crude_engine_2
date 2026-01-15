@@ -3,13 +3,13 @@
 	"buffers": [
 		{
 			"name": "pointshadow_meshlet",
-			"filename": "pointshadow_meshlet.glsl",
-			"includes" : [	
-				"crude/platform.glsli",
-				"crude/debug.glsli",
-				"crude/scene.glsli",
-				"crude/culling.glsli",
-				"crude/light.glsli"
+			"filename": "pointshadow_meshlet.crude_shader",
+			"includes": [
+				"common/platform.h",
+				"common/debug.h",
+				"common/scene.h",
+				"common/culling.h",
+				"common/light.h"
 			]
 		}
 	],

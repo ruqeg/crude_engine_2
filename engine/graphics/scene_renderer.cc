@@ -90,6 +90,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.compose_light_pass.direct_radiance_texture = "direct_radiance";
   scene_renderer->options.compose_light_pass.ssr_texture = "ssr";
   scene_renderer->options.compose_light_pass.output_texture = "radiance";
+  scene_renderer->options.compose_light_pass.packed_roughness_metalness_texture = "gbuffer_roughness_metalness";
 
   scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
@@ -311,10 +312,10 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
   }
 
-  scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights" );
-  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );
-  scene_renderer->lights_indices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_indices" );
-  scene_renderer->lights_bins_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_Z_BINS, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_bins" );
+  scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light_gpu ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights" );
+  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );
+  scene_renderer->lights_indices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_indices" );
+  scene_renderer->lights_bins_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_LIGHT_Z_BINS, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_bins" );
 }
 
 void
@@ -387,9 +388,9 @@ crude_gfx_scene_renderer_on_resize
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
   }
   
-  uint32 tile_x_count = scene_renderer->gpu->renderer_size.x / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-  uint32 tile_y_count = scene_renderer->gpu->renderer_size.y / CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_TILE_SIZE;
-  uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_GRAPHICS_SCENE_RENDERER_LIGHT_WORDS_COUNT;
+  uint32 tile_x_count = scene_renderer->gpu->renderer_size.x / CRUDE_LIGHT_TILE_SIZE;
+  uint32 tile_y_count = scene_renderer->gpu->renderer_size.y / CRUDE_LIGHT_TILE_SIZE;
+  uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_LIGHT_WORDS_COUNT;
   scene_renderer->lights_tiles_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * tiles_entry_count, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_tiles" );
 
   CRUDE_PROFILER_ZONE_END;
@@ -441,6 +442,9 @@ update_dynamic_buffers_
     scene->absolute_time = scene_renderer->options.absolute_time;
     scene->absolute_frame = scene_renderer->gpu->absolute_frame;
     scene->debug_mode = scene_renderer->options.debug.debug_mode;
+    scene->debug_flags1 = scene_renderer->options.debug.flags1;
+    scene->debug_force_metalness = scene_renderer->options.debug.force_metalness;
+    scene->debug_force_roughness = scene_renderer->options.debug.force_roughness;
 
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
   }
