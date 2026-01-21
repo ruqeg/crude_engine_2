@@ -51,12 +51,6 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 ],
 ```
 
-## TODO
-- Normal Memory mang PLEASE
-- Physics full rework
-- Resources Manager and normal aync loader
-- Animations
-
 ## Dependencies
 [cgltf](https://github.com/jkuhlmann/cgltf), 
 [cJSON](https://github.com/DaveGamble/cJSON),

@@ -1,0 +1,22 @@
+BACLOG
+  - Memory Profiler 
+  - Physics Rework
+  - Resources manager
+  - Asyn loader
+  - Animations
+  - Fix SSR and implement it if it will be needed.
+
+TODO
+  - Fix RTX DDGI
+  - RTX Reflections
+
+ON HOLD
+  - Render Graph Editor
+
+IN PROGRESS
+  - Sanitizer: (Get from https://docs.godotengine.org/en/latest/engine_details/development/debugging/using_sanitizers.html#undefined-behavior-sanitizer-ubsan :D)
+  -- Address sanitizer
+  -- Leak sanitizer
+  -- Memory sanitizer
+  -- Thread sanitizer
+  -- Undefined behavior sanitizer
