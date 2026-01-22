@@ -2,15 +2,23 @@ cmake_minimum_required(VERSION 3.25)
 
 project(crude CXX)
 
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY ON)
+set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+if(CRUDE_ADDRESS_SANITIZER)
+add_compile_options(-fsanitize=address -fsanitize=undefined)
+add_link_options(-fsanitize=address -fsanitize=undefined)
+endif()
+  
+add_compile_options("/MP" "/ZI")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-option(CRUDE_FORCE_STATIC "Force static linking for all libraries" OFF)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Develop;Release;Production;" CACHE STRING "" FORCE)
 if(NOT CMAKE_BUILD_TYPE)
@@ -58,9 +66,9 @@ add_compile_definitions(
 
 set(CRUDE_GAME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/game)
 
-add_subdirectory(extlibs)
+add_subdirectory(thirdparty)
 add_subdirectory(engine)
 add_subdirectory(game)
 add_subdirectory(editor)
 
-#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT crude_host)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT crude_engine)
