@@ -4,7 +4,7 @@ project(crude_game)
 
 file(GLOB_RECURSE SRC *.cc)
 file(GLOB_RECURSE HEADERS *.h)
-file(GLOB_RECURSE ENVIROMENT *.crude_environment)
+file(GLOB_RECURSE CRUDE_ENVIROMENT *.crude_environment)
 file(COPY ${ENVIROMENT} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
@@ -15,8 +15,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}\\.
 
 target_link_libraries(${PROJECT_NAME} PUBLIC crude_engine)
 
-source_group(${PROJECT_NAME} FILES ${CRUDE_SOURCES})
-
-if(MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE "/MP" "/ZI")
-endif()
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})

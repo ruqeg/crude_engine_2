@@ -13,9 +13,8 @@
 #include <engine/scene/scripts/free_camera_ecs.h>
 #include <engine/external/game_ecs.h>
 #include <engine/external/game_debug_ecs.h>
-#include <game/level_mars_ecs.h>
 
-typedef struct crude_game
+typedef struct crude_editor
 {
   crude_engine                                            *engine;
 
@@ -24,44 +23,47 @@ typedef struct crude_game
 
   /* Common */
   crude_entity                                             main_node;
-  
+
+  /* Dev */
+  crude_entity                                             editor_camera_node;
+
   /* System Context */
-  crude_level_mars_system_context                          level_mars_system_context;
   crude_free_camera_system_context                         free_camera_system_context;
   crude_physics_debug_system_context                       physics_debug_system_context;
-} crude_game;
+  crude_game_debug_system_context                          game_debug_system_context;
+} crude_editor;
 
 CRUDE_API void
-crude_game_initialize
+crude_editor_initialize
 (
-  _In_ crude_game                                         *game,
+  _In_ crude_editor                                       *editor,
   _In_ crude_engine                                       *engine,
   _In_ char const                                         *working_directory
 );
 
 CRUDE_API void
-crude_game_deinitialize
+crude_editor_deinitialize
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
-crude_game_update
+crude_editor_update
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
-crude_game_instance_intialize
+crude_editor_instance_intialize
 (
 );
 
 CRUDE_API void
-crude_game_instance_deintialize
+crude_editor_instance_deintialize
 (
 );
 
-CRUDE_API crude_game*
-crude_game_instance
+CRUDE_API crude_editor*
+crude_editor_instance
 (
 );

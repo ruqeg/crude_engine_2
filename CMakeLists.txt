@@ -64,11 +64,8 @@ add_compile_definitions(
   CRUDE_GPU_PROFILER=CRUDE_DEVELOP
   )
 
-set(CRUDE_GAME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/game)
-
 add_subdirectory(thirdparty)
 add_subdirectory(engine)
 add_subdirectory(game)
-add_subdirectory(editor)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT crude_engine)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT crude_game)

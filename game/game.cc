@@ -9,141 +9,146 @@
 #include <engine/physics/physics_ecs.h>
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/external/game_ecs.h>
-#include <game/level_mars_ecs.h>
 
-#include <game/game.h>
+#include <editor/editor.h>
 
-crude_game                                                *crude_game_instance_;
+crude_editor                                              *crude_editor_instance_;
 
 static void
-crude_game_deinitialize_constant_strings_
+crude_editor_deinitialize_constant_strings_
 (
-  _In_ crude_game                                         *editor
+  _In_ crude_editor                                       *editor
 );
 
 static void
-crude_game_input_callback_
+crude_editor_input_callback_
 (
   _In_ void                                               *ctx,
   _In_ void                                               *sdl_event
 );
 
 static void
-crude_game_setup_custom_nodes_to_scene_
+crude_editor_setup_custom_nodes_to_scene_
 ( 
-  _In_ crude_game                                         *game,
-  _In_ crude_ecs                                          *world
+  _In_ crude_editor                                       *editor
 );
 
 void
-crude_game_update_input_
+crude_editor_update_input_
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 );
 
 void
-crude_game_imgui_custom_draw
+crude_editor_imgui_custom_draw
 (
-  _In_ void                                               *ctx,
-  _In_ crude_ecs                                          *world
+  _In_ void                                               *ctx
 );
 
 void
-crude_game_initialize
+crude_editor_initialize
 (
-  _In_ crude_game                                         *game,
+  _In_ crude_editor                                       *editor,
   _In_ crude_engine                                       *engine,
   _In_ char const                                         *working_directory
 )
 {
-  crude_ecs                                               *world;
   char                                                     starting_node_absolute_filepath[ 4096 ];
 
-  game->engine = engine;
+  editor->engine = engine;
   
-  world = crude_scene_thread_manager_lock_world( &game->engine->___scene_thread_manager );
+  editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   
-  
-  game->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
-  game->free_camera_system_context.input = crude_scene_thread_manager_get_input_copy_ptr( &game->engine->___scene_thread_manager );
-  crude_free_camera_system_import( world, &game->free_camera_system_context );
-  crude_physics_components_import( world );
-  crude_physics_components_import( world );
-  crude_scene_debug_components_import( world );
-  crude_game_components_import( world );
-  game->level_mars_system_context = CRUDE_COMPOUNT_EMPTY( crude_level_mars_system_context );
-  crude_level_mars_system_import( world, &game->level_mars_system_context );
-  
-  crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
-  crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
+  editor->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
+  editor->free_camera_system_context.input = &editor->engine->platform.input;
 
-  game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
-  game->physics_debug_system_context.resources_absolute_directory = game->engine->environment.directories.resources_absolute_directory;
-  game->physics_debug_system_context.string_bufffer = &game->debug_strings_buffer;
-  crude_physics_debug_system_import( world, &game->physics_debug_system_context );
+  crude_free_camera_system_import( engine->world, &editor->free_camera_system_context );
+  crude_physics_components_import( engine->world );
+  crude_physics_components_import( engine->world );
+  crude_scene_debug_components_import( engine->world );
+  crude_game_components_import( engine->world );
   
-  crude_snprintf( starting_node_absolute_filepath, sizeof( starting_node_absolute_filepath ), "%s\\%s", game->engine->environment.directories.resources_absolute_directory, "game\\nodes\\level_mars.crude_node" );
-  game->main_node = crude_node_manager_get_node( &game->engine->node_manager, starting_node_absolute_filepath, world );
+  crude_string_buffer_initialize( &editor->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
+  crude_string_buffer_initialize( &editor->debug_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
 
-  crude_scene_thread_manager_set_main_node_UNSAFE( &game->engine->___scene_thread_manager, game->main_node );
+  editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
+  editor->physics_debug_system_context.resources_absolute_directory = editor->engine->environment.directories.resources_absolute_directory;
+  editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
+  crude_physics_debug_system_import( engine->world, &editor->physics_debug_system_context );
   
-  crude_scene_thread_manager_unlock_world( &game->engine->___scene_thread_manager );
+  editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
+  crude_game_debug_system_import( engine->world, &editor->game_debug_system_context );
+  
+  crude_snprintf( starting_node_absolute_filepath, sizeof( starting_node_absolute_filepath ), "%s\\%s", editor->engine->environment.directories.resources_absolute_directory, "game\\nodes\\level_mars.crude_node" );
+  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, starting_node_absolute_filepath, engine->world );
 
-  crude_graphics_thread_manager_set_imgui_custom_draw( &game->engine->___graphics_thread_manager, crude_game_imgui_custom_draw, game );
+  editor->engine->main_node = editor->main_node;
+  crude_editor_setup_custom_nodes_to_scene_( editor );
+
+  editor->engine->imgui_draw_custom_fn = crude_editor_imgui_custom_draw;
+  editor->engine->imgui_draw_custom_ctx = editor;
 }
 
 void
-crude_game_imgui_custom_draw
+crude_editor_imgui_custom_draw
 (
-  _In_ void                                               *ctx,
-  _In_ crude_ecs                                          *world
+  _In_ void                                               *ctx
 )
 {
 }
 
 void
-crude_game_deinitialize
+crude_editor_deinitialize
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                             *editor
 )
 {
-  crude_game_deinitialize_constant_strings_( game );
+  crude_editor_deinitialize_constant_strings_( editor );
 }
 
 void
-crude_game_update
+crude_editor_update
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 )
 {
-  crude_game_update_input_( game );
+  crude_editor_update_input_( editor );
 }
 
 void
-crude_game_update_input_
+crude_editor_update_input_
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 )
 {
+  if ( editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
+  {
+    SDL_GetMouseState( &editor->engine->last_unrelative_mouse_position.x, &editor->engine->last_unrelative_mouse_position.y );
+    crude_platform_hide_cursor( &editor->engine->platform );
+  }
+  
+  if ( !editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.mouse.right.current != editor->engine->platform.input.prev_mouse.right.current )
+  {
+    SDL_WarpMouseInWindow( editor->engine->platform.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
+    crude_platform_show_cursor( &editor->engine->platform );
+  }
 }
 
 void
-crude_game_input_callback_
+crude_editor_input_callback_
 (
   _In_ void                                               *ctx,
   _In_ void                                               *sdl_event
 )
 {
-  crude_game *game = CRUDE_CAST( crude_game*, ctx );
+  crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
   
-  mtx_lock( &game->engine->imgui_mutex );
-  ImGui::SetCurrentContext( game->engine->imgui_context );
+  ImGui::SetCurrentContext( editor->engine->imgui_context );
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  mtx_unlock( &game->engine->imgui_mutex );
 }
 
 bool
-crude_game_parse_json_to_component_
+crude_editor_parse_json_to_component_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON const                                        *component_json,
@@ -155,7 +160,7 @@ crude_game_parse_json_to_component_
 }
 
 void
-crude_game_parse_all_components_to_json_
+crude_editor_parse_all_components_to_json_
 ( 
   _In_ crude_entity                                        node, 
   _In_ cJSON                                              *node_components_json,
@@ -165,44 +170,79 @@ crude_game_parse_all_components_to_json_
 }
 
 void
-crude_game_deinitialize_constant_strings_
+crude_editor_deinitialize_constant_strings_
 (
-  _In_ crude_game                                         *game
+  _In_ crude_editor                                       *editor
 )
 {
-  crude_string_buffer_deinitialize( &game->debug_strings_buffer );
-  crude_string_buffer_deinitialize( &game->debug_constant_strings_buffer );
+  crude_string_buffer_deinitialize( &editor->debug_strings_buffer );
+  crude_string_buffer_deinitialize( &editor->debug_constant_strings_buffer );
 }
 
 void
-crude_game_setup_custom_nodes_to_scene_
+crude_editor_setup_custom_nodes_to_scene_
 ( 
-  _In_ crude_game                                         *game,
-  _In_ crude_ecs                                          *world
+  _In_ crude_editor                                       *editor
 )
 {
+  {
+    crude_transform                                        editor_camera_node_transform;
+    crude_camera                                           editor_camera_node_camera;
+    crude_free_camera                                      editor_camera_node_crude_free_camera;
+
+    if ( crude_entity_valid( editor->engine->world, editor->editor_camera_node ) )
+    {
+      crude_entity_destroy( editor->engine->world, editor->editor_camera_node );
+    }
+
+    editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+    XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
+    XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
+    XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
+
+    editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+    editor_camera_node_camera.fov_radians = 1;
+    editor_camera_node_camera.aspect_ratio = 1.8;
+    editor_camera_node_camera.near_z = 1;
+    editor_camera_node_camera.far_z = 300;
+
+    editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
+    editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
+    editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
+    editor_camera_node_crude_free_camera.input_enabled = true;
+    editor_camera_node_crude_free_camera.input = &editor->engine->platform.input;
+
+    editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
+    CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
+    CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
+    CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
+  }
+
+  editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->engine->world, editor->main_node, "editor_camera" );
+
+  editor->engine->camera_node = editor->editor_camera_node;
 }
 
 void
-crude_game_instance_intialize
+crude_editor_instance_intialize
 (
 )
 {
-  crude_game_instance_ = CRUDE_CAST( crude_game*, malloc( sizeof( crude_game ) ) );
+  crude_editor_instance_ = CRUDE_CAST( crude_editor*, malloc( sizeof( crude_editor ) ) );
 }
 
 void
-crude_game_instance_deintialize
+crude_editor_instance_deintialize
 (
 )
 {
-  free( crude_game_instance_ );
+  free( crude_editor_instance_ );
 }
 
-crude_game*
-crude_game_instance
+crude_editor*
+crude_editor_instance
 (
 )
 {
-  return crude_game_instance_;
+  return crude_editor_instance_;
 }
