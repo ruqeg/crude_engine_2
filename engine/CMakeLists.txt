@@ -12,6 +12,6 @@ set(CRUDE_SOURCES ${SRC} ${HEADERS})
 add_library(${PROJECT_NAME} STATIC ${CRUDE_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}\\..\\)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY} imgui imguizmo flecs SDL3-static stb tlsf VulkanMemoryAllocator cgltf spirv-reflect-static miniaudio enkiTS TracyClient cjson meshoptimizer nfd DirectXMath)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY} imgui imguizmo flecs SDL3-static stb tlsf VulkanMemoryAllocator cgltf spirv-reflect-static miniaudio enkiTS TracyClient cjson meshoptimizer nfd DirectXMath imgui-node-editor)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})

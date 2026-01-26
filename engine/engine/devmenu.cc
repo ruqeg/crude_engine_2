@@ -69,6 +69,9 @@ crude_devmenu_option devmenu_options[ ] =
   },
   {
     "Node Inspector", crude_devmenu_node_inspector_callback
+  },
+  {
+    "Technique Editor", crude_devmenu_technique_editor_callback
   }
 };
 
@@ -93,6 +96,7 @@ crude_devmenu_initialize
   crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu );
   crude_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu );
   crude_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
+  crude_devmenu_technique_editor_initialize( &devmenu->technique_editor, devmenu );
 }
 
 void
@@ -101,6 +105,7 @@ crude_devmenu_deinitialize
   _In_ crude_devmenu                                      *devmenu
 )
 {
+  crude_devmenu_technique_editor_deinitialize( &devmenu->technique_editor );
   crude_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
   crude_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
   crude_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
@@ -155,6 +160,7 @@ crude_devmenu_draw
   crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
   crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
   crude_devmenu_node_inspector_draw( &devmenu->node_inspector );
+  crude_devmenu_technique_editor_draw( &devmenu->technique_editor );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -173,6 +179,7 @@ crude_devmenu_update
   crude_devmenu_nodes_tree_update( &devmenu->nodes_tree );
   crude_devmenu_node_inspector_update( &devmenu->node_inspector );
   crude_devmenu_viewport_update( &devmenu->viewport );
+  crude_devmenu_technique_editor_update( &devmenu->technique_editor );
 
   //if ( game->time - devmenu->last_framerate_update_time > 1.f )
   //{
@@ -1693,6 +1700,103 @@ crude_devmenu_viewport_callback
 )
 {
   devmenu->viewport.enabled = !devmenu->viewport.enabled;
+}
+
+/***********************
+ * 
+ * Develop Technique Editor
+ * 
+ ***********************/
+void
+crude_devmenu_technique_editor_initialize
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
+  _In_ crude_devmenu                                      *devmenu
+)
+{
+  devmenu->technique_editor.enabled = false;
+
+  devmenu_technique_editor->ax_context = ax::NodeEditor::CreateEditor( );
+}
+
+void
+crude_devmenu_technique_editor_deinitialize
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+)
+{
+  ax::NodeEditor::DestroyEditor( devmenu_technique_editor->ax_context );
+}
+
+void
+crude_devmenu_technique_editor_update
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+)
+{
+}
+
+void
+crude_devmenu_technique_editor_draw
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+)
+{
+  if ( !devmenu_technique_editor->enabled )
+  {
+    return;
+  }
+
+  // !TODO
+  // ImGui::ShowMetricsWindow( );
+
+  ImGuiIO *imgui_io = &ImGui::GetIO();
+  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+  ImGui::SetNextWindowSize( imgui_io->DisplaySize);
+  const auto windowBorderSize = ImGui::GetStyle().WindowBorderSize;
+  const auto windowRounding   = ImGui::GetStyle().WindowRounding;
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::Begin("Technique Editor", nullptr, ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, windowBorderSize);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, windowRounding);
+
+  ax::NodeEditor::SetCurrentEditor( devmenu_technique_editor->ax_context );
+  ax::NodeEditor::Begin( "Technique Editor Node", ImVec2( 0.0, 0.0f ) );
+
+  int unique_id = 1;
+  ax::NodeEditor::BeginNode(unique_id++);
+      ImGui::Text("Node A");
+      ax::NodeEditor::BeginPin(unique_id++, ax::NodeEditor::PinKind::Input);
+          ImGui::Text("-> In");
+      ax::NodeEditor::EndPin();
+      ImGui::SameLine();
+      ax::NodeEditor::BeginPin(unique_id++, ax::NodeEditor::PinKind::Output);
+          ImGui::Text("Out ->");
+      ax::NodeEditor::EndPin();
+  ax::NodeEditor::EndNode();
+
+  ax::NodeEditor::End();
+  ax::NodeEditor::SetCurrentEditor(nullptr);
+  
+  ImGui::PopStyleVar(2);
+  ImGui::End();
+  ImGui::PopStyleVar(2);
+}
+
+void
+crude_devmenu_technique_editor_callback
+(
+  _In_ crude_devmenu                                      *devmenu
+)
+{
+  devmenu->technique_editor.enabled = !devmenu->technique_editor.enabled;
 }
 
 #endif

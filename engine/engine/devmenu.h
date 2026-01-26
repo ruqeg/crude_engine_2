@@ -4,6 +4,7 @@
 
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
+#include <engine/graphics/imgui.h>
 
 typedef struct crude_engine crude_engine;
 typedef struct crude_devmenu crude_devmenu;
@@ -89,6 +90,13 @@ typedef struct crude_devmenu_viewport
   bool                                                     enabled;
 } crude_devmenu_viewport;
 
+typedef struct crude_devmenu_technique_editor
+{
+  ax::NodeEditor::EditorContext                           *ax_context;
+  crude_devmenu                                           *devmenu;
+  bool                                                     enabled;
+} crude_devmenu_technique_editor;
+
 typedef struct crude_devmenu
 {
   crude_engine                                            *engine;
@@ -102,6 +110,7 @@ typedef struct crude_devmenu
   crude_devmenu_nodes_tree                                 nodes_tree;
   crude_devmenu_node_inspector                             node_inspector;
   crude_devmenu_viewport                                   viewport;
+  crude_devmenu_technique_editor                           technique_editor;
   uint32                                                   selected_option;
   float32                                                  last_framerate_update_time;
   uint32                                                   previous_framerate;
@@ -517,6 +526,42 @@ crude_devmenu_viewport_draw
 
 CRUDE_API void
 crude_devmenu_viewport_callback
+(
+  _In_ crude_devmenu                                      *devmenu
+);
+
+/***********************
+ * 
+ * Develop Technique Editor
+ * 
+ ***********************/
+CRUDE_API void
+crude_devmenu_technique_editor_initialize
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
+  _In_ crude_devmenu                                      *devmenu
+);
+
+CRUDE_API void
+crude_devmenu_technique_editor_deinitialize
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+);
+
+CRUDE_API void
+crude_devmenu_technique_editor_update
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+);
+
+CRUDE_API void
+crude_devmenu_technique_editor_draw
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
+);
+
+CRUDE_API void
+crude_devmenu_technique_editor_callback
 (
   _In_ crude_devmenu                                      *devmenu
 );

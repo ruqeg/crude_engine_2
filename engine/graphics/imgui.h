@@ -5,4 +5,5 @@
 
 #if CRUDE_DEVELOP
 #include <thirdparty/ImGuizmo/ImGuizmo.h>
+#include <thirdparty/imgui-node-editor/imgui_node_editor.h>
 #endif

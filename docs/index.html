@@ -13,6 +13,48 @@
     <p>CE2 is a 3D game engine with gpu driven rendering created to have fun at free time, written in C++ due to some dependencies, but I use C99-style to reduce headache with extra abstraction. The renderer is based on Vulkan with no current plans to support other graphics APIs. Currently CE2 only supports Windows, but Linux support is planned at the future. The project is still under active development, but I think that readme won't hurt.</p>
     <img src="images/intro.png" width="400" \>
     <hr/>
+    <h2>Features</h2>
+    <p>Render Graph, Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping, Automatic Exposure, Asynchronous Resources Loading, Multi-Threading Commands Recording, Json Scene, GLTF Models, GPU Profiler, Shader Hot Reloading, Task/Mesh Shader, ECS, etc</p>
+    <hr/>
+    <h2>Setup</h2>
+    <p>Download and install Vulkan SDK from <a href="https://vulkan.lunarg.com/">LunarG website</a> for your system. Then clone this repository</p>
+    <code>
+    git clone https://github.com/ruqeg/crude_engine_2</br>
+    cd crude_engine_2</br>
+    </code>
+    <p>build VS2022 project with cmake</p>
+
+    <code>
+    mkdir build</br>
+    cd build</br>
+    python build.py</br>
+    </code>
+    <p>Open generated .sln file in Visual Studio 2022 and build solution.</p>
+    <p>To edit shaders in VS download the <a href="https://marketplace.visualstudio.com/items?itemName=DanielScherzer.GLSL2022">GLSL language integration (for VS2022)</a> extension and configure:</p>
+    <code>
+    "Audo detect shader type file extension":</br>
+    .crude_shader</br></br>
+    "Arguments for the external compiler executable":</br>
+    --target-env vulkan1.2 --glsl-version 460 -DCRUDE_VALIDATOR_LINTING -e GL_GOOGLE_include_directive</br></br>
+    "External compiler executable file path (without quotes)":</br>
+    glslangValidator.exe
+    </code>
+    <p>To edit shaders in VSCode, download the <a href="https://marketplace.visualstudio.com/items?itemName=dtoplak.vscode-glsllint">GLSL Lints extension</a> and configure custom glslangValidatorArgs</p>
+
+    <code>
+    "glsllint.glslangValidatorArgs": [</br>
+	    "--target-env",</br>
+	    "vulkan1.2",</br>
+	    "--glsl-version",</br>
+	    "460",</br>
+	    "-DCRUDE_VALIDATOR_LINTING"</br>
+        "-e"</br>
+        "GL_GOOGLE_include_directive"</br>
+    ]
+    </code>
+
+</p>
+    <hr/>
     <h2>Versions</h2>
     <ul>
         <li>
@@ -49,51 +91,61 @@
     </ul>
     <hr/>
     <h2>Work</h2>
-    <table>
+    <table border>
         <tr>
-            <td width="100">Fix RTX DDGI</td>
-            <td width="100"><b>TODO</b></td>
-            <td width="100"></td>
+            <td width="500">Fix RTX DDGI</td>
+            <td width="500"><i>TODO</i></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">RTX Reflections</td>
-            <td width="100"><b>TODO</b></td>
-            <td width="100"></td>
+            <td width="500">RTX Reflections</td>
+            <td width="500"><i>TODO</i></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Render Graph Editor</td>
-            <td width="100"><b>In Progress</b></td>
-            <td width="100"></td>
+            <td width="500">Render Graph Editor</td>
+            <td width="500"><b>In Progress</b></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Sanitizer</td>
-            <td width="100">On Hold</td>
-            <td width="100">Need to implement it after linux implementation. But it should be already included in build.py</td>
+            <td width="500">Sanitizer</td>
+            <td width="500"><s>On Hold</s></td>
+            <td width="500">Need to implement it after linux implementation. But it should be already included in build.py</td>
         </tr>
         <tr>
-            <td width="100">Fix SSR and implement it if it will be needed.</td>
-            <td width="100"><b>Backlog</b></td>
-            <td width="100"></td>
+            <td width="500">Fix SSR and implement it if it will be needed.</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Animations.</td>
-            <td width="100"><b>Backlog</b></td>
-            <td width="100"></td>
+            <td width="500">Materials System</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Fix asyn loader</td>
-            <td width="100"><b>Backlog</b></td>
-            <td width="100"></td>
+            <td width="500">Animations</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Improve Resources manager</td>
-            <td width="100"><b>Backlog</b></td>
-            <td width="100"></td>
+            <td width="500">Fix asyn loader</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
         </tr>
         <tr>
-            <td width="100">Physics Rework</td>
-            <td width="100"><b>Backlog</b></td>
-            <td width="100"></td>
+            <td width="500">Improve Resources manager</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
+        </tr>
+        <tr>
+            <td width="500">Physics Rework</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
+        </tr>
+        <tr>
+            <td width="500">TrenchBroom Integration</td>
+            <td width="500"><u>Backlog</u></td>
+            <td width="500"></td>
         </tr>
     </table>
     <hr/>
