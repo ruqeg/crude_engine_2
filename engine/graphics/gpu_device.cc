@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <renderdoc_app.h>
 
 #include <engine/core/profiler.h>
 #include <engine/core/string.h>

@@ -9,9 +9,9 @@ file(GLOB_RECURSE HEADERS *.h *.inl)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})
 
-add_library(${PROJECT_NAME} SHARED ${CRUDE_SOURCES})
+add_library(${PROJECT_NAME} STATIC ${CRUDE_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}\\..\\)
-target_link_libraries(${PROJECT_NAME} PUBLIC imguizmo flecs SDL3-static stb tlsf ${Vulkan_LIBRARY} vma cgltf spirv_reflect miniaudio enkiTS TracyClient cjson meshoptimizer nfd)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY} imgui imguizmo flecs SDL3-static stb tlsf VulkanMemoryAllocator cgltf spirv-reflect-static miniaudio enkiTS TracyClient cjson meshoptimizer nfd DirectXMath)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})

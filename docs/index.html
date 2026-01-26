@@ -1,22 +1,105 @@
-BACLOG
-  - Memory Profiler 
-  - Physics Rework
-  - Resources manager
-  - Asyn loader
-  - Animations
-  - Fix SSR and implement it if it will be needed.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crude Engine 2</title>
+</head>
+<body>
+    <h1>Crude Engine 2</h1>
 
-TODO
-  - Fix RTX DDGI
-  - RTX Reflections
-
-ON HOLD
-  - Render Graph Editor
-
-IN PROGRESS
-  - Sanitizer: (Get from https://docs.godotengine.org/en/latest/engine_details/development/debugging/using_sanitizers.html#undefined-behavior-sanitizer-ubsan :D)
-  -- Address sanitizer
-  -- Leak sanitizer
-  -- Memory sanitizer
-  -- Thread sanitizer
-  -- Undefined behavior sanitizer
+    <hr/>
+    <h2>Overview</h2>
+    <p>CE2 is a 3D game engine with gpu driven rendering created to have fun at free time, written in C++ due to some dependencies, but I use C99-style to reduce headache with extra abstraction. The renderer is based on Vulkan with no current plans to support other graphics APIs. Currently CE2 only supports Windows, but Linux support is planned at the future. The project is still under active development, but I think that readme won't hurt.</p>
+    <img src="images/intro.png" width="400" \>
+    <hr/>
+    <h2>Versions</h2>
+    <ul>
+        <li>
+            <h3>Version 0.1.1</h3>
+            <p>Refactoring, bug fixing, automatic exposure, DDGI (requires some rework in the future)</p>
+            <img src="images/version_0_1_1.webp" width="400">
+        </li>
+        <li>
+            <h3>Version 0.1.0</h3>
+            <h4>The core engine architecture and main graphics features have been implemented</h4>
+            <p>Render Graph, Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping,  Asynchronous Resources Loading, Multi-Threading Commands Recording, Json Scene, GLTF Models, GPU Profiler, Shader Hot Reloading, Task/Mesh Shader, ECS, etc<p>bug fixing, clustered shading, gbuffer, simple lighting</p>
+            <img src="images/version_0_1_0.jpeg" width="400">
+        </li>
+        <li>
+            <h3>Version 0.0.4</h3>
+            <p>bug fixing, clustered shading, gbuffer, simple lighting</p>
+            <img src="images/version_0_0_4.png" width="400">
+        </li>
+        <li>
+            <h3>Version 0.0.3</h3>
+            <p>bug fixing, code refactoring, debug tools in shader, conus culling, frustum culling, occlusion culling, compute shader in render graph, imguizmo integration</p>
+            <img src="images/version_0_0_3.png" width="400">
+        </li>
+        <li>
+            <h3>Version 0.0.2</h3>
+            <p>meshlets rendering, meshlets generation, simple launcher, code refactoring, moved from C99 to C++20, imgui integration, bug fixing, shader hot reload</p>
+            <img src="images/version_0_0_2.jpeg" width="400">
+        </li>
+        <li>
+            <h3>Version 0.0.1</h3>
+            <p>memory management and basic data structures, resource management, automatic pipeline layout generation, multi-threading commands recording & asynchronous loading, render graph, window management, gltf loader</p>
+            <img src="images/version_0_0_1.png" width="400">
+        </li>
+    </ul>
+    <hr/>
+    <h2>Work</h2>
+    <table>
+        <tr>
+            <td width="100">Fix RTX DDGI</td>
+            <td width="100"><b>TODO</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">RTX Reflections</td>
+            <td width="100"><b>TODO</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Render Graph Editor</td>
+            <td width="100"><b>In Progress</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Sanitizer</td>
+            <td width="100">On Hold</td>
+            <td width="100">Need to implement it after linux implementation. But it should be already included in build.py</td>
+        </tr>
+        <tr>
+            <td width="100">Fix SSR and implement it if it will be needed.</td>
+            <td width="100"><b>Backlog</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Animations.</td>
+            <td width="100"><b>Backlog</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Fix asyn loader</td>
+            <td width="100"><b>Backlog</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Improve Resources manager</td>
+            <td width="100"><b>Backlog</b></td>
+            <td width="100"></td>
+        </tr>
+        <tr>
+            <td width="100">Physics Rework</td>
+            <td width="100"><b>Backlog</b></td>
+            <td width="100"></td>
+        </tr>
+    </table>
+    <hr/>
+    <h2>Links</h2>
+    <ul>
+        <li><a href="https://github.com/ruqeg/crude_engine_2">GitHub</a></li>
+    </ul>
+</body>
+</html>

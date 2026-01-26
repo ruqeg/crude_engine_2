@@ -62,15 +62,17 @@
  * Compiler Macros
  * 
  ***********************************************/
-#if defined(_MSC_VER)
-#if defined(__cplusplus)
-#define CRUDE_EXPORT extern "C" __declspec( dllexport )
-#define CRUDE_IMPORT extern "C" __declspec( dllimport )
-#else
-#define CRUDE_EXPORT __declspec( dllexport )
-#define CRUDE_IMPORT __declspec( dllimport )
-#endif
-#endif
+//#if defined(_MSC_VER)
+//#if defined(__cplusplus)
+//#define CRUDE_EXPORT extern "C" __declspec( dllexport )
+//#define CRUDE_IMPORT extern "C" __declspec( dllimport )
+//#else
+//#define CRUDE_EXPORT __declspec( dllexport )
+//#define CRUDE_IMPORT __declspec( dllimport )
+//#endif
+//#endif
+#define CRUDE_EXPORT extern
+#define CRUDE_IMPORT extern
 
 #if __cplusplus >= 201703L
 #define CRUDE_ALIGNED_DATA(x)   alignas(x)
@@ -112,7 +114,7 @@
 #define CRUDE_COMPOUNT( t, ... ) ( ( t ) ##__VA_ARGS__ )
 #define CRUDE_COMPOUNT_EMPTY( t ) (( t ) { 0 } )
 #else
-#define CRUDE_COMPOUNT( t, ... ) ( t ##__VA_ARGS__ )
+#define CRUDE_COMPOUNT( t, ... ) ( t __VA_ARGS__ )
 #define CRUDE_COMPOUNT_EMPTY( t ) ( t {} )
 #endif
 

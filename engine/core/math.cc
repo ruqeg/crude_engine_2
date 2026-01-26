@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <cJSON.h>
+#include <thirdparty/cJSON/cJSON.h>
 
 #include <engine/core/memory.h>
 #include <engine/core/math.h>
@@ -147,11 +147,11 @@ crude_raycast_obb
     XMVECTOR normals[ ] =
     {
       g_XMIdentityR0,
-      g_XMIdentityR0 * -1.0f,
+      XMVectorNegate( g_XMIdentityR0 ),
       g_XMIdentityR1,
-      g_XMIdentityR1 * -1.0f,
+      XMVectorNegate( g_XMIdentityR1 ),
       g_XMIdentityR2,
-      g_XMIdentityR2 * -1.0f
+      XMVectorNegate( g_XMIdentityR2 )
     };
 
     for ( uint32 i = 0; i < 6; ++i )

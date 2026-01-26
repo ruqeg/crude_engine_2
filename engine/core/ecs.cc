@@ -340,10 +340,11 @@ crude_entity_get_or_add_component
 (
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
-  _In_ ecs_id_t                                            id
+  _In_ ecs_id_t                                            id,
+  _In_ uint64                                              size
 )
 {
-  return ecs_ensure_id( world, entity, id );
+  return ecs_ensure_id( world, entity, id, size );
 }
 
 void const*

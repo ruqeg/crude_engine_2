@@ -1,4 +1,4 @@
-#include <cgltf.h>
+#include <thirdparty/cgltf/cgltf.h>
 
 #include <engine/core/hash_map.h>
 #include <engine/core/file.h>
@@ -42,7 +42,7 @@ crude_collisions_resources_manager_gltf_parse_
   result = cgltf_validate( gltf );
   if ( result != cgltf_result_success )
   {
-    CRUDE_ASSERT( CRUDE_CHANNEL_GRAPHICS, false, "Failed to validate gltf file: %s", gltf_path );
+    CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Failed to validate gltf file: %s", gltf_path );
     return NULL;
   }
 

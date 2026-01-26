@@ -1,4 +1,4 @@
-#include <stb_sprintf.h>
+#include <thirdparty/stb/stb_sprintf.h>
 #include <string.h>
 
 #include <engine/core/assert.h>
@@ -78,7 +78,7 @@ crude_string_buffer_append_m
 {
   if ( string_buffer->occupied + size >= string_buffer->capacity )
   {
-    CRUDE_OVERFLOW( false );
+    CRUDE_OVERFLOW();
     return;
   }
   

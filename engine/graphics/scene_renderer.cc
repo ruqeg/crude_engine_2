@@ -1,6 +1,6 @@
 #include <TaskScheduler_c.h>
-#include <cgltf.h>
-#include <stb_image.h>
+#include <thirdparty/cgltf/cgltf.h>
+#include <thirdparty/stb/stb_image.h>
 #include <meshoptimizer.h>
 
 #include <engine/core/profiler.h>

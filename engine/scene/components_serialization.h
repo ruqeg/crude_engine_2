@@ -1,8 +1,9 @@
 #pragma once
 
+#include <thirdparty/cJSON/cJSON.h>
+
 #include <engine/core/ecs.h>
 #include <engine/core/memory.h>
-#include <cJSON.h>
 
 typedef struct crude_node_manager crude_node_manager;
 typedef struct crude_physics crude_physics;

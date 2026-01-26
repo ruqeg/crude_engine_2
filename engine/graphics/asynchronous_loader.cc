@@ -1,4 +1,4 @@
-#include <stb_image.h>
+#include <thirdparty/stb/stb_image.h>
 #include <TaskScheduler_c.h>
 
 #include <engine/core/profiler.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <flecs.h>
+#include <thirdparty/flecs/flecs.h>
 #include <threads.h>
 
 #include <engine/core/alias.h>
@@ -213,7 +213,8 @@ crude_entity_get_or_add_component
 (
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity,
-  _In_ ecs_id_t                                            id
+  _In_ ecs_id_t                                            id,
+  _In_ uint64                                              size
 );
 
 CRUDE_API void const*
@@ -298,7 +299,7 @@ crude_entity_remove_id
 
 #define CRUDE_ENTITY_GET_OR_ADD_COMPONENT( world, entity, component )\
 (\
-  ( component* )( crude_entity_get_or_add_component( world, entity, ecs_id( component ) ) )\
+  ( component* )( crude_entity_get_or_add_component( world, entity, ecs_id( component ), sizeof( component ) ) )\
 )
 
 #define CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, entity, component )\
@@ -357,7 +358,7 @@ crude_entity_remove_id
   edesc.add = add_ids;\
   ecs_system_desc_t desc = {\
     .query = {\
-      .terms = ##__VA_ARGS__\
+      .terms = __VA_ARGS__\
     }\
   };\
   desc.entity = ecs_entity_init( world, &edesc );\
@@ -377,7 +378,7 @@ crude_entity_remove_id
   edesc.name = #id_; \
   ecs_observer_desc_t desc = {\
     .query = {\
-      .terms = ##__VA_ARGS__\
+      .terms = __VA_ARGS__\
     }\
   };\
   desc.entity = ecs_entity_init( world, &edesc ); \

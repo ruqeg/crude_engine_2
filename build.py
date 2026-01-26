@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import platform
 
 def ask_yes_no(question, default="y"):
     valid = {"y": True, "yes": True, "n": False, "no": False}
@@ -25,26 +26,32 @@ def ask_yes_no(question, default="y"):
 
 def main():
     cmake_options = [
+        #"-G", "Ninja",
         "-G", "Visual Studio 17 2022",
-        "-DCMAKE_GENERATOR_TOOLSET=ClangCL"
+        #"-DCMAKE_C_COMPILER=clang",
+        #"-DCMAKE_CXX_COMPILER=clang++"
     ]
     
     print("=" * 60)
     print("CMake Configuration Script")
     print("=" * 60)
     
-    if ask_yes_no("Enable sanitizers?", default="n"):
-        cmake_options.append('-DLLVM_ENABLE_PROJECTS="clang"')
-        cmake_options.append('-DLLVM_ENABLE_RUNTIMES="compiler-rt"')
-        
-        if ask_yes_no("  Add AddressSanitizer?"):
-            cmake_options.append("-DCRUDE_ADDRESS_SANITIZER=ON")
-        
-        if ask_yes_no("  Add MemorySanitizer?"):
-            cmake_options.append("-DCRUDE_MEMORY_SANITIZER=ON")
-        
-        if ask_yes_no("  Add UndefinedBehaviorSanitizer?"):
-            cmake_options.append("-DCRUDE_UNDEFINED_BEHAVIOR_SANITIZER=ON")
+    os_name = platform.system()
+
+    if os_name == "Linux":
+        if ask_yes_no("Enable sanitizers?", default="n"):
+            if ask_yes_no("  Add AddressSanitizer?"):
+                cmake_options.append("-DCRUDE_ADDRESS_SANITIZER=ON")
+            if ask_yes_no("  Add MemorySanitizer?"):
+                cmake_options.append("-DCRUDE_MEMORY_SANITIZER=ON")
+            if ask_yes_no("  Add UndefinedBehaviorSanitizer?"):
+                cmake_options.append("-DCRUDE_UNDEFINED_SANITIZER=ON")
+            if ask_yes_no("  Add ThreadSanitizer?"):
+                cmake_options.append("-DCRUDE_THREAD_SANITIZER=ON")
+            if ask_yes_no("  Add LeakSanitizer?"):
+                cmake_options.append("-DCRUDE_LEAK_SANITIZER=ON")
+    else:
+        print("Your os doesn't support sanitizers :(")
     
     # Ask about build type
     #print("\nSelect build type:")
@@ -101,9 +108,25 @@ def main():
             
     except subprocess.CalledProcessError as e:
         print(f"\n✗ CMake failed: {e}")
+        input("\nPress Enter to exit...")
+        return
     except FileNotFoundError:
         print("\n✗ Error: 'cmake' command not found. Make sure CMake is in your PATH.")
+        input("\nPress Enter to exit...")
+        return
     
+    #try:
+        #cmd = ["cmake"] + ["--build"]
+        #result = subprocess.run(cmd, check=True)
+    #except subprocess.CalledProcessError as e:
+        #print(f"\n✗ CMake build failed: {e}")
+        #input("\nPress Enter to exit...")
+        #return
+    #except FileNotFoundError:
+        #print("\n✗ Error: 'cmake' command not found. Make sure CMake is in your PATH.")
+        #input("\nPress Enter to exit...")
+        #return
+
     input("\nPress Enter to exit...")
 
 if __name__ == "__main__":

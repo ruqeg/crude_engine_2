@@ -222,7 +222,8 @@ crude_engine_initialize
 {
   char                                                     environment_absolute_filepath[ 4096 ];
 
-  crude_snprintf( environment_absolute_filepath, CRUDE_COUNTOF( environment_absolute_filepath ), "%s\\%s", working_directory, CRUDE_ENGINE_ENVIRONMENT_INITIAL );
+  crude_memory_set( environment_absolute_filepath, sizeof( environment_absolute_filepath ), 0 );
+  crude_snprintf( environment_absolute_filepath, sizeof( environment_absolute_filepath ), "%s\\%s", working_directory, CRUDE_ENGINE_ENVIRONMENT_INITIAL );
 
   *engine = CRUDE_COMPOUNT_EMPTY( crude_engine );
   crude_engine_initialize_services_( );

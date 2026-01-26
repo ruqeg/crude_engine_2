@@ -1,4 +1,4 @@
-#include <cJSON.h>
+#include <thirdparty/cJSON/cJSON.h>
 
 #include <engine/core/file.h>
 #include <engine/core/log.h>

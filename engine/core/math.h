@@ -1,9 +1,9 @@
 #pragma once
 
 /* okay I give up... directxmath is too good to not to use */
+#include <thirdparty/cJSON/cJSON.h>
 #include <DirectXMath.h>
 #include <math.h>
-#include <cJSON.h>
 
 #include <engine/core/alias.h>
 

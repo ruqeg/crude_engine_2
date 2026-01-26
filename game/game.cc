@@ -10,7 +10,7 @@
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/external/game_ecs.h>
 
-#include <editor/editor.h>
+#include <game/game.h>
 
 crude_editor                                              *crude_editor_instance_;
 

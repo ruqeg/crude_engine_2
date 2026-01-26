@@ -1,4 +1,4 @@
-#include <flecs.h>
+#include <thirdparty/flecs/flecs.h>
 #include <stdarg.h>
 
 #include <engine/core/log.h>

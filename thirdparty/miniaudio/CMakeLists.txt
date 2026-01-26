@@ -21,7 +21,7 @@ option(MINIAUDIO_BUILD_TESTS                   "Build miniaudio tests"          
 option(MINIAUDIO_BUILD_TOOLS                   "Build miniaudio development tools. Leave this disabled unless you know what you're doing. If you enable this and you get build errors, you clearly do not know what you're doing and yet you still enabled this option. Why would you do that?" OFF)
 option(MINIAUDIO_FORCE_CXX                     "Force compilation as C++"            OFF)
 option(MINIAUDIO_FORCE_C89                     "Force compilation as C89"            OFF)
-option(MINIAUDIO_NO_EXTRA_NODES                "Do not build extra node graph nodes" OFF)
+option(MINIAUDIO_NO_EXTRA_NODES                "Do not build extra node graph nodes" ON)
 option(MINIAUDIO_NO_LIBVORBIS                  "Disable miniaudio_libvorbis"         OFF)
 option(MINIAUDIO_NO_LIBOPUS                    "Disable miniaudio_libopus"           OFF)
 option(MINIAUDIO_NO_WASAPI                     "Disable the WASAPI backend"          OFF)

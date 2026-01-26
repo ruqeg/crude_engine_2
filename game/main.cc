@@ -1,6 +1,17 @@
+#define CGLTF_IMPLEMENTATION
+#include <thirdparty/cgltf/cgltf.h>
+
+#define STB_SPRINTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#include <thirdparty/stb/stb_sprintf.h>
+#include <thirdparty/stb/stb_image.h>
+
+#define VMA_IMPLEMENTATION
+#include <thirdparty/vma/include/vk_mem_alloc.h>
+
 #include <engine/core/file.h>
 
-#include <editor/editor.h>
+#include <game/game.h>
 
 int
 main

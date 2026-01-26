@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <vma_usage.h>
-#include <spirv_reflect.h>
+#include <thirdparty/vma/include/vk_mem_alloc.h>
+#include <thirdparty/SPIRV-Reflect/spirv_reflect.h>
 
 #include <engine/core/math.h>
 #include <engine/core/alias.h>
