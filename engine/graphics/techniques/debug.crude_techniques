@@ -1,35 +1,35 @@
 {
     "name": "debug",
     "buffers": [
-			{
-				"name": "debug",
-				"filename": "debug.crude_shader",
-				"includes": [
-					"common/platform.h",
-					"common/debug.h",
-					"common/scene.h"
-				]
-			}
-	],
+      {
+        "name": "debug",
+        "filename": "debug.crude_shader",
+        "includes": [
+          "common/platform.h",
+          "common/debug.h",
+          "common/scene.h"
+        ]
+      }
+  ],
     "pipelines": [
         {
             "name": "debug_line3d",
-		    "render_pass_output":
-		        {
-		            "reference": "debug_pass" 
-		        },
-	        "blend": [
-	            {
-		            "enable": 1,
-		            "src_colour": "SRC_ALPHA",
-		            "dst_colour": "ONE_MINUS_SRC_ALPHA",
-		            "op": "ADD"
-	            }
-	        ],
-			"depth" : {
-				"write" : 0,
-				"test" : "less_or_equal"
-			},
+        "render_pass_output":
+            {
+                "reference": "debug_pass" 
+            },
+          "blend": [
+              {
+                "enable": 1,
+                "src_colour": "SRC_ALPHA",
+                "dst_colour": "ONE_MINUS_SRC_ALPHA",
+                "op": "ADD"
+              }
+          ],
+      "depth" : {
+        "write" : 0,
+        "test" : "less_or_equal"
+      },
             "topology" : "LINE_LIST",
             "shaders": [
                 {
@@ -44,18 +44,18 @@
         },  
         {   
             "name": "debug_line2d",
-		    "render_pass_output":
-		        {
-		    	    "reference": "debug_pass" 
-		        },
-	        "blend": [
-	            {
-		        "enable": 1,
-		        "src_colour": "SRC_ALPHA",
-		        "dst_colour": "ONE_MINUS_SRC_ALPHA",
-		        "op": "ADD"
-	            }
-	        ],
+        "render_pass_output":
+            {
+              "reference": "debug_pass" 
+            },
+          "blend": [
+              {
+            "enable": 1,
+            "src_colour": "SRC_ALPHA",
+            "dst_colour": "ONE_MINUS_SRC_ALPHA",
+            "op": "ADD"
+              }
+          ],
             "topology" : "LINE_LIST",
             "shaders": [
                 {
@@ -70,22 +70,22 @@
         },  
         {   
             "name": "debug_cube",
-		    "render_pass_output":
-		        {
-		    	    "reference": "debug_pass" 
-		        },
-	        "blend": [
-	            {
-		        "enable": 1,
-		        "src_colour": "SRC_ALPHA",
-		        "dst_colour": "ONE_MINUS_SRC_ALPHA",
-		        "op": "ADD"
-	            }
-	        ],
-			"depth" : {
-				"write" : 1,
-				"test" : "less_or_equal"
-			},
+        "render_pass_output":
+            {
+              "reference": "debug_pass" 
+            },
+          "blend": [
+              {
+            "enable": 1,
+            "src_colour": "SRC_ALPHA",
+            "dst_colour": "ONE_MINUS_SRC_ALPHA",
+            "op": "ADD"
+              }
+          ],
+      "depth" : {
+        "write" : 1,
+        "test" : "less_or_equal"
+      },
             "topology" : "TRIANGLE_LIST",
             "shaders": [
                 {

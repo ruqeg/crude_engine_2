@@ -1,108 +1,108 @@
 {
-	"name": "compute",
-	"buffers": [
-		{
-			"name": "compute",
-			"filename": "compute.crude_shader",
-			"includes": [
-				"common/platform.h",
-				"common/scene.h",
-				"common/debug.h",
-				"common/culling.h",
-				"common/light.h"
-			]
-		}
-	],
-	"pipelines": [
-	  	{
-			"name": "depth_pyramid",
-			"shaders": [
-		  		{
-				"stage": "compute",
-				"buffer": "compute"
-		  		}
-			]
-	  	},
-	  	{
-			"name": "culling_early",
-			"shaders": [
-				{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-	  	},
-	  	{
-			"name": "culling_late",
-			"shaders": [
-				{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-	  	},
-	  	{
-			"name": "luminance_histogram_generation",
-			"shaders": [
-				{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-	  	{
-			"name": "luminance_average_calculation",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-	  	{
-			"name": "ssr_hit_calculation",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-	  	{
-			"name": "ssr_convolve_vertical",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-	  	{
-			"name": "ssr_convolve_horizontal",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-	  	{
-			"name": "ssr_compose",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		},
-		{
-			"name": "compose_light",
-			"shaders": [
-		  		{
-					"stage": "compute",
-					"buffer": "compute"
-		  		}
-			]
-		}
-	]
+  "name": "compute",
+  "buffers": [
+    {
+      "name": "compute",
+      "filename": "compute.crude_shader",
+      "includes": [
+        "common/platform.h",
+        "common/scene.h",
+        "common/debug.h",
+        "common/culling.h",
+        "common/light.h"
+      ]
+    }
+  ],
+  "pipelines": [
+      {
+      "name": "depth_pyramid",
+      "shaders": [
+          {
+        "stage": "compute",
+        "buffer": "compute"
+          }
+      ]
+      },
+      {
+      "name": "culling_early",
+      "shaders": [
+        {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+      },
+      {
+      "name": "culling_late",
+      "shaders": [
+        {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+      },
+      {
+      "name": "luminance_histogram_generation",
+      "shaders": [
+        {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+      {
+      "name": "luminance_average_calculation",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+      {
+      "name": "ssr_hit_calculation",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+      {
+      "name": "ssr_convolve_vertical",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+      {
+      "name": "ssr_convolve_horizontal",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+      {
+      "name": "ssr_compose",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    },
+    {
+      "name": "compose_light",
+      "shaders": [
+          {
+          "stage": "compute",
+          "buffer": "compute"
+          }
+      ]
+    }
+  ]
 }

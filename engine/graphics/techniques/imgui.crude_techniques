@@ -1,39 +1,39 @@
 {
-	"name" : "imgui",
-	"buffers": [
-		{
-			"name": "imgui",
-			"filename": "imgui.crude_shader",
-			"includes": [
-				"common/platform.h"
-			]
-		}
-	],
-	"pipelines" : [
-		{
-			"name" : "imgui",
-			"render_pass_output":
-			{
-				"reference": "imgui_pass" 
-			},
-			"blend": [
-				{
-					"enable": 1,
-					"src_colour": "SRC_ALPHA",
-					"dst_colour": "ONE_MINUS_SRC_ALPHA",
-					"op": "ADD"
-				}
-			],
-			"shaders" : [
-				{
-					"stage" : "vertex",
-					"buffer" : "imgui"
-				},
-				{
-					"stage" : "fragment",
-					"buffer" : "imgui"
-				}
-			]
-		}
-	]
+  "name" : "imgui",
+  "buffers": [
+    {
+      "name": "imgui",
+      "filename": "imgui.crude_shader",
+      "includes": [
+        "common/platform.h"
+      ]
+    }
+  ],
+  "pipelines" : [
+    {
+      "name" : "imgui",
+      "render_pass_output":
+      {
+        "reference": "imgui_pass" 
+      },
+      "blend": [
+        {
+          "enable": 1,
+          "src_colour": "SRC_ALPHA",
+          "dst_colour": "ONE_MINUS_SRC_ALPHA",
+          "op": "ADD"
+        }
+      ],
+      "shaders" : [
+        {
+          "stage" : "vertex",
+          "buffer" : "imgui"
+        },
+        {
+          "stage" : "fragment",
+          "buffer" : "imgui"
+        }
+      ]
+    }
+  ]
 }

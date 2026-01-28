@@ -1,4 +1,6 @@
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <thirdparty/imgui/imgui.h>
+#include <thirdparty/imgui/imgui_internal.h>
 
 #include <thirdparty/imgui/backends/imgui_impl_sdl3.h>
 #include <thirdparty/imgui/backends/imgui_impl_vulkan.h>

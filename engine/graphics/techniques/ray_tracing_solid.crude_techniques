@@ -1,103 +1,103 @@
 {
-	"name" : "ray_tracing",
-	"buffers": [
-		{
-			"name": "ray_tracing_solid",
-			"filename": "ray_tracing_solid.crude_shader",
-			"includes": [ "common/platform.h", "common/debug.h", "common/scene.h" ]
-		},
-		{
-			"name": "ddgi",
-			"filename": "ddgi.crude_shader",
-			"includes": [ "common/platform.h", "common/debug.h", "common/scene.h", "common/light.h" ]
-		}
-	],
-	"pipelines" : [
-		{
-			"name" : "ray_tracing_solid",
-			"render_pass": "ray_tracing_solid_pass",
-			"shaders" : [
-				{
-					"stage" : "raygen",
-					"buffer" : "ray_tracing_solid"
-				},
-				{
-					"stage" : "closest_hit",
-					"buffer" : "ray_tracing_solid"
-				},
-				{
-					"stage" : "miss",
-					"buffer" : "ray_tracing_solid"
-				}
-			]
-		},
-		{
-			"name" : "probe_raytracer",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "raygen",
-					"buffer" : "ddgi"
-				},
-				{
-					"stage" : "closest_hit",
-					"buffer" : "ddgi"
-				},
-				{
-					"stage" : "miss",
-					"buffer" : "ddgi"
-				}
-			]
-		},
-		{
-			"name" : "probe_update_visibility",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "compute",
-					"buffer" : "ddgi"
-				}
-			]
-		},
-		{
-			"name" : "probe_update_irradiance",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "compute",
-					"buffer" : "ddgi"
-				}
-			]
-		},
-		{
-			"name" : "probe_debug",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "compute",
-					"buffer" : "ddgi"
-				}
-			]
-		},
-		{
-			"name" : "sample_irradiance",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "compute",
-					"buffer" : "ddgi"
-				}
-			]
-		},
-		{
-			"name" : "calculate_probe_offsets",
-			"render_pass": "indirect_light_pass",
-			"shaders" : [
-				{
-					"stage" : "compute",
-					"buffer" : "ddgi"
-				}
-			]
-		}
-	]
+  "name" : "ray_tracing",
+  "buffers": [
+    {
+      "name": "ray_tracing_solid",
+      "filename": "ray_tracing_solid.crude_shader",
+      "includes": [ "common/platform.h", "common/debug.h", "common/scene.h" ]
+    },
+    {
+      "name": "ddgi",
+      "filename": "ddgi.crude_shader",
+      "includes": [ "common/platform.h", "common/debug.h", "common/scene.h", "common/light.h" ]
+    }
+  ],
+  "pipelines" : [
+    {
+      "name" : "ray_tracing_solid",
+      "render_pass": "ray_tracing_solid_pass",
+      "shaders" : [
+        {
+          "stage" : "raygen",
+          "buffer" : "ray_tracing_solid"
+        },
+        {
+          "stage" : "closest_hit",
+          "buffer" : "ray_tracing_solid"
+        },
+        {
+          "stage" : "miss",
+          "buffer" : "ray_tracing_solid"
+        }
+      ]
+    },
+    {
+      "name" : "probe_raytracer",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "raygen",
+          "buffer" : "ddgi"
+        },
+        {
+          "stage" : "closest_hit",
+          "buffer" : "ddgi"
+        },
+        {
+          "stage" : "miss",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "probe_update_visibility",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "probe_update_irradiance",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "probe_debug",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "sample_irradiance",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "calculate_probe_offsets",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    }
+  ]
 }
