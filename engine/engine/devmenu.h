@@ -185,6 +185,8 @@ typedef struct crude_devmenu
   float32                                                  last_framerate_update_time;
   uint32                                                   previous_framerate;
   uint32                                                   current_framerate;
+
+  crude_stack_allocator                                   *dev_stack_allocator;
 } crude_devmenu;
 
 /***********************

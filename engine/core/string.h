@@ -94,6 +94,14 @@ crude_string_copy
   _In_ size_t                                              n
 );
 
+CRUDE_API uint64
+crude_string_copy_unknow_length
+(
+  _Out_ char                                              *dst,
+  _In_ char const                                         *src,
+  _In_ size_t                                              dst_max_size
+);
+
 CRUDE_API size_t
 crude_string_length
 (

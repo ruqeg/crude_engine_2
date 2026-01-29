@@ -158,6 +158,32 @@ crude_string_copy
   strncpy( dst, src, n );
 }
 
+uint64
+crude_string_copy_unknow_length
+(
+  _Out_ char                                              *dst,
+  _In_ char const                                         *src,
+  _In_ size_t                                              dst_max_size
+)
+{
+  uint64 length = 0;
+
+  while ( length < dst_max_size - 1 )
+  {
+    if ( src[ length ] != 0 )
+    {
+      break;
+    }
+
+    dst[ length ] = src[ length ];
+    ++length;
+  }
+  
+  dst[ length ] = 0;
+  
+  return length;
+}
+
 size_t
 crude_string_length
 (

@@ -12,6 +12,7 @@
 #include <engine/graphics/imgui.h>
 #include <engine/engine.h>
 #include <engine/core/profiler.h>
+#include <engine/gui/hardcoded_icon.h>
 
 #include <engine/engine/devmenu.h>
 
@@ -1752,6 +1753,16 @@ splitter_
   return ImGui::SplitterBehavior(bb, id, split_vertically ? ImGuiAxis_X : ImGuiAxis_Y, size1, size2, min_size1, min_size2, 0.0f);
 }
 
+crude_technique_editor_link
+crude_technique_editor_link_empty_
+(
+)
+{
+  crude_technique_editor_link link = CRUDE_COMPOUNT_EMPTY( crude_technique_editor_link );
+  link.color = ImColor(255,255,255);
+  return link;
+}
+
 int32
 crude_devmenu_technique_editor_get_next_id_
 (
@@ -1902,10 +1913,10 @@ crude_devmenu_technique_editor_is_pin_linked_
   {
     return false;
   }
-
-  for (auto& link : m_Links)
+  
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->links ); ++i )
   {
-    if (link.StartPinID == id || link.EndPinID == id)
+    if ( devmenu_technique_editor->links[ i ].start_pin_id == id || devmenu_technique_editor->links[ i ].end_pin_id == id )
     {
       return true;
     }
@@ -1936,16 +1947,16 @@ crude_devmenu_technique_editor_build_node_
   _In_ crude_technique_editor_node                        *node
 )
 {
-  for (auto& input : node->Inputs)
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
   {
-      input.Node = node;
-      input.Kind = PinKind::Input;
+    node->inputs[ i ].node = node;
+    node->inputs[ i ].kind = CRUDE_TECHNIQUE_EDITOR_PIN_KIND_INPUT;
   }
   
-  for (auto& output : node->Outputs)
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
   {
-      output.Node = node;
-      output.Kind = PinKind::Output;
+    node->outputs[ i ].node = node;
+    node->outputs[ i ].kind = CRUDE_TECHNIQUE_EDITOR_PIN_KIND_OUTPUT;
   }
 }
 
@@ -2219,422 +2230,562 @@ crude_devmenu_technique_editor_spawn_houdini_group_node_
 void
 crude_devmenu_technique_editor_build_nodes_
 (
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  for (auto& node : m_Nodes)
-      BuildNode(&node);
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->nodes ); ++i )
+  {
+    crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &devmenu_technique_editor->nodes[ i ] );
+  }
+}
+
+bool
+crude_devmenu_technique_editor_config_save_node_settings_
+(
+  _In_ ax::NodeEditor::NodeId                              node_id,
+  _In_ char const*                                         data,
+  _In_ size_t                                              size,
+  _In_ ax::NodeEditor::SaveReasonFlags                     reason,
+  _In_ void                                               *user_data
+)
+{
+  crude_devmenu_technique_editor                          *devmenu_technique_editor;
+  crude_technique_editor_node                             *node;
+
+  devmenu_technique_editor = CRUDE_CAST( crude_devmenu_technique_editor*, user_data );
+
+  node = crude_devmenu_technique_editor_find_node_( devmenu_technique_editor, node_id );
+  if ( !node )
+  {
+    return false;
+  }
+
+  crude_string_copy( node->state, data, size );
+  crude_devmenu_technique_editor_touch_node_( devmenu_technique_editor, node_id );
+
+  return true;
+}
+
+size_t
+crude_devmenu_technique_editor_config_load_node_settings_
+(
+  _In_ ax::NodeEditor::NodeId                              node_id, 
+  _In_ char                                               *data,
+  _In_ void                                               *user_data
+)
+{
+  crude_devmenu_technique_editor                          *devmenu_technique_editor;
+  crude_technique_editor_node                             *node;
+  uint64                                                   length;
+
+  devmenu_technique_editor = CRUDE_CAST( crude_devmenu_technique_editor*, user_data );
+
+  node = crude_devmenu_technique_editor_find_node_( devmenu_technique_editor, node_id );
+  if ( !node )
+  {
+    return 0;
+  }
+  
+  if ( data != NULL )
+  {
+    length = crude_string_copy_unknow_length( data, node->state, sizeof( node->state ) );
+  }
+  return length;
 }
 
 void
 crude_devmenu_technique_editor_on_start_
 (
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-        ed::Config config;
+  crude_technique_editor_node                             *node;
+  ax::NodeEditor::Config                                   config;
 
-        config.SettingsFile = "Blueprints.json";
+  config.SettingsFile = "Blueprints.json";
+  config.UserPointer = devmenu_technique_editor;
+  config.LoadNodeSettings = crude_devmenu_technique_editor_config_load_node_settings_;
+  config.SaveNodeSettings = crude_devmenu_technique_editor_config_save_node_settings_;
 
-        config.UserPointer = this;
+  devmenu_technique_editor->ax_context = ax::NodeEditor::CreateEditor(&config);
+  ax::NodeEditor::SetCurrentEditor( devmenu_technique_editor->ax_context );
 
-        config.LoadNodeSettings = [](ed::NodeId nodeId, char* data, void* userPointer) -> size_t
-        {
-            auto self = static_cast<Example*>(userPointer);
+  node = crude_devmenu_technique_editor_spawn_input_action_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(-252, 220));
+  node = crude_devmenu_technique_editor_spawn_branch_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(-300, 351));
+  node = crude_devmenu_technique_editor_spawn_do_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(-238, 504));
+  node = crude_devmenu_technique_editor_spawn_output_action_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(71, 80));
+  node = crude_devmenu_technique_editor_spawn_set_timer_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(168, 316));
 
-            auto node = self->FindNode(nodeId);
-            if (!node)
-                return 0;
+  node = crude_devmenu_technique_editor_spawn_tree_sequence_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(1028, 329));
+  node = crude_devmenu_technique_editor_spawn_tree_task_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(1204, 458));
+  node = crude_devmenu_technique_editor_spawn_tree_task_2node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(868, 538));
 
-            if (data != nullptr)
-                memcpy(data, node->State.data(), node->State.size());
-            return node->State.size();
-        };
+  node = crude_devmenu_technique_editor_spawn_comment_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(112, 576));
+  ax::NodeEditor::SetGroupSize(node->id, ImVec2(384, 154));
+  node = crude_devmenu_technique_editor_spawn_comment_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(800, 224));
+  ax::NodeEditor::SetGroupSize(node->id, ImVec2(640, 400));
 
-        config.SaveNodeSettings = [](ed::NodeId nodeId, const char* data, size_t size, ed::SaveReasonFlags reason, void* userPointer) -> bool
-        {
-            auto self = static_cast<Example*>(userPointer);
+  node = crude_devmenu_technique_editor_spawn_less_node_( devmenu_technique_editor );             
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(366, 652));
+  node = crude_devmenu_technique_editor_spawn_weird_node_( devmenu_technique_editor );            
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(144, 652));
+  node = crude_devmenu_technique_editor_spawn_message_node_( devmenu_technique_editor );          
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(-348, 698));
+  node = crude_devmenu_technique_editor_spawn_print_string_node_( devmenu_technique_editor );      
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(-69, 652));
 
-            auto node = self->FindNode(nodeId);
-            if (!node)
-                return false;
+  node = crude_devmenu_technique_editor_spawn_houdini_transform_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(500, -70));
+  node = crude_devmenu_technique_editor_spawn_houdini_group_node_( devmenu_technique_editor );
+  ax::NodeEditor::SetNodePosition(node->id, ImVec2(500, 42));
 
-            node->State.assign(data, size);
+  ax::NodeEditor::NavigateToContent();
 
-            self->TouchNode(nodeId);
+  crude_devmenu_technique_editor_build_nodes_( devmenu_technique_editor );
 
-            return true;
-        };
+  crude_technique_editor_link link = crude_technique_editor_link_empty_( );
+  link.id = crude_devmenu_technique_editor_get_next_link_id_( devmenu_technique_editor );
+  link.start_pin_id = devmenu_technique_editor->nodes[ 5 ].outputs[ 0 ].id;
+  link.end_pin_id = devmenu_technique_editor->nodes[ 6 ].inputs[ 0 ].id;
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->links, link );
+  
+  link.id = crude_devmenu_technique_editor_get_next_link_id_( devmenu_technique_editor );
+  link.start_pin_id = devmenu_technique_editor->nodes[ 5 ].outputs[ 0 ].id;
+  link.end_pin_id = devmenu_technique_editor->nodes[ 7 ].inputs[ 0 ].id;
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->links, link );
+  
+  link.id = crude_devmenu_technique_editor_get_next_link_id_( devmenu_technique_editor );
+  link.start_pin_id = devmenu_technique_editor->nodes[ 14 ].outputs[ 0 ].id;
+  link.end_pin_id = devmenu_technique_editor->nodes[ 15 ].inputs[ 0 ].id;
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->links, link );
 
-        m_Editor = ed::CreateEditor(&config);
-        ed::SetCurrentEditor(m_Editor);
-
-        Node* node;
-        node = SpawnInputActionNode();      ed::SetNodePosition(node->ID, ImVec2(-252, 220));
-        node = SpawnBranchNode();           ed::SetNodePosition(node->ID, ImVec2(-300, 351));
-        node = SpawnDoNNode();              ed::SetNodePosition(node->ID, ImVec2(-238, 504));
-        node = SpawnOutputActionNode();     ed::SetNodePosition(node->ID, ImVec2(71, 80));
-        node = SpawnSetTimerNode();         ed::SetNodePosition(node->ID, ImVec2(168, 316));
-
-        node = SpawnTreeSequenceNode();     ed::SetNodePosition(node->ID, ImVec2(1028, 329));
-        node = SpawnTreeTaskNode();         ed::SetNodePosition(node->ID, ImVec2(1204, 458));
-        node = SpawnTreeTask2Node();        ed::SetNodePosition(node->ID, ImVec2(868, 538));
-
-        node = SpawnComment();              ed::SetNodePosition(node->ID, ImVec2(112, 576)); ed::SetGroupSize(node->ID, ImVec2(384, 154));
-        node = SpawnComment();              ed::SetNodePosition(node->ID, ImVec2(800, 224)); ed::SetGroupSize(node->ID, ImVec2(640, 400));
-
-        node = SpawnLessNode();             ed::SetNodePosition(node->ID, ImVec2(366, 652));
-        node = SpawnWeirdNode();            ed::SetNodePosition(node->ID, ImVec2(144, 652));
-        node = SpawnMessageNode();          ed::SetNodePosition(node->ID, ImVec2(-348, 698));
-        node = SpawnPrintStringNode();      ed::SetNodePosition(node->ID, ImVec2(-69, 652));
-
-        node = SpawnHoudiniTransformNode(); ed::SetNodePosition(node->ID, ImVec2(500, -70));
-        node = SpawnHoudiniGroupNode();     ed::SetNodePosition(node->ID, ImVec2(500, 42));
-
-        ed::NavigateToContent();
-
-        BuildNodes();
-
-        m_Links.push_back(Link(GetNextLinkId(), m_Nodes[5].Outputs[0].ID, m_Nodes[6].Inputs[0].ID));
-        m_Links.push_back(Link(GetNextLinkId(), m_Nodes[5].Outputs[0].ID, m_Nodes[7].Inputs[0].ID));
-
-        m_Links.push_back(Link(GetNextLinkId(), m_Nodes[14].Outputs[0].ID, m_Nodes[15].Inputs[0].ID));
-
-        m_HeaderBackground = LoadTexture("data/BlueprintBackground.png");
-        m_SaveIcon         = LoadTexture("data/ic_save_white_24dp.png");
-        m_RestoreIcon      = LoadTexture("data/ic_restore_white_24dp.png");
-
-
-        //auto& io = ImGui::GetIO();
+  devmenu_technique_editor->header_background_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devmenu_technique_editor->restore_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devmenu_technique_editor->save_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 }
 
 void
 crude_devmenu_technique_editor_on_stop_
 (
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
+{
+  ax::NodeEditor::DestroyEditor( devmenu_technique_editor->ax_context );
+}
+
+ImColor
+crude_technique_editor_get_icon_color
+(
+  _In_ crude_technique_editor_pin_type                     type
+)
+{
+  switch (type)
+  {
+    default:
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW:     return ImColor(255, 255, 255);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL:     return ImColor(220,  48,  48);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT:      return ImColor( 68, 201, 156);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT:    return ImColor(147, 226,  74);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_STRING:   return ImColor(124,  21, 153);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_OBJECT:   return ImColor( 51, 150, 215);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FUNCTION: return ImColor(218,   0, 183);
+    case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_DELEGATE: return ImColor(255,  48,  48);
+  }
+}
+
+void
+crude_technique_editor_draw_pin_icon
+(
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
+  _In_ crude_technique_editor_pin const                   *pin,
+  _In_ bool                                                connected,
+  _In_ int                                                 alpha
+)
+{
+  
+  crude_gui_hardcoded_icon_type                            icon_type;
+  ImColor                                                  icon_color;
+
+  icon_color = crude_technique_editor_get_icon_color( pin->type );
+  icon_color.Value.w = alpha / 255.0f;
+
+  switch ( pin->type )
+  {
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW:     icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_FLOW;   break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL:     icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT:      icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT:    icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_STRING:   icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_OBJECT:   icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FUNCTION: icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_CIRCLE; break;
+  case CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_DELEGATE: icon_type = CRUDE_GUI_HARDCODED_ICON_TYPE_SQUARE; break;
+  default:
+    return;
+  }
+  
+  crude_gui_draw_icon(
+    CRUDE_COMPOUNT( XMFLOAT2, { devmenu_technique_editor->pin_icon_size, devmenu_technique_editor->pin_icon_size } ),
+    icon_type,
+    connected,
+    CRUDE_COMPOUNT( XMFLOAT4, { icon_color.Value.x, icon_color.Value.y, icon_color.Value.z, icon_color.Value.w } ),
+    CRUDE_COMPOUNT( XMFLOAT4, { 32, 32, 32, alpha } ) );
+}
+
+void
+crude_devmenu_technique_editor_show_style_editor
+(
+  _In_opt_ bool                                           *show
+)
+{
+  if ( !ImGui::Begin( "Style", show ) )
+  {
+    ImGui::End();
+    return;
+  }
+
+  float32 pane_width = ImGui::GetContentRegionAvail().x;
+
+  ax::NodeEditor::Style *editor_style = &ax::NodeEditor::GetStyle( );
+
+  ImGui::BeginHorizontal("Style buttons", ImVec2(pane_width, 0), 1.0f);
+  ImGui::TextUnformatted("Values");
+  ImGui::Spring();
+  if ( ImGui::Button("Reset to defaults") )
+  {
+    *editor_style = ax::NodeEditor::Style( );
+  }
+
+  ImGui::EndHorizontal();
+  ImGui::Spacing();
+  ImGui::DragFloat4("Node Padding", &editor_style->NodePadding.x, 0.1f, 0.0f, 40.0f);
+  ImGui::DragFloat("Node Rounding", &editor_style->NodeRounding, 0.1f, 0.0f, 40.0f);
+  ImGui::DragFloat("Node Border Width", &editor_style->NodeBorderWidth, 0.1f, 0.0f, 15.0f);
+  ImGui::DragFloat("Hovered Node Border Width", &editor_style->HoveredNodeBorderWidth, 0.1f, 0.0f, 15.0f);
+  ImGui::DragFloat("Hovered Node Border Offset", &editor_style->HoverNodeBorderOffset, 0.1f, -40.0f, 40.0f);
+  ImGui::DragFloat("Selected Node Border Width", &editor_style->SelectedNodeBorderWidth, 0.1f, 0.0f, 15.0f);
+  ImGui::DragFloat("Selected Node Border Offset", &editor_style->SelectedNodeBorderOffset, 0.1f, -40.0f, 40.0f);
+  ImGui::DragFloat("Pin Rounding", &editor_style->PinRounding, 0.1f, 0.0f, 40.0f);
+  ImGui::DragFloat("Pin Border Width", &editor_style->PinBorderWidth, 0.1f, 0.0f, 15.0f);
+  ImGui::DragFloat("Link Strength", &editor_style->LinkStrength, 1.0f, 0.0f, 500.0f);
+  //ImVec2  SourceDirection;
+  //ImVec2  TargetDirection;
+  ImGui::DragFloat("Scroll Duration", &editor_style->ScrollDuration, 0.001f, 0.0f, 2.0f);
+  ImGui::DragFloat("Flow Marker Distance", &editor_style->FlowMarkerDistance, 1.0f, 1.0f, 200.0f);
+  ImGui::DragFloat("Flow Speed", &editor_style->FlowSpeed, 1.0f, 1.0f, 2000.0f);
+  ImGui::DragFloat("Flow Duration", &editor_style->FlowDuration, 0.001f, 0.0f, 5.0f);
+  //ImVec2  PivotAlignment;
+  //ImVec2  PivotSize;
+  //ImVec2  PivotScale;
+  //float   PinCorners;
+  //float   PinRadius;
+  //float   PinArrowSize;
+  //float   PinArrowWidth;
+  ImGui::DragFloat("Group Rounding", &editor_style->GroupRounding, 0.1f, 0.0f, 40.0f);
+  ImGui::DragFloat("Group Border Width", &editor_style->GroupBorderWidth, 0.1f, 0.0f, 15.0f);
+
+  ImGui::Separator();
+
+  static ImGuiColorEditFlags edit_mode = ImGuiColorEditFlags_DisplayRGB;
+  ImGui::BeginHorizontal("Color Mode", ImVec2(pane_width, 0), 1.0f);
+  ImGui::TextUnformatted("Filter Colors");
+  ImGui::Spring();
+  ImGui::RadioButton("RGB", &edit_mode, ImGuiColorEditFlags_DisplayRGB);
+  ImGui::Spring(0);
+  ImGui::RadioButton("HSV", &edit_mode, ImGuiColorEditFlags_DisplayHSV);
+  ImGui::Spring(0);
+  ImGui::RadioButton("HEX", &edit_mode, ImGuiColorEditFlags_DisplayHex);
+  ImGui::EndHorizontal();
+
+  static ImGuiTextFilter filter;
+  filter.Draw("##filter", pane_width);
+
+  ImGui::Spacing();
+
+  ImGui::PushItemWidth(-160);
+  for ( int32 i = 0; i < ax::NodeEditor::StyleColor_Count; ++i )
+  {
+    char const *name = ax::NodeEditor::GetStyleColorName( CRUDE_CAST( ax::NodeEditor::StyleColor, i ) );
+    if ( !filter.PassFilter( name ) )
     {
-        auto releaseTexture = [this](ImTextureID& id)
-        {
-            if (id)
-            {
-                DestroyTexture(id);
-                id = nullptr;
-            }
-        };
-
-        releaseTexture(m_RestoreIcon);
-        releaseTexture(m_SaveIcon);
-        releaseTexture(m_HeaderBackground);
-
-        if (m_Editor)
-        {
-            ed::DestroyEditor(m_Editor);
-            m_Editor = nullptr;
-        }
+      continue;
     }
 
-    ImColor GetIconColor(PinType type)
-    {
-        switch (type)
-        {
-            default:
-            case PinType::Flow:     return ImColor(255, 255, 255);
-            case PinType::Bool:     return ImColor(220,  48,  48);
-            case PinType::Int:      return ImColor( 68, 201, 156);
-            case PinType::Float:    return ImColor(147, 226,  74);
-            case PinType::String:   return ImColor(124,  21, 153);
-            case PinType::Object:   return ImColor( 51, 150, 215);
-            case PinType::Function: return ImColor(218,   0, 183);
-            case PinType::Delegate: return ImColor(255,  48,  48);
-        }
-    };
+    ImGui::ColorEdit4( name, &editor_style->Colors[ i ].x, edit_mode );
+  }
 
-    void DrawPinIcon(const Pin& pin, bool connected, int alpha)
-    {
-        IconType iconType;
-        ImColor  color = GetIconColor(pin.Type);
-        color.Value.w = alpha / 255.0f;
-        switch (pin.Type)
-        {
-            case PinType::Flow:     iconType = IconType::Flow;   break;
-            case PinType::Bool:     iconType = IconType::Circle; break;
-            case PinType::Int:      iconType = IconType::Circle; break;
-            case PinType::Float:    iconType = IconType::Circle; break;
-            case PinType::String:   iconType = IconType::Circle; break;
-            case PinType::Object:   iconType = IconType::Circle; break;
-            case PinType::Function: iconType = IconType::Circle; break;
-            case PinType::Delegate: iconType = IconType::Square; break;
-            default:
-                return;
-        }
+  ImGui::PopItemWidth();
 
-        ax::Widgets::Icon(ImVec2(static_cast<float>(m_PinIconSize), static_cast<float>(m_PinIconSize)), iconType, connected, color, ImColor(32, 32, 32, alpha));
-    };
-
-    void ShowStyleEditor(bool* show = nullptr)
-    {
-        if (!ImGui::Begin("Style", show))
-        {
-            ImGui::End();
-            return;
-        }
-
-        auto paneWidth = ImGui::GetContentRegionAvail().x;
-
-        auto& editorStyle = ed::GetStyle();
-        ImGui::BeginHorizontal("Style buttons", ImVec2(paneWidth, 0), 1.0f);
-        ImGui::TextUnformatted("Values");
-        ImGui::Spring();
-        if (ImGui::Button("Reset to defaults"))
-            editorStyle = ed::Style();
-        ImGui::EndHorizontal();
-        ImGui::Spacing();
-        ImGui::DragFloat4("Node Padding", &editorStyle.NodePadding.x, 0.1f, 0.0f, 40.0f);
-        ImGui::DragFloat("Node Rounding", &editorStyle.NodeRounding, 0.1f, 0.0f, 40.0f);
-        ImGui::DragFloat("Node Border Width", &editorStyle.NodeBorderWidth, 0.1f, 0.0f, 15.0f);
-        ImGui::DragFloat("Hovered Node Border Width", &editorStyle.HoveredNodeBorderWidth, 0.1f, 0.0f, 15.0f);
-        ImGui::DragFloat("Hovered Node Border Offset", &editorStyle.HoverNodeBorderOffset, 0.1f, -40.0f, 40.0f);
-        ImGui::DragFloat("Selected Node Border Width", &editorStyle.SelectedNodeBorderWidth, 0.1f, 0.0f, 15.0f);
-        ImGui::DragFloat("Selected Node Border Offset", &editorStyle.SelectedNodeBorderOffset, 0.1f, -40.0f, 40.0f);
-        ImGui::DragFloat("Pin Rounding", &editorStyle.PinRounding, 0.1f, 0.0f, 40.0f);
-        ImGui::DragFloat("Pin Border Width", &editorStyle.PinBorderWidth, 0.1f, 0.0f, 15.0f);
-        ImGui::DragFloat("Link Strength", &editorStyle.LinkStrength, 1.0f, 0.0f, 500.0f);
-        //ImVec2  SourceDirection;
-        //ImVec2  TargetDirection;
-        ImGui::DragFloat("Scroll Duration", &editorStyle.ScrollDuration, 0.001f, 0.0f, 2.0f);
-        ImGui::DragFloat("Flow Marker Distance", &editorStyle.FlowMarkerDistance, 1.0f, 1.0f, 200.0f);
-        ImGui::DragFloat("Flow Speed", &editorStyle.FlowSpeed, 1.0f, 1.0f, 2000.0f);
-        ImGui::DragFloat("Flow Duration", &editorStyle.FlowDuration, 0.001f, 0.0f, 5.0f);
-        //ImVec2  PivotAlignment;
-        //ImVec2  PivotSize;
-        //ImVec2  PivotScale;
-        //float   PinCorners;
-        //float   PinRadius;
-        //float   PinArrowSize;
-        //float   PinArrowWidth;
-        ImGui::DragFloat("Group Rounding", &editorStyle.GroupRounding, 0.1f, 0.0f, 40.0f);
-        ImGui::DragFloat("Group Border Width", &editorStyle.GroupBorderWidth, 0.1f, 0.0f, 15.0f);
-
-        ImGui::Separator();
-
-        static ImGuiColorEditFlags edit_mode = ImGuiColorEditFlags_DisplayRGB;
-        ImGui::BeginHorizontal("Color Mode", ImVec2(paneWidth, 0), 1.0f);
-        ImGui::TextUnformatted("Filter Colors");
-        ImGui::Spring();
-        ImGui::RadioButton("RGB", &edit_mode, ImGuiColorEditFlags_DisplayRGB);
-        ImGui::Spring(0);
-        ImGui::RadioButton("HSV", &edit_mode, ImGuiColorEditFlags_DisplayHSV);
-        ImGui::Spring(0);
-        ImGui::RadioButton("HEX", &edit_mode, ImGuiColorEditFlags_DisplayHex);
-        ImGui::EndHorizontal();
-
-        static ImGuiTextFilter filter;
-        filter.Draw("##filter", paneWidth);
-
-        ImGui::Spacing();
-
-        ImGui::PushItemWidth(-160);
-        for (int i = 0; i < ed::StyleColor_Count; ++i)
-        {
-            auto name = ed::GetStyleColorName((ed::StyleColor)i);
-            if (!filter.PassFilter(name))
-                continue;
-
-            ImGui::ColorEdit4(name, &editorStyle.Colors[i].x, edit_mode);
-        }
-        ImGui::PopItemWidth();
-
-        ImGui::End();
-    }
+  ImGui::End();
+}
 
 void
 crude_devmenu_technique_editor_show_left_pane_
 (
-  float paneWidth
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
+  _In_ float32                                             pane_width
 )
+{
+  uint64 temporary_allocator_marker = crude_stack_allocator_get_marker( devmenu_technique_editor->devmenu->dev_stack_allocator );
+
+  ImGuiIO *io = &ImGui::GetIO();
+
+  ImGui::BeginChild("Selection", ImVec2(pane_width, 0));
+
+  pane_width = ImGui::GetContentRegionAvail().x;
+
+  static bool show_style_editor = false;
+
+  ImGui::BeginHorizontal("Style Editor", ImVec2(pane_width, 0));
+  ImGui::Spring(0.0f, 0.0f);
+  if (ImGui::Button("Zoom to Content"))
+  {
+    ax::NodeEditor::NavigateToContent( );
+  }
+  
+  ImGui::Spring(0.0f);
+  if (ImGui::Button("Show Flow"))
+  {
+    for ( uint64 i = 0; i < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->links ); ++i )
     {
-        auto& io = ImGui::GetIO();
-
-        ImGui::BeginChild("Selection", ImVec2(paneWidth, 0));
-
-        paneWidth = ImGui::GetContentRegionAvail().x;
-
-        static bool showStyleEditor = false;
-        ImGui::BeginHorizontal("Style Editor", ImVec2(paneWidth, 0));
-        ImGui::Spring(0.0f, 0.0f);
-        if (ImGui::Button("Zoom to Content"))
-            ed::NavigateToContent();
-        ImGui::Spring(0.0f);
-        if (ImGui::Button("Show Flow"))
-        {
-            for (auto& link : m_Links)
-                ed::Flow(link.ID);
-        }
-        ImGui::Spring();
-        if (ImGui::Button("Edit Style"))
-            showStyleEditor = true;
-        ImGui::EndHorizontal();
-        ImGui::Checkbox("Show Ordinals", &m_ShowOrdinals);
-
-        if (showStyleEditor)
-            ShowStyleEditor(&showStyleEditor);
-
-        std::vector<ed::NodeId> selectedNodes;
-        std::vector<ed::LinkId> selectedLinks;
-        selectedNodes.resize(ed::GetSelectedObjectCount());
-        selectedLinks.resize(ed::GetSelectedObjectCount());
-
-        int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), static_cast<int>(selectedNodes.size()));
-        int linkCount = ed::GetSelectedLinks(selectedLinks.data(), static_cast<int>(selectedLinks.size()));
-
-        selectedNodes.resize(nodeCount);
-        selectedLinks.resize(linkCount);
-
-        int saveIconWidth     = GetTextureWidth(m_SaveIcon);
-        int saveIconHeight    = GetTextureWidth(m_SaveIcon);
-        int restoreIconWidth  = GetTextureWidth(m_RestoreIcon);
-        int restoreIconHeight = GetTextureWidth(m_RestoreIcon);
-
-        ImGui::GetWindowDrawList()->AddRectFilled(
-            ImGui::GetCursorScreenPos(),
-            ImGui::GetCursorScreenPos() + ImVec2(paneWidth, ImGui::GetTextLineHeight()),
-            ImColor(ImGui::GetStyle().Colors[ImGuiCol_HeaderActive]), ImGui::GetTextLineHeight() * 0.25f);
-        ImGui::Spacing(); ImGui::SameLine();
-        ImGui::TextUnformatted("Nodes");
-        ImGui::Indent();
-        for (auto& node : m_Nodes)
-        {
-            ImGui::PushID(node.ID.AsPointer());
-            auto start = ImGui::GetCursorScreenPos();
-
-            if (const auto progress = GetTouchProgress(node.ID))
-            {
-                ImGui::GetWindowDrawList()->AddLine(
-                    start + ImVec2(-8, 0),
-                    start + ImVec2(-8, ImGui::GetTextLineHeight()),
-                    IM_COL32(255, 0, 0, 255 - (int)(255 * progress)), 4.0f);
-            }
-
-            bool isSelected = std::find(selectedNodes.begin(), selectedNodes.end(), node.ID) != selectedNodes.end();
-# if IMGUI_VERSION_NUM >= 18967
-            ImGui::SetNextItemAllowOverlap();
-# endif
-            if (ImGui::Selectable((node.Name + "##" + std::to_string(reinterpret_cast<uintptr_t>(node.ID.AsPointer()))).c_str(), &isSelected))
-            {
-                if (io.KeyCtrl)
-                {
-                    if (isSelected)
-                        ed::SelectNode(node.ID, true);
-                    else
-                        ed::DeselectNode(node.ID);
-                }
-                else
-                    ed::SelectNode(node.ID, false);
-
-                ed::NavigateToSelection();
-            }
-            if (ImGui::IsItemHovered() && !node.State.empty())
-                ImGui::SetTooltip("State: %s", node.State.c_str());
-
-            auto id = std::string("(") + std::to_string(reinterpret_cast<uintptr_t>(node.ID.AsPointer())) + ")";
-            auto textSize = ImGui::CalcTextSize(id.c_str(), nullptr);
-            auto iconPanelPos = start + ImVec2(
-                paneWidth - ImGui::GetStyle().FramePadding.x - ImGui::GetStyle().IndentSpacing - saveIconWidth - restoreIconWidth - ImGui::GetStyle().ItemInnerSpacing.x * 1,
-                (ImGui::GetTextLineHeight() - saveIconHeight) / 2);
-            ImGui::GetWindowDrawList()->AddText(
-                ImVec2(iconPanelPos.x - textSize.x - ImGui::GetStyle().ItemInnerSpacing.x, start.y),
-                IM_COL32(255, 255, 255, 255), id.c_str(), nullptr);
-
-            auto drawList = ImGui::GetWindowDrawList();
-            ImGui::SetCursorScreenPos(iconPanelPos);
-# if IMGUI_VERSION_NUM < 18967
-            ImGui::SetItemAllowOverlap();
-# else
-            ImGui::SetNextItemAllowOverlap();
-# endif
-            if (node.SavedState.empty())
-            {
-                if (ImGui::InvisibleButton("save", ImVec2((float)saveIconWidth, (float)saveIconHeight)))
-                    node.SavedState = node.State;
-
-                if (ImGui::IsItemActive())
-                    drawList->AddImage(m_SaveIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
-                else if (ImGui::IsItemHovered())
-                    drawList->AddImage(m_SaveIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-                else
-                    drawList->AddImage(m_SaveIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
-            }
-            else
-            {
-                ImGui::Dummy(ImVec2((float)saveIconWidth, (float)saveIconHeight));
-                drawList->AddImage(m_SaveIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
-            }
-
-            ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
-# if IMGUI_VERSION_NUM < 18967
-            ImGui::SetItemAllowOverlap();
-# else
-            ImGui::SetNextItemAllowOverlap();
-# endif
-            if (!node.SavedState.empty())
-            {
-                if (ImGui::InvisibleButton("restore", ImVec2((float)restoreIconWidth, (float)restoreIconHeight)))
-                {
-                    node.State = node.SavedState;
-                    ed::RestoreNodeState(node.ID);
-                    node.SavedState.clear();
-                }
-
-                if (ImGui::IsItemActive())
-                    drawList->AddImage(m_RestoreIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
-                else if (ImGui::IsItemHovered())
-                    drawList->AddImage(m_RestoreIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-                else
-                    drawList->AddImage(m_RestoreIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
-            }
-            else
-            {
-                ImGui::Dummy(ImVec2((float)restoreIconWidth, (float)restoreIconHeight));
-                drawList->AddImage(m_RestoreIcon, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
-            }
-
-            ImGui::SameLine(0, 0);
-# if IMGUI_VERSION_NUM < 18967
-            ImGui::SetItemAllowOverlap();
-# endif
-            ImGui::Dummy(ImVec2(0, (float)restoreIconHeight));
-
-            ImGui::PopID();
-        }
-        ImGui::Unindent();
-
-        static int changeCount = 0;
-
-        ImGui::GetWindowDrawList()->AddRectFilled(
-            ImGui::GetCursorScreenPos(),
-            ImGui::GetCursorScreenPos() + ImVec2(paneWidth, ImGui::GetTextLineHeight()),
-            ImColor(ImGui::GetStyle().Colors[ImGuiCol_HeaderActive]), ImGui::GetTextLineHeight() * 0.25f);
-        ImGui::Spacing(); ImGui::SameLine();
-        ImGui::TextUnformatted("Selection");
-
-        ImGui::BeginHorizontal("Selection Stats", ImVec2(paneWidth, 0));
-        ImGui::Text("Changed %d time%s", changeCount, changeCount > 1 ? "s" : "");
-        ImGui::Spring();
-        if (ImGui::Button("Deselect All"))
-            ed::ClearSelection();
-        ImGui::EndHorizontal();
-        ImGui::Indent();
-        for (int i = 0; i < nodeCount; ++i) ImGui::Text("Node (%p)", selectedNodes[i].AsPointer());
-        for (int i = 0; i < linkCount; ++i) ImGui::Text("Link (%p)", selectedLinks[i].AsPointer());
-        ImGui::Unindent();
-
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
-            for (auto& link : m_Links)
-                ed::Flow(link.ID);
-
-        if (ed::HasSelectionChanged())
-            ++changeCount;
-
-        ImGui::EndChild();
+      ax::NodeEditor::Flow( devmenu_technique_editor->links[ i ].id );
     }
+  }
+
+  ImGui::Spring();
+  
+  if (ImGui::Button("Edit Style"))
+  {
+    show_style_editor = true;
+  }
+
+  ImGui::EndHorizontal();
+  ImGui::Checkbox("Show Ordinals", &devmenu_technique_editor->show_ordinals);
+
+  if ( show_style_editor )
+  {
+    crude_devmenu_technique_editor_show_style_editor( &show_style_editor );
+  }
+
+  ax::NodeEditor::NodeId *selected_nodes;
+  ax::NodeEditor::LinkId *selected_links;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( selected_nodes, ax::NodeEditor::GetSelectedObjectCount( ), crude_stack_allocator_pack( devmenu_technique_editor->devmenu->dev_stack_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( selected_links, ax::NodeEditor::GetSelectedObjectCount( ), crude_stack_allocator_pack( devmenu_technique_editor->devmenu->dev_stack_allocator ) );
+
+  int32 node_count = ax::NodeEditor::GetSelectedNodes( selected_nodes, ax::NodeEditor::GetSelectedObjectCount( ) );
+  int32 link_count = ax::NodeEditor::GetSelectedLinks( selected_links, ax::NodeEditor::GetSelectedObjectCount( ) );
+
+  CRUDE_ARRAY_SET_LENGTH( selected_nodes, node_count );
+  CRUDE_ARRAY_SET_LENGTH( selected_links, link_count );
+
+  crude_gfx_texture *save_icon_texture = crude_gfx_access_texture( &devmenu_technique_editor->devmenu->engine->gpu, devmenu_technique_editor->save_icon_texture_handle );
+  crude_gfx_texture *restore_icon_texture = crude_gfx_access_texture( &devmenu_technique_editor->devmenu->engine->gpu, devmenu_technique_editor->restore_icon_texture_handle );
+  int32 saveIconWidth = save_icon_texture->width;
+  int32 saveIconHeight = save_icon_texture->width;
+  int32 restoreIconWidth = restore_icon_texture->width;
+  int32 restoreIconHeight = restore_icon_texture->width;
+
+  ImGui::GetWindowDrawList()->AddRectFilled(
+    ImGui::GetCursorScreenPos(),
+    ImGui::GetCursorScreenPos() + ImVec2(pane_width, ImGui::GetTextLineHeight()),
+    ImColor(ImGui::GetStyle().Colors[ImGuiCol_HeaderActive]), ImGui::GetTextLineHeight() * 0.25f );
+
+  ImGui::Spacing(); ImGui::SameLine();
+  ImGui::TextUnformatted("Nodes");
+  ImGui::Indent();
+  
+  for ( uint64 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->nodes ); ++node_index )
+  {
+    crude_technique_editor_node *node = &devmenu_technique_editor->nodes[ node_index ];
+    ImGui::PushID( node->id.AsPointer( ) );
+
+    ImVec2 start = ImGui::GetCursorScreenPos();
+
+    float32 progress = crude_devmenu_technique_editor_get_touch_progress_( devmenu_technique_editor, node->id );
+    if ( progress )
+    {
+      ImGui::GetWindowDrawList()->AddLine(
+        start + ImVec2(-8, 0),
+        start + ImVec2(-8, ImGui::GetTextLineHeight()),
+        IM_COL32(255, 0, 0, 255 - (int)(255 * progress)), 4.0f);
+    }
+
+    bool is_selected = false;
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( selected_nodes ); ++i )
+    {
+      if ( selected_nodes[ i ] == node->id )
+      {
+        is_selected = true;
+        break;
+      }
+    }
+
+    ImGui::SetNextItemAllowOverlap( );
+    
+    char node_name_with_id[ sizeof( node->name ) + 128 ]{};
+    crude_snprintf( node_name_with_id, sizeof( node_name_with_id ), "%s##%u", node->name, CRUDE_CAST( uint64, node->id.AsPointer( ) ) );
+
+    if ( ImGui::Selectable( node_name_with_id, &is_selected ) )
+    {
+      if ( io->KeyCtrl )
+      {
+        if ( is_selected )
+        {
+          ax::NodeEditor::SelectNode( node->id, true );
+        }
+        else
+        {
+          ax::NodeEditor::DeselectNode( node->id );
+        }
+      }
+      else
+      {
+        ax::NodeEditor::SelectNode( node->id, false );
+      }
+
+      ax::NodeEditor::NavigateToSelection( );
+    }
+
+    if ( ImGui::IsItemHovered( ) && node->state[ 0 ] )
+    {
+      ImGui::SetTooltip( "State: %s", node->state );
+    }
+
+    char id_str[ 128 ] = {};
+    crude_snprintf( id_str, sizeof( id_str ), "(%u)", CRUDE_CAST( uint64, node->id.AsPointer( ) ) );
+    ImVec2 textSize = ImGui::CalcTextSize( id_str, NULL );
+    ImVec2 iconPanelPos = start + ImVec2(
+      pane_width - ImGui::GetStyle().FramePadding.x - ImGui::GetStyle().IndentSpacing - saveIconWidth - restoreIconWidth - ImGui::GetStyle().ItemInnerSpacing.x * 1,
+      (ImGui::GetTextLineHeight() - saveIconHeight) / 2);
+    ImGui::GetWindowDrawList()->AddText(
+      ImVec2(iconPanelPos.x - textSize.x - ImGui::GetStyle().ItemInnerSpacing.x, start.y),
+      IM_COL32(255, 255, 255, 255), id_str, nullptr);
+
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    ImGui::SetCursorScreenPos(iconPanelPos);
+    ImGui::SetNextItemAllowOverlap();
+    
+    if ( !node->saved_state[ 0 ] )
+    {
+      if ( ImGui::InvisibleButton( "save", ImVec2( saveIconWidth, saveIconHeight ) ) )
+      {
+        crude_string_copy_unknow_length( node->saved_state, node->state, sizeof( node->saved_state ) );
+      }
+
+      if ( ImGui::IsItemActive( ) )
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+      }
+      else if (ImGui::IsItemHovered())
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+      }
+      else
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+      }
+    }
+    else
+    {
+      ImGui::Dummy(ImVec2(saveIconWidth, saveIconHeight));
+      drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+    }
+
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::SetNextItemAllowOverlap();
+    if ( node->saved_state[ 0 ] )
+    {
+      if ( ImGui::InvisibleButton( "restore", ImVec2( restoreIconWidth, restoreIconHeight ) ) )
+      {
+        crude_string_copy_unknow_length( node->state, node->saved_state, sizeof( node->state ) );
+        ax::NodeEditor::RestoreNodeState( node->id );
+        node->saved_state[ 0 ] = 0;
+      }
+
+      if (ImGui::IsItemActive())
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+      }
+      else if (ImGui::IsItemHovered())
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+      }
+      else
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+      }
+    }
+    else
+    {
+      ImGui::Dummy(ImVec2((float)restoreIconWidth, (float)restoreIconHeight));
+      drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+    }
+
+    ImGui::SameLine(0, 0);
+    ImGui::Dummy(ImVec2(0, (float)restoreIconHeight));
+
+    ImGui::PopID();
+  }
+  
+  ImGui::Unindent();
+
+  static int changeCount = 0;
+
+  ImGui::GetWindowDrawList()->AddRectFilled(
+    ImGui::GetCursorScreenPos(),
+    ImGui::GetCursorScreenPos() + ImVec2(pane_width, ImGui::GetTextLineHeight()),
+    ImColor(ImGui::GetStyle().Colors[ImGuiCol_HeaderActive]), ImGui::GetTextLineHeight() * 0.25f);
+  ImGui::Spacing(); ImGui::SameLine();
+  ImGui::TextUnformatted("Selection");
+
+  ImGui::BeginHorizontal("Selection Stats", ImVec2(pane_width, 0));
+  ImGui::Text("Changed %d time%s", changeCount, changeCount > 1 ? "s" : "");
+  ImGui::Spring();
+  if (ImGui::Button("Deselect All"))
+  {
+    ax::NodeEditor::ClearSelection( );
+  }
+
+  ImGui::EndHorizontal();
+  ImGui::Indent();
+  for ( int32 i = 0; i < node_count; ++i )
+  {
+    ImGui::Text( "Node (%p)", selected_nodes[ i ].AsPointer( ) );
+  }
+  for ( int32 i = 0; i < link_count; ++i )
+  {
+    ImGui::Text( "Link (%p)", selected_links[ i ].AsPointer( ) );
+  }
+  ImGui::Unindent( );
+
+  if (ImGui::IsKeyPressed(ImGuiKey_Z))
+  {
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->links ); ++i )
+    {
+      ax::NodeEditor::Flow( devmenu_technique_editor->links[ i ].id );
+    }
+  }
+
+  if ( ax::NodeEditor::HasSelectionChanged( ) )
+  {
+    ++changeCount;
+  }
+
+  ImGui::EndChild();
+  
+cleanup:
+  crude_stack_allocator_free_marker( devmenu_technique_editor->devmenu->dev_stack_allocator, temporary_allocator_marker );
+}
 
 void
 crude_devmenu_technique_editor_on_frame_
@@ -3579,7 +3730,12 @@ crude_devmenu_technique_editor_initialize
   devmenu_technique_editor->pin_icon_size = 24;
   devmenu_technique_editor->touch_time = 1.f;
   devmenu_technique_editor->show_ordinals = false;
-  devmenu_technique_editor->ax_context = ax::NodeEditor::CreateEditor( );
+
+  devmenu_technique_editor->header_background_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devmenu_technique_editor->restore_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devmenu_technique_editor->save_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+
+  crude_devmenu_technique_editor_on_start_( devmenu_technique_editor );
 }
 
 void
