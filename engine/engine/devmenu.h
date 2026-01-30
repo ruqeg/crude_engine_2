@@ -135,9 +135,9 @@ typedef struct crude_technique_editor_node
   char                                                     name[ 512 ];
   crude_technique_editor_pin                              *inputs;
   crude_technique_editor_pin                              *outputs;
-  ImColor                                                  color;
+  XMFLOAT4                                                 color;
   crude_technique_editor_node_type                         type;
-  ImVec2                                                   size;
+  XMFLOAT2                                                 size;
   char                                                     state[ 512 ];
   char                                                     saved_state[ 512 ];
 } crude_technique_editor_node;

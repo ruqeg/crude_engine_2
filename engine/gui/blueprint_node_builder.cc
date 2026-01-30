@@ -57,8 +57,7 @@ crude_gui_blueprint_node_builder_begin
 void
 crude_gui_blueprint_node_builder_end
 (
-  _In_ crude_gui_blueprint_node_builder                   *builder,
-  _In_ ax::NodeEditor::NodeId                              id
+  _In_ crude_gui_blueprint_node_builder                   *builder
 )
 {
   crude_gui_blueprint_node_builder_set_stage_( builder, CRUDE_GUI_BLUEPRINT_NODE_BUILDER_STAGE_END );

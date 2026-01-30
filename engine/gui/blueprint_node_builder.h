@@ -56,8 +56,7 @@ crude_gui_blueprint_node_builder_begin
 CRUDE_API void
 crude_gui_blueprint_node_builder_end
 (
-  _In_ crude_gui_blueprint_node_builder                   *builder,
-  _In_ ax::NodeEditor::NodeId                              id
+  _In_ crude_gui_blueprint_node_builder                   *builder
 );
 
 CRUDE_API void
