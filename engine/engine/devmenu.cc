@@ -89,6 +89,8 @@ crude_devmenu_initialize
   devmenu->selected_option = 0;
   devmenu->previous_framerate = 0.f;
   devmenu->current_framerate = 0.f;
+  devmenu->dev_heap_allocator = &engine->develop_heap_allocator;
+  devmenu->dev_stack_allocator = &engine->develop_temporary_allocator;
   crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu );
   crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
   crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
@@ -1961,20 +1963,43 @@ crude_devmenu_technique_editor_build_node_
   }
 }
 
+#define CRUDE_CREATE_NODE( var_name, var_color )\
+  crude_technique_editor_node new_node;\
+  crude_technique_editor_node_initialize( &new_node, devmenu_technique_editor->devmenu->dev_heap_allocator );\
+  new_node.id = crude_devmenu_technique_editor_get_next_id_( devmenu_technique_editor );\
+  new_node.name = var_name;\
+  new_node.color = var_color;
+
+#define CRUDE_CREATE_OUTPUT_PIN( var_name, var_type )\
+{\
+  crude_technique_editor_pin new_pin = crude_technique_editor_pin_empty( );\
+  new_pin.id = crude_devmenu_technique_editor_get_next_id_( devmenu_technique_editor );\
+  new_pin.name = var_name;\
+  new_pin.type = var_type;\
+  CRUDE_ARRAY_PUSH( new_node.outputs, new_pin );\
+}
+#define CRUDE_CREATE_INPUT_PIN( var_name, var_type )\
+{\
+  crude_technique_editor_pin new_pin = crude_technique_editor_pin_empty( );\
+  new_pin.id = crude_devmenu_technique_editor_get_next_id_( devmenu_technique_editor );\
+  new_pin.name = var_name;\
+  new_pin.type = var_type;\
+  CRUDE_ARRAY_PUSH( new_node.inputs, new_pin );\
+}
+
 crude_technique_editor_node*
 crude_devmenu_technique_editor_spawn_input_action_node_
 (
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "InputAction Fire", ImColor(255, 128, 128));
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Delegate);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Pressed", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Released", PinType::Flow);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "InputAction Fire", CRUDE_COMPOUNT( XMFLOAT4, { 255 / 255.f, 128 / 255.f, 128 / 255.f, 1.f } ) );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_DELEGATE );
+  CRUDE_CREATE_OUTPUT_PIN( "Pressed", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "Released", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -1983,15 +2008,15 @@ crude_devmenu_technique_editor_spawn_branch_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "Branch");
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Condition", PinType::Bool);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "True", PinType::Flow);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "False", PinType::Flow);
+  CRUDE_CREATE_NODE( "Branch", CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 1.f, 1.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "Condition", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  CRUDE_CREATE_OUTPUT_PIN( "True", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "False", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
 }
 
 crude_technique_editor_node*
@@ -2000,16 +2025,15 @@ crude_devmenu_technique_editor_spawn_do_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Do N");
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Enter", PinType::Flow);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "N", PinType::Int);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Reset", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Exit", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Counter", PinType::Int);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Do N", CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 1.f, 1.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "Enter", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "N", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT );
+  CRUDE_CREATE_INPUT_PIN( "Reset", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "True", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "False", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2018,14 +2042,13 @@ crude_devmenu_technique_editor_spawn_output_action_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "OutputAction");
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Sample", PinType::Float);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "Condition", PinType::Bool);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Event", PinType::Delegate);
-
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "OutputAction", CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 1.f, 1.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "Sample", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_INPUT_PIN( "Event", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_DELEGATE );
+  CRUDE_CREATE_OUTPUT_PIN( "Condition", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2034,14 +2057,13 @@ crude_devmenu_technique_editor_spawn_print_string_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "Print String");
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "In String", PinType::String);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Print String", CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 1.f, 1.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "In String", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_STRING );
+  CRUDE_CREATE_OUTPUT_PIN( "Condition", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2050,13 +2072,12 @@ crude_devmenu_technique_editor_spawn_message_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "", ImColor(128, 195, 248));
-    m_Nodes.back().Type = NodeType::Simple;
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "Message", PinType::String);
-
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "", CRUDE_COMPOUNT( XMFLOAT4, { 128/ 255.f, 195/ 255.f, 248 / 255.f, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_SIMPLE;
+  CRUDE_CREATE_OUTPUT_PIN( "Message", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_STRING );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2065,17 +2086,16 @@ crude_devmenu_technique_editor_spawn_set_timer_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "Set Timer", ImColor(128, 195, 248));
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Object", PinType::Object);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Function Name", PinType::Function);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Time", PinType::Float);
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "Looping", PinType::Bool);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Set Timer", CRUDE_COMPOUNT( XMFLOAT4, { 128 / 255.f, 195 / 255.f, 248 / 255.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "Object", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_OBJECT );
+  CRUDE_CREATE_INPUT_PIN( "Function Name", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FUNCTION );
+  CRUDE_CREATE_INPUT_PIN( "Time", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_INPUT_PIN( "Looping", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2084,15 +2104,14 @@ crude_devmenu_technique_editor_spawn_less_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "<", ImColor(128, 195, 248));
-  m_Nodes.back().Type = NodeType::Simple;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Float);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Float);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Float);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "<", CRUDE_COMPOUNT( XMFLOAT4, { 128 / 255.f, 195 / 255.f, 248 / 255.f, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_SIMPLE;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2101,15 +2120,14 @@ crude_devmenu_technique_editor_spawn_weird_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "o.O", ImColor(128, 195, 248));
-  m_Nodes.back().Type = NodeType::Simple;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Float);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Float);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Float);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "o.O", CRUDE_COMPOUNT( XMFLOAT4, { 128 / 255.f, 195 / 255.f, 248 / 255.f, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_SIMPLE;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2118,22 +2136,21 @@ crude_devmenu_technique_editor_spawn_trace_by_channel_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Single Line Trace by Channel", ImColor(255, 128, 64));
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Start", PinType::Flow);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "End", PinType::Int);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Trace Channel", PinType::Float);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Trace Complex", PinType::Bool);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Actors to Ignore", PinType::Int);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Draw Debug Type", PinType::Bool);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "Ignore Self", PinType::Bool);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Out Hit", PinType::Float);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "Return Value", PinType::Bool);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Single Line Trace by Channel", CRUDE_COMPOUNT( XMFLOAT4, { 128 / 255.f, 195 / 255.f, 248 / 255.f, 1.f } ) );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "Start", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "End", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT );
+  CRUDE_CREATE_INPUT_PIN( "Trace Channel", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT );
+  CRUDE_CREATE_INPUT_PIN( "Trace Complex", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  CRUDE_CREATE_INPUT_PIN( "Actors to Ignore", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT );
+  CRUDE_CREATE_INPUT_PIN( "Draw Debug Type", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  CRUDE_CREATE_INPUT_PIN( "Ignore Self", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "Out Hit", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "Return Value", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2142,14 +2159,13 @@ crude_devmenu_technique_editor_spawn_tree_sequence_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-    m_Nodes.emplace_back(GetNextId(), "Sequence");
-    m_Nodes.back().Type = NodeType::Tree;
-    m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-    m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-
-    BuildNode(&m_Nodes.back());
-
-    return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Sequence", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_TREE;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2158,13 +2174,12 @@ crude_devmenu_technique_editor_spawn_tree_task_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Move To");
-  m_Nodes.back().Type = NodeType::Tree;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Move To", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_TREE;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2173,13 +2188,12 @@ crude_devmenu_technique_editor_spawn_tree_task_2node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Random Wait");
-  m_Nodes.back().Type = NodeType::Tree;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Random Wait", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_TREE;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2188,11 +2202,12 @@ crude_devmenu_technique_editor_spawn_comment_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Test Comment");
-  m_Nodes.back().Type = NodeType::Comment;
-  m_Nodes.back().Size = ImVec2(300, 200);
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Test Comment", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_COMMENT;
+  new_node.size = CRUDE_COMPOUNT( XMFLOAT2, {300, 200 });
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2201,14 +2216,13 @@ crude_devmenu_technique_editor_spawn_houdini_transform_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Transform");
-  m_Nodes.back().Type = NodeType::Houdini;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Transform", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_HOUDINI;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 crude_technique_editor_node*
@@ -2217,15 +2231,14 @@ crude_devmenu_technique_editor_spawn_houdini_group_node_
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  m_Nodes.emplace_back(GetNextId(), "Group");
-  m_Nodes.back().Type = NodeType::Houdini;
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-  m_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
-  
-  BuildNode(&m_Nodes.back());
-  
-  return &m_Nodes.back();
+  CRUDE_CREATE_NODE( "Group", CRUDE_COMPOUNT( XMFLOAT4, { 1, 1, 1, 1.f } ) );
+  new_node.type = CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_HOUDINI;
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_INPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  CRUDE_CREATE_OUTPUT_PIN( "", CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW );
+  crude_devmenu_technique_editor_build_node_( devmenu_technique_editor, &new_node );
+  CRUDE_ARRAY_PUSH( devmenu_technique_editor->nodes, new_node );
+  return &CRUDE_ARRAY_BACK( devmenu_technique_editor->nodes );
 }
 
 void
@@ -2369,10 +2382,6 @@ crude_devmenu_technique_editor_on_start_
   link.start_pin_id = devmenu_technique_editor->nodes[ 14 ].outputs[ 0 ].id;
   link.end_pin_id = devmenu_technique_editor->nodes[ 15 ].inputs[ 0 ].id;
   CRUDE_ARRAY_PUSH( devmenu_technique_editor->links, link );
-
-  devmenu_technique_editor->header_background_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  devmenu_technique_editor->restore_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  devmenu_technique_editor->save_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 }
 
 void
@@ -2435,11 +2444,11 @@ crude_technique_editor_draw_pin_icon
   }
   
   crude_gui_draw_icon(
-    CRUDE_COMPOUNT( XMFLOAT2, { devmenu_technique_editor->pin_icon_size, devmenu_technique_editor->pin_icon_size } ),
+    XMFLOAT2 { CRUDE_CAST( float32, devmenu_technique_editor->pin_icon_size ), CRUDE_CAST( float32, devmenu_technique_editor->pin_icon_size ) },
     icon_type,
     connected,
-    CRUDE_COMPOUNT( XMFLOAT4, { icon_color.Value.x, icon_color.Value.y, icon_color.Value.z, icon_color.Value.w } ),
-    CRUDE_COMPOUNT( XMFLOAT4, { 32, 32, 32, alpha } ) );
+    XMFLOAT4 { icon_color.Value.x, icon_color.Value.y, icon_color.Value.z, icon_color.Value.w },
+    XMFLOAT4 { 32 / 255.f, 32/ 255.f, 32/ 255.f, alpha / 255.0f } );
 }
 
 void
@@ -2591,10 +2600,10 @@ crude_devmenu_technique_editor_show_left_pane_
 
   crude_gfx_texture *save_icon_texture = crude_gfx_access_texture( &devmenu_technique_editor->devmenu->engine->gpu, devmenu_technique_editor->save_icon_texture_handle );
   crude_gfx_texture *restore_icon_texture = crude_gfx_access_texture( &devmenu_technique_editor->devmenu->engine->gpu, devmenu_technique_editor->restore_icon_texture_handle );
-  int32 saveIconWidth = save_icon_texture->width;
-  int32 saveIconHeight = save_icon_texture->width;
-  int32 restoreIconWidth = restore_icon_texture->width;
-  int32 restoreIconHeight = restore_icon_texture->width;
+  int32 saveIconWidth = save_icon_texture ? save_icon_texture->width : 100;
+  int32 saveIconHeight = save_icon_texture ? save_icon_texture->width : 100;
+  int32 restoreIconWidth = restore_icon_texture ? restore_icon_texture->width : 0;
+  int32 restoreIconHeight = restore_icon_texture ? restore_icon_texture->width : 0;
 
   ImGui::GetWindowDrawList()->AddRectFilled(
     ImGui::GetCursorScreenPos(),
@@ -2682,24 +2691,30 @@ crude_devmenu_technique_editor_show_left_pane_
       {
         crude_string_copy_unknow_length( node->saved_state, node->state, sizeof( node->saved_state ) );
       }
-
-      if ( ImGui::IsItemActive( ) )
+      
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devmenu_technique_editor->save_icon_texture_handle ) )
       {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
-      }
-      else if (ImGui::IsItemHovered())
-      {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-      }
-      else
-      {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+        if ( ImGui::IsItemActive( ) )
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+        }
+        else if (ImGui::IsItemHovered())
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+        }
+        else
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+        }
       }
     }
     else
     {
       ImGui::Dummy(ImVec2(saveIconWidth, saveIconHeight));
-      drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devmenu_technique_editor->save_icon_texture_handle ) )
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->save_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+      }
     }
 
     ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
@@ -2713,23 +2728,29 @@ crude_devmenu_technique_editor_show_left_pane_
         node->saved_state[ 0 ] = 0;
       }
 
-      if (ImGui::IsItemActive())
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devmenu_technique_editor->restore_icon_texture_handle ) )
       {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
-      }
-      else if (ImGui::IsItemHovered())
-      {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-      }
-      else
-      {
-        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+        if (ImGui::IsItemActive())
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+        }
+        else if (ImGui::IsItemHovered())
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+        }
+        else
+        {
+          drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 160));
+        }
       }
     }
     else
     {
       ImGui::Dummy(ImVec2((float)restoreIconWidth, (float)restoreIconHeight));
-      drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+      if ( CRUDE_RESOURCE_HANDLE_IS_VALID( devmenu_technique_editor->restore_icon_texture_handle ) )
+      {
+        drawList->AddImage( CRUDE_CAST( ImTextureRef, &devmenu_technique_editor->restore_icon_texture_handle.index ), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 32));
+      }
     }
 
     ImGui::SameLine(0, 0);
@@ -2791,8 +2812,7 @@ cleanup:
 void
 crude_devmenu_technique_editor_on_frame_
 (
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
-  _In_ float32                                             delta_time
+  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
   crude_devmenu_technique_editor_update_touch_( devmenu_technique_editor );
@@ -2830,9 +2850,8 @@ crude_devmenu_technique_editor_on_frame_
   {
     ImVec2 cursorTopLeft = ImGui::GetCursorScreenPos();
 
-
-    crude_gui_blueprint_node_builder builder;
-    util::BlueprintNodeBuilder builder(m_HeaderBackground, GetTextureWidth(m_HeaderBackground), GetTextureHeight(m_HeaderBackground));
+    crude_gui_blueprint_node_builder builder = crude_gui_blueprint_node_builder_empty( &devmenu_technique_editor->devmenu->engine->gpu );
+    builder.header_texture_handle = devmenu_technique_editor->header_background_texture_handle;
     
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->nodes ); ++node_index )
     {
@@ -3002,7 +3021,7 @@ crude_devmenu_technique_editor_on_frame_
 
       crude_gui_blueprint_node_builder_end( &builder );
     }
-    
+//    
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->nodes ); ++node_index )
     {
       crude_technique_editor_node *node = &devmenu_technique_editor->nodes[ node_index ];
@@ -3549,7 +3568,7 @@ crude_devmenu_technique_editor_on_frame_
     }
 
     ImGui::SetCursorScreenPos(cursorTopLeft);
-  }
+}
 
 #if 1
   ImVec2 openPopupPosition = ImGui::GetMousePos();
@@ -3847,7 +3866,38 @@ crude_devmenu_technique_editor_on_frame_
 
   //ImGui::ShowTestWindow();
   //ImGui::ShowMetricsWindow();
+}
 
+crude_technique_editor_pin
+crude_technique_editor_pin_empty
+(
+)
+{
+  crude_technique_editor_pin pin = CRUDE_COMPOUNT_EMPTY( crude_technique_editor_pin );
+  return pin;
+}
+
+void
+crude_technique_editor_node_initialize
+(
+  _In_ crude_technique_editor_node                        *node,
+  _In_ crude_heap_allocator                               *allocator
+)
+{
+  *node = CRUDE_COMPOUNT_EMPTY( crude_technique_editor_node );
+  node->color = CRUDE_COMPOUNT_EMPTY( XMFLOAT4, { 255, 255, 255 } );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, 0, crude_heap_allocator_pack( allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->outputs, 0, crude_heap_allocator_pack( allocator ) );
+}
+
+void
+crude_technique_editor_node_deinitialize
+(
+  _In_ crude_technique_editor_node                        *node
+)
+{
+  CRUDE_ARRAY_DEINITIALIZE( node->inputs );
+  CRUDE_ARRAY_DEINITIALIZE( node->outputs );
 }
 
 void
@@ -3857,6 +3907,8 @@ crude_devmenu_technique_editor_initialize
   _In_ crude_devmenu                                      *devmenu
 )
 {
+  *devmenu_technique_editor = CRUDE_COMPOUNT_EMPTY( crude_devmenu_technique_editor );
+
   devmenu->technique_editor.enabled = false;
   
   devmenu_technique_editor->next_id = 1;
@@ -3867,6 +3919,11 @@ crude_devmenu_technique_editor_initialize
   devmenu_technique_editor->header_background_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   devmenu_technique_editor->restore_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   devmenu_technique_editor->save_icon_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  devmenu_technique_editor->devmenu = devmenu;
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( devmenu_technique_editor->nodes, 0, crude_heap_allocator_pack( devmenu->dev_heap_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( devmenu_technique_editor->links, 0, crude_heap_allocator_pack( devmenu->dev_heap_allocator ) );
+  CRUDE_HASHMAP_INITIALIZE( devmenu_technique_editor->node_id_to_touch_time, crude_heap_allocator_pack( devmenu->dev_heap_allocator ) );
 
   crude_devmenu_technique_editor_on_start_( devmenu_technique_editor );
 }
@@ -3877,7 +3934,7 @@ crude_devmenu_technique_editor_deinitialize
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  ax::NodeEditor::DestroyEditor( devmenu_technique_editor->ax_context );
+  crude_devmenu_technique_editor_on_stop_( devmenu_technique_editor );
 }
 
 void
@@ -3901,7 +3958,7 @@ crude_devmenu_technique_editor_draw
 
   // !TODO
   // ImGui::ShowMetricsWindow( );
-
+  
   ImGuiIO *imgui_io = &ImGui::GetIO();
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   ImGui::SetNextWindowSize( imgui_io->DisplaySize);
@@ -3918,25 +3975,7 @@ crude_devmenu_technique_editor_draw
         ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, windowBorderSize);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, windowRounding);
-
-  ax::NodeEditor::SetCurrentEditor( devmenu_technique_editor->ax_context );
-  ax::NodeEditor::Begin( "Technique Editor Node", ImVec2( 0.0, 0.0f ) );
-
-  int unique_id = 1;
-  ax::NodeEditor::BeginNode(unique_id++);
-      ImGui::Text("Node A");
-      ax::NodeEditor::BeginPin(unique_id++, ax::NodeEditor::PinKind::Input);
-          ImGui::Text("-> In");
-      ax::NodeEditor::EndPin();
-      ImGui::SameLine();
-      ax::NodeEditor::BeginPin(unique_id++, ax::NodeEditor::PinKind::Output);
-          ImGui::Text("Out ->");
-      ax::NodeEditor::EndPin();
-  ax::NodeEditor::EndNode();
-
-  ax::NodeEditor::End();
-  ax::NodeEditor::SetCurrentEditor(nullptr);
-  
+  crude_devmenu_technique_editor_on_frame_( devmenu_technique_editor );
   ImGui::PopStyleVar(2);
   ImGui::End();
   ImGui::PopStyleVar(2);

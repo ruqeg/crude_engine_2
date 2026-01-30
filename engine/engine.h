@@ -41,6 +41,10 @@ typedef struct crude_engine
   crude_stack_allocator                                    temporary_allocator;
   crude_heap_allocator                                     cgltf_temporary_allocator;
   crude_stack_allocator                                    model_renderer_resources_manager_temporary_allocator;
+#if CRUDE_DEVELOP
+  crude_stack_allocator                                    develop_temporary_allocator;
+  crude_heap_allocator                                     develop_heap_allocator;
+#endif
 
   /******************************
    *

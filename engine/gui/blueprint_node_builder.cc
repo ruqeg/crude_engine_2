@@ -23,16 +23,16 @@ crude_gui_blueprint_node_builder_end_pin_
   _In_ crude_gui_blueprint_node_builder                   *builder
 );
 
-void
-crude_gui_blueprint_node_builder_initialize
+crude_gui_blueprint_node_builder
+crude_gui_blueprint_node_builder_empty
 (
-  _In_ crude_gui_blueprint_node_builder                   *builder,
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  *builder = CRUDE_COMPOUNT_EMPTY( crude_gui_blueprint_node_builder );
-  builder->header_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  builder->gpu = gpu;
+  crude_gui_blueprint_node_builder builder = CRUDE_COMPOUNT_EMPTY( crude_gui_blueprint_node_builder );
+  builder.header_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  builder.gpu = gpu;
+  return builder;
 }
 
 void
@@ -97,15 +97,15 @@ crude_gui_blueprint_node_builder_end
           ImColor(255, 255, 255, 96 * alpha / (3 * 255)), 1.0f);
       }
     }
-
-    builder->current_node_id = 0;
-
-    ImGui::PopID();
-
-    ax::NodeEditor::PopStyleVar();
-
-    crude_gui_blueprint_node_builder_set_stage_( builder, CRUDE_GUI_BLUEPRINT_NODE_BUILDER_STAGE_INVALID );
   }
+
+  builder->current_node_id = 0;
+
+  ImGui::PopID();
+
+  ax::NodeEditor::PopStyleVar();
+
+  crude_gui_blueprint_node_builder_set_stage_( builder, CRUDE_GUI_BLUEPRINT_NODE_BUILDER_STAGE_INVALID );
 }
 
 void

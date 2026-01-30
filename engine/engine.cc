@@ -336,6 +336,11 @@ crude_engine_initialize_allocators_
   crude_stack_allocator_initialize( &engine->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
   crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
   crude_stack_allocator_initialize( &engine->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
+  
+#if CRUDE_DEVELOP
+  crude_heap_allocator_initialize( &engine->develop_heap_allocator, CRUDE_RMEGA( 16 ), "develop_heap_allocator" );
+  crude_stack_allocator_initialize( &engine->develop_temporary_allocator, CRUDE_RMEGA( 16 ), "develop_temporary_allocator" );
+#endif
 }
 
 static void
@@ -347,6 +352,12 @@ crude_engine_deinitialize_allocators_
   crude_heap_allocator_deinitialize( &engine->common_allocator );
   crude_heap_allocator_deinitialize( &engine->resources_allocator );
   crude_stack_allocator_deinitialize( &engine->temporary_allocator );
+  crude_heap_allocator_deinitialize( &engine->cgltf_temporary_allocator );
+  crude_stack_allocator_deinitialize( &engine->model_renderer_resources_manager_temporary_allocator );
+#if CRUDE_DEVELOP
+  crude_heap_allocator_deinitialize( &engine->develop_heap_allocator );
+  crude_stack_allocator_deinitialize( &engine->develop_temporary_allocator );
+#endif
 }
 
 void

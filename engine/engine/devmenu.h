@@ -124,7 +124,7 @@ typedef struct crude_technique_editor_pin
 {
   ax::NodeEditor::PinId                                    id;
   crude_technique_editor_node                             *node;
-  char                                                     name[ 512 ];
+  char const                                              *name;
   crude_technique_editor_pin_type                          type;
   crude_technique_editor_pin_kind                          kind;
 } crude_technique_editor_pin;
@@ -132,7 +132,7 @@ typedef struct crude_technique_editor_pin
 typedef struct crude_technique_editor_node
 {
   ax::NodeEditor::NodeId                                   id;
-  char                                                     name[ 512 ];
+  char const                                              *name;
   crude_technique_editor_pin                              *inputs;
   crude_technique_editor_pin                              *outputs;
   XMFLOAT4                                                 color;
@@ -187,6 +187,7 @@ typedef struct crude_devmenu
   uint32                                                   current_framerate;
 
   crude_stack_allocator                                   *dev_stack_allocator;
+  crude_heap_allocator                                    *dev_heap_allocator;
 } crude_devmenu;
 
 /***********************
@@ -607,6 +608,24 @@ crude_devmenu_viewport_callback
  * Develop Technique Editor
  * 
  ***********************/
+crude_technique_editor_pin
+crude_technique_editor_pin_empty
+(
+);
+
+void
+crude_technique_editor_node_initialize
+(
+  _In_ crude_technique_editor_node                        *node,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+void
+crude_technique_editor_node_deinitialize
+(
+  _In_ crude_technique_editor_node                        *node
+);
+
 CRUDE_API void
 crude_devmenu_technique_editor_initialize
 (
