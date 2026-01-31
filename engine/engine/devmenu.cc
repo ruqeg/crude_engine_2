@@ -3934,6 +3934,15 @@ crude_devmenu_technique_editor_deinitialize
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( devmenu_technique_editor->nodes ); ++i )
+  {
+    crude_technique_editor_node_deinitialize( &devmenu_technique_editor->nodes[ i ] );
+  }
+
+  CRUDE_ARRAY_DEINITIALIZE( devmenu_technique_editor->nodes );
+  CRUDE_ARRAY_DEINITIALIZE( devmenu_technique_editor->links );
+  CRUDE_HASHMAP_DEINITIALIZE( devmenu_technique_editor->node_id_to_touch_time );
+
   crude_devmenu_technique_editor_on_stop_( devmenu_technique_editor );
 }
 
