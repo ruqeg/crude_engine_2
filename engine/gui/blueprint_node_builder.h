@@ -39,9 +39,10 @@ typedef struct crude_gui_blueprint_node_builder
   bool                                                     has_header;
 } crude_gui_blueprint_node_builder;
 
-CRUDE_API crude_gui_blueprint_node_builder
-crude_gui_blueprint_node_builder_empty
+CRUDE_API void
+crude_gui_blueprint_node_builder_initialize
 (
+  _In_ crude_gui_blueprint_node_builder                   *builder,
   _In_ crude_gfx_device                                   *gpu
 );
 

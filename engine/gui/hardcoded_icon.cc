@@ -1,7 +1,7 @@
 #include <engine/gui/hardcoded_icon.h>
 
 void
-crude_gui_draw_hardcoded_icon_im
+crude_gui_queue_render_hardcoded_icon_im
 (
   _In_ ImDrawList                                         *draw_list,
   _In_ ImVec2 const                                       *a,
@@ -250,7 +250,7 @@ crude_gui_draw_hardcoded_icon_im
 
 
 void
-crude_gui_draw_icon
+crude_gui_queue_render_icon
 (
   _In_ XMFLOAT2                                            size,
   _In_ crude_gui_hardcoded_icon_type                       type,
@@ -266,7 +266,7 @@ crude_gui_draw_icon
     ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
     ImVec2 cursor_end = cursor_pos + im_size;
     ImDrawList *draw_list  = ImGui::GetWindowDrawList();
-    crude_gui_draw_hardcoded_icon_im( draw_list, &cursor_pos, &cursor_end, type, filled,
+    crude_gui_queue_render_hardcoded_icon_im( draw_list, &cursor_pos, &cursor_end, type, filled,
       CRUDE_COMPOUNT( ImColor, { color.x, color.y, color.z, color.w } ),
       CRUDE_COMPOUNT( ImColor, { inner_color.x, inner_color.y, inner_color.z, inner_color.w } ) );
   }

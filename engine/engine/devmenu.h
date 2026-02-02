@@ -2,6 +2,7 @@
 
 #if CRUDE_DEVELOP
 
+#include <engine/gui/blueprint.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
@@ -90,79 +91,9 @@ typedef struct crude_devmenu_viewport
   bool                                                     enabled;
 } crude_devmenu_viewport;
 
-
-typedef enum crude_technique_editor_pin_type
-{
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOW,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_BOOL,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_INT,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FLOAT,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_STRING,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_OBJECT,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_FUNCTION,
-  CRUDE_TECHNIQUE_EDITOR_PIN_TYPE_DELEGATE,
-} crude_technique_editor_pin_type;
-
-typedef enum crude_technique_editor_pin_kind
-{
-  CRUDE_TECHNIQUE_EDITOR_PIN_KIND_OUTPUT,
-  CRUDE_TECHNIQUE_EDITOR_PIN_KIND_INPUT
-} crude_technique_editor_pin_kind;
-
-typedef enum crude_technique_editor_node_type
-{
-  CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_BLUEPRINT,
-  CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_SIMPLE,
-  CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_TREE,
-  CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_COMMENT,
-  CRUDE_TECHNIQUE_EDITOR_NODE_TYPE_HOUDINI
-} crude_technique_editor_node_type;
-
-typedef struct crude_technique_editor_node crude_technique_editor_node;
-
-typedef struct crude_technique_editor_pin
-{
-  ax::NodeEditor::PinId                                    id;
-  crude_technique_editor_node                             *node;
-  char const                                              *name;
-  crude_technique_editor_pin_type                          type;
-  crude_technique_editor_pin_kind                          kind;
-} crude_technique_editor_pin;
-
-typedef struct crude_technique_editor_node
-{
-  ax::NodeEditor::NodeId                                   id;
-  char const                                              *name;
-  crude_technique_editor_pin                              *inputs;
-  crude_technique_editor_pin                              *outputs;
-  XMFLOAT4                                                 color;
-  crude_technique_editor_node_type                         type;
-  XMFLOAT2                                                 size;
-  char                                                     state[ 512 ];
-  char                                                     saved_state[ 512 ];
-} crude_technique_editor_node;
-
-typedef struct crude_technique_editor_link
-{
-  ax::NodeEditor::LinkId                                   id;
-  ax::NodeEditor::PinId                                    start_pin_id;
-  ax::NodeEditor::PinId                                    end_pin_id;
-  ImColor                                                  color;
-} crude_technique_editor_link;
-
 typedef struct crude_devmenu_technique_editor
 {
-  ax::NodeEditor::EditorContext                           *ax_context;
-  int32                                                    next_id;
-  int32                                                    pin_icon_size;
-  crude_technique_editor_node                             *nodes;
-  crude_technique_editor_link                             *links;
-  crude_gfx_texture_handle                                 header_background_texture_handle;
-  crude_gfx_texture_handle                                 save_icon_texture_handle;
-  crude_gfx_texture_handle                                 restore_icon_texture_handle;
-  float32                                                  touch_time;
-  struct { uint64 key; float value; }                     *node_id_to_touch_time;
-  bool                                                     show_ordinals;
+  crude_gui_blueprint                                      blueprint;
   crude_devmenu                                           *devmenu;
   bool                                                     enabled;
 } crude_devmenu_technique_editor;
@@ -608,24 +539,6 @@ crude_devmenu_viewport_callback
  * Develop Technique Editor
  * 
  ***********************/
-crude_technique_editor_pin
-crude_technique_editor_pin_empty
-(
-);
-
-void
-crude_technique_editor_node_initialize
-(
-  _In_ crude_technique_editor_node                        *node,
-  _In_ crude_heap_allocator                               *allocator
-);
-
-void
-crude_technique_editor_node_deinitialize
-(
-  _In_ crude_technique_editor_node                        *node
-);
-
 CRUDE_API void
 crude_devmenu_technique_editor_initialize
 (

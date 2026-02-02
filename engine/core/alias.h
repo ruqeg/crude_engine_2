@@ -157,3 +157,4 @@ typedef size_t        sizet;
  * 
  ***********************************************/
 #define CRUDE_COUNTOF( a ) ( sizeof( a ) / sizeof( a[ 0 ] ) )
+#define CRUDE_SWAP( a, b ) { decltype( a ) temp = a; a = b; b = temp; }

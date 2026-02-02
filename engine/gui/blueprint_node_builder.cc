@@ -23,16 +23,16 @@ crude_gui_blueprint_node_builder_end_pin_
   _In_ crude_gui_blueprint_node_builder                   *builder
 );
 
-crude_gui_blueprint_node_builder
-crude_gui_blueprint_node_builder_empty
+void
+crude_gui_blueprint_node_builder_initialize
 (
+  _In_ crude_gui_blueprint_node_builder                   *builder,
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  crude_gui_blueprint_node_builder builder = CRUDE_COMPOUNT_EMPTY( crude_gui_blueprint_node_builder );
-  builder.header_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  builder.gpu = gpu;
-  return builder;
+  *builder = CRUDE_COMPOUNT_EMPTY( crude_gui_blueprint_node_builder );
+  builder->header_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  builder->gpu = gpu;
 }
 
 void
