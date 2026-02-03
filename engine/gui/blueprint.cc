@@ -416,12 +416,6 @@ crude_gui_blueprint_queue_render
           ImGui::TextUnformatted( input->name );
           ImGui::Spring( 0 );
         }
-
-        if ( input->type == CRUDE_GUI_BLUEPRINT_PIN_TYPE_BOOL )
-        {
-          ImGui::Button("Hello");
-          ImGui::Spring(0);
-        }
         
         ImGui::PopStyleVar();
         crude_gui_blueprint_node_builder_end_input( &node_builder );

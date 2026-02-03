@@ -1,6 +1,9 @@
 #if CRUDE_DEVELOP
 
+#define DEVMENU_HEIGHT 25
+
 #include <SDL3/SDL.h>
+#include <thirdparty/nativefiledialog-extended/src/include/nfd.h>
 
 #include <engine/core/hash_map.h>
 #include <engine/platform/platform.h>
@@ -12,7 +15,6 @@
 #include <engine/graphics/imgui.h>
 #include <engine/engine.h>
 #include <engine/core/profiler.h>
-#include <engine/gui/blueprint.h>
 
 #include <engine/engine/devmenu.h>
 
@@ -131,13 +133,13 @@ crude_devmenu_draw
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
   {
-    ImGui::SetNextWindowSize( ImVec2( devmenu->engine->gpu.renderer_size.x, 25 ) );
+    ImGui::SetNextWindowSize( ImVec2( devmenu->engine->gpu.renderer_size.x, DEVMENU_HEIGHT ) );
     ImGui::Begin( "Devmenu", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground );
     ImGui::GetIO().FontGlobalScale = 0.5f;
     for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
     {
       ImGui::SetCursorPos( ImVec2( i * ( 100 ), 0 ) );
-      if ( ImGui::Button( devmenu_options[ i ].name, ImVec2( 100, 25 ) ) )
+      if ( ImGui::Button( devmenu_options[ i ].name, ImVec2( 100, DEVMENU_HEIGHT ) ) )
       {
         devmenu_options[ i ].callback( devmenu );
       }
@@ -1710,20 +1712,6 @@ crude_devmenu_viewport_callback
  * Develop Technique Editor
  * 
  ***********************/
-
-static void
-crude_devmenu_technique_editor_blueprint_create_node_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gui_blueprint_node                          **node
-);
-
-crude_gui_blueprint_node*
-crude_devmenu_technique_editor_spawn_branch_node_
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
-);
-
 void
 crude_devmenu_technique_editor_initialize
 (
@@ -1731,18 +1719,16 @@ crude_devmenu_technique_editor_initialize
   _In_ crude_devmenu                                      *devmenu
 )
 {
-  crude_gui_blueprint_create_node_callback_container       callback_container;
-
   *devmenu_technique_editor = CRUDE_COMPOUNT_EMPTY( crude_devmenu_technique_editor );
-
-  devmenu->technique_editor.devmenu = devmenu;
-  devmenu->technique_editor.enabled = false;
-
-  callback_container.fun = crude_devmenu_technique_editor_blueprint_create_node_callback_;
-  callback_container.ctx = devmenu_technique_editor;
-
-  crude_gui_blueprint_initialize( &devmenu->technique_editor.blueprint, callback_container, &devmenu->engine->gpu, devmenu->dev_heap_allocator, devmenu->dev_stack_allocator, "devmenu_technique_editor_settings.txt" );
-}
+  devmenu_technique_editor->devmenu = devmenu;
+  devmenu_technique_editor->technique_absolute_filepath[ 0 ] = 0;
+  devmenu_technique_editor->nodes_visual_offset_speed = 1.f;
+  devmenu_technique_editor->nodes_visual_scale_speed = 1.f;
+  crude_gfx_render_graph_builder_initialize( &devmenu_technique_editor->render_graph_builder, &devmenu->engine->gpu );
+  crude_gfx_render_graph_initialize( &devmenu_technique_editor->render_graph, &devmenu_technique_editor->render_graph_builder );
+  devmenu_technique_editor->nodes_visual_offset = CRUDE_COMPOUNT( XMFLOAT2, { 1.f, 1.f } );
+  devmenu_technique_editor->nodes_visual_scale = 1.f;
+} 
 
 void
 crude_devmenu_technique_editor_deinitialize
@@ -1750,7 +1736,6 @@ crude_devmenu_technique_editor_deinitialize
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
-  crude_gui_blueprint_deinitialize( &devmenu_technique_editor->blueprint );
 }
 
 void
@@ -1767,6 +1752,11 @@ crude_devmenu_technique_editor_draw
   _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
 )
 {
+  crude_gfx_render_graph                                  *render_graph;
+  crude_gfx_render_graph_builder                          *render_graph_builder;
+  ImGuiIO                                                 *imgui_io;
+  float32                                                  window_border_size, window_rounding;
+
   if ( !devmenu_technique_editor->enabled )
   {
     return;
@@ -1775,7 +1765,104 @@ crude_devmenu_technique_editor_draw
   // !TODO
   // ImGui::ShowMetricsWindow( );
   
-  crude_gui_blueprint_queue_render( &devmenu_technique_editor->blueprint, "Technique Editor" );
+  imgui_io = &ImGui::GetIO();
+  ImGui::SetNextWindowPos( ImVec2( 0, DEVMENU_HEIGHT ) );
+  ImGui::SetNextWindowSize( ImVec2( imgui_io->DisplaySize.x, imgui_io->DisplaySize.y - DEVMENU_HEIGHT ) );
+  window_border_size = ImGui::GetStyle( ).WindowBorderSize;
+  window_rounding = ImGui::GetStyle( ).WindowRounding;
+  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
+  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
+  ImGui::Begin( "Technique Editor", NULL, ImGuiWindowFlags_NoTitleBar |
+    ImGuiWindowFlags_NoResize |
+    ImGuiWindowFlags_NoMove |
+    ImGuiWindowFlags_NoScrollbar |
+    ImGuiWindowFlags_NoScrollWithMouse |
+    ImGuiWindowFlags_NoSavedSettings |
+    ImGuiWindowFlags_NoBringToFrontOnFocus );
+  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, window_border_size );
+  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, window_rounding );
+  
+  if ( ImGui::Button( "Parse From File" ) )
+  {
+    nfdu8filteritem_t                                       ndf_filters[ ] = { { "Crude Render Graph", "crude_render_graph" } };
+
+    nfdu8char_t                                            *ndf_absolute_filepath;
+    nfdopendialogu8args_t                                   ndf_args;
+    nfdresult_t                                             ndf_result;
+
+    ndf_args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
+    ndf_args.filterList = ndf_filters;
+    ndf_args.filterCount = CRUDE_COUNTOF( ndf_filters );
+
+    ndf_result = NFD_OpenDialogU8_With( &ndf_absolute_filepath, &ndf_args );
+    if ( ndf_result == NFD_OKAY )
+    {
+      crude_snprintf( devmenu_technique_editor->technique_absolute_filepath, sizeof( devmenu_technique_editor->technique_absolute_filepath ), "%s", ndf_absolute_filepath );
+      crude_gfx_render_graph_parse_from_file( &devmenu_technique_editor->render_graph, devmenu_technique_editor->technique_absolute_filepath, devmenu_technique_editor->devmenu->dev_stack_allocator );
+      NFD_FreePathU8( ndf_absolute_filepath );
+    }
+    else if ( ndf_result == NFD_CANCEL )
+    {
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_FILEIO, "User pressed cancel!" );
+    }
+    else 
+    {
+      CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Error: %s", NFD_GetError( ) );
+    }
+  }
+  ImGui::SameLine( );
+  ImGui::InputFloat( "nodes_visual_offset_speed", &devmenu_technique_editor->nodes_visual_offset_speed, 0.001f );
+  ImGui::SameLine( );
+  ImGui::InputFloat( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_scale_speed, 0.001f );
+  ImGui::SameLine( );
+  ImGui::InputFloat2( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_offset.x );
+  ImGui::SameLine( );
+  ImGui::InputFloat( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_scale );
+  ImGui::SameLine( );
+  
+  if ( ImGui::IsMouseDragging( ImGuiMouseButton_Right ) )
+  {
+    ImVec2 delta = ImGui::GetMouseDragDelta( ImGuiMouseButton_Right );
+    
+    devmenu_technique_editor->nodes_visual_offset.x += delta.x * devmenu_technique_editor->nodes_visual_offset_speed;
+    devmenu_technique_editor->nodes_visual_offset.y += delta.y * devmenu_technique_editor->nodes_visual_offset_speed;
+    ImGui::ResetMouseDragDelta( ImGuiMouseButton_Right );
+  }
+  render_graph = &devmenu_technique_editor->render_graph;
+  render_graph_builder = &devmenu_technique_editor->render_graph_builder;
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+  {
+    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph_builder, render_graph->nodes[ i ] );
+    
+#define HEIGHT 300
+#define WIDTH 200
+
+    ImVec2 position( devmenu_technique_editor->nodes_visual_offset.x, devmenu_technique_editor->nodes_visual_offset.y );
+    position.y += ( imgui_io->DisplaySize.y - DEVMENU_HEIGHT - HEIGHT ) / 2;
+    position.x += ( WIDTH + 100 ) * i + 100;
+
+    ImGui::SetNextWindowPos( position );
+    ImGui::SetNextWindowSize( ImVec2( WIDTH, HEIGHT ) );
+    ImGui::Begin( node->name, NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove );
+    ImGui::Text( "Render Pass" );
+    ImGui::Text( "Name: \"%s\"", node->name );
+    ImGui::Text( "Type: %s", node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS ? "Graphics" : "Compute" );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+    {
+
+    }
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
+    {
+    }
+  //crude_gfx_render_graph_resource_handle                  *inputs;
+  //crude_gfx_render_graph_resource_handle                  *outputs;
+
+    ImGui::End();
+  }
+  
+  ImGui::PopStyleVar( 2 );
+  ImGui::End( );
+  ImGui::PopStyleVar( 2 );
 }
 
 void
@@ -1785,35 +1872,6 @@ crude_devmenu_technique_editor_callback
 )
 {
   devmenu->technique_editor.enabled = !devmenu->technique_editor.enabled;
-}
-
-void
-crude_devmenu_technique_editor_blueprint_create_node_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ crude_gui_blueprint_node                          **node
-)
-{
-  crude_devmenu_technique_editor *devmenu_technique_editor = CRUDE_CAST( crude_devmenu_technique_editor*, ctx );
-
-  if (ImGui::MenuItem("Branch"))
-  {
-    *node = crude_devmenu_technique_editor_spawn_branch_node_( devmenu_technique_editor );
-  }
-}
-
-crude_gui_blueprint_node*
-crude_devmenu_technique_editor_spawn_branch_node_
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
-)
-{
-  crude_gui_blueprint *blueprint = &devmenu_technique_editor->blueprint;
-  crude_gui_blueprint_node *node = crude_gui_blueprint_create_node_unsafe_ptr( blueprint, "Pass", CRUDE_COMPOUNT( XMFLOAT4, { 1.f, 1.f, 1.f, 1.f } ) );
-  crude_gui_blueprint_add_input_pin_to_node( blueprint, node, "Inputs", CRUDE_GUI_BLUEPRINT_PIN_TYPE_FLOW );
-  crude_gui_blueprint_add_output_pin_to_node( blueprint, node, "Outputs", CRUDE_GUI_BLUEPRINT_PIN_TYPE_FLOW );
-  crude_gui_blueprint_build_nodes( blueprint );
-  return node;
 }
 
 #endif

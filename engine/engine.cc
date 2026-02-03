@@ -553,7 +553,7 @@ crude_engine_initialize_graphics_
   crude_gfx_asynchronous_loader_initialize( &engine->async_loader, &engine->gpu );
   crude_gfx_asynchronous_loader_manager_add_loader( &engine->asynchronous_loader_manager, &engine->async_loader );
 
-  crude_snprintf( render_graph_file_path, sizeof( render_graph_file_path ), "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.json" );
+  crude_snprintf( render_graph_file_path, sizeof( render_graph_file_path ), "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.crude_render_graph" );
   crude_gfx_render_graph_parse_from_file( &engine->render_graph, render_graph_file_path, &engine->temporary_allocator );
   crude_gfx_render_graph_compile( &engine->render_graph, &engine->temporary_allocator );
   

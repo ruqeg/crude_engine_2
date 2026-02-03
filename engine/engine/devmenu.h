@@ -2,7 +2,6 @@
 
 #if CRUDE_DEVELOP
 
-#include <engine/gui/blueprint.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
@@ -93,8 +92,14 @@ typedef struct crude_devmenu_viewport
 
 typedef struct crude_devmenu_technique_editor
 {
-  crude_gui_blueprint                                      blueprint;
   crude_devmenu                                           *devmenu;
+  crude_gfx_render_graph                                   render_graph;
+  crude_gfx_render_graph_builder                           render_graph_builder;
+  char                                                     technique_absolute_filepath[ 1024 ];
+  float32                                                  nodes_visual_offset_speed;
+  float32                                                  nodes_visual_scale_speed;
+  XMFLOAT2                                                 nodes_visual_offset;
+  float32                                                  nodes_visual_scale;
   bool                                                     enabled;
 } crude_devmenu_technique_editor;
 
