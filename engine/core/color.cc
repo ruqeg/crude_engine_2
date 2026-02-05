@@ -63,6 +63,33 @@ crude_color_a
   return ( ( color >> 24 ) & 0xff ) / 255.f;
 }
 
+uint8 
+crude_color_r_u8
+(
+  _In_ crude_color                                         color
+)
+{
+  return ( color & 0xff );
+}
+
+uint8 
+crude_color_g_u8
+(
+  _In_ crude_color                                         color
+)
+{
+  return ( ( color >> 8 ) & 0xff );
+}
+
+uint8 
+crude_color_b_u8
+(
+  _In_ crude_color                                         color
+)
+{
+  return ( ( color >> 16 ) & 0xff );
+}
+
 CRUDE_API crude_color
 crude_color_from_u8
 (

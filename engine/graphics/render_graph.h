@@ -3,6 +3,9 @@
 #include <engine/graphics/gpu_device.h>
 #include <engine/core/memory.h>
 
+#define CRUDE_GFX_RENDER_GRAPH_NODE_NAME_MAX_LENGTH 512
+#define CRUDE_GFX_RENDER_GRAPH_RESOURCE_NAME_MAX_LENGTH 512
+
 /************************************************
  *
  * Render Graph Handles
@@ -82,7 +85,7 @@ typedef struct crude_gfx_render_graph_resource
   crude_gfx_render_graph_node_handle                       producer;
   crude_gfx_render_graph_resource_handle                   output_handle;
   int32                                                    ref_count;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_RENDER_GRAPH_RESOURCE_NAME_MAX_LENGTH ];
 } crude_gfx_render_graph_resource;
 
 typedef struct crude_gfx_render_graph_resource_input_creation
@@ -139,7 +142,7 @@ typedef struct crude_gfx_render_graph_node
   crude_gfx_render_graph_resource_handle                  *outputs;
   crude_gfx_render_graph_node_handle                      *edges;
   bool                                                     enabled;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_RENDER_GRAPH_NODE_NAME_MAX_LENGTH ];
   crude_gfx_render_graph_node_type                         type;
 } crude_gfx_render_graph_node;
 

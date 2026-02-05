@@ -69,7 +69,7 @@ crude_gfx_render_graph_parse_from_file
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  crude_string_buffer                                      string_buffer;
+  crude_string_buffer                                      temporary_string_buffer;
   cJSON                                                   *render_graph_json;
   cJSON const                                             *passes;
   cJSON const                                             *pass;
@@ -83,10 +83,9 @@ crude_gfx_render_graph_parse_from_file
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", render_graph_absolute_filepath );
     return;
   }
-
-  crude_string_buffer_initialize( &string_buffer, CRUDE_RKILO( 4 ), crude_linear_allocator_pack( &render_graph->linear_allocator ) );
-
+  
   temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
+
   crude_read_file( render_graph_absolute_filepath, crude_stack_allocator_pack( temporary_allocator ), &render_graph_json_buffer, &render_graph_json_buffer_size );
   render_graph_json = cJSON_ParseWithLength( CRUDE_REINTERPRET_CAST( char const*, render_graph_json_buffer ), render_graph_json_buffer_size );
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_maker );
@@ -112,6 +111,8 @@ crude_gfx_render_graph_parse_from_file
     
   
     temporary_allocator_maker = crude_stack_allocator_get_marker( temporary_allocator );
+    
+    crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 4 ), crude_stack_allocator_pack( temporary_allocator ) );
 
     pass_inputs = cJSON_GetObjectItemCaseSensitive( pass, "inputs" );
     pass_outputs = cJSON_GetObjectItemCaseSensitive( pass, "outputs" );
@@ -137,15 +138,8 @@ crude_gfx_render_graph_parse_from_file
         creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_input_creation );
         creation.type = string_to_resource_type_( cJSON_GetStringValue( input_type ) );
         creation.resource_info.external = false;
-        creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) );
-
-        CRUDE_ARRAY_PUSH( node_creation.inputs, CRUDE_COMPOUNT( crude_gfx_render_graph_resource_input_creation, {
-          .type = string_to_resource_type_( cJSON_GetStringValue( input_type ) ),
-          .resource_info = {
-            .external = false,
-          },
-          .name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( input_name ) ),
-        } ) );
+        creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( input_name ) );
+        CRUDE_ARRAY_PUSH( node_creation.inputs, creation );
       }
     }
     
@@ -162,7 +156,7 @@ crude_gfx_render_graph_parse_from_file
 
       output_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_output_creation );
       output_creation.type = string_to_resource_type_( cJSON_GetStringValue( output_type ) );
-      output_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( output_name ) );
+      output_creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( output_name ) );
       output_creation.resource_info.texture.handle.index = CRUDE_RESOURCE_INDEX_INVALID;
 
       switch ( output_creation.type )
@@ -239,7 +233,7 @@ crude_gfx_render_graph_parse_from_file
     pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
     pass_pipeline_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
 
-    node_creation.name = crude_string_buffer_append_use_f( &string_buffer, "%s", cJSON_GetStringValue( pass_name ) );
+    node_creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( pass_name ) );
     node_creation.enabled = pass_enabled ? cJSON_GetNumberValue( pass_enabled ) : 1;
     
     node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS;
@@ -970,7 +964,7 @@ crude_gfx_render_graph_builder_create_node
   }
 
   node = crude_gfx_render_graph_builder_access_node( builder, node_handle );
-  node->name = creation->name;
+  crude_string_copy( node->name, creation->name, sizeof( node->name ) );
   node->enabled = creation->enabled;
   node->type = creation->type;
   node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
@@ -1012,8 +1006,9 @@ crude_gfx_render_graph_builder_create_node_output
   }
 
   crude_gfx_render_graph_resource* resource = crude_gfx_render_graph_builder_access_resource( builder, resource_handle );
-  resource->name = creation->name;
   resource->type = creation->type;
+  
+  crude_string_copy( resource->name, creation->name, sizeof( resource->name ) );
   
   if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )
   {
@@ -1049,8 +1044,9 @@ crude_gfx_render_graph_builder_create_node_input
   resource->producer = CRUDE_GFX_RENDER_GRAPH_NODE_HANDLE_INVALID;
   resource->output_handle = CRUDE_GFX_RENDER_GRAPH_RESOURCE_HANDLE_INVALID;
   resource->type = creation->type;
-  resource->name = creation->name;
   resource->ref_count = 0;
+
+  crude_string_copy( resource->name, creation->name, sizeof( resource->name ) );
   
   return resource_handle;
 }

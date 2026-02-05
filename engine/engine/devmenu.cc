@@ -1723,7 +1723,7 @@ crude_devmenu_technique_editor_initialize
   devmenu_technique_editor->devmenu = devmenu;
   devmenu_technique_editor->technique_absolute_filepath[ 0 ] = 0;
   devmenu_technique_editor->nodes_visual_offset_speed = 1.f;
-  devmenu_technique_editor->nodes_visual_scale_speed = 1.f;
+  devmenu_technique_editor->nodes_visual_scale_speed = 0.025f;
   crude_gfx_render_graph_builder_initialize( &devmenu_technique_editor->render_graph_builder, &devmenu->engine->gpu );
   crude_gfx_render_graph_initialize( &devmenu_technique_editor->render_graph, &devmenu_technique_editor->render_graph_builder );
   devmenu_technique_editor->nodes_visual_offset = CRUDE_COMPOUNT( XMFLOAT2, { 1.f, 1.f } );
@@ -1746,6 +1746,26 @@ crude_devmenu_technique_editor_update
 {
 }
 
+ImU32 crude_devmenu_technique_editor_random_resources_colors_[ ] =
+{
+  0xFF1E90FF, 0xFF228B22, 0xFF8B008B, 0xFF8A2BE2, 0xFFDC143C, 0xFF2E8B57, 0xFF4682B4, 0xFF5F9EA0,
+  0xFFBA55D3, 0xFF008000, 0xFF808000, 0xFF800000, 0xFF000080, 0xFF800080, 0xFF663399, 0xFF483D8B,
+  0xFF2F4F4F, 0xFF191970, 0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F,
+  0xFF8B0000, 0xFF9400D3, 0xFF9932CC, 0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B, 0xFF006400,
+  0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F, 0xFF8B0000, 0xFF9400D3, 0xFF9932CC,
+  0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B, 0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082,
+  0xFF2E8B57, 0xFF556B2F, 0xFF8B0000, 0xFF9400D3, 0xFF9932CC, 0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F,
+  0xFF008B8B, 0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F, 0xFF8B0000,
+  0xFF9400D3, 0xFF9932CC, 0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B, 0xFF006400, 0xFF8B4513,
+  0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F, 0xFF8B0000, 0xFF9400D3, 0xFF9932CC, 0xFF8B008B,
+  0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B, 0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57,
+  0xFF556B2F, 0xFF8B0000, 0xFF9400D3, 0xFF9932CC, 0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B,
+  0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F, 0xFF8B0000, 0xFF9400D3,
+  0xFF9932CC, 0xFF8B008B, 0xFF483D8B, 0xFF2F4F4F, 0xFF008B8B, 0xFF006400, 0xFF8B4513, 0xFFA0522D,
+  0xFF4B0082, 0xFF2E8B57, 0xFF556B2F, 0xFF8B0000, 0xFF9400D3, 0xFF9932CC, 0xFF8B008B, 0xFF483D8B,
+  0xFF2F4F4F, 0xFF008B8B, 0xFF006400, 0xFF8B4513, 0xFFA0522D, 0xFF4B0082, 0xFF2E8B57, 0xFF556B2F,
+};
+
 void
 crude_devmenu_technique_editor_draw
 (
@@ -1765,104 +1785,158 @@ crude_devmenu_technique_editor_draw
   // !TODO
   // ImGui::ShowMetricsWindow( );
   
-  imgui_io = &ImGui::GetIO();
-  ImGui::SetNextWindowPos( ImVec2( 0, DEVMENU_HEIGHT ) );
-  ImGui::SetNextWindowSize( ImVec2( imgui_io->DisplaySize.x, imgui_io->DisplaySize.y - DEVMENU_HEIGHT ) );
-  window_border_size = ImGui::GetStyle( ).WindowBorderSize;
-  window_rounding = ImGui::GetStyle( ).WindowRounding;
-  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
-  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
-  ImGui::Begin( "Technique Editor", NULL, ImGuiWindowFlags_NoTitleBar |
-    ImGuiWindowFlags_NoResize |
-    ImGuiWindowFlags_NoMove |
-    ImGuiWindowFlags_NoScrollbar |
-    ImGuiWindowFlags_NoScrollWithMouse |
-    ImGuiWindowFlags_NoSavedSettings |
-    ImGuiWindowFlags_NoBringToFrontOnFocus );
-  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, window_border_size );
-  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, window_rounding );
-  
-  if ( ImGui::Button( "Parse From File" ) )
-  {
-    nfdu8filteritem_t                                       ndf_filters[ ] = { { "Crude Render Graph", "crude_render_graph" } };
-
-    nfdu8char_t                                            *ndf_absolute_filepath;
-    nfdopendialogu8args_t                                   ndf_args;
-    nfdresult_t                                             ndf_result;
-
-    ndf_args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
-    ndf_args.filterList = ndf_filters;
-    ndf_args.filterCount = CRUDE_COUNTOF( ndf_filters );
-
-    ndf_result = NFD_OpenDialogU8_With( &ndf_absolute_filepath, &ndf_args );
-    if ( ndf_result == NFD_OKAY )
-    {
-      crude_snprintf( devmenu_technique_editor->technique_absolute_filepath, sizeof( devmenu_technique_editor->technique_absolute_filepath ), "%s", ndf_absolute_filepath );
-      crude_gfx_render_graph_parse_from_file( &devmenu_technique_editor->render_graph, devmenu_technique_editor->technique_absolute_filepath, devmenu_technique_editor->devmenu->dev_stack_allocator );
-      NFD_FreePathU8( ndf_absolute_filepath );
-    }
-    else if ( ndf_result == NFD_CANCEL )
-    {
-      CRUDE_LOG_INFO( CRUDE_CHANNEL_FILEIO, "User pressed cancel!" );
-    }
-    else 
-    {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Error: %s", NFD_GetError( ) );
-    }
-  }
-  ImGui::SameLine( );
-  ImGui::InputFloat( "nodes_visual_offset_speed", &devmenu_technique_editor->nodes_visual_offset_speed, 0.001f );
-  ImGui::SameLine( );
-  ImGui::InputFloat( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_scale_speed, 0.001f );
-  ImGui::SameLine( );
-  ImGui::InputFloat2( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_offset.x );
-  ImGui::SameLine( );
-  ImGui::InputFloat( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_scale );
-  ImGui::SameLine( );
-  
-  if ( ImGui::IsMouseDragging( ImGuiMouseButton_Right ) )
-  {
-    ImVec2 delta = ImGui::GetMouseDragDelta( ImGuiMouseButton_Right );
-    
-    devmenu_technique_editor->nodes_visual_offset.x += delta.x * devmenu_technique_editor->nodes_visual_offset_speed;
-    devmenu_technique_editor->nodes_visual_offset.y += delta.y * devmenu_technique_editor->nodes_visual_offset_speed;
-    ImGui::ResetMouseDragDelta( ImGuiMouseButton_Right );
-  }
-  render_graph = &devmenu_technique_editor->render_graph;
-  render_graph_builder = &devmenu_technique_editor->render_graph_builder;
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
-  {
-    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph_builder, render_graph->nodes[ i ] );
-    
-#define HEIGHT 300
-#define WIDTH 200
-
-    ImVec2 position( devmenu_technique_editor->nodes_visual_offset.x, devmenu_technique_editor->nodes_visual_offset.y );
-    position.y += ( imgui_io->DisplaySize.y - DEVMENU_HEIGHT - HEIGHT ) / 2;
-    position.x += ( WIDTH + 100 ) * i + 100;
-
-    ImGui::SetNextWindowPos( position );
-    ImGui::SetNextWindowSize( ImVec2( WIDTH, HEIGHT ) );
-    ImGui::Begin( node->name, NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove );
-    ImGui::Text( "Render Pass" );
-    ImGui::Text( "Name: \"%s\"", node->name );
-    ImGui::Text( "Type: %s", node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS ? "Graphics" : "Compute" );
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
-    {
-
-    }
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
-    {
-    }
-  //crude_gfx_render_graph_resource_handle                  *inputs;
-  //crude_gfx_render_graph_resource_handle                  *outputs;
-
-    ImGui::End();
-  }
-  
-  ImGui::PopStyleVar( 2 );
-  ImGui::End( );
-  ImGui::PopStyleVar( 2 );
+//  imgui_io = &ImGui::GetIO();
+//  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+//  ImGui::SetNextWindowSize( ImVec2( imgui_io->DisplaySize.x, imgui_io->DisplaySize.y ) );
+//  window_border_size = ImGui::GetStyle( ).WindowBorderSize;
+//  window_rounding = ImGui::GetStyle( ).WindowRounding;
+//  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
+//  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
+//  ImGui::PushStyleColor( ImGuiCol_WindowBg, IM_COL32( 30, 30, 40, 255 ) );
+//  ImGui::Begin( "Technique Editor", NULL, ImGuiWindowFlags_NoTitleBar |
+//    ImGuiWindowFlags_NoResize |
+//    ImGuiWindowFlags_NoMove |
+//    ImGuiWindowFlags_NoScrollbar |
+//    ImGuiWindowFlags_NoScrollWithMouse |
+//    ImGuiWindowFlags_NoSavedSettings |
+//    ImGuiWindowFlags_NoBringToFrontOnFocus );
+//  ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, window_border_size );
+//  ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, window_rounding );
+//
+//  float32 nodes_visual_scale = CRUDE_MAX( devmenu_technique_editor->nodes_visual_scale, 0.5f );
+//  render_graph = &devmenu_technique_editor->render_graph;
+//  render_graph_builder = &devmenu_technique_editor->render_graph_builder;
+//
+//  uint32 child_index = 0;
+//  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
+//  {
+//    crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph_builder, render_graph->nodes[ i ] );
+//    
+//#define HEIGHT 600
+//#define WIDTH 400
+//
+//    ImVec2 position(
+//      nodes_visual_scale * devmenu_technique_editor->nodes_visual_offset.x,   
+//      nodes_visual_scale * devmenu_technique_editor->nodes_visual_offset.y );
+//    position.y += DEVMENU_HEIGHT;
+//    //position.y += ( i / 4 ) * HEIGHT;
+//    position.x += /*( i % 4 ) **/ i * nodes_visual_scale * WIDTH;
+//
+//    ImGui::SetNextWindowPos( position );
+//    ImGui::SetNextWindowSize( ImVec2( nodes_visual_scale * WIDTH, nodes_visual_scale * HEIGHT ) );
+//    ImGui::PushStyleColor( ImGuiCol_WindowBg, IM_COL32( 15, 15, 15, 255 ) );
+//    ImGui::Begin( node->name, NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove );
+//    if ( devmenu_technique_editor->nodes_visual_scale > 0.5f )
+//    {
+//      ImGui::InputText( "Name", node->name, sizeof( node->name ) );
+//
+//      const char* items[] = { "Graphics", "Compute", "Ray Tracing" };
+//      int item_current = node->type;
+//      ImGui::Combo( "Type", &item_current, items, IM_ARRAYSIZE(items) );
+//      node->type = CRUDE_CAST( crude_gfx_render_graph_node_type, item_current );
+//      
+//      ImGui::Text( "Inputs" );
+//      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->inputs ); ++i )
+//      {
+//        crude_gfx_render_graph_resource *resource = crude_gfx_render_graph_builder_access_resource( render_graph_builder, node->inputs[ i ] );
+//        ImGui::PushID( i );
+//        
+//        ImU32 color = crude_devmenu_technique_editor_random_resources_colors_[ ( crude_hash_string( resource->name, 0 ) ) % CRUDE_COUNTOF( crude_devmenu_technique_editor_random_resources_colors_ ) ];
+//        ImGui::PushStyleColor( ImGuiCol_ChildBg, color );
+//        
+//        ImGui::BeginChild( ++child_index, ImVec2( nodes_visual_scale * WIDTH / 2, nodes_visual_scale * 100 ) );
+//        ImGui::InputText( "Name", resource->name, sizeof( resource->name ) );
+//        ImGui::Checkbox( "External", &resource->resource_info.external );
+//        ImGui::EndChild();
+//
+//        ImGui::PopStyleColor( );
+//
+//        ImGui::PopID( );
+//      }
+//      ImGui::Text( "Outputs" );
+//      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
+//      {
+//        ImGui::PushID( i );
+//        ImGui::PopID( );
+//      }
+//    }
+//    else
+//    {
+//      ImGui::Text( "%s", node->name );
+//    }
+//  //crude_gfx_render_graph_resource_handle                  *inputs;
+//  //crude_gfx_render_graph_resource_handle                  *outputs;
+//
+//    ImGui::End();
+//    ImGui::PopStyleColor( );
+//  }
+//  ImGui::SetCursorPos( ImVec2( 0, DEVMENU_HEIGHT ) );
+//
+//  ImGui::PushItemWidth( 100 );
+//  if ( ImGui::Button( "Parse From File" ) )
+//  {
+//    nfdu8filteritem_t                                       ndf_filters[ ] = { { "Crude Render Graph", "crude_render_graph" } };
+//
+//    nfdu8char_t                                            *ndf_absolute_filepath;
+//    nfdopendialogu8args_t                                   ndf_args;
+//    nfdresult_t                                             ndf_result;
+//
+//    ndf_args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
+//    ndf_args.filterList = ndf_filters;
+//    ndf_args.filterCount = CRUDE_COUNTOF( ndf_filters );
+//
+//    ndf_result = NFD_OpenDialogU8_With( &ndf_absolute_filepath, &ndf_args );
+//    if ( ndf_result == NFD_OKAY )
+//    {
+//      crude_snprintf( devmenu_technique_editor->technique_absolute_filepath, sizeof( devmenu_technique_editor->technique_absolute_filepath ), "%s", ndf_absolute_filepath );
+//      crude_gfx_render_graph_parse_from_file( &devmenu_technique_editor->render_graph, devmenu_technique_editor->technique_absolute_filepath, devmenu_technique_editor->devmenu->dev_stack_allocator );
+//      NFD_FreePathU8( ndf_absolute_filepath );
+//    }
+//    else if ( ndf_result == NFD_CANCEL )
+//    {
+//      CRUDE_LOG_INFO( CRUDE_CHANNEL_FILEIO, "User pressed cancel!" );
+//    }
+//    else 
+//    {
+//      CRUDE_LOG_ERROR( CRUDE_CHANNEL_FILEIO, "Error: %s", NFD_GetError( ) );
+//    }
+//  }
+//  ImGui::InputFloat( "nodes_visual_offset_speed", &devmenu_technique_editor->nodes_visual_offset_speed );
+//  ImGui::SameLine( ); ImGui::Dummy( ImVec2( 20.f, 0.f ) ); ImGui::SameLine( );  
+//  ImGui::InputFloat( "nodes_visual_scale_speed", &devmenu_technique_editor->nodes_visual_scale_speed );
+//  ImGui::SameLine( ); ImGui::Dummy( ImVec2( 20.f, 0.f ) ); ImGui::SameLine( );  
+//  ImGui::InputFloat2( "nodes_visual_offset", &devmenu_technique_editor->nodes_visual_offset.x );
+//  ImGui::SameLine( ); ImGui::Dummy( ImVec2( 20.f, 0.f ) ); ImGui::SameLine( );  
+//  ImGui::InputFloat( "nodes_visual_scale", &devmenu_technique_editor->nodes_visual_scale  );
+//  ImGui::SameLine( );
+//  ImGui::PopItemWidth( );
+//  ImGui::GetStyle().ScaleAllSizes( 1.f );
+//  
+//  if ( ImGui::IsMouseDragging( ImGuiMouseButton_Right ) )
+//  {
+//    ImVec2 delta = ImGui::GetMouseDragDelta( ImGuiMouseButton_Right );
+//    
+//    devmenu_technique_editor->nodes_visual_offset.x += delta.x * devmenu_technique_editor->nodes_visual_offset_speed;
+//    devmenu_technique_editor->nodes_visual_offset.y += delta.y * devmenu_technique_editor->nodes_visual_offset_speed;
+//    ImGui::ResetMouseDragDelta( ImGuiMouseButton_Right );
+//  }
+//  
+//  if ( imgui_io->MouseWheel != 0.f )
+//  {
+//    float32 added_scale = imgui_io->MouseWheel * devmenu_technique_editor->nodes_visual_scale_speed;
+//    devmenu_technique_editor->nodes_visual_scale += added_scale;
+//    if ( devmenu_technique_editor->nodes_visual_scale < 0.5f )
+//    {
+//      devmenu_technique_editor->nodes_visual_scale = 0.5f;
+//    }
+//  }
+//
+//  ImGui::PopStyleVar( 2 );
+//  ImGui::End( );
+//  ImGui::PopStyleColor( );
+//  ImGui::PopStyleVar( 2 );
+//
+//  ImGui::ShowDemoWindow( );
 }
 
 void

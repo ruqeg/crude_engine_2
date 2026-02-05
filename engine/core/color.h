@@ -37,6 +37,24 @@ crude_color_a
   _In_ crude_color                                         color
 );
 
+CRUDE_API uint8 
+crude_color_r_u8
+(
+  _In_ crude_color                                         color
+);
+
+CRUDE_API uint8 
+crude_color_g_u8
+(
+  _In_ crude_color                                         color
+);
+
+CRUDE_API uint8 
+crude_color_b_u8
+(
+  _In_ crude_color                                         color
+);
+
 CRUDE_API crude_color
 crude_color_from_u8
 (
