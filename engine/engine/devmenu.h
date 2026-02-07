@@ -50,6 +50,9 @@ typedef struct crude_devmenu_gpu_visual_profiler
 typedef struct crude_devmenu_render_graph
 {
   crude_devmenu                                           *devmenu;
+  crude_gfx_render_graph                                   render_graph;
+  crude_gfx_render_graph_builder                           render_graph_builder;
+  char                                                     technique_absolute_filepath[ 1024 ];
   bool                                                     enabled;
 } crude_devmenu_render_graph;
 
@@ -90,19 +93,6 @@ typedef struct crude_devmenu_viewport
   bool                                                     enabled;
 } crude_devmenu_viewport;
 
-typedef struct crude_devmenu_technique_editor
-{
-  crude_devmenu                                           *devmenu;
-  crude_gfx_render_graph                                   render_graph;
-  crude_gfx_render_graph_builder                           render_graph_builder;
-  char                                                     technique_absolute_filepath[ 1024 ];
-  float32                                                  nodes_visual_offset_speed;
-  float32                                                  nodes_visual_scale_speed;
-  XMFLOAT2                                                 nodes_visual_offset;
-  float32                                                  nodes_visual_scale;
-  bool                                                     enabled;
-} crude_devmenu_technique_editor;
-
 typedef struct crude_devmenu
 {
   crude_engine                                            *engine;
@@ -116,7 +106,6 @@ typedef struct crude_devmenu
   crude_devmenu_nodes_tree                                 nodes_tree;
   crude_devmenu_node_inspector                             node_inspector;
   crude_devmenu_viewport                                   viewport;
-  crude_devmenu_technique_editor                           technique_editor;
   uint32                                                   selected_option;
   float32                                                  last_framerate_update_time;
   uint32                                                   previous_framerate;
@@ -535,42 +524,6 @@ crude_devmenu_viewport_draw
 
 CRUDE_API void
 crude_devmenu_viewport_callback
-(
-  _In_ crude_devmenu                                      *devmenu
-);
-
-/***********************
- * 
- * Develop Technique Editor
- * 
- ***********************/
-CRUDE_API void
-crude_devmenu_technique_editor_initialize
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor,
-  _In_ crude_devmenu                                      *devmenu
-);
-
-CRUDE_API void
-crude_devmenu_technique_editor_deinitialize
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
-);
-
-CRUDE_API void
-crude_devmenu_technique_editor_update
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
-);
-
-CRUDE_API void
-crude_devmenu_technique_editor_draw
-(
-  _In_ crude_devmenu_technique_editor                     *devmenu_technique_editor
-);
-
-CRUDE_API void
-crude_devmenu_technique_editor_callback
 (
   _In_ crude_devmenu                                      *devmenu
 );

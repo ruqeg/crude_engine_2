@@ -425,3 +425,20 @@ CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_render_graph_pass_container_empty
 (
 );
+
+/************************************************
+ *
+ * Render Graph Resources
+ * 
+ ***********************************************/
+crude_gfx_render_graph_resource_type
+crude_gfx_render_graph_resource_string_to_type
+(
+  _In_ char const                                         *str
+);
+
+char const*
+crude_gfx_render_graph_resource_type_to_string
+(
+  _In_ crude_gfx_render_graph_resource_type                type
+);

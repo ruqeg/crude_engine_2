@@ -11,17 +11,6 @@
 
 /************************************************
  *
- * Render Graph Utils Static Functions Declataion
- * 
- ***********************************************/
-crude_gfx_render_graph_resource_type
-string_to_resource_type_
-(
-  _In_ char const                                         *input_type
-);
-
-/************************************************
- *
  * Render Graph Functions
  * 
  ***********************************************/
@@ -136,7 +125,7 @@ crude_gfx_render_graph_parse_from_file
         CRUDE_ASSERT( input_type && input_name );
 
         creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_input_creation );
-        creation.type = string_to_resource_type_( cJSON_GetStringValue( input_type ) );
+        creation.type = crude_gfx_render_graph_resource_string_to_type( cJSON_GetStringValue( input_type ) );
         creation.resource_info.external = false;
         creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( input_name ) );
         CRUDE_ARRAY_PUSH( node_creation.inputs, creation );
@@ -155,7 +144,7 @@ crude_gfx_render_graph_parse_from_file
       CRUDE_ASSERT( output_type && output_name );
 
       output_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_resource_output_creation );
-      output_creation.type = string_to_resource_type_( cJSON_GetStringValue( output_type ) );
+      output_creation.type = crude_gfx_render_graph_resource_string_to_type( cJSON_GetStringValue( output_type ) );
       output_creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( output_name ) );
       output_creation.resource_info.texture.handle.index = CRUDE_RESOURCE_INDEX_INVALID;
 
@@ -1321,32 +1310,49 @@ crude_gfx_render_graph_pass_container_empty
 
 /************************************************
  *
- * Render Graph Utils Static Functions Implementation
+ * Render Graph Resources
  * 
  ***********************************************/
 crude_gfx_render_graph_resource_type
-string_to_resource_type_
+crude_gfx_render_graph_resource_string_to_type
 (
-  _In_ char const                                         *input_type
+  _In_ char const                                         *str
 )
 {
-  if ( strcmp( input_type, "texture" ) == 0 )
+  if ( strcmp( str, "texture" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE;
   }
-  if ( strcmp( input_type, "attachment" ) == 0 )
+  if ( strcmp( str, "attachment" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT;
   }
-  if ( strcmp( input_type, "marker" ) == 0 )
+  if ( strcmp( str, "marker" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_MARKER;
   }
-  if ( strcmp( input_type, "reference" ) == 0 )
+  if ( strcmp( str, "reference" ) == 0 )
   {
     return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE;
   }
   
   CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "Can't convert string to resoruce type for render graph" );
   return CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_INVALID;
+}
+
+char const*
+crude_gfx_render_graph_resource_type_to_string
+(
+  _In_ crude_gfx_render_graph_resource_type                type
+)
+{
+  switch ( type )
+  {
+  case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT:    return "attachment";
+  case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE:       return "texture";
+  case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_MARKER:        return "marker";
+  case CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE:     return "reference";
+  }
+  CRUDE_ASSERT( false );
+  return "Invalid";
 }
