@@ -9,7 +9,7 @@
 #include <engine/physics/physics.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/platform/platform.h>
-#include <engine/engine/devmenu.h>
+#include <engine/gui/devmenu.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/imgui.h>
 

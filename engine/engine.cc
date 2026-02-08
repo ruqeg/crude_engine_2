@@ -419,13 +419,14 @@ crude_engine_initialize_imgui_
   ImGui::StyleColorsDark();
   imgui_io = &ImGui::GetIO();
   imgui_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  //imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  imgui_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   imgui_io->ConfigWindowsResizeFromEdges = true;
   imgui_io->ConfigWindowsMoveFromTitleBarOnly = true;
   
   ImGui_ImplSDL3_InitForVulkan( engine->platform.sdl_window );
 
   engine->pub_engine_should_proccess_imgui_input = true;
+
 
   //engine->imgui_font = imgui_io->Fonts->AddFontFromFileTTF( /* TODO */ game->game_font_absolute_filepath, 20.f );
   //CRUDE_ASSERT( engine->imgui_font );
@@ -826,7 +827,6 @@ crude_engine_graphics_main_thread_loop_
   ImGui::NewFrame( );
   ImGuizmo::SetOrthographic( false );
   ImGuizmo::BeginFrame();
-  //ImGui::DockSpaceOverViewport( 0u, ImGui::GetMainViewport( ) );
 
   crude_devmenu_draw( &engine->devmenu );
   if ( engine->imgui_draw_custom_fn )

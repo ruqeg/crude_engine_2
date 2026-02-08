@@ -16,7 +16,7 @@
 #include <engine/engine.h>
 #include <engine/core/profiler.h>
 
-#include <engine/engine/devmenu.h>
+#include <engine/gui/devmenu.h>
 
 typedef void ( *crude_devmenu_option_callback_function )
 (
