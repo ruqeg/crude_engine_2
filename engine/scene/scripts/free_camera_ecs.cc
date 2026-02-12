@@ -105,6 +105,7 @@ void
 crude_free_camera_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_free_camera_system_context                   *ctx
 )
 {
@@ -112,7 +113,7 @@ crude_free_camera_system_import
   
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_free_camera );
 
-  crude_scene_components_import( world );
+  crude_scene_components_import( world, manager );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_free_camera_update_system_, EcsOnUpdate, ctx, {
     { .id = ecs_id( crude_transform ) },

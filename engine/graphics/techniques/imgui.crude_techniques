@@ -14,7 +14,7 @@
       "name" : "imgui",
       "render_pass_output":
       {
-        "reference": "imgui_pass" 
+        "reference": "imgui_editor_pass"
       },
       "blend": [
         {

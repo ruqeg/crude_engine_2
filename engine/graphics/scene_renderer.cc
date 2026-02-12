@@ -350,7 +350,7 @@ crude_gfx_scene_renderer_register_passes
   
   if ( scene_renderer->imgui_pass_enalbed )
   {
-    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_editor_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
   }
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "gbuffer_early_pass", crude_gfx_gbuffer_early_pass_pack( &scene_renderer->gbuffer_early_pass ) );

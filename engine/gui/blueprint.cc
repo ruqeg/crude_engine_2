@@ -122,7 +122,7 @@ crude_gui_blueprint_pin_type_to_color_
 );
 
 static void
-crude_gui_blueprint_pin_queue_render_
+crude_gui_blueprint_pin_queue_draw_
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ crude_gui_blueprint_pin const                      *pin,
@@ -131,13 +131,13 @@ crude_gui_blueprint_pin_queue_render_
 );
 
 static void
-crude_gui_blueprint_queue_render_style_editor_
+crude_gui_blueprint_queue_draw_style_editor_
 (
-  _In_opt_ bool                                           *queue_render
+  _In_opt_ bool                                           *queue_draw
 );
 
 static void
-crude_gui_blueprint_queue_render_left_pane_
+crude_gui_blueprint_queue_draw_left_pane_
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ float32                                             pane_width
@@ -257,7 +257,7 @@ crude_gui_blueprint_deinitialize
 }
 
 void
-crude_gui_blueprint_queue_render
+crude_gui_blueprint_queue_draw
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ char const                                         *title
@@ -298,7 +298,7 @@ crude_gui_blueprint_queue_render
 
   crude_imgui_splitter_( true, 4.0f, &left_pane_width, &right_pane_width, 50.0f, 50.0f, false );
 
-  crude_gui_blueprint_queue_render_left_pane_( blueprint, left_pane_width - 4.0f );
+  crude_gui_blueprint_queue_draw_left_pane_( blueprint, left_pane_width - 4.0f );
 
   ImGui::SameLine( 0.0f, 12.0f );
 
@@ -377,7 +377,7 @@ crude_gui_blueprint_queue_render
               ImGui::Spring(0);
             }
 
-            crude_gui_blueprint_pin_queue_render_( blueprint, output, crude_gui_blueprint_is_pin_linked_( blueprint, output->id ), alpha );
+            crude_gui_blueprint_pin_queue_draw_( blueprint, output, crude_gui_blueprint_is_pin_linked_( blueprint, output->id ), alpha );
             ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.x / 2);
             ImGui::EndHorizontal();
             ImGui::PopStyleVar();
@@ -409,7 +409,7 @@ crude_gui_blueprint_queue_render
 
         crude_gui_blueprint_node_builder_input( &node_builder, input->id );
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-        crude_gui_blueprint_pin_queue_render_( blueprint, input, crude_gui_blueprint_is_pin_linked_( blueprint, input->id ), alpha );
+        crude_gui_blueprint_pin_queue_draw_( blueprint, input, crude_gui_blueprint_is_pin_linked_( blueprint, input->id ), alpha );
         ImGui::Spring( 0 );
         if ( input->name[ 0 ] )
         {
@@ -474,7 +474,7 @@ crude_gui_blueprint_queue_render
           ImGui::TextUnformatted( output->name );
         }
         ImGui::Spring( 0 );
-        crude_gui_blueprint_pin_queue_render_( blueprint, output, crude_gui_blueprint_is_pin_linked_( blueprint, output->id ), alpha );
+        crude_gui_blueprint_pin_queue_draw_( blueprint, output, crude_gui_blueprint_is_pin_linked_( blueprint, output->id ), alpha );
         ImGui::PopStyleVar();
         crude_gui_blueprint_node_builder_end_output( &node_builder );
       }
@@ -1603,7 +1603,7 @@ crude_gui_blueprint_pin_type_to_color_
 }
 
 void
-crude_gui_blueprint_pin_queue_render_
+crude_gui_blueprint_pin_queue_draw_
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ crude_gui_blueprint_pin const                      *pin,
@@ -1632,7 +1632,7 @@ crude_gui_blueprint_pin_queue_render_
     return;
   }
   
-  crude_gui_queue_render_icon(
+  crude_gui_queue_draw_icon(
     XMFLOAT2 { CRUDE_CAST( float32, blueprint->pin_icon_size ), CRUDE_CAST( float32, blueprint->pin_icon_size ) },
     icon_type,
     connected,
@@ -1641,9 +1641,9 @@ crude_gui_blueprint_pin_queue_render_
 }
 
 void
-crude_gui_blueprint_queue_render_style_editor_
+crude_gui_blueprint_queue_draw_style_editor_
 (
-  _In_opt_ bool                                           *queue_render
+  _In_opt_ bool                                           *queue_draw
 )
 {
   static ImGuiColorEditFlags                               im_edit_mode = ImGuiColorEditFlags_DisplayRGB;
@@ -1652,7 +1652,7 @@ crude_gui_blueprint_queue_render_style_editor_
   ax::NodeEditor::Style                                   *ax_editor_style;
   float32                                                  pane_width;
 
-  if ( !ImGui::Begin( "Style", queue_render ) )
+  if ( !ImGui::Begin( "Style", queue_draw ) )
   {
     ImGui::End();
     return;
@@ -1723,14 +1723,14 @@ crude_gui_blueprint_queue_render_style_editor_
 }
 
 void
-crude_gui_blueprint_queue_render_left_pane_
+crude_gui_blueprint_queue_draw_left_pane_
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ float32                                             pane_width
 )
 {
   static int                                               change_count = 0;
-  static bool                                              should_queue_render_style_editor = false;
+  static bool                                              should_queue_draw_style_editor = false;
   
   ax::NodeEditor::NodeId                                  *ax_selected_nodes;
   ax::NodeEditor::LinkId                                  *ax_selected_links;
@@ -1772,15 +1772,15 @@ crude_gui_blueprint_queue_render_left_pane_
   
   if ( ImGui::Button( "Edit Style" ) )
   {
-    should_queue_render_style_editor = true;
+    should_queue_draw_style_editor = true;
   }
 
   ImGui::EndHorizontal( );
   ImGui::Checkbox( "Show Ordinals", &blueprint->show_ordinals );
 
-  if ( should_queue_render_style_editor )
+  if ( should_queue_draw_style_editor )
   {
-    crude_gui_blueprint_queue_render_style_editor_( &should_queue_render_style_editor );
+    crude_gui_blueprint_queue_draw_style_editor_( &should_queue_draw_style_editor );
   }
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( ax_selected_nodes, ax::NodeEditor::GetSelectedObjectCount( ), crude_stack_allocator_pack( blueprint->temporary_allocator ) );

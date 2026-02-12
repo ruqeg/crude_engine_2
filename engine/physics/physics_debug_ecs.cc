@@ -62,11 +62,12 @@ void
 crude_physics_debug_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_physics_debug_system_context                  *ctx
 )
 {
-  crude_physics_components_import( world );
-  crude_scene_debug_components_import( world );
+  crude_physics_components_import( world, manager );
+  crude_scene_debug_components_import( world, manager );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_engine_physics_collision_shape_create_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_physics_collision_shape ) },

@@ -359,7 +359,7 @@ crude_gfx_render_graph_compile
       }
     }
     
-    CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
+    //CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
     CRUDE_ARRAY_SET_LENGTH( render_graph->nodes, 0 );
     
     for ( int32 i = CRUDE_ARRAY_LENGTH( sorted_nodes ) - 1; i >= 0; --i )

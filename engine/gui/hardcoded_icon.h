@@ -15,7 +15,7 @@ typedef enum crude_gui_hardcoded_icon_type
 } crude_gui_hardcoded_icon_type;
 
 CRUDE_API void
-crude_gui_queue_render_hardcoded_icon_im
+crude_gui_queue_draw_hardcoded_icon_im
 (
   _In_ ImDrawList                                         *draw_list,
   _In_ ImVec2 const                                       *a,
@@ -27,7 +27,7 @@ crude_gui_queue_render_hardcoded_icon_im
 );
 
 CRUDE_API void
-crude_gui_queue_render_icon
+crude_gui_queue_draw_icon
 (
   _In_ XMFLOAT2                                            size,
   _In_ crude_gui_hardcoded_icon_type                       type,

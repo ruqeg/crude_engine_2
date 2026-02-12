@@ -42,5 +42,6 @@ CRUDE_API void
 crude_free_camera_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_free_camera_system_context                   *ctx
 );

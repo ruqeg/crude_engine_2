@@ -52,32 +52,24 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Develop" CACHE STRING "Default build type" FORCE)
 endif()
 
-# Debug Configuration
 #if(CRUDE_SANITIZER_ANY_ENABLED)
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
-#else()
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG /ZI")
-#endif()
+set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,Develop>:EditAndContinue>")
+#endif
+
+# Debug Configuration
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
 
 # Develop Configuration
-#if(CRUDE_SANITIZER_ANY_ENABLED)
-#set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
-#else()
-set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2 /ZI")
-#endif()
+set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Release Configuration  
-#if(CRUDE_SANITIZER_ANY_ENABLED)
-	#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
-#else()
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2 /ZI")
-#endif()
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_PRODUCTION=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")

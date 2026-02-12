@@ -3,6 +3,7 @@
 #if CRUDE_DEVELOP
 
 #include <engine/core/ecs.h>
+#include <engine/scene/components_serialization.h>
 #include <engine/core/string.h>
 
 /**********************************************************
@@ -20,6 +21,7 @@ CRUDE_API void
 crude_physics_debug_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_physics_debug_system_context                 *ctx
 );
 

@@ -35,7 +35,8 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_debug_gltf );
 CRUDE_API void
 crude_scene_debug_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 );
 
 #endif

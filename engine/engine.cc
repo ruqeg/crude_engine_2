@@ -157,13 +157,13 @@ crude_engine_deinitialize_scene_
 );
 
 static void
-crude_engine_initialize_devmenu_
+crude_engine_initialize_gui_
 (
   _In_ crude_engine                                       *engine
 );
 
 static void
-crude_engine_deinitialize_devmenu_
+crude_engine_deinitialize_gui_
 (
   _In_ crude_engine                                       *engine
 );
@@ -214,6 +214,31 @@ crude_engine_graphics_task_set_thread_loop_
 );
 
 void
+crude_engine_gui_queue_draw_
+(
+  _In_ crude_engine                                       *engine
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_engine_gui_queue_draw_" );
+  ImGui::SetCurrentContext( engine->imgui_context );
+  ImGuizmo::SetImGuiContext( engine->imgui_context );
+ 
+  ImGui_ImplSDL3_NewFrame( );
+  ImGui::NewFrame( );
+  ImGuizmo::SetOrthographic( false );
+  ImGuizmo::BeginFrame();
+  
+  crude_gui_editor_queue_draw( &engine->editor );
+  crude_gui_devmenu_draw( &engine->devmenu );
+
+  if ( engine->imgui_draw_custom_fn )
+  {
+    engine->imgui_draw_custom_fn( engine->imgui_draw_custom_ctx );
+  }
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
 crude_engine_initialize
 (
   _In_ crude_engine                                       *engine,
@@ -240,7 +265,7 @@ crude_engine_initialize
   crude_engine_initialize_physics_( engine );
   crude_engine_initialize_scene_( engine );
   crude_engine_commands_manager_initialize( &engine->commands_manager, engine, &engine->common_allocator );
-  crude_engine_initialize_devmenu_( engine );
+  crude_engine_initialize_gui_( engine );
 
   engine->running = true;
 }
@@ -253,7 +278,7 @@ crude_engine_deinitialize
 {
   engine->running = false;
 
-  crude_engine_deinitialize_devmenu_( engine );
+  crude_engine_deinitialize_gui_( engine );
   crude_engine_commands_manager_deinitialize( &engine->commands_manager );
   crude_engine_deinitialize_scene_( engine );
   crude_engine_deinitialize_physics_( engine );
@@ -283,7 +308,7 @@ crude_engine_update
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   
   crude_platform_update( &engine->platform );
-  crude_devmenu_update( &engine->devmenu );
+  crude_gui_devmenu_update( &engine->devmenu );
   
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
@@ -295,8 +320,9 @@ crude_engine_update
     crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
     CRUDE_PROFILER_ZONE_END;
   }
+
   crude_engine_commands_manager_update( &engine->commands_manager );
-  
+
   if ( crude_engine_graphics_main_thread_loop_( engine )  )
   {
     crude_task_sheduler_start_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
@@ -376,6 +402,8 @@ crude_engine_initialize_ecs_
   CRUDE_ECS_TAG_DEFINE( engine->world, crude_entity_tag );
   
   crude_ecs_set_threads( engine->world, 1 );
+
+  crude_components_serialization_manager_initialize( &engine->components_serialization_manager, &engine->common_allocator );
 }
 
 static void
@@ -384,6 +412,7 @@ crude_engine_deinitialize_ecs_
   _In_ crude_engine                                       *engine
 )
 {
+  crude_components_serialization_manager_deinitialize( &engine->components_serialization_manager );
   crude_ecs_destroy( engine->world );
 }
 
@@ -472,7 +501,7 @@ crude_engine_initialize_audio_
   engine->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
   engine->audio_system_context.device = &engine->audio_device;
 
-  crude_audio_system_import( engine->world, &engine->audio_system_context );
+  crude_audio_system_import( engine->world, &engine->components_serialization_manager, &engine->audio_system_context );
 }
 
 static void
@@ -670,7 +699,7 @@ crude_engine_initialize_physics_
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;
   
-  crude_physics_system_import( engine->world, &engine->physics_system_context );
+  crude_physics_system_import( engine->world, &engine->components_serialization_manager, &engine->physics_system_context );
 }
 
 void
@@ -709,7 +738,7 @@ crude_engine_input_callback_
     ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
   }
   
-  crude_devmenu_handle_input( &engine->devmenu );
+  crude_gui_devmenu_handle_input( &engine->devmenu );
 }
 
 void
@@ -740,21 +769,23 @@ crude_engine_deinitialize_scene_
 }
 
 void
-crude_engine_initialize_devmenu_
+crude_engine_initialize_gui_
 (
   _In_ crude_engine                                       *engine
 )
 {
-  crude_devmenu_initialize( &engine->devmenu, engine );
+  crude_gui_devmenu_initialize( &engine->devmenu, engine );
+  crude_gui_editor_initialize( &engine->editor, engine );
 }
 
 void
-crude_engine_deinitialize_devmenu_
+crude_engine_deinitialize_gui_
 (
   _In_ crude_engine                                       *engine
 )
 {
-  crude_devmenu_deinitialize( &engine->devmenu );
+  crude_gui_devmenu_deinitialize( &engine->devmenu );
+  crude_gui_editor_deinitialize( &engine->editor );
 }
 
 bool
@@ -804,14 +835,13 @@ crude_engine_graphics_main_thread_loop_
     return false;
   }
 
-  ImGui::SetCurrentContext( engine->imgui_context );
-  ImGuizmo::SetImGuiContext( engine->imgui_context );
-
   engine->graphics_absolute_time += last_graphics_update_delta;
   engine->last_graphics_update_time = crude_time_now( );
   engine->scene_renderer.options.absolute_time = engine->graphics_absolute_time;
 
   crude_gfx_new_frame( &engine->gpu );
+
+  crude_engine_gui_queue_draw_( engine );
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
   engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );
@@ -821,17 +851,6 @@ crude_engine_graphics_main_thread_loop_
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
     crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
-  }
- 
-  ImGui_ImplSDL3_NewFrame( );
-  ImGui::NewFrame( );
-  ImGuizmo::SetOrthographic( false );
-  ImGuizmo::BeginFrame();
-
-  crude_devmenu_draw( &engine->devmenu );
-  if ( engine->imgui_draw_custom_fn )
-  {
-    engine->imgui_draw_custom_fn( engine->imgui_draw_custom_ctx );
   }
 
   CRUDE_PROFILER_ZONE_END;

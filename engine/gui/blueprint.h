@@ -136,7 +136,7 @@ crude_gui_blueprint_deinitialize
 );
 
 CRUDE_API void
-crude_gui_blueprint_queue_render
+crude_gui_blueprint_queue_draw
 (
   _In_ crude_gui_blueprint                                *blueprint,
   _In_ char const                                         *title

@@ -25,13 +25,17 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_physics_collision_shape, "crude_physics_col
 void
 crude_physics_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 )
 {
   CRUDE_ECS_MODULE( world, crude_physics_components );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character_body_handle );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_collision_shape );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_collision_shape );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
@@ -81,7 +85,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character_body_han
   return dynamic_body_json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_handle )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
 {
   crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager->physics_resources_manager, *component );
   ImGui::Text( "Mask" );
@@ -107,7 +111,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_body_ha
   ImGui::CheckboxFlags( "9", &character_body->mask, 1 << 10 );
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
 {
   crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( manager->physics_resources_manager, *component );
   ImGui::Text( "Layer" );
@@ -185,7 +189,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
   return collision_shape_json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collision_shape )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_collision_shape )
 {
   if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
   {
@@ -400,10 +404,11 @@ void
 crude_physics_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_physics_system_context                       *ctx
 )
 {
-  crude_physics_components_import( world );
+  crude_physics_components_import( world, manager );
 
   //CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_handle_destroy_observer_, EcsOnRemove, ctx, { 
   //  { .id = ecs_id( crude_physics_static_body_handle ) }

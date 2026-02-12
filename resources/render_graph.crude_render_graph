@@ -399,7 +399,7 @@
       "outputs": [
         {
           "type": "attachment",
-          "name": "final",
+          "name": "game_final",
           "format": "VK_FORMAT_R8G8B8A8_UNORM",
           "scale": [ 1, 1 ],
           "op": "clear",
@@ -412,13 +412,13 @@
       "inputs": [
         {
           "type": "attachment",
-          "name": "final"
+          "name": "game_final"
         }
       ],
       "outputs": [
         {
           "type": "reference",
-          "name": "final"
+          "name": "game_final"
         },
         {
           "type": "marker",
@@ -427,7 +427,8 @@
       ]
     },
     {
-      "name": "imgui_pass",
+      "name": "imgui_editor_pass",
+      "enabled": 1,
       "inputs": [
         {
           "type": "reference",
@@ -467,13 +468,69 @@
         },
         {
           "type": "attachment",
-          "name": "final"
+          "name": "game_final"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "attachment",
+          "name": "editor_final",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        }
+      ]
+    },
+    {
+      "name": "imgui_game_pass",
+      "enabled": 0,
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "IMGUI_PASS_MARKER"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_albedo"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_normal"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_roughness_metalness"
+        },
+        {
+          "type": "texture",
+          "name": "depth"
+        },
+        {
+          "type": "texture",
+          "name": "direct_radiance"
+        },
+        {
+          "type": "texture",
+          "name": "ssr_hit_uv_depth_rdotv"
+        },
+        {
+          "type": "texture",
+          "name": "ssr"
+        },
+        {
+          "type": "texture",
+          "name": "gbuffer_mesh_draw_index"
+        },
+        {
+          "type": "attachment",
+          "name": "game_final"
         }
       ],
       "outputs": [
         {
           "type": "reference",
-          "name": "final"
+          "name": "game_final"
         }
       ]
     }

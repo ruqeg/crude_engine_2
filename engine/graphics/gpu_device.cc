@@ -2260,6 +2260,8 @@ crude_gfx_create_pipeline
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   }
 
+  crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_PIPELINE, CRUDE_CAST( uint64, pipeline->vk_pipeline ), pipeline->name );
+
   return pipeline_handle;
 }
 

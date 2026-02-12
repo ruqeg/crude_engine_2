@@ -30,7 +30,8 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_collisi
 CRUDE_API void
 crude_physics_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 );
 
 /**********************************************************
@@ -47,5 +48,6 @@ CRUDE_API void
 crude_physics_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_physics_system_context                       *ctx
 );

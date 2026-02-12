@@ -21,13 +21,6 @@ crude_editor_deinitialize_constant_strings_
 );
 
 static void
-crude_editor_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
-);
-
-static void
 crude_editor_setup_custom_nodes_to_scene_
 ( 
   _In_ crude_editor                                       *editor
@@ -62,11 +55,11 @@ crude_editor_initialize
   editor->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
   editor->free_camera_system_context.input = &editor->engine->platform.input;
 
-  crude_free_camera_system_import( engine->world, &editor->free_camera_system_context );
-  crude_physics_components_import( engine->world );
-  crude_physics_components_import( engine->world );
-  crude_scene_debug_components_import( engine->world );
-  crude_game_components_import( engine->world );
+  crude_free_camera_system_import( engine->world, &engine->components_serialization_manager, &editor->free_camera_system_context );
+  crude_physics_components_import( engine->world, &engine->components_serialization_manager );
+  crude_physics_components_import( engine->world, &engine->components_serialization_manager );
+  crude_scene_debug_components_import( engine->world, &engine->components_serialization_manager );
+  crude_game_components_import( engine->world, &engine->components_serialization_manager );
   
   crude_string_buffer_initialize( &editor->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
   crude_string_buffer_initialize( &editor->debug_strings_buffer, 4096, crude_heap_allocator_pack( &editor->engine->common_allocator ) );
@@ -74,7 +67,7 @@ crude_editor_initialize
   editor->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
   editor->physics_debug_system_context.resources_absolute_directory = editor->engine->environment.directories.resources_absolute_directory;
   editor->physics_debug_system_context.string_bufffer = &editor->debug_strings_buffer;
-  crude_physics_debug_system_import( engine->world, &editor->physics_debug_system_context );
+  crude_physics_debug_system_import( engine->world, &engine->components_serialization_manager, &editor->physics_debug_system_context );
   
   editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   crude_game_debug_system_import( engine->world, &editor->game_debug_system_context );
@@ -132,19 +125,6 @@ crude_editor_update_input_
     SDL_WarpMouseInWindow( editor->engine->platform.sdl_window, editor->engine->last_unrelative_mouse_position.x, editor->engine->last_unrelative_mouse_position.y );
     crude_platform_show_cursor( &editor->engine->platform );
   }
-}
-
-void
-crude_editor_input_callback_
-(
-  _In_ void                                               *ctx,
-  _In_ void                                               *sdl_event
-)
-{
-  crude_editor *editor = CRUDE_CAST( crude_editor*, ctx );
-  
-  ImGui::SetCurrentContext( editor->engine->imgui_context );
-  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
 }
 
 bool

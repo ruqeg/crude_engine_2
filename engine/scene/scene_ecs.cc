@@ -23,11 +23,13 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_runtime, "crude_node_runtime" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
 
 void
 crude_scene_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 )
 {
   CRUDE_ECS_MODULE( world, crude_scene_components );
@@ -37,6 +39,12 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_gltf );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_runtime );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_camera );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_gltf );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_runtime );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
@@ -60,6 +68,10 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera )
   return camera_json;
 }
 
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_camera )
+{
+}
+
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform )
 {
   crude_memory_set( component, 0, sizeof( crude_camera ) );
@@ -75,6 +87,10 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform )
   cJSON_AddItemToObject( transform_json, "rotation", cJSON_CreateFloatArray( &component->rotation.x, 4 ) );
   cJSON_AddItemToObject( transform_json, "scale", cJSON_CreateFloatArray( &component->scale.x, 3 ) );
   return transform_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
+{
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
@@ -102,6 +118,10 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
   return gltf_json;
 }
 
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
+{
+}
+
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )
 {
   crude_memory_set( component, 0, sizeof( crude_light ) );
@@ -121,7 +141,15 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
   return light_json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_runtime )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
+{
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_runtime )
+{
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 {
 }
 

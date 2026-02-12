@@ -69,8 +69,14 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_transform );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_gltf );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_light );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_node_runtime );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_node_external );
 
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_camera );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_transform );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_gltf );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_light );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_runtime );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_node_external );
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip
@@ -107,5 +113,6 @@ crude_transform_parent_to_world
 CRUDE_API void
 crude_scene_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 );

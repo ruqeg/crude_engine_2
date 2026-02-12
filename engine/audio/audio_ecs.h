@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/core/ecs.h>
+#include <engine/scene/components_serialization.h>
 #include <engine/audio/audio_device.h>
 
 /**********************************************************
@@ -36,5 +37,6 @@ CRUDE_API void
 crude_audio_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_audio_system_context                         *ctx
 );

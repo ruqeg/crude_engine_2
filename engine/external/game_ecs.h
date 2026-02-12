@@ -47,5 +47,6 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_level_mars );
 CRUDE_API void
 crude_game_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 );

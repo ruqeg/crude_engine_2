@@ -66,11 +66,12 @@ void
 crude_audio_system_import
 (
   _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
   _In_ crude_audio_system_context                         *ctx
 )
 {
   crude_audio_components_import( world );
-  crude_scene_components_import( world );
+  crude_scene_components_import( world, manager );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_listener_update_system_, EcsOnUpdate, ctx, { 
     { .id = ecs_id( crude_transform ) },

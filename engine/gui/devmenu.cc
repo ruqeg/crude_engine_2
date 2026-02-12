@@ -18,67 +18,67 @@
 
 #include <engine/gui/devmenu.h>
 
-typedef void ( *crude_devmenu_option_callback_function )
+typedef void ( *crude_gui_devmenu_option_callback_function )
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                      *devmenu
 );
 
-typedef bool ( *crude_devmenu_hotkey_pressed_callback_function )
+typedef bool ( *crude_gui_devmenu_hotkey_pressed_callback_function )
 (
   _In_ crude_input                                        *input
 );
 
-typedef struct crude_devmenu_option
+typedef struct crude_gui_devmenu_option
 {
   char const                                              *name;
-  crude_devmenu_option_callback_function                   callback;
-  crude_devmenu_hotkey_pressed_callback_function           hotkey_pressed_callback;
-} crude_devmenu_option;
+  crude_gui_devmenu_option_callback_function                   callback;
+  crude_gui_devmenu_hotkey_pressed_callback_function           hotkey_pressed_callback;
+} crude_gui_devmenu_option;
 
-crude_devmenu_option devmenu_options[ ] =
+crude_gui_devmenu_option devmenu_options[ ] =
 {
   {
-    "Free Camera", crude_devmenu_free_camera_callback, crude_devmenu_free_camera_callback_hotkey_pressed_callback
+    "Free Camera", crude_gui_devmenu_free_camera_callback, crude_gui_devmenu_free_camera_callback_hotkey_pressed_callback
   },
   {
-    "Reload Techniques", crude_devmenu_reload_techniques_callback, crude_devmenu_reload_techniques_hotkey_pressed_callback
+    "Reload Techniques", crude_gui_devmenu_reload_techniques_callback, crude_gui_devmenu_reload_techniques_hotkey_pressed_callback
   },
   {
-    "GPU Visual Profiler", crude_devmenu_gpu_visual_profiler_callback
+    "GPU Visual Profiler", crude_gui_devmenu_gpu_visual_profiler_callback
   },
   {
-    "Memory Visual Profiler", crude_devmenu_memory_visual_profiler_callback
+    "Memory Visual Profiler", crude_gui_devmenu_memory_visual_profiler_callback
   },
   {
-    "Texture Inspector", crude_devmenu_texture_inspector_callback
+    "Texture Inspector", crude_gui_devmenu_texture_inspector_callback
   },
   {
-    "Render Graph", crude_devmenu_render_graph_callback
+    "Render Graph", crude_gui_devmenu_render_graph_callback
   },
   {
-    "GPU Pool", crude_devmenu_gpu_pool_callback
+    "GPU Pool", crude_gui_devmenu_gpu_pool_callback
   },
   {
-    "Scene Renderer", crude_devmenu_scene_renderer_callback
+    "Scene Renderer", crude_gui_devmenu_scene_renderer_callback
   },
   {
-    "Show/Hide Collisions", crude_devmenu_collisions_view_callback
+    "Show/Hide Collisions", crude_gui_devmenu_collisions_view_callback
   },
   {
-    "Show/Hide Debug GLTF", crude_devmenu_debug_gltf_view_callback
+    "Show/Hide Debug GLTF", crude_gui_devmenu_debug_gltf_view_callback
   },
   {
-    "Nodes Tree", crude_devmenu_nodes_tree_callback
+    "Nodes Tree", crude_gui_devmenu_nodes_tree_callback
   },
   {
-    "Node Inspector", crude_devmenu_node_inspector_callback
+    "Node Inspector", crude_gui_devmenu_node_inspector_callback
   }
 };
 
 void
-crude_devmenu_initialize
+crude_gui_devmenu_initialize
 (
-  _In_ crude_devmenu                                      *devmenu,
+  _In_ crude_gui_devmenu                                  *devmenu,
   _In_ crude_engine                                       *engine
 )
 {
@@ -89,41 +89,41 @@ crude_devmenu_initialize
   devmenu->current_framerate = 0.f;
   devmenu->dev_heap_allocator = &engine->develop_heap_allocator;
   devmenu->dev_stack_allocator = &engine->develop_temporary_allocator;
-  crude_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu );
-  crude_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
-  crude_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
-  crude_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu );
-  crude_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu );
-  crude_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu );
-  crude_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu );
-  crude_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu );
-  crude_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
+  crude_gui_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu );
+  crude_gui_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
+  crude_gui_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
+  crude_gui_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu );
+  crude_gui_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu );
+  crude_gui_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu );
+  crude_gui_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu );
+  crude_gui_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu );
+  crude_gui_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
 }
 
 void
-crude_devmenu_deinitialize
+crude_gui_devmenu_deinitialize
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
-  crude_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
-  crude_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
-  crude_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
-  crude_devmenu_render_graph_deinitialize( &devmenu->render_graph );
-  crude_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
-  crude_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
-  crude_devmenu_nodes_tree_deinitialize( &devmenu->nodes_tree );
-  crude_devmenu_node_inspector_deinitialize( &devmenu->node_inspector );
-  crude_devmenu_viewport_deinitialize( &devmenu->viewport );
+  crude_gui_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
+  crude_gui_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
+  crude_gui_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
+  crude_gui_devmenu_render_graph_deinitialize( &devmenu->render_graph );
+  crude_gui_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
+  crude_gui_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
+  crude_gui_devmenu_nodes_tree_deinitialize( &devmenu->nodes_tree );
+  crude_gui_devmenu_node_inspector_deinitialize( &devmenu->node_inspector );
+  crude_gui_devmenu_viewport_deinitialize( &devmenu->viewport );
 }
 
 void
-crude_devmenu_draw
+crude_gui_devmenu_draw
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "crude_devmenu_draw" );
+  CRUDE_PROFILER_ZONE_NAME( "crude_gui_devmenu_draw" );
   
   ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
   if ( devmenu->enabled )
@@ -151,33 +151,33 @@ crude_devmenu_draw
   //  ImGui::End( );
   //}
   
-  crude_devmenu_viewport_draw( &devmenu->viewport );
-  crude_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
-  crude_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
-  crude_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
-  crude_devmenu_render_graph_draw( &devmenu->render_graph );
-  crude_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
-  crude_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
-  crude_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
-  crude_devmenu_node_inspector_draw( &devmenu->node_inspector );
+  crude_gui_devmenu_viewport_draw( &devmenu->viewport );
+  crude_gui_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
+  crude_gui_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
+  crude_gui_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
+  crude_gui_devmenu_render_graph_draw( &devmenu->render_graph );
+  crude_gui_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
+  crude_gui_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
+  crude_gui_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
+  crude_gui_devmenu_node_inspector_draw( &devmenu->node_inspector );
   CRUDE_PROFILER_ZONE_END;
 }
 
 void
-crude_devmenu_update
+crude_gui_devmenu_update
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
-  crude_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
-  crude_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
-  crude_devmenu_texture_inspector_update( &devmenu->texture_inspector );
-  crude_devmenu_render_graph_update( &devmenu->render_graph );
-  crude_devmenu_gpu_pool_update( &devmenu->gpu_pool );
-  crude_devmenu_scene_renderer_update( &devmenu->scene_renderer );
-  crude_devmenu_nodes_tree_update( &devmenu->nodes_tree );
-  crude_devmenu_node_inspector_update( &devmenu->node_inspector );
-  crude_devmenu_viewport_update( &devmenu->viewport );
+  crude_gui_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
+  crude_gui_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
+  crude_gui_devmenu_texture_inspector_update( &devmenu->texture_inspector );
+  crude_gui_devmenu_render_graph_update( &devmenu->render_graph );
+  crude_gui_devmenu_gpu_pool_update( &devmenu->gpu_pool );
+  crude_gui_devmenu_scene_renderer_update( &devmenu->scene_renderer );
+  crude_gui_devmenu_nodes_tree_update( &devmenu->nodes_tree );
+  crude_gui_devmenu_node_inspector_update( &devmenu->node_inspector );
+  crude_gui_devmenu_viewport_update( &devmenu->viewport );
 
   //if ( game->time - devmenu->last_framerate_update_time > 1.f )
   //{
@@ -192,9 +192,9 @@ crude_devmenu_update
 }
 
 void
-crude_devmenu_handle_input
+crude_gui_devmenu_handle_input
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   crude_input *input = &devmenu->engine->platform.input;
@@ -204,14 +204,14 @@ crude_devmenu_handle_input
     devmenu->enabled = !devmenu->enabled;
     
     crude_entity player_controller_node = devmenu->engine->player_controller_node;
-    if ( devmenu->enabled )
-    {
-      crude_platform_show_cursor( &devmenu->engine->platform );
-    }
-    else
-    {
-      crude_platform_hide_cursor( &devmenu->engine->platform );
-    }
+    //if ( devmenu->enabled )
+    //{
+    //  crude_platform_show_cursor( &devmenu->engine->platform );
+    //}
+    //else
+    //{
+    //  crude_platform_hide_cursor( &devmenu->engine->platform );
+    //}
     
     crude_player_controller *player_controller = NULL;
     if ( crude_entity_valid( devmenu->engine->world, player_controller_node ) )
@@ -239,9 +239,9 @@ crude_devmenu_handle_input
  * 
  ***********************/
 void
-crude_devmenu_debug_gltf_view_callback
+crude_gui_devmenu_debug_gltf_view_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->engine->scene_renderer.options.debug.hide_debug_gltf = !devmenu->engine->scene_renderer.options.debug.hide_debug_gltf;
@@ -249,7 +249,7 @@ crude_devmenu_debug_gltf_view_callback
 
 
 bool
-crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
+crude_gui_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
 (
   _In_ crude_input                                        *input
 )
@@ -258,16 +258,16 @@ crude_devmenu_debug_gltf_view_callback_hotkey_pressed_callback
 }
 
 void
-crude_devmenu_collisions_view_callback
+crude_gui_devmenu_collisions_view_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->engine->scene_renderer.options.debug.hide_collision = !devmenu->engine->scene_renderer.options.debug.hide_collision;
 }
 
 bool
-crude_devmenu_collisions_view_callback_hotkey_pressed_callback
+crude_gui_devmenu_collisions_view_callback_hotkey_pressed_callback
 (
   _In_ crude_input                                        *input
 )
@@ -276,9 +276,9 @@ crude_devmenu_collisions_view_callback_hotkey_pressed_callback
 }
 
 void
-crude_devmenu_free_camera_callback
+crude_gui_devmenu_free_camera_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   crude_entity player_controller_node = devmenu->engine->player_controller_node;
@@ -288,7 +288,7 @@ crude_devmenu_free_camera_callback
 }
 
 bool
-crude_devmenu_free_camera_callback_hotkey_pressed_callback
+crude_gui_devmenu_free_camera_callback_hotkey_pressed_callback
 (
   _In_ crude_input                                        *input
 )
@@ -297,16 +297,16 @@ crude_devmenu_free_camera_callback_hotkey_pressed_callback
 }
 
 void
-crude_devmenu_reload_techniques_callback
+crude_gui_devmenu_reload_techniques_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   crude_engine_commands_manager_push_reload_techniques_command( &devmenu->engine->commands_manager );
 }
 
 bool
-crude_devmenu_reload_techniques_hotkey_pressed_callback
+crude_gui_devmenu_reload_techniques_hotkey_pressed_callback
 (
   _In_ crude_input                                        *input
 )
@@ -318,10 +318,10 @@ crude_devmenu_reload_techniques_hotkey_pressed_callback
  * Devmenu
  ***********************/
 void
-crude_devmenu_gpu_visual_profiler_initialize
+crude_gui_devmenu_gpu_visual_profiler_initialize
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_gpu_profiler->devmenu = devmenu;
@@ -344,9 +344,9 @@ crude_devmenu_gpu_visual_profiler_initialize
 }
 
 void
-crude_devmenu_gpu_visual_profiler_deinitialize
+crude_gui_devmenu_gpu_visual_profiler_deinitialize
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
+  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
 )
 {
   CRUDE_HASHMAP_DEINITIALIZE( dev_gpu_profiler->name_hashed_to_color_index );
@@ -355,9 +355,9 @@ crude_devmenu_gpu_visual_profiler_deinitialize
 }
 
 void
-crude_devmenu_gpu_visual_profiler_update
+crude_gui_devmenu_gpu_visual_profiler_update
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
+  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
 )
 {
   crude_gfx_gpu_set_timestamps_enable( dev_gpu_profiler->gpu, !dev_gpu_profiler->paused );
@@ -416,9 +416,9 @@ crude_devmenu_gpu_visual_profiler_update
 }
 
 void
-crude_devmenu_gpu_visual_profiler_draw
+crude_gui_devmenu_gpu_visual_profiler_draw
 (
-  _In_ crude_devmenu_gpu_visual_profiler                  *dev_gpu_profiler
+  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
 )
 {
   if ( !dev_gpu_profiler->enabled )
@@ -655,9 +655,9 @@ crude_devmenu_gpu_visual_profiler_draw
 }
 
 void
-crude_devmenu_gpu_visual_profiler_callback
+crude_gui_devmenu_gpu_visual_profiler_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
@@ -669,10 +669,10 @@ crude_devmenu_gpu_visual_profiler_callback
  * 
  ***********************/
 void
-crude_devmenu_memory_visual_profiler_initialize
+crude_gui_devmenu_memory_visual_profiler_initialize
 (
-  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_memory_visual_profiler           *dev_mem_profiler,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_mem_profiler->devmenu = devmenu;
@@ -688,26 +688,26 @@ crude_devmenu_memory_visual_profiler_initialize
 }
 
 void
-crude_devmenu_memory_visual_profiler_deinitialize
+crude_gui_devmenu_memory_visual_profiler_deinitialize
 (
-  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
+  _In_ crude_gui_devmenu_memory_visual_profiler           *dev_mem_profiler
 )
 {
   CRUDE_ARRAY_DEINITIALIZE( dev_mem_profiler->allocators_containers );
 }
 
 void
-crude_devmenu_memory_visual_profiler_update
+crude_gui_devmenu_memory_visual_profiler_update
 (
-  _In_ crude_devmenu_memory_visual_profiler                *dev_mem_profiler
+  _In_ crude_gui_devmenu_memory_visual_profiler           *dev_mem_profiler
 )
 {
 }
 
 void
-crude_devmenu_memory_visual_profiler_draw
+crude_gui_devmenu_memory_visual_profiler_draw
 (
-  _In_ crude_devmenu_memory_visual_profiler               *dev_mem_profiler
+  _In_ crude_gui_devmenu_memory_visual_profiler           *dev_mem_profiler
 )
 {
   if ( !dev_mem_profiler->enabled )
@@ -809,9 +809,9 @@ crude_devmenu_memory_visual_profiler_draw
 }
 
 void
-crude_devmenu_memory_visual_profiler_callback
+crude_gui_devmenu_memory_visual_profiler_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->memory_visual_profiler.enabled = !devmenu->memory_visual_profiler.enabled;
@@ -823,37 +823,37 @@ crude_devmenu_memory_visual_profiler_callback
  * 
  ***********************/
 void
-crude_devmenu_texture_inspector_initialize
+crude_gui_devmenu_texture_inspector_initialize
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_texture_inspector->devmenu = devmenu;
   dev_texture_inspector->enabled = false;
-  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &devmenu->engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( devmenu->engine->scene_renderer.render_graph->builder, "final" )->resource_info.texture.handle )->handle;
+  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &devmenu->engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( devmenu->engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle;
 }
 
 void
-crude_devmenu_texture_inspector_deinitialize
+crude_gui_devmenu_texture_inspector_deinitialize
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
+  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
 )
 {
 }
 
 void
-crude_devmenu_texture_inspector_update
+crude_gui_devmenu_texture_inspector_update
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
+  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
 )
 {
 }
 
 void
-crude_devmenu_texture_inspector_draw
+crude_gui_devmenu_texture_inspector_draw
 (
-  _In_ crude_devmenu_texture_inspector                    *dev_texture_inspector
+  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
 )
 {
   char const                                              *preview_texture_name;
@@ -926,9 +926,9 @@ crude_devmenu_texture_inspector_draw
 }
 
 void
-crude_devmenu_texture_inspector_callback
+crude_gui_devmenu_texture_inspector_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
@@ -941,10 +941,10 @@ crude_devmenu_texture_inspector_callback
  * 
  ***********************/
 void
-crude_devmenu_render_graph_initialize
+crude_gui_devmenu_render_graph_initialize
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_render_graph                     *dev_render_graph,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_render_graph->devmenu = devmenu;
@@ -955,25 +955,25 @@ crude_devmenu_render_graph_initialize
 }
 
 void
-crude_devmenu_render_graph_deinitialize
+crude_gui_devmenu_render_graph_deinitialize
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph
+  _In_ crude_gui_devmenu_render_graph                     *dev_render_graph
 )
 {
 }
 
 void
-crude_devmenu_render_graph_update
+crude_gui_devmenu_render_graph_update
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph
+  _In_ crude_gui_devmenu_render_graph                     *dev_render_graph
 )
 {
 }
 
 void
-crude_devmenu_render_graph_draw
+crude_gui_devmenu_render_graph_draw
 (
-  _In_ crude_devmenu_render_graph                         *dev_render_graph
+  _In_ crude_gui_devmenu_render_graph                     *dev_render_graph
 )
 {
   crude_gfx_render_graph                                  *render_graph;
@@ -1057,9 +1057,9 @@ crude_devmenu_render_graph_draw
 }
 
 void
-crude_devmenu_render_graph_callback
+crude_gui_devmenu_render_graph_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->render_graph.enabled = !devmenu->render_graph.enabled;
@@ -1071,21 +1071,21 @@ crude_devmenu_render_graph_callback
  * 
  ***********************/
 static void
-crude_devmenu_gpu_pool_draw_pool_
+crude_gui_devmenu_gpu_pool_draw_pool_
 (
   _In_ crude_resource_pool                                *resource_pool,
   _In_ char const                                         *resource_name,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
 }
 
 void
-crude_devmenu_gpu_pool_initialize
+crude_gui_devmenu_gpu_pool_initialize
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_gpu_pool->devmenu = devmenu;
@@ -1093,25 +1093,25 @@ crude_devmenu_gpu_pool_initialize
 }
 
 void
-crude_devmenu_gpu_pool_deinitialize
+crude_gui_devmenu_gpu_pool_deinitialize
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
 )
 {
 }
 
 void
-crude_devmenu_gpu_pool_update
+crude_gui_devmenu_gpu_pool_update
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
 )
 {
 }
 
 void
-crude_devmenu_gpu_pool_draw
+crude_gui_devmenu_gpu_pool_draw
 (
-  _In_ crude_devmenu_gpu_pool                             *dev_gpu_pool
+  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
 )
 {
   if ( !dev_gpu_pool->enabled )
@@ -1139,21 +1139,21 @@ crude_devmenu_gpu_pool_draw
   ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
   
   ImGui::Separator();
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.buffers, "Buffers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.textures, "Textures", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.pipelines, "Pipelines", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.samplers, "Samplers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_sets, "DescriptorSets", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_set_layouts, "DescriptorSetLayouts", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.framebuffers, "Framebuffers", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.render_passes, "RenderPasses", dev_gpu_pool->devmenu );
-  crude_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.shaders, "Shaders", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.buffers, "Buffers", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.textures, "Textures", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.pipelines, "Pipelines", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.samplers, "Samplers", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_sets, "DescriptorSets", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_set_layouts, "DescriptorSetLayouts", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.framebuffers, "Framebuffers", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.render_passes, "RenderPasses", dev_gpu_pool->devmenu );
+  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.shaders, "Shaders", dev_gpu_pool->devmenu );
 }
 
 void
-crude_devmenu_gpu_pool_callback
+crude_gui_devmenu_gpu_pool_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->gpu_pool.enabled = !devmenu->gpu_pool.enabled;
@@ -1165,10 +1165,10 @@ crude_devmenu_gpu_pool_callback
  * 
  ***********************/
 void
-crude_devmenu_scene_renderer_initialize
+crude_gui_devmenu_scene_renderer_initialize
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_scene_renderer                   *dev_scene_rendere,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_scene_rendere->devmenu = devmenu;
@@ -1176,25 +1176,25 @@ crude_devmenu_scene_renderer_initialize
 }
 
 void
-crude_devmenu_scene_renderer_deinitialize
+crude_gui_devmenu_scene_renderer_deinitialize
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+  _In_ crude_gui_devmenu_scene_renderer                   *dev_scene_rendere
 )
 {
 }
 
 void
-crude_devmenu_scene_renderer_update
+crude_gui_devmenu_scene_renderer_update
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+  _In_ crude_gui_devmenu_scene_renderer                   *dev_scene_rendere
 )
 {
 }
 
 void
-crude_devmenu_scene_renderer_draw
+crude_gui_devmenu_scene_renderer_draw
 (
-  _In_ crude_devmenu_scene_renderer                       *dev_scene_rendere
+  _In_ crude_gui_devmenu_scene_renderer                   *dev_scene_rendere
 )
 {
   if ( !dev_scene_rendere->enabled )
@@ -1257,9 +1257,9 @@ crude_devmenu_scene_renderer_draw
 }
 
 void
-crude_devmenu_scene_renderer_callback
+crude_gui_devmenu_scene_renderer_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
@@ -1271,9 +1271,9 @@ crude_devmenu_scene_renderer_callback
  * 
  ***********************/
 void
-crude_devmenu_nodes_tree_draw_internal_
+crude_gui_devmenu_nodes_tree_draw_internal_
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
+  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree,
   _In_ crude_entity                                        node,
   _In_ uint32                                             *current_node_index
 )
@@ -1341,7 +1341,7 @@ crude_devmenu_nodes_tree_draw_internal_
         for ( int32 i = 0; i < it.count; ++i )
         {
           crude_entity child = crude_entity_from_iterator( &it, i );
-          crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, child, current_node_index );
+          crude_gui_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, child, current_node_index );
         }
       }
     }
@@ -1351,10 +1351,10 @@ crude_devmenu_nodes_tree_draw_internal_
 }
 
 void
-crude_devmenu_nodes_tree_initialize
+crude_gui_devmenu_nodes_tree_initialize
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_nodes_tree->devmenu = devmenu;
@@ -1364,25 +1364,25 @@ crude_devmenu_nodes_tree_initialize
 }
 
 void
-crude_devmenu_nodes_tree_deinitialize
+crude_gui_devmenu_nodes_tree_deinitialize
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
 )
 {
 }
 
 void
-crude_devmenu_nodes_tree_update
+crude_gui_devmenu_nodes_tree_update
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
 )
 {
 }
 
 void
-crude_devmenu_nodes_tree_draw
+crude_gui_devmenu_nodes_tree_draw
 (
-  _In_ crude_devmenu_nodes_tree                           *dev_nodes_tree
+  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
 )
 {
   crude_ecs                                               *world;
@@ -1417,14 +1417,14 @@ crude_devmenu_nodes_tree_draw
   
   ImGui::Begin( "Scene Node Tree" );
   current_node_index = 0u;
-  crude_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, dev_nodes_tree->devmenu->engine->main_node, &current_node_index );
+  crude_gui_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, dev_nodes_tree->devmenu->engine->main_node, &current_node_index );
   ImGui::End( );
 }
 
 void
-crude_devmenu_nodes_tree_callback
+crude_gui_devmenu_nodes_tree_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->nodes_tree.enabled = !devmenu->nodes_tree.enabled;
@@ -1437,10 +1437,10 @@ crude_devmenu_nodes_tree_callback
  * 
  ***********************/
 void
-crude_devmenu_node_inspector_initialize
+crude_gui_devmenu_node_inspector_initialize
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_node_inspector->devmenu = devmenu;
@@ -1448,25 +1448,25 @@ crude_devmenu_node_inspector_initialize
 }
 
 void
-crude_devmenu_node_inspector_deinitialize
+crude_gui_devmenu_node_inspector_deinitialize
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector
+  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
 )
 {
 }
 
 void
-crude_devmenu_node_inspector_update
+crude_gui_devmenu_node_inspector_update
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector
+  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
 )
 {
 }
 
 void
-crude_devmenu_node_inspector_draw
+crude_gui_devmenu_node_inspector_draw
 (
-  _In_ crude_devmenu_node_inspector                       *dev_node_inspector
+  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
 )
 {
   crude_ecs *world = dev_node_inspector->devmenu->engine->world;
@@ -1580,9 +1580,9 @@ crude_devmenu_node_inspector_draw
 }
 
 void
-crude_devmenu_node_inspector_callback
+crude_gui_devmenu_node_inspector_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->node_inspector.enabled = !devmenu->node_inspector.enabled;
@@ -1594,10 +1594,10 @@ crude_devmenu_node_inspector_callback
  * 
  ***********************/
 void
-crude_devmenu_viewport_initialize
+crude_gui_devmenu_viewport_initialize
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport,
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu_viewport                         *dev_viewport,
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   dev_viewport->devmenu = devmenu;
@@ -1605,25 +1605,25 @@ crude_devmenu_viewport_initialize
 }
 
 void
-crude_devmenu_viewport_deinitialize
+crude_gui_devmenu_viewport_deinitialize
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport
+  _In_ crude_gui_devmenu_viewport                         *dev_viewport
 )
 {
 }
 
 void
-crude_devmenu_viewport_update
+crude_gui_devmenu_viewport_update
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport
+  _In_ crude_gui_devmenu_viewport                         *dev_viewport
 )
 {
 }
 
 void
-crude_devmenu_viewport_draw
+crude_gui_devmenu_viewport_draw
 (
-  _In_ crude_devmenu_viewport                             *dev_viewport
+  _In_ crude_gui_devmenu_viewport                         *dev_viewport
 )
 {
   static ImGuizmo::OPERATION                               selected_gizmo_operation = ImGuizmo::TRANSLATE;
@@ -1736,9 +1736,9 @@ cleanup:
 }
 
 void
-crude_devmenu_viewport_callback
+crude_gui_devmenu_viewport_callback
 (
-  _In_ crude_devmenu                                      *devmenu
+  _In_ crude_gui_devmenu                                  *devmenu
 )
 {
   devmenu->viewport.enabled = !devmenu->viewport.enabled;

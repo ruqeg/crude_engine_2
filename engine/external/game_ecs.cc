@@ -12,12 +12,15 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_level_mars, "crude_level_mars" );
 void
 crude_game_components_import
 (
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager
 )
 {
   CRUDE_ECS_MODULE( world, crude_game_components );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_player_controller );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_level_mars );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player_controller );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_level_mars );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_player_controller )
@@ -47,7 +50,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_player_controller )
   return json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controller )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   ImGui::DragFloat( "Rotation Speed", &component->rotation_speed, 0.01 );
   ImGui::DragFloat( "Jump Velocity", &component->jump_velocity, 0.01 );
@@ -71,6 +74,6 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_level_mars )
   return json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_level_mars )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_level_mars )
 {
 }

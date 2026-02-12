@@ -10,6 +10,7 @@
 #include <engine/physics/physics_ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/gui/devmenu.h>
+#include <engine/gui/editor.h>
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/imgui.h>
 
@@ -64,6 +65,8 @@ typedef struct crude_engine
   crude_entity                                             main_node;
   crude_entity                                             camera_node;
   crude_entity                                             player_controller_node;
+
+  crude_components_serialization_manager                   components_serialization_manager;
 
   /******************************
    *
@@ -127,7 +130,8 @@ typedef struct crude_engine
    *
    ******************************/
 #if CRUDE_DEVELOP
-  crude_devmenu                                            devmenu;
+  crude_gui_devmenu                                        devmenu;
+  crude_gui_editor                                         editor;
 #endif
 
   /******************************
