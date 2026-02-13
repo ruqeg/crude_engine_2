@@ -960,6 +960,8 @@ crude_gui_devmenu_render_graph_deinitialize
   _In_ crude_gui_devmenu_render_graph                     *dev_render_graph
 )
 {
+  crude_gfx_render_graph_builder_deinitialize( &dev_render_graph->render_graph_builder );
+  crude_gfx_render_graph_deinitialize( &dev_render_graph->render_graph );
 }
 
 void

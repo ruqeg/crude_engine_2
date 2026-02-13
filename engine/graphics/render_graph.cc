@@ -312,10 +312,10 @@ crude_gfx_render_graph_compile
     for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++node_index )
     {
       crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
-      if ( !node->enabled )
-      {
-        continue;
-      }
+      //if ( !node->enabled )
+      //{
+      //  continue;
+      //}
       
       CRUDE_ARRAY_PUSH( stack, render_graph->nodes[ node_index ] );
       
@@ -359,7 +359,7 @@ crude_gfx_render_graph_compile
       }
     }
     
-    //CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
+    CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( sorted_nodes ) == CRUDE_ARRAY_LENGTH( render_graph->nodes ) );
     CRUDE_ARRAY_SET_LENGTH( render_graph->nodes, 0 );
     
     for ( int32 i = CRUDE_ARRAY_LENGTH( sorted_nodes ) - 1; i >= 0; --i )
@@ -367,10 +367,9 @@ crude_gfx_render_graph_compile
       CRUDE_ARRAY_PUSH( render_graph->nodes, sorted_nodes[ i ] );
     }
     
-
     crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
   }
-  
+
   /* Compute Resource Aliasing */
   {
     crude_gfx_render_graph_node_handle                    *allocations;

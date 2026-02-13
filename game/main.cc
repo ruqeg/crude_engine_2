@@ -28,7 +28,7 @@ main
     crude_engine_initialize( &engine, working_directory );
 
     crude_editor_instance_intialize( );
-
+    
     crude_editor_initialize( crude_editor_instance( ), &engine, working_directory );
   }
 
