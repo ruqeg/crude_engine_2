@@ -2,6 +2,45 @@
 
 #include <engine/core/memory.h>
 
+typedef uint64 crude_file_iterator_handle;
+
+typedef struct crude_file_iterator
+{
+  crude_file_iterator_handle                               handle;
+  uint8                                                    founded_data[ 320 ];
+} crude_file_iterator;
+
+CRUDE_API bool
+crude_file_iterator_initialize
+(
+  _Out_ crude_file_iterator                               *iterator,
+  _In_ char const                                         *search_filter
+);
+
+CRUDE_API bool
+crude_file_iterator_is_directory
+(
+  _In_ crude_file_iterator                                *iterator
+);
+
+CRUDE_API char const*
+crude_file_iterator_name
+(
+  _In_ crude_file_iterator                                *iterator
+);
+
+CRUDE_API bool
+crude_file_iterator_next
+(
+  _In_ crude_file_iterator                                *iterator
+);
+
+CRUDE_API void
+crude_file_iterator_deinitialize
+(
+  _In_ crude_file_iterator                                *iterator
+);
+
 CRUDE_API void
 crude_get_executable_directory
 (

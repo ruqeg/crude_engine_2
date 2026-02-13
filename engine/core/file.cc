@@ -8,9 +8,13 @@
 #define GetCurrentDir getcwd
 #endif
 
+#include <engine/core/string.h>
 #include <engine/core/assert.h>
 
 #include <engine/core/file.h>
+
+static_assert( sizeof( crude_file_iterator::founded_data ) == sizeof( WIN32_FIND_DATA ) );
+static_assert( sizeof( crude_file_iterator::handle ) == sizeof( HANDLE ) );
 
 static long _get_file_size
 (
@@ -21,6 +25,53 @@ static long _get_file_size
   long file_size_signed = ftell( f );
   fseek( f, 0, SEEK_SET );
   return file_size_signed;
+}
+
+bool
+crude_file_iterator_initialize
+(
+  _In_ crude_file_iterator                                *iterator,
+  _In_ char const                                         *search_filter
+)
+{
+  iterator->handle = CRUDE_CAST( crude_file_iterator_handle, FindFirstFile( search_filter, CRUDE_CAST( LPWIN32_FIND_DATAA, iterator->founded_data ) ), sizeof( iterator->handle ) );
+  return iterator->handle != CRUDE_CAST( crude_file_iterator_handle, INVALID_HANDLE_VALUE );
+}
+
+bool
+crude_file_iterator_is_directory
+(
+  _In_ crude_file_iterator                                *iterator
+)
+{
+  return CRUDE_CAST( WIN32_FIND_DATA*, iterator->founded_data )->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+char const*
+crude_file_iterator_name
+(
+  _In_ crude_file_iterator                                *iterator
+)
+{
+  return CRUDE_CAST( WIN32_FIND_DATA*, iterator->founded_data )->cFileName;
+}
+
+bool
+crude_file_iterator_next
+(
+  _In_ crude_file_iterator                                *iterator
+)
+{
+  return FindNextFile( CRUDE_CAST( HANDLE, iterator->handle ), CRUDE_CAST( LPWIN32_FIND_DATAA, iterator->founded_data ) );
+}
+
+void
+crude_file_iterator_deinitialize
+(
+  _In_ crude_file_iterator                                *iterator
+)
+{
+  FindClose( CRUDE_CAST( HANDLE, iterator->handle ) );
 }
 
 void

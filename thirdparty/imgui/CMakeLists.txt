@@ -12,4 +12,4 @@ set(SOURCES ${SRC} ${HEADERS})
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3-static ${Vulkan_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3-static ${Vulkan_LIBRARY})

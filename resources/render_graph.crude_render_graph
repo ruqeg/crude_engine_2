@@ -467,7 +467,7 @@
           "name": "gbuffer_mesh_draw_index"
         },
         {
-          "type": "attachment",
+          "type": "texture",
           "name": "game_final"
         }
       ],

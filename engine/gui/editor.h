@@ -8,6 +8,8 @@
 #include <engine/gui/node_inspector.h>
 #include <engine/gui/node_tree.h>
 #include <engine/gui/viewport.h>
+#include <engine/gui/log_viewer.h>
+#include <engine/gui/content_browser.h>
 
 typedef struct crude_engine crude_engine;
 
@@ -17,6 +19,8 @@ typedef struct crude_gui_editor
   crude_gui_viewport                                       viewport;
   crude_gui_node_inspector                                 node_inspector;
   crude_gui_node_tree                                      node_tree;
+  crude_gui_log_viewer                                     log_viewer;
+  crude_gui_content_browser                                content_browser;
   crude_entity                                             selected_node;
 } crude_gui_editor;
 

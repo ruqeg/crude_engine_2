@@ -31,11 +31,23 @@ typedef enum crude_channel
 
 CRUDE_API void
 crude_log_initialize
-();
+(
+);
 
 CRUDE_API void
 crude_log_deinitialize
-();
+(
+);
+
+CRUDE_API char const*
+crude_log_buffer
+(
+);
+
+CRUDE_API uint64
+crude_log_buffer_length
+(
+);
 
 CRUDE_API void
 crude_log_common
@@ -59,6 +71,15 @@ crude_log_common_va
   _In_ va_list                                             args
 );
 
+#if CRUDE_PRODUCTION
+#define CRUDE_LOG( channel, format, ... )
+#define CRUDE_LOG_INFO( channel, format, ... )
+#define CRUDE_LOG_WARNING( channel, format, ... )
+#define CRUDE_LOG_ERROR( channel, format, ... )\
+{\
+  crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ERROR, format, ##__VA_ARGS__ );\
+}
+#else
 #define CRUDE_LOG( channel, format, ... )\
 {\
   crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ALL, format, ##__VA_ARGS__ );\
@@ -78,3 +99,4 @@ crude_log_common_va
 {\
   crude_log_common( __FILE__, __LINE__, channel, CRUDE_VERBOSITY_ERROR, format, ##__VA_ARGS__ );\
 }
+#endif

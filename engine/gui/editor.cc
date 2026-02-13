@@ -24,6 +24,8 @@ crude_gui_editor_initialize
   crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0 );
   crude_gui_node_inspector_initialize( &editor->node_inspector, &engine->components_serialization_manager, &engine->node_manager );
   crude_gui_node_tree_initialize( &editor->node_tree );
+  crude_gui_log_viewer_initialize( &editor->log_viewer );
+  crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
 }
 
 void
@@ -34,6 +36,8 @@ crude_gui_editor_deinitialize
 {
   crude_gui_node_tree_deinitialize( &editor->node_tree );
   crude_gui_node_inspector_deinitialize( &editor->node_inspector );
+  crude_gui_log_viewer_deinitialize( &editor->log_viewer );
+  crude_gui_content_browser_deinitialize( &editor->content_browser );
 }
 
 void
@@ -52,22 +56,21 @@ crude_gui_editor_queue_draw
   
   if ( ImGui::DockBuilderGetNode( im_dockspace_id ) == NULL )
   {
-    ImGuiID                                                im_dock_id_left, im_dock_id_main, im_dock_id_left_top, im_dock_id_left_bottom;
+    ImGuiID                                                im_dock_id_node_tree, im_dock_id_viewport, im_dock_id_inspector, im_dock_id_logger;
 
-    ImGui::DockBuilderAddNode( im_dockspace_id, ImGuiDockNodeFlags_DockSpace );
+    ImGui::DockBuilderAddNode( im_dockspace_id, ImGuiDockNodeFlags_None );
     ImGui::DockBuilderSetNodeSize( im_dockspace_id, im_viewport->Size );
-
-    im_dock_id_left = 0;
-    im_dock_id_main = im_dockspace_id;
-    ImGui::DockBuilderSplitNode( im_dock_id_main, ImGuiDir_Left, 0.20f, &im_dock_id_left, &im_dock_id_main );
-
-    im_dock_id_left_top = 0;
-    im_dock_id_left_bottom = 0;
-    ImGui::DockBuilderSplitNode( im_dock_id_left, ImGuiDir_Up, 0.50f, &im_dock_id_left_top, &im_dock_id_left_bottom );
     
-    ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_main );
-    ImGui::DockBuilderDockWindow( "Inspector", im_dock_id_left_bottom );
-    ImGui::DockBuilderDockWindow( "Node Tree", im_dock_id_left_top );
+    ImGui::DockBuilderSplitNode( im_dockspace_id, ImGuiDir_Up, 0.75f, &im_dock_id_viewport, &im_dock_id_logger );
+
+    ImGui::DockBuilderSplitNode( im_dock_id_viewport, ImGuiDir_Left, 0.20f, &im_dock_id_node_tree, &im_dock_id_viewport );
+    ImGui::DockBuilderSplitNode( im_dock_id_node_tree, ImGuiDir_Up, 0.50f, &im_dock_id_node_tree, &im_dock_id_inspector );
+    
+    ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_viewport );
+    ImGui::DockBuilderDockWindow( "Inspector", im_dock_id_inspector );
+    ImGui::DockBuilderDockWindow( "Node Tree", im_dock_id_node_tree );
+    ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_logger );
+    ImGui::DockBuilderDockWindow( "Log Viewer", im_dock_id_logger );
     ImGui::DockBuilderFinish( im_dockspace_id );
   }
   
@@ -78,12 +81,23 @@ crude_gui_editor_queue_draw
   crude_gui_viewport_queue_draw( &editor->viewport, editor->engine->world, editor->selected_node, editor->engine->camera_node );
   ImGui::End( );
   ImGui::PopStyleColor( );
+  
   ImGui::Begin( "Inspector" );
   crude_gui_node_inspector_queue_draw( &editor->node_inspector, editor->engine->world, editor->selected_node );
   ImGui::End( );
+  
   ImGui::Begin( "Node Tree" );
   crude_gui_node_tree_queue_draw( &editor->node_tree, editor->engine->world, editor->engine->main_node, &editor->selected_node );
   ImGui::End( );
+  
+  ImGui::Begin( "Log Viewer" );
+  crude_gui_log_viewer_queue_draw( &editor->log_viewer );
+  ImGui::End( );
+  
+  ImGui::Begin( "Content Browser" );
+  crude_gui_content_browser_queue_draw( &editor->content_browser );
+  ImGui::End( );
+  
   crude_gui_editor_pop_style_( );
     ImGui::ShowDemoWindow();
 }

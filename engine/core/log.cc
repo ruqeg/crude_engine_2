@@ -11,6 +11,7 @@
 
 #include <engine/core/log.h>
 
+char                                                      *loged_buffer_;
 char                                                       message_buffer_[ CRUDE_RKILO( 8 ) ];
 char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];
 uint64                                                     loged_bytes_ = 0;
@@ -56,20 +57,41 @@ get_channel_string_
   return "Unknown-Channel";
 }
 
-CRUDE_API void
+void
 crude_log_initialize
-()
+(
+)
 {
+  loged_buffer_ = CRUDE_CAST( char*, malloc( CRUDE_RMEGA( 1 ) ) );
   log_file_ = fopen( "crude_log.txt", "w" );
   mtx_init( &log_mutex_, mtx_plain );
 }
 
-CRUDE_API void
+void
 crude_log_deinitialize
-()
+(
+)
 {
+  free( loged_buffer_ );
   mtx_destroy( &log_mutex_ );
   fclose( log_file_ );
+}
+
+char const*
+crude_log_buffer
+(
+)
+{
+  return loged_buffer_;
+}
+
+
+uint64
+crude_log_buffer_length
+(
+)
+{
+  return loged_bytes_;
 }
 
 void
@@ -106,9 +128,13 @@ crude_log_common_va
 
   crude_snprintf( format_buffer_, CRUDE_COUNTOF( message_buffer_ ), "[ %s ][ %s ][ %s ][ line: %i ]\n\t=> %s\n\n", get_verbosity_string_( verbosity ), get_channel_string_( channel ), filename, line, format );
   message_length = crude_vsnprintf( message_buffer_, CRUDE_COUNTOF( message_buffer_ ), format_buffer_, args );
+
 #ifdef _WIN32
   OutputDebugStringA( ( LPCSTR )message_buffer_ );
 #endif
+
+  printf( "%s", message_buffer_ );
+  
   if ( log_file_ )
   {
     fprintf( log_file_, message_buffer_ );
@@ -117,9 +143,26 @@ crude_log_common_va
       fflush( log_file_ );
     }
   }
-  printf( "%s", message_buffer_ );
+
+  for ( uint32 i = 0; i < message_length; ++i )
+  {
+    if ( loged_bytes_ + i > CRUDE_RMEGA( 1 ) - 1 )
+    {
+      break;
+    }
+    loged_buffer_[ loged_bytes_ + i ] = message_buffer_[ i ]; 
+  }
 
   loged_bytes_ += message_length;
+
+  if ( loged_bytes_ < CRUDE_RMEGA( 1 ) )
+  {
+    loged_buffer_[ loged_bytes_ ] = 0;
+  }
+  else
+  {
+    loged_buffer_[ CRUDE_RMEGA( 1 ) - 1 ] = 0;
+  }
 
   if ( loged_bytes_ > CRUDE_RMEGA( 1 ) )
   {
