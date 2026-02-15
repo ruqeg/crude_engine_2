@@ -75,10 +75,11 @@ crude_gfx_technique_load_from_file
 )
 {
   char const                                              *json_path;
-  crude_gfx_technique_creation                             technique_creation;
   cJSON                                                   *technique_json;
   cJSON const                                             *passes;
   uint8                                                   *technique_json_buffer;
+  crude_gfx_technique_creation                             technique_creation;
+  crude_string_buffer                                      technique_buffer;
   size_t                                                   allocated_marker;
   uint32                                                   technique_json_buffer_size;
 #if !CRUDE_PRODUCTION
@@ -98,11 +99,12 @@ crude_gfx_technique_load_from_file
   crude_string_buffer_initialize( &path_buffer, 1024, crude_stack_allocator_pack( temporary_allocator ) );
 #endif
 
-  json_path = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s%s", gpu->techniques_absolute_directory, technique_relative_filepath );;
+  crude_string_buffer_initialize( &technique_buffer, crude_string_length( gpu->techniques_absolute_directory ) + crude_string_length( technique_relative_filepath ) + 1, gpu->allocator_container );
+  json_path = crude_string_buffer_append_use_f( &technique_buffer, "%s%s", gpu->techniques_absolute_directory, technique_relative_filepath );;
   if ( !crude_file_exist( json_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
-    return;
+    goto cleanup_common_allocations;
   }
   
   crude_read_file( json_path, crude_stack_allocator_pack( temporary_allocator ), &technique_json_buffer, &technique_json_buffer_size );
@@ -111,19 +113,19 @@ crude_gfx_technique_load_from_file
   if ( !technique_json )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file for technique... Error %s", cJSON_GetErrorPtr() );
-    return;
+    goto cleanup_common_allocations;
   }
   
   technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_technique_creation );
   
-  technique_creation.technique_relative_filepath = technique_relative_filepath;
+  crude_string_copy( technique_creation.technique_relative_filepath, technique_relative_filepath, sizeof( technique_creation.technique_relative_filepath ) );
   {
     cJSON const                                           *technique_name_json;
     char const                                            *technique_name;
     
     technique_name_json = cJSON_GetObjectItemCaseSensitive( technique_json, "name" );
     technique_name = cJSON_GetStringValue( technique_name_json );
-    technique_creation.name = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", technique_name );
+    crude_string_copy( technique_creation.name, technique_name, sizeof( technique_creation.name ) );
   }
   
 #if !CRUDE_PRODUCTION
@@ -201,8 +203,12 @@ crude_gfx_technique_load_from_file
     crude_gfx_technique *technique = crude_gfx_create_technique( gpu, &technique_creation );
   }
   
+cleanup_json:
   cJSON_Delete( technique_json );
+
+cleanup_common_allocations:
   crude_stack_allocator_free_marker( temporary_allocator, allocated_marker  );
+  crude_string_buffer_deinitialize( &technique_buffer );
 }
 
 /************************************************

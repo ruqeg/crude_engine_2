@@ -153,8 +153,9 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
   {
-    component->mesh.model_filename = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) ) );
-    component->mesh.octree_handle = crude_collisions_resources_manager_get_octree_handle( manager->collisions_resources_manager, crude_string_buffer_append_use_f( &manager->string_bufffer, "%s%s", manager->resources_absolute_directory, component->mesh.model_filename ) );
+    char const *local_relative_path = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
+    crude_string_copy( component->mesh.model_relative_filepath, local_relative_path, sizeof( component->mesh.model_relative_filepath ) );
+    component->mesh.octree_handle = crude_collisions_resources_manager_get_octree_handle( manager->collisions_resources_manager, component->mesh.model_relative_filepath );
   }
   else
   {
@@ -179,7 +180,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
   }
   else if ( component->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
   {
-    cJSON_AddItemToObject( collision_shape_json, "path", cJSON_CreateString( component->mesh.model_filename ) );
+    cJSON_AddItemToObject( collision_shape_json, "path", cJSON_CreateString( component->mesh.model_relative_filepath ) );
   }
   else
   {

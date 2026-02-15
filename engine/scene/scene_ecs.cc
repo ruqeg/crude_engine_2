@@ -95,13 +95,12 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
 {
-  char const                                              *gltf_path;
+  char const                                              *gltf_relative_filepath;
 
-  gltf_path = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
+  gltf_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
 
   crude_memory_set( component, 0, sizeof( crude_gltf ) );
-  component->original_path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", gltf_path );
-  component->path = crude_string_buffer_append_use_f( &manager->string_bufffer, "%s%s", manager->resources_absolute_directory, gltf_path );
+  crude_string_copy( component->relative_filepath, gltf_relative_filepath, sizeof( component->relative_filepath ) );
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   return true;
 }
@@ -110,7 +109,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
 {
   cJSON *gltf_json = cJSON_CreateObject( );     
   cJSON_AddItemToObject( gltf_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_gltf ) ) );
-  cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( component->original_path ) );
+  cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( component->relative_filepath ) );
   if ( component->hidden )
   {
     cJSON_AddItemToObject( gltf_json, "hidden", cJSON_CreateBool( component->hidden ) );
@@ -120,6 +119,51 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
 {
+  ImGui::PushID( component->relative_filepath );
+      //if ((n % 3) != 0)
+      //    ImGui::SameLine();
+      //ImGui::Button(names[n], ImVec2(60, 60));
+      //
+      //// Our buttons are both drag sources and drag targets here!
+      //if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+      //{
+      //    // Set payload to carry the index of our item (could be anything)
+      //    ImGui::SetDragDropPayload("DND_DEMO_CELL", &n, sizeof(int));
+      //
+      //    // Display preview (could be anything, e.g. when dragging an image we could decide to display
+      //    // the filename and a small preview of the image, etc.)
+      //    if (mode == Mode_Copy) { ImGui::Text("Copy %s", names[n]); }
+      //    if (mode == Mode_Move) { ImGui::Text("Move %s", names[n]); }
+      //    if (mode == Mode_Swap) { ImGui::Text("Swap %s", names[n]); }
+      //    ImGui::EndDragDropSource();
+      //}
+      //if (ImGui::BeginDragDropTarget())
+      //{
+      //    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_DEMO_CELL"))
+      //    {
+      //        IM_ASSERT(payload->DataSize == sizeof(int));
+      //        int payload_n = *(const int*)payload->Data;
+      //        if (mode == Mode_Copy)
+      //        {
+      //            names[n] = names[payload_n];
+      //        }
+      //        if (mode == Mode_Move)
+      //        {
+      //            names[n] = names[payload_n];
+      //            names[payload_n] = "";
+      //        }
+      //        if (mode == Mode_Swap)
+      //        {
+      //            const char* tmp = names[n];
+      //            names[n] = names[payload_n];
+      //            names[payload_n] = tmp;
+      //        }
+      //    }
+      //    ImGui::EndDragDropTarget();
+      //}
+  ImGui::PopID();
+
+  ImGui::Checkbox( "Hidden", &component->hidden );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )

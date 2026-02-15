@@ -873,7 +873,7 @@ crude_engine_graphics_task_set_thread_loop_
   
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_graphics_task_set_thread_loop_" );
   
-  final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GRAPHICS_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
+  final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GFX_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
 
   if ( engine->gpu.swapchain_resized_last_frame )
   {

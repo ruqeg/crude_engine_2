@@ -116,9 +116,9 @@ typedef struct crude_gfx_device
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
   VkSemaphore                                              vk_graphics_semaphore;
-  VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   VkDescriptorPool                                         vk_descriptor_pool;
   /**
    * Vulkan queues
@@ -130,7 +130,7 @@ typedef struct crude_gfx_device
   /**
    * Additional data related to the swapchain.
    */
-  VkImage                                                  vk_swapchain_images[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   uint32                                                   vk_swapchain_images_count;
   XMFLOAT2                                                 vk_swapchain_size;
   uint32                                                   vk_swapchain_image_index;
@@ -151,11 +151,6 @@ typedef struct crude_gfx_device
   VmaAllocator                                             vma_allocator;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
-
-  /**
-   * Objects names buffer works like a shit since we dont release name with objects... !TODO 
-   */
-  crude_string_buffer                                      objects_names_string_buffer;
 
   /**
    * !TODO 

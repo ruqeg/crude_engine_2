@@ -2,6 +2,7 @@
 
 /* yes, it's not optimized, bud it works, and i don't have any plans to fix it the near future */
 
+#include <engine/core/core_config.h>
 #include <engine/core/memory.h>
 #include <engine/core/assert.h>
 

@@ -4,10 +4,10 @@ void
 crude_components_serialization_manager_initialize
 (
   _In_ crude_components_serialization_manager             *manager,
-	_In_ crude_heap_allocator																*allocator
+  _In_ crude_heap_allocator                                *allocator
 )
 {
-	CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( manager->component_id_to_imgui_funs, 512, crude_heap_allocator_pack( allocator ) );
+  CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( manager->component_id_to_imgui_funs, 512, crude_heap_allocator_pack( allocator ) );
 }
 
 void
@@ -16,7 +16,7 @@ crude_components_serialization_manager_deinitialize
   _In_ crude_components_serialization_manager             *manager
 )
 {
-	CRUDE_HASHMAP_DEINITIALIZE( manager->component_id_to_imgui_funs );
+  CRUDE_HASHMAP_DEINITIALIZE( manager->component_id_to_imgui_funs );
 }
 
 void

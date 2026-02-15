@@ -684,7 +684,6 @@ crude_gui_devmenu_memory_visual_profiler_initialize
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_heap_allocator_pack( &devmenu->engine->resources_allocator ) );
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_stack_allocator_pack( &devmenu->engine->temporary_allocator ) );
   CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &devmenu->engine->render_graph.linear_allocator ) );
-  CRUDE_ARRAY_PUSH( dev_mem_profiler->allocators_containers, crude_linear_allocator_pack( &devmenu->engine->node_manager.string_linear_allocator ) );
 }
 
 void
@@ -1484,7 +1483,7 @@ crude_gui_devmenu_node_inspector_draw
   crude_node_external *node_external = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_node_external );
   if ( node_external )
   {
-    ImGui::Text( "External \"%s\"", node_external->path );
+    ImGui::Text( "External \"%s\"", node_external->node_relative_filepath );
   }
   
   crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
@@ -1531,8 +1530,7 @@ crude_gui_devmenu_node_inspector_draw
   crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_gltf );
   if ( gltf && ImGui::CollapsingHeader( "crude_gltf" ) )
   {
-    ImGui::Text( "Relative Path \"%s\"", gltf->original_path );
-    ImGui::Text( "Absolute Path \"%s\"", gltf->path );
+    ImGui::Text( "Relative Path \"%s\"", gltf->relative_filepath );
     ImGui::Checkbox( "Hidden", &gltf->hidden );
   }
   

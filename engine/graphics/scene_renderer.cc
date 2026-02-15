@@ -107,7 +107,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.debug.force_metalness = 0;
 #endif /* CRUDE_DEVELOP */
 
-  scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GRAPHICS_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
+  scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GFX_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
@@ -125,8 +125,8 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->mesh_task_indirect_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_draw_counts_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_count_hga" );
 
   scene_renderer->debug_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "debug_commands_hga" );
-  scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
-  scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GRAPHICS_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
+  scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
+  scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
@@ -428,8 +428,8 @@ update_dynamic_buffers_
     scene->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
     scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
     //scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
-    scene->inv_shadow_map_size.x = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
-    scene->inv_shadow_map_size.y = 1.f / CRUDE_GRAPHICS_TETRAHEDRON_SHADOWMAP_SIZE;
+    scene->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
+    scene->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
     scene->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
 #else
@@ -554,7 +554,7 @@ crude_scene_renderer_register_nodes_instances_
     if ( !child_gltf->hidden )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-      model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->path, &local_model_initialized );
+      model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->relative_filepath, &local_model_initialized );
       model_renderer_resources_instant.type = CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF;
       XMStoreFloat4x4( &model_renderer_resources_instant.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, model_renderer_resources_instant );

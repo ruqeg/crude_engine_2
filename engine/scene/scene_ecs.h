@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/scene/scene_config.h>
 #include <engine/core/math.h>
 #include <engine/core/ecs.h>
 #include <engine/platform/platform.h>
@@ -12,7 +13,7 @@
  *********************************************************/
 typedef struct crude_node_external
 {
-  char const                                              *path;
+  char                                                     node_relative_filepath[ CRUDE_NODE_EXTERNAL_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_node_external;
 
 typedef struct crude_node_runtime
@@ -43,8 +44,7 @@ typedef struct crude_light
 
 typedef struct crude_gltf
 {
-  char const                                              *path;
-  char const                                              *original_path;
+  char                                                     relative_filepath[ CRUDE_GLTF_RELATIVE_FILEPATH_LENGTH_MAX ];
   bool                                                     hidden;
 } crude_gltf;
 

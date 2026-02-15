@@ -3,7 +3,7 @@
 #include <engine/graphics/render_graph.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
-#define CRUDE_GRAPHICS_DEPTH_PYRAMID_PASS_MAX_LEVELS ( 16 )
+#define CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ( 16 )
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 

@@ -286,7 +286,7 @@ crude_gfx_ssr_pass_on_resize
   radiance_hierarchy_creation.depth = 1u;
   radiance_hierarchy_creation.subresource.mip_level_count = pass->radiance_hierarchy_levels;
   radiance_hierarchy_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
-  radiance_hierarchy_creation.name = "radiance_hierarchy_texture_handle";
+  crude_string_copy( radiance_hierarchy_creation.name, "radiance_hierarchy_texture_handle", sizeof( radiance_hierarchy_creation.name ) );
   pass->radiance_hierarchy_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &radiance_hierarchy_creation );
 
   crude_gfx_link_texture_sampler( pass->scene_renderer->gpu, pass->radiance_hierarchy_texture_handle, pass->radiance_hierarchy_sampler );

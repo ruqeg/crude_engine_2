@@ -9,7 +9,7 @@ typedef struct crude_gfx_depth_pyramid_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
   crude_gfx_texture_handle                                 depth_pyramid_texture_handle;
-  crude_gfx_texture_handle                                 depth_pyramid_views_handles[ CRUDE_GRAPHICS_DEPTH_PYRAMID_PASS_MAX_LEVELS ];
+  crude_gfx_texture_handle                                 depth_pyramid_views_handles[ CRUDE_GFX_DEPTH_PYRAMID_PASS_MAX_LEVELS ];
   crude_gfx_sampler_handle                                 depth_pyramid_sampler;
   uint32                                                   depth_pyramid_levels;
 } crude_gfx_depth_pyramid_pass;

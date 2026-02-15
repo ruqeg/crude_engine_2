@@ -24,7 +24,7 @@ CRUDE_API void
 crude_components_serialization_manager_initialize
 (
   _In_ crude_components_serialization_manager             *manager,
-	_In_ crude_heap_allocator																*allocator
+  _In_ crude_heap_allocator                                *allocator
 );
 
 CRUDE_API void

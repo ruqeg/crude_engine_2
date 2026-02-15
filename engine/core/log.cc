@@ -9,11 +9,12 @@
 #include <engine/core/string.h>
 #include <engine/core/assert.h>
 
+#include <engine/core/core_config.h>
 #include <engine/core/log.h>
 
 char                                                      *loged_buffer_;
-char                                                       message_buffer_[ CRUDE_RKILO( 8 ) ];
-char                                                       format_buffer_[ CRUDE_RKILO( 8 ) ];
+char                                                       message_buffer_[ CRUDE_CORE_LOG_MESSAGE_BUFFER_MAX_LENGTH ];
+char                                                       format_buffer_[ CRUDE_CORE_LOG_FORMAT_BUFFER_MAX_LENGTH ];
 uint64                                                     loged_bytes_ = 0;
 FILE                                                      *log_file_ = NULL;
 mtx_t                                                      log_mutex_;

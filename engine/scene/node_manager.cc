@@ -65,8 +65,6 @@ crude_node_manager_initialize
   manager->collisions_resources_manager = creation->collisions_resources_manager;
   manager->allocator = creation->allocator;
 
-  crude_linear_allocator_initialize( &manager->string_linear_allocator, CRUDE_SCENE_STRING_LINEAR_ALLOCATOR_SIZE, "scene_allocator" );
-  crude_string_buffer_initialize( &manager->string_bufffer, 4096, crude_linear_allocator_pack( &manager->string_linear_allocator ) );
   CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
 }
 
@@ -77,8 +75,6 @@ crude_node_manager_deinitialize
 )
 {
   CRUDE_HASHMAP_DEINITIALIZE( manager->hashed_absolute_filepath_to_node );
-  crude_string_buffer_deinitialize( &manager->string_bufffer );
-  crude_linear_allocator_deinitialize( &manager->string_linear_allocator );
 }
 
 void
@@ -96,9 +92,6 @@ crude_node_manager_clear
     }
     manager->hashed_absolute_filepath_to_node[ i ].key = 0;
   }
-
-  crude_string_buffer_clear( &manager->string_bufffer );
-  crude_linear_allocator_clear( &manager->string_linear_allocator );
 }
 
 crude_entity
@@ -237,20 +230,23 @@ crude_node_manager_load_node_from_json_
   if ( is_node_external )
   {
     cJSON                                                 *node_external_json;
-    char const                                            *node_external_json_filepath;
+    char const                                            *node_external_json_relative_filepath;
     uint64                                                 temporary_allocator_marker;
     crude_string_buffer                                    temporary_path_buffer;
-    
+    crude_node_external                                    node_external;
+
     temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
     crude_string_buffer_initialize( &temporary_path_buffer, 2048, crude_stack_allocator_pack( manager->temporary_allocator ) );
 
-    node_external_json_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
+    node_external_json_relative_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     
-    node_external_json = crude_node_manager_parse_json_( manager, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", manager->resources_absolute_directory, node_external_json_filepath ) );
+    node_external_json = crude_node_manager_parse_json_( manager, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", manager->resources_absolute_directory, node_external_json_relative_filepath ) );
     node = crude_node_manager_load_node_from_json_( manager, node_external_json, world );
     crude_entity_set_name( world, node, node_name );
 
-    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { crude_string_buffer_append_use_f( &manager->string_bufffer, "%s", node_external_json_filepath ) } );
+    node_external = CRUDE_COMPOUNT_EMPTY( crude_node_external );
+    crude_string_copy( node_external.node_relative_filepath, node_external_json_relative_filepath, sizeof( node_external.node_relative_filepath ) );
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external } );
 
     crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
   }
@@ -407,7 +403,7 @@ crude_node_manager_node_to_json_hierarchy_
   is_external_node = CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_node_external );
   if ( is_external_node )
   {
-    cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external )->path ) );
+    cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external )->node_relative_filepath ) );
   }
 
   {

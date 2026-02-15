@@ -47,7 +47,7 @@ crude_gfx_postprocessing_pass_initialize
   luminance_average_texture_creation.height = 1u;
   luminance_average_texture_creation.depth = 1u;
   luminance_average_texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
-  luminance_average_texture_creation.name = "luminance_average_texture";
+  crude_string_copy( luminance_average_texture_creation.name, "luminance_average_texture", sizeof( luminance_average_texture_creation.name ) );
   pass->luminance_average_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &luminance_average_texture_creation ); 
   
   pass->luminance_histogram_hga = crude_gfx_memory_allocate_with_name( pass->scene_renderer->gpu, sizeof( uint32 ) * 256, CRUDE_GFX_MEMORY_TYPE_GPU, "luminance_histogram_hga" );

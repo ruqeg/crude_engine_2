@@ -257,9 +257,6 @@ crude_gfx_device_initialize
   gpu->techniques_absolute_directory = creation->techniques_absolute_directory;
   gpu->compiled_shaders_absolute_directory = creation->compiled_shaders_absolute_directory;
   gpu->shaders_absolute_directory = creation->shaders_absolute_directory;
-  
-  // !TODO
-  crude_string_buffer_initialize( &gpu->objects_names_string_buffer, CRUDE_RMEGA( 1 ), gpu->allocator_container );
 
   vk_create_instance_( gpu, creation->vk_application_name, creation->vk_application_version, temporary_allocator );
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -276,13 +273,13 @@ crude_gfx_device_initialize
     gpu->gpu_timestamp_frequency = vk_physical_properties.limits.timestampPeriod / ( 1000 * 1000 );
 
     uint32 gpu_time_queries_per_frame = 32;
-    uint32 num_pools = creation->num_threads * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
+    uint32 num_pools = creation->num_threads * CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT;
     gpu->num_threads = creation->num_threads;
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gpu->thread_frame_pools, num_pools, gpu->allocator_container );
     
 #if CRUDE_GPU_PROFILER
     gpu->gpu_time_queries_manager = CRUDE_STATIC_CAST( crude_gfx_gpu_time_queries_manager*, CRUDE_ALLOCATE( gpu->allocator_container, sizeof( crude_gfx_gpu_time_queries_manager ) ) );
-    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, gpu->allocator_container, gpu_time_queries_per_frame, creation->num_threads , CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES );
+    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, gpu->allocator_container, gpu_time_queries_per_frame, creation->num_threads , CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT );
 #endif
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->thread_frame_pools ); ++i )
     {
@@ -342,7 +339,7 @@ crude_gfx_device_initialize
 
     semaphore_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreCreateInfo );
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+    for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
     {
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_image_avalivable_semaphores[ i ] );
       vkCreateSemaphore( gpu->vk_device, &semaphore_info, gpu->vk_allocation_callbacks, &gpu->vk_swapchain_updated_semaphore[ i ] );
@@ -484,7 +481,7 @@ crude_gfx_device_deinitialize
   
   vkDestroyFence( gpu->vk_device, gpu->vk_immediate_fence, gpu->vk_allocation_callbacks );
   vkDestroySemaphore( gpu->vk_device, gpu->vk_graphics_semaphore, gpu->vk_allocation_callbacks );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     vkDestroySemaphore( gpu->vk_device, gpu->vk_image_avalivable_semaphores[ i ], gpu->vk_allocation_callbacks );
     vkDestroySemaphore( gpu->vk_device, gpu->vk_swapchain_updated_semaphore[ i ], gpu->vk_allocation_callbacks );
@@ -527,8 +524,6 @@ crude_gfx_device_deinitialize
   gpu->vkDestroyDebugUtilsMessengerEXT( gpu->vk_instance, gpu->vk_debug_utils_messenger, gpu->vk_allocation_callbacks );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
   vkDestroyInstance( gpu->vk_instance, gpu->vk_allocation_callbacks );
-
-  crude_string_buffer_deinitialize( &gpu->objects_names_string_buffer );
 }
 
 /************************************************
@@ -605,8 +600,8 @@ crude_gfx_present
   }
 
   {
-    VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES ];
-    VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES ];
+    VkWriteDescriptorSet                                   bindless_descriptor_writes[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
+    VkDescriptorImageInfo                                  bindless_image_info[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
     uint32                                                 current_write_index;
 
     current_write_index = 0;
@@ -1049,7 +1044,7 @@ crude_gfx_compile_shader
 
   char const                                              *temp_filename;
   char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
-  char                                                     technique_name_upper[ 1024 ];
+  char                                                     technique_name_upper[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
   uint32                                                   i;
   
   temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
@@ -1177,7 +1172,7 @@ crude_gfx_resize_texture
   texture_creation.subresource = texture->subresource;
   texture_creation.format = texture->vk_format;
   texture_creation.type = texture->type;
-  texture_creation.name = texture->name;
+  crude_string_copy( texture->name, texture_creation.name, sizeof( texture->name ) );
   texture_creation.width = width;
   texture_creation.height = height;
   texture_creation.depth = 1;
@@ -1531,7 +1526,7 @@ crude_gfx_create_texture
     memcpy( destination_data, creation->initial_data, image_size );
     vmaUnmapMemory( gpu->vma_allocator, vma_staging_allocation );
     
-    cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GRAPHICS_TEXTURE_COPY_FROM_BUFFER_THREAD_ID, true );
+    cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID, true );
 
     vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferImageCopy );
     vk_region.bufferOffset = 0;
@@ -1915,7 +1910,7 @@ crude_gfx_create_pipeline
 {
   crude_gfx_pipeline                                      *pipeline;
   crude_gfx_shader_state                                  *shader_state;
-  VkDescriptorSetLayout                                    vk_layouts[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  VkDescriptorSetLayout                                    vk_layouts[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   VkPipelineLayoutCreateInfo                               vk_pipeline_layout_info;
   crude_gfx_pipeline_handle                                pipeline_handle;
   crude_gfx_shader_state_handle                            shader_state_handle;
@@ -2585,7 +2580,7 @@ crude_gfx_create_descriptor_set
 
   if ( descriptor_set_layout->bindless )
   {
-    uint32 max_binding = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES - 1;
+    uint32 max_binding = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT - 1;
     VkDescriptorSetVariableDescriptorCountAllocateInfoEXT count_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetVariableDescriptorCountAllocateInfoEXT );
     count_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
     count_info.descriptorSetCount = 1;
@@ -2598,9 +2593,9 @@ crude_gfx_create_descriptor_set
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( gpu->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set: %s", creation->name ? creation->name : "#noname" );
   }
 
-  VkWriteDescriptorSet descriptor_write[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  VkDescriptorBufferInfo buffer_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  VkDescriptorImageInfo image_info[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  VkWriteDescriptorSet descriptor_write[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorBufferInfo buffer_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorImageInfo image_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
 
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VkWriteDescriptorSetAccelerationStructureKHR vk_acceleration_structure_info;
@@ -2895,8 +2890,8 @@ crude_gfx_create_technique
 
   technique = crude_gfx_access_technique( gpu, technique_handle );
   
-  technique->technique_relative_filepath = creation->technique_relative_filepath;
-  technique->name = creation->name;
+  crude_string_copy( technique->technique_relative_filepath, creation->technique_relative_filepath, sizeof( technique->technique_relative_filepath ) );
+  crude_string_copy( technique->name, creation->name, sizeof( technique->name ) );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, gpu->allocator_container );
   CRUDE_HASHMAP_INITIALIZE( technique->name_hashed_to_pass_index, gpu->allocator_container );
@@ -4025,7 +4020,7 @@ vk_create_swapchain_
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
   vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
 
-  cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GRAPHICS_SWAPCHAIN_BARRIER_COMMAND_BUFFER_THREAD_ID, true );
+  cmd = crude_gfx_get_primary_cmd( gpu, CRUDE_GFX_SWAPCHAIN_BARRIER_COMMAND_BUFFER_THREAD_ID, true );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
@@ -4088,13 +4083,13 @@ vk_create_descriptor_pool_
     }
     {
       VkDescriptorPoolSize pool_sizes_bindless[] = {
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES }
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT }
       };
       pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
       pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
       pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      pool_info.maxSets       = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES * CRUDE_COUNTOF( pool_sizes_bindless );
+      pool_info.maxSets       = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT * CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless );
       pool_info.pPoolSizes    = pool_sizes_bindless;
       CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
@@ -4109,12 +4104,12 @@ vk_create_descriptor_pool_
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
       .start = CRUDE_BINDLESS_TEXTURE_BINDING,
-      .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
+      .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
     } ) );
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
       .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
       .start = CRUDE_BINDLESS_TEXTURE_BINDING + 1,
-      .count = CRUDE_GRAPHICS_MAX_BINDLESS_RESOURCES,
+      .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
     } ) );
     gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &creation );
   }
@@ -4269,13 +4264,13 @@ vk_create_texture_
   texture->depth          = creation->depth;
   texture->subresource    = creation->subresource;
   texture->type           = creation->type;
-  texture->name           = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "%s", creation->name );
   texture->vk_format      = creation->format;
   texture->sampler        = NULL;
   texture->flags          = creation->flags;
   texture->handle         = handle;
   texture->parent_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   texture->state          = CRUDE_GFX_RESOURCE_STATE_UNDEFINED;
+  crude_string_copy( texture->name, creation->name, sizeof( texture->name ) );
 
   {
     VmaAllocationCreateInfo                                memory_info;

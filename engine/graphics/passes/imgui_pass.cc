@@ -41,7 +41,7 @@ crude_gfx_imgui_pass_initialize
   texture_creation.width = font_width;
   texture_creation.height = font_height;
   texture_creation.depth = 1;
-  texture_creation.name = "imgui_font";
+  crude_string_copy( texture_creation.name, "imgui_font", sizeof( texture_creation.name ) );
   pass->font_texture = crude_gfx_create_texture( gpu, &texture_creation );
   
   /* Store our identifier */

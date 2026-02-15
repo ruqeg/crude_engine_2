@@ -13,6 +13,7 @@ typedef struct crude_gfx_model_renderer_resources_manager_creation
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;
+  char const                                              *resources_absolute_directory;
 } crude_gfx_model_renderer_resources_manager_creation;
 
 typedef struct crude_gfx_model_renderer_resources_manager
@@ -25,14 +26,19 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;
-  
+  char const                                              *resources_absolute_directory;
+
   /***********************
    * Common CPU & GPU Data
    **********************/
   crude_gfx_sampler_handle                                *samplers;
   crude_gfx_texture_handle                                *images;
   crude_gfx_memory_allocation                             *buffers;
-  
+
+  crude_linear_allocator                                   linear_allocator;
+  crude_string_buffer                                      gltf_absolute_filepath_string_buffer;
+  crude_string_buffer                                      image_absolute_filepath_string_buffer;
+
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/

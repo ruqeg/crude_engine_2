@@ -4,7 +4,6 @@
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
 
-
 typedef struct crude_gui_node_tree
 {
   crude_node_manager                                      *node_manager;

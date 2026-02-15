@@ -44,9 +44,6 @@ typedef struct crude_node_manager
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
   crude_scene_parse_all_components_to_json_func            additional_parse_all_components_to_json_func;
   char const                                              *resources_absolute_directory;
-  /* Common */
-  crude_linear_allocator                                   string_linear_allocator;
-  crude_string_buffer                                      string_bufffer;
   struct { uint64 key; crude_entity value; }              *hashed_absolute_filepath_to_node;
 } crude_node_manager;
 

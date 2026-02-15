@@ -67,7 +67,7 @@ typedef struct crude_physics_collision_shape
     } sphere;
     struct
     {
-      char const                                          *model_filename;
+      char                                                 model_relative_filepath[ 1024 ];
       crude_octree_handle                                  octree_handle;
     } mesh;
   };

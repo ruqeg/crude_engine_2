@@ -20,7 +20,7 @@
  ***********************************************/
 typedef struct crude_gfx_file_load_request
 {
-  char                                                     path[ 1024 ];
+  char                                                    *absolute_filpath;
   crude_gfx_texture_handle                                 texture;
   crude_gfx_memory_allocation                              allocation;
 } crude_gfx_file_load_request;
@@ -57,11 +57,12 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_memory_allocation                              gpu_old_allocation_ready;
   uint32                                                   total_requests_count;
 
-  VkCommandPool                                            vk_cmd_pools[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
-  crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES ];
+  VkCommandPool                                            vk_cmd_pools[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
 
   mtx_t                                                    request_mutex;
 
+  crude_heap_allocator                                     strings_allocator;
   crude_linear_allocator                                   linear_allocator;
 } crude_gfx_asynchronous_loader;
 

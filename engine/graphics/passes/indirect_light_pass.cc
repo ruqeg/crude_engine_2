@@ -115,7 +115,7 @@ crude_gfx_indirect_light_pass_initialize
   buffer_creation.name = "ddgi_cb";
   pass->ddgi_cb = crude_gfx_create_buffer( pass->scene_renderer->renderer->gpu, &buffer_creation );
 
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     pass->probe_raytrace_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
     pass->probe_update_irradiance_ds[ i ] = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
@@ -135,7 +135,7 @@ crude_gfx_indirect_light_pass_deinitialize
 )
 {
   crude_gfx_destroy_buffer( pass->scene_renderer->renderer->gpu, pass->ddgi_cb );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->probe_raytrace_ds[ i ] );
     crude_gfx_destroy_descriptor_set( pass->scene_renderer->renderer->gpu, pass->probe_update_irradiance_ds[ i ] );
@@ -330,7 +330,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
   renderer = pass->scene_renderer->renderer;
   
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( pass->probe_raytrace_ds[ i ] ) )
     {
@@ -360,7 +360,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
@@ -383,7 +383,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_visibility" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
@@ -400,7 +400,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
@@ -418,7 +418,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
 
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_debug" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
@@ -433,7 +433,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "calculate_probe_offsets" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 
@@ -448,7 +448,7 @@ crude_gfx_indirect_light_pass_on_techniques_reloaded
   
   technique_pass = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "sample_irradiance" );
   pipeline_dsl = crude_gfx_get_descriptor_set_layout( renderer->gpu, technique_pass->pipeline, CRUDE_MATERIAL_DESCRIPTOR_SET_INDEX );
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
     crude_gfx_descriptor_set_creation                    ds_creation;
 

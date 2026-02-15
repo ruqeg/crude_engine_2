@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 
+#include <engine/core/core_config.h>
 #include <engine/core/log.h>
 
 #include <engine/core/process.h>

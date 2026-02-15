@@ -153,7 +153,7 @@ crude_gfx_render_pass_output_empty
   crude_gfx_render_pass_output output;
 
   output.num_color_formats = 0;
-  for ( uint32 i = 0; i < CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS; ++i )
+  for ( uint32 i = 0; i < CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT; ++i )
   {
     output.color_formats[ i ] = VK_FORMAT_UNDEFINED;
     output.color_final_layouts[ i ] = VK_IMAGE_LAYOUT_UNDEFINED;

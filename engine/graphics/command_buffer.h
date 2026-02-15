@@ -18,7 +18,7 @@ typedef struct crude_gfx_cmd_buffer
   crude_gfx_render_pass                                   *current_render_pass;
   crude_gfx_framebuffer                                   *current_framebuffer;
   crude_gfx_pipeline                                      *current_pipeline;
-  VkClearValue                                             clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
+  VkClearValue                                             clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
   VkCommandBuffer                                          vk_cmd_buffer;
 
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;

@@ -251,7 +251,7 @@ crude_gfx_cmd_bind_render_pass
     vk_depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
     vk_depth_attachment_info.loadOp = depth_op;
     vk_depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   
   vk_rendering_info = CRUDE_COMPOUNT_EMPTY( VkRenderingInfoKHR );
@@ -396,8 +396,8 @@ crude_gfx_cmd_set_clear_depth_and_stencil
   _In_ float32                                             stencil
 )
 {
-  cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
-  cmd->clears[ CRUDE_GRAPHICS_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
 }
 
 void
@@ -895,7 +895,6 @@ crude_gfx_cmd_manager_initialize
   _In_ uint32                                              num_threads
 )
 {
-  crude_allocator_container                                temporary_allocator_container;
   uint32                                                   total_pools;
   uint32                                                   total_buffers;
   uint32                                                   temporary_allocator_mark;
@@ -906,9 +905,7 @@ crude_gfx_cmd_manager_initialize
   cmd_manager->num_primary_cmd_buffers_per_thread = 3;
   cmd_manager->num_secondary_cmd_buffer_per_pool = 5;
 
-  temporary_allocator_container = crude_stack_allocator_pack( gpu->temporary_allocator );
-
-  total_pools = cmd_manager->num_pools_per_frame * CRUDE_GRAPHICS_MAX_SWAPCHAIN_IMAGES;
+  total_pools = cmd_manager->num_pools_per_frame * CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT;
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_secondary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
@@ -924,8 +921,12 @@ crude_gfx_cmd_manager_initialize
   for ( uint32 i = 0; i < total_buffers; i++ )
   {
     crude_gfx_cmd_buffer                                  *current_cmd_buffer;
+    char const                                            *resource_name;
+    crude_string_buffer                                    temporary_string_buffer;
     VkCommandBufferAllocateInfo                            allocate_info;
     uint32                                                 frame_index, thread_index, pool_index;
+    
+    temporary_allocator_mark = crude_stack_allocator_get_marker( gpu->temporary_allocator );
 
     frame_index = i / ( cmd_manager->num_primary_cmd_buffers_per_thread * cmd_manager->num_pools_per_frame );
     thread_index = ( i / cmd_manager->num_primary_cmd_buffers_per_thread ) % cmd_manager->num_pools_per_frame;
@@ -942,8 +943,12 @@ crude_gfx_cmd_manager_initialize
     CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &allocate_info, &current_cmd_buffer->vk_cmd_buffer ), "Failed to allocate command buffer" );
     crude_gfx_cmd_initialize( current_cmd_buffer, gpu );
 
-    char const *resource_name = crude_string_buffer_append_use_f( &gpu->objects_names_string_buffer, "primary_cmd frame: %i thread: %i pool: %i", frame_index, thread_index, pool_index );
+    crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+
+    resource_name = crude_string_buffer_append_use_f( &temporary_string_buffer, "primary_cmd frame: %i thread: %i pool: %i", frame_index, thread_index, pool_index );
     crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )current_cmd_buffer->vk_cmd_buffer, resource_name );
+
+    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_mark );
   }
   
   total_secondary_buffers = total_pools * cmd_manager->num_secondary_cmd_buffer_per_pool;
@@ -962,7 +967,7 @@ crude_gfx_cmd_manager_initialize
     allocate_info.commandBufferCount = cmd_manager->num_secondary_cmd_buffer_per_pool;
     
     secondary_buffers = NULL;
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool, temporary_allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( secondary_buffers, cmd_manager->num_secondary_cmd_buffer_per_pool, crude_stack_allocator_pack( gpu->temporary_allocator ) );
 
     vkAllocateCommandBuffers( gpu->vk_device, &allocate_info, secondary_buffers );
     for ( uint32 second_cmd_index = 0; second_cmd_index < cmd_manager->num_secondary_cmd_buffer_per_pool; ++second_cmd_index )

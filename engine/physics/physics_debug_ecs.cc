@@ -43,7 +43,7 @@ crude_engine_physics_collision_shape_create_observer_
     }
     else if ( collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
     {
-      debug_model_relative_filename = collision_shape->mesh.model_filename;
+      debug_model_relative_filename = collision_shape->mesh.model_relative_filepath;
     }
     else
     {

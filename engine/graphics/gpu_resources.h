@@ -4,6 +4,7 @@
 #include <thirdparty/vma/include/vk_mem_alloc.h>
 #include <thirdparty/SPIRV-Reflect/spirv_reflect.h>
 
+#include <engine/graphics/graphics_config.h>
 #include <engine/core/math.h>
 #include <engine/core/alias.h>
 #include <engine/core/array.h>
@@ -304,9 +305,9 @@ typedef struct crude_gfx_render_pass_creation
 {
   uint16                                                   num_render_targets;
   
-  VkFormat                                                 color_formats[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
-  VkImageLayout                                            color_final_layouts[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  VkFormat                                                 color_formats[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
   
   VkFormat                                                 depth_stencil_format;
   VkImageLayout                                            depth_stencil_final_layout;
@@ -319,8 +320,8 @@ typedef struct crude_gfx_render_pass_creation
 
 typedef struct crude_gfx_framebuffer_creation
 {
-  char const                                              *name;
-  crude_gfx_texture_handle                                 output_textures[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  char                                                     name[ CRUDE_GFX_FRAMEBUFFER_NAME_MAX_LENGTH ];
+  crude_gfx_texture_handle                                 output_textures[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
   crude_gfx_texture_handle                                 depth_stencil_texture;
   uint32                                                   num_render_targets;
   bool                                                     manual_resources_free;
@@ -342,7 +343,7 @@ typedef struct crude_gfx_depth_stencil_creation
 
 typedef struct crude_gfx_blend_state_creation
 {
-  crude_gfx_blend_state                                    blend_states[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_blend_state                                    blend_states[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
   uint32                                                   active_states;
 } crude_gfx_blend_state_creation;
 
@@ -371,8 +372,8 @@ typedef struct crude_gfx_texture_creation
   uint8                                                    flags;
   VkFormat                                                 format;
   crude_gfx_texture_type                                   type;
-  char const                                              *name;
   crude_gfx_texture_handle                                 alias;
+  char                                                     name[ CRUDE_GFX_TEXTURE_NAME_MAX ];
 } crude_gfx_texture_creation;
 
 typedef struct crude_gfx_texture_view_creation
@@ -385,9 +386,9 @@ typedef struct crude_gfx_texture_view_creation
 
 typedef struct crude_gfx_render_pass_output
 {
-  VkFormat                                                 color_formats[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
-  VkImageLayout                                            color_final_layouts[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
-  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  VkFormat                                                 color_formats[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
+  VkImageLayout                                            color_final_layouts[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
+  crude_gfx_render_pass_operation                          color_operations[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
 
   VkFormat                                                 depth_stencil_format;
   VkImageLayout                                            depth_stencil_final_layout;
@@ -422,7 +423,7 @@ typedef struct crude_gfx_shader_stage
 
 typedef struct crude_gfx_shader_state_creation
 {
-  crude_gfx_shader_stage                                   stages[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
+  crude_gfx_shader_stage                                   stages[ CRUDE_GFX_SHADER_STAGES_MAX_COUNT ];
   char const                                              *name;
   uint32                                                   stages_count;
   uint32                                                   spv_input;
@@ -445,7 +446,7 @@ typedef struct crude_gfx_descriptor_set_layout_binding
 
 typedef struct crude_gfx_descriptor_set_layout_creation
 {
-  crude_gfx_descriptor_set_layout_binding                  bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_descriptor_set_layout_binding                  bindings[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   uint32                                                   num_bindings;
   uint32                                                   set_index;
   char const                                              *name;
@@ -471,9 +472,9 @@ typedef struct crude_gfx_pipeline_creation
 
 typedef struct crude_gfx_descriptor_set_creation
 {
-  crude_gfx_resource_index                                 resources[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  crude_gfx_sampler_handle                                 samplers[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  uint16                                                   bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_resource_index                                 resources[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  crude_gfx_sampler_handle                                 samplers[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  uint16                                                   bindings[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   crude_gfx_descriptor_set_layout_handle                   layout;
   uint32                                                   num_resources;
   char const                                              *name;
@@ -485,7 +486,7 @@ typedef struct crude_gfx_descriptor_set_creation
 typedef struct crude_gfx_shader_descriptor_reflect
 {
   uint32                                                   sets_count;
-  crude_gfx_descriptor_set_layout_creation                 sets[ CRUDE_GRAPHICS_MAX_SET_COUNT ];
+  crude_gfx_descriptor_set_layout_creation                 sets[ CRUDE_GFX_SET_MAX_COUNT ];
 } crude_gfx_shader_descriptor_reflect;
 
 typedef struct crude_gfx_shader_input_reflect
@@ -547,7 +548,7 @@ typedef struct crude_gfx_texture
   crude_gfx_texture_handle                                 handle;
   crude_gfx_texture_type                                   type;
   crude_gfx_sampler                                       *sampler;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_TEXTURE_NAME_MAX ];
   crude_gfx_resource_state                                 state;
   bool                                                     ready;
   crude_gfx_texture_handle                                 parent_texture_handle;
@@ -568,7 +569,7 @@ typedef struct crude_gfx_descriptor_set_layout
   VkDescriptorSetLayout                                    vk_descriptor_set_layout;
   VkDescriptorSetLayoutBinding                            *vk_binding;
   crude_gfx_descriptor_binding                            *bindings;
-  uint8                                                    binding_to_index[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  uint8                                                    binding_to_index[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   uint16                                                   num_bindings;
   uint16                                                   set_index;
   crude_gfx_descriptor_set_layout_handle                   handle;
@@ -578,9 +579,9 @@ typedef struct crude_gfx_descriptor_set_layout
 typedef struct crude_gfx_descriptor_set
 {
   VkDescriptorSet                                          vk_descriptor_set;
-  crude_gfx_resource_index                                 resources[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  crude_gfx_sampler_handle                                 samplers[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
-  uint16                                                   bindings[ CRUDE_GRAPHICS_MAX_DESCRIPTORS_PER_SET ];
+  crude_gfx_resource_index                                 resources[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  crude_gfx_sampler_handle                                 samplers[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  uint16                                                   bindings[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
   char const                                              *name;
@@ -595,8 +596,8 @@ typedef struct crude_gfx_pipeline
   VkPipelineLayout                                         vk_pipeline_layout;
   VkPipelineBindPoint                                      vk_bind_point;
   crude_gfx_shader_state_handle                            shader_state;
-  crude_gfx_descriptor_set_layout const                   *descriptor_set_layout[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
-  crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout_handle[ CRUDE_GRAPHICS_MAX_DESCRIPTOR_SET_LAYOUTS ];
+  crude_gfx_descriptor_set_layout const                   *descriptor_set_layout[ CRUDE_GFX_DESCRIPTOR_SET_LAYOUTS_MAX_COUNT ];
+  crude_gfx_descriptor_set_layout_handle                   descriptor_set_layout_handle[ CRUDE_GFX_DESCRIPTOR_SET_LAYOUTS_MAX_COUNT ];
   uint32                                                   num_active_layouts;
   crude_gfx_depth_stencil_creation                         depth_stencil;
   crude_gfx_blend_state_creation                           blend_state;
@@ -625,19 +626,19 @@ typedef struct crude_gfx_framebuffer
   uint32                                                   height;
   float32                                                  scale_x;
   float32                                                  scale_y;
-  crude_gfx_texture_handle                                 color_attachments[ CRUDE_GRAPHICS_MAX_IMAGE_OUTPUTS ];
+  crude_gfx_texture_handle                                 color_attachments[ CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT ];
   crude_gfx_texture_handle                                 depth_stencil_attachment;
   uint32                                                   num_color_attachments;
   uint8                                                    resize;
   bool                                                     manual_resources_free;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_FRAMEBUFFER_NAME_MAX_LENGTH ];
 } crude_gfx_framebuffer;
 
 typedef struct crude_gfx_shader_state
 {
-  VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
+  VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GFX_SHADER_STAGES_MAX_COUNT ];
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GRAPHICS_MAX_SHADER_STAGES ];
+  VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GFX_SHADER_STAGES_MAX_COUNT];
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
   const char                                              *name;
   uint32                                                   active_shaders;
@@ -659,10 +660,12 @@ typedef struct crude_gfx_technique_pass_creation
 
 typedef struct crude_gfx_technique_creation
 {
-  char const                                              *technique_relative_filepath;
   crude_gfx_technique_pass_creation                        passes[ 32 ];
   uint32                                                   passes_count;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
+#if CRUDE_DEVELOP
+  char                                                     technique_relative_filepath[ CRUDE_GFX_TECHNIQUE_RELATIIVE_FILEPATH_MAX_LENGTH ];
+#endif
 } crude_gfx_technique_creation;
 
 typedef struct crude_gfx_technique_pass
@@ -673,11 +676,13 @@ typedef struct crude_gfx_technique_pass
 
 typedef struct crude_gfx_technique
 {
-  char const                                              *technique_relative_filepath;
-  char const                                              *name;
   crude_gfx_technique_pass                                *passes;
   uint32                                                   pool_index;
   struct { uint64 key; uint16 value; }                    *name_hashed_to_pass_index;
+  char                                                     name[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
+#if CRUDE_DEVELOP
+  char                                                     technique_relative_filepath[ CRUDE_GFX_TECHNIQUE_RELATIIVE_FILEPATH_MAX_LENGTH ];
+#endif
 } crude_gfx_technique;
 
 typedef struct crude_gfx_material_creation

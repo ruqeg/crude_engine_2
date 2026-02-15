@@ -49,3 +49,7 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
     "GL_GOOGLE_include_directive"
 ],
 ```
+
+
+TODO:
+REMOVE MOST crude_stack_allocator_pack( temporary_allocator ), it's fucking unpredictable
