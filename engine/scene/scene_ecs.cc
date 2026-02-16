@@ -91,6 +91,21 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
 {
+  XMFLOAT3                                               pitch_yaw_roll;
+
+  CRUDE_IMGUI_START_OPTIONS;
+  CRUDE_IMGUI_OPTION( "Translation", {
+    ImGui::DragFloat3( "##Translation", &component->translation.x, 1.f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Quaternion Rotation", {
+    XMStoreFloat3( &pitch_yaw_roll, crude_quaternion_to_pitch_yaw_roll( XMLoadFloat4( &component->rotation ) ) );
+    ImGui::DragFloat4( "##Quaternion Rotation", &component->rotation.x, 0.05f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+  } );
+
+  CRUDE_IMGUI_OPTION( "Scale", {
+    ImGui::DragFloat3( "##Scale", &component->scale.x, 1.f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+  } );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )

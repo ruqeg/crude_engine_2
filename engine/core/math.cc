@@ -5,6 +5,21 @@
 #include <engine/core/math.h>
 #include <engine/core/assert.h>
 
+XMVECTOR
+crude_quaternion_to_pitch_yaw_roll
+(
+  _In_ FXMVECTOR                                           quaternion
+)
+{
+  XMVECTOR nq = XMQuaternionNormalize( quaternion );
+  return XMVectorSet(
+    atan2( 2.0f * ( XMVectorGetY( nq ) * XMVectorGetZ( nq ) + XMVectorGetX( nq ) * XMVectorGetW( nq ) ), 1.0f - 2.0f * ( XMVectorGetY( nq ) * XMVectorGetY( nq ) + XMVectorGetZ( nq ) * XMVectorGetZ( nq ) ) ),
+    asin( 2.0f * ( XMVectorGetY( nq ) * XMVectorGetW( nq ) - XMVectorGetX( nq ) * XMVectorGetZ( nq ) ) ),
+    atan2( 2.0f * ( XMVectorGetX( nq ) * XMVectorGetY( nq ) + XMVectorGetZ( nq ) * XMVectorGetW( nq ) ), 1.0f - 2.0f * ( XMVectorGetX( nq ) * XMVectorGetX( nq ) + XMVectorGetZ( nq ) * XMVectorGetZ( nq ) ) ),
+    1.f
+  );
+}
+
 float32
 crude_random_unit_f32
 (

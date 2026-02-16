@@ -325,7 +325,8 @@ crude_engine_update
 
   if ( crude_engine_graphics_main_thread_loop_( engine )  )
   {
-    crude_task_sheduler_start_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
+    crude_engine_graphics_task_set_thread_loop_( 0, 0, 0, engine );
+    //crude_task_sheduler_start_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   }
 
   CRUDE_PROFILER_ZONE_END;

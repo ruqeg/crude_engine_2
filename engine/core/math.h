@@ -28,6 +28,13 @@ typedef struct crude_raycast_result
   bool                                                     hit;
 } crude_raycast_result;
 
+
+CRUDE_API XMVECTOR
+crude_quaternion_to_pitch_yaw_roll
+(
+  _In_ FXMVECTOR                                           quaternion
+);
+
 CRUDE_API float32
 crude_random_unit_f32
 (
