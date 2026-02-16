@@ -64,7 +64,7 @@ crude_gfx_pointlight_shadow_pass_initialize
 
   framebuffer_creation = crude_gfx_framebuffer_creation_empty( );
   framebuffer_creation.depth_stencil_texture = pass->tetrahedron_shadow_texture;
-  framebuffer_creation.name = "tetrahedron_framebuffer";
+  crude_string_copy( framebuffer_creation.name, "tetrahedron_framebuffer", sizeof( framebuffer_creation.name ) );
   framebuffer_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   framebuffer_creation.height = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   framebuffer_creation.manual_resources_free = true;

@@ -102,9 +102,16 @@ crude_gui_content_browser_queue_draw_internal_
         else
         {
           tree_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_Leaf;
-
+          
           if ( ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_file_iterator_name( &file_iterator ) ) )
           {
+            if ( ImGui::BeginDragDropSource( ImGuiDragDropFlags_None ) )
+            {
+              crude_snprintf( browser->selected_relative_filepath, sizeof( browser->selected_relative_filepath ), "%s\\%s", absolute_directory + crude_string_length( browser->resources_absolute_directory ) + 1, crude_file_iterator_name( &file_iterator ) );
+              ImGui::SetDragDropPayload( "crude_content_browser_file", browser->selected_relative_filepath, sizeof( browser->selected_relative_filepath ) );
+              ImGui::Text( "Selected %s", browser->selected_relative_filepath );
+              ImGui::EndDragDropSource();
+            }
             ImGui::TreePop( );
           }
         }

@@ -144,7 +144,8 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;
   manager->temporary_allocator = creation->temporary_allocator;
   manager->gpu = creation->async_loader->gpu;
-  
+  manager->resources_absolute_directory = creation->resources_absolute_directory;
+
   manager->total_meshes_count = 0;
 
   manager->total_meshlets_count = 0;
@@ -166,7 +167,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   
   CRUDE_HASHMAP_INITIALIZE( manager->model_hashed_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
 
-  crude_linear_allocator_initialize( &manager->linear_allocator, CRUDE_RKILO( 32 ), "crude_gfx_model_renderer_resources_manager::linear_allocator" );
+  crude_linear_allocator_initialize( &manager->linear_allocator, CRUDE_RKILO( 32 ) + 2, "crude_gfx_model_renderer_resources_manager::linear_allocator" );
   crude_string_buffer_initialize( &manager->gltf_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
   crude_string_buffer_initialize( &manager->image_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
 }

@@ -609,6 +609,7 @@ crude_engine_initialize_graphics_
   model_renderer_resources_manager_creation.async_loader = &engine->async_loader;
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
+  model_renderer_resources_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   crude_gfx_model_renderer_resources_manager_intialize( &engine->model_renderer_resources_manager, &model_renderer_resources_manager_creation );
 
   scene_renderer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_creation );

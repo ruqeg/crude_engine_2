@@ -90,7 +90,9 @@ crude_gfx_asynchronous_loader_initialize
   crude_linear_allocator_initialize( &asynloader->linear_allocator, sizeof( crude_gfx_upload_request ) * CRUDE_GFX_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT + sizeof( crude_gfx_file_load_request ) * CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT + 3 * sizeof( crude_array_header ), "asynchronous_loader_linear_allocator" );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( asynloader->file_load_requests, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT, crude_linear_allocator_pack( &asynloader->linear_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( asynloader->upload_requests, CRUDE_GFX_ASYNCHRONOUS_LOADER_UPLOAD_REQUESTS_LIMIT, crude_linear_allocator_pack( &asynloader->linear_allocator ) );
-  
+  crude_memory_set( asynloader->file_load_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->file_load_requests[ 0 ] ) );
+  crude_memory_set( asynloader->upload_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->upload_requests[ 0 ] ) );
+
   asynloader->staging_allocation = crude_gfx_memory_allocate( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
 
   {
@@ -111,6 +113,14 @@ crude_gfx_asynchronous_loader_deinitialize
 
   vkDestroyFence( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence, asynloader->gpu->vk_allocation_callbacks );
   
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ); ++i )
+  {
+    if ( asynloader->file_load_requests[ i ].absolute_filpath )
+    {
+      crude_heap_allocator_deallocate( &asynloader->strings_allocator, asynloader->file_load_requests[ i ].absolute_filpath );
+    }
+  }
+
   crude_linear_allocator_deinitialize( &asynloader->linear_allocator );
   crude_heap_allocator_deinitialize( &asynloader->strings_allocator );
 
@@ -337,7 +347,7 @@ crude_gfx_asynchronous_loader_update
     }
     else
     {
-      CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, "Error reading file %s", load_request.absolute_filpath );
+      CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Error reading file %s", load_request.absolute_filpath );
     }
   }
 }
@@ -379,11 +389,19 @@ crude_gfx_asynchronous_loader_push_file_load_request_
   _In_ crude_gfx_file_load_request                         file_load_request
 )
 {
+  crude_gfx_file_load_request                             *new_file_load_request;
+  uint64                                                   absolute_filpath_length;
+
   mtx_lock( &asynloader->request_mutex );
 
-  asynloader->file_load_requests[ asynloader->file_load_requests_rpos ].absolute_filpath = CRUDE_CAST( char*, crude_heap_allocator_reallocate( &asynloader->strings_allocator, asynloader->file_load_requests[ asynloader->file_load_requests_rpos ].absolute_filpath, crude_string_length( file_load_request.absolute_filpath ) ) ); 
-  asynloader->file_load_requests[ asynloader->file_load_requests_rpos ].allocation = file_load_request.allocation;
-  asynloader->file_load_requests[ asynloader->file_load_requests_rpos ].texture = file_load_request.texture;
+  new_file_load_request = &asynloader->file_load_requests[ asynloader->file_load_requests_rpos ];
+
+  absolute_filpath_length = crude_string_length( file_load_request.absolute_filpath );
+  new_file_load_request->absolute_filpath = CRUDE_CAST( char*, crude_heap_allocator_reallocate( &asynloader->strings_allocator, new_file_load_request->absolute_filpath, absolute_filpath_length + 1 ) ); 
+  crude_memory_copy( new_file_load_request->absolute_filpath, file_load_request.absolute_filpath, absolute_filpath_length );
+  new_file_load_request->absolute_filpath[ absolute_filpath_length ] = 0;
+  new_file_load_request->allocation = file_load_request.allocation;
+  new_file_load_request->texture = file_load_request.texture;
 
   asynloader->file_load_requests_rpos = ( asynloader->file_load_requests_rpos + 1 ) % CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT;
   

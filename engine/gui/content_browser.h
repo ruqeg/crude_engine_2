@@ -8,6 +8,7 @@ typedef struct crude_gui_content_browser
 {
   char const                                              *resources_absolute_directory;
   crude_stack_allocator                                   *temporary_allocator;
+  char                                                     selected_relative_filepath[ 1024 ];
 } crude_gui_content_browser;
 
 CRUDE_API void

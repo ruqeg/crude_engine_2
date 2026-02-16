@@ -2781,7 +2781,7 @@ crude_gfx_create_framebuffer
   framebuffer->width = creation->width;
   framebuffer->height = creation->height;
   framebuffer->resize = creation->resize;
-  framebuffer->name = creation->name;
+  crude_string_copy( framebuffer->name, creation->name, sizeof( framebuffer->name ) );
   framebuffer->scale_x = 1.0;
   framebuffer->scale_y = 1.0;
   framebuffer->manual_resources_free = creation->manual_resources_free;
