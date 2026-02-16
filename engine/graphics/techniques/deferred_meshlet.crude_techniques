@@ -15,28 +15,27 @@
   ],
   "pipelines" : [
     {
-      "name" : "deferred_meshlet",
-      "render_pass_output":
-      {
-        "reference": "gbuffer_early_pass" 
+      "name": "deferred_meshlet",
+      "render_pass_output": {
+        "reference": "gbuffer_early_pass"
       },
-      "depth" : {
-        "write" : 1,
-        "test" : "less_or_equal"
+      "depth": {
+        "write": 1,
+        "test": "less_or_equal"
       },
-      "cull" : "back",
-      "shaders" : [
+      "cull": "front",
+      "shaders": [
         {
-          "stage" : "mesh",
-          "buffer" : "deferred"
+          "stage": "mesh",
+          "buffer": "deferred"
         },
         {
-          "stage" : "task",
-          "buffer" : "deferred"
+          "stage": "task",
+          "buffer": "deferred"
         },
         {
-          "stage" : "fragment",
-          "buffer" : "deferred"
+          "stage": "fragment",
+          "buffer": "deferred"
         }
       ]
     },

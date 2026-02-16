@@ -197,7 +197,7 @@ crude_camera_view_to_clip
   _In_ crude_camera const                                 *camera
 )
 {
-  return XMMatrixPerspectiveFovLH( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
+  return XMMatrixPerspectiveFovRH( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
 }
 
 crude_transform

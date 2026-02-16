@@ -290,6 +290,7 @@ crude_gfx_pointlight_shadow_pass_render
   //
   //      XMStoreFloat4( &pointlight_spheres_mapped[ i ], XMVectorSet( light_transform->translation.x, light_transform->translation.y, light_transform->translation.z, light->radius ) );
   // 
+  //      !TODO CAMERA WAS SWAPPRED TO XMMatrixPerspectiveFovRH!!!!!!!!!!
   //      view_to_clip[ 0 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov1 ), tanf( XMConvertToRadians( fov0 ) * 0.5f ) / tanf( XMConvertToRadians( fov1 ) * 0.5f ), 0.2f, light->radius );
   //      view_to_clip[ 1 ] = XMMatrixPerspectiveFovLH( XMConvertToRadians( fov0 ), tanf( XMConvertToRadians( fov1 ) * 0.5f ) / tanf( XMConvertToRadians( fov0 ) * 0.5f ), 0.2f, light->radius );
   //

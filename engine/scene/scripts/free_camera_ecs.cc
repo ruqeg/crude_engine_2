@@ -76,15 +76,15 @@ crude_free_camera_update_system_
 
     if ( moving_right )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_right, moving_speed * moving_right * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_right, moving_speed * moving_right * it->delta_time * 1.f ) );
     }
     if ( moving_forward )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, moving_speed * moving_forward * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, moving_speed * moving_forward * it->delta_time * -1.f ) );
     }
     if ( moving_up )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_up, moving_speed * moving_up * it->delta_time ) );
+      translation = XMVectorAdd( translation, XMVectorScale( basis_up, moving_speed * moving_up * it->delta_time * 1.f ) );
     }
     XMStoreFloat3( &transforms[ i ].translation, translation );
 

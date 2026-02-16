@@ -272,10 +272,10 @@ crude_calculate_lighting
 
   radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
-  if ( scene.data.active_lights_count < 1 )
-  {
+  //if ( scene.data.active_lights_count < 1 )
+  //{
     return radiance;
-  }
+  //}
 
   view_position = vec4( vertex_position, 1.0 ) * scene.data.camera.world_to_view;
 

@@ -188,7 +188,7 @@ crude_editor_setup_custom_nodes_to_scene_
 
     editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
     editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
-    editor_camera_node_crude_free_camera.rotating_speed_multiplier = -0.004f;
+    editor_camera_node_crude_free_camera.rotating_speed_multiplier = 0.004f;
     editor_camera_node_crude_free_camera.input_enabled = true;
     editor_camera_node_crude_free_camera.input = &editor->engine->platform.input;
 
