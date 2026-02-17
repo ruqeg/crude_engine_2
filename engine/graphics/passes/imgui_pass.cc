@@ -242,11 +242,11 @@ crude_gfx_imgui_pass_render
       {
         /* Project scissor/clipping rectangles into framebuffer space */
         ImVec4 clip_rect;
-        clip_rect.x = ( pcmd->ClipRect.x - clip_off.x ) * clip_scale.x;
-        clip_rect.y = ( pcmd->ClipRect.y - clip_off.y ) * clip_scale.y;
-        clip_rect.z = ( pcmd->ClipRect.z - clip_off.x ) * clip_scale.x;
-        clip_rect.w = ( pcmd->ClipRect.w - clip_off.y ) * clip_scale.y;
-        
+        clip_rect.x = CRUDE_MAX( ( pcmd->ClipRect.x - clip_off.x ) * clip_scale.x, 0 );
+        clip_rect.y = CRUDE_MAX( ( pcmd->ClipRect.y - clip_off.y ) * clip_scale.y, 0 );
+        clip_rect.z = CRUDE_MAX( ( pcmd->ClipRect.z - clip_off.x ) * clip_scale.x, 0 );
+        clip_rect.w = CRUDE_MAX( ( pcmd->ClipRect.w - clip_off.y ) * clip_scale.y, 0 );
+
         if ( clip_rect.x < framebuffer_width && clip_rect.y < framebuffer_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f )
         {
           /* Apply scissor/clipping rectangle */

@@ -76,6 +76,23 @@ crude_gui_editor_queue_draw
   
   ImGui::DockSpaceOverViewport( im_dockspace_id, im_viewport, ImGuiDockNodeFlags_PassthruCentralNode );
   
+  if ( ImGui::BeginMainMenuBar( ) )
+  {
+    if ( ImGui::BeginMenu( "File" ) )
+    {
+      if ( ImGui::MenuItem( "Open" ) )
+      {
+
+      }
+
+      if ( ImGui::MenuItem( "Save" ) )
+      {
+      }
+      ImGui::EndMenu( );
+    }
+    ImGui::EndMainMenuBar( );
+  }
+
   ImGui::PushStyleColor( ImGuiCol_WindowBg, CRUDE_COMPOUNT( ImVec4, { 0.25f * 30 / 255.f, 0.25f *23 / 255.f, 0.25f *12 / 255.f, 1.00f } ) );
   ImGui::Begin( "Viewport" );
   crude_gui_viewport_queue_draw( &editor->viewport, editor->engine->world, editor->selected_node, editor->engine->camera_node );

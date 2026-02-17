@@ -551,7 +551,7 @@ crude_scene_renderer_register_nodes_instances_
   
     child_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
   
-    if ( !child_gltf->hidden )
+    if ( !child_gltf->hidden && child_gltf->relative_filepath[ 0 ] )
     {
       model_renderer_resources_instant = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
       model_renderer_resources_instant.model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, child_gltf->relative_filepath, &local_model_initialized );

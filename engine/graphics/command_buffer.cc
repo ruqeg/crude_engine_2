@@ -423,6 +423,8 @@ crude_gfx_cmd_set_scissor
     vk_scissor.extent.width = cmd->gpu->renderer_size.x;
     vk_scissor.extent.height = cmd->gpu->renderer_size.y;
   }
+
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_scissor.extent.width > 0 && vk_scissor.extent.height > 0 && vk_scissor.offset.x >= 0 && vk_scissor.offset.y >= 0, "vk_scissor issues!" );
   
   vkCmdSetScissor( cmd->vk_cmd_buffer, 0, 1, &vk_scissor );
 }
