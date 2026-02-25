@@ -72,20 +72,24 @@ crude_gfx_gbuffer_early_pass_render
       VkDeviceAddress                                      vertices_indices;
       VkDeviceAddress                                      visible_mesh_count;
       VkDeviceAddress                                      mesh_draw_commands;
+      VkDeviceAddress                                      debug_line_vertices;
+      VkDeviceAddress                                      debug_counts;
     };
-    push_constant_                                         pust_constant;
+    push_constant_                                         push_constant;
 
-    pust_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
-    pust_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
-    pust_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
-    pust_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
-    pust_constant.vertices_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_hga.gpu_address;
-    pust_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
-    pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
-    pust_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
-    pust_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
+    push_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
+    push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
+    push_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
+    push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
+    push_constant.vertices_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_hga.gpu_address;
+    push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
+    push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
+    push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
+    push_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
+    push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
+    push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
 
-    crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
+    crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_draw_mesh_task_indirect_count(
       primary_cmd,

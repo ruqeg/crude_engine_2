@@ -845,7 +845,10 @@ crude_gfx_render_graph_on_techniques_reloaded
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( render_graph->nodes ); ++i )
   {
     crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ i ] );
-    crude_gfx_render_graph_render_pass_container_on_techniques_reloaded( node->render_graph_pass_container );
+    if ( node->enabled )
+    {
+      crude_gfx_render_graph_render_pass_container_on_techniques_reloaded( node->render_graph_pass_container );
+    }
   }
 }
 

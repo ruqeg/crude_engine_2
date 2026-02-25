@@ -46,8 +46,6 @@ crude_editor_initialize
   _In_ char const                                         *working_directory
 )
 {
-  char                                                     starting_node_absolute_filepath[ 4096 ];
-
   editor->engine = engine;
   
   editor->editor_camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
@@ -72,8 +70,7 @@ crude_editor_initialize
   editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   crude_game_debug_system_import( engine->world, &editor->game_debug_system_context );
   
-  crude_snprintf( starting_node_absolute_filepath, sizeof( starting_node_absolute_filepath ), "%s\\%s", editor->engine->environment.directories.resources_absolute_directory, "game\\nodes\\level_mars.crude_node" );
-  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, starting_node_absolute_filepath, engine->world );
+  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, "game\\nodes\\level_mars.crude_node", engine->world );
 
   editor->engine->main_node = editor->main_node;
   crude_editor_setup_custom_nodes_to_scene_( editor );

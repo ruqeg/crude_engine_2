@@ -27,26 +27,26 @@ crude_engine_commands_manager_deinitialize
 }
 
 void
-crude_engine_commands_manager_push_reload_scene_command
+crude_engine_commands_manager_push_reload_node_command
 (
   _In_ crude_engine_commands_manager                      *manager
 )
 {
   crude_engine_commands_manager_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_engine_commands_manager_queue_command );
-  command.type = CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_SCENE;
+  command.type = CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_NODE;
   CRUDE_ARRAY_PUSH( manager->commands_queue, command ); 
 }
 
 void
-crude_engine_commands_manager_push_load_scene_command
+crude_engine_commands_manager_push_load_node_command
 (
   _In_ crude_engine_commands_manager                      *manager,
-  _In_ char const                                         *absolute_filepath
+  _In_ char const                                         *relative_filepath
 )
 {
   crude_engine_commands_manager_queue_command command = CRUDE_COMPOUNT_EMPTY( crude_engine_commands_manager_queue_command );
-  command.type = CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_SCENE;
-  command.load_scene.absolute_filepath = absolute_filepath;
+  command.type = CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_NODE;
+  crude_string_copy( command.load_node.relative_filepath, relative_filepath, sizeof( command.load_node.relative_filepath ) );
   CRUDE_ARRAY_PUSH( manager->commands_queue, command );
 }
 
@@ -99,36 +99,21 @@ crude_engine_commands_manager_update
 //      crude_scene_thread_manager_unlock_world( &manager->engine->___scene_thread_manager );
 //      break;
 //    }
-//    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_SCENE:
-//    {
-//      vkDeviceWaitIdle( game->gpu.vk_device );
-//
-//      crude_node_manager_clear( &game->node_manager );
-//      crude_physics_resources_manager_clear( &game->physics_resources_manager );
-//      crude_gfx_model_renderer_resources_manager_clear( &game->model_renderer_resources_manager );
-//      
-//#if CRUDE_DEVELOP
-//      crude_string_buffer_clear( &game->debug_strings_buffer );
-//#endif
-//      crude_string_buffer_clear( &game->game_strings_buffer );
-//      game_setup_custom_preload_nodes_( game );
-//      game->main_node = crude_node_manager_get_node( &game->node_manager, game->commands_queue[ i ].load_scene.absolute_filepath );
-//      game->current_scene_absolute_filepath = game->commands_queue[ i ].load_scene.absolute_filepath;
-//      game_setup_custom_postload_nodes_( game );
-//
-//      bool buffer_recreated = crude_gfx_scene_renderer_update_instances_from_node( &game->scene_renderer, game->main_node );
-//      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &game->model_renderer_resources_manager );
-//
-//      if ( buffer_recreated )
-//      {
-//        crude_gfx_render_graph_on_techniques_reloaded( &game->render_graph );
-//      }
-//
-//      crude_audio_device_sound_stop( &game->audio_device, game->death_sound_handle );
-//      game->death_screen = false;
-//      game->death_overlap_color.w = 0;
-//      break;
-//    }
+    case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_NODE:
+    {
+      vkDeviceWaitIdle( manager->engine->gpu.vk_device );
+
+      crude_node_manager_clear( &manager->engine->node_manager, manager->engine->world );
+      crude_physics_resources_manager_clear( &manager->engine->physics_resources_manager );
+      crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
+      
+      manager->engine->main_node = crude_node_manager_get_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world );
+
+      crude_gfx_scene_renderer_update_instances_from_node( &manager->engine->scene_renderer, manager->engine->world, manager->engine->main_node );
+      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &manager->engine->model_renderer_resources_manager );
+
+      break;
+    }
     case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
     {
       for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->engine->gpu.resource_cache.techniques ); ++i )

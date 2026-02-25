@@ -66,6 +66,7 @@ crude_node_manager_initialize
   manager->allocator = creation->allocator;
 
   CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
+  crude_string_buffer_initialize( &manager->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( manager->allocator ) );
 }
 
 void
@@ -74,6 +75,7 @@ crude_node_manager_deinitialize
   _In_ crude_node_manager                                 *manager
 )
 {
+  crude_string_buffer_deinitialize( &manager->absolute_filepath_string_buffer );
   CRUDE_HASHMAP_DEINITIALIZE( manager->hashed_absolute_filepath_to_node );
 }
 
@@ -98,13 +100,17 @@ crude_entity
 crude_node_manager_get_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath,
+  _In_ char const                                         *node_realtive_filepath,
   _In_ crude_ecs                                          *world
 )
 {
+  char const                                              *node_absolute_filepath;
   crude_entity                                             node_template;
   int64                                                    node_index;
   uint64                                                   filename_hashed;
+
+  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
+  node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
   filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
@@ -125,12 +131,16 @@ void
 crude_node_manager_remove_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath,
+  _In_ char const                                         *node_realtive_filepath,
   _In_ crude_ecs                                          *world
 )
 {
+  char const                                              *node_absolute_filepath;
   int64                                                    node_index;
   uint64                                                   filename_hashed;
+  
+  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
+  node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
   filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
@@ -147,13 +157,18 @@ void
 crude_node_manager_save_node_by_file_to_file
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_absolute_filepath,
-  _In_ char const                                         *saved_absolute_filepath,
+  _In_ char const                                         *node_realtive_filepath,
+  _In_ char const                                         *saved_relative_filepath,
   _In_ crude_ecs                                          *world
 )
 {
+  char const                                              *node_absolute_filepath;
+  char const                                              *saved_absolute_filepath;
   int64                                                    node_index;
   uint64                                                   filename_hashed;
+    
+  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
+  node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
   filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
   node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
@@ -161,7 +176,10 @@ crude_node_manager_save_node_by_file_to_file
   {
     return;
   }
-  
+
+  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
+  saved_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, saved_relative_filepath );
+
   crude_node_manager_save_node_to_file( manager, world, manager->hashed_absolute_filepath_to_node[ node_index ].value, saved_absolute_filepath );
 }
 
@@ -171,14 +189,19 @@ crude_node_manager_save_node_to_file
   _In_ crude_node_manager                                 *manager,
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
-  _In_ char const                                         *saved_absolute_filepath
+  _In_ char const                                         *saved_relative_filepath
 )
 {
+  char const                                              *saved_absolute_filepath;
   cJSON                                                   *node_json;
   char const                                              *node_str;
+  
+  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
+  saved_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, saved_relative_filepath );
+
   node_json = crude_node_manager_node_to_json_hierarchy_( manager, world, node );
   node_str = cJSON_Print( node_json );
-  crude_write_file( saved_absolute_filepath, node_str, strlen( node_str ) ); // TODO
+  crude_write_file( saved_absolute_filepath, node_str, crude_string_length( node_str ) ); // TODO
   cJSON_Delete( node_json );
 }
 

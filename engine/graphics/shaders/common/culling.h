@@ -44,6 +44,11 @@ crude_bounding_sphere_to_clipped_aabb
 )
 {
   vec2                                                     cx, vx, minx, maxx, cy, vy, miny, maxy;
+
+#if CRUDE_RIGHT_HAND
+  c.z = -c.z;
+#endif
+
   if ( c.z - r < znear )
   {
     return false;
@@ -60,7 +65,6 @@ crude_bounding_sphere_to_clipped_aabb
   maxy = mat2( vy.x, -vy.y, vy.y, vy.x ) * cy;
 
   aabb = vec4( minx.x / minx.y * p00, miny.x / miny.y * p11, maxx.x / maxx.y * p00, maxy.x / maxy.y * p11 );
-
   return true;
 }
 
@@ -90,13 +94,17 @@ crude_occlusion_culling
   in uint                                                  depth_pyramid_texture_index,
   in vec3                                                  world_bounding_center,
   in vec3                                                  camera_world_position,
-  in mat4                                                  culling_view_projection
+  in mat4                                                  culling_view_projection,
+  in DebugLinesVerticesRef                                 debug_line_vertices,
+  in DebugCountsRef                                        debug_counts
 )
 {
   vec4 aabb_clip;
   bool occlusion_visible = true;
   if ( crude_bounding_sphere_to_clipped_aabb( view_bounding_center, radius, znear, projection_00, projection_11, aabb_clip ) )
   {
+    //crude_debug_draw_box( debug_line_vertices, debug_counts, world_bounding_center - radius, world_bounding_center + radius, vec4( 1, 1, 1, 1 ) );
+  
     vec4 aabb = crude_clip_to_uv_space( aabb_clip );
 
     ivec2 depth_pyramid_size = textureSize( global_textures[ nonuniformEXT( depth_pyramid_texture_index ) ], 0 );
@@ -119,6 +127,8 @@ crude_occlusion_culling
     vec4 sceen_space_center_last = vec4( world_bounding_center + dir * radius, 1.0 ) * culling_view_projection;
     float depth_sphere = sceen_space_center_last.z / sceen_space_center_last.w;
     occlusion_visible = ( depth_sphere <= depth );
+
+    //crude_debug_draw_2d_box( debug_line_vertices, debug_counts, vec2( aabb_clip.x, -aabb_clip.y ), vec2( aabb_clip.z, -aabb_clip.w ), occlusion_visible ? vec4( 0, 1, 0, 1 ) : vec4( 1, 0, 0, 1 ) );
   }
 
   return occlusion_visible;

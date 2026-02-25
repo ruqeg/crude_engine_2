@@ -53,6 +53,9 @@ CRUDE_PUSH_CONSTANT
   MeshDrawCommandsRef                                      mesh_draw_commands_culled;
 
   MeshDrawCountRef                                         mesh_draw_count;
+  DebugLinesVerticesRef                                    debug_line_vertices;
+
+  DebugCountsRef                                           debug_counts;
   vec2                                                     _padding;
 };
 
@@ -122,7 +125,9 @@ void main()
       scene.data.camera.view_to_clip[ 1 ][ 1 ],
       mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
       scene.data.camera.position,
-      scene.data.camera.world_to_clip
+      scene.data.camera.world_to_clip,
+      debug_line_vertices,
+      debug_counts
     );
   }
 

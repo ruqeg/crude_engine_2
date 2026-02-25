@@ -847,7 +847,8 @@ crude_engine_graphics_main_thread_loop_
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
   engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );
-  XMStoreFloat4x4( &engine->scene_renderer.options.scene.camera_view_to_world, crude_transform_node_to_world( engine->world, engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_transform ) ) );
+  XMMATRIX view_to_world = crude_transform_node_to_world( engine->world, engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_transform ) );
+  XMStoreFloat4x4( &engine->scene_renderer.options.scene.camera_view_to_world, view_to_world );
 
   if ( new_buffers_recrteated_or_model_initialized )
   {

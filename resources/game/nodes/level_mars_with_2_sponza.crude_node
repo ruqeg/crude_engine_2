@@ -1,0 +1,107 @@
+{
+	"name":	"level_mars",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_level_mars"
+		}],
+	"children":	[{
+			"name":	"dna",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"dna_part1_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\DNA_Part1.gltf"
+						}],
+					"children":	[]
+				}, {
+					"name":	"dna_part2_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\DNA_Part2.gltf"
+						}],
+					"children":	[]
+				}]
+		}, {
+			"name":	"model",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Map.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"portal2",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"Sponza\\glTF\\Sponza.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"sponza_copy",
+			"transform":	{
+				"translation":	[0, 0, -19.35798454284668],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"Sponza\\glTF\\Sponza.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"sponza_copy_copy",
+			"transform":	{
+				"translation":	[-28.779642105102539, -1.6337928771972656, -18.004537582397461],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"Sponza\\glTF\\Sponza.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"light1",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_light",
+					"radius":	5,
+					"color":	[1, 1, 1],
+					"intensity":	1
+				}],
+			"children":	[]
+		}]
+}

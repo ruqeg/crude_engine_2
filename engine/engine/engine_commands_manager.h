@@ -2,13 +2,14 @@
 
 #include <engine/core/alias.h>
 #include <engine/core/memory.h>
+#include <engine/scene/scene_config.h>
 
 typedef struct crude_engine crude_engine;
 
 typedef enum crude_engine_commands_manager_queue_command_type
 {
-  CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_SCENE,
-  CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_SCENE,
+  CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_NODE,
+  CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_NODE,
   CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES,
   CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_COUNT,
 } crude_engine_commands_manager_queue_command_type;
@@ -20,11 +21,11 @@ typedef struct crude_engine_commands_manager_queue_command
   {
     struct 
     {
-      char const                                          *absolute_filepath;
-    } load_scene;
+      char                                                 relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
+    } load_node;
     struct 
     {
-    } reload_scene;
+    } reload_node;
     struct 
     {
     } reload_techniques;
@@ -52,16 +53,16 @@ crude_engine_commands_manager_deinitialize
 );
 
 CRUDE_API void
-crude_engine_commands_manager_push_reload_scene_command
+crude_engine_commands_manager_push_reload_node_command
 (
   _In_ crude_engine_commands_manager                      *manager
 );
 
 CRUDE_API void
-crude_engine_commands_manager_push_load_scene_command
+crude_engine_commands_manager_push_load_node_command
 (
   _In_ crude_engine_commands_manager                      *manager,
-  _In_ char const                                         *absolute_filepath
+  _In_ char const                                         *relative_filepath
 );
 
 CRUDE_API void

@@ -5,6 +5,7 @@
 #define DEFERRED_MESHLET
 //#define DEFERRED_CLASSIC
 //#define TRANSPARENT_NO_CULL
+//#define CRUDE_STAGE_TASK
 //#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
 #define CRUDE_STAGE_FRAGMENT
@@ -83,7 +84,10 @@ CRUDE_PUSH_CONSTANT
   VisibleMeshCountRef                                      visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
-  vec2                                                     _pust_constant_padding;
+  DebugLinesVerticesRef                                    debug_line_vertices;
+
+  DebugCountsRef                                           debug_counts;
+  vec2                                                     _padding;
 };
 #elif defined( TRANSPARENT_NO_CULL )
 CRUDE_PUSH_CONSTANT
@@ -111,7 +115,10 @@ CRUDE_PUSH_CONSTANT
 
   float                                                    inv_radiance_texture_width;
   float                                                    inv_radiance_texture_height;
-  vec2                                                     _pust_constant_padding;
+  DebugLinesVerticesRef                                    debug_line_vertices;
+
+  DebugCountsRef                                           debug_counts;
+  vec2                                                     _padding;
 };
 #endif
 
@@ -161,6 +168,7 @@ void main()
   bool accept = true;
 
 #if defined( DEFERRED_MESHLET )
+  // !TODO
   accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
   
   vec4 view_center = world_center * scene.data.camera.world_to_view;
@@ -177,7 +185,9 @@ void main()
     occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
       scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
       visible_mesh_count.depth_pyramid_texture_index,
-      world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip
+      world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip,
+      debug_line_vertices,
+      debug_counts
     );
   }
   accept = occlusion_visible;
@@ -257,7 +267,7 @@ void main()
     out_mesh_draw_index[ i ] = mesh_draw_index;
     out_world_positions[ i ] = world_position.xyz;
     out_view_surface_normal[ i ] = view_normal;
-    out_view_position[ i ] = scene.data.camera.position - world_position.xyz;
+    out_view_position[ i ] = view_position.xyz;
   }
   
   for ( uint i = task_index; i < triangles_count; i += gl_WorkGroupSize.x )
@@ -345,6 +355,8 @@ layout(location=2) in vec3 in_normal;
 layout(location=3) in vec3 in_tangent;
 layout(location=4) in vec3 in_bitangent;
 layout(location=5) in vec3 in_world_position;
+layout(location=6) in vec3 in_view_surface_normal;
+layout(location=7) in vec3 in_view_position;
 
 void main()
 {

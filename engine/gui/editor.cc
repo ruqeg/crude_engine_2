@@ -1,8 +1,16 @@
-#include <engine/gui/editor.h>
+#include <nfd.h>
 
 #include <engine/engine.h>
 
-static  void
+#include <engine/gui/editor.h>
+
+nfdu8filteritem_t                                          crude_gui_editor_node_file_filters_[ ] = 
+{ 
+  CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Node", "crude_node" } )
+};
+
+
+static void
 crude_gui_editor_push_style_
 (
 );
@@ -78,18 +86,87 @@ crude_gui_editor_queue_draw
   
   if ( ImGui::BeginMainMenuBar( ) )
   {
+    bool                                                   file_filepath_error;
+
+    file_filepath_error = false;
+
     if ( ImGui::BeginMenu( "File" ) )
     {
-      if ( ImGui::MenuItem( "Open" ) )
+      if ( ImGui::MenuItem( "Open Node" ) )
       {
+        nfdu8char_t                                       *nfd_out_path;
+        nfdopendialogu8args_t                              nfd_args;
+        nfdresult_t                                        nfd_result;
 
+        nfd_args = CRUDE_COMPOUNT_EMPTY( nfdopendialogu8args_t );
+        nfd_args.filterList = crude_gui_editor_node_file_filters_;
+        nfd_args.filterCount = CRUDE_COUNTOF( crude_gui_editor_node_file_filters_ );
+        
+        nfd_result = NFD_OpenDialogU8_With( &nfd_out_path, &nfd_args );
+        if ( nfd_result == NFD_OKAY )
+        {
+          char                                            *relative_filepath_candidate;
+          char                                             selected_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
+
+          relative_filepath_candidate = strstr( nfd_out_path, "\\resources\\" );
+          if ( relative_filepath_candidate )
+          {
+            crude_snprintf( selected_relative_filepath, sizeof( selected_relative_filepath ), "%s", relative_filepath_candidate + crude_string_length( "\\resources\\" ) );
+            NFD_FreePathU8( nfd_out_path );
+            
+            crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, selected_relative_filepath );
+          }
+          else
+          {
+            file_filepath_error = true;
+          }
+        }
       }
-
-      if ( ImGui::MenuItem( "Save" ) )
+      if ( ImGui::MenuItem( "Save Node" ) )
       {
+        nfdu8char_t                                       *nfd_out_path;
+        nfdsavedialogu8args_t                              nfd_args;
+        nfdresult_t                                        nfd_result;
+
+        nfd_args = CRUDE_COMPOUNT_EMPTY( nfdsavedialogu8args_t );
+        nfd_args.filterList = crude_gui_editor_node_file_filters_;
+        nfd_args.filterCount = CRUDE_COUNTOF( crude_gui_editor_node_file_filters_ );
+        
+        nfd_result = NFD_SaveDialogU8_With( &nfd_out_path, &nfd_args );
+        if ( nfd_result == NFD_OKAY )
+        {
+          char                                            *relative_filepath_candidate;
+          char                                             selected_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
+
+          relative_filepath_candidate = strstr( nfd_out_path, "\\resources\\" );
+          if ( relative_filepath_candidate )
+          {
+            crude_snprintf( selected_relative_filepath, sizeof( selected_relative_filepath ), "%s", relative_filepath_candidate + crude_string_length( "\\resources\\" ) );
+            NFD_FreePathU8( nfd_out_path );
+
+            crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, selected_relative_filepath );
+          }
+          else
+          {
+            file_filepath_error = true;
+          }
+        }
       }
       ImGui::EndMenu( );
     }
+
+    if ( file_filepath_error )
+    {
+      ImGui::OpenPopup( "Node Filepath Error" );
+    }
+
+    if ( ImGui::BeginPopup( "Node Filepath Error" ) )
+    {
+      ImGui::Text( "Fuckind idiot, node filepath has to be inside resources directory!" );
+      ImGui::Text( "Resources Directory \"%s\"!", editor->engine->environment.directories.resources_absolute_directory );
+      ImGui::EndPopup();
+    }
+
     ImGui::EndMainMenuBar( );
   }
 

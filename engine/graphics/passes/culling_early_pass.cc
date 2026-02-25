@@ -38,6 +38,8 @@ crude_gfx_culling_early_pass_render
     VkDeviceAddress                                        mesh_draw_commands;
     VkDeviceAddress                                        mesh_draw_commands_culled;
     VkDeviceAddress                                        mesh_draw_count;
+    VkDeviceAddress                                        debug_line_vertices;
+    VkDeviceAddress                                        debug_counts;
   };
 
   crude_gfx_device                                        *gpu;
@@ -73,6 +75,8 @@ crude_gfx_culling_early_pass_render
   push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
   push_constant.mesh_draw_commands_culled = pass->scene_renderer->mesh_task_indirect_commands_culled_hga.gpu_address;
   push_constant.mesh_draw_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
+  push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
+  push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
   crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

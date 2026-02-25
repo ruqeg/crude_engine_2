@@ -372,6 +372,10 @@ parse_gpu_pipeline_
     {
       pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_FRONT_BIT;
     }
+    else if ( strcmp( cull_mode, "none" ) == 0 )
+    {
+      pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_NONE;
+    }
     else
     {
       CRUDE_ASSERT( false );
@@ -385,7 +389,7 @@ parse_gpu_pipeline_
     pipeline_creation->topology = crude_gfx_string_to_vk_primitive_topology( topology_str );
   }
 
-  pipeline_creation->rasterization.front = VK_FRONT_FACE_CLOCKWISE;
+  pipeline_creation->rasterization.front = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   
   cJSON const *render_pass_output_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "render_pass_output" );
   if ( render_pass_output_json != NULL )

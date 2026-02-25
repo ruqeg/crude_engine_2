@@ -13,7 +13,7 @@
  *********************************************************/
 typedef struct crude_node_external
 {
-  char                                                     node_relative_filepath[ CRUDE_NODE_EXTERNAL_RELATIVE_FILEPATH_LENGTH_MAX ];
+  char                                                     node_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_node_external;
 
 typedef struct crude_node_runtime
