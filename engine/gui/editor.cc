@@ -34,6 +34,7 @@ crude_gui_editor_initialize
   crude_gui_node_tree_initialize( &editor->node_tree );
   crude_gui_log_viewer_initialize( &editor->log_viewer );
   crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
+  crude_gui_gpu_visual_profiler_initialize( &editor->gpu_visual_profiler, &engine->gpu, &engine->develop_heap_allocator );
 }
 
 void
@@ -46,6 +47,7 @@ crude_gui_editor_deinitialize
   crude_gui_node_inspector_deinitialize( &editor->node_inspector );
   crude_gui_log_viewer_deinitialize( &editor->log_viewer );
   crude_gui_content_browser_deinitialize( &editor->content_browser );
+  crude_gui_gpu_visual_profiler_deinitialize( &editor->gpu_visual_profiler );
 }
 
 void
@@ -64,7 +66,7 @@ crude_gui_editor_queue_draw
   
   if ( ImGui::DockBuilderGetNode( im_dockspace_id ) == NULL )
   {
-    ImGuiID                                                im_dock_id_node_tree, im_dock_id_viewport, im_dock_id_inspector, im_dock_id_logger;
+    ImGuiID                                                im_dock_id_node_tree, im_dock_id_viewport, im_dock_id_inspector, im_dock_id_browser, im_dock_id_logger;
 
     ImGui::DockBuilderAddNode( im_dockspace_id, ImGuiDockNodeFlags_None );
     ImGui::DockBuilderSetNodeSize( im_dockspace_id, im_viewport->Size );
@@ -73,12 +75,14 @@ crude_gui_editor_queue_draw
 
     ImGui::DockBuilderSplitNode( im_dock_id_viewport, ImGuiDir_Left, 0.20f, &im_dock_id_node_tree, &im_dock_id_viewport );
     ImGui::DockBuilderSplitNode( im_dock_id_node_tree, ImGuiDir_Up, 0.50f, &im_dock_id_node_tree, &im_dock_id_inspector );
-    
+    ImGui::DockBuilderSplitNode( im_dock_id_logger, ImGuiDir_Left, 0.5f, &im_dock_id_browser, &im_dock_id_logger );
+
     ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_viewport );
     ImGui::DockBuilderDockWindow( "Inspector", im_dock_id_inspector );
     ImGui::DockBuilderDockWindow( "Node Tree", im_dock_id_node_tree );
-    ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_logger );
+    ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_browser );
     ImGui::DockBuilderDockWindow( "Log Viewer", im_dock_id_logger );
+    ImGui::DockBuilderDockWindow( "GPU Profiler", im_dock_id_logger );
     ImGui::DockBuilderFinish( im_dockspace_id );
   }
   
@@ -192,6 +196,10 @@ crude_gui_editor_queue_draw
   crude_gui_content_browser_queue_draw( &editor->content_browser );
   ImGui::End( );
   
+  ImGui::Begin( "GPU Profiler" );
+  crude_gui_gpu_visual_profiler_queue_draw( &editor->gpu_visual_profiler );
+  ImGui::End( );
+  
   crude_gui_editor_pop_style_( );
     ImGui::ShowDemoWindow();
 }
@@ -202,6 +210,7 @@ crude_gui_editor_update
   _In_ crude_gui_editor                                   *editor
 )
 {
+  crude_gui_gpu_visual_profiler_update( &editor->gpu_visual_profiler );
 }
 
 void

@@ -10,6 +10,7 @@
 #include <engine/gui/viewport.h>
 #include <engine/gui/log_viewer.h>
 #include <engine/gui/content_browser.h>
+#include <engine/gui/gpu_visual_profiler.h>
 
 typedef struct crude_engine crude_engine;
 
@@ -22,6 +23,7 @@ typedef struct crude_gui_editor
   crude_gui_log_viewer                                     log_viewer;
   crude_gui_content_browser                                content_browser;
   crude_entity                                             selected_node;
+  crude_gui_gpu_visual_profiler                            gpu_visual_profiler;
 } crude_gui_editor;
 
 CRUDE_API void

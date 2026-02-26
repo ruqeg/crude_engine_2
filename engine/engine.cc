@@ -309,7 +309,8 @@ crude_engine_update
   
   crude_platform_update( &engine->platform );
   crude_gui_devmenu_update( &engine->devmenu );
-  
+  crude_gui_editor_update( &engine->editor );
+
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( engine->world, delta_time );
