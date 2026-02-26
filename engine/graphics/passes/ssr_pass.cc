@@ -68,6 +68,10 @@ crude_gfx_ssr_pass_render
   crude_gfx_texture                                       *direct_radiance_texture;
   crude_gfx_texture                                       *radiance_hierarchy_texture;
 
+#if !CRUDE_GFX_SSR_ENABLED
+  return;
+#endif
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_ssr_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
     

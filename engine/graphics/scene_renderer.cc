@@ -91,8 +91,12 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.compose_light_pass.ssr_texture = "ssr";
   scene_renderer->options.compose_light_pass.output_texture = "radiance";
   scene_renderer->options.compose_light_pass.packed_roughness_metalness_texture = "gbuffer_roughness_metalness";
-
+  
+#if CRUDE_GFX_SSR_ENABLED
   scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
+#else
+  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "direct_radiance";
+#endif
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
    
   scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );

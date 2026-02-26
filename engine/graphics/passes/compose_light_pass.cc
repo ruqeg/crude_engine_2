@@ -43,6 +43,10 @@ crude_gfx_compose_light_pass_render
   crude_gfx_pipeline_handle                                pipeline;
   push_constant_                                           pust_constant;
 
+#if !CRUDE_GFX_SSR_ENABLED
+  return;
+#endif
+
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_compose_direct_light_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 

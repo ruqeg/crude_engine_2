@@ -1,5 +1,7 @@
 #pragma once
 
+#define CRUDE_GFX_SSR_ENABLED                              0
+
 #define CRUDE_GFX_TEXTURE_NAME_MAX                         ( 512 )
 
 #define CRUDE_GFX_MESHLET_MAX_VERTICES                     ( 128 )
