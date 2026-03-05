@@ -220,19 +220,32 @@ crude_transform_node_to_world
   _In_opt_ crude_transform const                          *transform
 )
 {
+  crude_transform const                                   *parent_transform;
+  XMMATRIX                                                 node_to_world;
+  crude_entity                                             parent;
+
   if ( transform == NULL )
   {
     transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform );
   }
 
-  crude_entity parent = crude_entity_get_parent( world, node );
-  
-  if ( crude_entity_valid( world, parent ) && CRUDE_ENTITY_HAS_COMPONENT( world, parent, crude_transform ) )
+  node_to_world = crude_transform_node_to_parent( transform );
+  parent = crude_entity_get_parent( world, node );
+
+  while ( crude_entity_valid( world, parent ) )
   {
-    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, parent, crude_transform );
-    return XMMatrixMultiply( crude_transform_node_to_parent( transform ), crude_transform_node_to_world( world, parent, parent_transform ) );
+    parent_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, parent, crude_transform );
+    if ( !parent_transform )
+    {
+      break;
+    }
+		node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
+    
+    node = parent;
+		parent = crude_entity_get_parent( world, parent );
   }
-  return crude_transform_node_to_parent( transform );
+  
+  return node_to_world;
 }
 
 XMMATRIX

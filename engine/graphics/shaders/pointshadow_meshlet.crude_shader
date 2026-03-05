@@ -25,7 +25,7 @@ CRUDE_RBUFFER( MeshInstancesDraws, 1 )
 
 CRUDE_RBUFFER( Meshlets, 2 )
 {
-  crude_meshlet                                            meshlets[];
+  crude_gfx_meshlet                                    meshlets[];
 };
 
 CRUDE_RBUFFER( MeshBounds, 3 )
@@ -256,7 +256,7 @@ CRUDE_UNIFORM( SceneConstant, 0 )
 
 CRUDE_RBUFFER( MeshDraws, 1 )
 {
-  crude_mesh_draw                                          mesh_draws[];
+  crude_gfx_mesh_draw                                  mesh_draws[];
 };
 
 CRUDE_RBUFFER( MeshInstancesDraws, 2 )
@@ -271,7 +271,7 @@ CRUDE_RBUFFER( MeshBounds, 3 )
 
 CRUDE_RBUFFER( Meshlets, 4 )
 {
-  crude_meshlet                                            meshlets[];
+  crude_gfx_meshlet                                          meshlets[];
 };
 
 CRUDE_RWBUFFER( PointLightMeshletInstances, 5 )
@@ -307,7 +307,7 @@ void main()
   
   uint mesh_draw_index = mesh_instance_draws[ mesh_instance_index ].mesh_draw_index;
 
-  crude_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
+  crude_gfx_mesh_draw mesh_draw = mesh_draws[ mesh_draw_index ];
 
   vec4 bounding_sphere = mesh_bounds[ mesh_draw_index ];
   mat4 mesh_to_world = mesh_instance_draws[ mesh_instance_index ].mesh_to_world;

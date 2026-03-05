@@ -112,15 +112,18 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
   _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _Inout_ XMFLOAT4X4                                     **joint_matrices,
   _In_ XMMATRIX                                            parent_to_model
 );
 
 static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 (
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex_gpu                       *vertices,
-  _In_ uint32                                              vertices_offset
+  _In_ crude_gfx_vertex                                   *vertices,
+  _In_ uint32                                              vertices_offset,
+  _In_ uint32 *MAXXXXXXXXXXX
 );
 
 static void
@@ -160,6 +163,9 @@ crude_gfx_model_renderer_resources_manager_intialize
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
   manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
+  
+  manager->total_joint_matrices_count = 0;
+  manager->joint_matrices_hga = crude_gfx_memory_allocation_empty( );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( manager->allocator ) );
@@ -170,6 +176,24 @@ crude_gfx_model_renderer_resources_manager_intialize
   crude_linear_allocator_initialize( &manager->linear_allocator, CRUDE_RKILO( 32 ) + 2, "crude_gfx_model_renderer_resources_manager::linear_allocator" );
   crude_string_buffer_initialize( &manager->gltf_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
   crude_string_buffer_initialize( &manager->image_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
+  
+  XMFLOAT4X4 joint_matrix;
+
+  XMStoreFloat4x4( &joint_matrix, XMMatrixIdentity( ) );
+  crude_gfx_memory_allocation                              old_gpu_allocation;
+  crude_gfx_memory_allocation                              cpu_allocation;
+  uint64                                                   allocation_size;
+  allocation_size = sizeof( joint_matrix );
+  cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
+  crude_memory_copy( cpu_allocation.cpu_address, &joint_matrix, allocation_size );
+  
+  old_gpu_allocation = manager->joint_matrices_hga;
+  
+  manager->joint_matrices_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( joint_matrix ), CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
+  
+  crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->joint_matrices_hga, old_gpu_allocation );
+  
+  manager->total_joint_matrices_count += 1;
 }
 
 void
@@ -214,6 +238,8 @@ crude_gfx_model_renderer_resources_manager_deintialize
 
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
+
+  crude_gfx_memory_deallocate( manager->gpu, manager->joint_matrices_hga );
 
   crude_linear_allocator_deinitialize( &manager->linear_allocator );
   crude_string_buffer_deinitialize( &manager->gltf_absolute_filepath_string_buffer );
@@ -261,6 +287,8 @@ crude_gfx_model_renderer_resources_manager_clear
 
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
+  
+  crude_gfx_memory_deallocate( manager->gpu, manager->joint_matrices_hga );
 
   manager->total_meshes_count = 0;
 
@@ -269,6 +297,8 @@ crude_gfx_model_renderer_resources_manager_clear
   manager->total_meshlets_vertices_indices_count = 0;
   manager->total_meshlets_triangles_indices_count = 0;
 
+  manager->total_joint_matrices_count = 0;
+
   manager->meshlets_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_vertices_hga = crude_gfx_memory_allocation_empty( );
   manager->meshlets_vertices_indices_hga = crude_gfx_memory_allocation_empty( );
@@ -276,6 +306,26 @@ crude_gfx_model_renderer_resources_manager_clear
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
   manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
+
+  manager->joint_matrices_hga = crude_gfx_memory_allocation_empty( );
+
+  XMFLOAT4X4 joint_matrix;
+
+  XMStoreFloat4x4( &joint_matrix, XMMatrixIdentity( ) );
+  crude_gfx_memory_allocation                              old_gpu_allocation;
+  crude_gfx_memory_allocation                              cpu_allocation;
+  uint64                                                   allocation_size;
+  allocation_size = sizeof( joint_matrix );
+  cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
+  crude_memory_copy( cpu_allocation.cpu_address, &joint_matrix, allocation_size );
+  
+  old_gpu_allocation = manager->joint_matrices_hga;
+  
+  manager->joint_matrices_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( joint_matrix ), CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
+  
+  crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->joint_matrices_hga, old_gpu_allocation );
+  
+  manager->total_joint_matrices_count += 1;
 }
 
 crude_gfx_model_renderer_resources
@@ -389,13 +439,36 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
     crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes );
   }
 
+  
+  XMFLOAT4X4                                      *joint_matrices;
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( joint_matrices, 0, crude_stack_allocator_pack( manager->temporary_allocator ) );
+
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading \"%s\" nodes", gltf_absolute_directory );
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, XMMatrixIdentity( ) );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf->scene[ i ].nodes, gltf->scene[ i ].nodes_count, gltf_mesh_index_to_mesh_primitive_index, &joint_matrices, XMMatrixIdentity( ) );
   }
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "\"%s\" loading finished", gltf_absolute_directory );
   
+  
+  if ( CRUDE_ARRAY_LENGTH( joint_matrices ) > 0 )
+  {
+    crude_gfx_memory_allocation                              old_gpu_allocation;
+    crude_gfx_memory_allocation                              cpu_allocation;
+    uint64                                                   allocation_size;
+    uint32                                                   mesh_index;
+    allocation_size = sizeof*( joint_matrices ) * CRUDE_ARRAY_LENGTH( joint_matrices );
+    cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
+    crude_memory_copy( cpu_allocation.cpu_address, joint_matrices, allocation_size );
+
+    old_gpu_allocation = manager->joint_matrices_hga;
+    
+    manager->total_joint_matrices_count += CRUDE_ARRAY_LENGTH( joint_matrices );
+    manager->joint_matrices_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof*( joint_matrices ) * manager->total_joint_matrices_count, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
+
+    crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->joint_matrices_hga, old_gpu_allocation );
+  }
+
   manager->total_meshes_count += meshes_count;
   crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_( manager, meshes );
 
@@ -935,8 +1008,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   _In_ crude_gfx_mesh_cpu                                 *meshes
 )
 {
-  crude_gfx_meshlet_gpu                                   *meshlets;
-  crude_gfx_meshlet_vertex_gpu                            *meshlets_vertices;
+  uint32 MAXXXXXXXXXXX = 0;
+
+  crude_gfx_meshlet                                       *meshlets;
+  crude_gfx_vertex                                        *meshlets_vertices;
   uint32                                                  *meshlets_vertices_indices;
   uint8                                                   *meshlets_triangles_indices;
   crude_gfx_memory_allocation                              old_gpu_allocation;
@@ -986,7 +1061,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       local_meshlets_triangles_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
       local_meshlets_offset = CRUDE_ARRAY_LENGTH( meshlets );
       
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset );
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( manager, mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset, &MAXXXXXXXXXXX );
 
       crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, primitive_indices );
       /* Build meshlets*/
@@ -1002,7 +1077,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         meshlets_vertices_indices + local_meshlets_vertices_indices_offset,
         meshlets_triangles_indices + local_meshlets_triangles_indices_offset,
         primitive_indices, primitive_indices_count, 
-        &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_meshlet_vertex_gpu ),
+        &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_vertex ),
         CRUDE_GFX_MESHLET_MAX_VERTICES, CRUDE_GFX_MESHLET_MAX_TRIANGLES, CRUDE_GFX_MESHLET_CONE_WEIGHT
       );
       
@@ -1030,10 +1105,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         meshopt_Bounds meshlet_bounds = meshopt_computeMeshletBounds(
           meshlets_vertices_indices + local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset,
           meshlets_triangles_indices + local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset,
-          local_meshlet->triangle_count, &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_meshlet_vertex_gpu )
+          local_meshlet->triangle_count, &meshlets_vertices[ local_meshlets_vertices_offset ].position.x, primitive_vertices_count, sizeof( crude_gfx_vertex )
         );;
 
-        crude_gfx_meshlet_gpu *new_meshlet = &meshlets[ meshlet_index + local_meshletes_offset ];
+        crude_gfx_meshlet *new_meshlet = &meshlets[ meshlet_index + local_meshletes_offset ];
 
         new_meshlet->vertices_offset = local_meshlets_vertices_indices_offset + local_meshlet->vertex_offset + manager->total_meshlets_vertices_indices_count;
         new_meshlet->triangles_offset = local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset + manager->total_meshlets_triangles_indices_count;
@@ -1050,7 +1125,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         new_meshlet->cone_cutoff = meshlet_bounds.cone_cutoff_s8;
       }
       
-      crude_gfx_meshlet_gpu const *last_meshlet = &CRUDE_ARRAY_BACK( meshlets );
+      crude_gfx_meshlet const *last_meshlet = &CRUDE_ARRAY_BACK( meshlets );
       CRUDE_ARRAY_SET_LENGTH( meshlets_vertices_indices, ( last_meshlet->vertices_offset - manager->total_meshlets_vertices_indices_count ) + last_meshlet->vertices_count );
       CRUDE_ARRAY_SET_LENGTH( meshlets_triangles_indices, ( last_meshlet->triangles_offset - manager->total_meshlets_triangles_indices_count ) + 3u * last_meshlet->triangles_count );
       
@@ -1114,7 +1189,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
   manager->meshlets_vertices_indices_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof*( meshlets_vertices_indices ) * manager->total_meshlets_vertices_indices_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshlets_vertices_indices_sb" );
 
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshlets_vertices_indices_hga, old_gpu_allocation );
-  
+
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
 }
 
@@ -1125,7 +1200,7 @@ crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
   _Out_ crude_gfx_mesh_cpu                                *meshes
 )
 {
-  crude_gfx_mesh_draw_gpu                                 *meshes_draws;
+  crude_gfx_mesh_draw                                     *meshes_draws;
   XMFLOAT4                                                *meshes_bounds;
   crude_gfx_buffer                                        *old_buffer_gpu;
   crude_gfx_memory_allocation                              cpu_allocation, old_gpu_allocation;
@@ -1142,12 +1217,12 @@ crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
     meshes_bounds[ i ] = meshes[ i ].bounding_sphere;
   }
   
-  allocation_size = sizeof( crude_gfx_mesh_draw_gpu ) * CRUDE_ARRAY_LENGTH( meshes_draws );
+  allocation_size = sizeof( crude_gfx_mesh_draw ) * CRUDE_ARRAY_LENGTH( meshes_draws );
   cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
   crude_memory_copy( cpu_allocation.cpu_address, meshes_draws, allocation_size );
 
   old_gpu_allocation = manager->meshes_draws_hga;
-  manager->meshes_draws_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( crude_gfx_mesh_draw_gpu ) * manager->total_meshes_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_draws_sb" );
+  manager->meshes_draws_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( crude_gfx_mesh_draw ) * manager->total_meshes_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_draws_sb" );
 
   crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshes_draws_hga, old_gpu_allocation );
   
@@ -1162,6 +1237,83 @@ crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
 }
 
+XMMATRIX
+crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent
+(
+  _In_ cgltf_node const                                   *gltf_node
+)
+{
+  XMMATRIX                                               model_to_model;
+  crude_transform                                        transform;
+  
+  if ( gltf_node->has_translation )
+  {
+    XMStoreFloat3( &transform.translation, XMVectorSet( gltf_node->translation[ 0 ], gltf_node->translation[ 1 ], gltf_node->translation[ 2 ], 1 ));
+  }
+  else
+  {
+    XMStoreFloat3( &transform.translation, XMVectorZero( ) );
+  }
+  
+  if ( gltf_node->has_scale )
+  {
+    XMStoreFloat3( &transform.scale, XMVectorSet( gltf_node->scale[ 0 ], gltf_node->scale[ 1 ], gltf_node->scale[ 2 ], 1 ));
+  }
+  else
+  {
+    XMStoreFloat3( &transform.scale, XMVectorReplicate( 1.f ) );
+  }
+  
+  if ( gltf_node->has_rotation )
+  {
+    XMStoreFloat4( &transform.rotation, XMVectorSet( gltf_node->rotation[ 0 ], gltf_node->rotation[ 1 ], gltf_node->rotation[ 2 ], gltf_node->rotation[ 3 ] ) );
+  }
+  else
+  {
+    XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
+  }
+  
+  if ( gltf_node->has_matrix )
+  {
+    XMVECTOR                                             decompose_scale;
+    XMVECTOR                                             decompose_rotation_quat;
+    XMVECTOR                                             decompose_translation;
+    XMFLOAT4X4                                           gltf_node_matrix;
+  
+    CRUDE_ASSERT( !gltf_node->has_translation );
+    CRUDE_ASSERT( !gltf_node->has_scale );
+    CRUDE_ASSERT( !gltf_node->has_rotation );
+    gltf_node_matrix = XMFLOAT4X4{ gltf_node->matrix };
+    XMMatrixDecompose( &decompose_scale, &decompose_rotation_quat, &decompose_translation, XMLoadFloat4x4( &gltf_node_matrix ) );
+    XMStoreFloat3( &transform.translation, decompose_translation );
+    XMStoreFloat4( &transform.rotation, decompose_rotation_quat );
+    XMStoreFloat3( &transform.scale, decompose_scale );
+  }
+  
+  return crude_transform_node_to_parent( &transform );
+}
+
+XMMATRIX
+crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_world
+(
+  _In_ cgltf_node const                                   *gltf_node
+)
+{
+  cgltf_node                                              *current_parent;
+  XMMATRIX                                                 node_to_world;
+  XMMATRIX                                                 node_to_parent;
+
+	node_to_parent = crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( gltf_node );
+	current_parent = gltf_node->parent;
+	while ( current_parent )
+	{
+		node_to_world = XMMatrixMultiply( crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( current_parent ), node_to_parent );
+		current_parent = current_parent->parent;
+	}
+
+	return node_to_world;
+}
+
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 (
@@ -1171,61 +1323,38 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ cgltf_node                                        **gltf_nodes,
   _In_ uint32                                              gltf_nodes_count,
   _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
+  _Inout_ XMFLOAT4X4                                     **joint_matrices,
   _In_ XMMATRIX                                            parent_to_model
 )
-{ 
+{
   for ( uint32 i = 0u; i < gltf_nodes_count; ++i )
   {
-    XMMATRIX                                               model_to_model;
-    crude_transform                                        transform;
-
-    if ( gltf_nodes[ i ]->has_translation )
-    {
-      XMStoreFloat3( &transform.translation, XMVectorSet( gltf_nodes[ i ]->translation[ 0 ], gltf_nodes[ i ]->translation[ 1 ], gltf_nodes[ i ]->translation[ 2 ], 1 ));
-    }
-    else
-    {
-      XMStoreFloat3( &transform.translation, XMVectorZero( ) );
-    }
-
-    if ( gltf_nodes[ i ]->has_scale )
-    {
-      XMStoreFloat3( &transform.scale, XMVectorSet( gltf_nodes[ i ]->scale[ 0 ], gltf_nodes[ i ]->scale[ 1 ], gltf_nodes[ i ]->scale[ 2 ], 1 ));
-    }
-    else
-    {
-      XMStoreFloat3( &transform.scale, XMVectorReplicate( 1.f ) );
-    }
-
-    if ( gltf_nodes[ i ]->has_rotation )
-    {
-      XMStoreFloat4( &transform.rotation, XMVectorSet( gltf_nodes[ i ]->rotation[ 0 ], gltf_nodes[ i ]->rotation[ 1 ], gltf_nodes[ i ]->rotation[ 2 ], gltf_nodes[ i ]->rotation[ 3 ] ) );
-    }
-    else
-    {
-      XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
-    }
+    XMMATRIX                                               model_to_model, node_to_parent;
     
-    if ( gltf_nodes[ i ]->has_matrix )
-    {
-      XMVECTOR                                             decompose_scale;
-      XMVECTOR                                             decompose_rotation_quat;
-      XMVECTOR                                             decompose_translation;
-      XMFLOAT4X4                                           gltf_node_matrix;
+    node_to_parent = crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( gltf_nodes[ i ] );
+    model_to_model = XMMatrixMultiply( parent_to_model, node_to_parent );
 
-      CRUDE_ASSERT( !gltf_nodes[ i ]->has_translation );
-      CRUDE_ASSERT( !gltf_nodes[ i ]->has_scale );
-      CRUDE_ASSERT( !gltf_nodes[ i ]->has_rotation );
-      gltf_node_matrix = XMFLOAT4X4{ gltf_nodes[ i ]->matrix };
-      XMMatrixDecompose( &decompose_scale, &decompose_rotation_quat, &decompose_translation, XMLoadFloat4x4( &gltf_node_matrix ) );
-      XMStoreFloat3( &transform.translation, decompose_translation );
-      XMStoreFloat4( &transform.rotation, decompose_rotation_quat );
-      XMStoreFloat3( &transform.scale, decompose_scale );
-    }
-
-    model_to_model = XMMatrixMultiply( parent_to_model, crude_transform_node_to_parent( &transform ) );
     if ( gltf_nodes[ i ]->mesh )
     {
+      
+      if ( gltf_nodes[ i ]->skin )
+      {
+        cgltf_skin                                          *gltf_skin;
+        XMMATRIX                                             model_to_mesh;
+        
+        gltf_skin = gltf_nodes[ i ]->skin;
+      	model_to_mesh = XMMatrixInverse( NULL, model_to_model );
+        uint32 offset = CRUDE_ARRAY_LENGTH( *joint_matrices );
+        CRUDE_ARRAY_SET_LENGTH( *joint_matrices, CRUDE_ARRAY_LENGTH( *joint_matrices ) + gltf_skin->joints_count );
+      	for (size_t i = 0; i < gltf_skin->joints_count; i++)
+      	{
+          XMFLOAT4X4 *inverse_bind_matrix = CRUDE_CAST( XMFLOAT4X4*, CRUDE_CAST( uint8*, gltf_skin->inverse_bind_matrices->buffer_view->buffer->data ) + gltf_skin->inverse_bind_matrices->buffer_view->offset );
+      		XMMATRIX joint_matrix = XMMatrixMultiply( crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( gltf_skin->joints[ i ] ), XMLoadFloat4x4( &inverse_bind_matrix[ i ] ) );
+      		joint_matrix = XMMatrixMultiply( model_to_mesh, joint_matrix );
+          XMStoreFloat4x4( &(*joint_matrices)[ i + offset ], XMMatrixIdentity() /*joint_matrix */);
+      	}
+      }
+
       uint32 mesh_index_offset = gltf_mesh_index_to_mesh_primitive_index[ cgltf_mesh_index( gltf, gltf_nodes[ i ]->mesh ) ];
       for ( uint32 pi = 0; pi < gltf_nodes[ i ]->mesh->primitives_count; ++pi )
       {
@@ -1236,27 +1365,34 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       }
     }
 
-    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index, model_to_model );
+    crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, model_renderer_resources, gltf, gltf_nodes[ i ]->children, gltf_nodes[ i ]->children_count, gltf_mesh_index_to_mesh_primitive_index, joint_matrices, model_to_model );
   }
 }
 
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 (
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_primitive                                    *primitive,
-  _In_ crude_gfx_meshlet_vertex_gpu                       *vertices,
-  _In_ uint32                                              vertices_offset
+  _In_ crude_gfx_vertex                                   *vertices,
+  _In_ uint32                                              vertices_offset,
+  _In_ uint32 *MAXXXXXXXXXXX
 )
 {
   XMFLOAT4                                                *primitive_tangents;
   XMFLOAT3                                                *primitive_positions;
   XMFLOAT3                                                *primitive_normals;
   XMFLOAT2                                                *primitive_texcoords;
+  uint8                                                   *primitive_joints;
+  XMFLOAT4                                                *primitive_weights;
   uint32                                                   meshlet_vertices_count;
   
   primitive_tangents = NULL;
-  primitive_positions = primitive_normals = NULL;
+  primitive_positions = NULL;
+  primitive_normals = NULL;
   primitive_texcoords = NULL;
+  primitive_joints = NULL;
+  primitive_weights = NULL;
 
   meshlet_vertices_count = primitive->attributes[ 0 ].data->count;
   
@@ -1296,6 +1432,20 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
       primitive_texcoords = CRUDE_CAST( XMFLOAT2*, attribute_data );
       break;
     }
+    case cgltf_attribute_type_joints:
+    {
+      CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( uint32 ) );
+      primitive_joints = CRUDE_CAST( uint8*, attribute_data );
+      break;
+    }
+    case cgltf_attribute_type_weights:
+    {
+      CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
+      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT4 ) );
+      primitive_weights = CRUDE_CAST( XMFLOAT4*, attribute_data );
+      break;
+    }
     }
   }
 
@@ -1303,7 +1453,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   {
     CRUDE_ASSERT( primitive_positions );
     
-    crude_gfx_meshlet_vertex_gpu *vertex = &vertices[ i + vertices_offset];
+    crude_gfx_vertex *vertex = &vertices[ i + vertices_offset];
 
     vertex->position.x = primitive_positions[ i ].x;
     vertex->position.y = primitive_positions[ i ].y;
@@ -1328,6 +1478,26 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
     {
       vertex->texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
       vertex->texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
+    }
+
+    if ( primitive_weights )
+    {
+      vertex->joint_weights = primitive_weights[ i ];
+    }
+
+    if ( primitive_joints )
+    {
+      vertex->joint_indices.x = primitive_joints[ 4 * i + 0 ];
+      vertex->joint_indices.y = primitive_joints[ 4 * i + 1 ];
+      vertex->joint_indices.z = primitive_joints[ 4 * i + 2 ];
+      vertex->joint_indices.w = primitive_joints[ 4 * i + 3 ];
+      *MAXXXXXXXXXXX = CRUDE_MAX( *MAXXXXXXXXXXX, primitive_joints[ 4 * i + 0 ], primitive_joints[ 4 * i + 1 ], primitive_joints[ 4 * i + 2 ], primitive_joints[ 4 * i + 3 ] );
+    }
+
+    if ( !primitive_weights && !primitive_joints )
+    {
+      vertex->joint_weights = CRUDE_COMPOUNT( XMFLOAT4, { 1, 0, 0, 0 } );
+      vertex->joint_indices = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
     }
   }
 }

@@ -61,7 +61,7 @@ CRUDE_PUSH_CONSTANT
 
 void write_mesh_draw_command
 (
-  out crude_mesh_draw_command                              mesh_draw_command,
+  out crude_gfx_mesh_draw_command                          mesh_draw_command,
   in uint                                                  mesh_instance_draw_index,
   in uint                                                  mesh_draw_index
 )

@@ -55,6 +55,10 @@ typedef struct crude_gfx_model_renderer_resources_manager
   uint64                                                   total_meshlets_vertices_indices_count;
   uint64                                                   total_meshlets_triangles_indices_count;
 
+  /* Animation */
+  crude_gfx_memory_allocation                              joint_matrices_hga;
+  uint64                                                   total_joint_matrices_count;
+
   /* Common */
   crude_gfx_memory_allocation                              meshes_draws_hga;
   crude_gfx_memory_allocation                              meshes_bounds_hga;

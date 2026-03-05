@@ -2,6 +2,7 @@
 
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/gpu_resources.h>
+#include <engine/graphics/shaders/common/scene.h>
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_cube_instance_gpu
 {
@@ -23,54 +24,6 @@ typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_debug_draw_command_gpu
   VkDrawIndirectCommand                                    draw_indirect_2dline;
   VkDrawIndirectCommand                                    draw_indirect_cube;
 } crude_gfx_debug_draw_command_gpu;
-
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_camera_gpu
-{
-  XMFLOAT4X4A                                              world_to_clip;
-  XMFLOAT4X4A                                              world_to_view;
-  XMFLOAT4X4A                                              view_to_clip;
-  XMFLOAT4X4A                                              clip_to_view;
-  XMFLOAT4X4A                                              view_to_world;
-  XMFLOAT4X4A                                              clip_to_world;
-  XMFLOAT4A                                                frustum_planes_culling[ 6 ];
-  XMFLOAT3A                                                position;
-  float32                                                  znear;
-  float32                                                  zfar;
-  XMFLOAT2                                                 padding;
-} crude_gfx_camera_gpu;
-
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_scene_constant_gpu
-{
-  crude_gfx_camera_gpu                                     camera;
-  crude_gfx_camera_gpu                                     camera_previous;
-  XMFLOAT2                                                 resolution;
-  uint32                                                   flags;
-  uint32                                                   meshes_instances_count;
-  uint32                                                   active_lights_count;
-  uint32                                                   tiled_shadowmap_texture_index;
-  XMFLOAT2                                                 inv_shadow_map_size;
-  XMFLOAT3                                                 background_color;
-  float32                                                  background_intensity;
-  XMFLOAT3                                                 ambient_color;
-  float32                                                  ambient_intensity;
-  uint32                                                   indirect_light_texture_index;
-  uint32                                                   absolute_frame;
-  float32                                                  absolute_time;
-  float32                                                  resolution_ratio;
-#if CRUDE_DEVELOP
-  uint32                                                   debug_mode;
-  uint32                                                   debug_flags1;
-  float32                                                  debug_force_roughness;
-  float32                                                  debug_force_metalness;
-#endif
-} crude_gfx_scene_constant_gpu;
-
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_command_gpu
-{
-  uint32                                                   draw_id;
-  VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
-  VkDrawIndirectCommand                                    indirect_mesh;
-} crude_gfx_mesh_draw_command_gpu;
 
 typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_mesh_draw_counts_gpu
 {
@@ -109,5 +62,5 @@ crude_gfx_camera_to_camera_gpu
 (
   _In_ crude_camera                                       *camera,
   _In_ XMFLOAT4X4                                          camera_view_to_world,
-  _Out_ crude_gfx_camera_gpu                              *camera_gpu
+  _Out_ crude_gfx_camera                                  *camera_gpu
 );

@@ -15,6 +15,71 @@
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
 
+//// POI: Update the current animation
+//void VulkanglTFModel::updateAnimation(float deltaTime, uint32_t currentBuffer)
+//{
+//	this->currentBuffer = currentBuffer;
+//
+//	if (activeAnimation > static_cast<uint32_t>(animations.size()) - 1)
+//	{
+//		std::cout << "No animation with index " << activeAnimation << std::endl;
+//		return;
+//	}
+//	Animation &animation = animations[activeAnimation];
+//	animation.currentTime += deltaTime;
+//	if (animation.currentTime > animation.end)
+//	{
+//		animation.currentTime -= animation.end;
+//	}
+//
+//	for (auto &channel : animation.channels)
+//	{
+//		AnimationSampler &sampler = animation.samplers[channel.samplerIndex];
+//		for (size_t i = 0; i < sampler.inputs.size() - 1; i++)
+//		{
+//			if (sampler.interpolation != "LINEAR")
+//			{
+//				std::cout << "This sample only supports linear interpolations\n";
+//				continue;
+//			}
+//
+//			// Get the input keyframe values for the current time stamp
+//			if ((animation.currentTime >= sampler.inputs[i]) && (animation.currentTime <= sampler.inputs[i + 1]))
+//			{
+//				float a = (animation.currentTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+//				if (channel.path == "translation")
+//				{
+//					channel.node->translation = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], a);
+//				}
+//				if (channel.path == "rotation")
+//				{
+//					glm::quat q1;
+//					q1.x = sampler.outputsVec4[i].x;
+//					q1.y = sampler.outputsVec4[i].y;
+//					q1.z = sampler.outputsVec4[i].z;
+//					q1.w = sampler.outputsVec4[i].w;
+//
+//					glm::quat q2;
+//					q2.x = sampler.outputsVec4[i + 1].x;
+//					q2.y = sampler.outputsVec4[i + 1].y;
+//					q2.z = sampler.outputsVec4[i + 1].z;
+//					q2.w = sampler.outputsVec4[i + 1].w;
+//
+//					channel.node->rotation = glm::normalize(glm::slerp(q1, q2, a));
+//				}
+//				if (channel.path == "scale")
+//				{
+//					channel.node->scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], a);
+//				}
+//			}
+//		}
+//	}
+//	for (auto &node : nodes)
+//	{
+//		updateJoints(node);
+//	}
+//}
+
 /**
  * Scene Renderer Other
  */
@@ -122,10 +187,10 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->lights_bins_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->lights_tiles_hga = crude_gfx_memory_allocation_empty( );
 
-  scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
-  scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene_constant_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene" );
-  scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
-  scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
+  scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
+  scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene" );
+  scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
+  scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
   scene_renderer->mesh_task_indirect_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_draw_counts_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_count_hga" );
 
   scene_renderer->debug_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "debug_commands_hga" );
@@ -277,9 +342,9 @@ crude_gfx_scene_renderer_update_instances_from_node
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_culled_hga );
     }
 
-    scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
-    scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
-    scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
+    scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
+    scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands" );
+    scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
 
     buffers_recrteated = true;
   }
@@ -416,13 +481,13 @@ update_dynamic_buffers_
   
   /* Update scene constant buffer*/
   {
-    crude_gfx_scene_constant_gpu                          *scene;
+    crude_gfx_scene                                       *scene;
     crude_gfx_memory_allocation                            scene_tca;
 
-    scene_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_scene_constant_gpu ) );
-    scene = CRUDE_CAST( crude_gfx_scene_constant_gpu*, scene_tca.cpu_address );
+    scene_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_scene ) );
+    scene = CRUDE_CAST( crude_gfx_scene*, scene_tca.cpu_address );
 
-    *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_constant_gpu );
+    *scene = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene );
     scene->flags = 0u;
     scene->camera_previous = scene->camera;
     scene->resolution.x = scene_renderer->gpu->renderer_size.x;
@@ -455,11 +520,11 @@ update_dynamic_buffers_
   
   /* Update meshes instanse draws buffers*/
   {
-    crude_gfx_mesh_instance_draw_gpu                      *meshes_instances_draws;
+    crude_gfx_mesh_instance_draw                          *meshes_instances_draws;
     crude_gfx_memory_allocation                            meshes_instances_draws_tca;
 
-    meshes_instances_draws_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw_gpu ) * scene_renderer->total_meshes_instances_count );
-    meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw_gpu*, meshes_instances_draws_tca.cpu_address );
+    meshes_instances_draws_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_count );
+    meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw*, meshes_instances_draws_tca.cpu_address );
   
     scene_renderer->total_visible_meshes_instances_count = 0u;
     for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )

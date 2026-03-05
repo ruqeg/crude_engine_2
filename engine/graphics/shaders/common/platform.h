@@ -2,6 +2,12 @@
 #ifndef CRUDE_PLATFORM_GLSL
 #define CRUDE_PLATFORM_GLSL
 
+#ifdef __cplusplus
+#include <vulkan/vulkan.h>
+#include <engine/core/alias.h>
+#include <engine/core/math.h>
+#endif
+
 #define CRUDE_SHADER_DEVELOP 1
 
 #define CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX 0
@@ -22,12 +28,51 @@
 #define CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
 #define CRUDE_MESH_DRAW_FLAGS_INDEX_16 ( 1 << 5 )
 
+#ifdef __cplusplus
+#define CRUDE_SHADER_STRUCT( name ) typedef CRUDE_ALIGNED_STRUCT( 16 ) name
+#else
+#define CRUDE_SHADER_STRUCT( name ) struct name
+#endif
+
+#ifdef __cplusplus
+#define CRUDE_SHADER_RBUFFER_REF( name, type )  typedef VkDeviceAddress name;
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type )  typedef VkDeviceAddress name;
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) typedef VkDeviceAddress name;
+#define CRUDE_SHADER_RWBUFFER_REF( name, type )  typedef VkDeviceAddress name;
+#else
+#define CRUDE_SHADER_RBUFFER_REF( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data; };
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data[]; };
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
+#define CRUDE_SHADER_RWBUFFER_REF( name, type ) layout(buffer_reference, row_major, std430) buffer name { type data[]; };
+#define CRUDE_RBUFFER_REF_SCALAR( name ) layout(buffer_reference, row_major, scalar) readonly buffer name
+#define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
+#define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
+#endif
+
 #ifndef __cplusplus
 
+#define float32 float
+#define int8 int8_t
+#define int16 int16_t
+#define int64 int64_t
+#define int32 int
 #define uint8 uint8_t
 #define uint16 uint16_t
 #define uint64 uint64_t
 #define uint32 uint
+#define XMFLOAT2 vec2
+#define XMFLOAT3 vec3
+#define XMFLOAT4 vec4
+#define XMUINT2 uvec2
+#define XMUINT3 uvec3
+#define XMUINT4 uvec4
+#define XMFLOAT2A vec4
+#define XMFLOAT3A vec4
+#define XMFLOAT4A vec4
+#define XMUINT2A uvec4
+#define XMUINT3A uvec4
+#define XMUINT4A uvec4
+#define XMFLOAT4X4 mat4
 
 #extension GL_EXT_debug_printf : require
 #extension GL_EXT_nonuniform_qualifier : require
@@ -48,11 +93,6 @@
 #define CRUDE_TEXTURE_FETCH( ti, coords, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], coords, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_IMAGE_STORE( ti, coords, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], coords, data )
-
-#define CRUDE_RBUFFER_REF_SCALAR( name ) layout(buffer_reference, row_major, scalar) readonly buffer name
-#define CRUDE_RBUFFER_REF_ALIGNED( name, align ) layout(buffer_reference, row_major, std430, buffer_reference_align=align) readonly buffer name
-#define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
-#define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
 
 #define CRUDE_DEAFULT_F0 vec3( 0.04f )
 #define CRUDE_SATURATE( v ) clamp( v, 0, 1 )
