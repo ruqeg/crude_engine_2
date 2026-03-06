@@ -76,7 +76,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_instance_draw )
   XMFLOAT4X4                                               mesh_to_world;
   XMFLOAT4X4                                               world_to_mesh;
   uint32                                                   mesh_draw_index;
-  XMFLOAT3A                                                padding;
+  uint32                                                   joints_matrices_offset;
+  XMFLOAT2                                                 padding;
 };
 
 CRUDE_SHADER_STRUCT( crude_gfx_vertex )

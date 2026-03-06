@@ -39,6 +39,7 @@ typedef struct crude_gfx_mesh_instance_cpu
 {
   XMFLOAT4X4                                               mesh_to_model;
   uint32                                                   mesh_gpu_index;
+  uint32                                                   joints_matrices_offset;
 } crude_gfx_mesh_instance_cpu;
 
 typedef struct crude_gfx_model_renderer_resources

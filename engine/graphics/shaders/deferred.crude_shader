@@ -250,10 +250,10 @@ void main()
     
     vec4 mesh_position = vec4( vertices.data[ vertex_index ].position, 1.0 );
 	  mat4 mesh_to_skin = 
-		  vertices.data[ vertex_index ].joint_weights.x * joint_matrices.data[ int( vertices.data[ vertex_index ].joint_indices.x ) ] +
-		  vertices.data[ vertex_index ].joint_weights.y * joint_matrices.data[ int( vertices.data[ vertex_index ].joint_indices.y ) ] +
-		  vertices.data[ vertex_index ].joint_weights.z * joint_matrices.data[ int( vertices.data[ vertex_index ].joint_indices.z ) ] +
-		  vertices.data[ vertex_index ].joint_weights.w * joint_matrices.data[ int( vertices.data[ vertex_index ].joint_indices.w ) ];
+		  vertices.data[ vertex_index ].joint_weights.x * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.x ) ] +
+		  vertices.data[ vertex_index ].joint_weights.y * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.y ) ] +
+		  vertices.data[ vertex_index ].joint_weights.z * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.z ) ] +
+		  vertices.data[ vertex_index ].joint_weights.w * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.w ) ];
     vec4 skinned_position = mesh_position * mesh_to_skin;
     vec4 world_position = skinned_position * mesh_to_world;
 

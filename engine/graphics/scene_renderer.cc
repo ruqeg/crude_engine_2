@@ -15,21 +15,31 @@
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
 
+typedef struct tmp_animation
+{
+  float32 current_time;
+  float32 end;
+} tmp_animation;
+
+uint64 active_animation_index;
+
+tmp_animation *animations;
+
 //// POI: Update the current animation
-//void VulkanglTFModel::updateAnimation(float deltaTime, uint32_t currentBuffer)
+//void updateAnimation(float deltaTime, uint32_t currentBuffer)
 //{
 //	this->currentBuffer = currentBuffer;
 //
-//	if (activeAnimation > static_cast<uint32_t>(animations.size()) - 1)
+//	if (active_animation_index > static_cast<uint32_t>(animations.size()) - 1)
 //	{
-//		std::cout << "No animation with index " << activeAnimation << std::endl;
+//		std::cout << "No animation with index " << active_animation_index << std::endl;
 //		return;
 //	}
-//	Animation &animation = animations[activeAnimation];
-//	animation.currentTime += deltaTime;
-//	if (animation.currentTime > animation.end)
+//	tmp_animation *animation = &animations[ active_animation_index ];
+//	animation->current_time += deltaTime;
+//	if (animation->current_time > animation->end )
 //	{
-//		animation.currentTime -= animation.end;
+//		animation->current_time -= animation->end;
 //	}
 //
 //	for (auto &channel : animation.channels)
@@ -548,6 +558,7 @@ update_dynamic_buffers_
         XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
         XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
         meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
+        meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = mesh_instance_cpu->joints_matrices_offset;
 
         ++scene_renderer->total_visible_meshes_instances_count;
       }

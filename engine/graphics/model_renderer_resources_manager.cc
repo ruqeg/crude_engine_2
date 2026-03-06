@@ -122,8 +122,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_primitive                                    *primitive,
   _In_ crude_gfx_vertex                                   *vertices,
-  _In_ uint32                                              vertices_offset,
-  _In_ uint32 *MAXXXXXXXXXXX
+  _In_ uint32                                              vertices_offset
 );
 
 static void
@@ -1061,7 +1060,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       local_meshlets_triangles_indices_offset = CRUDE_ARRAY_LENGTH( meshlets_triangles_indices );
       local_meshlets_offset = CRUDE_ARRAY_LENGTH( meshlets );
       
-      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( manager, mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset, &MAXXXXXXXXXXX );
+      crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_( manager, mesh_primitive, meshlets_vertices, local_meshlets_vertices_offset );
 
       crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_indices_( mesh_primitive, primitive_indices );
       /* Build meshlets*/
@@ -1336,6 +1335,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 
     if ( gltf_nodes[ i ]->mesh )
     {
+        uint32 offset = CRUDE_ARRAY_LENGTH( *joint_matrices );
       
       if ( gltf_nodes[ i ]->skin )
       {
@@ -1344,14 +1344,16 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
         
         gltf_skin = gltf_nodes[ i ]->skin;
       	model_to_mesh = XMMatrixInverse( NULL, model_to_model );
-        uint32 offset = CRUDE_ARRAY_LENGTH( *joint_matrices );
         CRUDE_ARRAY_SET_LENGTH( *joint_matrices, CRUDE_ARRAY_LENGTH( *joint_matrices ) + gltf_skin->joints_count );
+        
+        XMFLOAT4X4 *inverse_bind_matrix = CRUDE_CAST( XMFLOAT4X4*, CRUDE_CAST( uint8*, gltf_skin->inverse_bind_matrices->buffer_view->buffer->data ) + gltf_skin->inverse_bind_matrices->buffer_view->offset );
+
       	for (size_t i = 0; i < gltf_skin->joints_count; i++)
       	{
-          XMFLOAT4X4 *inverse_bind_matrix = CRUDE_CAST( XMFLOAT4X4*, CRUDE_CAST( uint8*, gltf_skin->inverse_bind_matrices->buffer_view->buffer->data ) + gltf_skin->inverse_bind_matrices->buffer_view->offset );
-      		XMMATRIX joint_matrix = XMMatrixMultiply( crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( gltf_skin->joints[ i ] ), XMLoadFloat4x4( &inverse_bind_matrix[ i ] ) );
-      		joint_matrix = XMMatrixMultiply( model_to_mesh, joint_matrix );
-          XMStoreFloat4x4( &(*joint_matrices)[ i + offset ], XMMatrixIdentity() /*joint_matrix */);
+          XMMATRIX joint_global_matrix = crude_gfx_model_renderer_resources_manager_get_cgltf_node_to_parent( gltf_skin->joints[ i ] );
+          XMMATRIX skinning_matrix = XMMatrixMultiply( joint_global_matrix, XMLoadFloat4x4( &inverse_bind_matrix[ i ] ) );
+          skinning_matrix = XMMatrixMultiply( model_to_mesh, skinning_matrix );
+          XMStoreFloat4x4( &(*joint_matrices)[ i + offset ], skinning_matrix );
       	}
       }
 
@@ -1360,6 +1362,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       {
         crude_gfx_mesh_instance_cpu mesh_instance;
         mesh_instance.mesh_gpu_index = mesh_index_offset + pi + manager->total_meshes_count;
+        mesh_instance.joints_matrices_offset = gltf_nodes[ i ]->skin ? offset + manager->total_joint_matrices_count : 0;
         XMStoreFloat4x4( &mesh_instance.mesh_to_model, model_to_model );
         CRUDE_ARRAY_PUSH( model_renderer_resources->meshes_instances, mesh_instance );
       }
@@ -1375,8 +1378,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ cgltf_primitive                                    *primitive,
   _In_ crude_gfx_vertex                                   *vertices,
-  _In_ uint32                                              vertices_offset,
-  _In_ uint32 *MAXXXXXXXXXXX
+  _In_ uint32                                              vertices_offset
 )
 {
   XMFLOAT4                                                *primitive_tangents;
@@ -1385,15 +1387,20 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   XMFLOAT2                                                *primitive_texcoords;
   uint8                                                   *primitive_joints;
   XMFLOAT4                                                *primitive_weights;
+  uint32                                                   primitive_joints_stride;
+  uint32                                                   primitive_weights_stride;
+  uint32                                                   primitive_normals_stride;
+  cgltf_component_type                                     primitive_joints_type;
   uint32                                                   meshlet_vertices_count;
   
   primitive_tangents = NULL;
   primitive_positions = NULL;
   primitive_normals = NULL;
   primitive_texcoords = NULL;
-  primitive_joints = NULL;
   primitive_weights = NULL;
+  primitive_joints = NULL;
 
+  primitive_joints_stride = primitive_normals_stride = primitive_weights_stride = 0;
   meshlet_vertices_count = primitive->attributes[ 0 ].data->count;
   
   for ( uint32 i = 0; i < primitive->attributes_count; ++i )
@@ -1421,7 +1428,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
     case cgltf_attribute_type_normal:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT3 ) );
+      primitive_normals_stride = attribute->data->stride;
       primitive_normals = CRUDE_CAST( XMFLOAT3*, attribute_data );
       break;
     }
@@ -1435,14 +1442,16 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
     case cgltf_attribute_type_joints:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( uint32 ) );
+
+      primitive_joints_stride = attribute->data->stride;
       primitive_joints = CRUDE_CAST( uint8*, attribute_data );
+      primitive_joints_type = attribute->data->component_type;
       break;
     }
     case cgltf_attribute_type_weights:
     {
+      primitive_weights_stride = attribute->data->stride;
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT4 ) );
       primitive_weights = CRUDE_CAST( XMFLOAT4*, attribute_data );
       break;
     }
@@ -1461,9 +1470,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 
     if ( primitive_normals )
     {
-      vertex->normal[ 0 ] = ( primitive_normals[ i ].x + 1.0f ) * 127.0f;
-      vertex->normal[ 1 ] = ( primitive_normals[ i ].y + 1.0f ) * 127.0f;
-      vertex->normal[ 2 ] = ( primitive_normals[ i ].z + 1.0f ) * 127.0f;
+      vertex->normal[ 0 ] = ( primitive_normals->x + 1.0f ) * 127.0f;
+      vertex->normal[ 1 ] = ( primitive_normals->y + 1.0f ) * 127.0f;
+      vertex->normal[ 2 ] = ( primitive_normals->z + 1.0f ) * 127.0f;
+      primitive_normals = CRUDE_CAST( XMFLOAT3*, CRUDE_CAST( uint8*, primitive_normals ) + primitive_normals_stride );
     }
 
     if ( primitive_tangents  )
@@ -1482,16 +1492,28 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
 
     if ( primitive_weights )
     {
-      vertex->joint_weights = primitive_weights[ i ];
+      vertex->joint_weights = *primitive_weights;
+      primitive_weights = CRUDE_CAST( XMFLOAT4*, CRUDE_CAST( uint8*, primitive_weights ) + primitive_weights_stride );
     }
 
     if ( primitive_joints )
     {
-      vertex->joint_indices.x = primitive_joints[ 4 * i + 0 ];
-      vertex->joint_indices.y = primitive_joints[ 4 * i + 1 ];
-      vertex->joint_indices.z = primitive_joints[ 4 * i + 2 ];
-      vertex->joint_indices.w = primitive_joints[ 4 * i + 3 ];
-      *MAXXXXXXXXXXX = CRUDE_MAX( *MAXXXXXXXXXXX, primitive_joints[ 4 * i + 0 ], primitive_joints[ 4 * i + 1 ], primitive_joints[ 4 * i + 2 ], primitive_joints[ 4 * i + 3 ] );
+      if ( primitive_joints_type == cgltf_component_type_r_8u  )
+      {
+        vertex->joint_indices.x = primitive_joints[ 0 ];
+        vertex->joint_indices.y = primitive_joints[ 1 ];
+        vertex->joint_indices.z = primitive_joints[ 2 ];
+        vertex->joint_indices.w = primitive_joints[ 3 ];
+      }
+      else if ( primitive_joints_type == cgltf_component_type_r_16u )
+      {
+        vertex->joint_indices.x = CRUDE_CAST( uint16*, primitive_joints )[ 0 ];
+        vertex->joint_indices.y = CRUDE_CAST( uint16*, primitive_joints )[ 1 ];
+        vertex->joint_indices.z = CRUDE_CAST( uint16*, primitive_joints )[ 2 ];
+        vertex->joint_indices.w = CRUDE_CAST( uint16*, primitive_joints )[ 3 ];
+      }
+      
+      primitive_joints += primitive_joints_stride;
     }
 
     if ( !primitive_weights && !primitive_joints )
