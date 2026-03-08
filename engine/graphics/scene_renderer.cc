@@ -15,81 +15,6 @@
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
 
-typedef struct tmp_animation
-{
-  float32 current_time;
-  float32 end;
-} tmp_animation;
-
-uint64 active_animation_index;
-
-tmp_animation *animations;
-
-//// POI: Update the current animation
-//void updateAnimation(float deltaTime, uint32_t currentBuffer)
-//{
-//	this->currentBuffer = currentBuffer;
-//
-//	if (active_animation_index > static_cast<uint32_t>(animations.size()) - 1)
-//	{
-//		std::cout << "No animation with index " << active_animation_index << std::endl;
-//		return;
-//	}
-//	tmp_animation *animation = &animations[ active_animation_index ];
-//	animation->current_time += deltaTime;
-//	if (animation->current_time > animation->end )
-//	{
-//		animation->current_time -= animation->end;
-//	}
-//
-//	for (auto &channel : animation.channels)
-//	{
-//		AnimationSampler &sampler = animation.samplers[channel.samplerIndex];
-//		for (size_t i = 0; i < sampler.inputs.size() - 1; i++)
-//		{
-//			if (sampler.interpolation != "LINEAR")
-//			{
-//				std::cout << "This sample only supports linear interpolations\n";
-//				continue;
-//			}
-//
-//			// Get the input keyframe values for the current time stamp
-//			if ((animation.currentTime >= sampler.inputs[i]) && (animation.currentTime <= sampler.inputs[i + 1]))
-//			{
-//				float a = (animation.currentTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
-//				if (channel.path == "translation")
-//				{
-//					channel.node->translation = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], a);
-//				}
-//				if (channel.path == "rotation")
-//				{
-//					glm::quat q1;
-//					q1.x = sampler.outputsVec4[i].x;
-//					q1.y = sampler.outputsVec4[i].y;
-//					q1.z = sampler.outputsVec4[i].z;
-//					q1.w = sampler.outputsVec4[i].w;
-//
-//					glm::quat q2;
-//					q2.x = sampler.outputsVec4[i + 1].x;
-//					q2.y = sampler.outputsVec4[i + 1].y;
-//					q2.z = sampler.outputsVec4[i + 1].z;
-//					q2.w = sampler.outputsVec4[i + 1].w;
-//
-//					channel.node->rotation = glm::normalize(glm::slerp(q1, q2, a));
-//				}
-//				if (channel.path == "scale")
-//				{
-//					channel.node->scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], a);
-//				}
-//			}
-//		}
-//	}
-//	for (auto &node : nodes)
-//	{
-//		updateJoints(node);
-//	}
-//}
-
 /**
  * Scene Renderer Other
  */
@@ -550,7 +475,7 @@ update_dynamic_buffers_
         
         mesh_instance_cpu = &model_renderer_resources_instance->model_renderer_resources.meshes_instances[ model_mesh_instance_index ];
         
-        mesh_to_model = XMLoadFloat4x4( &mesh_instance_cpu->mesh_to_model );
+        mesh_to_model = crude_gfx_node_to_world( scene_renderer->model_renderer_resources_manager, mesh_instance_cpu->node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
         
         mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );

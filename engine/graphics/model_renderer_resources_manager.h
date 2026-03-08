@@ -3,12 +3,14 @@
 #include <engine/graphics/gpu_device.h>
 
 #include <engine/scene/scene_ecs.h>
+#include <engine/scene/animations_manager.h>
 #include <engine/graphics/model_renderer_resources.h>
 #include <engine/graphics/asynchronous_loader.h>
 #include <engine/graphics/gpu_memory.h>
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
+  crude_animations_manager                                *animations_manager;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
@@ -22,6 +24,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    * Context 
    **********************/
   crude_gfx_device                                        *gpu;
+  crude_animations_manager                                *animations_manager;
   crude_gfx_asynchronous_loader                           *async_loader;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
@@ -34,6 +37,9 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_sampler_handle                                *samplers;
   crude_gfx_texture_handle                                *images;
   crude_gfx_memory_allocation                             *buffers;
+
+  crude_gfx_node                                          *nodes;   
+  crrude_gfx_skin                                         *skins;
 
   crude_linear_allocator                                   linear_allocator;
   crude_string_buffer                                      gltf_absolute_filepath_string_buffer;

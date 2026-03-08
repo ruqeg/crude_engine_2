@@ -239,10 +239,10 @@ crude_transform_node_to_world
     {
       break;
     }
-		node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
+    node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
     
     node = parent;
-		parent = crude_entity_get_parent( world, parent );
+    parent = crude_entity_get_parent( world, parent );
   }
   
   return node_to_world;
