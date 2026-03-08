@@ -112,6 +112,7 @@ crude_gfx_scene_renderer_initialize
 #endif /* CRUDE_DEVELOP */
 
   scene_renderer->total_meshes_instances_buffer_capacity = CRUDE_GFX_SCENE_RENDERER_MESH_INSTANCES_BUFFER_CAPACITY;
+  scene_renderer->total_joints_matrices_buffer_capacity = CRUDE_GFX_SCENE_RENDERER_JOINT_MATRICES_BUFFER_CAPACITY;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
@@ -121,6 +122,8 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->lights_indices_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->lights_bins_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->lights_tiles_hga = crude_gfx_memory_allocation_empty( );
+  
+  scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
 
   scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws" );
   scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene" );
@@ -226,6 +229,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_commands_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_cubes_instances_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_line_vertices_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
@@ -251,6 +255,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node, &model_initialized );
   
   scene_renderer->total_meshes_instances_count = 0u;
+  scene_renderer->total_joints_matrices_count = 1u; /* reserve default matrix */
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
   {
     crude_gfx_model_renderer_resources                    *model_renderer_resources;
@@ -258,14 +263,40 @@ crude_gfx_scene_renderer_update_instances_from_node
     model_renderer_resources = &scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources;
     for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
-      if ( model_renderer_resources->nodes[ node_index ].meshes_gpu )
+      crude_gfx_node                                      *node;
+
+      node = &model_renderer_resources->nodes[ node_index ];
+
+      if ( node->meshes_gpu )
       {
-        scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes[ node_index ].meshes_gpu );
+        scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( node->meshes_gpu );
+      }
+
+      if ( node->skin != -1 )
+      {
+        crude_gfx_skin                                    *skin;
+
+        skin = &model_renderer_resources->skins[ node->skin ];
+        scene_renderer->total_joints_matrices_count += CRUDE_ARRAY_LENGTH( skin->joints );
       }
     }
   }
 
   buffers_recrteated = false;
+  
+  if ( scene_renderer->total_joints_matrices_count > scene_renderer->total_joints_matrices_buffer_capacity )
+  {
+    scene_renderer->total_joints_matrices_buffer_capacity = 4 * scene_renderer->total_joints_matrices_count; 
+
+    if ( crude_gfx_memory_allocation_valid( &scene_renderer->joint_matrices_hga ) )
+    {
+      crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
+    }
+
+    scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
+
+    buffers_recrteated = true;
+  }
   
   if ( 2.f * scene_renderer->total_meshes_instances_count > scene_renderer->total_meshes_instances_buffer_capacity )
   {
@@ -474,7 +505,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     meshes_instances_draws_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_count );
     meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw*, meshes_instances_draws_tca.cpu_address );
   
-    joint_matrices_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_joints_matrices_count );
+    joint_matrices_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_count );
     joint_matrices = CRUDE_CAST( XMFLOAT4X4*, joint_matrices_tca.cpu_address );
     
     joints_matrices_offset = 0u;
@@ -489,6 +520,9 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
       crude_gfx_model_renderer_resources                *model_renderer_resources;
 
       model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
+      model_renderer_resources = &model_renderer_resources_instance->model_renderer_resources;
+
+      joints_matrices_offset = joint_matrix_index;
 
       for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
       {
@@ -509,7 +543,14 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
             XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
             XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
             meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = node->meshes_gpu[ mesh_gpu_index ];
-            meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = joints_matrices_offset;
+            if ( node->skin != -1 )
+            {
+              meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = joints_matrices_offset;
+            }
+            else
+            {
+              meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = 0;
+            }
 
             ++scene_renderer->total_visible_meshes_instances_count;
           }
@@ -534,8 +575,6 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 		      }
         }
       }
-
-      joints_matrices_offset += joint_matrix_index;
     }
   
     crude_gfx_cmd_memory_copy( primary_cmd, joint_matrices_tca, scene_renderer->joint_matrices_hga, 0, 0 );

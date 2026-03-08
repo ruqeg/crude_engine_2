@@ -73,6 +73,7 @@ crude_gfx_model_renderer_resources_animations_update
 
     animation = &model->animations[ i ];
 
+    animation->active = true;
     if ( !animation->active )
     {
       continue;

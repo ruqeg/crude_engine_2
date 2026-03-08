@@ -85,7 +85,7 @@ crude_gfx_transparent_pass_render
     push_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
-    push_constant.joint_matrices = pass->scene_renderer->model_renderer_resources_manager->joint_matrices_hga.gpu_address;
+    push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_draw_mesh_task_indirect_count(

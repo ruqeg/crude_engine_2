@@ -89,7 +89,7 @@ typedef struct crude_gfx_model_renderer_resources
 {
   crude_gfx_node                                          *nodes;
   crude_gfx_skin                                          *skins;
-  crude_gfx_animation                                         *animations;
+  crude_gfx_animation                                     *animations;
 } crude_gfx_model_renderer_resources;
 
 CRUDE_API void
