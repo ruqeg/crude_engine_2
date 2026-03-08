@@ -38,9 +38,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_texture_handle                                *images;
   crude_gfx_memory_allocation                             *buffers;
 
-  crude_gfx_node                                          *nodes;   
-  crrude_gfx_skin                                         *skins;
-
   crude_linear_allocator                                   linear_allocator;
   crude_string_buffer                                      gltf_absolute_filepath_string_buffer;
   crude_string_buffer                                      image_absolute_filepath_string_buffer;
@@ -60,10 +57,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
   uint64                                                   total_meshlets_vertices_count;
   uint64                                                   total_meshlets_vertices_indices_count;
   uint64                                                   total_meshlets_triangles_indices_count;
-
-  /* Animation */
-  crude_gfx_memory_allocation                              joint_matrices_hga;
-  uint64                                                   total_joint_matrices_count;
 
   /* Common */
   crude_gfx_memory_allocation                              meshes_draws_hga;

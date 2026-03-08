@@ -38,25 +38,58 @@ typedef struct crude_gfx_node
   int64                                                    skin;
   int64                                                    parent;
   int64                                                   *childrens;
+  int64                                                   *meshes_gpu;
   crude_transform                                          transform;
 } crude_gfx_node;
 
-typedef struct crrude_gfx_skin
+typedef enum crude_gfx_animation_channel_path
+{
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_TRANSLATION,
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_ROTATION,
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_SCALE
+} crude_gfx_animation_channel_path;
+
+typedef enum crude_gfx_animation_sampler_interpolation_type
+{
+  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR
+} crude_gfx_animation_sampler_interpolation_type;
+
+typedef struct crude_gfx_animation_sampler
+{
+  crude_gfx_animation_sampler_interpolation_type           interpolation;
+  float32                                                 *inputs;
+  XMFLOAT4                                                *outputs;
+} crude_gfx_animation_sampler;
+
+typedef struct crude_gfx_animation_channel
+{
+  uint32                                                   sampler_index;
+  crude_gfx_animation_channel_path                         path;
+  uint64                                                   node;
+} crude_gfx_animation_channel;
+
+typedef struct crude_gfx_animation
+{
+  float32                                                  current_time;
+  float32                                                  start;
+  float32                                                  end;
+  crude_gfx_animation_channel                             *channels;
+  crude_gfx_animation_sampler                             *samplers;
+  char                                                     name[ CRUDE_ANIMATION_NAME_LENGTH_MAX ];
+  bool                                                     active;
+} crude_gfx_animation;
+
+typedef struct crude_gfx_skin
 {
   XMFLOAT4X4                                              *inverse_bind_matrices;
-} crrude_gfx_skin;
-
-typedef struct crude_gfx_mesh_instance_cpu
-{
-  //XMFLOAT4X4                                               mesh_to_model;
-  uint32                                                   mesh_gpu_index;
-  uint32                                                   node_index;
-  uint32                                                   joints_matrices_offset;
-} crude_gfx_mesh_instance_cpu;
+  int64                                                   *joints;
+} crude_gfx_skin;
 
 typedef struct crude_gfx_model_renderer_resources
 {
-  crude_gfx_mesh_instance_cpu                             *meshes_instances;
+  crude_gfx_node                                          *nodes;
+  crude_gfx_skin                                          *skins;
+  crude_gfx_animation                                         *animations;
 } crude_gfx_model_renderer_resources;
 
 CRUDE_API void
@@ -70,6 +103,14 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 XMMATRIX
 crude_gfx_node_to_world
 (
-  _In_ crude_gfx_model_renderer_resources_manager const   *manager,
+  _In_ crude_gfx_model_renderer_resources const           *model,
   _In_ uint64                                              node_index
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_animations_update
+(
+  _In_ crude_gfx_model_renderer_resources const           *model,
+  _In_ crude_ecs                                          *world,
+  _In_ float32                                             delta_time
 );

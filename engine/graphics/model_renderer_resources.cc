@@ -33,7 +33,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 XMMATRIX
 crude_gfx_node_to_world
 (
-  _In_ crude_gfx_model_renderer_resources_manager const   *manager,
+  _In_ crude_gfx_model_renderer_resources const           *model,
   _In_ uint64                                              node_index
 )
 {
@@ -42,7 +42,7 @@ crude_gfx_node_to_world
   XMMATRIX                                                 node_to_world;
   XMMATRIX                                                 node_to_parent;
   
-  node = &manager->nodes[ node_index ];
+  node = &model->nodes[ node_index ];
   node_to_world = node_to_parent = crude_transform_node_to_parent( &node->transform );
   current_parent_index = node->parent;
 
@@ -50,11 +50,86 @@ crude_gfx_node_to_world
   {
     crude_gfx_node                                        *current_parent;
 
-    current_parent = &manager->nodes[ current_parent_index ];
+    current_parent = &model->nodes[ current_parent_index ];
 
     node_to_world = XMMatrixMultiply( crude_transform_node_to_parent( &current_parent->transform ), node_to_parent );
     current_parent_index = current_parent->parent;
   }
 
   return node_to_world;
+}
+
+void
+crude_gfx_model_renderer_resources_animations_update
+(
+  _In_ crude_gfx_model_renderer_resources const           *model,
+  _In_ crude_ecs                                          *world,
+  _In_ float32                                             delta_time
+)
+{
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model->animations ); ++i )
+  {
+    crude_gfx_animation                                   *animation;
+
+    animation = &model->animations[ i ];
+
+    if ( !animation->active )
+    {
+      continue;
+    }
+
+    animation->current_time += delta_time;
+    if ( animation->current_time > animation->end )
+    {
+      animation->current_time -= animation->end;
+    }
+
+    for ( uint32 channel_index = 0u; channel_index < CRUDE_ARRAY_LENGTH( animation->channels ); ++channel_index )
+    {
+      crude_gfx_animation_channel                         *channel; 
+      crude_gfx_animation_sampler                         *sampler;
+      
+      channel = &animation->channels[ channel_index ];
+      sampler = &animation->samplers[ channel->sampler_index ];
+
+      if ( sampler->interpolation != CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR )
+      {
+        CRUDE_ASSERT( false );
+        continue;
+      }
+
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( sampler->inputs ) - 1; ++i )
+      {
+        if ( ( animation->current_time >= sampler->inputs[ i ] ) && ( animation->current_time <= sampler->inputs[ i + 1 ] ) )
+        {
+          crude_transform                                 *transform;
+          XMVECTOR                                         x, y;
+          float32                                          t;
+
+          t = ( animation->current_time - sampler->inputs[ i ] ) / ( sampler->inputs[ i + 1 ] - sampler->inputs[ i ] );
+
+          transform = &model->nodes[ channel->node ].transform;;
+
+          if ( channel->path == CRUDE_GFX_ANIMATION_CHANNEL_PATH_TRANSLATION )
+          {
+            x = XMLoadFloat4( &sampler->outputs[ i ] );
+            y = XMLoadFloat4( &sampler->outputs[ i + 1 ] );
+            XMStoreFloat3( &transform->translation, XMVectorLerp( x, y, t ) );
+          }
+          if ( channel->path == CRUDE_GFX_ANIMATION_CHANNEL_PATH_ROTATION )
+          {
+            x = XMLoadFloat4( &sampler->outputs[ i ] );
+            y = XMLoadFloat4( &sampler->outputs[ i + 1 ] );
+            XMStoreFloat4( &transform->rotation, XMQuaternionNormalize( XMQuaternionSlerp( x, y, t ) ) );
+          }
+          if ( channel->path == CRUDE_GFX_ANIMATION_CHANNEL_PATH_SCALE )
+          {
+            x = XMLoadFloat4( &sampler->outputs[ i ] );
+            y = XMLoadFloat4( &sampler->outputs[ i + 1 ] );
+            XMStoreFloat3( &transform->scale, XMVectorLerp( x, y, t ) );
+          }
+        }
+      }
+    }
+  }
 }

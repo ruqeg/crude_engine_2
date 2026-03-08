@@ -146,10 +146,13 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
   uint32                                                   total_meshes_instances_count;
+  uint32                                                   total_joints_matrices_count;
   crude_gfx_memory_allocation                              meshes_instances_draws_hga;
   crude_gfx_memory_allocation                              mesh_task_indirect_commands_hga;
   crude_gfx_memory_allocation                              mesh_task_indirect_count_hga;
   crude_gfx_memory_allocation                              mesh_task_indirect_commands_culled_hga;
+
+  crude_gfx_memory_allocation                              joint_matrices_hga;
   
   uint32                                                   total_meshes_instances_buffer_capacity;
 

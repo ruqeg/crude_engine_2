@@ -19,7 +19,7 @@
  * Scene Renderer Other
  */
 static void
-update_dynamic_buffers_
+crude_gfx_scene_renderer_update_dynamic_buffers_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
@@ -253,7 +253,16 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->total_meshes_instances_count = 0u;
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
   {
-    scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources.meshes_instances );
+    crude_gfx_model_renderer_resources                    *model_renderer_resources;
+    
+    model_renderer_resources = &scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources;
+    for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
+    {
+      if ( model_renderer_resources->nodes[ node_index ].meshes_gpu )
+      {
+        scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes[ node_index ].meshes_gpu );
+      }
+    }
   }
 
   buffers_recrteated = false;
@@ -334,7 +343,7 @@ crude_gfx_scene_renderer_submit_draw_task
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
   crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
-  update_dynamic_buffers_( scene_renderer, primary_cmd );
+  crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
   crude_gfx_cmd_pop_marker( primary_cmd );
   crude_gfx_queue_cmd( primary_cmd );
@@ -404,7 +413,7 @@ crude_gfx_scene_renderer_on_resize
  * Scene Renderer Other
  */
 static void
-update_dynamic_buffers_
+crude_gfx_scene_renderer_update_dynamic_buffers_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
@@ -453,42 +462,83 @@ update_dynamic_buffers_
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
   }
   
-  /* Update meshes instanse draws buffers*/
+  /* Update meshes instanse draws & joints matrices buffers */
   {
     crude_gfx_mesh_instance_draw                          *meshes_instances_draws;
+    XMFLOAT4X4                                            *joint_matrices;
     crude_gfx_memory_allocation                            meshes_instances_draws_tca;
+    crude_gfx_memory_allocation                            joint_matrices_tca;
+    uint64                                                 joint_matrix_index;
+    uint64                                                 joints_matrices_offset;
 
     meshes_instances_draws_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_count );
     meshes_instances_draws = CRUDE_CAST( crude_gfx_mesh_instance_draw*, meshes_instances_draws_tca.cpu_address );
   
+    joint_matrices_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_joints_matrices_count );
+    joint_matrices = CRUDE_CAST( XMFLOAT4X4*, joint_matrices_tca.cpu_address );
+    
+    joints_matrices_offset = 0u;
+    joint_matrix_index = 0u;
+    XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], XMMatrixIdentity( ) );
+
     scene_renderer->total_visible_meshes_instances_count = 0u;
-    for ( uint32 model_instance_index = 0; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
+
+    for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
     {
       crude_gfx_model_renderer_resources_instance       *model_renderer_resources_instance;
+      crude_gfx_model_renderer_resources                *model_renderer_resources;
 
       model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
-      
-      for ( uint32 model_mesh_instance_index = 0; model_mesh_instance_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->model_renderer_resources.meshes_instances ); ++model_mesh_instance_index )
+
+      for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
       {
         XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
-        crude_gfx_mesh_instance_cpu                       *mesh_instance_cpu;
+        crude_gfx_node                                    *node;
         
-        mesh_instance_cpu = &model_renderer_resources_instance->model_renderer_resources.meshes_instances[ model_mesh_instance_index ];
+        node = &model_renderer_resources->nodes[ node_index ];
         
-        mesh_to_model = crude_gfx_node_to_world( scene_renderer->model_renderer_resources_manager, mesh_instance_cpu->node_index );
-        model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
-        
-        mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
+        if ( node->meshes_gpu )
+        {
+          for ( uint32 mesh_gpu_index = 0; mesh_gpu_index < CRUDE_ARRAY_LENGTH( node->meshes_gpu ); ++mesh_gpu_index )
+          {
+            mesh_to_model = crude_gfx_node_to_world( &model_renderer_resources_instance->model_renderer_resources, node_index );
+            model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
+            
+            mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
 
-        XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
-        XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
-        meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = mesh_instance_cpu->mesh_gpu_index;
-        meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = mesh_instance_cpu->joints_matrices_offset;
+            XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
+            XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
+            meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = node->meshes_gpu[ mesh_gpu_index ];
+            meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = joints_matrices_offset;
 
-        ++scene_renderer->total_visible_meshes_instances_count;
+            ++scene_renderer->total_visible_meshes_instances_count;
+          }
+        }
+
+        if ( node->skin != -1 )
+        {
+          crude_gfx_skin                                      *skin;
+          XMMATRIX                                             inverse_transform;
+
+          skin = &model_renderer_resources->skins[ node->skin ];
+
+          inverse_transform = XMMatrixInverse( NULL, crude_gfx_node_to_world( model_renderer_resources, node_index ) );
+		      for ( uint64 i = 0; i < CRUDE_ARRAY_LENGTH( skin->joints ); ++i )
+		      {
+            XMMATRIX                                           joint_matrix, inverse_bind_matrix;
+
+            inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ i ] );
+		      	joint_matrix = XMMatrixMultiply( crude_gfx_node_to_world( model_renderer_resources, skin->joints[ i ] ), inverse_bind_matrix );
+		      	joint_matrix = XMMatrixMultiply( inverse_transform, joint_matrix );
+            XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], joint_matrix );
+		      }
+        }
       }
-    }
 
+      joints_matrices_offset += joint_matrix_index;
+    }
+  
+    crude_gfx_cmd_memory_copy( primary_cmd, joint_matrices_tca, scene_renderer->joint_matrices_hga, 0, 0 );
     crude_gfx_cmd_memory_copy( primary_cmd, meshes_instances_draws_tca, scene_renderer->meshes_instances_draws_hga, 0, 0 );
   }
   
