@@ -11,7 +11,7 @@
 	"children":	[{
 			"name":	"dna",
 			"transform":	{
-				"translation":	[0, 0, 0],
+				"translation":	[0, 6.4815049171447754, 0],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -44,7 +44,7 @@
 		}, {
 			"name":	"model",
 			"transform":	{
-				"translation":	[0, 0, 0],
+				"translation":	[0, -19.230560302734375, 0],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
@@ -54,15 +54,15 @@
 				}],
 			"children":	[]
 		}, {
-			"name":	"skin",
+			"name":	"portal_child",
 			"transform":	{
-				"translation":	[0, 4.4272689819335938, -21.170158386230469],
+				"translation":	[0, 0, 0],
 				"rotation":	[0, 0, 0, 1],
-				"scale":	[5, 5, 5]
+				"scale":	[1, 1, 1]
 			},
 			"components":	[{
 					"type":	"crude_gltf",
-					"path":	"game\\models\\SimpleSkin.gltf"
+					"path":	"game\\models\\portal2.gltf"
 				}],
 			"children":	[]
 		}, {

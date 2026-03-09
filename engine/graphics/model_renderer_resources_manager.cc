@@ -218,6 +218,11 @@ crude_gfx_model_renderer_resources_manager_deintialize
       for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.animations ); ++k )
       {
         CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].channels );
+        for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( resource.animations[ k ].samplers ); ++j )
+        {
+          CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers[ j ].inputs );
+          CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers[ j ].outputs );
+        }
         CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers );
       }
       CRUDE_ARRAY_DEINITIALIZE( resource.animations );
@@ -1292,6 +1297,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
     gltf_node = &gltf->nodes[ i ];
     node = &model_renderer_resources->nodes[ i ];
     
+    crude_string_copy( node->name, gltf_node->name ? gltf_node->name : "None", sizeof( node->name ) );
+
     if ( gltf_node->skin )
     {
       node->skin = cgltf_skin_index( gltf, gltf_node->skin );
@@ -1353,26 +1360,27 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
   _In_ uint32                                              vertices_offset
 )
 {
-  XMFLOAT4                                                *primitive_tangents;
-  XMFLOAT3                                                *primitive_positions;
-  XMFLOAT3                                                *primitive_normals;
-  XMFLOAT2                                                *primitive_texcoords;
-  uint8                                                   *primitive_joints;
-  XMFLOAT4                                                *primitive_weights;
+  uint8                                                   *primitive_tangents_data;
+  uint8                                                   *primitive_positions_data;
+  uint8                                                   *primitive_normals_data;
+  uint8                                                   *primitive_texcoords_data;
+  uint8                                                   *primitive_joints_data;
+  uint8                                                   *primitive_weights_data;
+  uint32                                                   primitive_positions_stride;
+  uint32                                                   primitive_tangents_stride;
+  uint32                                                   primitive_texcoords_stride;
   uint32                                                   primitive_joints_stride;
   uint32                                                   primitive_weights_stride;
   uint32                                                   primitive_normals_stride;
   cgltf_component_type                                     primitive_joints_type;
   uint32                                                   meshlet_vertices_count;
   
-  primitive_tangents = NULL;
-  primitive_positions = NULL;
-  primitive_normals = NULL;
-  primitive_texcoords = NULL;
-  primitive_weights = NULL;
-  primitive_joints = NULL;
+  primitive_tangents_data = primitive_positions_data = primitive_normals_data = NULL;
+  primitive_texcoords_data = primitive_weights_data = primitive_joints_data = NULL;
 
-  primitive_joints_stride = primitive_normals_stride = primitive_weights_stride = 0;
+  primitive_joints_stride = primitive_positions_stride = 0;
+  primitive_normals_stride = primitive_weights_stride = 0;
+
   meshlet_vertices_count = primitive->attributes[ 0 ].data->count;
   
   for ( uint32 i = 0; i < primitive->attributes_count; ++i )
@@ -1386,29 +1394,29 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
     case cgltf_attribute_type_position:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT3 ) );
-      primitive_positions = CRUDE_CAST( XMFLOAT3*, attribute_data );
+      primitive_positions_stride = attribute->data->stride;
+      primitive_positions_data = CRUDE_CAST( uint8*, attribute_data );
       break;
     }
     case cgltf_attribute_type_tangent:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT4 ) );
-      primitive_tangents = CRUDE_CAST( XMFLOAT4*, attribute_data );
+      primitive_tangents_data = CRUDE_CAST( uint8*, attribute_data );
+      primitive_tangents_stride = attribute->data->stride;
       break;
     }
     case cgltf_attribute_type_normal:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
       primitive_normals_stride = attribute->data->stride;
-      primitive_normals = CRUDE_CAST( XMFLOAT3*, attribute_data );
+      primitive_normals_data = CRUDE_CAST( uint8*, attribute_data );
       break;
     }
     case cgltf_attribute_type_texcoord:
     {
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec2 );
-      CRUDE_ASSERT( attribute->data->stride == sizeof( XMFLOAT2 ) );
-      primitive_texcoords = CRUDE_CAST( XMFLOAT2*, attribute_data );
+      primitive_texcoords_data = CRUDE_CAST( uint8*, attribute_data );
+      primitive_texcoords_stride = attribute->data->stride;
       break;
     }
     case cgltf_attribute_type_joints:
@@ -1416,79 +1424,101 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlet_vertices_
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
 
       primitive_joints_stride = attribute->data->stride;
-      primitive_joints = CRUDE_CAST( uint8*, attribute_data );
+      primitive_joints_data = CRUDE_CAST( uint8*, attribute_data );
       primitive_joints_type = attribute->data->component_type;
       break;
     }
     case cgltf_attribute_type_weights:
     {
-      primitive_weights_stride = attribute->data->stride;
       CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
-      primitive_weights = CRUDE_CAST( XMFLOAT4*, attribute_data );
+      primitive_weights_data = CRUDE_CAST( uint8*, attribute_data );
+      primitive_weights_stride = attribute->data->stride;
       break;
     }
     }
   }
+  
+  CRUDE_ASSERT( primitive_positions_data );
 
   for ( uint32 i = 0; i < meshlet_vertices_count; ++i )
   {
-    CRUDE_ASSERT( primitive_positions );
     
     crude_gfx_vertex *vertex = &vertices[ i + vertices_offset];
 
-    vertex->position.x = primitive_positions[ i ].x;
-    vertex->position.y = primitive_positions[ i ].y;
-    vertex->position.z = primitive_positions[ i ].z;
+    vertex->position = *CRUDE_CAST( XMFLOAT3*, primitive_positions_data );
+    primitive_positions_data += primitive_positions_stride;
 
-    if ( primitive_normals )
+    if ( primitive_normals_data )
     {
-      vertex->normal[ 0 ] = ( primitive_normals->x + 1.0f ) * 127.0f;
-      vertex->normal[ 1 ] = ( primitive_normals->y + 1.0f ) * 127.0f;
-      vertex->normal[ 2 ] = ( primitive_normals->z + 1.0f ) * 127.0f;
-      primitive_normals = CRUDE_CAST( XMFLOAT3*, CRUDE_CAST( uint8*, primitive_normals ) + primitive_normals_stride );
+      XMFLOAT3                                            *normal;
+      
+      normal = CRUDE_CAST( XMFLOAT3*, primitive_normals_data );
+
+      vertex->normal[ 0 ] = ( normal->x + 1.0f ) * 127.0f;
+      vertex->normal[ 1 ] = ( normal->y + 1.0f ) * 127.0f;
+      vertex->normal[ 2 ] = ( normal->z + 1.0f ) * 127.0f;
+
+      primitive_normals_data += primitive_normals_stride;
     }
 
-    if ( primitive_tangents  )
+    if ( primitive_tangents_data  )
     {
-      vertex->tangent[ 0 ] = ( primitive_tangents[ i ].x + 1.0f ) * 127.0f;
-      vertex->tangent[ 1 ] = ( primitive_tangents[ i ].y + 1.0f ) * 127.0f;
-      vertex->tangent[ 2 ] = ( primitive_tangents[ i ].z + 1.0f ) * 127.0f;
-      vertex->tangent[ 3 ] = ( primitive_tangents[ i ].w + 1.0f ) * 127.0f;
+      XMFLOAT4                                            *tangent;
+      
+      tangent = CRUDE_CAST( XMFLOAT4*, primitive_tangents_data );
+
+      vertex->tangent[ 0 ] = ( tangent->x + 1.0f ) * 127.0f;
+      vertex->tangent[ 1 ] = ( tangent->y + 1.0f ) * 127.0f;
+      vertex->tangent[ 2 ] = ( tangent->z + 1.0f ) * 127.0f;
+      vertex->tangent[ 3 ] = ( tangent->w + 1.0f ) * 127.0f;
+
+      primitive_tangents_data += primitive_tangents_stride;
     }
 
-    if ( primitive_texcoords )
+    if ( primitive_texcoords_data )
     {
-      vertex->texcoords[ 0 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].x );
-      vertex->texcoords[ 1 ] = meshopt_quantizeHalf( primitive_texcoords[ i ].y );
+      XMFLOAT2                                            *texcoord;
+      
+      texcoord = CRUDE_CAST( XMFLOAT2*, primitive_texcoords_data );
+
+      vertex->texcoords[ 0 ] = meshopt_quantizeHalf( texcoord->x );
+      vertex->texcoords[ 1 ] = meshopt_quantizeHalf( texcoord->y );
+
+      primitive_texcoords_data += primitive_texcoords_stride;
     }
 
-    if ( primitive_weights )
+    if ( primitive_weights_data )
     {
-      vertex->joint_weights = *primitive_weights;
-      primitive_weights = CRUDE_CAST( XMFLOAT4*, CRUDE_CAST( uint8*, primitive_weights ) + primitive_weights_stride );
+      XMFLOAT4                                            *weight;
+      
+      weight = CRUDE_CAST( XMFLOAT4*, primitive_weights_data );
+
+      vertex->joint_weights = *weight;
+
+      primitive_weights_data += primitive_weights_stride;
     }
 
-    if ( primitive_joints )
+    if ( primitive_joints_data )
     {
       if ( primitive_joints_type == cgltf_component_type_r_8u  )
       {
-        vertex->joint_indices.x = primitive_joints[ 0 ];
-        vertex->joint_indices.y = primitive_joints[ 1 ];
-        vertex->joint_indices.z = primitive_joints[ 2 ];
-        vertex->joint_indices.w = primitive_joints[ 3 ];
+        vertex->joint_indices.x = primitive_joints_data[ 0 ];
+        vertex->joint_indices.y = primitive_joints_data[ 1 ];
+        vertex->joint_indices.z = primitive_joints_data[ 2 ];
+        vertex->joint_indices.w = primitive_joints_data[ 3 ];
       }
       else if ( primitive_joints_type == cgltf_component_type_r_16u )
       {
-        vertex->joint_indices.x = CRUDE_CAST( uint16*, primitive_joints )[ 0 ];
-        vertex->joint_indices.y = CRUDE_CAST( uint16*, primitive_joints )[ 1 ];
-        vertex->joint_indices.z = CRUDE_CAST( uint16*, primitive_joints )[ 2 ];
-        vertex->joint_indices.w = CRUDE_CAST( uint16*, primitive_joints )[ 3 ];
+        vertex->joint_indices.x = CRUDE_CAST( uint16*, primitive_joints_data )[ 0 ];
+        vertex->joint_indices.y = CRUDE_CAST( uint16*, primitive_joints_data )[ 1 ];
+        vertex->joint_indices.z = CRUDE_CAST( uint16*, primitive_joints_data )[ 2 ];
+        vertex->joint_indices.w = CRUDE_CAST( uint16*, primitive_joints_data )[ 3 ];
       }
       
-      primitive_joints += primitive_joints_stride;
+      primitive_joints_data += primitive_joints_stride;
     }
 
-    if ( !primitive_weights && !primitive_joints )
+    if ( !primitive_weights_data && !primitive_joints_data )
     {
       vertex->joint_weights = CRUDE_COMPOUNT( XMFLOAT4, { 1, 0, 0, 0 } );
       vertex->joint_indices = CRUDE_COMPOUNT_EMPTY( XMFLOAT4 );
@@ -1604,7 +1634,11 @@ crude_gfx_model_renderer_resources_manager_load_animations_
     animation = &model_renderer_resources->animations[ animation_index ];
     crude_string_copy( animation->name, gltf_animation->name, sizeof( animation->name ) );
 
+    animation->loop = false;
+    animation->active = false;
     animation->current_time = 0.f;
+    animation->start = 0.f;
+    animation->end = 0.f;
 
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( animation->samplers, gltf_animation->samplers_count, crude_heap_allocator_pack( manager->allocator ) );
 
@@ -1624,7 +1658,8 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       }
       else
       {
-        CRUDE_ASSERT( false );
+        sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR; 
+        //CRUDE_ASSERT( false );
       }
     
       inputs_data = CRUDE_CAST( uint8*, gltf_sampler->input->buffer_view->buffer->data ) + gltf_sampler->input->buffer_view->offset;
@@ -1649,7 +1684,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       }
     
       CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sampler->outputs, gltf_sampler->output->count, crude_heap_allocator_pack( manager->allocator ) );
-      outputs_data = CRUDE_CAST( uint8*, gltf_sampler->output->buffer_view->buffer->data ) + gltf_sampler->output->buffer_view->offset;
+      outputs_data = CRUDE_CAST( uint8*, gltf_sampler->output->buffer_view->buffer->data ) + gltf_sampler->output->buffer_view->offset + gltf_sampler->output->offset;
       
       for ( uint32 i = 0; i < gltf_sampler->output->count; ++i )
       {

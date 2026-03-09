@@ -522,20 +522,20 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
       model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
       model_renderer_resources = &model_renderer_resources_instance->model_renderer_resources;
 
-      joints_matrices_offset = joint_matrix_index;
-
       for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
       {
         XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
         crude_gfx_node                                    *node;
         
         node = &model_renderer_resources->nodes[ node_index ];
+
+        joints_matrices_offset = joint_matrix_index;
         
         if ( node->meshes_gpu )
         {
           for ( uint32 mesh_gpu_index = 0; mesh_gpu_index < CRUDE_ARRAY_LENGTH( node->meshes_gpu ); ++mesh_gpu_index )
           {
-            mesh_to_model = crude_gfx_node_to_world( &model_renderer_resources_instance->model_renderer_resources, node_index );
+            mesh_to_model = crude_gfx_node_to_world( model_renderer_resources, node_index );
             model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
             
             mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
@@ -569,9 +569,8 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
             XMMATRIX                                           joint_matrix, inverse_bind_matrix;
 
             inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ i ] );
-		      	joint_matrix = XMMatrixMultiply( crude_gfx_node_to_world( model_renderer_resources, skin->joints[ i ] ), inverse_bind_matrix );
-		      	joint_matrix = XMMatrixMultiply( inverse_transform, joint_matrix );
-            XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], joint_matrix );
+            joint_matrix = crude_gfx_node_to_world( model_renderer_resources, skin->joints[ i ] );
+            XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), inverse_transform ) );
 		      }
         }
       }

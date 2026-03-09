@@ -178,6 +178,7 @@ void main()
   {
     frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
   }
+  frustum_visible = true;
   
   bool occlusion_visible = false;
   if ( frustum_visible )
@@ -254,8 +255,8 @@ void main()
       vertices.data[ vertex_index ].joint_weights.y * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.y ) ] +
       vertices.data[ vertex_index ].joint_weights.z * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.z ) ] +
       vertices.data[ vertex_index ].joint_weights.w * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.w ) ];
-    vec4 skinned_position = mesh_position * mesh_to_skin;
-    vec4 world_position = skinned_position * mesh_to_world;
+    vec4 skin_position = mesh_position * mesh_to_skin;
+    vec4 world_position = skin_position * mesh_to_world;
 
     vec4 view_position = world_position * scene.data.camera.world_to_view;
     

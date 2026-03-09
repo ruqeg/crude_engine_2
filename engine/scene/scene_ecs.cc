@@ -134,7 +134,19 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
 {
+  crude_gfx_model_renderer_resources                       model_renderer_resources;
+
   CRUDE_IMGUI_START_OPTIONS;
+
+  if ( component->relative_filepath[ 0 ] )
+  {
+    model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, component->relative_filepath, NULL );
+  }
+  else
+  {
+    model_renderer_resources = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
+  }
+
   CRUDE_IMGUI_OPTION( "Hidden", {
     ImGui::Checkbox( "##Hidden", &component->hidden );
   } );
@@ -158,6 +170,29 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       ImGui::EndDragDropTarget();
     }
   } );
+  
+  CRUDE_IMGUI_OPTION( "Animations", {
+    if ( model_renderer_resources.animations )
+    {
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources.animations ); ++i )
+      {
+        crude_gfx_animation                               *animation;
+
+        animation = &model_renderer_resources.animations[ i ];
+        
+        ImGui::Spacing( );
+        
+        if ( ImGui::TreeNodeEx( ( void* )( intptr_t )i, ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_OpenOnDoubleClick, animation->name ) )
+        {
+          ImGui::SliderFloat( "Current", &animation->current_time, animation->start, animation->end );
+          ImGui::Checkbox( "Active", &animation->active );
+          ImGui::Checkbox( "Loop", &animation->loop );
+          
+          ImGui::TreePop( );
+        }
+      }
+    }
+    } );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )

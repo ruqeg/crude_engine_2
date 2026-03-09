@@ -5,6 +5,7 @@
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
 #include <engine/physics/physics_resources_manager.h>
+#include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_node_manager crude_node_manager;
 
@@ -31,12 +32,14 @@ typedef struct crude_node_manager_creation
   crude_heap_allocator                                    *allocator;
   crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
   crude_scene_parse_all_components_to_json_func            additional_parse_all_components_to_json_func;
+  crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
   char const                                              *resources_absolute_directory;
 } crude_node_manager_creation;
 
 typedef struct crude_node_manager
 {
   /* Context */
+  crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;

@@ -766,6 +766,7 @@ crude_engine_initialize_scene_
   node_manager_creation.physics_resources_manager = &engine->physics_resources_manager;
   node_manager_creation.collisions_resources_manager = &engine->collision_resources_manager;
   node_manager_creation.allocator = &engine->common_allocator;
+  node_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
   crude_node_manager_initialize( &engine->node_manager, &node_manager_creation );
 }
 

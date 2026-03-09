@@ -40,6 +40,7 @@ typedef struct crude_gfx_node
   int64                                                   *childrens;
   int64                                                   *meshes_gpu;
   crude_transform                                          transform;
+  char                                                     name[ CRUDE_GFX_NODE_NAME_LENGTH_MAX ];
 } crude_gfx_node;
 
 typedef enum crude_gfx_animation_channel_path
@@ -77,6 +78,7 @@ typedef struct crude_gfx_animation
   crude_gfx_animation_sampler                             *samplers;
   char                                                     name[ CRUDE_ANIMATION_NAME_LENGTH_MAX ];
   bool                                                     active;
+  bool                                                     loop;
 } crude_gfx_animation;
 
 typedef struct crude_gfx_skin

@@ -63,6 +63,7 @@ crude_node_manager_initialize
   manager->resources_absolute_directory = creation->resources_absolute_directory;
   manager->physics_resources_manager = creation->physics_resources_manager;
   manager->collisions_resources_manager = creation->collisions_resources_manager;
+  manager->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   manager->allocator = creation->allocator;
 
   CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
