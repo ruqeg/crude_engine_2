@@ -173,12 +173,7 @@ void main()
   
   vec4 view_center = world_center * scene.data.camera.world_to_view;
 
-  bool frustum_visible = accept;
-  for ( uint i = 0; i < 6; ++i )
-  {
-    frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
-  }
-  frustum_visible = true;
+  bool frustum_visible = accept && crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
   
   bool occlusion_visible = false;
   if ( frustum_visible )

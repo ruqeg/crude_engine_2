@@ -5,9 +5,9 @@
 //#define LIGHT_LUT
 //#define LUMINANCE_HISTOGRAM_GENERATION
 //#define CULLING_EARLY
-//#define CULLING_LATE
+#define CULLING_LATE
 //#define DEPTH_PYRAMID
-#define SSR_COMPOSE
+//#define SSR_COMPOSE
 //#define SSR_CONVOLVE_VERTICAL
 //#define SSR_CONVOLVE_HORIZONTAL
 //#define SSR_HIT_CALCULATION
@@ -108,13 +108,10 @@ void main()
   float radius = bounding_sphere.w * scale * 1.1;
 
   vec4 view_center = world_center * scene.data.camera.world_to_view;
+  
+  //crude_debug_draw_box( debug_line_vertices, debug_counts, world_center.xyz - radius, world_center.xyz + radius, vec4( 1, 1, 1, 1 ) );
 
-  bool frustum_visible = true;
-  for ( uint i = 0; i < 6; ++i )
-  {
-    frustum_visible = frustum_visible && ( dot( scene.data.camera.frustum_planes_culling[ i ], view_center ) > -radius );
-  }
-  frustum_visible = true;
+  bool frustum_visible = crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
 
   bool occlusion_visible = false;
   if ( frustum_visible )

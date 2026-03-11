@@ -22,22 +22,6 @@
 #include <engine/graphics/passes/ssr_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
-typedef enum crude_gfx_model_renderer_resoruces_instances_type
-{
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF,
-#if CRUDE_DEVELOP
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF,
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION,
-#endif
-} crude_gfx_model_renderer_resoruces_instances_type;
-
-typedef struct crude_gfx_model_renderer_resources_instance
-{
-  XMFLOAT4X4                                               model_to_world;
-  crude_gfx_model_renderer_resources                       model_renderer_resources;
-  crude_gfx_model_renderer_resoruces_instances_type        type;
-} crude_gfx_model_renderer_resources_instance;
-
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
@@ -137,13 +121,14 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   bool                                                     imgui_pass_enalbed;
+  int64                                                    last_submit_time;
 
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_memory_allocation                              scene_hga;
 
-  crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
+  crude_gfx_model_renderer_resources_instance            **model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
 
   crude_gfx_memory_allocation                              meshes_instances_draws_hga;

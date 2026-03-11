@@ -111,20 +111,31 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
 {
   char const                                              *gltf_relative_filepath;
+  crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
 
   gltf_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
 
-  crude_memory_set( component, 0, sizeof( crude_gltf ) );
-  crude_string_copy( component->relative_filepath, gltf_relative_filepath, sizeof( component->relative_filepath ) );
+  *component = CRUDE_COMPOUNT_EMPTY( crude_gltf );
+  
+  component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+  component->model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL );
+
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   return true;
 }
 
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
 {
-  cJSON *gltf_json = cJSON_CreateObject( );     
+  cJSON                                                   *gltf_json;
+  crude_gfx_model_renderer_resources                      *model_renderer_resources;
+
+  CRUDE_ASSERT( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 );
+
+  model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager->model_renderer_resources_manager, component->model_renderer_resources_instance.model_renderer_resources_handle );
+
+  gltf_json = cJSON_CreateObject( );     
   cJSON_AddItemToObject( gltf_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_gltf ) ) );
-  cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( component->relative_filepath ) );
+  cJSON_AddItemToObject( gltf_json, "path", cJSON_CreateString( model_renderer_resources->relative_filepath ) );
   if ( component->hidden )
   {
     cJSON_AddItemToObject( gltf_json, "hidden", cJSON_CreateBool( component->hidden ) );
@@ -134,25 +145,18 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
 {
-  crude_gfx_model_renderer_resources                       model_renderer_resources;
+  crude_gfx_model_renderer_resources                      *model_renderer_resources;
 
   CRUDE_IMGUI_START_OPTIONS;
 
-  if ( component->relative_filepath[ 0 ] )
-  {
-    model_renderer_resources = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, component->relative_filepath, NULL );
-  }
-  else
-  {
-    model_renderer_resources = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
-  }
+  model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager->model_renderer_resources_manager, component->model_renderer_resources_instance.model_renderer_resources_handle );
 
   CRUDE_IMGUI_OPTION( "Hidden", {
     ImGui::Checkbox( "##Hidden", &component->hidden );
   } );
 
   CRUDE_IMGUI_OPTION( "Relative Filepath", {
-    ImGui::Text( "\"%s\"", component->relative_filepath );
+    ImGui::Text( "\"%s\"", model_renderer_resources ? model_renderer_resources->relative_filepath : "Empty" );
     if ( ImGui::BeginDragDropTarget( ) )
     {
       ImGuiPayload const                                  *im_payload;
@@ -164,7 +168,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
         replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
         if ( strstr( replace_relative_filepath, ".gltf" ) )
         {
-          crude_string_copy( component->relative_filepath, replace_relative_filepath, sizeof( component->relative_filepath ) );
+          crude_gfx_model_renderer_resources_handle        model_renderer_resources_handle;
+          model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath, NULL );
+
+          component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+          component->model_renderer_resources_instance.model_renderer_resources_handle = model_renderer_resources_handle;
         }
       }
       ImGui::EndDragDropTarget();
@@ -172,25 +180,40 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
   } );
   
   CRUDE_IMGUI_OPTION( "Animations", {
-    if ( model_renderer_resources.animations )
+    if ( model_renderer_resources )
     {
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources.animations ); ++i )
-      {
-        crude_gfx_animation                               *animation;
+      crude_gfx_animation                                 *animations;
+      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
 
-        animation = &model_renderer_resources.animations[ i ];
-        
-        ImGui::Spacing( );
-        
-        if ( ImGui::TreeNodeEx( ( void* )( intptr_t )i, ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_OpenOnDoubleClick, animation->name ) )
+      animation_instance = &component->model_renderer_resources_instance.animation_instance;
+      animations = model_renderer_resources->animations;
+      
+      ImGui::Spacing( );
+      
+      if ( ImGui::BeginCombo( "Animation", animation_instance->animation_index > -1 ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
+      {
+        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( animations ); i++ )
         {
-          ImGui::SliderFloat( "Current", &animation->current_time, animation->start, animation->end );
-          ImGui::Checkbox( "Active", &animation->active );
-          ImGui::Checkbox( "Loop", &animation->loop );
+          bool is_selected = ( animation_instance->animation_index == i );
+          if ( ImGui::Selectable( animations[ i ].name, is_selected ) )
+          {
+            animation_instance->animation_index = i;
+          }
           
-          ImGui::TreePop( );
+          if ( is_selected )
+          {
+            ImGui::SetItemDefaultFocus( );
+          }
         }
+        ImGui::EndCombo( );
       }
+
+      if ( animation_instance->animation_index != -1 )
+      {
+        ImGui::SliderFloat( "Current", &animation_instance->current_time, animations[ animation_instance->animation_index ].start, animations[ animation_instance->animation_index ].end );
+      }
+      ImGui::Checkbox( "Inverse", &animation_instance->inverse );
+      ImGui::Checkbox( "Loop", &animation_instance->loop );
     }
     } );
 }
@@ -224,88 +247,4 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_runtime )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 {
-}
-
-XMMATRIX
-crude_camera_view_to_clip
-(
-  _In_ crude_camera const                                 *camera
-)
-{
-  return XMMatrixPerspectiveFovRH( camera->fov_radians, camera->aspect_ratio, camera->near_z, camera->far_z );
-}
-
-crude_transform
-crude_transform_empty
-(
-)
-{
-  crude_transform transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
-  XMStoreFloat3( &transform.translation, XMVectorZero( ) );
-  XMStoreFloat4( &transform.rotation, XMQuaternionIdentity( ) );
-  XMStoreFloat3( &transform.scale, XMVectorSplatOne( ) );
-  return transform;
-}
-
-XMMATRIX
-crude_transform_node_to_world
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node,
-  _In_opt_ crude_transform const                          *transform
-)
-{
-  crude_transform const                                   *parent_transform;
-  XMMATRIX                                                 node_to_world;
-  crude_entity                                             parent;
-
-  if ( transform == NULL )
-  {
-    transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform );
-  }
-
-  node_to_world = crude_transform_node_to_parent( transform );
-  parent = crude_entity_get_parent( world, node );
-
-  while ( crude_entity_valid( world, parent ) )
-  {
-    parent_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, parent, crude_transform );
-    if ( !parent_transform )
-    {
-      break;
-    }
-    node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
-    
-    node = parent;
-    parent = crude_entity_get_parent( world, parent );
-  }
-  
-  return node_to_world;
-}
-
-XMMATRIX
-crude_transform_node_to_parent
-(
-  _In_ crude_transform const                              *transform
-)
-{ 
-  return XMMatrixAffineTransformation( XMLoadFloat3( &transform->scale ), XMVectorZero( ), XMLoadFloat4( &transform->rotation ), XMLoadFloat3( &transform->translation ) );
-}
-
-XMMATRIX
-crude_transform_parent_to_world
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node
-)
-{
-  crude_entity parent = crude_entity_get_parent( world, node );
-  
-  if ( crude_entity_valid( world, parent ) && CRUDE_ENTITY_HAS_COMPONENT( world, parent, crude_transform ) )
-  {
-    crude_transform *parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, parent, crude_transform );
-    return crude_transform_node_to_world( world, parent, parent_transform );
-  }
-
-  return XMMatrixIdentity( ) ;
 }

@@ -1,0 +1,95 @@
+{
+	"name":	"level_mars",
+	"transform":	{
+		"translation":	[0, 0, 0],
+		"rotation":	[0, 0, 0, 1],
+		"scale":	[1, 1, 1]
+	},
+	"components":	[{
+			"type":	"crude_level_mars"
+		}],
+	"children":	[{
+			"name":	"dna",
+			"transform":	{
+				"translation":	[0, 6.4815049171447754, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[],
+			"children":	[{
+					"name":	"dna_part1_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\DNA_Part1.gltf"
+						}],
+					"children":	[]
+				}, {
+					"name":	"dna_part2_model",
+					"transform":	{
+						"translation":	[0, 0, 0],
+						"rotation":	[0, 0, 0, 1],
+						"scale":	[1, 1, 1]
+					},
+					"components":	[{
+							"type":	"crude_gltf",
+							"path":	"game\\models\\DNA_Part2.gltf"
+						}],
+					"children":	[]
+				}]
+		}, {
+			"name":	"model",
+			"transform":	{
+				"translation":	[0, -19.230560302734375, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\Map.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"portal_child",
+			"transform":	{
+				"translation":	[-18.68437385559082, 0.8732905387878418, -38.6291275024414],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[3, 3, 3]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\portal2.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"man",
+			"transform":	{
+				"translation":	[-17.025634765625, -0.98094546794891357, -42.9134407043457],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[7, 7, 7]
+			},
+			"components":	[{
+					"type":	"crude_gltf",
+					"path":	"game\\models\\CesiumMan.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"light1",
+			"transform":	{
+				"translation":	[0, 0, 0],
+				"rotation":	[0, 0, 0, 1],
+				"scale":	[1, 1, 1]
+			},
+			"components":	[{
+					"type":	"crude_light",
+					"radius":	5,
+					"color":	[1, 1, 1],
+					"intensity":	1
+				}],
+			"children":	[]
+		}]
+}

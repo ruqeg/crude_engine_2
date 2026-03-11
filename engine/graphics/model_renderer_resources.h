@@ -1,10 +1,15 @@
 #pragma once
 
-#include <engine/scene/scene_ecs.h>
 #include <engine/graphics/gpu_device.h>
 #include <engine/graphics/shaders/common/scene.h>
 
+typedef struct crude_transform crude_transform;
 typedef struct crude_gfx_model_renderer_resources_manager crude_gfx_model_renderer_resources_manager;
+
+typedef struct crude_gfx_model_renderer_resources_handle
+{
+  uint32                                                   index;
+} crude_gfx_model_renderer_resources_handle;
 
 typedef struct crude_gfx_mesh_cpu
 {
@@ -39,7 +44,6 @@ typedef struct crude_gfx_node
   int64                                                    parent;
   int64                                                   *childrens;
   int64                                                   *meshes_gpu;
-  crude_transform                                          transform;
   char                                                     name[ CRUDE_GFX_NODE_NAME_LENGTH_MAX ];
 } crude_gfx_node;
 
@@ -71,14 +75,11 @@ typedef struct crude_gfx_animation_channel
 
 typedef struct crude_gfx_animation
 {
-  float32                                                  current_time;
   float32                                                  start;
   float32                                                  end;
   crude_gfx_animation_channel                             *channels;
   crude_gfx_animation_sampler                             *samplers;
-  char                                                     name[ CRUDE_ANIMATION_NAME_LENGTH_MAX ];
-  bool                                                     active;
-  bool                                                     loop;
+  char                                                     name[ CRUDE_GFX_ANIMATION_NAME_LENGTH_MAX ];
 } crude_gfx_animation;
 
 typedef struct crude_gfx_skin
@@ -89,10 +90,39 @@ typedef struct crude_gfx_skin
 
 typedef struct crude_gfx_model_renderer_resources
 {
-  crude_gfx_node                                          *nodes;
   crude_gfx_skin                                          *skins;
   crude_gfx_animation                                     *animations;
+  crude_gfx_node                                          *nodes;
+  crude_transform                                         *default_nodes_transforms;
+  crude_transform                                         *animated_nodes_transforms;
+  char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_gfx_model_renderer_resources;
+
+typedef enum crude_gfx_model_renderer_resoruces_instances_type
+{
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF,
+#if CRUDE_DEVELOP
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF,
+  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION,
+#endif
+} crude_gfx_model_renderer_resoruces_instances_type;
+
+typedef struct crude_gfx_model_renderer_resources_animation_instance
+{
+  MOVED NODES TO HERE!
+  int64                                                    animation_index;
+  float32                                                  current_time;
+  bool                                                     inverse;
+  bool                                                     loop;
+} crude_gfx_model_renderer_resources_animation_instance;
+
+typedef struct crude_gfx_model_renderer_resources_instance
+{
+  crude_gfx_model_renderer_resources_animation_instance    animation_instance;
+  crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
+  XMFLOAT4X4                                               model_to_world;
+  crude_gfx_model_renderer_resoruces_instances_type        type;
+} crude_gfx_model_renderer_resources_instance;
 
 CRUDE_API void
 crude_gfx_mesh_cpu_to_mesh_draw_gpu
@@ -105,14 +135,33 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 XMMATRIX
 crude_gfx_node_to_world
 (
-  _In_ crude_gfx_model_renderer_resources const           *model,
+  _In_ crude_gfx_node const                               *nodes,
+  _In_ crude_transform const                              *transforms,
   _In_ uint64                                              node_index
 );
 
 CRUDE_API void
-crude_gfx_model_renderer_resources_animations_update
+crude_gfx_model_renderer_resources_initialize
 (
-  _In_ crude_gfx_model_renderer_resources const           *model,
-  _In_ crude_ecs                                          *world,
+  _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_deinitialize
+(
+  _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
+);
+
+CRUDE_API crude_gfx_model_renderer_resources_instance
+crude_gfx_model_renderer_resources_instance_empty
+(
+);
+
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_update_animation
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
   _In_ float32                                             delta_time
 );

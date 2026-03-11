@@ -43,7 +43,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
 
-  struct { uint64 key; crude_gfx_model_renderer_resources value; } *model_hashed_name_to_model_renderer_resource;
+  struct { uint64 key; crude_gfx_model_renderer_resources_handle value; } *model_hashed_name_to_model_renderer_resource;
 
   /* For meshlet pipelines */
   crude_gfx_memory_allocation                              meshlets_hga;
@@ -59,6 +59,8 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_memory_allocation                              meshes_draws_hga;
   crude_gfx_memory_allocation                              meshes_bounds_hga;
   uint64                                                   total_meshes_count;
+
+  crude_resource_pool                                      model_renderer_resources_pool;
 } crude_gfx_model_renderer_resources_manager;
 
 CRUDE_API void
@@ -80,7 +82,7 @@ crude_gfx_model_renderer_resources_manager_clear
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 );
 
-CRUDE_API crude_gfx_model_renderer_resources
+CRUDE_API crude_gfx_model_renderer_resources_handle
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
@@ -92,4 +94,11 @@ CRUDE_API void
 crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager
+);
+
+CRUDE_API crude_gfx_model_renderer_resources*
+crude_gfx_model_renderer_resources_manager_access_model_renderer_resources
+(
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_handle            handle
 );

@@ -181,6 +181,8 @@ crude_gfx_model_renderer_resources_manager_intialize
 
   CRUDE_HASHMAP_INITIALIZE( manager->model_hashed_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
 
+  crude_resource_pool_initialize( &manager->model_renderer_resources_pool, crude_heap_allocator_pack( manager->allocator ), 1024, sizeof( crude_gfx_model_renderer_resources ) );
+
   crude_linear_allocator_initialize( &manager->linear_allocator, CRUDE_RKILO( 32 ) + 2, "crude_gfx_model_renderer_resources_manager::linear_allocator" );
   crude_string_buffer_initialize( &manager->gltf_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
   crude_string_buffer_initialize( &manager->image_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
@@ -196,39 +198,18 @@ crude_gfx_model_renderer_resources_manager_deintialize
   {
     if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
     {
-      crude_gfx_model_renderer_resources resource = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.nodes ); ++k )
-      {
-        if ( resource.nodes[ k ].meshes_gpu )
-        {
-          CRUDE_ARRAY_DEINITIALIZE( resource.nodes[ k ].meshes_gpu );
-        }
-        if ( resource.nodes[ k ].childrens )
-        {
-          CRUDE_ARRAY_DEINITIALIZE( resource.nodes[ k ].childrens );
-        }
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.nodes );
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.skins ); ++k )
-      {
-        CRUDE_ARRAY_DEINITIALIZE( resource.skins[ k ].joints );
-        CRUDE_ARRAY_DEINITIALIZE( resource.skins[ k ].inverse_bind_matrices );
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.skins );
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.animations ); ++k )
-      {
-        CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].channels );
-        for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( resource.animations[ k ].samplers ); ++j )
-        {
-          CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers[ j ].inputs );
-          CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers[ j ].outputs );
-        }
-        CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers );
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.animations );
+      crude_gfx_model_renderer_resources                  *resource;
+      crude_gfx_model_renderer_resources_handle            resource_handle;
+      
+      resource_handle = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      resource = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, resource_handle.index ) );
+      
+      crude_gfx_model_renderer_resources_deinitialize( resource );
+      crude_resource_pool_release_resource( &manager->model_renderer_resources_pool, resource_handle.index );
     }
   }
   CRUDE_HASHMAP_DEINITIALIZE( manager->model_hashed_name_to_model_renderer_resource );
+  crude_resource_pool_deinitialize( &manager->model_renderer_resources_pool );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
   {
@@ -271,31 +252,14 @@ crude_gfx_model_renderer_resources_manager_clear
   {
     if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
     {
-      crude_gfx_model_renderer_resources resource = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.nodes ); ++k )
-      {
-        if ( resource.nodes[ k ].meshes_gpu )
-        {
-          CRUDE_ARRAY_DEINITIALIZE( resource.nodes[ k ].meshes_gpu );
-        }
-        if ( resource.nodes[ k ].childrens )
-        {
-          CRUDE_ARRAY_DEINITIALIZE( resource.nodes[ k ].childrens );
-        }
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.nodes );
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.skins ); ++k )
-      {
-        CRUDE_ARRAY_DEINITIALIZE( resource.skins[ k ].joints );
-        CRUDE_ARRAY_DEINITIALIZE( resource.skins[ k ].inverse_bind_matrices );
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.skins );
-      for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( resource.animations ); ++k )
-      {
-        CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].channels );
-        CRUDE_ARRAY_DEINITIALIZE( resource.animations[ k ].samplers );
-      }
-      CRUDE_ARRAY_DEINITIALIZE( resource.animations );
+      crude_gfx_model_renderer_resources                  *resource;
+      crude_gfx_model_renderer_resources_handle            resource_handle;
+      
+      resource_handle = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      resource = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, resource_handle.index ) );
+      
+      crude_gfx_model_renderer_resources_deinitialize( resource );
+      crude_resource_pool_release_resource( &manager->model_renderer_resources_pool, resource_handle.index );
     }
     manager->model_hashed_name_to_model_renderer_resource[ i ].key = 0;
   }
@@ -342,7 +306,7 @@ crude_gfx_model_renderer_resources_manager_clear
   manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
 }
 
-crude_gfx_model_renderer_resources
+crude_gfx_model_renderer_resources_handle
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
@@ -350,7 +314,8 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
   _Out_opt_ bool                                           *model_initialized
 )
 {
-  crude_gfx_model_renderer_resources                       model_renderer_resouces;
+  crude_gfx_model_renderer_resources_handle                model_renderer_resouces_handle;
+  crude_gfx_model_renderer_resources                      *model_renderer_resouces;
   int64                                                    model_renderer_resouces_index;
   uint64                                                   filename_hashed;
 
@@ -369,9 +334,11 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
   {
     *model_initialized = true;
   }
-  model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, filepath );
-  CRUDE_HASHMAP_SET( manager->model_hashed_name_to_model_renderer_resource, filename_hashed, model_renderer_resouces );
-  return model_renderer_resouces;
+  model_renderer_resouces_handle = { crude_resource_pool_obtain_resource( &manager->model_renderer_resources_pool ) };
+  model_renderer_resouces = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, model_renderer_resouces_handle.index ) );
+  *model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, filepath );
+  CRUDE_HASHMAP_SET( manager->model_hashed_name_to_model_renderer_resource, filename_hashed, model_renderer_resouces_handle );
+  return model_renderer_resouces_handle;
 }
 
 void
@@ -388,6 +355,20 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
   }
   crude_gfx_submit_immediate( cmd );
   CRUDE_PROFILER_ZONE_END;
+}
+
+crude_gfx_model_renderer_resources*
+crude_gfx_model_renderer_resources_manager_access_model_renderer_resources
+(
+  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_handle            handle
+)
+{
+  if ( handle.index == -1 )
+  {
+    return NULL;
+  }
+  return CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, handle.index ) );
 }
 
 /**
@@ -412,6 +393,8 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
 
   model_renderer_resouces = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
   
+  crude_string_copy( model_renderer_resouces.relative_filepath, gltf_relative_filepath, sizeof( model_renderer_resouces.relative_filepath ) );
+
   images_offset = CRUDE_ARRAY_LENGTH( manager->images );
   samplers_offset = CRUDE_ARRAY_LENGTH( manager->samplers );
   buffers_offset = CRUDE_ARRAY_LENGTH( manager->buffers );
@@ -434,8 +417,6 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes, meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   
-  model_renderer_resouces = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources );
-
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading images" );
   crude_gfx_model_renderer_resources_manager_gltf_load_images_( manager, gltf, gltf_absolute_directory );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading samplers" );
@@ -1288,14 +1269,18 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 )
 {
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->nodes, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
-
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->default_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->animated_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
+  
   for ( uint32 i = 0; i < gltf->nodes_count; ++i )
   {
     cgltf_node                                            *gltf_node;
+    crude_transform                                       *transform;
     crude_gfx_node                                        *node;
 
     gltf_node = &gltf->nodes[ i ];
     node = &model_renderer_resources->nodes[ i ];
+    transform = &model_renderer_resources->default_nodes_transforms[ i ];
     
     crude_string_copy( node->name, gltf_node->name ? gltf_node->name : "None", sizeof( node->name ) );
 
@@ -1347,7 +1332,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       node->meshes_gpu = NULL;
     }
 
-    crude_gfx_model_renderer_resources_manager_get_cgltf_node_transform( gltf_node, &node->transform );
+    crude_gfx_model_renderer_resources_manager_get_cgltf_node_transform( gltf_node, transform );
+  }
+
+  for ( uint32 i = 0; i < gltf->nodes_count; ++i )
+  {
+    model_renderer_resources->animated_nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
   }
 }
 
@@ -1632,11 +1622,15 @@ crude_gfx_model_renderer_resources_manager_load_animations_
     
     gltf_animation = &gltf->animations[ animation_index ];
     animation = &model_renderer_resources->animations[ animation_index ];
-    crude_string_copy( animation->name, gltf_animation->name, sizeof( animation->name ) );
+    if ( gltf_animation->name[ 0 ] )
+    {
+      crude_string_copy( animation->name, gltf_animation->name, sizeof( animation->name ) );
+    }
+    else
+    {
+      crude_snprintf( animation->name, sizeof( animation->name ), "%s_unknown_animation_%i", model_renderer_resources->relative_filepath, animation_index );
+    }
 
-    animation->loop = false;
-    animation->active = false;
-    animation->current_time = 0.f;
     animation->start = 0.f;
     animation->end = 0.f;
 
@@ -1658,6 +1652,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       }
       else
       {
+        // !TODO
         sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR; 
         //CRUDE_ASSERT( false );
       }

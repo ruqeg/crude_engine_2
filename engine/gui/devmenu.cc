@@ -1527,13 +1527,6 @@ crude_gui_devmenu_node_inspector_draw
     ImGui::InputFloat( "radius", &light->radius );
   }
   
-  crude_gltf *gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_gltf );
-  if ( gltf && ImGui::CollapsingHeader( "crude_gltf" ) )
-  {
-    ImGui::Text( "Relative Path \"%s\"", gltf->relative_filepath );
-    ImGui::Checkbox( "Hidden", &gltf->hidden );
-  }
-  
   crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_physics_character_body_handle );
   if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) )
   {

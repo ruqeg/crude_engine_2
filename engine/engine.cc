@@ -321,13 +321,6 @@ crude_engine_update
     crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
     CRUDE_PROFILER_ZONE_END;
   }
-  
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( engine->scene_renderer.model_renderer_resoruces_instances ); ++i )
-  {
-    crude_gfx_model_renderer_resources                    *model_renderer_resources;
-    model_renderer_resources = &engine->scene_renderer.model_renderer_resoruces_instances[ i ].model_renderer_resources;
-    crude_gfx_model_renderer_resources_animations_update( model_renderer_resources, engine->world, delta_time );
-  }
 
   crude_engine_commands_manager_update( &engine->commands_manager );
 
