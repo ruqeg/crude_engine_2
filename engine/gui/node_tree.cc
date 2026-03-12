@@ -86,7 +86,7 @@ crude_gui_node_tree_queue_draw
         ImGui::Separator( );
         if ( ImGui::Button( "Apply" ) )
         {
-          crude_entity new_node = crude_entity_copy_hierarchy( world, node_tree->node_reference, node_tree->new_node_name, true, true );
+          crude_entity new_node = crude_node_copy_hierarchy( world, node_tree->node_reference, node_tree->new_node_name, true, true );
           crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, node_tree->node_reference ) );
           node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
           *selected_node = new_node;

@@ -23,8 +23,7 @@ static void
 crude_gfx_scene_renderer_update_dynamic_buffers_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd,
-  _In_ float32                                             delta_time
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
 /**
@@ -332,6 +331,41 @@ crude_gfx_scene_renderer_update_instances_from_node
 }
 
 void
+crude_gfx_scene_renderer_update_animations_from_node
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+)
+{
+  ecs_iter_t                                               children_it;
+  bool                                                     local_model_initialized;
+  XMMATRIX                                                 model_to_custom_model;
+
+  children_it = crude_ecs_children( world, node );
+  local_model_initialized = false;
+
+  model_to_custom_model = XMMatrixIdentity( );
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
+  {
+    crude_gltf                                            *child_gltf;
+    child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
+    crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, delta_time );
+  }
+
+  while ( ecs_children_next( &children_it ) )
+  {
+    for ( size_t i = 0; i < children_it.count; ++i )
+    {
+      crude_entity child = crude_entity_from_iterator( &children_it, i );
+      crude_gfx_scene_renderer_update_animations_from_node( scene_renderer, world, child, delta_time );
+    }
+  }
+}
+
+void
 crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
@@ -373,17 +407,11 @@ crude_gfx_scene_renderer_submit_draw_task
 )
 {
   crude_gfx_cmd_buffer                                    *primary_cmd;
-  int64                                                    current_time;
-  float32                                                  delta_time;
-  
-  current_time = crude_time_now( );
-  delta_time = crude_time_delta_seconds( scene_renderer->last_submit_time, current_time );
-  scene_renderer->last_submit_time = current_time;
 
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
   crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
-  crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, primary_cmd, delta_time );
+  crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
   crude_gfx_cmd_pop_marker( primary_cmd );
   crude_gfx_queue_cmd( primary_cmd );
@@ -456,8 +484,7 @@ static void
 crude_gfx_scene_renderer_update_dynamic_buffers_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_gfx_cmd_buffer                               *primary_cmd,
-  _In_ float32                                             delta_time
+  _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
   crude_gfx_device                                        *gpu;
@@ -528,18 +555,17 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     {
       crude_gfx_model_renderer_resources_instance         *model_renderer_resources_instance;
       crude_gfx_model_renderer_resources const            *model_renderer_resources;
-      crude_gfx_model_renderer_resources_animation_instance const *animation_instance;
 
       model_renderer_resources_instance = scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
       model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance->model_renderer_resources_handle );
 
-      animation_instance = NULL;
-
-      if ( model_renderer_resources_instance->animation_instance.animation_index > -1 )
-      {
-        animation_instance = &model_renderer_resources_instance->animation_instance;
-        crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance, delta_time );
-      }
+      //animation_instance = NULL;
+      //
+      //if ( model_renderer_resources_instance->animation_instance.animation_index > -1 )
+      //{
+      //  animation_instance = &model_renderer_resources_instance->animation_instance;
+      //  //crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance, delta_time );
+      //}
 
       for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
       {
@@ -552,17 +578,8 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
         
         if ( node->meshes_gpu || node->skin != -1 )
         {
-          if ( animation_instance )
-          {
-            mesh_to_model = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources->animated_nodes_transforms, node_index );
-          }
-          else
-          {
-            mesh_to_model = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources->default_nodes_transforms, node_index );
-          }
-          
+          mesh_to_model = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
           model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
-            
           mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
         }
 
@@ -600,7 +617,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
             XMMATRIX                                           joint_matrix, inverse_bind_matrix;
 
             inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ i ] );
-            joint_matrix = crude_gfx_node_to_world( model_renderer_resources->nodes, animation_instance ? model_renderer_resources->animated_nodes_transforms : model_renderer_resources->default_nodes_transforms, skin->joints[ i ] );
+            joint_matrix = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ i ] );
             XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh ) );
 		      }
         }

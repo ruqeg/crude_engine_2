@@ -85,3 +85,61 @@ crude_transform_parent_to_world
 
   return XMMatrixIdentity( ) ;
 }
+
+crude_entity
+crude_node_copy_hierarchy
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ char const                                         *name,
+  _In_ bool                                                copy_value,
+  _In_ bool                                                enabled
+)
+{
+  if ( !crude_entity_valid( world, node ) )
+  {
+    return CRUDE_COMPOUNT_EMPTY( crude_entity );
+  }
+  
+  crude_entity new_node = crude_entity_copy( world, node, copy_value );
+
+  ecs_iter_t it = crude_ecs_children( world, node );
+
+  while ( ecs_children_next( &it ) )
+  {
+    for ( size_t i = 0; i < it.count; ++i )
+    {
+      crude_entity child = crude_entity_from_iterator( &it, i );
+      crude_entity new_child = crude_node_copy_hierarchy( world, child, crude_entity_get_name( world, child ), copy_value, enabled );
+
+      crude_entity_set_parent( world, new_child, new_node );
+    }
+  }
+  
+  crude_entity_enable( world, new_node, enabled );
+  crude_entity_set_name( world, new_node, name );
+
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, new_node, crude_gltf ) )
+  {
+    crude_gltf const                                      *old_gltf;
+    crude_gltf                                            *new_gltf;
+    crude_transform const                                 *old_transforms;
+    crude_allocator_container                              allocator_container;
+    uint32                                                 nodes_count;
+
+    old_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
+    new_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, new_node, crude_gltf );
+    
+    old_transforms = old_gltf->model_renderer_resources_instance.nodes_transforms;
+    nodes_count = CRUDE_ARRAY_LENGTH( old_transforms );
+    allocator_container = CRUDE_ARRAY_ALLOCATOR( old_transforms );
+
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( new_gltf->model_renderer_resources_instance.nodes_transforms, nodes_count, allocator_container );
+    for ( uint32 i = 0; i < nodes_count; ++i )
+    {
+      new_gltf->model_renderer_resources_instance.nodes_transforms[ i ] = old_transforms[ i ];
+    }
+  }
+
+  return new_node;
+}

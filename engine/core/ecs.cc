@@ -237,42 +237,6 @@ crude_entity_copy
   return ecs_clone( world, 0, src, copy_value );
 }
 
-crude_entity
-crude_entity_copy_hierarchy
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        src,
-  _In_ char const                                         *name,
-  _In_ bool                                                copy_value,
-  _In_ bool                                                enabled
-)
-{
-  if ( !crude_entity_valid( world, src ) )
-  {
-    return CRUDE_COMPOUNT_EMPTY( crude_entity );
-  }
-  
-  crude_entity new_node = crude_entity_copy( world, src, copy_value );
-
-  ecs_iter_t it = crude_ecs_children( world, src );
-
-  while ( ecs_children_next( &it ) )
-  {
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-      crude_entity child = crude_entity_from_iterator( &it, i );
-      crude_entity new_child = crude_entity_copy_hierarchy( world, child, crude_entity_get_name( world, child ), copy_value, enabled );
-
-      crude_entity_set_parent( world, new_child, new_node );
-    }
-  }
-  
-  crude_entity_enable( world, new_node, enabled );
-  crude_entity_set_name( world, new_node, name );
-
-  return new_node;
-}
-
 void
 crude_entity_enable
 (

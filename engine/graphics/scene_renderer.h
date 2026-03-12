@@ -121,7 +121,6 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   bool                                                     imgui_pass_enalbed;
-  int64                                                    last_submit_time;
 
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data
@@ -224,6 +223,15 @@ crude_gfx_scene_renderer_update_instances_from_node
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        main_node
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_update_animations_from_node
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
 );
 
 CRUDE_API void

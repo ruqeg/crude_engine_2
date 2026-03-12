@@ -94,7 +94,6 @@ typedef struct crude_gfx_model_renderer_resources
   crude_gfx_animation                                     *animations;
   crude_gfx_node                                          *nodes;
   crude_transform                                         *default_nodes_transforms;
-  crude_transform                                         *animated_nodes_transforms;
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_gfx_model_renderer_resources;
 
@@ -109,7 +108,6 @@ typedef enum crude_gfx_model_renderer_resoruces_instances_type
 
 typedef struct crude_gfx_model_renderer_resources_animation_instance
 {
-  MOVED NODES TO HERE!
   int64                                                    animation_index;
   float32                                                  current_time;
   bool                                                     inverse;
@@ -118,6 +116,7 @@ typedef struct crude_gfx_model_renderer_resources_animation_instance
 
 typedef struct crude_gfx_model_renderer_resources_instance
 {
+  crude_transform                                         *nodes_transforms;
   crude_gfx_model_renderer_resources_animation_instance    animation_instance;
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
@@ -156,7 +155,6 @@ CRUDE_API crude_gfx_model_renderer_resources_instance
 crude_gfx_model_renderer_resources_instance_empty
 (
 );
-
 
 CRUDE_API void
 crude_gfx_model_renderer_resources_instance_update_animation

@@ -1270,7 +1270,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 {
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->nodes, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->default_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->animated_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
   
   for ( uint32 i = 0; i < gltf->nodes_count; ++i )
   {
@@ -1333,11 +1332,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
     }
 
     crude_gfx_model_renderer_resources_manager_get_cgltf_node_transform( gltf_node, transform );
-  }
-
-  for ( uint32 i = 0; i < gltf->nodes_count; ++i )
-  {
-    model_renderer_resources->animated_nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
   }
 }
 

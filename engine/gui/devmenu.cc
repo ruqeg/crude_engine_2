@@ -1408,7 +1408,7 @@ crude_gui_devmenu_nodes_tree_draw
     ImGui::InputText( "Name", dev_nodes_tree->dublicate_node_name, sizeof( dev_nodes_tree ) );
     if ( ImGui::Button( "Dublicate" ) )
     {
-      crude_entity new_node = crude_entity_copy_hierarchy( world, dev_nodes_tree->dublicate_node_reference, dev_nodes_tree->dublicate_node_name, true, true );
+      crude_entity new_node = crude_node_copy_hierarchy( world, dev_nodes_tree->dublicate_node_reference, dev_nodes_tree->dublicate_node_name, true, true );
       crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, dev_nodes_tree->dublicate_node_reference ) );
       dev_nodes_tree->dublicate_node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
       dev_nodes_tree->selected_node = new_node;

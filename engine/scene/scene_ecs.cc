@@ -11,6 +11,14 @@
  *
  *********************************************************/
 
+CRUDE_ECS_OBSERVER_DECLARE( crude_gltf_destroy_observer_ );
+
+static void
+crude_gltf_destroy_observer_ 
+(
+  _In_ ecs_iter_t                                         *it
+);
+
 ECS_COMPONENT_DECLARE( crude_transform );
 ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
@@ -45,6 +53,10 @@ crude_scene_components_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_runtime );
+
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
+    { .id = ecs_id( crude_gltf ) }
+  } );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
@@ -111,7 +123,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
 {
   char const                                              *gltf_relative_filepath;
-  crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
+  crude_gfx_model_renderer_resources                      *model_renderer_resources;
 
   gltf_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "path" ) );
 
@@ -119,6 +131,13 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
   
   component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
   component->model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL );
+  model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager->model_renderer_resources_manager, component->model_renderer_resources_instance.model_renderer_resources_handle );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( component->model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( manager->allocator ) );
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
+  {
+    component->model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
+  }
 
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   return true;
@@ -247,4 +266,21 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_runtime )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 {
+}
+
+void
+crude_gltf_destroy_observer_ 
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_gltf *gltf_per_entity = ecs_field( it, crude_gltf, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_gltf                                            *gltf;
+
+    gltf = &gltf_per_entity[ i ];
+    CRUDE_ARRAY_DEINITIALIZE( gltf->model_renderer_resources_instance.nodes_transforms );
+  }
 }

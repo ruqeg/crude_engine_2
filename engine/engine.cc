@@ -323,6 +323,7 @@ crude_engine_update
   }
 
   crude_engine_commands_manager_update( &engine->commands_manager );
+  crude_gfx_scene_renderer_update_animations_from_node( &engine->scene_renderer, engine->world, engine->main_node, delta_time );
 
   if ( crude_engine_graphics_main_thread_loop_( engine )  )
   {

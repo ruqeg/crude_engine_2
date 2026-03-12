@@ -79,9 +79,9 @@ crude_gfx_model_renderer_resources_deinitialize
       CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].childrens );
     }
   }
+  
   CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes );
   CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->default_nodes_transforms );
-  CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animated_nodes_transforms );
 
   for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( model_renderer_resources->skins ); ++k )
   {
@@ -92,6 +92,11 @@ crude_gfx_model_renderer_resources_deinitialize
   for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( model_renderer_resources->animations ); ++k )
   {
     CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations[ k ].channels );
+    for ( uint32 j = 0; j < CRUDE_ARRAY_LENGTH( model_renderer_resources->animations[ k ].samplers ); ++j )
+    {
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations[ k ].samplers[ j ].inputs );
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations[ k ].samplers[ j ].outputs );
+    }
     CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations[ k ].samplers );
   }
   CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations );
@@ -183,7 +188,7 @@ crude_gfx_model_renderer_resources_instance_update_animation
   
         t = ( animation_instance->current_time - sampler->inputs[ i ] ) / ( sampler->inputs[ i + 1 ] - sampler->inputs[ i ] );
   
-        transform = &model_renderer_resources->animated_nodes_transforms[ channel->node ];
+        transform = &model_renderer_resources_instance->nodes_transforms[ channel->node ];
   
         if ( channel->path == CRUDE_GFX_ANIMATION_CHANNEL_PATH_TRANSLATION )
         {
