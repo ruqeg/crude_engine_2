@@ -347,6 +347,11 @@ typedef struct crude_gfx_blend_state_creation
   uint32                                                   active_states;
 } crude_gfx_blend_state_creation;
 
+typedef struct crude_gfx_multisample_creation
+{
+  bool                                                     enabled;
+} crude_gfx_multisample_creation;
+
 typedef struct crude_gfx_rasterization_creation
 {
   VkCullModeFlagBits                                       cull_mode;
@@ -373,6 +378,7 @@ typedef struct crude_gfx_texture_creation
   VkFormat                                                 format;
   crude_gfx_texture_type                                   type;
   crude_gfx_texture_handle                                 alias;
+  bool                                                     multisampled;
   char                                                     name[ CRUDE_GFX_TEXTURE_NAME_MAX ];
 } crude_gfx_texture_creation;
 
@@ -455,6 +461,7 @@ typedef struct crude_gfx_descriptor_set_layout_creation
 
 typedef struct crude_gfx_pipeline_creation
 {
+  crude_gfx_multisample_creation                           multisample;
   crude_gfx_rasterization_creation                         rasterization;
   crude_gfx_depth_stencil_creation                         depth_stencil;
   crude_gfx_blend_state_creation                           blend_state;

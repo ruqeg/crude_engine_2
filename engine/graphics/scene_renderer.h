@@ -5,14 +5,13 @@
 #include <engine/graphics/asynchronous_loader.h>
 #include <engine/graphics/scene_renderer_resources.h>
 #include <engine/graphics/passes/imgui_pass.h>
-#include <engine/graphics/passes/gbuffer_early_pass.h>
-#include <engine/graphics/passes/gbuffer_late_pass.h>
+#include <engine/graphics/passes/opaque_early_pass.h>
+#include <engine/graphics/passes/opaque_late_pass.h>
 #include <engine/graphics/passes/depth_pyramid_pass.h>
 #include <engine/graphics/passes/culling_early_pass.h>
 #include <engine/graphics/passes/culling_late_pass.h>
 #include <engine/graphics/passes/debug_pass.h>
-#include <engine/graphics/passes/compose_direct_light_pass.h>
-#include <engine/graphics/passes/compose_light_pass.h>
+#include <engine/graphics/passes/compose_pass.h>
 #include <engine/graphics/passes/pointlight_shadow_pass.h>
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
@@ -34,13 +33,6 @@ typedef struct crude_gfx_scene_renderer_creation
 
 typedef struct crude_gfx_scene_renderer_options
 {
-  struct 
-  {
-    char const                                            *gbuffer_albedo;
-    char const                                            *gbuffer_normal;
-    char const                                            *gbuffer_roughness_metalness;
-    char const                                            *gbuffer_depth;
-  } compose_pass;
   struct 
   {
     char const                                            *depth;
@@ -74,7 +66,7 @@ typedef struct crude_gfx_scene_renderer_options
     char const                                            *ssr_texture;
     char const                                            *output_texture;
     char const                                            *packed_roughness_metalness_texture;
-  } compose_light_pass;
+  } compose_pass;
   struct 
   {
     crude_camera                                           camera;
@@ -178,14 +170,13 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_culling_early_pass                             culling_early_pass;
   crude_gfx_culling_late_pass                              culling_late_pass;
-  crude_gfx_gbuffer_early_pass                             gbuffer_early_pass;
-  crude_gfx_gbuffer_late_pass                              gbuffer_late_pass;
+  crude_gfx_opaque_early_pass                              opaque_early_pass;
+  crude_gfx_opaque_late_pass                               opaque_late_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   //crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
-  crude_gfx_compose_direct_light_pass                      compose_direct_light_pass;
-  crude_gfx_compose_light_pass                             compose_light_pass;
+  crude_gfx_compose_pass                             compose_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
   crude_gfx_transparent_pass                               transparent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;

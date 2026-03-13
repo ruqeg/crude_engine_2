@@ -70,9 +70,9 @@ crude_editor_initialize
   editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   crude_game_debug_system_import( engine->world, &editor->game_debug_system_context );
   
-  editor->main_node = crude_node_manager_get_node( &editor->engine->node_manager, "game\\nodes\\level_mars.crude_node", engine->world );
+  crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "game\\nodes\\party.crude_node" );
+  crude_engine_commands_manager_update( &engine->commands_manager );
 
-  editor->engine->main_node = editor->main_node;
   crude_editor_setup_custom_nodes_to_scene_( editor );
 
   editor->engine->imgui_draw_custom_fn = crude_editor_imgui_custom_draw;
@@ -165,7 +165,7 @@ crude_editor_setup_custom_nodes_to_scene_
   {
     crude_transform                                        editor_camera_node_transform;
     crude_camera                                           editor_camera_node_camera;
-    crude_free_camera                                      editor_camera_node_crude_free_camera;
+    crude_free_camera                                      editor_camera_node_free_camera;
 
     if ( crude_entity_valid( editor->engine->world, editor->editor_camera_node ) )
     {
@@ -183,19 +183,19 @@ crude_editor_setup_custom_nodes_to_scene_
     editor_camera_node_camera.near_z = 1;
     editor_camera_node_camera.far_z = 300;
 
-    editor_camera_node_crude_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
-    editor_camera_node_crude_free_camera.moving_speed_multiplier = 10.f;
-    editor_camera_node_crude_free_camera.rotating_speed_multiplier = 0.004f;
-    editor_camera_node_crude_free_camera.input_enabled = true;
-    editor_camera_node_crude_free_camera.input = &editor->engine->platform.input;
+    editor_camera_node_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
+    editor_camera_node_free_camera.moving_speed_multiplier = 10.f;
+    editor_camera_node_free_camera.rotating_speed_multiplier = 0.004f;
+    editor_camera_node_free_camera.input_enabled = true;
+    editor_camera_node_free_camera.input = &editor->engine->platform.input;
 
     editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
     CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
     CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
-    CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_free_camera, { editor_camera_node_crude_free_camera } );
+    CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_free_camera, { editor_camera_node_free_camera } );
   }
 
-  editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->engine->world, editor->main_node, "editor_camera" );
+  editor->editor_camera_node = crude_ecs_lookup_entity_from_parent( editor->engine->world, editor->engine->main_node, "editor_camera" );
 
   editor->engine->camera_node = editor->editor_camera_node;
 }

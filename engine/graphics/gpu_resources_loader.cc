@@ -303,6 +303,12 @@ parse_gpu_pipeline_
       }
     }
   }
+
+  cJSON const *multisample_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "multisample" );
+  if ( multisample_json != NULL )
+  {
+    pipeline_creation->multisample.enabled = cJSON_GetObjectItemCaseSensitive( multisample_json, "enabled" );
+  }
   
   cJSON const *depth_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "depth" );
   if ( depth_json != NULL )

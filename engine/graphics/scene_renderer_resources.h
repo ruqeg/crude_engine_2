@@ -49,14 +49,6 @@ typedef struct crude_gfx_light_cpu
   XMFLOAT3                                                 translation;
 } crude_gfx_light_cpu;
 
-typedef struct crude_gfx_light_gpu
-{
-  XMFLOAT3                                                 position;
-  float32                                                  radius;
-  XMFLOAT3                                                 color;
-  float32                                                  intensity;
-} crude_gfx_light_gpu;
-
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (

@@ -2117,12 +2117,22 @@ crude_gfx_create_pipeline
     
     vk_multisampling = CRUDE_COMPOUNT_EMPTY( VkPipelineMultisampleStateCreateInfo );
     vk_multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    vk_multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    vk_multisampling.sampleShadingEnable = VK_FALSE;
-    vk_multisampling.minSampleShading = 1.0f;
+    vk_multisampling.rasterizationSamples = creation->multisample.enabled ? CRUDE_GFX_SAMPLE_COUNT : VK_SAMPLE_COUNT_1_BIT;
     vk_multisampling.pSampleMask = NULL;
     vk_multisampling.alphaToCoverageEnable = VK_FALSE;
     vk_multisampling.alphaToOneEnable = VK_FALSE;
+    if ( creation->multisample.enabled )
+    {
+#if CRUDE_GFX_SAMPLE_RATE_SHADING
+      vk_multisampling.sampleShadingEnable = VK_TRUE;
+      vk_multisampling.minSampleShading = 0.2f;
+#endif
+    }
+    else
+    {
+      vk_multisampling.sampleShadingEnable = VK_FALSE;
+      vk_multisampling.minSampleShading = 1.0f;
+    }
     
     vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
     vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -3834,6 +3844,9 @@ vk_create_device_
   physical_features2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFeatures2 );
   physical_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
   physical_features2.pNext = next_feature;
+#if CRUDE_GFX_SAMPLE_RATE_SHADING
+  physical_features2.features.sampleRateShading = VK_TRUE;
+#endif
   vkGetPhysicalDeviceFeatures2( gpu->vk_physical_device, &physical_features2 );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( device_extensions, CRUDE_COUNTOF( vk_device_required_extensions ), temporary_allocator );
@@ -4286,10 +4299,10 @@ vk_create_texture_
     image_info.extent.depth = creation->depth;
     image_info.mipLevels = creation->subresource.mip_level_count;
     image_info.arrayLayers = creation->subresource.array_layer_count;
-    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
     image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.samples = creation->multisampled ? CRUDE_GFX_SAMPLE_COUNT : VK_SAMPLE_COUNT_1_BIT;
 
     is_render_target = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET ) == CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
     is_compute_used = ( creation->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE ) == CRUDE_GFX_TEXTURE_MASK_COMPUTE;

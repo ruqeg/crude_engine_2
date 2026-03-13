@@ -5,40 +5,40 @@
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
-typedef struct crude_gfx_gbuffer_early_pass
+typedef struct crude_gfx_opaque_late_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-} crude_gfx_gbuffer_early_pass;
+} crude_gfx_opaque_late_pass;
 
 CRUDE_API void
-crude_gfx_gbuffer_early_pass_initialize
+crude_gfx_opaque_late_pass_initialize
 (
-  _In_ crude_gfx_gbuffer_early_pass                       *pass,
+  _In_ crude_gfx_opaque_late_pass                         *pass,
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
 CRUDE_API void
-crude_gfx_gbuffer_early_pass_deinitialize
+crude_gfx_opaque_late_pass_deinitialize
 (
-  _In_ crude_gfx_gbuffer_early_pass                       *pass
+  _In_ crude_gfx_opaque_late_pass                         *pass
 );
 
 CRUDE_API void
-crude_gfx_gbuffer_early_pass_pre_render
+crude_gfx_opaque_late_pass_pre_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
 CRUDE_API void
-crude_gfx_gbuffer_early_pass_render
+crude_gfx_opaque_late_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
 
 CRUDE_API crude_gfx_render_graph_pass_container
-crude_gfx_gbuffer_early_pass_pack
+crude_gfx_opaque_late_pass_pack
 (
-  _In_ crude_gfx_gbuffer_early_pass                       *pass
+  _In_ crude_gfx_opaque_late_pass                         *pass
 );

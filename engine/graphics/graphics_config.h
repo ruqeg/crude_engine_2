@@ -51,3 +51,6 @@
 #define CRUDE_GFX_DEVICE_HEAP_ALLOCATOR_DEFAULT_ALLOCATION_STRATEGY ( 1 )
 
 #define CRUDE_GFX_PRESENT_TEXTURE_NAME "editor_final"
+
+#define CRUDE_GFX_SAMPLE_COUNT                             ( VK_SAMPLE_COUNT_16_BIT )
+#define CRUDE_GFX_SAMPLE_RATE_SHADING                      ( true )

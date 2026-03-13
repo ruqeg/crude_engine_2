@@ -69,6 +69,7 @@ typedef struct crude_gfx_render_graph_resource_info
       VkImageUsageFlags                                    flags;
       crude_gfx_render_pass_operation                      load_op;
       crude_gfx_texture_handle                             handle;
+      bool                                                 multisample;
       union
       {
         // !TODO handle uint32, int32
@@ -128,6 +129,7 @@ typedef struct crude_gfx_render_graph_node_creation
   crude_gfx_render_graph_resource_input_creation          *inputs;
   crude_gfx_render_graph_resource_output_creation         *outputs;
   bool                                                     enabled;
+  bool                                                     multisample;
   char const                                              *name;
   crude_gfx_render_graph_node_type                         type;
 } crude_gfx_render_graph_node_creation;
@@ -142,6 +144,7 @@ typedef struct crude_gfx_render_graph_node
   crude_gfx_render_graph_resource_handle                  *outputs;
   crude_gfx_render_graph_node_handle                      *edges;
   bool                                                     enabled;
+  bool                                                     multisample;
   char                                                     name[ CRUDE_GFX_RENDER_GRAPH_NODE_NAME_MAX_LENGTH ];
   crude_gfx_render_graph_node_type                         type;
 } crude_gfx_render_graph_node;

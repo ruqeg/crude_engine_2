@@ -173,8 +173,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
   CRUDE_IMGUI_OPTION( "Hidden", {
     ImGui::Checkbox( "##Hidden", &component->hidden );
   } );
-
-  CRUDE_IMGUI_OPTION( "Relative Filepath", {
+  
     ImGui::Text( "\"%s\"", model_renderer_resources ? model_renderer_resources->relative_filepath : "Empty" );
     if ( ImGui::BeginDragDropTarget( ) )
     {
@@ -189,6 +188,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
         {
           crude_gfx_model_renderer_resources_handle        model_renderer_resources_handle;
           model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath, NULL );
+          
+          if ( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
+          {
+            CRUDE_ARRAY_DEINITIALIZE( component->model_renderer_resources_instance.nodes_transforms );
+          }
 
           component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
           component->model_renderer_resources_instance.model_renderer_resources_handle = model_renderer_resources_handle;
@@ -196,6 +200,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       }
       ImGui::EndDragDropTarget();
     }
+  CRUDE_IMGUI_OPTION( "Relative Filepath", {
   } );
   
   CRUDE_IMGUI_OPTION( "Animations", {
@@ -258,6 +263,17 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
 {
+  CRUDE_IMGUI_START_OPTIONS;
+
+  CRUDE_IMGUI_OPTION( "Color", {
+    ImGui::ColorPicker3( "##Color", &component->color.x );
+  } );
+  CRUDE_IMGUI_OPTION( "Intensity", {
+    ImGui::InputFloat( "##Intensity", &component->intensity );
+  } );
+  CRUDE_IMGUI_OPTION( "Radius", {
+    ImGui::InputFloat( "##Radius", &component->radius );
+  } );
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_runtime )

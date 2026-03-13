@@ -57,7 +57,7 @@ crude_gfx_light_lut_pass_render
 
   crude_gfx_device                                        *gpu;
   crude_gfx_light_lut_pass                                *pass;
-  crude_gfx_light_gpu                                     *lights_gpu;
+  crude_gfx_light                                         *lights_gpu;
   crude_gfx_sorted_light                                  *sorted_lights;
   uint32                                                  *lights_luts;
   uint32                                                  *bin_range_per_light;
@@ -76,6 +76,12 @@ crude_gfx_light_lut_pass_render
   {
     return;
   }
+
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_bins_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_tiles_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_indices_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_world_to_clip_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( pass->scene_renderer->temporary_allocator );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( sorted_lights, pass->scene_renderer->total_visible_lights_count, crude_stack_allocator_pack( pass->scene_renderer->temporary_allocator ) );
@@ -97,10 +103,10 @@ crude_gfx_light_lut_pass_render
   
     light_cpu = &pass->scene_renderer->lights[ i ];
     
-    lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_gpu );
+    lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light );
     lights_gpu[ i ].color = light_cpu->light.color;
     lights_gpu[ i ].intensity = light_cpu->light.intensity;
-    lights_gpu[ i ].position = light_cpu->translation;
+    lights_gpu[ i ].world_position = light_cpu->translation;
     lights_gpu[ i ].radius = light_cpu->light.radius;
   }
 
@@ -116,6 +122,9 @@ crude_gfx_light_lut_pass_render
     world_pos = XMVectorSet( light_cpu->translation.x, light_cpu->translation.y, light_cpu->translation.z, 1.0f );
   
     view_pos = XMVector4Transform( world_pos, world_to_view );
+#if CRUDE_RIGHT_HAND
+    view_pos = XMVectorSetZ( view_pos, -1.f * XMVectorGetZ( view_pos ) );
+#endif
     view_pos_min = XMVectorAdd( view_pos, XMVectorSet( 0, 0, -light_cpu->light.radius, 0 ) );
     view_pos_max = XMVectorAdd( view_pos, XMVectorSet( 0, 0, light_cpu->light.radius, 0 ) );
   
@@ -134,8 +143,8 @@ crude_gfx_light_lut_pass_render
     uint32                                               lights_gpu_count;
 
     lights_gpu_count = CRUDE_ARRAY_LENGTH( lights_gpu );
-    lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light_gpu ) * lights_gpu_count );
-    crude_memory_copy( lights_tca.cpu_address, lights_gpu, sizeof( crude_gfx_light_gpu ) * lights_gpu_count );
+    lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * lights_gpu_count );
+    crude_memory_copy( lights_tca.cpu_address, lights_gpu, sizeof( crude_gfx_light ) * lights_gpu_count );
     crude_gfx_cmd_memory_copy( primary_cmd, lights_tca, pass->scene_renderer->lights_hga, 0, 0 );
   }
     
@@ -245,7 +254,7 @@ crude_gfx_light_lut_pass_render
   
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( lights_gpu ); ++i )
     {
-      crude_gfx_light_gpu                               *light_gpu;
+      crude_gfx_light                                   *light_gpu;
       XMVECTOR                                           light_world_position, light_view_position;
       XMVECTOR                                           aabb, minx, maxx, miny, maxy;
       XMVECTOR                                           left, right, top, bottom;
@@ -259,10 +268,13 @@ crude_gfx_light_lut_pass_render
       light_gpu = &lights_gpu[ light_index ];
   
       /* Transform light in camera space */
-      light_world_position = XMVectorSet( light_gpu->position.x, light_gpu->position.y, light_gpu->position.z, 1.0f );
+      light_world_position = XMVectorSet( light_gpu->world_position.x, light_gpu->world_position.y, light_gpu->world_position.z, 1.0f );
       light_radius = light_gpu->radius;
   
       light_view_position = XMVector4Transform( light_world_position, world_to_view );
+#if CRUDE_RIGHT_HAND
+      light_view_position = XMVectorSetZ( light_view_position, -1.f * XMVectorGetZ( light_view_position ) );
+#endif
       camera_visible = -XMVectorGetZ( light_view_position ) - light_radius < camera->near_z;
   
       if ( !camera_visible )
@@ -287,6 +299,9 @@ crude_gfx_light_lut_pass_render
           corner = XMVectorSetW( corner, 1.f );
   
           corner_vs = XMVector4Transform( corner, world_to_view );
+#if CRUDE_RIGHT_HAND
+          corner_vs = XMVectorSetZ( corner_vs, -1.f * XMVectorGetZ( corner_vs ) );
+#endif
           corner_vs = XMVectorSetZ( corner_vs, CRUDE_MAX( camera->near_z, XMVectorGetZ( corner_vs ) ) );
           corner_ndc = XMVector4Transform( corner_vs, view_to_clip );
           corner_ndc = XMVectorScale( corner_ndc, 1.f / XMVectorGetW( corner_ndc ) );

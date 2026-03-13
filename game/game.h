@@ -21,9 +21,6 @@ typedef struct crude_editor
   crude_string_buffer                                      debug_strings_buffer;
   crude_string_buffer                                      debug_constant_strings_buffer;
 
-  /* Common */
-  crude_entity                                             main_node;
-
   /* Dev */
   crude_entity                                             editor_camera_node;
 

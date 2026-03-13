@@ -8,23 +8,7 @@
       "outputs": [
         {
           "type": "marker",
-          "name": "lights_hga"
-        },
-        {
-          "type": "marker",
-          "name": "lights_bins_hga"
-        },
-        {
-          "type": "marker",
-          "name": "lights_tiles_hga"
-        },
-        {
-          "type": "marker",
-          "name": "lights_indices_hga"
-        },
-        {
-          "type": "marker",
-          "name": "lights_world_to_clip_hga"
+          "name": "light_lut_pass_marker"
         }
       ]
     },
@@ -44,8 +28,13 @@
       ]
     },
     {
-      "name": "gbuffer_early_pass",
+      "name": "opaque_early_pass",
+      "multisample": 1,
       "inputs": [
+        {
+          "type": "reference",
+          "name": "light_lut_pass_marker"
+        },
         {
           "type": "reference",
           "name": "mesh_task_indirect_commands_early"
@@ -58,32 +47,8 @@
       "outputs": [
         {
           "type": "attachment",
-          "name": "gbuffer_albedo",
-          "format": "VK_FORMAT_R8G8B8A8_UNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_normal",
-          "format": "VK_FORMAT_R16G16_SNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 1, 1, 1, 1 ]
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_roughness_metalness",
-          "format": "VK_FORMAT_R16G16_SNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 1, 1, 1, 1 ]
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_mesh_draw_index",
-          "format": "VK_FORMAT_R16_UINT",
+          "name": "direct_radiance",
+          "format": "VK_FORMAT_R16G16B16A16_UNORM",
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
@@ -144,7 +109,8 @@
       ]
     },
     {
-      "name": "gbuffer_late_pass",
+      "name": "opaque_late_pass",
+      "multisample": 1,
       "inputs": [
         {
           "type": "reference",
@@ -160,19 +126,7 @@
         },
         {
           "type": "attachment",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_roughness_metalness"
-        },
-        {
-          "type": "attachment",
-          "name": "gbuffer_mesh_draw_index"
+          "name": "direct_radiance"
         },
         {
           "type": "attachment",
@@ -182,19 +136,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "reference",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "reference",
-          "name": "gbuffer_roughness_metalness"
-        },
-        {
-          "type": "reference",
-          "name": "gbuffer_mesh_draw_index"
+          "name": "direct_radiance"
         },
         {
           "type": "reference",
@@ -207,19 +149,11 @@
       ]
     },
     {
-      "name": "compose_direct_light_pass",
+      "name": "compose_pass",
       "inputs": [
         {
           "type": "texture",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_roughness_metalness"
+          "name": "direct_radiance"
         },
         {
           "type": "texture",
@@ -228,32 +162,12 @@
         {
           "type": "reference",
           "name": "MESHLET_LATE_PASS_MARKER"
-        },
-        {
-          "type": "reference",
-          "name": "lights_hga"
-        },
-        {
-          "type": "reference",
-          "name": "lights_bins_hga"
-        },
-        {
-          "type": "reference",
-          "name": "lights_tiles_hga"
-        },
-        {
-          "type": "reference",
-          "name": "lights_indices_hga"
-        },
-        {
-          "type": "reference",
-          "name": "lights_world_to_clip_hga"
         }
       ],
       "outputs": [
         {
           "type": "attachment",
-          "name": "direct_radiance",
+          "name": "radiance",
           "format": "VK_FORMAT_R16G16B16A16_UNORM",
           "scale": [ 1, 1 ],
           "op": "clear",
@@ -289,14 +203,10 @@
     {
       "name": "ssr_pass",
       "type": "compute",
-      "inputs": [ 
+      "inputs": [
         {
           "type": "texture",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "texture",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "reference",
@@ -309,16 +219,8 @@
       "outputs": [
         {
           "type": "attachment",
-          "name": "ssr_hit_uv_depth_rdotv",
-          "format": "VK_FORMAT_R8G8B8A8_UNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
-        },
-        {
-          "type": "attachment",
-          "name": "ssr",
-          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "name": "radiance_with_ssr",
+          "format": "VK_FORMAT_R16G16B16A16_UNORM",
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
@@ -330,39 +232,12 @@
       ]
     },
     {
-      "name": "compose_light_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "texture",
-          "name": "ssr"
-        },
-        {
-          "type": "texture",
-          "name": "direct_radiance"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_roughness_metalness"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "attachment",
-          "name": "radiance",
-          "format": "VK_FORMAT_R16G16B16A16_UNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
-        }
-      ]
-    },
-    {
       "name": "transparent_pass",
+      "multisample": 1,
       "inputs": [
         {
           "type": "attachment",
-          "name": "radiance"
+          "name": "radiance_with_ssr"
         },
         {
           "type": "attachment",
@@ -376,7 +251,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "radiance"
+          "name": "radiance_with_ssr"
         },
         {
           "type": "reference",
@@ -393,7 +268,7 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "radiance"
+          "name": "radiance_with_ssr"
         }
       ],
       "outputs": [
@@ -436,18 +311,6 @@
         },
         {
           "type": "texture",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_roughness_metalness"
-        },
-        {
-          "type": "texture",
           "name": "depth"
         },
         {
@@ -456,15 +319,11 @@
         },
         {
           "type": "texture",
-          "name": "ssr_hit_uv_depth_rdotv"
+          "name": "radiance"
         },
         {
           "type": "texture",
-          "name": "ssr"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_mesh_draw_index"
+          "name": "radiance_with_ssr"
         },
         {
           "type": "texture",
@@ -492,35 +351,11 @@
         },
         {
           "type": "texture",
-          "name": "gbuffer_albedo"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_normal"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_roughness_metalness"
-        },
-        {
-          "type": "texture",
           "name": "depth"
         },
         {
           "type": "texture",
           "name": "direct_radiance"
-        },
-        {
-          "type": "texture",
-          "name": "ssr_hit_uv_depth_rdotv"
-        },
-        {
-          "type": "texture",
-          "name": "ssr"
-        },
-        {
-          "type": "texture",
-          "name": "gbuffer_mesh_draw_index"
         },
         {
           "type": "attachment",

@@ -92,15 +92,15 @@
 		}, {
 			"name":	"light1",
 			"transform":	{
-				"translation":	[0, 0, 0],
+				"translation":	[-79.2983856201172, 8.4981517791748047, -27.149511337280273],
 				"rotation":	[0, 0, 0, 1],
 				"scale":	[1, 1, 1]
 			},
 			"components":	[{
 					"type":	"crude_light",
-					"radius":	5,
-					"color":	[1, 1, 1],
-					"intensity":	1
+					"radius":	70,
+					"color":	[0.83185839653015137, 0.20980501174926758, 0.20980501174926758],
+					"intensity":	25
 				}],
 			"children":	[]
 		}]

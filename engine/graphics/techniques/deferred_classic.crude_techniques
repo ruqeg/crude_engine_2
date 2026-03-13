@@ -18,7 +18,7 @@
       "name" : "deferred_classic",
       "render_pass_output":
       {
-        "reference": "gbuffer_early_pass" 
+        "reference": "opaque_early_pass" 
       },
       "depth" : {
         "write" : 1,

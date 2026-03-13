@@ -96,6 +96,7 @@ crude_gfx_render_graph_parse_from_file
     cJSON const                                           *pass_output;
     cJSON const                                           *pass_name;
     cJSON const                                           *pass_enabled;
+    cJSON const                                           *pass_multisample_enabled;
     cJSON const                                           *pass_pipeline_type;
     
   
@@ -108,6 +109,10 @@ crude_gfx_render_graph_parse_from_file
     CRUDE_ASSERT( pass_outputs );
 
     node_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_render_graph_node_creation );
+    
+    pass_multisample_enabled = cJSON_GetObjectItemCaseSensitive( pass, "multisample" );
+    node_creation.multisample = pass_multisample_enabled ? cJSON_GetNumberValue( pass_multisample_enabled ) : 1;
+
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), crude_stack_allocator_pack( temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), crude_stack_allocator_pack( temporary_allocator ) );
   
@@ -171,6 +176,8 @@ crude_gfx_render_graph_parse_from_file
           output_creation.resource_info.texture.scale.x = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 0 ) );
           output_creation.resource_info.texture.scale.y = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 1 ) );
           output_creation.resource_info.texture.depth = 1;
+
+          output_creation.resource_info.texture.multisample = node_creation.multisample;
 
           if ( crude_gfx_has_depth( output_creation.resource_info.texture.format ) )
           {
@@ -958,6 +965,7 @@ crude_gfx_render_graph_builder_create_node
   crude_string_copy( node->name, creation->name, sizeof( node->name ) );
   node->enabled = creation->enabled;
   node->type = creation->type;
+  node->multisample = creation->multisample;
   node->framebuffer = CRUDE_GFX_FRAMEBUFFER_HANDLE_INVALID;
   node->render_pass = CRUDE_GFX_RENDER_PASS_HANDLE_INVALID;
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->inputs, CRUDE_ARRAY_LENGTH( creation->inputs ), builder->allocator_container );
@@ -998,7 +1006,7 @@ crude_gfx_render_graph_builder_create_node_output
 
   crude_gfx_render_graph_resource* resource = crude_gfx_render_graph_builder_access_resource( builder, resource_handle );
   resource->type = creation->type;
-  
+
   crude_string_copy( resource->name, creation->name, sizeof( resource->name ) );
   
   if ( creation->type != CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_REFERENCE )

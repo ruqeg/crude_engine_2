@@ -98,7 +98,7 @@ crude_gfx_cmd_begin_secondary
   rendering_info.pColorAttachmentFormats = render_pass->num_render_targets > 0 ? render_pass->output.color_formats : NULL;
   rendering_info.depthAttachmentFormat = render_pass->output.depth_stencil_format;
   rendering_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-  rendering_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  rendering_info.rasterizationSamples = CRUDE_GFX_SAMPLE_COUNT; CRUDE_ASSERT( false );
 
   VkCommandBufferInheritanceInfo inheritance = CRUDE_COMPOUNT_EMPTY( VkCommandBufferInheritanceInfo );
   inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;

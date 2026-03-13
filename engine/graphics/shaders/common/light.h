@@ -11,6 +11,21 @@
 #define CRUDE_SHADOW_FILTER_NUM_SAMPLES ( 16 )
 #define CRUDE_SHADOW_FILTER_RADIUS ( 1.5 )
 
+CRUDE_SHADER_STRUCT( crude_gfx_light )
+{
+  XMFLOAT3                                                 world_position;
+  float32                                                  radius;
+  XMFLOAT3                                                 color;
+  float32                                                  intensity;
+};
+
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsZBinsRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsRef, crude_gfx_light );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsTilesRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsIndicesRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsShadowViewsRef, XMFLOAT4X4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsTrianglesIndicesRef, uint8 );
+
 #ifndef __cplusplus
 
 const vec2 filter_kernel[ CRUDE_SHADOW_FILTER_NUM_SAMPLES ] =
@@ -37,14 +52,6 @@ const vec3 crude_tetrahedron_face_a = vec3( 0.0, -0.57735026, 0.81649661 );
 const vec3 crude_tetrahedron_face_b = vec3( 0.0, -0.57735026, -0.81649661 );
 const vec3 crude_tetrahedron_face_c = vec3( -0.81649661, 0.57735026, 0.0 );
 const vec3 crude_tetrahedron_face_d = vec3( 0.81649661, 0.57735026, 0.0 );
-
-struct crude_light
-{
-  vec3                                                     world_position;
-  float                                                    radius;
-  vec3                                                     color;
-  float                                                    intensity;
-};
 
 vec3
 crude_schlick_fresnel
@@ -114,42 +121,12 @@ crude_get_tetrahedron_face_index
   return index;
 }
 
-CRUDE_RBUFFER_REF_SCALAR( LightsZBinsRef ) 
-{
-  uint                                                     data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( LightsRef )
-{
-  crude_light                                              data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( LightsTilesRef )
-{
-  uint                                                     data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( LightsIndicesRef )
-{
-  uint                                                     data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( LightsShadowViewsRef )
-{
-  mat4                                                      data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( LightsTrianglesIndicesRef )
-{
-  uint8_t                                                  data[];
-};
-
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 float
 crude_calculate_point_light_shadow_contribution
 (
-  in crude_light                                           light,
+  in crude_gfx_light                                       light,
   in vec3                                                  vertex_position,
   in SceneRef                                              scene,
   in LightsShadowViewsRef                                  light_shadow_views
@@ -207,7 +184,7 @@ crude_calculate_point_light_shadow_contribution
 vec3
 crude_calculate_point_light_contribution
 (
-  in crude_light                                           light,
+  in crude_gfx_light                                        light,
   in vec3                                                  albedo,
   in float                                                 roughness,
   in float                                                 metalness,
@@ -272,12 +249,23 @@ crude_calculate_lighting
 
   radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
-  //if ( scene.data.active_lights_count < 1 )
-  //{
+  if ( scene.data.active_lights_count < 1 )
+  {
+    return vec3(0,1,0);
     return radiance;
-  //}
+  }
 
   view_position = vec4( vertex_position, 1.0 ) * scene.data.camera.world_to_view;
+
+#if CRUDE_RIGHT_HAND
+  view_position.z = -view_position.z;
+#endif
+
+  if ( view_position.z < 0 )
+  {
+    return vec3(1,0,0);
+    return radiance;
+  }
 
   linear_d = ( view_position.z - scene.data.camera.znear ) / ( scene.data.camera.zfar - scene.data.camera.znear );
   bin_index = int( linear_d * CRUDE_LIGHT_Z_BINS );
@@ -293,18 +281,22 @@ crude_calculate_lighting
 
   if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
   {
-    for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
-    {
-      uint word_id = light_id / 32;
-      uint bit_id = light_id % 32;
-
-      if ( ( lights_tiles.data[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
-      {
-        uint global_light_index = lights_indices.data[ light_id ];
-        radiance += crude_calculate_point_light_contribution( lights.data[ global_light_index ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
-      }
-    }
+   // return crude_distinct_colors_f32[ 25 ];
+    //radiance = vec3(1,1,1);
+    //for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
+    //{
+    //  uint word_id = light_id / 32;
+    //  uint bit_id = light_id % 32;
+    //
+    //  if ( ( lights_tiles.data[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
+    //  {
+    //    uint global_light_index = lights_indices.data[ light_id ];
+    //    radiance = crude_calculate_point_light_contribution( lights.data[ 0 ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+    //  }
+    //}
   }
+
+  return crude_distinct_colors_f32[ bin_index ];
 
 #ifdef CRUDE_RAYTRACED_DDGI
   indirect_irradiance = CRUDE_TEXTURE_LOD( scene.data.indirect_light_texture_index, screen_texcoord, 0 ).rgb;
