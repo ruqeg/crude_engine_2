@@ -114,10 +114,6 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
   scene_renderer->lights_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_indices_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_bins_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_tiles_hga = crude_gfx_memory_allocation_empty( );
   
   scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
 
@@ -216,15 +212,11 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_culled_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_count_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_indices_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_commands_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_cubes_instances_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_line_vertices_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
-  
+
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
 }
@@ -371,25 +363,7 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   }
   
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_world_to_clip_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
-  }
-  
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_indices_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_indices_hga );
-  }
-  
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_bins_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_bins_hga );
-  }
-
   scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights" );
-  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip" );
-  scene_renderer->lights_indices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_indices" );
-  scene_renderer->lights_bins_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * CRUDE_LIGHT_Z_BINS, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_bins" );
 }
 
 void
@@ -455,16 +429,6 @@ crude_gfx_scene_renderer_on_resize
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_on_resize" );
-  /* Reinitialize light gpu data */
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_tiles_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_tiles_hga );
-  }
-  
-  uint32 tile_x_count = scene_renderer->gpu->renderer_size.x / CRUDE_LIGHT_TILE_SIZE;
-  uint32 tile_y_count = scene_renderer->gpu->renderer_size.y / CRUDE_LIGHT_TILE_SIZE;
-  uint32 tiles_entry_count = tile_x_count * tile_y_count * CRUDE_LIGHT_WORDS_COUNT;
-  scene_renderer->lights_tiles_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * tiles_entry_count, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_tiles" );
 
   CRUDE_PROFILER_ZONE_END;
 }

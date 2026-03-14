@@ -208,7 +208,7 @@ crude_gfx_cmd_bind_render_pass
         color_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
         break;
       default:
-        color_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        color_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // !TODO VK_ATTACHMENT_LOAD_OP_DONT_CARE for multisample https://docs.vulkan.org/samples/latest/samples/performance/msaa/README.html
         break;
     }
     
@@ -218,7 +218,7 @@ crude_gfx_cmd_bind_render_pass
     color_attachment_info->imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     color_attachment_info->resolveMode = VK_RESOLVE_MODE_NONE;
     color_attachment_info->loadOp = color_op;
-    color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // !TODO STORE_OP_DONT_CARE for multisample
     color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ i ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
   }
   

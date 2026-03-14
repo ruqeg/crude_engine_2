@@ -6,9 +6,9 @@
 //#define DEFERRED_CLASSIC
 //#define TRANSPARENT_NO_CULL
 //#define CRUDE_STAGE_TASK
-//#define CRUDE_STAGE_MESH
+#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
-#define CRUDE_STAGE_FRAGMENT
+//#define CRUDE_STAGE_FRAGMENT
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
@@ -89,15 +89,8 @@ CRUDE_PUSH_CONSTANT
   DebugCountsRef                                           debug_counts;
   JointMatricesRef                                         joint_matrices;
 
-  float                                                    inv_radiance_texture_width;
-  float                                                    inv_radiance_texture_height;
-  LightsZBinsRef                                           zbins;
-
-  LightsTilesRef                                           lights_tiles;
-  LightsIndicesRef                                         lights_indices;
-
   LightsRef                                                lights;
-  LightsShadowViewsRef                                     light_shadow_views;
+  XMFLOAT2                                                 push_constant_padding_;
 };
 #elif defined( TRANSPARENT_NO_CULL )
 CRUDE_PUSH_CONSTANT
@@ -115,20 +108,13 @@ CRUDE_PUSH_CONSTANT
   VisibleMeshCountRef                                      visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
-  LightsZBinsRef                                           zbins;
-
-  LightsTilesRef                                           lights_tiles;
-  LightsIndicesRef                                         lights_indices;
-
-  LightsRef                                                lights;
-  LightsShadowViewsRef                                     light_shadow_views;
-
-  float                                                    inv_radiance_texture_width;
-  float                                                    inv_radiance_texture_height;
   DebugLinesVerticesRef                                    debug_line_vertices;
 
   DebugCountsRef                                           debug_counts;
   JointMatricesRef                                         joint_matrices;
+
+  LightsRef                                                lights;
+  XMFLOAT2                                                 push_constant_padding_;
 };
 #endif
 
@@ -399,16 +385,13 @@ void main()
     normal = normalize( tbn * normalize( bump_normal ) );
   }
 
-  uvec2 screen_position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
   float depth = gl_FragCoord.z;
-  vec2 screen_texcoord = vec2( gl_FragCoord.x * inv_radiance_texture_width, gl_FragCoord * inv_radiance_texture_height );
   
   vec3 direct_radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
     direct_radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
-      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights );
   }
   else
   {
@@ -464,16 +447,13 @@ void main()
     normal = normalize( tbn * normalize( bump_normal ) );
   }
 
-  uvec2 screen_position = uvec2( gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5 );
   float depth = gl_FragCoord.z;
-  vec2 screen_texcoord = vec2( gl_FragCoord.x * inv_radiance_texture_width, gl_FragCoord * inv_radiance_texture_height );
   
   vec3 radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
     radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, screen_position, screen_texcoord,
-      scene, zbins, lights_tiles, lights_indices, lights, light_shadow_views );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights );
   }
   else
   {

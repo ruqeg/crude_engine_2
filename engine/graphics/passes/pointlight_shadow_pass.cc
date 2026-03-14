@@ -430,7 +430,6 @@ crude_gfx_pointlight_shadow_pass_on_techniques_reloaded
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointshadow_meshlet_draw_commands_sb[ i ], 8u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->meshletes_instances_sb[ i ], 9u );
     crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->pointshadow_meshletes_instances_count_sb[ i ], 10u );
-    crude_gfx_descriptor_set_creation_add_buffer( &ds_creation, pass->scene_renderer->lights_world_to_clip_hga.buffer_handle, 11u );
     
     pass->pointshadow_ds[ i ] = crude_gfx_create_descriptor_set( pass->scene_renderer->gpu, &ds_creation );
   }

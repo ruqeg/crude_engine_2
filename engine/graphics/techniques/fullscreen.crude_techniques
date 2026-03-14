@@ -14,23 +14,6 @@
   ],
   "pipelines" : [
     {
-      "name" : "compose_direct_light",
-      "render_pass_output":
-      {
-        "reference": "compose_direct_light_pass" 
-      },
-      "shaders" : [
-        {
-          "stage" : "vertex",
-          "buffer" : "fullscreen"
-        },
-        {
-          "stage" : "fragment",
-          "buffer" : "fullscreen"
-        }
-      ]
-    },
-    {
       "name" : "postprocessing",
       "render_pass_output":
       {

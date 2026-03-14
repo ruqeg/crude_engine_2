@@ -67,23 +67,24 @@ crude_gfx_opaque_late_pass_render
     {
       VkDeviceAddress                                      scene;
       VkDeviceAddress                                      mesh_draws;
+
       VkDeviceAddress                                      mesh_instance_draws;
       VkDeviceAddress                                      meshlets;
+
       VkDeviceAddress                                      vertices;
       VkDeviceAddress                                      triangles_indices;
+
       VkDeviceAddress                                      vertices_indices;
       VkDeviceAddress                                      visible_mesh_count;
+
       VkDeviceAddress                                      mesh_draw_commands;
       VkDeviceAddress                                      debug_line_vertices;
+
       VkDeviceAddress                                      debug_counts;
       JointMatricesRef                                     joint_matrices;
-      float32                                              inv_radiance_texture_width;
-      float32                                              inv_radiance_texture_height;
-      LightsZBinsRef                                       zbins;
-      LightsTilesRef                                       lights_tiles;
-      LightsIndicesRef                                     lights_indices;
+
       LightsRef                                            lights;
-      LightsShadowViewsRef                                 light_shadow_views;
+      XMFLOAT2                                             padding;
     };
     push_constant_                                         push_constant;
 
@@ -99,13 +100,7 @@ crude_gfx_opaque_late_pass_render
     push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
     push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
-    push_constant.zbins = pass->scene_renderer->lights_bins_hga.gpu_address;
-    push_constant.lights_tiles = pass->scene_renderer->lights_tiles_hga.gpu_address;
-    push_constant.lights_indices = pass->scene_renderer->lights_indices_hga.gpu_address;
     push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
-    push_constant.light_shadow_views = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;
-    push_constant.inv_radiance_texture_width = 1.f / gpu->renderer_size.x;
-    push_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_draw_mesh_task_indirect_count(

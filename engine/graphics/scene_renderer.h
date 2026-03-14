@@ -147,10 +147,6 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_light_cpu                                     *lights;
   crude_gfx_memory_allocation                              lights_hga;
-  crude_gfx_memory_allocation                              lights_bins_hga;
-  crude_gfx_memory_allocation                              lights_tiles_hga;
-  crude_gfx_memory_allocation                              lights_indices_hga;
-  crude_gfx_memory_allocation                              lights_world_to_clip_hga;
   uint32                                                   total_visible_lights_count;
 
   /***********************

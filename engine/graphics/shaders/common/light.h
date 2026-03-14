@@ -226,86 +226,34 @@ crude_calculate_lighting
   in vec3                                                  normal,
   in vec3                                                  vertex_position,
   in vec3                                                  camera_position,
-  in uvec2                                                 position,
-  in vec2                                                  screen_texcoord,
   in SceneRef                                              scene,
-  in LightsZBinsRef                                        zbins,
-  in LightsTilesRef                                        lights_tiles,
-  in LightsIndicesRef                                      lights_indices,
-  in LightsRef                                             lights,
-  in LightsShadowViewsRef                                  light_shadow_views
+  in LightsRef                                             lights
 )
 {
+  // !TODO LIGHTS INDICES PER CLUSTER INSTEAD + WAVE INSTRUCTION PER CLUSTER in case I will need it in future
+  // (don't want to overcook for now)
+
   vec4                                                     view_position;
-  vec3                                                     radiance, indirect_irradiance, indirect_diffuse;
-  uvec2                                                    tile;
-  float                                                    linear_d;
-  int                                                      bin_index;
-  uint                                                     bin_value, min_light_id, max_light_id, stride, address;
+  vec3                                                     direct_radiance, indirect_irradiance, indirect_diffuse;
+  vec3                                                     f0;
 
-  vec3 f0 = CRUDE_DEAFULT_F0;
+  f0 = CRUDE_DEAFULT_F0;
 
-  radiance = vec3( 0 );
+  direct_radiance = vec3( 0 );
 
-  radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
+  direct_radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
   if ( scene.data.active_lights_count < 1 )
   {
-    return vec3(0,1,0);
-    return radiance;
+    return direct_radiance;
   }
 
-  view_position = vec4( vertex_position, 1.0 ) * scene.data.camera.world_to_view;
-
-#if CRUDE_RIGHT_HAND
-  view_position.z = -view_position.z;
-#endif
-
-  if ( view_position.z < 0 )
+  for ( uint i = 0; i < scene.data.active_lights_count; ++i )
   {
-    return vec3(1,0,0);
-    return radiance;
+    direct_radiance += crude_calculate_point_light_contribution( lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
   }
 
-  linear_d = ( view_position.z - scene.data.camera.znear ) / ( scene.data.camera.zfar - scene.data.camera.znear );
-  bin_index = int( linear_d * CRUDE_LIGHT_Z_BINS );
-  bin_value = zbins.data[ bin_index ];
-
-  min_light_id = bin_value & 0xFFFF;
-  max_light_id = ( bin_value >> 16 ) & 0xFFFF;
-
-  tile = position / uint( CRUDE_LIGHT_TILE_SIZE );
-
-  stride = uint( CRUDE_LIGHT_WORDS_COUNT ) * ( uint( scene.data.resolution.x ) / uint( CRUDE_LIGHT_TILE_SIZE ) );
-  address = tile.y * stride + tile.x * CRUDE_LIGHT_WORDS_COUNT;
-
-  if ( min_light_id != CRUDE_LIGHTS_MAX_COUNT + 1 )
-  {
-   // return crude_distinct_colors_f32[ 25 ];
-    //radiance = vec3(1,1,1);
-    //for ( uint light_id = min_light_id; light_id <= max_light_id; ++light_id )
-    //{
-    //  uint word_id = light_id / 32;
-    //  uint bit_id = light_id % 32;
-    //
-    //  if ( ( lights_tiles.data[ address + word_id ] & ( 1 << bit_id ) ) != 0 )
-    //  {
-    //    uint global_light_index = lights_indices.data[ light_id ];
-    //    radiance = crude_calculate_point_light_contribution( lights.data[ 0 ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
-    //  }
-    //}
-  }
-
-  return crude_distinct_colors_f32[ bin_index ];
-
-#ifdef CRUDE_RAYTRACED_DDGI
-  indirect_irradiance = CRUDE_TEXTURE_LOD( scene.data.indirect_light_texture_index, screen_texcoord, 0 ).rgb;
-  indirect_diffuse = indirect_irradiance * albedo.rgb;
-  const float ao = 1.0f;
-  radiance.xyz += indirect_diffuse * ao;
-#endif /* CRUDE_RAYTRACED_DDGI */
-
-  return radiance;
+  return direct_radiance;
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
