@@ -13,6 +13,27 @@
       ]
     },
     {
+      "name": "pointlight_shadows_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "light_lut_pass_marker"
+        }
+      ],
+      "outputs": [
+        {
+            "type": "texture",
+            "name": "tetrahedron_shadow_texture",
+            "external": true
+        },
+        {
+          "type": "marker",
+          "name": "pointlight_shadows_pass"
+        }
+      ]
+    },
+    {
       "name": "culling_early_pass",
       "type": "compute",
       "inputs": [],
@@ -42,6 +63,10 @@
         {
           "type": "reference",
           "name": "mesh_task_indirect_count_early"
+        },
+        {
+          "type": "reference",
+          "name": "pointlight_shadows_pass"
         }
       ],
       "outputs": [

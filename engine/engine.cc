@@ -598,6 +598,7 @@ crude_engine_initialize_graphics_
   {
     crude_gfx_technique_load_from_file( "deferred_classic.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   }
+  crude_gfx_technique_load_from_file( "pointshadow_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "compute.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "debug.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "fullscreen.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );

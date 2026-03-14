@@ -26,6 +26,12 @@ CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsIndicesRef, uint32 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsShadowViewsRef, XMFLOAT4X4 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsTrianglesIndicesRef, uint8 );
 
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletesInstancesRef, XMUINT2 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletesInstancesCountRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletDrawCommands, XMUINT4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointlightSpheresRef, XMFLOAT4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsWorldToClipRef, XMFLOAT4X4 );
+
 #ifndef __cplusplus
 
 const vec2 filter_kernel[ CRUDE_SHADOW_FILTER_NUM_SAMPLES ] =
@@ -232,10 +238,7 @@ crude_calculate_lighting
 {
   // !TODO LIGHTS INDICES PER CLUSTER INSTEAD + WAVE INSTRUCTION PER CLUSTER in case I will need it in future
   // (don't want to overcook for now)
-
-  vec4                                                     view_position;
-  vec3                                                     direct_radiance, indirect_irradiance, indirect_diffuse;
-  vec3                                                     f0;
+  vec3                                                     direct_radiance, f0;
 
   f0 = CRUDE_DEAFULT_F0;
 
@@ -247,6 +250,7 @@ crude_calculate_lighting
   {
     return direct_radiance;
   }
+
 
   for ( uint i = 0; i < scene.data.active_lights_count; ++i )
   {

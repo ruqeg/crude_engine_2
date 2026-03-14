@@ -147,6 +147,7 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_light_cpu                                     *lights;
   crude_gfx_memory_allocation                              lights_hga;
+  crude_gfx_memory_allocation                              lights_world_to_clip_hga;
   uint32                                                   total_visible_lights_count;
 
   /***********************
@@ -170,9 +171,9 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_opaque_late_pass                               opaque_late_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
-  //crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
+  crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
-  crude_gfx_compose_pass                             compose_pass;
+  crude_gfx_compose_pass                                   compose_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
   crude_gfx_transparent_pass                               transparent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
