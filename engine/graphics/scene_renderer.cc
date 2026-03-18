@@ -128,6 +128,20 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
+  {
+    crude_gfx_model_renderer_resources                    *light_model_renderer_resources;
+
+    scene_renderer->light_model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+    scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
+    light_model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle );
+  
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->light_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( light_model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( light_model_renderer_resources->default_nodes_transforms ); ++i )
+    {
+      scene_renderer->light_model_renderer_resources_instance.nodes_transforms[ i ] = light_model_renderer_resources->default_nodes_transforms[ i ];
+    }
+  }
+
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
@@ -221,6 +235,8 @@ crude_gfx_scene_renderer_deinitialize
 
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
+  
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->light_model_renderer_resources_instance.nodes_transforms );
 }
 
 bool
@@ -237,6 +253,9 @@ crude_gfx_scene_renderer_update_instances_from_node
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_instances_from_node" );
 
   model_initialized = false;
+  
+  // load debug light (in case it was cleaned because of new model manager resource clean)
+  scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
@@ -668,6 +687,9 @@ crude_scene_renderer_register_nodes_instances_
     light_gpu.light = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_light );
     XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
+    
+    XMStoreFloat4x4( &scene_renderer->light_model_renderer_resources_instance.model_to_world, XMMatrixTranslation( light_gpu.translation.x, light_gpu.translation.y, light_gpu.translation.z ) );
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, &scene_renderer->light_model_renderer_resources_instance );
   }
   
   *model_initialized |= local_model_initialized;

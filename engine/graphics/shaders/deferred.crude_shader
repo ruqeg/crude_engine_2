@@ -398,6 +398,8 @@ void main()
     direct_radiance = scene.data.background_color * scene.data.background_intensity;
   }
 
+  direct_radiance += mesh_draw.emissive.xyz * mesh_draw.emissive.w;
+
   out_direct_radiance = vec4( direct_radiance, 1.f );
 }
 

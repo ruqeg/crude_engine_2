@@ -483,6 +483,11 @@ crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_
   mesh_draw->occlusion_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
   mesh_draw->normal_texture_handle.index = CRUDE_SHADER_TEXTURE_UNDEFINED;
 
+  mesh_draw->emmision.x = material->emissive_factor[ 0 ];
+  mesh_draw->emmision.y = material->emissive_factor[ 1 ];
+  mesh_draw->emmision.z = material->emissive_factor[ 2 ];
+  mesh_draw->emmision.w = material->emissive_strength.emissive_strength;
+
   if ( material == NULL )
   {
     return false;

@@ -149,26 +149,27 @@ layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out flat uint out_mesh_draw_index[];
 layout(location=2) out vec3 out_normals[];
 
-/* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi, http://www.hd-prg.com/tileBasedShadows.html */
+/* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi */
 const vec3 plane_normals[ 12 ] =
 {
-  vec3(0.00000000, -0.03477280, 0.99939519),
-  vec3(-0.47510946, -0.70667917, 0.52428567),
-  vec3(0.47510946, -0.70667917, 0.52428567),
   vec3(0.00000000, -0.03477280, -0.99939519),
-  vec3(0.47510946, -0.70667917, -0.52428567),
   vec3(-0.47510946, -0.70667917, -0.52428567),
-  vec3(-0.52428567, 0.70667917, -0.47510946),
-  vec3(-0.52428567, 0.70667917, 0.47510946),
-  vec3(-0.99939519, 0.03477280, 0.00000000),
+  vec3(0.47510946, -0.70667917, -0.52428567),
+  vec3(0.00000000, -0.03477280, 0.99939519),
+  vec3(0.47510946, -0.70667917, 0.52428567),
+  vec3(-0.47510946, -0.70667917, 0.52428567),
   vec3(0.52428567, 0.70667917, -0.47510946),
   vec3(0.99939519, 0.03477280, 0.00000000),
-  vec3(0.52428567, 0.70667917, 0.47510946)
+  vec3(0.52428567, 0.70667917, 0.47510946),
+  vec3(-0.52428567, 0.70667917, -0.47510946),
+  vec3(-0.52428567, 0.70667917, 0.47510946),
+  vec3(-0.99939519, 0.03477280, 0.00000000)
 };
 
 float get_clip_distance( vec3 light_position, vec3 vertex_position, uint plane_index )
 {
   vec3 normal = plane_normals[ plane_index ];
+  //return dot( vertex_position - light_position, normal );
   return dot( vertex_position, normal ) + dot( light_position, -normal );
 }
 

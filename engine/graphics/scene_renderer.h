@@ -113,6 +113,11 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   bool                                                     imgui_pass_enalbed;
+  
+  /***********************
+   * Debug
+   **********************/
+  crude_gfx_model_renderer_resources_instance              light_model_renderer_resources_instance;
 
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data

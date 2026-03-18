@@ -25,6 +25,7 @@ typedef struct crude_gfx_mesh_cpu
   uint32                                                   normal_offset;
   uint32                                                   texcoord_offset;
   uint32                                                   indices_count;
+  XMFLOAT4                                                 emmision;
   XMFLOAT4                                                 albedo_color_factor;
   XMFLOAT3                                                 metallic_roughness_occlusion_factor;
   float32                                                  alpha_cutoff;
