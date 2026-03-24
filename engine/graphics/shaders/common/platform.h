@@ -97,6 +97,12 @@
 #define CRUDE_DEAFULT_F0 vec3( 0.04f )
 #define CRUDE_SATURATE( v ) clamp( v, 0, 1 )
 
+#define CRUDE_WAVE_IS_FIRST_LANE                           ( gl_SubgroupInvocationID == 0 )
+#define CRUDE_WAVE_ACTIVE_COUNT_BITS( condition )          ( subgroupBallot( condition ) )
+#define CRUDE_MAKE_UNIFORM( value )                        ( subgroupBroadcastFirst( value ) )
+
+#define CRUDE_BARRIER                                      memoryBarrierShared(); barrier();
+
 #define crude_device_address uint64
 
 /* Read only */

@@ -260,7 +260,7 @@ void main()
   uint count_for_this_bin = histogram.data[ local_index ];
   histogram_shared[ local_index ] = count_for_this_bin * local_index;
 
-  barrier( );
+CRUDE_BARRIER
 
   histogram.data[ local_index ] = 0;
 
@@ -273,7 +273,7 @@ void main()
       histogram_shared[ local_index ] += histogram_shared[ local_index + cutoff ];
     }
 
-    barrier( );
+CRUDE_BARRIER
   }
 
   if ( local_index == 0 )
@@ -322,7 +322,7 @@ void main()
 {
   histogram_shared[ gl_LocalInvocationIndex ] = 0;
 
-  barrier( );
+CRUDE_BARRIER
   
   uvec2 hdr_color_texture_size = textureSize( global_textures[ nonuniformEXT( hdr_color_texture_index ) ], 0 ).xy;
   if ( gl_GlobalInvocationID.x < hdr_color_texture_size.x && gl_GlobalInvocationID.y < hdr_color_texture_size.y )
@@ -332,7 +332,7 @@ void main()
     atomicAdd( histogram_shared[ bin_index ], 1 );
   }
 
-  barrier( );
+CRUDE_BARRIER
   
   atomicAdd( histogram.data[ gl_LocalInvocationIndex ], histogram_shared[ gl_LocalInvocationIndex ] );
 }

@@ -7,6 +7,8 @@
 
 #include <engine/core/alias.h>
 
+#define CRUDE_RIGHT_HAND 1
+
 using namespace DirectX;
 
 #define CRUDE_FLOOR( a ) floor( a )
@@ -159,6 +161,16 @@ crude_intersection_sphere_triangle
   _In_ XMVECTOR                                             closest_point,
   _In_ XMVECTOR                                             sphere_position,
   _In_ float32                                              sphere_radius
+);
+
+CRUDE_API XMVECTOR
+crude_compute_projected_sphere_aabb
+(
+  _In_ XMVECTOR                                            light_world_position,
+  _In_ float32                                             light_radius,
+  _In_ XMMATRIX                                            camera_world_to_view,
+  _In_ XMMATRIX                                            camera_view_to_clip,
+  _In_ float32                                             camera_near_z
 );
 
 CRUDE_API crude_raycast_result

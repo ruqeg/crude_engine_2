@@ -124,7 +124,7 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_memory_allocation                              scene_hga;
 
-  crude_gfx_model_renderer_resources_instance            **model_renderer_resoruces_instances;
+  crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
 
   crude_gfx_memory_allocation                              meshes_instances_draws_hga;
@@ -151,9 +151,9 @@ typedef struct crude_gfx_scene_renderer
    * Common Lights & Shadows CPU & GPU Data
    **********************/
   crude_gfx_light_cpu                                     *lights;
+  crude_gfx_culled_light_cpu                              *culled_lights;
   crude_gfx_memory_allocation                              lights_hga;
-  crude_gfx_memory_allocation                              lights_world_to_clip_hga;
-  uint32                                                   total_visible_lights_count;
+  crude_gfx_memory_allocation                              lights_world_to_texture_hga;
 
   /***********************
    * Ray Tracing CPU & GPU Data

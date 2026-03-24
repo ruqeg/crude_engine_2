@@ -51,32 +51,36 @@ crude_gfx_light_lut_pass_render
 
   gpu = pass->scene_renderer->gpu;
 
-  if ( !pass->scene_renderer->total_visible_lights_count )
+  if ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) == 0 )
   {
     return;
   }
-
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
   
   /* Upload light to gpu */
   {
+    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+  
     crude_gfx_light                                       *lights_gpu;
     crude_gfx_memory_allocation                            lights_tca;
 
-    lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * pass->scene_renderer->total_visible_lights_count );
+    lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) );
     lights_gpu = CRUDE_CAST( crude_gfx_light*, lights_tca.cpu_address );
 
-    for ( uint32 i = 0; i < pass->scene_renderer->total_visible_lights_count; ++i )
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ); ++i )
     {
+      crude_gfx_culled_light_cpu const                    *culled_light_cpu;
       crude_gfx_light_cpu const                           *light_cpu;
   
-      light_cpu = &pass->scene_renderer->lights[ i ];
+      culled_light_cpu = &pass->scene_renderer->culled_lights[ i ];
+      light_cpu = &pass->scene_renderer->lights[ culled_light_cpu->light_index ];
       
       lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light );
       lights_gpu[ i ].color = light_cpu->light.color;
       lights_gpu[ i ].intensity = light_cpu->light.intensity;
       lights_gpu[ i ].world_position = light_cpu->translation;
       lights_gpu[ i ].radius = light_cpu->light.radius;
+      //lights_gpu[ i ].tile_position = culled_light_cpu->tile_position;
+      //lights_gpu[ i ].tile_size = culled_light_cpu->tile_size;
     }
 
     crude_gfx_cmd_memory_copy( primary_cmd, lights_tca, pass->scene_renderer->lights_hga, 0, 0 );

@@ -2,6 +2,7 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define POINTSHADOW
+#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_TASK
 //#define POINTSHADOW_COMMANDS_GENERATION
 //#define POINTSHADOW_CULLING
@@ -44,7 +45,7 @@ CRUDE_PUSH_CONSTANT
   PointlightSpheresRef                                     pointlight_spheres;
 
   PointshadowMeshletDrawCommands                           pointshadow_meshlet_draw_commands;
-  LightsWorldToClipRef                                     lights_world_to_clip;
+  LightsWorldToTextureRef                                  lights_world_to_texture;
 };
 
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
@@ -199,10 +200,15 @@ void main()
   for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {
     uint vertex_index = vertices_indices.data[ i + vertices_offset ];
-    vec4 model_position = vec4( vertices.data[ vertex_index ].position, 1.0 );
-    
-    vec4 world_position = model_position * mesh_to_world;
-    gl_MeshVerticesEXT[ i ].gl_Position = world_position * lights_world_to_clip.data[ layer_index ];
+    vec4 mesh_position = vec4( vertices.data[ vertex_index ].position, 1.0 );
+    mat4 mesh_to_skin = 
+      vertices.data[ vertex_index ].joint_weights.x * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.x ) ] +
+      vertices.data[ vertex_index ].joint_weights.y * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.y ) ] +
+      vertices.data[ vertex_index ].joint_weights.z * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.z ) ] +
+      vertices.data[ vertex_index ].joint_weights.w * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.w ) ];
+    vec4 skin_position = mesh_position * mesh_to_skin;
+    vec4 world_position = skin_position * mesh_to_world;
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * lights_world_to_texture.data[ layer_index ];
     
     float clip_distances[ 3 ];
     vec3 light_position = pointlight_spheres.data[ light_index ].xyz;
@@ -274,19 +280,25 @@ void main()
     return;
   }
 
-
+  uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], mesh_draw.meshletes_count );
   for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
   {
     uint meshlet_index = mesh_draw.meshletes_offset + i;
-    float meshlet_radius = meshlets.data[ meshlet_index ].radius * scale * 1.1;
-    vec4 meshlet_world_center = vec4( meshlets.data[ meshlet_index ].center, 1 ) * mesh_to_world;
-
-    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
-    {
-      uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], 1 );
-      pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
-    }
+    pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
   }
+  //  pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+  //  for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
+  //  {
+  //    uint meshlet_index = mesh_draw.meshletes_offset + i;
+  //    float meshlet_radius = meshlets.data[ meshlet_index ].radius * scale * 1.1;
+  //    vec4 meshlet_world_center = vec4( meshlets.data[ meshlet_index ].center, 1 ) * mesh_to_world;
+  //
+  //    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
+  //    {
+  //      uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], 1 );
+  //     pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+  //    }
+  //  }
 }
 
 #endif /* POINTSHADOW_CULLING */

@@ -49,6 +49,14 @@ typedef struct crude_gfx_light_cpu
   XMFLOAT3                                                 translation;
 } crude_gfx_light_cpu;
 
+typedef struct crude_gfx_culled_light_cpu
+{
+  uint32                                                   light_index;
+  float32                                                  screen_area;
+  XMFLOAT2                                                 tile_position;
+  float32                                                  tile_size;
+} crude_gfx_culled_light_cpu;
+
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (

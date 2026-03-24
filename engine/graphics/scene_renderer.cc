@@ -38,6 +38,12 @@ crude_scene_renderer_register_nodes_instances_
   _Out_opt_ bool                                          *model_initialized
 );
 
+static void
+crude_scene_renderer_cull_lights_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
 /**
  *
  * Renderer Scene Function
@@ -111,10 +117,11 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->total_joints_matrices_buffer_capacity = CRUDE_GFX_SCENE_RENDERER_JOINT_MATRICES_BUFFER_CAPACITY;
   
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->culled_lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
   scene_renderer->lights_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->lights_world_to_texture_hga = crude_gfx_memory_allocation_empty( );
   
   scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga" );
 
@@ -222,7 +229,7 @@ crude_gfx_scene_renderer_deinitialize
 #endif
 
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
@@ -235,6 +242,7 @@ crude_gfx_scene_renderer_deinitialize
 
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->light_model_renderer_resources_instance.nodes_transforms );
 }
@@ -259,15 +267,18 @@ crude_gfx_scene_renderer_update_instances_from_node
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
+  CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0u );
+
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node, &model_initialized );
-  
+
   scene_renderer->total_meshes_instances_count = 0u;
   scene_renderer->total_joints_matrices_count = 1u; /* reserve default matrix */
+  
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
   {
     crude_gfx_model_renderer_resources const              *model_renderer_resources;
     
-    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->model_renderer_resoruces_instances[ i ]->model_renderer_resources_handle );
+    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources_handle );
     
     for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
@@ -384,13 +395,13 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
     crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   }
   
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_world_to_clip_hga ) )
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_world_to_texture_hga ) )
   {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_clip_hga );
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
   }
 
   scene_renderer->lights_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_light ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_hga" );
-  scene_renderer->lights_world_to_clip_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_clip_hga" );
+  scene_renderer->lights_world_to_texture_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_texture_hga" );
 }
 
 void
@@ -405,6 +416,7 @@ crude_gfx_scene_renderer_submit_draw_task
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
   primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
   crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
+  crude_scene_renderer_cull_lights_( scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, primary_cmd );
   crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
   crude_gfx_cmd_pop_marker( primary_cmd );
@@ -490,7 +502,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     scene->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->renderer_size.x ) / scene_renderer->gpu->renderer_size.y;
     crude_gfx_camera_to_camera_gpu( &scene_renderer->options.scene.camera, scene_renderer->options.scene.camera_view_to_world, &scene->camera );
     scene->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
-    scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->culled_lights );
     scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
     scene->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
     scene->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
@@ -536,19 +548,11 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
     for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
     {
-      crude_gfx_model_renderer_resources_instance         *model_renderer_resources_instance;
+      crude_gfx_model_renderer_resources_instance const   *model_renderer_resources_instance;
       crude_gfx_model_renderer_resources const            *model_renderer_resources;
 
-      model_renderer_resources_instance = scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
+      model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
       model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance->model_renderer_resources_handle );
-
-      //animation_instance = NULL;
-      //
-      //if ( model_renderer_resources_instance->animation_instance.animation_index > -1 )
-      //{
-      //  animation_instance = &model_renderer_resources_instance->animation_instance;
-      //  //crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance, delta_time );
-      //}
 
       for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
       {
@@ -646,8 +650,6 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     
     crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
   }
-
-  scene_renderer->total_visible_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
 }
 
 void
@@ -677,7 +679,7 @@ crude_scene_renderer_register_nodes_instances_
     if ( !child_gltf->hidden && child_gltf->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
     {
       XMStoreFloat4x4( &child_gltf->model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
-      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, &child_gltf->model_renderer_resources_instance );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, child_gltf->model_renderer_resources_instance );
     }
   }
 
@@ -689,7 +691,7 @@ crude_scene_renderer_register_nodes_instances_
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
     
     XMStoreFloat4x4( &scene_renderer->light_model_renderer_resources_instance.model_to_world, XMMatrixTranslation( light_gpu.translation.x, light_gpu.translation.y, light_gpu.translation.z ) );
-    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, &scene_renderer->light_model_renderer_resources_instance );
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->light_model_renderer_resources_instance );
   }
   
   *model_initialized |= local_model_initialized;
@@ -701,6 +703,130 @@ crude_scene_renderer_register_nodes_instances_
       crude_entity child = crude_entity_from_iterator( &children_it, i );
       crude_scene_renderer_register_nodes_instances_( scene_renderer, world, child, &local_model_initialized );
       *model_initialized |= local_model_initialized;
+    }
+  }
+}
+
+void
+crude_scene_renderer_cull_lights_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_device                                        *gpu;
+  crude_camera const                                      *camera;
+  crude_transform const                                   *camera_transform;
+  XMMATRIX                                                 view_to_world, world_to_view, view_to_clip, clip_to_view, world_to_clip;
+  float32                                                  tile_size, tile_position_x, tile_position_y;
+  
+  gpu = scene_renderer->gpu;
+
+  camera = &scene_renderer->options.scene.camera;
+  view_to_world = XMLoadFloat4x4( &scene_renderer->options.scene.camera_view_to_world );
+
+  world_to_view = XMMatrixInverse( NULL, view_to_world );
+  view_to_clip = crude_camera_view_to_clip( camera );
+  clip_to_view = XMMatrixInverse( NULL, view_to_clip );
+  world_to_clip = XMMatrixMultiply( world_to_view, view_to_clip );
+  
+  CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0 );
+  
+  tile_size = 1024.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
+  
+  tile_position_x = 0.f;
+  tile_position_y = 0.f;
+
+  for ( uint32 light_index = 0; light_index < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++light_index )
+  {
+    crude_gfx_light_cpu                               *light;
+    XMVECTOR                                           light_world_position, light_view_position;
+    XMVECTOR                                           aabb, aabb_screen;
+    float32                                            aabb_screen_min_x, aabb_screen_max_x, aabb_screen_min_y, aabb_screen_max_y;
+    float32                                            aabb_screen_width, aabb_screen_height, aabb_screen_width_cropped, aabb_screen_height_cropped;
+    float32                                            light_view_position_length, light_radius;
+    bool                                               camera_inside, camera_visible, ty_camera_inside, tx_camera_inside;
+  
+    light = &scene_renderer->lights[ light_index ];
+  
+    /* Transform light in camera space */
+    light_world_position = XMVectorSet( light->translation.x, light->translation.y, light->translation.z, 1.0f );
+    light_radius = light->light.radius;
+  
+    light_view_position = XMVector4Transform( light_world_position, world_to_view );
+#if CRUDE_RIGHT_HAND
+    light_view_position = XMVectorSetZ( light_view_position, -1.f * XMVectorGetZ( light_view_position ) );
+#endif
+    camera_visible = -XMVectorGetZ( light_view_position ) - light_radius < camera->near_z;
+  
+    if ( !camera_visible )
+    {
+      continue;
+    }
+  
+    aabb = crude_compute_projected_sphere_aabb( light_world_position, light_radius, world_to_view, view_to_clip, camera->near_z );
+  
+    light_view_position_length = XMVectorGetX( XMVector3Length( light_view_position ) );
+    camera_inside = ( light_view_position_length - light_radius ) < camera->near_z;
+  
+    if ( camera_inside )
+    {
+      aabb = { -1,-1, 1, 1 };
+    }
+
+    aabb_screen = XMVectorSet(
+      ( XMVectorGetX( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.x - 1 ),
+      ( XMVectorGetY( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.y - 1 ),
+      ( XMVectorGetZ( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.x - 1 ),
+      ( XMVectorGetW( aabb ) * 0.5f + 0.5f ) * ( gpu->renderer_size.y - 1 )
+    );
+  
+    aabb_screen_width = XMVectorGetZ( aabb_screen ) - XMVectorGetX( aabb_screen );
+    aabb_screen_height = XMVectorGetW( aabb_screen ) - XMVectorGetY( aabb_screen );
+  
+    if ( aabb_screen_width < 0.0001f || aabb_screen_height < 0.0001f )
+    {
+      continue;
+    }
+  
+    aabb_screen_min_x = XMVectorGetX( aabb_screen );
+    aabb_screen_min_y = XMVectorGetY( aabb_screen );
+    
+    aabb_screen_max_x = aabb_screen_min_x + aabb_screen_width;
+    aabb_screen_max_y = aabb_screen_min_y + aabb_screen_height;
+  
+    if ( aabb_screen_min_x > gpu->renderer_size.x || aabb_screen_min_y > gpu->renderer_size.y )
+    {
+      continue;
+    }
+  
+    if ( aabb_screen_max_x < 0.0f || aabb_screen_max_y < 0.0f )
+    {
+      continue;
+    }
+  
+    aabb_screen_min_x = CRUDE_MAX( aabb_screen_min_x, 0.0f );
+    aabb_screen_min_y = CRUDE_MAX( aabb_screen_min_y, 0.0f );
+  
+    aabb_screen_max_x = CRUDE_MIN( aabb_screen_max_x, gpu->renderer_size.x );
+    aabb_screen_max_y = CRUDE_MIN( aabb_screen_max_y, gpu->renderer_size.y );
+
+    aabb_screen_width_cropped = aabb_screen_max_x - aabb_screen_min_x;
+    aabb_screen_height_cropped = aabb_screen_max_y - aabb_screen_min_y;
+
+    crude_gfx_culled_light_cpu culled_light_cpu;
+    culled_light_cpu.light_index = light_index;
+    culled_light_cpu.screen_area = aabb_screen_width_cropped * aabb_screen_height_cropped;
+    culled_light_cpu.tile_position.x = tile_position_x;
+    culled_light_cpu.tile_position.y = tile_position_y;
+    culled_light_cpu.tile_size = tile_size;
+    CRUDE_ARRAY_PUSH( scene_renderer->culled_lights, culled_light_cpu );
+
+    tile_position_x += tile_size;
+
+    if ( tile_position_x > 0.99 )
+    {
+      tile_position_x = 0;
+      tile_position_y += tile_size;
     }
   }
 }

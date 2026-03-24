@@ -2,9 +2,9 @@
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define CRUDE_STAGE_FRAGMENT
-//#define POSTPROCESSING
-//#define COMPOSE_DIRECT_LIGHT
-#define SSR
+#define POSTPROCESSING
+#define COMPOSE_DIRECT_LIGHT
+//#define SSR
 
 #include "common/platform.h"
 #include "common/debug.h"

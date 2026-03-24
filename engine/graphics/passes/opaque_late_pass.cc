@@ -84,7 +84,7 @@ crude_gfx_opaque_late_pass_render
       JointMatricesRef                                     joint_matrices;
 
       LightsRef                                            lights;
-      XMFLOAT2                                             padding;
+      LightsWorldToTextureRef                              lights_world_to_texture;
     };
     push_constant_                                         push_constant;
 
@@ -101,6 +101,7 @@ crude_gfx_opaque_late_pass_render
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
     push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
     push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
+    push_constant.lights_world_to_texture = pass->scene_renderer->lights_world_to_texture_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_draw_mesh_task_indirect_count(

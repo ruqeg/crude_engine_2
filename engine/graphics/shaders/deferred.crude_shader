@@ -6,9 +6,9 @@
 //#define DEFERRED_CLASSIC
 //#define TRANSPARENT_NO_CULL
 //#define CRUDE_STAGE_TASK
-#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
-//#define CRUDE_STAGE_FRAGMENT
+#define CRUDE_STAGE_FRAGMENT
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
@@ -90,7 +90,7 @@ CRUDE_PUSH_CONSTANT
   JointMatricesRef                                         joint_matrices;
 
   LightsRef                                                lights;
-  XMFLOAT2                                                 push_constant_padding_;
+  LightsWorldToTextureRef                                  lights_world_to_texture;
 };
 #elif defined( TRANSPARENT_NO_CULL )
 CRUDE_PUSH_CONSTANT
@@ -114,7 +114,7 @@ CRUDE_PUSH_CONSTANT
   JointMatricesRef                                         joint_matrices;
 
   LightsRef                                                lights;
-  XMFLOAT2                                                 push_constant_padding_;
+  LightsWorldToTextureRef                                  lights_world_to_texture;
 };
 #endif
 
@@ -391,7 +391,7 @@ void main()
   if ( depth != 1.f )
   {
     direct_radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights, lights_world_to_texture );
   }
   else
   {
@@ -455,7 +455,7 @@ void main()
   if ( depth != 1.f )
   {
     radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights, lights_world_to_texture );
   }
   else
   {

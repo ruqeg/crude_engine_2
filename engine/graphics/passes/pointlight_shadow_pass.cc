@@ -3,6 +3,23 @@
 
 #include <engine/graphics/passes/pointlight_shadow_pass.h>
 
+static int
+crude_gfx_culled_light_cpu_area_cmp_
+(
+  _In_ void const                                         *a,
+  _In_ void const                                         *b
+)
+{
+  crude_gfx_culled_light_cpu                              *light_a;
+  crude_gfx_culled_light_cpu                              *light_b;
+
+  light_a = CRUDE_CAST( crude_gfx_culled_light_cpu*, a );
+  light_b = CRUDE_CAST( crude_gfx_culled_light_cpu*, b );
+
+  return light_a->screen_area - light_b->screen_area;
+}
+
+
 void
 crude_gfx_pointlight_shadow_pass_initialize
 (
@@ -19,14 +36,14 @@ crude_gfx_pointlight_shadow_pass_initialize
     
   pass->pointlight_spheres_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointlight_spheres_hga" );
   pass->pointshadow_meshlet_draw_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * ( CRUDE_LIGHTS_MAX_COUNT * 4u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshlet_draw_commands_hga" );
-  pass->pointshadow_meshletes_instances_hga= crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT2 ) * CRUDE_MAX_MESHLETS_PER_LIGHT * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_hga" );
+  pass->pointshadow_meshletes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT2 ) * CRUDE_MAX_MESHLETS_PER_LIGHT * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_hga" );
   pass->pointshadow_meshletes_instances_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * ( CRUDE_LIGHTS_MAX_COUNT + 1u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_count_hga" );
 
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   texture_creation.height = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   texture_creation.depth = 1u;
-  texture_creation.format = VK_FORMAT_D16_UNORM;
+  texture_creation.format = VK_FORMAT_D32_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
   crude_string_copy( texture_creation.name, "tetrahedron_shadow_texture", sizeof( texture_creation.name ) );
@@ -43,7 +60,7 @@ crude_gfx_pointlight_shadow_pass_initialize
   render_pass_creation = crude_gfx_render_pass_creation_empty( );
   render_pass_creation.name = "tetrahedron_render_pass";
   render_pass_creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-  render_pass_creation.depth_stencil_format = VK_FORMAT_D16_UNORM;
+  render_pass_creation.depth_stencil_format = texture_creation.format;
   render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   pass->tetrahedron_render_pass_handle = crude_gfx_create_render_pass( scene_renderer->gpu, &render_pass_creation );
 
@@ -92,16 +109,16 @@ crude_gfx_pointlight_shadow_pass_render
 {
   crude_gfx_device                                        *gpu;
   crude_gfx_pointlight_shadow_pass                        *pass;
+  crude_gfx_texture                                       *tetrahedron_shadow_texture;
   crude_gfx_pipeline_handle                                pointshadow_culling_pipeline;
   crude_gfx_pipeline_handle                                pointshadow_commands_generation_pipeline;
   crude_gfx_pipeline_handle                                pointshadow_pipeline;
-  crude_gfx_texture                                       *tetrahedron_shadow_texture;
   uint32                                                   width, height;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_pointlight_shadow_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
-  if ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) == 0 )
+  if ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) == 0 )
   {
     return;
   }
@@ -150,7 +167,7 @@ crude_gfx_pointlight_shadow_pass_render
 
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 
-    crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_visible_meshes_instances_count * CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
+    crude_gfx_cmd_dispatch( primary_cmd, ( pass->scene_renderer->total_visible_meshes_instances_count * CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) + 31 ) / 32, 1u, 1u );
   
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->pointshadow_meshletes_instances_count_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->pointshadow_meshletes_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
@@ -183,7 +200,7 @@ crude_gfx_pointlight_shadow_pass_render
 
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 
-    crude_gfx_cmd_dispatch( primary_cmd, ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) + 31 ) / 32, 1u, 1u );
+    crude_gfx_cmd_dispatch( primary_cmd, ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) + 31 ) / 32, 1u, 1u );
   
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->pointshadow_meshlet_draw_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
     crude_gfx_cmd_pop_marker( primary_cmd );
@@ -244,7 +261,7 @@ crude_gfx_pointlight_shadow_pass_render
       PointlightSpheresRef                                 pointlight_spheres;
 
       PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
-      LightsWorldToClipRef                                 lights_world_to_clip;
+      LightsWorldToTextureRef                              lights_world_to_texture;
     };
     
     XMFLOAT4                                              *pointlight_spheres;
@@ -257,7 +274,7 @@ crude_gfx_pointlight_shadow_pass_render
     pointlight_spheres_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, pass->pointlight_spheres_hga.size );
     pointlight_spheres = CRUDE_CAST( XMFLOAT4*, pointlight_spheres_tca.cpu_address );
 
-    pointlight_world_to_clip_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, pass->scene_renderer->lights_world_to_clip_hga.size );
+    pointlight_world_to_clip_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, pass->scene_renderer->lights_world_to_texture_hga.size );
     pointlight_world_to_clip = CRUDE_CAST( XMFLOAT4X4*, pointlight_world_to_clip_tca.cpu_address );
 
     fov0 = 143.98570868f + 1.99273682f;
@@ -268,9 +285,7 @@ crude_gfx_pointlight_shadow_pass_render
       XMMATRIX                                             clip_to_face_clip[ 4 ];
       XMMATRIX                                             view_to_faceed_view[ 4 ];
       XMMATRIX                                             x_rot_matrix, y_rot_matrix, z_rot_matrix;
-      float32                                              tile_size, tile_position_x, tile_position_y;
       
-      // Yellow -> ? -> Red -> Yellow
       x_rot_matrix = XMMatrixRotationX( XMConvertToRadians( 27.36780516f ) );
       y_rot_matrix = XMMatrixRotationY( XMConvertToRadians( 0.f ) );
       z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 0.f ) );
@@ -287,38 +302,48 @@ crude_gfx_pointlight_shadow_pass_render
       z_rot_matrix = XMMatrixRotationZ( XMConvertToRadians( 90.f ) );
       view_to_faceed_view[ 3 ] = XMMatrixMultiply( XMMatrixMultiply( y_rot_matrix, x_rot_matrix ), z_rot_matrix );
 
-      tile_size = 1.f;
-      tile_position_x = 0.f;
-      tile_position_y = 0.f;
-  
-      clip_to_face_clip[ 0 ] = XMMatrixSet(
-        tile_size, 0.f , 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y - ( tile_size * 0.5f ), 0.f, 1.f
-      ) ;
-      clip_to_face_clip[ 1 ] = XMMatrixSet(
-        tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x + ( tile_size * 0.5f ), tile_position_y, 0.f, 1.f
-      );
-      clip_to_face_clip[ 2 ] = XMMatrixSet(
-        tile_size, 0.f, 0.f, 0.f, 0.f, tile_size * 0.5f, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x, tile_position_y + ( tile_size * 0.5f ), 0.f, 1.f
-      );
-      clip_to_face_clip[ 3 ] = XMMatrixSet(
-        tile_size * 0.5f, 0.f, 0.f, 0.f, 0.f, tile_size, 0.f, 0.f,
-        0.f, 0.f, 1.f, 0.f, tile_position_x - ( tile_size * 0.5f ), tile_position_y, 0.f, 1.f
-      );
-      //clip_to_face_clip[ 0 ] = clip_to_face_clip[ 1 ] = clip_to_face_clip[ 2 ] = clip_to_face_clip[ 3 ] = XMMatrixIdentity( );
-  
-      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ); ++i )
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ); ++i )
       {
+        crude_gfx_culled_light_cpu const                  *culled_light_cpu;
         crude_gfx_light_cpu const                         *light_cpu;
         crude_light const                                 *light;
         XMMATRIX                                           view_to_clip[ 2 ];
         XMMATRIX                                           world_to_view, world_to_faced_view, world_to_clip;
-  
-        light_cpu = &pass->scene_renderer->lights[ i ];
+        float32                                            tile_position_x, tile_position_y;
+
+        culled_light_cpu = &pass->scene_renderer->culled_lights[ i ];
+        light_cpu = &pass->scene_renderer->lights[ culled_light_cpu->light_index ];
         light = &light_cpu->light;
-  
+
+        /* from [0;1] to [-1;1] with tile_size offset from begining */
+        tile_position_x = -1.f + culled_light_cpu->tile_position.x * 2 + culled_light_cpu->tile_size;
+        tile_position_y = 1.f - culled_light_cpu->tile_position.y * 2 - culled_light_cpu->tile_size;
+
+        clip_to_face_clip[ 0 ] = XMMatrixSet(
+          culled_light_cpu->tile_size, 0.f , 0.f, 0.f,
+          0.f, culled_light_cpu->tile_size * 0.5f, 0.f, 0.f,
+          0.f, 0.f, 1.f, 0.f,
+          tile_position_x, tile_position_y - ( culled_light_cpu->tile_size * 0.5f ), 0.f, 1.f
+        );
+        clip_to_face_clip[ 1 ] = XMMatrixSet(
+          culled_light_cpu->tile_size * 0.5f, 0.f, 0.f, 0.f,
+          0.f, culled_light_cpu->tile_size, 0.f, 0.f,
+          0.f, 0.f, 1.f, 0.f,
+          tile_position_x + ( culled_light_cpu->tile_size * 0.5f ), tile_position_y, 0.f, 1.f
+        );
+        clip_to_face_clip[ 2 ] = XMMatrixSet(
+          culled_light_cpu->tile_size, 0.f, 0.f, 0.f,
+          0.f, culled_light_cpu->tile_size * 0.5f, 0.f, 0.f,
+          0.f, 0.f, 1.f, 0.f,
+          tile_position_x, tile_position_y + ( culled_light_cpu->tile_size * 0.5f ), 0.f, 1.f
+        );
+        clip_to_face_clip[ 3 ] = XMMatrixSet(
+          culled_light_cpu->tile_size * 0.5f, 0.f, 0.f, 0.f,
+          0.f, culled_light_cpu->tile_size, 0.f, 0.f,
+          0.f, 0.f, 1.f, 0.f,
+          tile_position_x - ( culled_light_cpu->tile_size * 0.5f ), tile_position_y, 0.f, 1.f
+        );
+
         XMStoreFloat4( &pointlight_spheres[ i ], XMVectorSet( light_cpu->translation.x, light_cpu->translation.y, light_cpu->translation.z, light->radius ) );
    
         view_to_clip[ 0 ] = XMMatrixPerspectiveFovRH( XMConvertToRadians( fov1 ), tanf( XMConvertToRadians( fov0 ) * 0.5f ) / tanf( XMConvertToRadians( fov1 ) * 0.5f ), 0.2f, light->radius );
@@ -343,7 +368,7 @@ crude_gfx_pointlight_shadow_pass_render
         XMStoreFloat4x4( &pointlight_world_to_clip[ i * 4 + 3 ], XMMatrixMultiply( world_to_clip, clip_to_face_clip[ 3 ] ) );
       }
       
-      crude_gfx_cmd_memory_copy( primary_cmd, pointlight_world_to_clip_tca, pass->scene_renderer->lights_world_to_clip_hga, 0, 0 );
+      crude_gfx_cmd_memory_copy( primary_cmd, pointlight_world_to_clip_tca, pass->scene_renderer->lights_world_to_texture_hga, 0, 0 );
       crude_gfx_cmd_memory_copy( primary_cmd, pointlight_spheres_tca, pass->pointlight_spheres_hga, 0, 0 );
     }
     
@@ -369,7 +394,7 @@ crude_gfx_pointlight_shadow_pass_render
     push_constant.pointshadow_meshletes_instances_count = pass->pointshadow_meshletes_instances_count_hga.gpu_address;
     push_constant.pointlight_spheres = pass->pointlight_spheres_hga.gpu_address;
     push_constant.pointshadow_meshlet_draw_commands = pass->pointshadow_meshlet_draw_commands_hga.gpu_address;
-    push_constant.lights_world_to_clip = pass->scene_renderer->lights_world_to_clip_hga.gpu_address;
+    push_constant.lights_world_to_texture = pass->scene_renderer->lights_world_to_texture_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

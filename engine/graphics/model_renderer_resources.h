@@ -98,15 +98,6 @@ typedef struct crude_gfx_model_renderer_resources
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_gfx_model_renderer_resources;
 
-typedef enum crude_gfx_model_renderer_resoruces_instances_type
-{
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_GLTF,
-#if CRUDE_DEVELOP
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_GLTF,
-  CRUDE_GFX_MODEL_RENDERER_RESOURCES_INSTANCE_TYPE_DUBUG_COLLISION,
-#endif
-} crude_gfx_model_renderer_resoruces_instances_type;
-
 typedef struct crude_gfx_model_renderer_resources_animation_instance
 {
   int64                                                    animation_index;
@@ -121,7 +112,6 @@ typedef struct crude_gfx_model_renderer_resources_instance
   crude_gfx_model_renderer_resources_animation_instance    animation_instance;
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
-  crude_gfx_model_renderer_resoruces_instances_type        type;
 } crude_gfx_model_renderer_resources_instance;
 
 CRUDE_API void

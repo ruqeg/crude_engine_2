@@ -422,6 +422,46 @@ crude_intersection_sphere_triangle
   return XMVectorGetX( XMVector3LengthSq( sphere_position - closest_point ) ) < sphere_radius * sphere_radius;
 }
 
+// !TODO why can't I just use world_to_clip? Lazy to think, i'll do it lated
+XMVECTOR
+crude_compute_projected_sphere_aabb
+(
+  _In_ XMVECTOR                                            light_world_position,
+  _In_ float32                                             light_radius,
+  _In_ XMMATRIX                                            camera_world_to_view,
+  _In_ XMMATRIX                                            camera_view_to_clip,
+  _In_ float32                                             camera_near_z
+)
+{
+  XMVECTOR                                                 aabb_min, aabb_max;
+  
+  aabb_min = XMVectorSet( FLT_MAX, FLT_MAX, FLT_MAX, 0 );
+  aabb_max = XMVectorSet( -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 );
+  
+  for ( uint32 c = 0; c < 8; ++c )
+  {
+    XMVECTOR                                       corner, corner_vs, corner_ndc;
+  
+    corner = XMVectorSet( ( c % 2 ) ? 1.f : -1.f, ( c & 2 ) ? 1.f : -1.f, ( c & 4 ) ? 1.f : -1.f, 1 );
+    corner = XMVectorScale( corner, light_radius );
+    corner = XMVectorAdd( corner, light_world_position );
+    corner = XMVectorSetW( corner, 1.f );
+  
+    corner_vs = XMVector4Transform( corner, camera_world_to_view );
+#if CRUDE_RIGHT_HAND
+    corner_vs = XMVectorSetZ( corner_vs, -1.f * XMVectorGetZ( corner_vs ) );
+#endif
+    corner_vs = XMVectorSetZ( corner_vs, CRUDE_MAX( camera_near_z, XMVectorGetZ( corner_vs ) ) );
+    corner_ndc = XMVector4Transform( corner_vs, camera_view_to_clip );
+    corner_ndc = XMVectorScale( corner_ndc, 1.f / XMVectorGetW( corner_ndc ) );
+  
+    aabb_min = XMVectorMin( aabb_min, corner_ndc );
+    aabb_max = XMVectorMax( aabb_max, corner_ndc );
+  }
+  
+  return XMVectorSet( XMVectorGetX( aabb_min ), -1.f * XMVectorGetY( aabb_max ), XMVectorGetX( aabb_max ), -1.f * XMVectorGetY( aabb_min ) );
+}
+
 crude_raycast_result
 crude_raycast_result_empty
 (
