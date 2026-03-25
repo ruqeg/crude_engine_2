@@ -79,8 +79,6 @@ crude_gfx_light_lut_pass_render
       lights_gpu[ i ].intensity = light_cpu->light.intensity;
       lights_gpu[ i ].world_position = light_cpu->translation;
       lights_gpu[ i ].radius = light_cpu->light.radius;
-      //lights_gpu[ i ].tile_position = culled_light_cpu->tile_position;
-      //lights_gpu[ i ].tile_size = culled_light_cpu->tile_size;
     }
 
     crude_gfx_cmd_memory_copy( primary_cmd, lights_tca, pass->scene_renderer->lights_hga, 0, 0 );

@@ -70,7 +70,7 @@ crude_editor_initialize
   editor->game_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_game_debug_system_context );
   crude_game_debug_system_import( engine->world, &editor->game_debug_system_context );
   
-  crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "game\\nodes\\party.crude_node" );
+  crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "game\\rb9\\nodes\\player.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
 
   crude_editor_setup_custom_nodes_to_scene_( editor );

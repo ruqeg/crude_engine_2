@@ -23,6 +23,17 @@ crude_transform_empty
   return transform;
 }
 
+crude_gltf
+crude_gltf_empty
+(
+)
+{
+  crude_gltf gltf = CRUDE_COMPOUNT_EMPTY( crude_gltf );
+  gltf.hidden = false;
+  gltf.model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+  return gltf;
+}
+
 XMMATRIX
 crude_transform_node_to_world
 (

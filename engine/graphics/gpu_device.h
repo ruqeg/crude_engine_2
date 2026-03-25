@@ -8,6 +8,7 @@
 #include <engine/core/assert.h>
 #include <engine/graphics/command_buffer.h>
 #include <engine/graphics/gpu_memory.h>
+#include <engine/graphics/gpu_crash_tracker.h>
 
 #include <engine/graphics/shaders/common/platform.h>
 
@@ -44,7 +45,7 @@ typedef struct crude_gfx_device_creation
   SDL_Window                                              *sdl_window;
   char const                                              *vk_application_name;
   uint32                                                   vk_application_version;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
   uint16                                                   queries_per_frame;
   uint16                                                   num_threads;
@@ -105,6 +106,12 @@ typedef struct crude_gfx_device
    * Stores current command buffers added to the queue.
    */
   crude_gfx_cmd_buffer                                   **queued_command_buffers;
+  /*
+   * 
+   */
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  crude_gfx_gpu_crash_tracker                              crash_tracker;
+#endif
   /**
    * Additional data related to the foundation of the renderer.
    */
@@ -149,6 +156,7 @@ typedef struct crude_gfx_device
    */
   VkAllocationCallbacks                                   *vk_allocation_callbacks;                               
   VmaAllocator                                             vma_allocator;
+  crude_heap_allocator                                    *allocator;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
 
@@ -338,6 +346,15 @@ crude_gfx_resize_texture
   _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ uint32                                              width,
   _In_ uint32                                              height
+);
+
+CRUDE_API void                                     
+crude_gfx_device_queue_submit
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ VkQueue                                             vk_queue,
+  _In_ VkSubmitInfo2                                      *vk_submit_info,
+  _In_ VkFence                                             vk_fence
 );
 
 #if CRUDE_GPU_PROFILER

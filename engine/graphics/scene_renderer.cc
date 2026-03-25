@@ -599,14 +599,14 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
           
           model_to_mesh = XMMatrixInverse( NULL, mesh_to_model );
 
-		      for ( uint64 i = 0; i < CRUDE_ARRAY_LENGTH( skin->joints ); ++i )
-		      {
+          for ( uint64 i = 0; i < CRUDE_ARRAY_LENGTH( skin->joints ); ++i )
+          {
             XMMATRIX                                           joint_matrix, inverse_bind_matrix;
 
             inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ i ] );
             joint_matrix = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ i ] );
             XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh ) );
-		      }
+          }
         }
       }
     }

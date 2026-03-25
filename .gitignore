@@ -3,9 +3,5 @@ build/
 shaders/include/crude_shaders/*
 *.vscode
 compiled_shaders/
-resources/game/sources/trenchboom/autosave/
-resources/game/models/
-resources/game/sounds/
-resources/game/colllisions/
 resources/debug/
-resources/game/fonts/
+resources/game/

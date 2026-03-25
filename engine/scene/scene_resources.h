@@ -54,6 +54,11 @@ crude_transform_empty
 (
 );
 
+CRUDE_API crude_gltf
+crude_gltf_empty
+(
+);
+
 CRUDE_API XMMATRIX
 crude_transform_node_to_world
 (

@@ -9,6 +9,17 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/NVIDIA_Nsight_Aftermath_SDK_2025.5.0.25317/")
+
+message(STATUS "Using find_package to locate Nsight Aftermath SDK")
+find_package(NsightAftermath)
+get_filename_component(NsightAftermath_LIBRARY_DIR ${NsightAftermath_LIBRARY} DIRECTORY)
+
+message(STATUS "Nsight Aftermath FOUND = ${NsightAftermath_FOUND}")
+message(STATUS "Nsight Aftermath Lib Dir = ${NsightAftermath_LIBRARY_DIR}")
+message(STATUS "Nsight Aftermath Lib = ${NsightAftermath_LIBRARY}")
+message(STATUS "Nsight Aftermath Headers Include = ${NsightAftermath_INCLUDE_DIR}")
+
 set(CRUDE_SANITIZER_ANY_ENABLED OFF)
 if(CRUDE_THREAD_SANITIZER)
 add_compile_options(-fsanitize=thread)

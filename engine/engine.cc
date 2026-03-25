@@ -571,7 +571,7 @@ crude_engine_initialize_graphics_
   device_creation.sdl_window = engine->platform.sdl_window;
   device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
-  device_creation.allocator_container = crude_heap_allocator_pack( &engine->common_allocator );
+  device_creation.allocator = &engine->common_allocator;
   device_creation.temporary_allocator = &engine->temporary_allocator;
   device_creation.queries_per_frame = 1u;
   device_creation.num_threads = 3;

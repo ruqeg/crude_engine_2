@@ -39,7 +39,11 @@ static char const *const vk_device_required_extensions[] =
   VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
   VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
-  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME
+  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME,
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME,
+  VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
+#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -239,7 +243,8 @@ crude_gfx_device_initialize
   temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
 
   gpu->sdl_window = creation->sdl_window;
-  gpu->allocator_container  = creation->allocator_container;
+  gpu->allocator = creation->allocator;
+  gpu->allocator_container = crude_heap_allocator_pack( gpu->allocator );
   gpu->vk_allocation_callbacks = NULL;
   gpu->temporary_allocator = creation->temporary_allocator;
   gpu->previous_frame = 0;
@@ -266,6 +271,10 @@ crude_gfx_device_initialize
   vk_pick_physical_device_( gpu, temporary_allocator );
   vk_create_device_( gpu, temporary_allocator );
   vk_create_vma_allocator_( gpu );
+
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  crude_gfx_gpu_crash_tracker_initialize( &gpu->crash_tracker, gpu->allocator );
+#endif
   
   {
     VkPhysicalDeviceProperties                               vk_physical_properties;
@@ -516,6 +525,10 @@ crude_gfx_device_deinitialize
   CRUDE_DEALLOCATE( gpu->allocator_container, gpu->gpu_time_queries_manager );
 #endif
   CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
+  
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  crude_gfx_gpu_crash_tracker_deinitialize( &gpu->crash_tracker );
+#endif
 
   vmaDestroyAllocator( gpu->vma_allocator );
   vkDestroyDevice( gpu->vk_device, gpu->vk_allocation_callbacks );
@@ -708,7 +721,7 @@ crude_gfx_present
     submit_info.signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores );
     submit_info.pSignalSemaphoreInfos    = signal_semaphores;
     
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+    crude_gfx_device_queue_submit( gpu, gpu->vk_main_queue, &submit_info, VK_NULL_HANDLE );
   }
  
   {
@@ -768,7 +781,7 @@ crude_gfx_present
       submit_info.signalSemaphoreInfoCount = CRUDE_COUNTOF( signal_semaphores );
       submit_info.pSignalSemaphoreInfos    = signal_semaphores;
     
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( gpu->vkQueueSubmit2KHR( gpu->vk_main_queue, 1, &submit_info, VK_NULL_HANDLE ), "Failed to sumbit queue" );
+      crude_gfx_device_queue_submit( gpu, gpu->vk_main_queue, &submit_info, VK_NULL_HANDLE );
     }
   }
   
@@ -1180,6 +1193,25 @@ crude_gfx_resize_texture
   vk_create_texture_( gpu, &texture_creation, texture->handle, texture );
   
   crude_gfx_destroy_texture( gpu, texture_to_delete_handle );
+}
+
+void                                     
+crude_gfx_device_queue_submit
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ VkQueue                                             vk_queue,
+  _In_ VkSubmitInfo2                                      *vk_submit_info,
+  _In_ VkFence                                             vk_fence
+)
+{
+  VkResult                                                 vk_result;
+
+  vk_result = gpu->vkQueueSubmit2KHR( vk_queue, 1, vk_submit_info, vk_fence );
+
+  if ( vk_result == VK_ERROR_DEVICE_LOST || vk_result == VK_ERROR_OUT_OF_DEVICE_MEMORY || vk_result == VK_ERROR_UNKNOWN )
+  {
+    crude_gfx_gpu_crash_tracker_handle_device_lost( &gpu->crash_tracker );
+  }
 }
 
 #if CRUDE_GPU_PROFILER
@@ -3417,18 +3449,21 @@ vk_create_instance_
     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-  VkValidationFeatureEnableEXT const features_requested[] = { 
-    VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+  VkValidationFeatureEnableEXT const features_requested[ ] = { 
     VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+#if CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE
+    VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+#endif
+#if CRUDE_GFX_GPU_AV_ENABLE
+    VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+#endif
     //VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
-    VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT
   };
   validation_features = CRUDE_COMPOUNT_EMPTY( VkValidationFeaturesEXT );
   validation_features.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
   validation_features.pNext = &debug_create_info; 
   validation_features.enabledValidationFeatureCount = CRUDE_COUNTOF( features_requested );
   validation_features.pEnabledValidationFeatures = features_requested;
-
   instance_create_info.pNext = &validation_features;
 #endif /* VK_EXT_debug_utils */
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
@@ -3677,6 +3712,9 @@ vk_create_device_
   _In_ crude_allocator_container                           temporary_allocator
 )
 {
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  VkPhysicalDeviceDiagnosticsConfigFeaturesNV              physical_device_diagnostics_config_features_nv;
+#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkPhysicalDeviceRayTracingValidationFeaturesNV           physical_device_ray_tracing_validation_features_nv;
@@ -3752,6 +3790,8 @@ vk_create_device_
     queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
   }
 
+  next_feature = NULL;
+
   //shader_atomic_int64_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderAtomicInt64Features );
   //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
   //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
@@ -3787,12 +3827,24 @@ vk_create_device_
   bit16_storage_features.pNext = &physical_device_buffer_defice_address_features;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  physical_device_diagnostics_config_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDiagnosticsConfigFeaturesNV );
+  physical_device_diagnostics_config_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
+  physical_device_diagnostics_config_features_nv.pNext = next_feature;
+  physical_device_diagnostics_config_features_nv.diagnosticsConfig = 
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV;
+  next_feature = &physical_device_diagnostics_config_features_nv;
+#endif
   
-  next_feature = NULL;
   if ( gpu->shader_relaxed_extended_instruction_extension_present )
   {
     shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
     shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+    shader_relaxed_extended_instruction_features.pNext = next_feature;
     shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = true;
     next_feature = &shader_relaxed_extended_instruction_features;
   }

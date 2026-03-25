@@ -290,8 +290,7 @@ crude_gfx_asynchronous_loader_update
       submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
       submit_info.pCommandBufferInfos      = command_buffers;
     
-      VkQueue used_queue = asynloader->gpu->vk_transfer_queue;
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( asynloader->gpu->vkQueueSubmit2KHR( used_queue, 1, &submit_info, asynloader->vk_transfer_completed_fence ), "Failed to sumbit queue" );
+      crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );;
     }
     
     if ( vkGetFenceStatus( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )

@@ -1564,16 +1564,16 @@ crude_gfx_model_renderer_resources_manager_load_skins_
 {
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->skins, gltf->skins_count, crude_heap_allocator_pack( manager->allocator ) );
 
-	for ( uint64 skin_index = 0; skin_index < gltf->skins_count; ++skin_index )
-	{
+  for ( uint64 skin_index = 0; skin_index < gltf->skins_count; ++skin_index )
+  {
     cgltf_skin                                            *gltf_skin;
     crude_gfx_skin                                       *skin;
 
     gltf_skin = &gltf->skins[ skin_index ];
     skin = &model_renderer_resources->skins[ skin_index ];
-		
-		if ( gltf_skin->inverse_bind_matrices )
-		{
+    
+    if ( gltf_skin->inverse_bind_matrices )
+    {
       uint8                                               *inverse_bind_matrix_data;
 
       inverse_bind_matrix_data = CRUDE_CAST( uint8*, gltf_skin->inverse_bind_matrices->buffer_view->buffer->data ) + gltf_skin->inverse_bind_matrices->buffer_view->offset;
@@ -1584,7 +1584,7 @@ crude_gfx_model_renderer_resources_manager_load_skins_
         skin->inverse_bind_matrices[ i ] = *CRUDE_CAST( XMFLOAT4X4*, inverse_bind_matrix_data );
         inverse_bind_matrix_data += gltf_skin->inverse_bind_matrices->stride;
       }
-		}
+    }
     else
     {
       skin->inverse_bind_matrices = NULL;
@@ -1602,7 +1602,7 @@ crude_gfx_model_renderer_resources_manager_load_skins_
     {
       skin->joints = NULL;
     }
-	}
+  }
 }
 
 void
@@ -1653,7 +1653,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       {
         // !TODO
         sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR; 
-        //CRUDE_ASSERT( false );
+        CRUDE_ASSERT( false );
       }
     
       inputs_data = CRUDE_CAST( uint8*, gltf_sampler->input->buffer_view->buffer->data ) + gltf_sampler->input->buffer_view->offset;

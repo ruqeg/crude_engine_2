@@ -800,6 +800,43 @@ crude_gfx_cmd_push_marker
   vk_label.color[ 3 ] = 1.0f;
   cmd->gpu->vkCmdBeginDebugUtilsLabelEXT( cmd->vk_cmd_buffer, &vk_label );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+  
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+    //// A helper for setting a checkpoint marker
+    //auto setCheckpointMarker = [this](vk::CommandBuffer commandBuffer, const std::string& markerData)
+    //{
+    //    // App is responsible for handling marker memory, and for resolving the memory at crash dump generation time.
+    //    // The actual "const void* pCheckpointMarker" passed to setCheckpointNV in this case can be any uniquely identifying value that the app can resolve to the marker data later.
+    //    // For this sample, we will use this approach to generating a unique marker value:
+    //    // We keep a ringbuffer with a marker history of the last c_markerFrameHistory frames (currently 4).
+    //    unsigned int markerMapIndex = frameNumber % GpuCrashTracker::c_markerFrameHistory;
+    //    auto& currentFrameMarkerMap = markerMap[markerMapIndex];
+    //    // Take the index into the ringbuffer, multiply by 10000, and add the total number of markers logged so far in the current frame, +1 to avoid a value of zero.
+    //    size_t markerID = markerMapIndex * 10000 + currentFrameMarkerMap.size() + 1;
+    //    // This value is the unique identifier we will pass to Aftermath and internally associate with the marker data in the map.
+    //    currentFrameMarkerMap[markerID] = markerData;
+    //    commandBuffer.setCheckpointNV((const void*)markerID);
+    //    // For example, if we are on frame 625, markerMapIndex = 625 % 4 = 1...
+    //    // The first marker for the frame will have markerID = 1 * 10000 + 0 + 1 = 10001.
+    //    // The 15th marker for the frame will have markerID = 1 * 10000 + 14 + 1 = 10015.
+    //    // On the next frame, 626, markerMapIndex = 626 % 4 = 2.
+    //    // The first marker for this frame will have markerID = 2 * 10000 + 0 + 1 = 20001.
+    //    // The 15th marker for the frame will have markerID = 2 * 10000 + 14 + 1 = 20015.
+    //    // So with this scheme, we can safely have up to 10000 markers per frame, and can guarantee a unique markerID for each one.
+    //    // There are many ways to generate and track markers and unique marker identifiers!
+    //};
+    //// clear the marker map for the current frame before writing any markers
+    //markerMap[frameNumber % GpuCrashTracker::c_markerFrameHistory].clear();
+    //
+    //// A helper that prepends the frame number to a string
+    //auto createMarkerStringForFrame = [this](const char* markerString) {
+    //    std::stringstream ss;
+    //    ss << "Frame " << frameNumber << ": " << markerString;
+    //    return ss.str();
+    //};
+    //// Insert a device diagnostic checkpoint into the command stream
+    //setCheckpointMarker(commandBuffer, createMarkerStringForFrame("Draw Cube"));
+#endif
 }
 
 void

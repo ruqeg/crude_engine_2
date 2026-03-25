@@ -29,6 +29,7 @@ add_subdirectory(meshoptimizer)
 add_subdirectory(vma)
 add_subdirectory(DirectXMath)
 add_subdirectory(imgui-node-editor)
+add_subdirectory(NVIDIA_Nsight_Aftermath_SDK_2025.5.0.25317)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})
 

@@ -103,6 +103,10 @@ crude_gui_node_tree_queue_draw
         crude_snprintf( node_tree->new_node_name, sizeof( node_tree->new_node_name ), "%s_child", crude_entity_get_name( world, node_tree->node_reference ), sizeof( node_tree->new_node_name ) );
         ImGui::OpenPopup("Node Popup Create Child");
       }
+      if ( ImGui::Button( "Remove" ) )
+      {
+        crude_entity_destroy_hierarchy( world, node_tree->node_reference );
+      }
       
       if ( ImGui::BeginPopupModal( "Node Popup Create Child", NULL, ImGuiWindowFlags_MenuBar ) )
       {
@@ -128,7 +132,7 @@ crude_gui_node_tree_queue_draw
           }
           case CRUDE_GUI_NODE_TYPE_GLTF:
           {
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_gltf, { } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_gltf, { crude_gltf_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
