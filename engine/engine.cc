@@ -857,8 +857,9 @@ crude_engine_graphics_main_thread_loop_
   if ( new_buffers_recrteated_or_model_initialized )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
-    crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
   }
+
+  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
 
   CRUDE_PROFILER_ZONE_END;
   return true;

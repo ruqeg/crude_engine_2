@@ -260,9 +260,11 @@ crude_gfx_asynchronous_loader_update
       texture_alignment = 4;
       aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );
       
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s start copy", texture->name );
       crude_memory_copy( asynloader->staging_allocation.cpu_address, request.data, aligned_image_size );
 
       crude_gfx_cmd_memory_copy_to_texture( cmd, texture->handle, asynloader->staging_allocation );
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s end copy", texture->name );
      
       free( request.data );
     }
@@ -291,6 +293,7 @@ crude_gfx_asynchronous_loader_update
       submit_info.pCommandBufferInfos      = command_buffers;
     
       crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );;
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue submitted" );
     }
     
     if ( vkGetFenceStatus( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
@@ -298,6 +301,7 @@ crude_gfx_asynchronous_loader_update
       vkWaitForFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
     }
     vkResetFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence );
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue done" );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
     {
