@@ -57,7 +57,8 @@ typedef enum crude_gfx_animation_channel_path
 
 typedef enum crude_gfx_animation_sampler_interpolation_type
 {
-  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR
+  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR,
+  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_STEP
 } crude_gfx_animation_sampler_interpolation_type;
 
 typedef struct crude_gfx_animation_sampler
@@ -123,7 +124,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 );
 
 XMMATRIX
-crude_gfx_node_to_world
+crude_gfx_node_to_model
 (
   _In_ crude_gfx_node const                               *nodes,
   _In_ crude_transform const                              *transforms,

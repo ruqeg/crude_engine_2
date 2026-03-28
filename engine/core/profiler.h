@@ -1,6 +1,6 @@
 #pragma once
 
-#if CRUDE_DEVELOP
+#if CRUDE_DEVELOP && 0
 #include <thirdparty/tracy/public/tracy/TracyC.h>
 
 #include <engine/core/alias.h>

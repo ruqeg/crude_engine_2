@@ -109,7 +109,7 @@ void main()
 
   vec4 view_center = world_center * scene.data.camera.world_to_view;
   
-  //crude_debug_draw_box( debug_line_vertices, debug_counts, world_center.xyz - radius, world_center.xyz + radius, vec4( 1, 1, 1, 1 ) );
+  crude_debug_draw_box( debug_line_vertices, debug_counts, world_center.xyz - radius, world_center.xyz + radius, vec4( 1, 1, 1, 1 ) );
 
   bool frustum_visible = crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
 
@@ -128,6 +128,7 @@ void main()
       debug_counts
     );
   }
+  occlusion_visible = true;
 
   bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
 #if defined( CULLING_LATE )

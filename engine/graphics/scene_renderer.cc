@@ -565,7 +565,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
         
         if ( node->meshes_gpu || node->skin != -1 )
         {
-          mesh_to_model = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
+          mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
           model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
           mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
         }
@@ -574,6 +574,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
         {
           for ( uint32 mesh_gpu_index = 0; mesh_gpu_index < CRUDE_ARRAY_LENGTH( node->meshes_gpu ); ++mesh_gpu_index )
           {
+            meshes_instances_draws->bounding_sphere ==;
             XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
             XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
             meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = node->meshes_gpu[ mesh_gpu_index ];
@@ -604,7 +605,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
             XMMATRIX                                           joint_matrix, inverse_bind_matrix;
 
             inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ i ] );
-            joint_matrix = crude_gfx_node_to_world( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ i ] );
+            joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ i ] );
             XMStoreFloat4x4( &joint_matrices[ joint_matrix_index++ ], XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh ) );
           }
         }

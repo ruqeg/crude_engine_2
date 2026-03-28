@@ -100,7 +100,6 @@ crude_occlusion_culling
 )
 {
   // !TODO ANIMATION BRAKE EVERYTHING FUCKING JOINT MATRICES!!!!!!!!!
-  return true;
   vec4 aabb_clip;
   bool occlusion_visible = true;
   if ( crude_bounding_sphere_to_clipped_aabb( view_bounding_center, radius, znear, projection_00, projection_11, aabb_clip ) )
@@ -145,7 +144,6 @@ crude_frustum_culling
 )
 {
   // !TODO ANIMATION BRAKE EVERYTHING FUCKING JOINT MATRICES!!!!!!!!!
-  return true;
   bool frustum_visible = true;
   for ( uint i = 0; i < 6; ++i )
   {

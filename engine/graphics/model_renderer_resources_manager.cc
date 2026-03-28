@@ -864,10 +864,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   mesh_primitive_index = 0;
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   { 
-    cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
+    cgltf_mesh *gltf_mesh = &gltf->meshes[ mesh_index ];
     gltf_mesh_index_to_mesh_primitive_index[ mesh_index ] = mesh_primitive_index;
 
-    for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
+    for ( uint32 primitive_index = 0; primitive_index < gltf_mesh->primitives_count; ++primitive_index )
     {
       ++mesh_primitive_index;
     }
@@ -876,12 +876,12 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
   mesh_primitive_index = 0;
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
   {
-    cgltf_mesh *mesh = &gltf->meshes[ mesh_index ];
+    cgltf_mesh *gltf_mesh = &gltf->meshes[ mesh_index ];
 
-    for ( uint32 primitive_index = 0; primitive_index < mesh->primitives_count; ++primitive_index )
+    for ( uint32 primitive_index = 0; primitive_index < gltf_mesh->primitives_count; ++primitive_index )
     {
       crude_gfx_mesh_cpu                                   mesh_draw;
-      cgltf_primitive                                     *mesh_primitive;
+      cgltf_primitive                                     *gltf_mesh_primitive;
       cgltf_accessor                                      *indices_accessor;
       cgltf_buffer_view                                   *indices_buffer_view;
       crude_gfx_memory_allocation                          indices_gpu_allocation;
@@ -890,18 +890,18 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       uint32                                               flags;
       bool                                                 material_transparent;
       
-      mesh_primitive = &mesh->primitives[ primitive_index ];
+      gltf_mesh_primitive = &gltf_mesh->primitives[ primitive_index ];
       mesh_draw = CRUDE_COMPOUNT_EMPTY( crude_gfx_mesh_cpu );
-      
+
       flags = 0;
 
-      for ( uint32 i = 0; i < mesh_primitive->attributes_count; ++i )
+      for ( uint32 i = 0; i < gltf_mesh_primitive->attributes_count; ++i )
       {
-        uint32 buffer_offset = mesh_primitive->attributes[ i ].data->offset + mesh_primitive->attributes[ i ].data->buffer_view->offset;
+        uint32 buffer_offset = gltf_mesh_primitive->attributes[ i ].data->offset + gltf_mesh_primitive->attributes[ i ].data->buffer_view->offset;
 
         // !TODO REMOVE
-        crude_gfx_memory_allocation gltf_hga = manager->buffers[ buffers_offset + cgltf_buffer_index( gltf, mesh_primitive->attributes[ i ].data->buffer_view->buffer ) ];
-        switch ( mesh_primitive->attributes[ i ].type )
+        crude_gfx_memory_allocation gltf_hga = manager->buffers[ buffers_offset + cgltf_buffer_index( gltf, gltf_mesh_primitive->attributes[ i ].data->buffer_view->buffer ) ];
+        switch ( gltf_mesh_primitive->attributes[ i ].type )
         {
         case cgltf_attribute_type_position:
         {
@@ -909,10 +909,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
           XMVECTOR                                         position_min;
           
           CRUDE_ASSERT( sizeof( cgltf_float[4] ) == sizeof( XMFLOAT4 ) );
-          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->has_max && mesh_primitive->attributes[ i ].data->has_min );
+          CRUDE_ASSERT( gltf_mesh_primitive->attributes[ i ].data->has_max && gltf_mesh_primitive->attributes[ i ].data->has_min );
           
-          position_max = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, mesh_primitive->attributes[ i ].data->min ) );
-          position_min = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, mesh_primitive->attributes[ i ].data->max ) );
+          position_max = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->min ) );
+          position_min = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->max ) );
 
           bounding_center = XMVectorAdd( position_min, position_min );
           bounding_center = XMVectorScale( bounding_center, 0.5f );
@@ -940,8 +940,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
         }
         case cgltf_attribute_type_texcoord:
         {
-          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->component_type == cgltf_component_type_r_32f );
-          CRUDE_ASSERT( mesh_primitive->attributes[ i ].data->type == cgltf_type_vec2 );
+          CRUDE_ASSERT( gltf_mesh_primitive->attributes[ i ].data->component_type == cgltf_component_type_r_32f );
+          CRUDE_ASSERT( gltf_mesh_primitive->attributes[ i ].data->type == cgltf_type_vec2 );
           mesh_draw.texcoord_hga = gltf_hga;
           mesh_draw.texcoord_offset = buffer_offset;
           break;
@@ -949,11 +949,11 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
         }
       }
       
-      indices_accessor = mesh_primitive->indices;
+      indices_accessor = gltf_mesh_primitive->indices;
       indices_buffer_view = indices_accessor->buffer_view;
       indices_gpu_allocation = manager->buffers[ buffers_offset + cgltf_buffer_index( gltf, indices_accessor->buffer_view->buffer ) ];
 
-      material_transparent = crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_( manager, gltf, mesh_primitive->material, &mesh_draw, images_offset, samplers_offset );
+      material_transparent = crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_( manager, gltf, gltf_mesh_primitive->material, &mesh_draw, images_offset, samplers_offset );
       
       if ( indices_accessor->component_type == cgltf_component_type_r_16u )
       {
@@ -1649,10 +1649,12 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       {
         sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR; 
       }
+      else if ( gltf_sampler->interpolation == cgltf_interpolation_type_step )
+      {
+        sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_STEP;
+      }
       else
       {
-        // !TODO
-        sampler->interpolation = CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR; 
         CRUDE_ASSERT( false );
       }
     

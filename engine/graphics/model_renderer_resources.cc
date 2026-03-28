@@ -32,7 +32,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
 }
 
 XMMATRIX
-crude_gfx_node_to_world
+crude_gfx_node_to_model
 (
   _In_ crude_gfx_node const                               *nodes,
   _In_ crude_transform const                              *transforms,
@@ -40,18 +40,18 @@ crude_gfx_node_to_world
 )
 {
   uint64                                                 current_parent_index;
-  XMMATRIX                                               node_to_world;
+  XMMATRIX                                               node_to_model;
   
-  node_to_world = crude_transform_node_to_parent( &transforms[ node_index ] );
+  node_to_model = crude_transform_node_to_parent( &transforms[ node_index ] );
   current_parent_index = nodes[ node_index ].parent;
   
   while ( current_parent_index != -1 )
   {
-    node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( &transforms[ current_parent_index ] ) );
+    node_to_model = XMMatrixMultiply( node_to_model, crude_transform_node_to_parent( &transforms[ current_parent_index ] ) );
     current_parent_index = nodes[ current_parent_index ].parent;
   }
   
-  return node_to_world;
+  return node_to_model;
 }
 
 void
@@ -173,12 +173,6 @@ crude_gfx_model_renderer_resources_instance_update_animation
     channel = &animation->channels[ channel_index ];
     sampler = &animation->samplers[ channel->sampler_index ];
   
-    if ( sampler->interpolation != CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR )
-    {
-      CRUDE_ASSERT( false );
-      continue;
-    }
-  
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( sampler->inputs ) - 1; ++i )
     {
       if ( ( animation_instance->current_time >= sampler->inputs[ i ] ) && ( animation_instance->current_time <= sampler->inputs[ i + 1 ] ) )
@@ -187,7 +181,15 @@ crude_gfx_model_renderer_resources_instance_update_animation
         XMVECTOR                                         x, y;
         float32                                          t;
   
-        t = ( animation_instance->current_time - sampler->inputs[ i ] ) / ( sampler->inputs[ i + 1 ] - sampler->inputs[ i ] );
+  
+        if ( sampler->interpolation == CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR )
+        {
+          t = ( animation_instance->current_time - sampler->inputs[ i ] ) / ( sampler->inputs[ i + 1 ] - sampler->inputs[ i ] );
+        }
+        else if ( sampler->interpolation == CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_STEP )
+        {
+          t = CRUDE_FLOOR( ( animation_instance->current_time - sampler->inputs[ i ] ) / ( sampler->inputs[ i + 1 ] - sampler->inputs[ i ] ) );
+        }
   
         transform = &model_renderer_resources_instance->nodes_transforms[ channel->node ];
   
