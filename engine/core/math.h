@@ -2,7 +2,7 @@
 
 /* okay I give up... directxmath is too good to not to use */
 #include <thirdparty/cJSON/cJSON.h>
-#include <DirectXMath.h>
+#include <thirdparty/DirectXMath/Inc/DirectXMath.h>
 #include <math.h>
 
 #include <engine/core/alias.h>

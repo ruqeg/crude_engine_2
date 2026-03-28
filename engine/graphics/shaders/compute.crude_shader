@@ -47,16 +47,13 @@ CRUDE_PUSH_CONSTANT
   MeshDrawsRef                                             mesh_draws;
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
-  MeshBoundsRef                                            mesh_bounds;
-
   MeshDrawCommandsRef                                      mesh_draw_commands;
+
   MeshDrawCommandsRef                                      mesh_draw_commands_culled;
-
   MeshDrawCountRef                                         mesh_draw_count;
-  DebugLinesVerticesRef                                    debug_line_vertices;
 
+  DebugLinesVerticesRef                                    debug_line_vertices;
   DebugCountsRef                                           debug_counts;
-  vec2                                                     _padding;
 };
 
 void write_mesh_draw_command
@@ -102,7 +99,7 @@ void main()
   
   uint mesh_draw_index = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_draw_index;
   mat4 mesh_to_world = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_to_world;
-  vec4 bounding_sphere = mesh_bounds.data[ mesh_draw_index ];
+  vec4 bounding_sphere = mesh_instance_draws.data[ mesh_instance_draw_index ].bounding_sphere;
   vec4 world_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;
   float scale = crude_calculate_scale_from_matrix( mat3( mesh_to_world ) );
   float radius = bounding_sphere.w * scale * 1.1;
@@ -113,22 +110,21 @@ void main()
 
   bool frustum_visible = crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
 
-  bool occlusion_visible = false;
-  if ( frustum_visible )
-  {
-    occlusion_visible = crude_occlusion_culling(
-      mesh_draw_index,
-      view_center.xyz, radius, scene.data.camera.znear, 
-      scene.data.camera.view_to_clip[ 0 ][ 0 ],
-      scene.data.camera.view_to_clip[ 1 ][ 1 ],
-      mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
-      scene.data.camera.position,
-      scene.data.camera.world_to_clip,
-      debug_line_vertices,
-      debug_counts
-    );
-  }
-  occlusion_visible = true;
+  bool occlusion_visible = frustum_visible;
+  //if ( frustum_visible )
+  //{
+  //  occlusion_visible = crude_occlusion_culling(
+  //    mesh_draw_index,
+  //    view_center.xyz, radius, scene.data.camera.znear, 
+  //    scene.data.camera.view_to_clip[ 0 ][ 0 ],
+  //    scene.data.camera.view_to_clip[ 1 ][ 1 ],
+  //    mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
+  //    scene.data.camera.position,
+  //    scene.data.camera.world_to_clip,
+  //    debug_line_vertices,
+  //    debug_counts
+  //  );
+  //}
 
   bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
 #if defined( CULLING_LATE )

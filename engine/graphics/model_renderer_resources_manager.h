@@ -57,7 +57,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
 
   /* Common */
   crude_gfx_memory_allocation                              meshes_draws_hga;
-  crude_gfx_memory_allocation                              meshes_bounds_hga;
   uint64                                                   total_meshes_count;
 
   crude_resource_pool                                      model_renderer_resources_pool;

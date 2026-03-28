@@ -149,7 +149,6 @@ CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshDrawsRef, crude_gfx_mesh_draw );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshletsRef, crude_gfx_meshlet );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( TrianglesIndicesRef, uint8 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( VerticesIndicesRef, uint32 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshBoundsRef, XMFLOAT4 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( JointMatricesRef, XMFLOAT4X4 );
 
 #ifndef __cplusplus

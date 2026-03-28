@@ -34,6 +34,7 @@ crude_gfx_pointlight_shadow_pass_initialize
 
   pass->scene_renderer = scene_renderer;
     
+  pass->enabled = true;
   pass->pointlight_spheres_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointlight_spheres_hga" );
   pass->pointshadow_meshlet_draw_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * ( CRUDE_LIGHTS_MAX_COUNT * 4u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshlet_draw_commands_hga" );
   pass->pointshadow_meshletes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT2 ) * CRUDE_MAX_MESHLETS_PER_LIGHT * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_hga" );
@@ -118,7 +119,7 @@ crude_gfx_pointlight_shadow_pass_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_pointlight_shadow_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
-  if ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) == 0 )
+  if ( !pass->enabled || CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) == 0 )
   {
     return;
   }
@@ -135,13 +136,13 @@ crude_gfx_pointlight_shadow_pass_render
       MeshDrawsRef                                         mesh_draws;
 
       MeshInstancesDrawsRef                                mesh_instance_draws;
-      MeshBoundsRef                                        mesh_bounds;
-
       MeshletsRef                                          meshlets;
-      LightsRef                                            lights;
 
+      LightsRef                                            lights;
       PointshadowMeshletesInstancesRef                     pointshadow_meshletes_instances;
+
       PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
+      XMFLOAT2                                             padding;
     };
     
     push_constant_                                         push_constant;
@@ -158,7 +159,6 @@ crude_gfx_pointlight_shadow_pass_render
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
-    push_constant.mesh_bounds = pass->scene_renderer->model_renderer_resources_manager->meshes_bounds_hga.gpu_address;
     push_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
     push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
     push_constant.pointshadow_meshletes_instances = pass->pointshadow_meshletes_instances_hga.gpu_address;
@@ -249,19 +249,19 @@ crude_gfx_pointlight_shadow_pass_render
       TrianglesIndicesRef                                  triangles_indices;
 
       VerticesIndicesRef                                   vertices_indices;
-      MeshBoundsRef                                        mesh_bounds;
-
       VkDeviceAddress                                      debug_counts;
+
       JointMatricesRef                                     joint_matrices;
-
       LightsRef                                            lights;
+
       PointshadowMeshletesInstancesRef                     pointshadow_meshletes_instances;
-
       PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-      PointlightSpheresRef                                 pointlight_spheres;
 
+      PointlightSpheresRef                                 pointlight_spheres;
       PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
+
       LightsWorldToTextureRef                              lights_world_to_texture;
+      XMFLOAT2                                             padding;
     };
     
     XMFLOAT4                                              *pointlight_spheres;
@@ -386,7 +386,6 @@ crude_gfx_pointlight_shadow_pass_render
     push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
     push_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
     push_constant.vertices_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_hga.gpu_address;
-    push_constant.mesh_bounds = pass->scene_renderer->model_renderer_resources_manager->meshes_bounds_hga.gpu_address;
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
     push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
     push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;

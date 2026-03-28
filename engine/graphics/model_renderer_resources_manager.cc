@@ -75,15 +75,27 @@ crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_
 );
 
 static void
+crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Out_ crude_gfx_model_renderer_resources                *model_renderer_resouces,
+  _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ cgltf_data                                         *gltf,
+  _In_ char const                                         *gltf_absolute_directory,
+  _In_ uint32                                              buffers_offset, 
+  _In_ uint32                                              images_offset,
+  _In_ uint32                                              samplers_offset
+);
+
+static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Out_ crude_gfx_model_renderer_resources                *model_renderer_resouces,
+  _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
   _In_ cgltf_data                                         *gltf,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ char const                                         *gltf_directory,
-  _In_ crude_gfx_mesh_cpu                                 *meshes,
-  _In_ uint64                                              meshes_count,
-  _In_ uint32                                              buffers_offset,
+  _In_ uint32                                              buffers_offset, 
   _In_ uint32                                              images_offset,
   _In_ uint32                                              samplers_offset
 );
@@ -92,15 +104,14 @@ static void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _In_ cgltf_data                                         *gltf,
-  _In_ crude_gfx_mesh_cpu                                 *meshes
+  _Inout_ crude_gfx_model_renderer_resources              *model_renderer_resouces,
+  _In_ cgltf_data                                         *gltf
 );
 
 void
 crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _Out_ crude_gfx_mesh_cpu                                *meshes
+  _In_ crude_gfx_model_renderer_resources_manager          *manager
 );
 
 static void
@@ -173,7 +184,6 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->meshlets_triangles_indices_hga = crude_gfx_memory_allocation_empty( );
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
-  manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( manager->allocator ) );
@@ -235,7 +245,6 @@ crude_gfx_model_renderer_resources_manager_deintialize
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_triangles_indices_hga );
 
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
-  crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
 
   crude_linear_allocator_deinitialize( &manager->linear_allocator );
   crude_string_buffer_deinitialize( &manager->gltf_absolute_filepath_string_buffer );
@@ -288,7 +297,6 @@ crude_gfx_model_renderer_resources_manager_clear
   crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_triangles_indices_hga );
 
   crude_gfx_memory_deallocate( manager->gpu, manager->meshes_draws_hga );
-  crude_gfx_memory_deallocate( manager->gpu, manager->meshes_bounds_hga );
 
   manager->total_meshes_count = 0;
 
@@ -303,7 +311,6 @@ crude_gfx_model_renderer_resources_manager_clear
   manager->meshlets_triangles_indices_hga = crude_gfx_memory_allocation_empty( );
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
-  manager->meshes_bounds_hga = crude_gfx_memory_allocation_empty( );
 }
 
 crude_gfx_model_renderer_resources_handle
@@ -383,11 +390,10 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
 {
   cgltf_data                                              *gltf;
   uint32                                                  *gltf_mesh_index_to_mesh_primitive_index;
-  crude_gfx_mesh_cpu                                      *meshes;
   char                                                    *gltf_absolute_directory;
   char                                                    *gltf_absolute_filepath;
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
-  uint64                                                   temporary_allocator_marker, meshes_count, images_offset, samplers_offset, buffers_offset;
+  uint64                                                   temporary_allocator_marker, images_offset, samplers_offset, buffers_offset;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
 
@@ -413,8 +419,6 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   gltf_absolute_filepath = NULL;
   crude_file_directory_from_path( gltf_absolute_directory );
   
-  meshes_count = crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_( gltf );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes, meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gltf_mesh_index_to_mesh_primitive_index, gltf->meshes_count, crude_stack_allocator_pack( manager->temporary_allocator ) );
   
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading images" );
@@ -425,24 +429,18 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_gfx_model_renderer_resources_manager_gltf_load_textures_( manager, gltf ); /* Should be executed after images/samplers loaded*/
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading bufferse" );
   crude_gfx_model_renderer_resources_manager_gltf_load_buffers_( manager, gltf, gltf_absolute_directory );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading meshes" );
-  crude_gfx_model_renderer_resources_manager_gltf_load_meshes_( manager, gltf, gltf_mesh_index_to_mesh_primitive_index, gltf_absolute_directory, meshes, meshes_count, buffers_offset, images_offset, samplers_offset );
-  if ( manager->gpu->mesh_shaders_extension_present )
-  {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create meshlets" );
-    crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, gltf, meshes );
-  }
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading nodes" );
-  crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf_mesh_index_to_mesh_primitive_index );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading geometry" );
+  crude_gfx_model_renderer_resources_manager_gltf_load_geometry_( manager, &model_renderer_resouces, gltf_mesh_index_to_mesh_primitive_index, gltf, gltf_absolute_directory, buffers_offset, images_offset, samplers_offset );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading skins" );
   crude_gfx_model_renderer_resources_manager_load_skins_( manager, &model_renderer_resouces, gltf );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading nodes" );
+  crude_gfx_model_renderer_resources_manager_gltf_load_nodes_( manager, &model_renderer_resouces, gltf, gltf_mesh_index_to_mesh_primitive_index );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading animations" );
   crude_gfx_model_renderer_resources_manager_load_animations_( manager, &model_renderer_resouces, gltf );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading finished" );
 
-  manager->total_meshes_count += meshes_count;
-  crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_( manager, meshes );
+  crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_( manager );
 
 cleanup:
   if ( gltf )
@@ -849,11 +847,10 @@ void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Out_ crude_gfx_model_renderer_resources                *model_renderer_resouces,
+  _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
   _In_ cgltf_data                                         *gltf,
-  _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index,
   _In_ char const                                         *gltf_directory,
-  _In_ crude_gfx_mesh_cpu                                 *meshes,
-  _In_ uint64                                              meshes_count,
   _In_ uint32                                              buffers_offset, 
   _In_ uint32                                              images_offset,
   _In_ uint32                                              samplers_offset
@@ -872,6 +869,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       ++mesh_primitive_index;
     }
   }
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resouces->meshes, mesh_primitive_index, crude_heap_allocator_pack( manager->allocator ) );
   
   mesh_primitive_index = 0;
   for ( uint32 mesh_index = 0; mesh_index < gltf->meshes_count; ++mesh_index )
@@ -911,10 +910,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
           CRUDE_ASSERT( sizeof( cgltf_float[4] ) == sizeof( XMFLOAT4 ) );
           CRUDE_ASSERT( gltf_mesh_primitive->attributes[ i ].data->has_max && gltf_mesh_primitive->attributes[ i ].data->has_min );
           
-          position_max = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->min ) );
-          position_min = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->max ) );
+          position_max = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->max ) );
+          position_min = XMLoadFloat4( CRUDE_REINTERPRET_CAST( XMFLOAT4 const*, gltf_mesh_primitive->attributes[ i ].data->min ) );
 
-          bounding_center = XMVectorAdd( position_min, position_min );
+          bounding_center = XMVectorAdd( position_max, position_min );
           bounding_center = XMVectorScale( bounding_center, 0.5f );
           bounding_radius = XMVectorGetX( XMVectorMax( XMVector3Length( position_max - bounding_center ), XMVector3Length( position_min - bounding_center ) ) );
 
@@ -963,26 +962,75 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshes_
       mesh_draw.index_hga = indices_gpu_allocation;
       mesh_draw.index_offset = indices_accessor->offset + indices_accessor->buffer_view->offset;
       mesh_draw.indices_count = indices_accessor->count;
-      mesh_draw.gpu_mesh_index = mesh_primitive_index + manager->total_meshes_count;
+      mesh_draw.gpu_mesh_global_index = mesh_primitive_index + manager->total_meshes_count;
 
-      mesh_draw.bounding_sphere.x = XMVectorGetX( bounding_center );
-      mesh_draw.bounding_sphere.y = XMVectorGetY( bounding_center );
-      mesh_draw.bounding_sphere.z = XMVectorGetZ( bounding_center );
-      mesh_draw.bounding_sphere.w = bounding_radius;
+      mesh_draw.default_bounding_sphere.x = XMVectorGetX( bounding_center );
+      mesh_draw.default_bounding_sphere.y = XMVectorGetY( bounding_center );
+      mesh_draw.default_bounding_sphere.z = XMVectorGetZ( bounding_center );
+      mesh_draw.default_bounding_sphere.w = bounding_radius;
 
       mesh_draw.flags |= flags;
 
-      meshes[ mesh_primitive_index++ ] = mesh_draw;
+      model_renderer_resouces->meshes[ mesh_primitive_index++ ] = mesh_draw;
     }
   }
+
+  manager->total_meshes_count += CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes );
+}
+
+void
+crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Out_ crude_gfx_model_renderer_resources                *model_renderer_resouces,
+  _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
+  _In_ cgltf_data                                         *gltf,
+  _In_ char const                                         *gltf_absolute_directory,
+  _In_ uint32                                              buffers_offset, 
+  _In_ uint32                                              images_offset,
+  _In_ uint32                                              samplers_offset
+)
+{
+  crude_gfx_mesh_draw                                     *meshes_draws;
+  crude_gfx_buffer                                        *old_buffer_gpu;
+  crude_gfx_memory_allocation                              cpu_allocation, old_gpu_allocation;
+  uint64                                                   allocation_size, temporary_allocator_marker;
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading meshes" );
+  crude_gfx_model_renderer_resources_manager_gltf_load_meshes_( manager, model_renderer_resouces, gltf_mesh_index_to_mesh_primitive_index, gltf, gltf_absolute_directory, buffers_offset, images_offset, samplers_offset );
+  if ( manager->gpu->mesh_shaders_extension_present )
+  {
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create meshlets" );
+    crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_( manager, model_renderer_resouces, gltf );
+  }
+  
+  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes_draws, CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ), crude_stack_allocator_pack( manager->temporary_allocator ) );
+
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ); ++i )
+  {
+    crude_gfx_mesh_cpu_to_mesh_draw_gpu( manager->gpu, &model_renderer_resouces->meshes[ i ], &meshes_draws[ i ] );
+  }
+  
+  allocation_size = sizeof( crude_gfx_mesh_draw ) * CRUDE_ARRAY_LENGTH( meshes_draws );
+  cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
+  crude_memory_copy( cpu_allocation.cpu_address, meshes_draws, allocation_size );
+
+  old_gpu_allocation = manager->meshes_draws_hga;
+  manager->meshes_draws_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( crude_gfx_mesh_draw ) * manager->total_meshes_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_draws_sb" );
+
+  crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshes_draws_hga, old_gpu_allocation );
+  
+  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
 }
 
 void
 crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _In_ cgltf_data                                         *gltf,
-  _In_ crude_gfx_mesh_cpu                                 *meshes
+  _Inout_ crude_gfx_model_renderer_resources              *model_renderer_resouces,
+  _In_ cgltf_data                                         *gltf
 )
 {
   crude_gfx_meshlet                                       *meshlets;
@@ -1089,7 +1137,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
         new_meshlet->triangles_offset = local_meshlets_triangles_indices_offset + local_meshlet->triangle_offset + manager->total_meshlets_triangles_indices_count;
         new_meshlet->vertices_count = local_meshlet->vertex_count;
         new_meshlet->triangles_count = local_meshlet->triangle_count;
-        new_meshlet->mesh_index = mesh_index + manager->total_meshes_count;
+        new_meshlet->mesh_index = model_renderer_resouces->meshes[ mesh_index ].gpu_mesh_global_index;
 
         new_meshlet->center = CRUDE_COMPOUNT( XMFLOAT3, { meshlet_bounds.center[ 0 ], meshlet_bounds.center[ 1 ], meshlet_bounds.center[ 2 ] } );
 
@@ -1104,9 +1152,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       CRUDE_ARRAY_SET_LENGTH( meshlets_vertices_indices, ( last_meshlet->vertices_offset - manager->total_meshlets_vertices_indices_count ) + last_meshlet->vertices_count );
       CRUDE_ARRAY_SET_LENGTH( meshlets_triangles_indices, ( last_meshlet->triangles_offset - manager->total_meshlets_triangles_indices_count ) + 3u * last_meshlet->triangles_count );
       
-      meshes[ mesh_index ].meshlets_count = local_meshletes_count;
-      meshes[ mesh_index ].meshlets_offset = local_meshlets_offset + manager->total_meshlets_count;
-      ++mesh_index;
+      model_renderer_resouces->meshes[ mesh_index ].meshlets_count = local_meshletes_count;
+      model_renderer_resouces->meshes[ mesh_index ].meshlets_offset = local_meshlets_offset + manager->total_meshlets_count;
       
       for ( uint32 meshlet_vertex_index = local_meshlets_vertices_indices_offset; meshlet_vertex_index < CRUDE_ARRAY_LENGTH( meshlets_vertices_indices ); ++meshlet_vertex_index )
       {
@@ -1114,6 +1161,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
       }
 
       local_meshlets_vertices_offset += primitive_vertices_count;
+      ++mesh_index;
     }
   }
   
@@ -1171,45 +1219,9 @@ crude_gfx_model_renderer_resources_manager_gltf_load_meshlets_
 void
 crude_gfx_model_renderer_resources_manager_create_meshes_gpu_buffers_
 (
-  _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _Out_ crude_gfx_mesh_cpu                                *meshes
+  _In_ crude_gfx_model_renderer_resources_manager         *manager
 )
 {
-  crude_gfx_mesh_draw                                     *meshes_draws;
-  XMFLOAT4                                                *meshes_bounds;
-  crude_gfx_buffer                                        *old_buffer_gpu;
-  crude_gfx_memory_allocation                              cpu_allocation, old_gpu_allocation;
-  uint64                                                   allocation_size, temporary_allocator_marker;
-  
-  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
-
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes_draws, CRUDE_ARRAY_LENGTH( meshes ), crude_stack_allocator_pack( manager->temporary_allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes_bounds, CRUDE_ARRAY_LENGTH( meshes ), crude_stack_allocator_pack( manager->temporary_allocator ) );
-
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( meshes ); ++i )
-  {
-    crude_gfx_mesh_cpu_to_mesh_draw_gpu( manager->gpu, &meshes[ i ], &meshes_draws[ i ] );
-    meshes_bounds[ i ] = meshes[ i ].bounding_sphere;
-  }
-  
-  allocation_size = sizeof( crude_gfx_mesh_draw ) * CRUDE_ARRAY_LENGTH( meshes_draws );
-  cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
-  crude_memory_copy( cpu_allocation.cpu_address, meshes_draws, allocation_size );
-
-  old_gpu_allocation = manager->meshes_draws_hga;
-  manager->meshes_draws_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( crude_gfx_mesh_draw ) * manager->total_meshes_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_draws_sb" );
-
-  crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshes_draws_hga, old_gpu_allocation );
-  
-  allocation_size = sizeof( XMFLOAT4 ) * CRUDE_ARRAY_LENGTH( meshes_bounds );
-  cpu_allocation = crude_gfx_memory_allocate( manager->gpu, allocation_size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
-  crude_memory_copy( cpu_allocation.cpu_address, meshes_bounds, allocation_size );
-    
-  old_gpu_allocation = manager->meshes_bounds_hga;
-  manager->meshes_bounds_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( XMFLOAT4 ) * manager->total_meshes_count, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_bounds_sb" );
-  crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy( manager->async_loader, cpu_allocation, manager->meshes_bounds_hga, old_gpu_allocation );
-
-  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
 }
 
 void
@@ -1324,16 +1336,139 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       uint32                                               mesh_index_offset;
 
       mesh_index_offset = gltf_mesh_index_to_mesh_primitive_index[ cgltf_mesh_index( gltf, gltf_node->mesh ) ];
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->meshes_gpu, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->allocator )  );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->meshes, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->allocator )  );
 
       for ( uint32 pi = 0; pi < gltf_node->mesh->primitives_count; ++pi )
       {
-        node->meshes_gpu[ pi ] = mesh_index_offset + pi + manager->total_meshes_count;
+        node->meshes[ pi ] = mesh_index_offset + pi;
+
+        if ( gltf_node->skin )
+        {
+          crude_gfx_aabb_cpu                              *joints_aabbs;
+          crude_gfx_skin                                  *skin;
+          crude_gfx_mesh_cpu                              *mesh;
+          cgltf_primitive                                 *gltf_primitive;
+          uint8                                           *primitive_positions_data;
+          uint8                                           *primitive_joints_data;
+          uint32                                           primitive_positions_stride;
+          uint32                                           primitive_joints_stride;
+          cgltf_component_type                             primitive_joints_type;
+          uint32                                           primitive_vertices_count;
+          
+          skin = &model_renderer_resources->skins[ node->skin ];
+          mesh = &model_renderer_resources->meshes[ node->meshes[ pi ] ];
+
+          gltf_primitive = &gltf_node->mesh->primitives[ pi ];
+          
+          primitive_positions_data = primitive_joints_data = NULL;
+
+          primitive_joints_stride = primitive_positions_stride = 0;
+
+          primitive_vertices_count = gltf_primitive->attributes[ 0 ].data->count;
+
+          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( joints_aabbs, CRUDE_ARRAY_LENGTH( skin->joints ), crude_heap_allocator_pack( manager->allocator ) );
+
+          for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( joints_aabbs ); ++i )
+          {
+            joints_aabbs[ i ].max.x = FLT_MAX;
+          }
+
+          for ( uint32 i = 0; i < gltf_primitive->attributes_count; ++i )
+          {
+            cgltf_attribute *attribute = &gltf_primitive->attributes[ i ];
+            CRUDE_ASSERT( primitive_vertices_count == attribute->data->count );
+
+            uint8 *attribute_data = CRUDE_STATIC_CAST( uint8*, attribute->data->buffer_view->buffer->data ) + attribute->data->buffer_view->offset + attribute->data->offset;
+            switch ( attribute->type )
+            {
+            case cgltf_attribute_type_position:
+            {
+              CRUDE_ASSERT( attribute->data->type == cgltf_type_vec3 );
+              primitive_positions_stride = attribute->data->stride;
+              primitive_positions_data = CRUDE_CAST( uint8*, attribute_data );
+              break;
+            }
+            case cgltf_attribute_type_joints:
+            {
+              CRUDE_ASSERT( attribute->data->type == cgltf_type_vec4 );
+
+              primitive_joints_stride = attribute->data->stride;
+              primitive_joints_data = CRUDE_CAST( uint8*, attribute_data );
+              primitive_joints_type = attribute->data->component_type;
+              break;
+            }
+            }
+          }
+          
+          CRUDE_ASSERT( primitive_positions_data );
+
+          for ( uint32 i = 0; i < primitive_vertices_count; ++i )
+          {
+            XMFLOAT3                                      *vertex_position;
+
+            vertex_position = CRUDE_CAST( XMFLOAT3*, primitive_positions_data );
+            primitive_positions_data += primitive_positions_stride;
+
+            if ( primitive_joints_data )
+            {
+              for ( uint32 k = 0; k < 4; ++k )
+              {
+                uint32                                     joint_index;
+                
+                if ( primitive_joints_type == cgltf_component_type_r_8u )
+                {
+                  joint_index = primitive_joints_data[ k ];
+                }
+                else
+                {
+                  CRUDE_ASSERT( primitive_joints_type == cgltf_component_type_r_16u );
+                  joint_index = CRUDE_CAST( uint16*, primitive_joints_data )[ k ];
+                }
+
+                /* !TODO i fucking hate this implementation */
+                if ( joints_aabbs[ joint_index ].max.x == FLT_MAX )
+                {
+                  joints_aabbs[ joint_index ].max.x = vertex_position->x;
+                  joints_aabbs[ joint_index ].max.y = vertex_position->y;
+                  joints_aabbs[ joint_index ].max.z = vertex_position->z;
+                  joints_aabbs[ joint_index ].min.x = vertex_position->x;
+                  joints_aabbs[ joint_index ].min.y = vertex_position->y;
+                  joints_aabbs[ joint_index ].min.z = vertex_position->z;
+                }
+                else
+                {
+                  joints_aabbs[ joint_index ].max.x = CRUDE_MAX( joints_aabbs[ joint_index ].max.x, vertex_position->x );
+                  joints_aabbs[ joint_index ].max.y = CRUDE_MAX( joints_aabbs[ joint_index ].max.y, vertex_position->y );
+                  joints_aabbs[ joint_index ].max.z = CRUDE_MAX( joints_aabbs[ joint_index ].max.z, vertex_position->z );
+                  joints_aabbs[ joint_index ].min.x = CRUDE_MIN( joints_aabbs[ joint_index ].min.x, vertex_position->x );
+                  joints_aabbs[ joint_index ].min.y = CRUDE_MIN( joints_aabbs[ joint_index ].min.y, vertex_position->y );
+                  joints_aabbs[ joint_index ].min.z = CRUDE_MIN( joints_aabbs[ joint_index ].min.z, vertex_position->z );
+                }
+              }
+              
+              primitive_joints_data += primitive_joints_stride;
+            }
+          }
+
+          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( mesh->affected_joints, 0, crude_heap_allocator_pack( manager->allocator ) );
+          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( mesh->affected_joints_local_aabb, 0, crude_heap_allocator_pack( manager->allocator ) );
+          for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( joints_aabbs ); ++i )
+          {
+            if ( joints_aabbs[ i ].max.x != FLT_MAX )
+            {
+              CRUDE_ARRAY_PUSH( mesh->affected_joints, i );
+              CRUDE_ARRAY_PUSH( mesh->affected_joints_local_aabb, joints_aabbs[ i ] );
+            }
+          }
+
+          CRUDE_ARRAY_DEINITIALIZE( joints_aabbs );
+        }
       }
+
     }
     else
     {
-      node->meshes_gpu = NULL;
+      node->meshes = NULL;
     }
 
     crude_gfx_model_renderer_resources_manager_get_cgltf_node_transform( gltf_node, transform );

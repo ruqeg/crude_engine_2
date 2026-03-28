@@ -20,7 +20,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   mesh_draw_gpu->metallic_roughness_occlusion_factor.y = mesh->metallic_roughness_occlusion_factor.y;
   mesh_draw_gpu->metallic_roughness_occlusion_factor.z = mesh->metallic_roughness_occlusion_factor.z;
   mesh_draw_gpu->flags = mesh->flags;
-  mesh_draw_gpu->mesh_index = mesh->gpu_mesh_index;
+  mesh_draw_gpu->mesh_index = mesh->gpu_mesh_global_index;
   mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
   mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
   mesh_draw_gpu->mesh_indices_count = mesh->indices_count;
@@ -69,11 +69,23 @@ crude_gfx_model_renderer_resources_deinitialize
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
 )
 {
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
+  {
+    if ( model_renderer_resources->meshes[ i ].affected_joints )
+    {
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes[ i ].affected_joints );
+    }
+    if ( model_renderer_resources->meshes[ i ].affected_joints_local_aabb )
+    {
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes[ i ].affected_joints_local_aabb );
+    }
+  }
+
   for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++k )
   {
-    if ( model_renderer_resources->nodes[ k ].meshes_gpu )
+    if ( model_renderer_resources->nodes[ k ].meshes )
     {
-      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].meshes_gpu );
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].meshes );
     }
     if ( model_renderer_resources->nodes[ k ].childrens )
     {

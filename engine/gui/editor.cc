@@ -35,6 +35,7 @@ crude_gui_editor_initialize
   crude_gui_log_viewer_initialize( &editor->log_viewer );
   crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
   crude_gui_gpu_visual_profiler_initialize( &editor->gpu_visual_profiler, &engine->gpu, &engine->develop_heap_allocator );
+  crude_gui_debug_initialize( &editor->debug, &engine->scene_renderer );
 }
 
 void
@@ -48,6 +49,7 @@ crude_gui_editor_deinitialize
   crude_gui_log_viewer_deinitialize( &editor->log_viewer );
   crude_gui_content_browser_deinitialize( &editor->content_browser );
   crude_gui_gpu_visual_profiler_deinitialize( &editor->gpu_visual_profiler );
+  crude_gui_debug_deinitialize( &editor->debug );
 }
 
 void
@@ -83,6 +85,7 @@ crude_gui_editor_queue_draw
     ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_browser );
     ImGui::DockBuilderDockWindow( "Log Viewer", im_dock_id_logger );
     ImGui::DockBuilderDockWindow( "GPU Profiler", im_dock_id_logger );
+    ImGui::DockBuilderDockWindow( "Debug", im_dock_id_logger );
     ImGui::DockBuilderFinish( im_dockspace_id );
   }
   
@@ -199,9 +202,12 @@ crude_gui_editor_queue_draw
   ImGui::Begin( "GPU Profiler" );
   crude_gui_gpu_visual_profiler_queue_draw( &editor->gpu_visual_profiler );
   ImGui::End( );
+
+  ImGui::Begin( "Debug" );
+  crude_gui_debug_queue_draw( &editor->debug );
+  ImGui::End( );
   
   crude_gui_editor_pop_style_( );
-    ImGui::ShowDemoWindow();
 }
 
 void
@@ -211,6 +217,7 @@ crude_gui_editor_update
 )
 {
   crude_gui_gpu_visual_profiler_update( &editor->gpu_visual_profiler );
+  crude_gui_debug_update( &editor->debug );
 }
 
 void

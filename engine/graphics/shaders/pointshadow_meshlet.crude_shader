@@ -33,19 +33,19 @@ CRUDE_PUSH_CONSTANT
   TrianglesIndicesRef                                      triangles_indices;
 
   VerticesIndicesRef                                       vertices_indices;
-  MeshBoundsRef                                            mesh_bounds;
-
   DebugCountsRef                                           debug_counts;
+
   JointMatricesRef                                         joint_matrices;
-
   LightsRef                                                lights;
+
   PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
-
   PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
-  PointlightSpheresRef                                     pointlight_spheres;
 
+  PointlightSpheresRef                                     pointlight_spheres;
   PointshadowMeshletDrawCommands                           pointshadow_meshlet_draw_commands;
+
   LightsWorldToTextureRef                                  lights_world_to_texture;
+  XMFLOAT2                                                 _padding;
 };
 
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
@@ -236,14 +236,17 @@ layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
 CRUDE_PUSH_CONSTANT
 {
-  SceneRef                                             scene;
-  MeshDrawsRef                                         mesh_draws;
-  MeshInstancesDrawsRef                                mesh_instance_draws;
-  MeshBoundsRef                                        mesh_bounds;
-  MeshletsRef                                          meshlets;
-  LightsRef                                            lights;
-  PointshadowMeshletesInstancesRef                     pointshadow_meshletes_instances;
-  PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
+
+  LightsRef                                                lights;
+  PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
+
+  PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
+  XMFLOAT2                                                 _padding;
 };
 
 void main()
@@ -265,8 +268,8 @@ void main()
   uint mesh_draw_index = mesh_instance_draws.data[ mesh_instance_index ].mesh_draw_index;
 
   crude_gfx_mesh_draw mesh_draw = mesh_draws.data[ mesh_draw_index ];
-
-  vec4 bounding_sphere = mesh_bounds.data[ mesh_draw_index ];
+  
+  vec4 bounding_sphere = mesh_instance_draws.data[ mesh_instance_index ].bounding_sphere;
   mat4 mesh_to_world = mesh_instance_draws.data[ mesh_instance_index ].mesh_to_world;
 
   vec4 mesh_world_bounding_center = vec4( bounding_sphere.xyz, 1 ) * mesh_to_world;

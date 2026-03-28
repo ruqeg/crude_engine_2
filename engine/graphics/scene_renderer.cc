@@ -286,9 +286,9 @@ crude_gfx_scene_renderer_update_instances_from_node
 
       node = &model_renderer_resources->nodes[ node_index ];
 
-      if ( node->meshes_gpu )
+      if ( node->meshes )
       {
-        scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( node->meshes_gpu );
+        scene_renderer->total_meshes_instances_count += CRUDE_ARRAY_LENGTH( node->meshes );
       }
 
       if ( node->skin != -1 )
@@ -563,28 +563,79 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
         joints_matrices_offset = joint_matrix_index;
         
-        if ( node->meshes_gpu || node->skin != -1 )
+        if ( node->meshes || node->skin != -1 )
         {
           mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
           model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
           mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
         }
 
-        if ( node->meshes_gpu )
+        if ( node->meshes )
         {
-          for ( uint32 mesh_gpu_index = 0; mesh_gpu_index < CRUDE_ARRAY_LENGTH( node->meshes_gpu ); ++mesh_gpu_index )
+          for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
           {
-            meshes_instances_draws->bounding_sphere ==;
-            XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_to_world, mesh_to_world );
-            XMStoreFloat4x4( &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
-            meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].mesh_draw_index = node->meshes_gpu[ mesh_gpu_index ];
+            crude_gfx_mesh_cpu                            *cpu_mesh;
+            crude_gfx_mesh_instance_draw                  *gpu_meshe_instance_draw;
+
+            cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
+            gpu_meshe_instance_draw = &meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ]; 
+
+            XMStoreFloat4x4( &gpu_meshe_instance_draw->mesh_to_world, mesh_to_world );
+            XMStoreFloat4x4( &gpu_meshe_instance_draw->world_to_mesh, XMMatrixInverse( NULL, mesh_to_world ) );
+            gpu_meshe_instance_draw->mesh_draw_index = cpu_mesh->gpu_mesh_global_index;
+
             if ( node->skin != -1 )
             {
-              meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = joints_matrices_offset;
+              if ( CRUDE_ARRAY_LENGTH( cpu_mesh->affected_joints ) )
+              {
+                crude_gfx_skin                             *skin;
+                XMMATRIX                                   model_to_mesh;
+                XMVECTOR                                   position_max, position_min;
+                XMVECTOR                                   bounding_center;
+                float32                                    bounding_radius;
+              
+                skin = &model_renderer_resources->skins[ node->skin ];
+                model_to_mesh = XMMatrixInverse( NULL, mesh_to_model );
+
+                position_max = XMLoadFloat3( &cpu_mesh->affected_joints_local_aabb[ 0 ].max );
+                position_min = XMLoadFloat3( &cpu_mesh->affected_joints_local_aabb[ 0 ].min );
+
+                for ( uint32 affected_joint = 0; affected_joint < CRUDE_ARRAY_LENGTH( cpu_mesh->affected_joints ); ++affected_joint )
+                {
+                  crude_gfx_aabb_cpu                      *local_joint_aabb;
+                  XMVECTOR                                 animated_joint_aabb_max;
+                  XMVECTOR                                 animated_joint_aabb_min;
+                  XMMATRIX                                 joint_matrix, inverse_bind_matrix;
+
+                  local_joint_aabb = &cpu_mesh->affected_joints_local_aabb[ affected_joint ];
+
+                  inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ cpu_mesh->affected_joints[ affected_joint ] ] );
+                  joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ cpu_mesh->affected_joints[ affected_joint ] ] );
+                  joint_matrix = XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh );
+                  
+                  animated_joint_aabb_max = XMVector3Transform( XMLoadFloat3( &local_joint_aabb->max ), joint_matrix );
+                  animated_joint_aabb_min = XMVector3Transform( XMLoadFloat3( &local_joint_aabb->min ), joint_matrix );
+                  position_max = XMVectorMax( position_max, animated_joint_aabb_max );
+                  position_min = XMVectorMin( position_min, animated_joint_aabb_min );
+                }
+
+                bounding_center = XMVectorAdd( position_max, position_min );
+                bounding_center = XMVectorScale( bounding_center, 0.5f );
+                bounding_radius = XMVectorGetX( XMVectorMax( XMVector3Length( position_max - bounding_center ), XMVector3Length( position_min - bounding_center ) ) );
+                
+                XMStoreFloat4( &gpu_meshe_instance_draw->bounding_sphere, XMVectorSet( XMVectorGetX( bounding_center ), XMVectorGetY( bounding_center ), XMVectorGetZ( bounding_center ), bounding_radius ) );
+              }
+              else
+              {
+                gpu_meshe_instance_draw->bounding_sphere = cpu_mesh->default_bounding_sphere;
+              }
+
+              gpu_meshe_instance_draw->joints_matrices_offset = joints_matrices_offset;
             }
             else
             {
-              meshes_instances_draws[ scene_renderer->total_visible_meshes_instances_count ].joints_matrices_offset = 0;
+              gpu_meshe_instance_draw->bounding_sphere = cpu_mesh->default_bounding_sphere;
+              gpu_meshe_instance_draw->joints_matrices_offset = 0;
             }
 
             ++scene_renderer->total_visible_meshes_instances_count;

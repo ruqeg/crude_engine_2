@@ -164,6 +164,7 @@ void main()
   bool accept = true;
 
 #if defined( DEFERRED_MESHLET )
+  // FLAG TO DO IT FOR MESH (ONLY STATIC, NO ANIMATIONS)
   //// !TODO
   //accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
   //

@@ -18,6 +18,7 @@ typedef struct crude_gfx_pointlight_shadow_pass
   crude_gfx_memory_allocation                              pointshadow_meshletes_instances_hga;
   crude_gfx_memory_allocation                              pointshadow_meshletes_instances_count_hga;
   crude_gfx_sampler_handle                                 tetrahedron_shadow_sampler;
+  bool                                                     enabled;
 } crude_gfx_pointlight_shadow_pass;
 
 CRUDE_API void

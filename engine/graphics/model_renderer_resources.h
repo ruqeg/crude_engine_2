@@ -6,14 +6,35 @@
 typedef struct crude_transform crude_transform;
 typedef struct crude_gfx_model_renderer_resources_manager crude_gfx_model_renderer_resources_manager;
 
+typedef enum crude_gfx_animation_channel_path
+{
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_TRANSLATION,
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_ROTATION,
+  CRUDE_GFX_ANIMATION_CHANNEL_PATH_SCALE
+} crude_gfx_animation_channel_path;
+
+typedef enum crude_gfx_animation_sampler_interpolation_type
+{
+  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR,
+  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_STEP
+} crude_gfx_animation_sampler_interpolation_type;
+
 typedef struct crude_gfx_model_renderer_resources_handle
 {
   uint32                                                   index;
 } crude_gfx_model_renderer_resources_handle;
 
+typedef struct crude_gfx_aabb_cpu
+{
+  XMFLOAT3                                                 max;
+  XMFLOAT3                                                 min;
+} crude_gfx_aabb_cpu;
+
 typedef struct crude_gfx_mesh_cpu
 {
-  XMFLOAT4                                                 bounding_sphere;
+  crude_gfx_aabb_cpu                                      *affected_joints_local_aabb;
+  uint32                                                  *affected_joints; /* need to calculate animation bounding box, i would like to move all this bullshit to the compute shader, but naaah im too lazy */
+  XMFLOAT4                                                 default_bounding_sphere;
   crude_gfx_memory_allocation                              index_hga;
   crude_gfx_memory_allocation                              position_hga;
   crude_gfx_memory_allocation                              tangent_hga;
@@ -34,9 +55,9 @@ typedef struct crude_gfx_mesh_cpu
   crude_gfx_texture_handle                                 metallic_roughness_texture_handle;
   crude_gfx_texture_handle                                 normal_texture_handle;
   crude_gfx_texture_handle                                 occlusion_texture_handle;
-  uint32                                                   gpu_mesh_index;
   uint32                                                   meshlets_offset;
   uint32                                                   meshlets_count;
+  uint64                                                   gpu_mesh_global_index;
 } crude_gfx_mesh_cpu;
 
 typedef struct crude_gfx_node
@@ -44,22 +65,9 @@ typedef struct crude_gfx_node
   int64                                                    skin;
   int64                                                    parent;
   int64                                                   *childrens;
-  int64                                                   *meshes_gpu;
+  uint64                                                  *meshes;
   char                                                     name[ CRUDE_GFX_NODE_NAME_LENGTH_MAX ];
 } crude_gfx_node;
-
-typedef enum crude_gfx_animation_channel_path
-{
-  CRUDE_GFX_ANIMATION_CHANNEL_PATH_TRANSLATION,
-  CRUDE_GFX_ANIMATION_CHANNEL_PATH_ROTATION,
-  CRUDE_GFX_ANIMATION_CHANNEL_PATH_SCALE
-} crude_gfx_animation_channel_path;
-
-typedef enum crude_gfx_animation_sampler_interpolation_type
-{
-  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_LINEAR,
-  CRUDE_GFX_ANIMATION_SAMPLER_INTERPOLATION_TYPE_STEP
-} crude_gfx_animation_sampler_interpolation_type;
 
 typedef struct crude_gfx_animation_sampler
 {
@@ -96,6 +104,7 @@ typedef struct crude_gfx_model_renderer_resources
   crude_gfx_animation                                     *animations;
   crude_gfx_node                                          *nodes;
   crude_transform                                         *default_nodes_transforms;
+  crude_gfx_mesh_cpu                                      *meshes;
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_gfx_model_renderer_resources;
 
@@ -123,7 +132,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   _Out_ crude_gfx_mesh_draw                               *mesh_draw_gpu
 );
 
-XMMATRIX
+CRUDE_API XMMATRIX
 crude_gfx_node_to_model
 (
   _In_ crude_gfx_node const                               *nodes,

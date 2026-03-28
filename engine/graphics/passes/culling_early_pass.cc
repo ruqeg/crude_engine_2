@@ -33,11 +33,13 @@ crude_gfx_culling_early_pass_render
   {
     VkDeviceAddress                                        scene;
     VkDeviceAddress                                        mesh_draws;
+
     VkDeviceAddress                                        mesh_instance_draws;
-    VkDeviceAddress                                        mesh_bounds;
     VkDeviceAddress                                        mesh_draw_commands;
+
     VkDeviceAddress                                        mesh_draw_commands_culled;
     VkDeviceAddress                                        mesh_draw_count;
+
     VkDeviceAddress                                        debug_line_vertices;
     VkDeviceAddress                                        debug_counts;
   };
@@ -71,7 +73,6 @@ crude_gfx_culling_early_pass_render
   push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
   push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
-  push_constant.mesh_bounds = pass->scene_renderer->model_renderer_resources_manager->meshes_bounds_hga.gpu_address;
   push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
   push_constant.mesh_draw_commands_culled = pass->scene_renderer->mesh_task_indirect_commands_culled_hga.gpu_address;
   push_constant.mesh_draw_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
