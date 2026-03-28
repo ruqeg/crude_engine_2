@@ -113,6 +113,8 @@ typedef struct crude_gfx_model_renderer_resources_animation_instance
   int64                                                    animation_index;
   float32                                                  current_time;
   bool                                                     inverse;
+  bool                                                     paused;
+  float32                                                  speed;
   bool                                                     loop;
 } crude_gfx_model_renderer_resources_animation_instance;
 
@@ -122,6 +124,7 @@ typedef struct crude_gfx_model_renderer_resources_instance
   crude_gfx_model_renderer_resources_animation_instance    animation_instance;
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
+  bool                                                     cast_shadow;
 } crude_gfx_model_renderer_resources_instance;
 
 CRUDE_API void

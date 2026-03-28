@@ -6,6 +6,8 @@
 #include <engine/graphics/shaders/common/platform.h>
 #endif
 
+#define CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW      1u
+
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshPositionsRef, XMFLOAT3 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshTexcoordsRef, float32 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshIndices16Ref, uint16 );
@@ -78,7 +80,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_instance_draw )
   XMFLOAT4                                                 bounding_sphere;
   uint32                                                   mesh_draw_index;
   uint32                                                   joints_matrices_offset;
-  XMFLOAT2                                                 padding;
+  uint32                                                   flags;
+  float32                                                  padding;
 };
 
 CRUDE_SHADER_STRUCT( crude_gfx_vertex )

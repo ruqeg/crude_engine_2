@@ -106,25 +106,25 @@ void main()
 
   vec4 view_center = world_center * scene.data.camera.world_to_view;
   
-  crude_debug_draw_box( debug_line_vertices, debug_counts, world_center.xyz - radius, world_center.xyz + radius, vec4( 1, 1, 1, 1 ) );
+  //crude_debug_draw_box( debug_line_vertices, debug_counts, world_center.xyz - radius, world_center.xyz + radius, vec4( 1, 1, 1, 1 ) );
 
   bool frustum_visible = crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
 
   bool occlusion_visible = frustum_visible;
-  //if ( frustum_visible )
-  //{
-  //  occlusion_visible = crude_occlusion_culling(
-  //    mesh_draw_index,
-  //    view_center.xyz, radius, scene.data.camera.znear, 
-  //    scene.data.camera.view_to_clip[ 0 ][ 0 ],
-  //    scene.data.camera.view_to_clip[ 1 ][ 1 ],
-  //    mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
-  //    scene.data.camera.position,
-  //    scene.data.camera.world_to_clip,
-  //    debug_line_vertices,
-  //    debug_counts
-  //  );
-  //}
+  if ( frustum_visible )
+  {
+    occlusion_visible = crude_occlusion_culling(
+      mesh_draw_index,
+      view_center.xyz, radius, scene.data.camera.znear, 
+      scene.data.camera.view_to_clip[ 0 ][ 0 ],
+      scene.data.camera.view_to_clip[ 1 ][ 1 ],
+      mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
+      scene.data.camera.position,
+      scene.data.camera.world_to_clip,
+      debug_line_vertices,
+      debug_counts
+    );
+  }
 
   bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
 #if defined( CULLING_LATE )

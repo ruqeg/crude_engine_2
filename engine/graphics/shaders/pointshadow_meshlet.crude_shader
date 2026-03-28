@@ -264,6 +264,11 @@ void main()
   {
     return;
   }
+
+  if ( ( mesh_instance_draws.data[ mesh_instance_index ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW ) == 0)
+  {
+    return;
+  }
   
   uint mesh_draw_index = mesh_instance_draws.data[ mesh_instance_index ].mesh_draw_index;
 

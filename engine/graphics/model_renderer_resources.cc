@@ -80,6 +80,7 @@ crude_gfx_model_renderer_resources_deinitialize
       CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes[ i ].affected_joints_local_aabb );
     }
   }
+  CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes );
 
   for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++k )
   {
@@ -124,6 +125,8 @@ crude_gfx_model_renderer_resources_instance_empty
   model_renderer_resources_instance = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
   model_renderer_resources_instance.model_renderer_resources_handle.index = -1;
   model_renderer_resources_instance.animation_instance.animation_index = -1;
+  model_renderer_resources_instance.animation_instance.speed = 1.f;
+  model_renderer_resources_instance.cast_shadow = true;
   XMStoreFloat4x4( &model_renderer_resources_instance.model_to_world, XMMatrixIdentity( ) );
   return model_renderer_resources_instance;
 }
@@ -162,18 +165,46 @@ crude_gfx_model_renderer_resources_instance_update_animation
   }
   
   animation = &model_renderer_resources->animations[ animation_instance->animation_index ];
-
-  animation_instance->current_time += delta_time;
-  if ( animation_instance->current_time > animation->end )
+  
+  delta_time *= animation_instance->speed;
+  if ( animation_instance->inverse )
   {
-    if ( animation_instance->loop )
+    delta_time *= -1.f;
+  }
+
+  if ( !animation_instance->paused )
+  {
+    animation_instance->current_time += delta_time;
+
+    if ( delta_time < 0 ) 
     {
-      animation_instance->current_time -= animation->end;
+      if ( animation_instance->current_time < animation->start )
+      {
+        if ( animation_instance->loop )
+        {
+          animation_instance->current_time += animation->end;
+        }
+        else
+        {
+          // !TODO
+          animation_instance->animation_index = -1;
+        }
+      }
     }
     else
     {
-      // !TODO
-      animation_instance->animation_index = -1;
+      if ( animation_instance->current_time > animation->end )
+      {
+        if ( animation_instance->loop )
+        {
+          animation_instance->current_time -= animation->end;
+        }
+        else
+        {
+          // !TODO
+          animation_instance->animation_index = -1;
+        }
+      }
     }
   }
   

@@ -147,6 +147,7 @@ crude_gfx_scene_renderer_initialize
     {
       scene_renderer->light_model_renderer_resources_instance.nodes_transforms[ i ] = light_model_renderer_resources->default_nodes_transforms[ i ];
     }
+    scene_renderer->light_model_renderer_resources_instance.cast_shadow = false;
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -636,6 +637,11 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
             {
               gpu_meshe_instance_draw->bounding_sphere = cpu_mesh->default_bounding_sphere;
               gpu_meshe_instance_draw->joints_matrices_offset = 0;
+            }
+
+            if ( model_renderer_resources_instance->cast_shadow )
+            {
+              gpu_meshe_instance_draw->flags = CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW;
             }
 
             ++scene_renderer->total_visible_meshes_instances_count;

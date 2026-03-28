@@ -174,6 +174,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
     ImGui::Checkbox( "##Hidden", &component->hidden );
   } );
   
+  CRUDE_IMGUI_OPTION( "Cast Shadow", {
+    ImGui::Checkbox( "##Cast Shadow", &component->model_renderer_resources_instance.cast_shadow );
+  } );
+  
+
   ImGui::Text( "\"%s\"", model_renderer_resources ? model_renderer_resources->relative_filepath : "Empty" );
   if ( ImGui::BeginDragDropTarget( ) )
   {
@@ -249,6 +254,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       }
       ImGui::Checkbox( "Inverse", &animation_instance->inverse );
       ImGui::Checkbox( "Loop", &animation_instance->loop );
+      ImGui::Checkbox( "Paused", &animation_instance->paused );
+      ImGui::DragFloat( "Speed", &animation_instance->speed, 0.1f, 0.1f );
     }
     } );
 }
@@ -280,10 +287,10 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
     ImGui::ColorPicker3( "##Color", &component->color.x );
   } );
   CRUDE_IMGUI_OPTION( "Intensity", {
-    ImGui::InputFloat( "##Intensity", &component->intensity );
+    ImGui::DragFloat( "##Intensity", &component->intensity );
   } );
   CRUDE_IMGUI_OPTION( "Radius", {
-    ImGui::InputFloat( "##Radius", &component->radius );
+    ImGui::DragFloat( "##Radius", &component->radius );
   } );
 }
 
