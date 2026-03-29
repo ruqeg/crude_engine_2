@@ -4,6 +4,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include <threads.h>
 
+#include <engine/core/hashmapstr.h>
 #include <engine/core/string.h>
 #include <engine/core/assert.h>
 #include <engine/graphics/command_buffer.h>
@@ -26,8 +27,8 @@ typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_man
 
 typedef struct crude_gfx_resource_cache
 {
-  struct{ uint64 key; crude_gfx_technique *value; }       *techniques;
-  struct{ uint64 key; crude_gfx_material *value; }        *materials;
+  CRUDE_HASHMAPSTR( crude_gfx_technique* )                *techniques;
+  CRUDE_HASHMAPSTR( crude_gfx_material* )                 *materials;
 } crude_gfx_resource_cache;
 
 typedef struct crude_gfx_gpu_thread_frame_pools

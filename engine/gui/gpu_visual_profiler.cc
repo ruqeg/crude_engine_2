@@ -30,7 +30,7 @@ crude_gui_gpu_visual_profiler_initialize
   profiler->framebuffer_pixel_count = 0u;
   profiler->initial_frames_paused = 15;
   memset( profiler->per_frame_active, 0, sizeof( uint16 ) * profiler->max_frames );
-  CRUDE_HASHMAP_INITIALIZE( profiler->name_hashed_to_color_index, crude_heap_allocator_pack( profiler->allocator ) );}
+  CRUDE_HASHMAPSTR_INITIALIZE( profiler->name_to_color_index, crude_heap_allocator_pack( profiler->allocator ) );}
 
 void
 crude_gui_gpu_visual_profiler_deinitialize
@@ -38,7 +38,7 @@ crude_gui_gpu_visual_profiler_deinitialize
   _In_ crude_gui_gpu_visual_profiler                      *profiler
 )
 {
-  CRUDE_HASHMAP_DEINITIALIZE( profiler->name_hashed_to_color_index );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( profiler->name_to_color_index );
   CRUDE_DEALLOCATE( crude_heap_allocator_pack( profiler->allocator ), profiler->timestamps );
   CRUDE_DEALLOCATE( crude_heap_allocator_pack( profiler->allocator ), profiler->per_frame_active );
 }
@@ -74,21 +74,20 @@ crude_gui_gpu_visual_profiler_update
   {
     crude_gfx_gpu_time_query                              *timestamp;
     int64                                                  hash_color_index;
-    uint64                                                 hashed_name, color_index;
+    uint64                                                 color_index;
 
     timestamp = &profiler->timestamps[ profiler->max_queries_per_frame * profiler->current_frame + i ];
   
-    hashed_name = crude_hash_string( timestamp->name, 0u );
-    hash_color_index = CRUDE_HASHMAP_GET_INDEX( profiler->name_hashed_to_color_index, hashed_name );
+    hash_color_index = CRUDE_HASHMAPSTR_GET_INDEX( profiler->name_to_color_index, timestamp->name );
 
     if ( hash_color_index == -1 )
     {
-      color_index = CRUDE_HASHMAP_LENGTH( profiler->name_hashed_to_color_index );
-      CRUDE_HASHMAP_SET( profiler->name_hashed_to_color_index, hashed_name, color_index );
+      color_index = CRUDE_HASHMAPSTR_LENGTH( profiler->name_to_color_index );
+      CRUDE_HASHMAPSTR_SET( profiler->name_to_color_index, CRUDE_COMPOUNT( crude_string_link, { timestamp->name } ), color_index );
     }
     else
     {
-      color_index = profiler->name_hashed_to_color_index[ hash_color_index ].value;
+      color_index = profiler->name_to_color_index[ hash_color_index ].value;
     }
   
     timestamp->color = crude_color_get_distinct_color( color_index );

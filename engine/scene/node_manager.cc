@@ -5,10 +5,8 @@
 #include <engine/core/string.h>
 #include <engine/core/array.h>
 #include <engine/scene/scene_ecs.h>
-#include <engine/core/hash_map.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/scene/scripts/free_camera_ecs.h>
-#include <engine/external/game_ecs.h>
 
 #include <engine/scene/node_manager.h>
 
@@ -25,7 +23,8 @@ crude_node_manager_load_node_from_json_
 (
   _In_ crude_node_manager                                 *manager,
   _In_ cJSON                                              *node_json,
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_opt_ crude_entity                                   *parent
 );
 
 static cJSON*
@@ -58,16 +57,18 @@ crude_node_manager_initialize
 )
 {
   manager->temporary_allocator = creation->temporary_allocator;
-  manager->additional_parse_json_to_component_func = creation->additional_parse_json_to_component_func;
-  manager->additional_parse_all_components_to_json_func = creation->additional_parse_all_components_to_json_func;
+  manager->components_serialization_manager = creation->components_serialization_manager;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
   manager->physics_resources_manager = creation->physics_resources_manager;
   manager->collisions_resources_manager = creation->collisions_resources_manager;
   manager->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   manager->allocator = creation->allocator;
+  manager->select_camera_func = creation->select_camera_func;
+  manager->select_camera_ctx = creation->select_camera_ctx;
 
-  CRUDE_HASHMAP_INITIALIZE( manager->hashed_absolute_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->relative_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
   crude_string_buffer_initialize( &manager->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( manager->allocator ) );
+  crude_string_buffer_initialize( &manager->relative_filepath_string_buffer, CRUDE_NODE_COUNT_MAX * ( 1 + CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ), crude_heap_allocator_pack( manager->allocator ) );
 }
 
 void
@@ -77,7 +78,8 @@ crude_node_manager_deinitialize
 )
 {
   crude_string_buffer_deinitialize( &manager->absolute_filepath_string_buffer );
-  CRUDE_HASHMAP_DEINITIALIZE( manager->hashed_absolute_filepath_to_node );
+  crude_string_buffer_deinitialize( &manager->relative_filepath_string_buffer );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->relative_filepath_to_node );
 }
 
 void
@@ -87,14 +89,16 @@ crude_node_manager_clear
   _In_ crude_ecs                                          *world
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->hashed_absolute_filepath_to_node ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->relative_filepath_to_node ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( manager->hashed_absolute_filepath_to_node[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( manager->relative_filepath_to_node[ i ].key.key_hash ) )
     {
-      crude_node_destroy_hierarchy_( world, manager->hashed_absolute_filepath_to_node[ i ].value );
+      crude_node_destroy_hierarchy_( world, manager->relative_filepath_to_node[ i ].value );
     }
-    manager->hashed_absolute_filepath_to_node[ i ].key = 0;
+    manager->relative_filepath_to_node[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
+
+  crude_string_buffer_clear( &manager->relative_filepath_string_buffer );
 }
 
 crude_entity
@@ -108,21 +112,23 @@ crude_node_manager_get_node
   char const                                              *node_absolute_filepath;
   crude_entity                                             node_template;
   int64                                                    node_index;
-  uint64                                                   filename_hashed;
 
   crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
   node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
-  filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
-  node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
+  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
   if ( node_index == -1 )
   {
     node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath, world );
-    CRUDE_HASHMAP_SET( manager->hashed_absolute_filepath_to_node, filename_hashed, node_template );
+    
+    CRUDE_HASHMAPSTR_SET(
+      manager->relative_filepath_to_node,
+      CRUDE_COMPOUNT( crude_string_link, { crude_string_buffer_append_use_f( &manager->relative_filepath_string_buffer, "%s", node_realtive_filepath ) } ),
+      node_template );
   }
   else
   {
-    node_template = manager->hashed_absolute_filepath_to_node[ node_index ].value;
+    node_template = manager->relative_filepath_to_node[ node_index ].value;
   }
 
   return node_template;
@@ -138,20 +144,18 @@ crude_node_manager_remove_node
 {
   char const                                              *node_absolute_filepath;
   int64                                                    node_index;
-  uint64                                                   filename_hashed;
   
   crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
   node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
-  filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
-  node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
+  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
   if ( node_index == -1 )
   {
     return;
   }
   
-  crude_node_destroy_hierarchy_( world, manager->hashed_absolute_filepath_to_node[ node_index ].value );
-  CRUDE_HASHMAP_REMOVE( manager->hashed_absolute_filepath_to_node, filename_hashed );
+  crude_node_destroy_hierarchy_( world, manager->relative_filepath_to_node[ node_index ].value );
+  CRUDE_HASHMAPSTR_REMOVE( manager->relative_filepath_to_node, node_realtive_filepath );
 }
 
 void
@@ -163,16 +167,10 @@ crude_node_manager_save_node_by_file_to_file
   _In_ crude_ecs                                          *world
 )
 {
-  char const                                              *node_absolute_filepath;
   char const                                              *saved_absolute_filepath;
   int64                                                    node_index;
-  uint64                                                   filename_hashed;
     
-  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
-  node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
-
-  filename_hashed = crude_hash_string( node_absolute_filepath, 0 );
-  node_index = CRUDE_HASHMAP_GET_INDEX( manager->hashed_absolute_filepath_to_node, filename_hashed );
+  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
   if ( node_index != -1 )
   {
     return;
@@ -181,7 +179,7 @@ crude_node_manager_save_node_by_file_to_file
   crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
   saved_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, saved_relative_filepath );
 
-  crude_node_manager_save_node_to_file( manager, world, manager->hashed_absolute_filepath_to_node[ node_index ].value, saved_absolute_filepath );
+  crude_node_manager_save_node_to_file( manager, world, manager->relative_filepath_to_node[ node_index ].value, saved_absolute_filepath );
 }
 
 void
@@ -227,7 +225,7 @@ crude_node_manager_load_node_from_file_
     return CRUDE_COMPOUNT_EMPTY( crude_entity );
   }
 
-  node = crude_node_manager_load_node_from_json_( manager, node_json, world );
+  node = crude_node_manager_load_node_from_json_( manager, node_json, world, NULL );
 
   cJSON_Delete( node_json );
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocated_marker );
@@ -240,7 +238,8 @@ crude_node_manager_load_node_from_json_
 (
   _In_ crude_node_manager                                 *manager,
   _In_ cJSON                                              *node_json,
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_opt_ crude_entity                                   *parent
 )
 {
   crude_entity                                             node;
@@ -249,34 +248,34 @@ crude_node_manager_load_node_from_json_
   
   node_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( node_json, "name") );
 
-  // !TODO handle external with hashmap (we don't want to parse 100 entities of same node :D)
   is_node_external = cJSON_HasObjectItem( node_json, "external" );
   if ( is_node_external )
   {
-    cJSON                                                 *node_external_json;
-    char const                                            *node_external_json_relative_filepath;
-    uint64                                                 temporary_allocator_marker;
-    crude_string_buffer                                    temporary_path_buffer;
-    crude_node_external                                    node_external;
+    char const                                            *node_external_relative_filepath;
+    crude_entity                                           node_external;
+    crude_node_external                                    node_external_component;
 
-    temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
-    crude_string_buffer_initialize( &temporary_path_buffer, 2048, crude_stack_allocator_pack( manager->temporary_allocator ) );
+    CRUDE_ASSERT( parent ); /* WTF IS GOING ONE, DONT PUT EXTERNAL ON TOP OF SCENE */
 
-    node_external_json_relative_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
+    node_external_relative_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     
-    node_external_json = crude_node_manager_parse_json_( manager, crude_string_buffer_append_use_f( &temporary_path_buffer, "%s%s", manager->resources_absolute_directory, node_external_json_relative_filepath ) );
-    node = crude_node_manager_load_node_from_json_( manager, node_external_json, world );
-    crude_entity_set_name( world, node, node_name );
+    node = crude_entity_create_empty( world, node_name );
+    crude_entity_set_parent( world, node, *parent );
 
-    node_external = CRUDE_COMPOUNT_EMPTY( crude_node_external );
-    crude_string_copy( node_external.node_relative_filepath, node_external_json_relative_filepath, sizeof( node_external.node_relative_filepath ) );
-    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external } );
-
-    crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
+    node_external = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world ), node_name, node, true, true );
+    
+    node_external_component = crude_node_external_empty( );
+    crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component ) );
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external_component } );
   }
   else
   {
     node = crude_entity_create_empty( world, node_name );
+    
+    if ( parent )
+    {
+      crude_entity_set_parent( world, node, *parent );
+    }
   }
   
   if ( !is_node_external )
@@ -288,8 +287,7 @@ crude_node_manager_load_node_from_json_
     for ( uint32 child_index = 0; child_index < cJSON_GetArraySize( children_json ); ++child_index )
     {
       child_json = cJSON_GetArrayItem( children_json, child_index );
-      crude_entity child_node = crude_node_manager_load_node_from_json_( manager, child_json, world );
-      crude_entity_set_parent( world, child_node, node );
+      crude_entity child_node = crude_node_manager_load_node_from_json_( manager, child_json, world, &node );
     }
   }
 
@@ -316,64 +314,9 @@ crude_node_manager_load_node_from_json_
       component_type_json = cJSON_GetObjectItemCaseSensitive( component_json, "type" );
       component_type = cJSON_GetStringValue( component_type_json );
   
-      if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_gltf ) ) == 0 )
-      {
-        crude_gltf                                         gltf;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_gltf )( &gltf, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_gltf, { gltf } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_camera ) ) == 0 )
-      {
-        crude_camera                                       camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_camera )( &camera, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_camera, { camera } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_free_camera ) ) == 0 )
-      {
-        crude_free_camera                                  free_camera;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_free_camera )( &free_camera, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_free_camera, { free_camera } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_light ) ) == 0 )
-      {
-        crude_light                                        light;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_light )( &light, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_light, { light } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) == 0 )
-      {
-        crude_physics_static_body_handle                   static_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_static_body_handle )( &static_body, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_static_body_handle, { static_body } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) == 0 )
-      {
-        crude_physics_character_body_handle                dynamic_body;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_character_body_handle )( &dynamic_body, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_character_body_handle, { dynamic_body } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) == 0 )
-      {
-        crude_physics_collision_shape                      collision_shape;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_physics_collision_shape )( &collision_shape, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_collision_shape, { collision_shape } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_player_controller ) ) == 0 )
-      {
-        crude_player_controller                            player_controller;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_player_controller )( &player_controller, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_player_controller, { player_controller } );
-      }
-      else if ( crude_string_cmp( component_type, CRUDE_COMPONENT_STRING( crude_level_mars ) ) == 0 )
-      {
-        crude_level_mars                                   level_mars;
-        CRUDE_PARSE_JSON_TO_COMPONENT( crude_level_mars )( &level_mars, component_json, world, node, manager );
-        CRUDE_ENTITY_SET_COMPONENT( world, node, crude_level_mars, { level_mars } );
-      }
-      else
-      {
-        manager->additional_parse_json_to_component_func( node, component_json, component_type, manager );
-      }
+      int64 index = CRUDE_HASHMAPSTR_GET_INDEX( manager->components_serialization_manager->component_name_to_json_funs, component_type );
+      CRUDE_ASSERT( index != -1 );
+      manager->components_serialization_manager->component_name_to_json_funs[ index ].value( world, node, component_json, manager );
     }
   }
 
@@ -448,74 +391,20 @@ crude_node_manager_node_to_json_hierarchy_
   
   {
     cJSON                                                 *node_components_json;
-    crude_free_camera const                               *node_free_camera;
-    crude_camera const                                    *node_camera;
-    crude_gltf const                                      *node_gltf;
-    crude_light const                                     *node_light;
-    crude_physics_static_body_handle const                *static_body;
-    crude_physics_character_body_handle const             *dynamic_body;
-    crude_physics_collision_shape const                   *collision_shape;
-    crude_player_controller const                         *player_controller_component;
-    crude_level_mars const                                *level_mars;
 
     node_components_json = cJSON_AddArrayToObject( node_json, "components" );
     
-    node_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_camera );
-    if ( node_camera )
+    for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->components_serialization_manager->component_id_to_json_funs ); ++i )
     {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_camera )( node_camera, manager ) );
+      if ( crude_hashmap_backet_key_valid( manager->components_serialization_manager->component_id_to_json_funs[ i ].key ) )
+      {
+        cJSON* component_json = manager->components_serialization_manager->component_id_to_json_funs[ i ].value( world, node, manager );
+        if ( component_json )
+        {
+          cJSON_AddItemToArray( node_components_json, component_json );
+        }
+      }
     }
-    
-    node_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
-    if ( node_gltf )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_gltf )( node_gltf, manager ) );
-      is_gltf_node = true;
-    }
-    
-    node_free_camera = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_free_camera );
-    if ( node_free_camera )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_free_camera )( node_free_camera, manager ) );
-    }
-
-    node_light = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_light );
-    if ( node_light )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_light )( node_light, manager ) );
-    }
-    
-    static_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_static_body_handle );
-    if ( static_body )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_static_body_handle )( static_body, manager ) );
-    }
-    
-    dynamic_body = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_character_body_handle );
-    if ( dynamic_body )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_character_body_handle )( dynamic_body, manager ) );
-    }
-    
-    collision_shape = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_physics_collision_shape );
-    if ( collision_shape )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_physics_collision_shape )( collision_shape, manager ) );
-    }
-  
-    player_controller_component = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_player_controller );
-    if ( player_controller_component )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_player_controller )( player_controller_component, manager ) );
-    }
-  
-    level_mars = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_level_mars );
-    if ( level_mars )
-    {
-      cJSON_AddItemToArray( node_components_json, CRUDE_PARSE_COMPONENT_TO_JSON( crude_level_mars )( level_mars, manager ) );
-    }
-    
-    manager->additional_parse_all_components_to_json_func( node, node_components_json, manager );
   }
   
   {
@@ -533,10 +422,7 @@ crude_node_manager_node_to_json_hierarchy_
           crude_entity                                       child;
 
           child = crude_entity_from_iterator( &it, i );
-          if ( !CRUDE_ENTITY_HAS_COMPONENT( world, child, crude_node_runtime ) )
-          {
-            cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, world, child ) );
-          }
+          cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, world, child ) );
         }
       }
     }

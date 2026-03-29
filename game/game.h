@@ -10,57 +10,51 @@
 #include <engine/physics/physics_resources_manager.h>
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
-#include <engine/scene/scripts/free_camera_ecs.h>
-#include <engine/external/game_ecs.h>
-#include <engine/external/game_debug_ecs.h>
+#include <game/player_controller_ecs.h>
 
-typedef struct crude_editor
+typedef struct crude_game
 {
   crude_engine                                            *engine;
 
   crude_string_buffer                                      debug_strings_buffer;
   crude_string_buffer                                      debug_constant_strings_buffer;
 
-  /* Dev */
-  crude_entity                                             editor_camera_node;
-
   /* System Context */
-  crude_free_camera_system_context                         free_camera_system_context;
   crude_physics_debug_system_context                       physics_debug_system_context;
-  crude_game_debug_system_context                          game_debug_system_context;
-} crude_editor;
+  crude_player_controller_system_context                   player_controller_system_context;
+} crude_game;
 
 CRUDE_API void
-crude_editor_initialize
+crude_game_initialize
 (
-  _In_ crude_editor                                       *editor,
+  _In_ crude_game                                         *game,
   _In_ crude_engine                                       *engine,
   _In_ char const                                         *working_directory
 );
 
 CRUDE_API void
-crude_editor_deinitialize
+crude_game_deinitialize
 (
-  _In_ crude_editor                                       *editor
+  _In_ crude_game                                         *game
 );
 
 CRUDE_API void
-crude_editor_update
+crude_game_update
 (
-  _In_ crude_editor                                       *editor
+  _In_ crude_game                                         *game
 );
 
 CRUDE_API void
-crude_editor_instance_intialize
+crude_game_instance_intialize
 (
 );
 
 CRUDE_API void
-crude_editor_instance_deintialize
+crude_game_instance_deintialize
 (
 );
 
-CRUDE_API crude_editor*
-crude_editor_instance
+CRUDE_API crude_game*
+crude_game_instance
 (
 );

@@ -2,6 +2,13 @@
 
 #include <engine/core/memory.h>
 
+typedef struct crude_string_link
+{
+  char const                                              *data;
+} crude_string_link;
+
+#define CRUDE_STRING_NODE( str ) CRUDE_COMPOUNT( crude_string_link, { str } )
+
 /************************************************
  *
  * String Buffer

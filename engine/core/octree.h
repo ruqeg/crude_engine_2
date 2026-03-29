@@ -7,6 +7,7 @@
 typedef struct crude_octree
 {
   XMFLOAT3                                                *points;
+  char                                                     name[ 4096 ];
 } crude_octree;
 
 CRUDE_API void

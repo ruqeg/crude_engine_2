@@ -23,21 +23,6 @@ crude_hashmap_backet_key_valid
   _In_ uint64                                              key
 );
 
-CRUDE_API uint64
-crude_hash_bytes
-(
-  _In_ uint8 const                                        *p,
-  _In_ size_t                                              len,
-  _In_ size_t                                              seed
-);
-
-CRUDE_API uint64
-crude_hash_string
-(
-  _In_ char const                                          str[],
-  _In_ size_t                                              seed
-);
-
 CRUDE_API void*
 crude_hashmap_growf
 (
@@ -63,6 +48,7 @@ crude_hashmap_set_index
   _In_ size_t                                              elemsize
 );
 
+#define CRUDE_HASHMAP( component ) struct { int64 key; component value; }
 #define CRUDE_HASHMAP_HEADER( h )  ( CRUDE_REINTERPRET_CAST( crude_hashmap_header*, h ) - 1 )
 #define CRUDE_HASHMAP_ALLOCATOR( h ) ( ( h ) ? CRUDE_HASHMAP_HEADER( h )->allocator : CRUDE_COMPOUNT_EMPTY( crude_allocator_container ) )
 #define CRUDE_HASHMAP_CAPACITY( h )  ( CRUDE_HASHMAP_HEADER( h )->capacity )

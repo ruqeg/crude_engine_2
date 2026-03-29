@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/core/ecs.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/resource_pool.h>
 #include <engine/core/octree.h>
 #include <engine/core/memory.h>
@@ -18,7 +19,7 @@ typedef struct crude_collisions_resources_manager
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_resource_pool                                      octree_resource_pool;
-  struct { uint64 key; crude_octree_handle value; }       *name_hashed_to_octree_resource_hadle;
+  CRUDE_HASHMAPSTR( crude_octree_handle )                 *name_to_octree_resource_hadle;
 } crude_collisions_resources_manager;
 
 CRUDE_API void

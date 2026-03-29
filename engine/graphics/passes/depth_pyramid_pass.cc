@@ -1,5 +1,5 @@
 
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/graphics/scene_renderer.h>
 
 #include <engine/graphics/passes/depth_pyramid_pass.h>

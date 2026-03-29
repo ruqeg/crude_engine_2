@@ -4,6 +4,7 @@
 #include <engine/engine/engine_commands_manager.h>
 #include <engine/graphics/asynchronous_loader_manager.h>
 #include <engine/scene/node_manager.h>
+#include <engine/scene/scripts/free_camera_ecs.h>
 #include <engine/audio/audio_device.h>
 #include <engine/audio/audio_ecs.h>
 #include <engine/physics/physics.h>
@@ -132,6 +133,8 @@ typedef struct crude_engine
 #if CRUDE_DEVELOP
   crude_gui_devmenu                                        devmenu;
   crude_gui_editor                                         editor;
+  crude_entity                                             editor_camera_node;
+  crude_free_camera_system_context                         free_camera_system_context;
 #endif
 
   /******************************

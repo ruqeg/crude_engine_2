@@ -611,7 +611,7 @@ typedef struct crude_gfx_pipeline
   crude_gfx_rasterization_creation                         rasterization;
   crude_gfx_pipeline_handle                                handle;
   bool                                                     graphics_pipeline;
-  char const                                               *name;
+  char                                                     name[ 512 ];
 
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
   crude_gfx_buffer_handle                                  shader_binding_table_raygen;
@@ -685,7 +685,7 @@ typedef struct crude_gfx_technique
 {
   crude_gfx_technique_pass                                *passes;
   uint32                                                   pool_index;
-  struct { uint64 key; uint16 value; }                    *name_hashed_to_pass_index;
+  CRUDE_HASHMAPSTR( uint16 )                              *name_to_pass_index;
   char                                                     name[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
 #if CRUDE_DEVELOP
   char                                                     technique_relative_filepath[ CRUDE_GFX_TECHNIQUE_RELATIIVE_FILEPATH_MAX_LENGTH ];

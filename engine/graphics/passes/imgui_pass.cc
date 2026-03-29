@@ -1,7 +1,6 @@
 #include <engine/graphics/imgui.h>
 
 #include <engine/graphics/scene_renderer.h>
-#include <engine/core/hash_map.h>
 
 #include <engine/graphics/passes/imgui_pass.h>
 

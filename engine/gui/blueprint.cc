@@ -1,4 +1,4 @@
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/gui/hardcoded_icon.h>
 #include <engine/gui/blueprint_node_builder.h>
 

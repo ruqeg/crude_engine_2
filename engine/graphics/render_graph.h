@@ -156,19 +156,19 @@ typedef struct crude_gfx_render_graph_node
  ***********************************************/
 typedef struct crude_gfx_render_graph_node_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_node_handle value; }            *node_map;
+  CRUDE_HASHMAPSTR( crude_gfx_render_graph_node_handle )                      *node_map;
   crude_resource_pool                                                          nodes;
 } crude_gfx_render_graph_node_cache;
 
 typedef struct crude_gfx_render_graph_resource_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_resource_handle value; }        *resource_map;
+  CRUDE_HASHMAPSTR( crude_gfx_render_graph_resource_handle )                  *resource_map;
   crude_resource_pool                                                          resources;
 } crude_gfx_render_graph_resource_cache;
 
 typedef struct crude_gfx_render_graph_pass_cache
 {
-  struct { uint64 key; crude_gfx_render_graph_pass_container value; }         *render_pass_map;
+  CRUDE_HASHMAPSTR( crude_gfx_render_graph_pass_container )                   *render_pass_map;
 } crude_gfx_render_graph_pass_cache;
 
 typedef struct crude_gfx_render_graph_builder
@@ -269,7 +269,7 @@ CRUDE_API void
 crude_gfx_render_graph_builder_register_render_pass
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
-  _In_ char const                                         *name,
+  _In_ crude_string_link                                   name,
   _In_ crude_gfx_render_graph_pass_container               render_pass
 );
 

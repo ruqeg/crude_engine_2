@@ -4,24 +4,16 @@
 #include <engine/core/octree.h>
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/physics/physics_resources_manager.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
 typedef struct crude_node_manager crude_node_manager;
 
-typedef bool (*crude_scene_parse_json_to_component_func)
+typedef void (*crude_node_manager_select_camera)
 ( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-);
-
-typedef void (*crude_scene_parse_all_components_to_json_func)
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                              *node_components_json,
-  _In_ crude_node_manager                                 *manager
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        camera_node
 );
 
 typedef struct crude_node_manager_creation
@@ -30,8 +22,9 @@ typedef struct crude_node_manager_creation
   crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;
-  crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
-  crude_scene_parse_all_components_to_json_func            additional_parse_all_components_to_json_func;
+  crude_components_serialization_manager                  *components_serialization_manager;
+  crude_node_manager_select_camera                         select_camera_func;
+  void                                                    *select_camera_ctx;
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
   char const                                              *resources_absolute_directory;
 } crude_node_manager_creation;
@@ -42,13 +35,17 @@ typedef struct crude_node_manager
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
   crude_physics_resources_manager                         *physics_resources_manager;
   crude_collisions_resources_manager                      *collisions_resources_manager;
+  crude_components_serialization_manager                  *components_serialization_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;
-  crude_scene_parse_json_to_component_func                 additional_parse_json_to_component_func;
-  crude_scene_parse_all_components_to_json_func            additional_parse_all_components_to_json_func;
+
+  /* Data */
+  crude_node_manager_select_camera                         select_camera_func;
+  void                                                    *select_camera_ctx;
   char const                                              *resources_absolute_directory;
-  struct { uint64 key; crude_entity value; }              *hashed_absolute_filepath_to_node;
+  CRUDE_HASHMAPSTR( crude_entity )                        *relative_filepath_to_node;
   crude_string_buffer                                      absolute_filepath_string_buffer;
+  crude_string_buffer                                      relative_filepath_string_buffer;
 } crude_node_manager;
 
 CRUDE_API void

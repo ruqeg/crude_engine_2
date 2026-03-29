@@ -10,10 +10,6 @@ typedef struct crude_node_external
   char                                                     node_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_node_external;
 
-typedef struct crude_node_runtime
-{
-} crude_node_runtime;
-
 typedef struct crude_transform
 {
   XMFLOAT3                                                 translation;
@@ -59,6 +55,16 @@ crude_gltf_empty
 (
 );
 
+CRUDE_API crude_camera
+crude_camera_empty
+(
+);
+
+CRUDE_API crude_node_external
+crude_node_external_empty
+(
+);
+
 CRUDE_API XMMATRIX
 crude_transform_node_to_world
 (
@@ -86,6 +92,7 @@ crude_node_copy_hierarchy
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_ char const                                         *name,
+  _In_ crude_entity                                        parent,
   _In_ bool                                                copy_value,
   _In_ bool                                                enabled
 );

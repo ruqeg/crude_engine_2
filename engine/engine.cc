@@ -169,6 +169,12 @@ crude_engine_deinitialize_gui_
 );
 
 static void
+crude_engine_initialize_editor_
+(
+  _In_ crude_engine                                       *engine
+);
+
+static void
 crude_engine_input_callback_
 (
   _In_ void                                               *ctx,
@@ -181,21 +187,11 @@ crude_engine_quit_callback_
   _In_ void                                               *ctx
 );
 
-static bool
-crude_engine_parse_json_to_component_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-);
-
 static void
-crude_engine_parse_all_components_to_json_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json,
-  _In_ crude_node_manager                                 *manager
+crude_engine_select_camera_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        camera_node
 );
 
 bool
@@ -266,6 +262,7 @@ crude_engine_initialize
   crude_engine_initialize_scene_( engine );
   crude_engine_commands_manager_initialize( &engine->commands_manager, engine, &engine->common_allocator );
   crude_engine_initialize_gui_( engine );
+  crude_engine_initialize_editor_( engine );
 
   engine->running = true;
 }
@@ -728,6 +725,19 @@ crude_engine_quit_callback_
 }
 
 void
+crude_engine_select_camera_
+(
+  _In_ void                                               *ctx,
+  _In_ crude_entity                                        camera_node
+)
+{
+  crude_engine                                            *engine;
+
+  engine = CRUDE_CAST( crude_engine*, ctx );
+  engine->camera_node = camera_node;
+}
+
+void
 crude_engine_input_callback_
 (
   _In_ void                                               *ctx,
@@ -756,12 +766,13 @@ crude_engine_initialize_scene_
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
-  node_manager_creation.additional_parse_all_components_to_json_func = crude_engine_parse_all_components_to_json_;
-  node_manager_creation.additional_parse_json_to_component_func = crude_engine_parse_json_to_component_;
   node_manager_creation.physics_resources_manager = &engine->physics_resources_manager;
   node_manager_creation.collisions_resources_manager = &engine->collision_resources_manager;
+  node_manager_creation.components_serialization_manager = &engine->components_serialization_manager;
   node_manager_creation.allocator = &engine->common_allocator;
   node_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
+  node_manager_creation.select_camera_func = crude_engine_select_camera_;
+  node_manager_creation.select_camera_ctx = engine;
   crude_node_manager_initialize( &engine->node_manager, &node_manager_creation );
 }
 
@@ -793,27 +804,44 @@ crude_engine_deinitialize_gui_
   crude_gui_devmenu_deinitialize( &engine->devmenu );
   crude_gui_editor_deinitialize( &engine->editor );
 }
-
-bool
-crude_engine_parse_json_to_component_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-)
-{
-  return true;
-}
-
 void
-crude_engine_parse_all_components_to_json_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                               *node_components_json,
-  _In_ crude_node_manager                                 *manager
+crude_engine_initialize_editor_
+(
+  _In_ crude_engine                                       *engine
 )
 {
+  crude_transform                                          editor_camera_node_transform;
+  crude_camera                                             editor_camera_node_camera;
+  crude_free_camera                                        editor_camera_node_free_camera;
+  
+  engine->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
+  engine->free_camera_system_context.input = &engine->platform.input;
+
+  crude_free_camera_system_import( engine->world, &engine->components_serialization_manager, &engine->free_camera_system_context );
+
+  editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+  XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
+  XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
+  XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
+
+  editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+  editor_camera_node_camera.fov_radians = 1;
+  editor_camera_node_camera.aspect_ratio = 1.8;
+  editor_camera_node_camera.near_z = 1;
+  editor_camera_node_camera.far_z = 300;
+
+  editor_camera_node_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
+  editor_camera_node_free_camera.moving_speed_multiplier = 10.f;
+  editor_camera_node_free_camera.rotating_speed_multiplier = 0.004f;
+  editor_camera_node_free_camera.input_enabled = true;
+  editor_camera_node_free_camera.input = &engine->platform.input;
+
+  engine->editor_camera_node = crude_entity_create_empty( engine->world, "editor_camera" );
+  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_transform, { editor_camera_node_transform } );
+  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_camera, { editor_camera_node_camera } );
+  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_free_camera, { editor_camera_node_free_camera } );
+
+  engine->camera_node = engine->editor_camera_node;
 }
 
 bool

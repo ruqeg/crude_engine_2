@@ -7,7 +7,7 @@
 #include <engine/core/profiler.h>
 #include <engine/core/array.h>
 #include <engine/core/file.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 
 #include <engine/scene/scene_ecs.h>
 #include <engine/physics/physics_ecs.h>
@@ -136,18 +136,29 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
   {
-    crude_gfx_model_renderer_resources                    *light_model_renderer_resources;
+    crude_gfx_model_renderer_resources                    *model_renderer_resources;
 
     scene_renderer->light_model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
     scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
-    light_model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle );
+    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle );
   
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->light_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( light_model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( light_model_renderer_resources->default_nodes_transforms ); ++i )
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->light_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
     {
-      scene_renderer->light_model_renderer_resources_instance.nodes_transforms[ i ] = light_model_renderer_resources->default_nodes_transforms[ i ];
+      scene_renderer->light_model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
     }
     scene_renderer->light_model_renderer_resources_instance.cast_shadow = false;
+    
+    scene_renderer->camera_model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+    scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
+    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle );
+  
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->camera_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
+    {
+      scene_renderer->camera_model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
+    }
+    scene_renderer->camera_model_renderer_resources_instance.cast_shadow = false;
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -246,6 +257,7 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
   
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->light_model_renderer_resources_instance.nodes_transforms );
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->camera_model_renderer_resources_instance.nodes_transforms );
 }
 
 bool
@@ -265,6 +277,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   
   // load debug light (in case it was cleaned because of new model manager resource clean)
   scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
+  scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
@@ -438,22 +451,22 @@ crude_gfx_scene_renderer_register_passes
   
   if ( scene_renderer->imgui_pass_enalbed )
   {
-    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "imgui_editor_pass", crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "imgui_editor_pass" ), crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
   }
 
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "opaque_early_pass", crude_gfx_opaque_early_pass_pack( &scene_renderer->opaque_early_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "opaque_late_pass", crude_gfx_opaque_late_pass_pack( &scene_renderer->opaque_late_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_early_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "depth_pyramid_late_pass", crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_early_pass", crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "culling_late_pass", crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "debug_pass", crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "compose_pass", crude_gfx_compose_pass_pack( &scene_renderer->compose_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "postprocessing_pass", crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "transparent_pass", crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "light_lut_pass", crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ssr_pass", crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "pointlight_shadows_pass", crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "opaque_early_pass" ), crude_gfx_opaque_early_pass_pack( &scene_renderer->opaque_early_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "opaque_late_pass" ), crude_gfx_opaque_late_pass_pack( &scene_renderer->opaque_late_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "depth_pyramid_early_pass" ), crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "depth_pyramid_late_pass" ), crude_gfx_depth_pyramid_pass_pack( &scene_renderer->depth_pyramid_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "culling_early_pass" ), crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "culling_late_pass" ), crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "debug_pass" ), crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "compose_pass" ), crude_gfx_compose_pass_pack( &scene_renderer->compose_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "postprocessing_pass" ), crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "transparent_pass" ), crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "light_lut_pass" ), crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ssr_pass" ), crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "pointlight_shadows_pass" ), crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
@@ -750,6 +763,12 @@ crude_scene_renderer_register_nodes_instances_
     
     XMStoreFloat4x4( &scene_renderer->light_model_renderer_resources_instance.model_to_world, XMMatrixTranslation( light_gpu.translation.x, light_gpu.translation.y, light_gpu.translation.z ) );
     CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->light_model_renderer_resources_instance );
+  }
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_camera ) )
+  {
+    XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
   }
   
   *model_initialized |= local_model_initialized;

@@ -6,7 +6,7 @@
 #include <engine/core/string.h>
 #include <engine/core/file.h>
 #include <engine/core/process.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/graphics/gpu_profiler.h>
 
 #include <engine/graphics/gpu_device.h>
@@ -425,8 +425,8 @@ crude_gfx_device_initialize
   gpu->swapchain_output.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   gpu->swapchain_output.num_color_formats = 1u;
   
-  CRUDE_HASHMAP_INITIALIZE( gpu->resource_cache.techniques, gpu->allocator_container );
-  CRUDE_HASHMAP_INITIALIZE( gpu->resource_cache.materials, gpu->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( gpu->resource_cache.techniques, gpu->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( gpu->resource_cache.materials, gpu->allocator_container );
   
   gpu->num_textures_to_update = 0;
   mtx_init( &gpu->texture_update_mutex, mtx_plain );
@@ -448,23 +448,23 @@ crude_gfx_device_deinitialize
   crude_gfx_destroy_descriptor_set_layout( gpu, gpu->bindless_descriptor_set_layout_handle );
   crude_gfx_destroy_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
   
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( gpu->resource_cache.techniques ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( gpu->resource_cache.techniques ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( gpu->resource_cache.techniques[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( gpu->resource_cache.techniques[ i ].key.key_hash ) )
     {
       crude_gfx_destroy_technique_instant( gpu, gpu->resource_cache.techniques[ i ].value );
     }
   }
-  CRUDE_HASHMAP_DEINITIALIZE( gpu->resource_cache.techniques );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( gpu->resource_cache.techniques );
 
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( gpu->resource_cache.materials ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( gpu->resource_cache.materials ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( gpu->resource_cache.materials[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( gpu->resource_cache.materials[ i ].key.key_hash ) )
     {
       crude_gfx_destroy_material_instant( gpu, gpu->resource_cache.materials[ i ].value );
     }
   }
-  CRUDE_HASHMAP_DEINITIALIZE( gpu->resource_cache.materials );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( gpu->resource_cache.materials );
   
   mtx_destroy( &gpu->texture_update_mutex );
 
@@ -1403,8 +1403,7 @@ crude_gfx_access_technique_by_name
   _In_ char const                                         *technique_name
 )
 {
-  uint64 technique_name_hashed = crude_hash_string( technique_name, 0 );
-  int64 technique_index = CRUDE_HASHMAP_GET_INDEX( gpu->resource_cache.techniques, technique_name_hashed );
+  int64 technique_index = CRUDE_HASHMAPSTR_GET_INDEX( gpu->resource_cache.techniques, technique_name );
   CRUDE_ASSERT( technique_index > -1 );
 
   crude_gfx_technique *technique = gpu->resource_cache.techniques[ technique_index ].value;
@@ -1968,7 +1967,7 @@ crude_gfx_create_pipeline
 
   pipeline = crude_gfx_access_pipeline( gpu, pipeline_handle );
   
-  pipeline->name = creation->name;
+  crude_string_copy( pipeline->name, creation->name, sizeof( pipeline->name ) );
   pipeline->shader_state = shader_state_handle;
   
   for ( uint32 i = 0; i < shader_state->reflect.descriptor.sets_count; ++i )
@@ -2900,8 +2899,7 @@ crude_gfx_create_material
 
   if ( material->name )
   {
-    uint64 key = crude_hash_string( material->name, 0 );
-    CRUDE_HASHMAP_SET( gpu->resource_cache.materials, key, material );
+    CRUDE_HASHMAPSTR_SET( gpu->resource_cache.materials, CRUDE_COMPOUNT( crude_string_link, { material->name } ), material );
   }
 
   return material;
@@ -2939,7 +2937,7 @@ crude_gfx_create_technique
   crude_string_copy( technique->name, creation->name, sizeof( technique->name ) );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, gpu->allocator_container );
-  CRUDE_HASHMAP_INITIALIZE( technique->name_hashed_to_pass_index, gpu->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( technique->name_to_pass_index, gpu->allocator_container );
 
   for ( size_t i = 0; i < creation->passes_count; ++i )
   {
@@ -2962,8 +2960,7 @@ crude_gfx_create_technique
 
     CRUDE_ARRAY_PUSH( technique->passes, technique_pass );
     
-    pass_name_hashed = crude_hash_string( pipeline->name, 0 );
-    CRUDE_HASHMAP_SET( technique->name_hashed_to_pass_index, pass_name_hashed, i );
+    CRUDE_HASHMAPSTR_SET( technique->name_to_pass_index, CRUDE_COMPOUNT( crude_string_link, { pipeline->name } ), i );
     
     for ( uint32 i = 0; i < pipeline->num_active_layouts; ++i )
     {
@@ -2972,23 +2969,13 @@ crude_gfx_create_technique
       {
         continue;
       }
-      
-      for ( uint32 b = 0; b < descriptor_set_layout->num_bindings; ++b )
-      {
-        // !OPTTODO
-        // we can get binding->name from reflect of shader, but how to manager names, don't want to allocate sep memory for each of them
-        // crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ b ];
-        // uint64 binding_name_hashed = crude_hash_string( binding->name, 0 );
-        // CRUDE_HASHMAP_SET( pass->name_hashed_to_descriptor_index, binding_name_hashed, binding->start );
-      }
     }
 
   }
   
   if ( creation->name )
   {
-    uint64 key = crude_hash_string( creation->name, 0 );
-    CRUDE_HASHMAP_SET( gpu->resource_cache.techniques, key, technique );
+    CRUDE_HASHMAPSTR_SET( gpu->resource_cache.techniques, CRUDE_COMPOUNT( crude_string_link, { technique->name } ), technique );
   }
 
   technique->pool_index = technique_handle.index;
@@ -3007,20 +2994,18 @@ crude_gfx_destroy_technique_instant
     return;
   }
 
-  uint64 technique_name_hashed = crude_hash_string( technique->name, 0u );
-  
   for ( size_t i = 0; i < CRUDE_ARRAY_LENGTH( technique->passes ); ++i )
   {
     crude_gfx_destroy_pipeline( gpu, technique->passes[ i ].pipeline );
     if ( technique->passes[ i ].name_hashed_to_descriptor_index )
     {
-      CRUDE_HASHMAP_DEINITIALIZE( technique->passes[ i ].name_hashed_to_descriptor_index );
+      CRUDE_HASHMAPSTR_DEINITIALIZE( technique->passes[ i ].name_hashed_to_descriptor_index );
     }
   }
   
   CRUDE_ARRAY_DEINITIALIZE( technique->passes );
-  CRUDE_HASHMAP_DEINITIALIZE( technique->name_hashed_to_pass_index );
-  CRUDE_HASHMAP_REMOVE( gpu->resource_cache.techniques, technique_name_hashed );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( technique->name_to_pass_index );
+  CRUDE_HASHMAPSTR_REMOVE( gpu->resource_cache.techniques, technique->name );
   crude_gfx_release_technique( gpu, CRUDE_COMPOUNT( crude_gfx_technique_handle, { technique->pool_index } ) );
 }
 

@@ -8,6 +8,8 @@ typedef enum crude_gui_node_type
 {
   CRUDE_GUI_NODE_TYPE_EMPTY_3D = 0,
   CRUDE_GUI_NODE_TYPE_GLTF = 1,
+  CRUDE_GUI_NODE_TYPE_CAMERA,
+  CRUDE_GUI_NODE_TYPE_NODE_EXTERNAL,
   CRUDE_GUI_NODE_TYPE_COUNT,
 } crude_gui_node_type;
 

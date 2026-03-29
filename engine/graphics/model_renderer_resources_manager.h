@@ -2,6 +2,7 @@
 
 #include <engine/graphics/gpu_device.h>
 
+#include <engine/core/hashmapstr.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/model_renderer_resources.h>
 #include <engine/graphics/asynchronous_loader.h>
@@ -43,7 +44,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
 
-  struct { uint64 key; crude_gfx_model_renderer_resources_handle value; } *model_hashed_name_to_model_renderer_resource;
+  CRUDE_HASHMAPSTR( crude_gfx_model_renderer_resources_handle ) *model_name_to_model_renderer_resource;
 
   /* For meshlet pipelines */
   crude_gfx_memory_allocation                              meshlets_hga;

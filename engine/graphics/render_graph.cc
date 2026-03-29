@@ -3,7 +3,7 @@
 #include <engine/core/file.h>
 #include <engine/core/log.h>
 #include <engine/core/assert.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/string.h>
 #include <engine/core/profiler.h>
 
@@ -894,26 +894,25 @@ void
 crude_gfx_render_graph_builder_register_render_pass
 (
   _In_ crude_gfx_render_graph_builder                     *builder,
-  _In_ char const                                         *name,
+  _In_ crude_string_link                                   name,
   _In_ crude_gfx_render_graph_pass_container               render_pass
 )
 {
-  uint64 key = crude_hash_string( name, 0 );
-  int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->render_pass_cache.render_pass_map, key );
+  int64 handle_index = CRUDE_HASHMAPSTR_GET_INDEX( builder->render_pass_cache.render_pass_map, name.data );
   if ( handle_index >= 0 )
   {
     CRUDE_ASSERT( false );
     return;
   }
 
-  handle_index = CRUDE_HASHMAP_GET_INDEX( builder->node_cache.node_map, key );
+  handle_index = CRUDE_HASHMAPSTR_GET_INDEX( builder->node_cache.node_map, name.data );
   if ( handle_index < 0 )
   {
     CRUDE_ASSERT( false );
     return;
   }
   
-  CRUDE_HASHMAP_SET( builder->render_pass_cache.render_pass_map, key, render_pass );
+  CRUDE_HASHMAPSTR_SET( builder->render_pass_cache.render_pass_map, name, render_pass );
 
   crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node( builder, builder->node_cache.node_map[ handle_index ].value );
   node->render_graph_pass_container = render_pass;
@@ -926,8 +925,7 @@ crude_gfx_render_graph_builder_unregister_render_pass
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_string( name, 0 );
-  CRUDE_HASHMAP_REMOVE( builder->render_pass_cache.render_pass_map, key );
+  CRUDE_HASHMAPSTR_REMOVE( builder->render_pass_cache.render_pass_map, name );
 }
 
 void
@@ -936,11 +934,11 @@ crude_gfx_render_graph_builder_unregister_all_render_passes
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( builder->render_pass_cache.render_pass_map ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( builder->render_pass_cache.render_pass_map ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( builder->render_pass_cache.render_pass_map[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( builder->render_pass_cache.render_pass_map[ i ].key.key_hash ) )
     {
-      builder->render_pass_cache.render_pass_map[ i ].key = CRUDE_HASHMAP_BACKET_STATE_EMPTY;
+      builder->render_pass_cache.render_pass_map[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
     }
   }
 }
@@ -972,10 +970,7 @@ crude_gfx_render_graph_builder_create_node
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->outputs, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->edges, CRUDE_ARRAY_LENGTH( creation->outputs ), builder->allocator_container );
   
-  {
-    uint64 key = crude_hash_string( node->name, 0 );
-    CRUDE_HASHMAP_SET( builder->node_cache.node_map, key, node_handle );
-  }
+  CRUDE_HASHMAPSTR_SET( builder->node_cache.node_map, CRUDE_COMPOUNT( crude_string_link, { node->name } ), node_handle );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( node->outputs ); ++i )
   {
@@ -1018,8 +1013,7 @@ crude_gfx_render_graph_builder_create_node_output
     resource->producer = producer;
     resource->ref_count = 0;
 
-    uint64 key = crude_hash_string( resource->name, 0 );
-    CRUDE_HASHMAP_SET( builder->resource_cache.resource_map, key, resource_handle );
+    CRUDE_HASHMAPSTR_SET( builder->resource_cache.resource_map, CRUDE_COMPOUNT( crude_string_link, { resource->name } ), resource_handle );
   }
 
   return resource_handle;
@@ -1067,8 +1061,7 @@ crude_gfx_render_graph_builder_access_node_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_string( name, 0 );
-  int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->node_cache.node_map, key );
+  int64 handle_index = CRUDE_HASHMAPSTR_GET_INDEX( builder->node_cache.node_map, name );
   if ( handle_index < 0 )
   {
     return NULL;
@@ -1113,8 +1106,7 @@ crude_gfx_render_graph_builder_access_resource_by_name
   _In_ char const                                         *name
 )
 {
-  uint64 key = crude_hash_string( name, 0 );
-  int64 handle_index = CRUDE_HASHMAP_GET_INDEX( builder->resource_cache.resource_map, key );
+  int64 handle_index = CRUDE_HASHMAPSTR_GET_INDEX( builder->resource_cache.resource_map, name );
   if ( handle_index < 0 )
   {
     CRUDE_ASSERT( false );
@@ -1132,7 +1124,7 @@ crude_gfx_render_graph_builder_resource_cache_initialize
 {
   crude_resource_pool_initialize( &builder->resource_cache.resources, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_RESOURCES_MAX_COUNT, sizeof( crude_gfx_render_graph_resource ) );
   builder->resource_cache.resource_map = NULL;
-  CRUDE_HASHMAP_INITIALIZE( builder->resource_cache.resource_map, builder->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( builder->resource_cache.resource_map, builder->allocator_container );
 }
 
 void
@@ -1143,7 +1135,7 @@ crude_gfx_render_graph_builder_node_cache_initialize
 {
   crude_resource_pool_initialize( &builder->node_cache.nodes, builder->allocator_container, CRUDE_GFX_RENDER_GRAPH_NODES_MAX_COUNT, sizeof( crude_gfx_render_graph_node ) );
   builder->node_cache.node_map = NULL;
-  CRUDE_HASHMAP_INITIALIZE( builder->node_cache.node_map, builder->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( builder->node_cache.node_map, builder->allocator_container );
 }
 
 void
@@ -1152,7 +1144,7 @@ crude_gfx_render_graph_builder_render_pass_cache_initialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  CRUDE_HASHMAP_INITIALIZE( builder->render_pass_cache.render_pass_map, builder->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( builder->render_pass_cache.render_pass_map, builder->allocator_container );
 }
 
 void
@@ -1161,9 +1153,9 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  for ( int32 i = 0; i < CRUDE_HASHMAP_CAPACITY( builder->resource_cache.resource_map ); ++i )
+  for ( int32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( builder->resource_cache.resource_map ); ++i )
   {
-    if ( !crude_hashmap_backet_key_valid( builder->resource_cache.resource_map[ i ].key ) )
+    if ( !crude_hashmapstr_backet_key_hash_valid( builder->resource_cache.resource_map[ i ].key.key_hash ) )
     {
       continue;
     }
@@ -1180,7 +1172,7 @@ crude_gfx_render_graph_builder_resource_cache_deinitialize
 
   crude_resource_pool_free_all_resource( &builder->resource_cache.resources );
   crude_resource_pool_deinitialize( &builder->resource_cache.resources );
-  CRUDE_HASHMAP_DEINITIALIZE( builder->resource_cache.resource_map );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( builder->resource_cache.resource_map );
 }
 
 void
@@ -1191,7 +1183,7 @@ crude_gfx_render_graph_builder_node_cache_deinitialize
 {
   crude_resource_pool_free_all_resource( &builder->node_cache.nodes );
   crude_resource_pool_deinitialize( &builder->node_cache.nodes );
-  CRUDE_HASHMAP_DEINITIALIZE( builder->node_cache.node_map );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( builder->node_cache.node_map );
 }
 
 void
@@ -1200,7 +1192,7 @@ crude_gfx_render_graph_builder_render_pass_cache_deinitialize
   _In_ crude_gfx_render_graph_builder                     *builder
 )
 {
-  CRUDE_HASHMAP_DEINITIALIZE( builder->render_pass_cache.render_pass_map );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( builder->render_pass_cache.render_pass_map );
 }
 
 /************************************************

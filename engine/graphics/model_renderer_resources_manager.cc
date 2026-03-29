@@ -3,7 +3,7 @@
 #include <meshoptimizer.h>
 
 #include <engine/core/file.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/memory.h>
 #include <engine/core/profiler.h>
 
@@ -189,7 +189,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->buffers, 0u, crude_heap_allocator_pack( manager->allocator ) );
 
-  CRUDE_HASHMAP_INITIALIZE( manager->model_hashed_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->model_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
 
   crude_resource_pool_initialize( &manager->model_renderer_resources_pool, crude_heap_allocator_pack( manager->allocator ), 1024, sizeof( crude_gfx_model_renderer_resources ) );
 
@@ -204,21 +204,21 @@ crude_gfx_model_renderer_resources_manager_deintialize
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->model_hashed_name_to_model_renderer_resource ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->model_name_to_model_renderer_resource ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( manager->model_name_to_model_renderer_resource[ i ].key.key_hash ) )
     {
       crude_gfx_model_renderer_resources                  *resource;
       crude_gfx_model_renderer_resources_handle            resource_handle;
       
-      resource_handle = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      resource_handle = manager->model_name_to_model_renderer_resource[ i ].value;
       resource = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, resource_handle.index ) );
       
       crude_gfx_model_renderer_resources_deinitialize( resource );
       crude_resource_pool_release_resource( &manager->model_renderer_resources_pool, resource_handle.index );
     }
   }
-  CRUDE_HASHMAP_DEINITIALIZE( manager->model_hashed_name_to_model_renderer_resource );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->model_name_to_model_renderer_resource );
   crude_resource_pool_deinitialize( &manager->model_renderer_resources_pool );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
@@ -257,20 +257,20 @@ crude_gfx_model_renderer_resources_manager_clear
   _In_ crude_gfx_model_renderer_resources_manager          *manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->model_hashed_name_to_model_renderer_resource ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->model_name_to_model_renderer_resource ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( manager->model_hashed_name_to_model_renderer_resource[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( manager->model_name_to_model_renderer_resource[ i ].key.key_hash ) )
     {
       crude_gfx_model_renderer_resources                  *resource;
       crude_gfx_model_renderer_resources_handle            resource_handle;
       
-      resource_handle = manager->model_hashed_name_to_model_renderer_resource[ i ].value;
+      resource_handle = manager->model_name_to_model_renderer_resource[ i ].value;
       resource = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, resource_handle.index ) );
       
       crude_gfx_model_renderer_resources_deinitialize( resource );
       crude_resource_pool_release_resource( &manager->model_renderer_resources_pool, resource_handle.index );
     }
-    manager->model_hashed_name_to_model_renderer_resource[ i ].key = 0;
+    manager->model_name_to_model_renderer_resource[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
@@ -324,17 +324,15 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
   crude_gfx_model_renderer_resources_handle                model_renderer_resouces_handle;
   crude_gfx_model_renderer_resources                      *model_renderer_resouces;
   int64                                                    model_renderer_resouces_index;
-  uint64                                                   filename_hashed;
 
-  filename_hashed = crude_hash_string( filepath, 0 );
-  model_renderer_resouces_index = CRUDE_HASHMAP_GET_INDEX( manager->model_hashed_name_to_model_renderer_resource, filename_hashed );
+  model_renderer_resouces_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->model_name_to_model_renderer_resource, filepath );
   if ( model_renderer_resouces_index != -1 )
   {
     if ( model_initialized )
     {
       *model_initialized = false;
     }
-    return manager->model_hashed_name_to_model_renderer_resource[ model_renderer_resouces_index ].value;
+    return manager->model_name_to_model_renderer_resource[ model_renderer_resouces_index ].value;
   }
   
   if ( model_initialized )
@@ -343,8 +341,11 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
   }
   model_renderer_resouces_handle = { crude_resource_pool_obtain_resource( &manager->model_renderer_resources_pool ) };
   model_renderer_resouces = CRUDE_CAST( crude_gfx_model_renderer_resources*, crude_resource_pool_access_resource( &manager->model_renderer_resources_pool, model_renderer_resouces_handle.index ) );
-  *model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, filepath );
-  CRUDE_HASHMAP_SET( manager->model_hashed_name_to_model_renderer_resource, filename_hashed, model_renderer_resouces_handle );
+  
+  crude_string_copy( model_renderer_resouces->relative_filepath, filepath, sizeof( model_renderer_resouces->relative_filepath ) );
+
+  *model_renderer_resouces = crude_gfx_model_renderer_resources_manager_load_gltf_( manager, model_renderer_resouces->relative_filepath );
+  CRUDE_HASHMAPSTR_SET( manager->model_name_to_model_renderer_resource, CRUDE_COMPOUNT( crude_string_link, { model_renderer_resouces->relative_filepath } ), model_renderer_resouces_handle );
   return model_renderer_resouces_handle;
 }
 

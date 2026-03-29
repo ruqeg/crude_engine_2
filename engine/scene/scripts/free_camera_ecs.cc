@@ -13,7 +13,7 @@
 ECS_COMPONENT_DECLARE( crude_free_camera );
 CRUDE_COMPONENT_STRING_DEFINE( crude_free_camera, "crude_free_camera" );
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_free_camera )
 {
   crude_memory_set( component, 0, sizeof( crude_free_camera ) );
   component->moving_speed_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "moving_speed_multiplier" ) );
@@ -21,7 +21,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_free_camera )
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_free_camera )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_free_camera )
 {
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_free_camera" ) );
@@ -112,6 +112,8 @@ crude_free_camera_system_import
   CRUDE_ECS_MODULE( world, crude_free_camera_system );
   
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_free_camera );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_free_camera );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_free_camera );
 
   crude_scene_components_import( world, manager );
 

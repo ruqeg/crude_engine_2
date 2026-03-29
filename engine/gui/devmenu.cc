@@ -5,10 +5,9 @@
 #include <SDL3/SDL.h>
 #include <thirdparty/nativefiledialog-extended/src/include/nfd.h>
 
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/platform/platform.h>
 #include <engine/scene/scene_ecs.h>
-#include <engine/external/game_ecs.h>
 #include <engine/scene/scene_debug_ecs.h>
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scripts/free_camera_ecs.h>
@@ -44,9 +43,6 @@ crude_gui_devmenu_option devmenu_options[ ] =
     "Reload Techniques", crude_gui_devmenu_reload_techniques_callback, crude_gui_devmenu_reload_techniques_hotkey_pressed_callback
   },
   {
-    "GPU Visual Profiler", crude_gui_devmenu_gpu_visual_profiler_callback
-  },
-  {
     "Memory Visual Profiler", crude_gui_devmenu_memory_visual_profiler_callback
   },
   {
@@ -66,12 +62,6 @@ crude_gui_devmenu_option devmenu_options[ ] =
   },
   {
     "Show/Hide Debug GLTF", crude_gui_devmenu_debug_gltf_view_callback
-  },
-  {
-    "Nodes Tree", crude_gui_devmenu_nodes_tree_callback
-  },
-  {
-    "Node Inspector", crude_gui_devmenu_node_inspector_callback
   }
 };
 
@@ -89,14 +79,11 @@ crude_gui_devmenu_initialize
   devmenu->current_framerate = 0.f;
   devmenu->dev_heap_allocator = &engine->develop_heap_allocator;
   devmenu->dev_stack_allocator = &engine->develop_temporary_allocator;
-  crude_gui_devmenu_gpu_visual_profiler_initialize( &devmenu->gpu_visual_profiler, devmenu );
   crude_gui_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
   crude_gui_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
   crude_gui_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu );
   crude_gui_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu );
   crude_gui_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu );
-  crude_gui_devmenu_nodes_tree_initialize( &devmenu->nodes_tree, devmenu );
-  crude_gui_devmenu_node_inspector_initialize( &devmenu->node_inspector, devmenu );
   crude_gui_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
 }
 
@@ -106,14 +93,11 @@ crude_gui_devmenu_deinitialize
   _In_ crude_gui_devmenu                                  *devmenu
 )
 {
-  crude_gui_devmenu_gpu_visual_profiler_deinitialize( &devmenu->gpu_visual_profiler );
   crude_gui_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
   crude_gui_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_deinitialize( &devmenu->render_graph );
   crude_gui_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
-  crude_gui_devmenu_nodes_tree_deinitialize( &devmenu->nodes_tree );
-  crude_gui_devmenu_node_inspector_deinitialize( &devmenu->node_inspector );
   crude_gui_devmenu_viewport_deinitialize( &devmenu->viewport );
 }
 
@@ -152,14 +136,11 @@ crude_gui_devmenu_draw
   //}
   
   crude_gui_devmenu_viewport_draw( &devmenu->viewport );
-  crude_gui_devmenu_gpu_visual_profiler_draw( &devmenu->gpu_visual_profiler );
   crude_gui_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
   crude_gui_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_draw( &devmenu->render_graph );
   crude_gui_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
-  crude_gui_devmenu_nodes_tree_draw( &devmenu->nodes_tree );
-  crude_gui_devmenu_node_inspector_draw( &devmenu->node_inspector );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -169,14 +150,11 @@ crude_gui_devmenu_update
   _In_ crude_gui_devmenu                                  *devmenu
 )
 {
-  crude_gui_devmenu_gpu_visual_profiler_update( &devmenu->gpu_visual_profiler );
   crude_gui_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
   crude_gui_devmenu_texture_inspector_update( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_update( &devmenu->render_graph );
   crude_gui_devmenu_gpu_pool_update( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_update( &devmenu->scene_renderer );
-  crude_gui_devmenu_nodes_tree_update( &devmenu->nodes_tree );
-  crude_gui_devmenu_node_inspector_update( &devmenu->node_inspector );
   crude_gui_devmenu_viewport_update( &devmenu->viewport );
 
   //if ( game->time - devmenu->last_framerate_update_time > 1.f )
@@ -212,16 +190,6 @@ crude_gui_devmenu_handle_input
     //{
     //  crude_platform_hide_cursor( &devmenu->engine->platform );
     //}
-    
-    crude_player_controller *player_controller = NULL;
-    if ( crude_entity_valid( devmenu->engine->world, player_controller_node ) )
-    {
-      player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( devmenu->engine->world, player_controller_node, crude_player_controller );
-    }
-    if ( player_controller )
-    {
-      player_controller->input_enabled = !devmenu->enabled;
-    }
   }
 
   for ( uint32 i = 0; i < CRUDE_COUNTOF( devmenu_options ); ++i  )
@@ -282,8 +250,6 @@ crude_gui_devmenu_free_camera_callback
 )
 {
   crude_entity player_controller_node = devmenu->engine->player_controller_node;
-  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( devmenu->engine->world, player_controller_node, crude_player_controller );
-  player_controller->fly_mode = !player_controller->fly_mode;
   crude_physics_enable_simulation( &devmenu->engine->physics, !devmenu->engine->physics.simulation_enabled );
 }
 
@@ -312,363 +278,6 @@ crude_gui_devmenu_reload_techniques_hotkey_pressed_callback
 )
 {
   return input->keys[ SDL_SCANCODE_LCTRL ].pressed && input->keys[ SDL_SCANCODE_G ].pressed && input->keys[ SDL_SCANCODE_R ].pressed;
-}
-
-/***********************
- * Devmenu
- ***********************/
-void
-crude_gui_devmenu_gpu_visual_profiler_initialize
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_gpu_profiler->devmenu = devmenu;
-  dev_gpu_profiler->gpu = &devmenu->engine->gpu;
-  dev_gpu_profiler->enabled = false;
-  dev_gpu_profiler->max_duration = 16.666f;
-  dev_gpu_profiler->max_frames = 100u;
-  dev_gpu_profiler->current_frame = 0u;
-  dev_gpu_profiler->max_visible_depth = 2;
-  dev_gpu_profiler->max_queries_per_frame = 32;
-  dev_gpu_profiler->allocator = &devmenu->engine->common_allocator;
-  dev_gpu_profiler->paused = false;
-  dev_gpu_profiler->pipeline_statistics = NULL;
-  dev_gpu_profiler->timestamps = CRUDE_CAST( crude_gfx_gpu_time_query*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( crude_gfx_gpu_time_query ) * dev_gpu_profiler->max_frames * dev_gpu_profiler->max_queries_per_frame ) );
-  dev_gpu_profiler->per_frame_active = CRUDE_CAST( uint16*, CRUDE_ALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), sizeof( uint16 ) * dev_gpu_profiler->max_frames ) );
-  dev_gpu_profiler->framebuffer_pixel_count = 0u;
-  dev_gpu_profiler->initial_frames_paused = 15;
-  memset( dev_gpu_profiler->per_frame_active, 0, sizeof( uint16 ) * dev_gpu_profiler->max_frames );
-  CRUDE_HASHMAP_INITIALIZE( dev_gpu_profiler->name_hashed_to_color_index, crude_heap_allocator_pack( dev_gpu_profiler->allocator ) );
-}
-
-void
-crude_gui_devmenu_gpu_visual_profiler_deinitialize
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-)
-{
-  CRUDE_HASHMAP_DEINITIALIZE( dev_gpu_profiler->name_hashed_to_color_index );
-  CRUDE_DEALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), dev_gpu_profiler->timestamps );
-  CRUDE_DEALLOCATE( crude_heap_allocator_pack( dev_gpu_profiler->allocator ), dev_gpu_profiler->per_frame_active );
-}
-
-void
-crude_gui_devmenu_gpu_visual_profiler_update
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-)
-{
-  crude_gfx_gpu_set_timestamps_enable( dev_gpu_profiler->gpu, !dev_gpu_profiler->paused );
-
-  if ( dev_gpu_profiler->initial_frames_paused )
-  {
-    --dev_gpu_profiler->initial_frames_paused;
-    return;
-  }
-
-  if ( dev_gpu_profiler->paused )
-  {
-    return;
-  }
-
-  uint32 active_timestamps = crude_gfx_copy_gpu_timestamps( dev_gpu_profiler->gpu, &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame ] );
-
-  dev_gpu_profiler->per_frame_active[ dev_gpu_profiler->current_frame ] = active_timestamps;
-  
-  dev_gpu_profiler->framebuffer_pixel_count = dev_gpu_profiler->gpu->renderer_size.x * dev_gpu_profiler->gpu->renderer_size.y;
-
-  dev_gpu_profiler->pipeline_statistics = &dev_gpu_profiler->gpu->gpu_time_queries_manager->frame_pipeline_statistics;
-
-  for ( uint32 i = 0; i < active_timestamps; ++i )
-  {
-    crude_gfx_gpu_time_query                              *timestamp;
-    int64                                                  hash_color_index;
-    uint64                                                 hashed_name, color_index;
-
-    timestamp = &dev_gpu_profiler->timestamps[ dev_gpu_profiler->max_queries_per_frame * dev_gpu_profiler->current_frame + i ];
-  
-    hashed_name = crude_hash_string( timestamp->name, 0u );
-    hash_color_index = CRUDE_HASHMAP_GET_INDEX( dev_gpu_profiler->name_hashed_to_color_index, hashed_name );
-
-    if ( hash_color_index == -1 )
-    {
-      color_index = CRUDE_HASHMAP_LENGTH( dev_gpu_profiler->name_hashed_to_color_index );
-      CRUDE_HASHMAP_SET( dev_gpu_profiler->name_hashed_to_color_index, hashed_name, color_index );
-    }
-    else
-    {
-      color_index = dev_gpu_profiler->name_hashed_to_color_index[ hash_color_index ].value;
-    }
-  
-    timestamp->color = crude_color_get_distinct_color( color_index );
-  }
-
-  dev_gpu_profiler->current_frame = ( dev_gpu_profiler->current_frame + 1 ) % dev_gpu_profiler->max_frames;
-
-  if ( dev_gpu_profiler->current_frame == 0 )
-  {
-    dev_gpu_profiler->max_time = -FLT_MAX;
-    dev_gpu_profiler->min_time = FLT_MAX;
-    dev_gpu_profiler->average_time = 0.f;
-  }
-}
-
-void
-crude_gui_devmenu_gpu_visual_profiler_draw
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-)
-{
-  if ( !dev_gpu_profiler->enabled )
-  {
-    return;
-  }
-
-  ImGui::Begin( "GPU Visual Profiler" );
-
-  {
-    ImGuiIO                                               *imgui_io;
-    ImDrawList                                            *draw_list;
-    char                                                   buf[ 128 ];
-    ImVec2                                                 cursor_pos, canvas_size, mouse_pos;
-    float64                                                new_average;
-    float32                                                widget_height, legend_width, graph_width;
-    uint32                                                 rect_width;
-    int32                                                  rect_x, selected_frame;
-
-    draw_list = ImGui::GetWindowDrawList();
-    cursor_pos = ImGui::GetCursorScreenPos();
-    canvas_size = ImGui::GetContentRegionAvail();
-    widget_height = canvas_size.y - 100;
-    
-    legend_width = 250;
-    graph_width = fabsf( canvas_size.x - legend_width );
-    rect_width = CRUDE_CEIL( graph_width / dev_gpu_profiler->max_frames );
-    rect_x = CRUDE_CEIL( graph_width - rect_width );
-
-    new_average = 0;
-
-    imgui_io = &ImGui::GetIO();
-
-    crude_memory_set( buf, 0u, sizeof( buf ) );
-
-    mouse_pos = imgui_io->MousePos;
-
-    selected_frame = -1;
-
-    /* Draw Graph */
-    for ( uint32 i = 0; i < dev_gpu_profiler->max_frames; ++i )
-    {
-      crude_gfx_gpu_time_query                            *frame_timestamps;
-      uint32                                               frame_index;
-      float32                                              frame_x, frame_time, rect_height, current_height;
-
-      frame_index = ( dev_gpu_profiler->current_frame - 1 - i ) % dev_gpu_profiler->max_frames;
-
-      frame_x = cursor_pos.x + rect_x;
-      frame_timestamps = &dev_gpu_profiler->timestamps[ frame_index * dev_gpu_profiler->max_queries_per_frame ];
-      frame_time = frame_timestamps[ 0 ].elapsed_ms;
-      
-      frame_time = CRUDE_CLAMP( frame_time, 1000.f, 0.00001f );
-            
-      new_average += frame_time;
-      dev_gpu_profiler->min_time = CRUDE_MIN( dev_gpu_profiler->min_time, frame_time );
-      dev_gpu_profiler->max_time = CRUDE_MAX( dev_gpu_profiler->max_time, frame_time );
-      
-      rect_height = frame_time / dev_gpu_profiler->max_duration * widget_height;
-      current_height = cursor_pos.y;
-      
-      /* Draw timestamps from the bottom */
-      for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ frame_index ]; ++j )
-      {
-        crude_gfx_gpu_time_query const                    *timestamp;
-        ImVec2                                             rect_min, rect_max;
-        uint32                                             width_margin;
-
-        timestamp = &frame_timestamps[ j ];
-
-        if ( timestamp->depth != 1 )
-        {
-          continue;
-        }
-        
-        width_margin = 2;
-      
-        rect_height = ( float32 )timestamp->elapsed_ms / dev_gpu_profiler->max_duration * widget_height;
-        rect_min = CRUDE_COMPOUNT( ImVec2, { frame_x + width_margin, current_height + widget_height - rect_height } );
-        rect_max = CRUDE_COMPOUNT( ImVec2, { frame_x + width_margin + rect_width - width_margin, current_height + widget_height } );
-        draw_list->AddRectFilled( rect_min, rect_max, timestamp->color );
-      
-        current_height -= rect_height;
-      }
-      
-      if ( mouse_pos.x >= frame_x && mouse_pos.x < frame_x + rect_width && mouse_pos.y >= cursor_pos.y && mouse_pos.y < cursor_pos.y + widget_height )
-      {
-        draw_list->AddRectFilled(
-          { frame_x, cursor_pos.y + widget_height },
-          { frame_x + rect_width, cursor_pos.y },
-          0x0fffffff
-        );
-      
-        ImGui::SetTooltip( "(%u): %f", frame_index, frame_time );
-      
-        selected_frame = frame_index;
-      }
-
-      draw_list->AddLine( { frame_x, cursor_pos.y + widget_height }, { frame_x, cursor_pos.y }, 0x0fffffff );
-
-      rect_x -= rect_width;
-    }
-    
-    sprintf( buf, "%3.4fms", dev_gpu_profiler->max_duration );
-    draw_list->AddText( { cursor_pos.x, cursor_pos.y }, 0xff0000ff, buf );
-    draw_list->AddRectFilled( { cursor_pos.x + rect_width, cursor_pos.y }, { cursor_pos.x + graph_width, cursor_pos.y + 1 }, 0xff0000ff );
-
-    sprintf( buf, "%3.4fms", dev_gpu_profiler->max_duration / 2.f );
-    draw_list->AddText( { cursor_pos.x, cursor_pos.y + widget_height / 2.f }, 0xff00ffff, buf );
-    draw_list->AddRectFilled( { cursor_pos.x + rect_width, cursor_pos.y + widget_height / 2.f }, { cursor_pos.x + graph_width, cursor_pos.y + widget_height / 2.f + 1 }, 0xff00ffff );
-
-    dev_gpu_profiler->average_time = CRUDE_CAST( float32, dev_gpu_profiler->new_average ) / dev_gpu_profiler->max_frames;
-
-    /* Draw legend */
-    ImGui::SetCursorPosX( cursor_pos.x + graph_width );
-
-    selected_frame = selected_frame == -1 ? ( dev_gpu_profiler->current_frame - 1 ) % dev_gpu_profiler->max_frames : selected_frame;
-    if ( selected_frame >= 0 )
-    {
-      crude_gfx_gpu_time_query                            *frame_timestamps;
-      float32                                              x, y;
-
-      frame_timestamps = &dev_gpu_profiler->timestamps[ selected_frame * dev_gpu_profiler->max_queries_per_frame ];
-    
-      x = cursor_pos.x + graph_width + 8;
-      y = cursor_pos.y + widget_height - 14;
-    
-      for ( uint32 j = 0; j < dev_gpu_profiler->per_frame_active[ selected_frame ]; ++j )
-      {
-        crude_gfx_gpu_time_query                          *timestamp;
-        float32                                            timestamp_x;
-
-        timestamp = &frame_timestamps[ j ];
-    
-        if ( timestamp->depth > dev_gpu_profiler->max_visible_depth )
-        {
-          continue;
-        }
-    
-        timestamp_x = x + timestamp->depth * 4;
-    
-        if ( timestamp->depth == 0 )
-        {
-          draw_list->AddRectFilled(
-            { timestamp_x, cursor_pos.y + 4 },
-            { timestamp_x + 8, cursor_pos.y + 12 },
-            timestamp->color
-          );
-          
-          sprintf( buf, "%2.3fms %d %s", timestamp->elapsed_ms, timestamp->depth, timestamp->name );
-          draw_list->AddText( { timestamp_x + 20, cursor_pos.y }, 0xffffffff, buf );
-        }
-        else
-        {
-          /* Draw all other timestamps starting from bottom */
-          draw_list->AddRectFilled(
-            { timestamp_x, y + 4 },
-            { timestamp_x + 8, y + 12 },
-            timestamp->color
-          );
-    
-          sprintf( buf, "%2.3fms %d %s", timestamp->elapsed_ms, timestamp->depth, timestamp->name );
-          draw_list->AddText( { timestamp_x + 20, y }, 0xffffffff, buf );
-    
-          y -= 14;
-        }
-      }
-    }
-
-    ImGui::Dummy( { canvas_size.x, widget_height } );
-  }
-
-  ImGui::SetNextItemWidth( 100.f );
-  ImGui::LabelText( "", "Max %3.4fms", dev_gpu_profiler->max_time );
-  ImGui::SameLine();
-  ImGui::SetNextItemWidth( 100.f );
-  ImGui::LabelText( "", "Min %3.4fms", dev_gpu_profiler->min_time );
-  ImGui::SameLine();
-  ImGui::LabelText( "", "Ave %3.4fms", dev_gpu_profiler->average_time );
-  
-  ImGui::Separator();
-  ImGui::Checkbox( "Pause", &dev_gpu_profiler->paused );
-  
-  {
-    char const                                            *stat_unit_name;
-    float32                                                stat_unit_multiplier;
-
-    static const char                                     *items[] = { "200ms", "100ms", "66ms", "33ms", "16ms", "8ms", "4ms" };
-    static const float                                     max_durations[] = { 200.f, 100.f, 66.f, 33.f, 16.f, 8.f, 4.f };
-    static const char                                     *stat_unit_names[] = { "Normal", "Kilo", "Mega" };
-    static const char                                     *stat_units[] = { "", "K", "M" };
-    static const float32                                   stat_unit_multipliers[] = { 1.f, 1000.f, 1000000.f };
-    static int                                             max_duration_index = 4;
-    static int                                             stat_unit_index = 1;
-
-    if ( ImGui::Combo( "Graph Max", &max_duration_index, items, IM_ARRAYSIZE( items ) ) )
-    {
-      dev_gpu_profiler->max_duration = max_durations[ max_duration_index ];
-    }
-    
-    ImGui::SliderInt( "Max Depth", &dev_gpu_profiler->max_visible_depth, 1, 4 );
-    
-    ImGui::Separator();
-    
-    stat_unit_multiplier = stat_unit_multipliers[ stat_unit_index ];
-    stat_unit_name = stat_units[ stat_unit_index ];
-    if ( dev_gpu_profiler->pipeline_statistics )
-    {
-      float32 stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT ];
-      for ( uint32 i = 0; i < CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT; ++i )
-      {
-        stat_values[ i ] = dev_gpu_profiler->pipeline_statistics->statistics[ i ] / stat_unit_multiplier;
-      }
-    
-      ImGui::Text( "Vertices %0.2f%s, Primitives %0.2f%s",
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTICES_COUNT ], stat_unit_name,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_PRIMITIVE_COUNT ], stat_unit_name );
-    
-      ImGui::Text( "Clipping: Invocations %0.2f%s, Survive C%0.2f%s, Visible Perc %3.1f",
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ], stat_unit_name,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ], stat_unit_name,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_PRIMITIVES ] / stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_CLIPPING_INVOCATIONS ] * 100.0f, stat_unit_name );
-      
-      ImGui::Text( "Invocations: Mesh Shaders %0.2f%s, Task Shaders %0.2f%s",
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_MESH_SHADER_INVOCATIONS ], stat_unit_name,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_TASK_SHADER_INVOCATIONS ], stat_unit_name );
-    
-      ImGui::Text( "Invocations: Vertex Shaders %0.2f%s, Fragment Shaders %0.2f%s, Compute Shaders %0.2f%s",
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ], stat_unit_name,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ], stat_unit_name, stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ], stat_unit_name );
-    
-      ImGui::Text( "Invocations divided by number of full screen quad pixels." );
-      ImGui::Text( "Vertex %0.2f, Fragment %0.2f, Compute %0.2f",
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_VERTEX_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_FRAGMENT_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count,
-        stat_values[ CRUDE_GFX_GPU_PIPELINE_STATISTICS_COMPUTE_SHADER_INVOCATIONS ] * stat_unit_multiplier / dev_gpu_profiler->framebuffer_pixel_count );
-    }
-  
-    ImGui::Combo( "Stat Units", &stat_unit_index, stat_unit_names, IM_ARRAYSIZE( stat_unit_names ) );
-  }
-  ImGui::End( );
-}
-
-void
-crude_gui_devmenu_gpu_visual_profiler_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->gpu_visual_profiler.enabled = !devmenu->gpu_visual_profiler.enabled;
 }
 
 /***********************
@@ -1272,321 +881,6 @@ crude_gui_devmenu_scene_renderer_callback
 )
 {
   devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
-}
-
-/***********************
- * 
- * Develop Nodes Tree
- * 
- ***********************/
-void
-crude_gui_devmenu_nodes_tree_draw_internal_
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree,
-  _In_ crude_entity                                        node,
-  _In_ uint32                                             *current_node_index
-)
-{
-  ImGuiTreeNodeFlags                                       tree_node_flags;
-  bool                                                     can_open_children_nodes, tree_node_opened;
-  
-  {
-    can_open_children_nodes = false;
-
-    ecs_iter_t it = ecs_children( dev_nodes_tree->devmenu->engine->world, node );
-    if ( !CRUDE_ENTITY_HAS_COMPONENT( dev_nodes_tree->devmenu->engine->world, node, crude_gltf ) && ecs_children_next( &it ) )
-    {
-      if ( it.count )
-      {
-        can_open_children_nodes = true;
-      }
-    }
-  }
-
-  tree_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-  
-  if ( !can_open_children_nodes )
-  {
-    tree_node_flags |= ImGuiTreeNodeFlags_Leaf;
-  }
-
-  if ( dev_nodes_tree->selected_node == node )
-  {
-    tree_node_flags |= ImGuiTreeNodeFlags_Selected;
-  }
-
-  tree_node_opened = ImGui::TreeNodeEx( ( void* )( intptr_t )*current_node_index, tree_node_flags, crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
-  if ( ImGui::IsItemClicked( ImGuiMouseButton_Left ) && !ImGui::IsItemToggledOpen( ) )
-  {
-    dev_nodes_tree->selected_node = node;
-  }
-
-  if ( ImGui::IsItemClicked( ImGuiMouseButton_Right ) )
-  {
-    dev_nodes_tree->dublicate_node_reference = node;
-    crude_string_copy( dev_nodes_tree->dublicate_node_name, crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ), sizeof( dev_nodes_tree->dublicate_node_reference ) );
-  }
-
-  if ( ImGui::IsItemClicked( 1 ) && !ImGui::IsItemToggledOpen( ) )
-  {
-    ImGui::OpenPopup( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
-  }
-
-  if (ImGui::BeginDragDropSource( ) )
-  {
-    ImGui::SetDragDropPayload( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ), NULL, 0 );
-    ImGui::Text( crude_entity_get_name( dev_nodes_tree->devmenu->engine->world, node ) );
-    ImGui::EndDragDropSource( );
-  }
-
-  ++( *current_node_index );
-  if ( tree_node_opened )
-  {
-    if ( can_open_children_nodes )
-    {
-      ecs_iter_t it = ecs_children( dev_nodes_tree->devmenu->engine->world, node );
-      while ( ecs_children_next( &it ) )
-      {
-        for ( int32 i = 0; i < it.count; ++i )
-        {
-          crude_entity child = crude_entity_from_iterator( &it, i );
-          crude_gui_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, child, current_node_index );
-        }
-      }
-    }
-    
-    ImGui::TreePop( );
-  }
-}
-
-void
-crude_gui_devmenu_nodes_tree_initialize
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_nodes_tree->devmenu = devmenu;
-  dev_nodes_tree->selected_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  dev_nodes_tree->dublicate_node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
-  dev_nodes_tree->enabled = false;
-}
-
-void
-crude_gui_devmenu_nodes_tree_deinitialize
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-)
-{
-}
-
-void
-crude_gui_devmenu_nodes_tree_update
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-)
-{
-}
-
-void
-crude_gui_devmenu_nodes_tree_draw
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-)
-{
-  crude_ecs                                               *world;
-  uint32                                                   current_node_index;
-
-  if ( !dev_nodes_tree->enabled )
-  {
-    return;
-  }
-
-  world = dev_nodes_tree->devmenu->engine->world;
-
-  if ( !crude_entity_valid( world, dev_nodes_tree->selected_node ) )
-  {
-    dev_nodes_tree->selected_node = dev_nodes_tree->devmenu->engine->main_node;
-  }
-  
-  if ( crude_entity_valid( world, dev_nodes_tree->dublicate_node_reference ) )
-  {
-    ImGui::Begin( "Dublicate Node" );
-    ImGui::Text( "Reference \"%s\"", crude_entity_get_name( world, dev_nodes_tree->dublicate_node_reference ) );
-    ImGui::InputText( "Name", dev_nodes_tree->dublicate_node_name, sizeof( dev_nodes_tree ) );
-    if ( ImGui::Button( "Dublicate" ) )
-    {
-      crude_entity new_node = crude_node_copy_hierarchy( world, dev_nodes_tree->dublicate_node_reference, dev_nodes_tree->dublicate_node_name, true, true );
-      crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, dev_nodes_tree->dublicate_node_reference ) );
-      dev_nodes_tree->dublicate_node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
-      dev_nodes_tree->selected_node = new_node;
-    }
-    ImGui::End( );
-  }
-  
-  ImGui::Begin( "Scene Node Tree" );
-  current_node_index = 0u;
-  crude_gui_devmenu_nodes_tree_draw_internal_( dev_nodes_tree, dev_nodes_tree->devmenu->engine->main_node, &current_node_index );
-  ImGui::End( );
-}
-
-void
-crude_gui_devmenu_nodes_tree_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->nodes_tree.enabled = !devmenu->nodes_tree.enabled;
-}
-
-
-/***********************
- * 
- * Develop Node Inspector
- * 
- ***********************/
-void
-crude_gui_devmenu_node_inspector_initialize
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_node_inspector->devmenu = devmenu;
-  dev_node_inspector->enabled = false;
-}
-
-void
-crude_gui_devmenu_node_inspector_deinitialize
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-)
-{
-}
-
-void
-crude_gui_devmenu_node_inspector_update
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-)
-{
-}
-
-void
-crude_gui_devmenu_node_inspector_draw
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-)
-{
-  crude_ecs *world = dev_node_inspector->devmenu->engine->world;
-  crude_entity selected_node = dev_node_inspector->devmenu->nodes_tree.selected_node;
-  if ( !crude_entity_valid( world, selected_node ) )
-  {
-    return;
-  }
-
-  ImGui::Begin( "Node Inspector" );
-  ImGui::Text( "Node: \"%s\"", crude_entity_get_name( world, selected_node ) );
-
-  crude_node_external *node_external = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_node_external );
-  if ( node_external )
-  {
-    ImGui::Text( "External \"%s\"", node_external->node_relative_filepath );
-  }
-  
-  crude_transform *transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
-  if ( transform && ImGui::CollapsingHeader( "crude_transform" ) )
-  {
-    bool transform_edited = false;
-    transform_edited |= ImGui::DragFloat3( "Translation", &transform->translation.x, .1f );
-    transform_edited |= ImGui::DragFloat3( "Scale", &transform->scale.x, .1f );
-    transform_edited |= ImGui::DragFloat4( "Rotation", &transform->rotation.x, .1f );
-    if ( transform_edited )
-    {
-      CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
-    }
-  }
-  
-  crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_free_camera );
-  if ( free_camera && ImGui::CollapsingHeader( "crude_free_camera" ) )
-  {
-    ImGui::InputFloat( "Moving Speed", &free_camera->moving_speed_multiplier, .1f );
-    ImGui::InputFloat( "Rotating Speed", &free_camera->rotating_speed_multiplier, .1f );
-  }
-  
-  crude_camera *camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_camera );
-  if ( camera && ImGui::CollapsingHeader( "crude_camera" ) )
-  {
-    ImGui::InputFloat( "Far Z", &camera->far_z );
-    ImGui::InputFloat( "Near Z", &camera->near_z );
-    ImGui::SliderAngle( "FOV Radians", &camera->fov_radians );
-    ImGui::InputFloat( "Aspect Ratio", &camera->aspect_ratio );
-    if ( ImGui::Button( "Set Active" ) )
-    {
-      dev_node_inspector->devmenu->engine->camera_node = selected_node;
-    }
-  }
-  
-  crude_light *light = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_light );
-  if ( light && ImGui::CollapsingHeader( "crude_light" ) )
-  {
-    ImGui::ColorEdit3( "color", &light->color.x );
-    ImGui::InputFloat( "intensity", &light->intensity );
-    ImGui::InputFloat( "radius", &light->radius );
-  }
-  
-  crude_physics_character_body_handle *dynamic_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_physics_character_body_handle );
-  if ( dynamic_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_character_body_handle )( world, selected_node, dynamic_body, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  crude_physics_static_body_handle *static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_physics_static_body_handle );
-  if ( static_body && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_static_body_handle )( world, selected_node, static_body, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  crude_physics_collision_shape *collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_physics_collision_shape );
-  if ( collision_shape && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_physics_collision_shape )( world, selected_node, collision_shape, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  crude_player_controller *player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_player_controller );
-  if ( player_controller && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_player_controller ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_player_controller )( world, selected_node, player_controller, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  crude_debug_collision *debug_collision = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_debug_collision );
-  if ( debug_collision && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_collision ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_collision )( world, selected_node, debug_collision, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-
-  crude_debug_gltf *debug_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_debug_gltf );
-  if ( debug_gltf && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_debug_gltf ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_debug_gltf )( world, selected_node, debug_gltf, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-
-  crude_node_runtime *runtime_node = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_node_runtime );
-  if ( runtime_node && ImGui::CollapsingHeader( CRUDE_COMPONENT_STRING( crude_node_runtime ) ) )
-  {
-    CRUDE_PARSE_COMPONENT_TO_IMGUI( crude_node_runtime )( world, selected_node, runtime_node, &dev_node_inspector->devmenu->engine->node_manager );
-  }
-  
-  ImGui::End( );
-}
-
-void
-crude_gui_devmenu_node_inspector_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->node_inspector.enabled = !devmenu->node_inspector.enabled;
 }
 
 /***********************

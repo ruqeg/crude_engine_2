@@ -8,6 +8,8 @@ crude_components_serialization_manager_initialize
 )
 {
   CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( manager->component_id_to_imgui_funs, 512, crude_heap_allocator_pack( allocator ) );
+  CRUDE_HASHMAP_INITIALIZE_WITH_CAPACITY( manager->component_id_to_json_funs, 512, crude_heap_allocator_pack( allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE_WITH_CAPACITY( manager->component_name_to_json_funs, 512, crude_heap_allocator_pack( allocator ) );
 }
 
 void
@@ -17,6 +19,8 @@ crude_components_serialization_manager_deinitialize
 )
 {
   CRUDE_HASHMAP_DEINITIALIZE( manager->component_id_to_imgui_funs );
+  CRUDE_HASHMAP_DEINITIALIZE( manager->component_id_to_json_funs );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->component_name_to_json_funs );
 }
 
 void
@@ -27,6 +31,27 @@ crude_components_serialization_manager_add_component_to_imgui
   _In_ crude_crude_components_serialization_parse_component_to_imgui_func fn
 )
 {
-  uint64 key = crude_hash_bytes( CRUDE_CAST( uint8*, &component_id ), sizeof( component_id ), 0 );
-  CRUDE_HASHMAP_SET( manager->component_id_to_imgui_funs, key, fn );
+  CRUDE_HASHMAP_SET( manager->component_id_to_imgui_funs, component_id, fn );
+}
+    
+void
+crude_components_serialization_manager_add_component_to_json
+(
+  _In_ crude_components_serialization_manager             *manager,
+  _In_ ecs_id_t                                            component_id,
+  _In_ crude_crude_components_serialization_parse_component_to_json_func fn
+)
+{
+  CRUDE_HASHMAP_SET( manager->component_id_to_json_funs, component_id, fn );
+}
+
+void
+crude_components_serialization_manager_add_json_to_component
+(
+  _In_ crude_components_serialization_manager             *manager,
+  _In_ crude_string_link                                   component_name,
+  _In_ crude_crude_components_serialization_parse_json_to_component_func fn
+)
+{
+  CRUDE_HASHMAPSTR_SET( manager->component_name_to_json_funs, component_name, fn );
 }

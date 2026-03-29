@@ -35,7 +35,7 @@ crude_gui_editor_initialize
   crude_gui_log_viewer_initialize( &editor->log_viewer );
   crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
   crude_gui_gpu_visual_profiler_initialize( &editor->gpu_visual_profiler, &engine->gpu, &engine->develop_heap_allocator );
-  crude_gui_debug_initialize( &editor->debug, &engine->scene_renderer );
+  crude_gui_debug_initialize( &editor->debug, engine );
 }
 
 void

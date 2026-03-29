@@ -2,7 +2,7 @@
 
 #include <engine/core/resource_pool.h>
 #include <engine/core/math.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/audio/audio_device_resources.h>
 
 typedef struct crude_audio_device

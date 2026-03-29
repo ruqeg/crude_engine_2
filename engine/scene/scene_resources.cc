@@ -34,6 +34,28 @@ crude_gltf_empty
   return gltf;
 }
 
+crude_camera
+crude_camera_empty
+(
+)
+{
+  crude_camera camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+  camera.fov_radians = 1;
+  camera.aspect_ratio = 1.8;
+  camera.near_z = 1;
+  camera.far_z = 300;
+  return camera;
+}
+
+crude_node_external
+crude_node_external_empty
+(
+)
+{
+  crude_node_external node_external = CRUDE_COMPOUNT_EMPTY( crude_node_external );
+  return node_external;
+}
+
 XMMATRIX
 crude_transform_node_to_world
 (
@@ -103,6 +125,7 @@ crude_node_copy_hierarchy
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
   _In_ char const                                         *name,
+  _In_ crude_entity                                        parent,
   _In_ bool                                                copy_value,
   _In_ bool                                                enabled
 )
@@ -113,6 +136,8 @@ crude_node_copy_hierarchy
   }
   
   crude_entity new_node = crude_entity_copy( world, node, copy_value );
+  
+  crude_entity_set_parent( world, new_node, parent );
 
   ecs_iter_t it = crude_ecs_children( world, node );
 
@@ -121,9 +146,7 @@ crude_node_copy_hierarchy
     for ( size_t i = 0; i < it.count; ++i )
     {
       crude_entity child = crude_entity_from_iterator( &it, i );
-      crude_entity new_child = crude_node_copy_hierarchy( world, child, crude_entity_get_name( world, child ), copy_value, enabled );
-
-      crude_entity_set_parent( world, new_child, new_node );
+      crude_node_copy_hierarchy( world, child, crude_entity_get_name( world, child ), new_node, copy_value, enabled );
     }
   }
   

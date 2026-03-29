@@ -117,7 +117,10 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Debug
    **********************/
+#if CRUDE_DEVELOP
   crude_gfx_model_renderer_resources_instance              light_model_renderer_resources_instance;
+  crude_gfx_model_renderer_resources_instance              camera_model_renderer_resources_instance;
+#endif
 
   /***********************
    * Common Mesh & Meshlets CPU & GPU Data

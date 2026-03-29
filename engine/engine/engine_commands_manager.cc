@@ -116,9 +116,9 @@ crude_engine_commands_manager_update
     }
     case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
     {
-      for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->engine->gpu.resource_cache.techniques ); ++i )
+      for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->engine->gpu.resource_cache.techniques ); ++i )
       {
-        if ( !crude_hashmap_backet_key_valid( manager->engine->gpu.resource_cache.techniques[ i ].key ) )
+        if ( !crude_hashmapstr_backet_key_hash_valid( manager->engine->gpu.resource_cache.techniques[ i ].key.key_hash ) )
         {
           continue;
         }

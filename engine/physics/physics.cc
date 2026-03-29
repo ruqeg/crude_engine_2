@@ -3,7 +3,7 @@
 
 #include <engine/core/log.h>
 #include <engine/core/array.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/assert.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/physics/physics_ecs.h>

@@ -24,13 +24,11 @@ ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
-ECS_COMPONENT_DECLARE( crude_node_runtime );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_node_runtime, "crude_node_runtime" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
 
 void
@@ -46,20 +44,26 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_camera );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_gltf );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_runtime );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
-  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_runtime );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_transform );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_light );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_camera );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_gltf );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_transform );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_light );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_camera );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_gltf ) }
   } );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_camera )
 {
   crude_memory_set( component, 0, sizeof( crude_camera ) );
   component->fov_radians = CRUDE_STATIC_CAST( float32, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "fov_radians" ) ) );
@@ -69,7 +73,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_camera )
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_camera )
 {
   cJSON *camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( camera_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_camera ) ) );
@@ -82,9 +86,28 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_camera )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_camera )
 {
+  CRUDE_IMGUI_START_OPTIONS;
+  CRUDE_IMGUI_OPTION( "Aspect Ratio", {
+    ImGui::DragFloat( "##Aspect Ratio", &component->aspect_ratio );
+  } );
+  CRUDE_IMGUI_OPTION( "Fov", {
+    ImGui::SliderAngle( "##Fov", &component->fov_radians, 30.f );
+  } );
+  CRUDE_IMGUI_OPTION( "Near Plane", {
+    ImGui::DragFloat( "##Near Plane", &component->near_z );
+  } );
+  CRUDE_IMGUI_OPTION( "Far Plane", {
+    ImGui::DragFloat( "##Far Plane", &component->far_z );
+  } );
+  CRUDE_IMGUI_OPTION( "Select", {
+    if ( ImGui::Button( "##Select" ) )
+    {
+      manager->select_camera_func( manager->select_camera_ctx, node );
+    }
+  } );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_transform )
 {
   crude_memory_set( component, 0, sizeof( crude_camera ) );
   crude_parse_json_to_float3( &component->translation, cJSON_GetObjectItemCaseSensitive( component_json, "translation" ) );
@@ -92,7 +115,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_transform )
   crude_parse_json_to_float3( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ) );
   return true;
 }
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_transform )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_transform )
 {
   cJSON *transform_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( transform_json, "translation", cJSON_CreateFloatArray( &component->translation.x, 3 ) );
@@ -107,7 +130,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
 
   CRUDE_IMGUI_START_OPTIONS;
   CRUDE_IMGUI_OPTION( "Translation", {
-    ImGui::DragFloat3( "##Translation", &component->translation.x, 1.f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+    ImGui::DragFloat3( "##Translation", &component->translation.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
   } );
   
   CRUDE_IMGUI_OPTION( "Quaternion Rotation", {
@@ -116,11 +139,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_transform )
   } );
 
   CRUDE_IMGUI_OPTION( "Scale", {
-    ImGui::DragFloat3( "##Scale", &component->scale.x, 1.f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+    ImGui::DragFloat3( "##Scale", &component->scale.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
   } );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
 {
   char const                                              *gltf_relative_filepath;
   crude_gfx_model_renderer_resources                      *model_renderer_resources;
@@ -143,7 +166,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_gltf )
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_gltf )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_gltf )
 {
   cJSON                                                   *gltf_json;
   crude_gfx_model_renderer_resources                      *model_renderer_resources;
@@ -260,7 +283,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
     } );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_light )
 {
   crude_memory_set( component, 0, sizeof( crude_light ) );
   component->radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
@@ -269,7 +292,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_light )
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_light )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_light )
 {
   cJSON *light_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( light_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_light ) ) );
@@ -294,12 +317,40 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
   } );
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_runtime )
-{
-}
-
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 {
+  CRUDE_IMGUI_START_OPTIONS;
+
+  ImGui::Text( "\"%s\"", component->node_relative_filepath[ 0 ] ? component->node_relative_filepath : "Empty" );
+  if ( ImGui::BeginDragDropTarget( ) )
+  {
+    ImGuiPayload const                                  *im_payload;
+    char                                                *replace_relative_filepath;
+  
+    im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
+    if ( im_payload )
+    {
+      replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
+      if ( strstr( replace_relative_filepath, ".crude_node" ) )
+      {
+        if ( component->node_relative_filepath[ 0 ] )
+        {
+          ecs_iter_t it = crude_ecs_children( world, node );
+          while ( ecs_children_next( &it ) )
+          {
+            for ( size_t i = 0; i < it.count; ++i )
+            {
+              crude_entity child = crude_entity_from_iterator( &it, i );
+              crude_entity_destroy_hierarchy( world, child );
+            }
+          }
+        }
+        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world ), replace_relative_filepath, node, true, true );
+        crude_string_copy( component->node_relative_filepath, replace_relative_filepath, sizeof( component->node_relative_filepath ) );
+      }
+    }
+    ImGui::EndDragDropTarget();
+  }
 }
 
 void

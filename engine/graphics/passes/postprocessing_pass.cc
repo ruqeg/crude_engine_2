@@ -1,4 +1,4 @@
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/time.h>
 #include <engine/graphics/scene_renderer.h>
 

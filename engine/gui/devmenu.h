@@ -206,42 +206,6 @@ crude_gui_devmenu_reload_techniques_hotkey_pressed_callback
 
 /***********************
  * 
- * Develop GPU Visual Profiler
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_gpu_visual_profiler_initialize
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_visual_profiler_deinitialize
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_visual_profiler_update
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_visual_profiler_draw
-(
-  _In_ crude_gui_devmenu_gpu_visual_profiler              *dev_gpu_profiler
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_visual_profiler_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
  * Develop Memory Visual Profiler
  * 
  ***********************/
@@ -416,78 +380,6 @@ crude_gui_devmenu_scene_renderer_draw
 
 CRUDE_API void
 crude_gui_devmenu_scene_renderer_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
- * Develop Nodes Tree
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_nodes_tree_initialize
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_nodes_tree_deinitialize
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-);
-
-CRUDE_API void
-crude_gui_devmenu_nodes_tree_update
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-);
-
-CRUDE_API void
-crude_gui_devmenu_nodes_tree_draw
-(
-  _In_ crude_gui_devmenu_nodes_tree                       *dev_nodes_tree
-);
-
-CRUDE_API void
-crude_gui_devmenu_nodes_tree_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
- * Develop Node Inspector
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_node_inspector_initialize
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_node_inspector_deinitialize
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_node_inspector_update
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_node_inspector_draw
-(
-  _In_ crude_gui_devmenu_node_inspector                   *dev_node_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_node_inspector_callback
 (
   _In_ crude_gui_devmenu                                  *devmenu
 );

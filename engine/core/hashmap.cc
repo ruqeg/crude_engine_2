@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmap.h>
 
 #define FNV_OFFSET 14695981039346656037UL
 #define FNV_PRIME 1099511628211UL
@@ -25,49 +25,6 @@ crude_hashmap_backet_key_valid
 {
   return key != CRUDE_HASHMAP_BACKET_STATE_EMPTY && key != CRUDE_HASHMAP_BACKET_STATE_REMOVED;
 }
-
-uint64
-crude_hash_bytes
-(
-  _In_ uint8 const                                        *p,
-  _In_ size_t                                              len,
-  _In_ size_t                                              seed
-)
-{
-  uint64 hash = FNV_OFFSET;
-  for ( uint32 i = 0; i < len; ++i )
-  {
-    hash ^= ( uint64 )( unsigned char )( p[ i ] );
-    hash *= FNV_PRIME;
-  }
-
-  if ( !crude_hashmap_backet_key_valid( hash ) )
-  {
-    hash = 1;
-  }
-
-  return hash;
-}
-
-uint64
-crude_hash_string
-(
-  _In_ char const                                         *str,
-  _In_ size_t                                              seed
-)
-{
-  return crude_hash_bytes( CRUDE_REINTERPRET_CAST( uint8 const*, str ), strlen( str ), 0 );
-}
-
-
-CRUDE_API uint64
-crude_hash_bytes
-(
-  _In_ uint8 const                                        *p,
-  _In_ size_t                                              len,
-  _In_ size_t                                              seed
-);
-
 
 void*
 crude_hashmap_growf

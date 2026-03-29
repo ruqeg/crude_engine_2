@@ -36,9 +36,15 @@ crude_physics_components_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body_handle );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_body_handle );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_collision_shape );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_static_body_handle );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_collision_shape );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_static_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_collision_shape );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
 {
   crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body_handle );
   if ( previous_handle )
@@ -52,7 +58,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body_handle
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
 
@@ -63,7 +69,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body_handle
   return static_body_json;
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_handle )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
 {
   crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character_body_handle );
   if ( previous_handle )
@@ -76,7 +82,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character_body_han
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character_body_handle )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
   crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager->physics_resources_manager, *component );
@@ -138,7 +144,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body_ha
   
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_collision_shape )
 {
   crude_memory_set( component, 0, sizeof( crude_physics_collision_shape ) );
   
@@ -165,7 +171,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_collision_shape )
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_collision_shape )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_collision_shape )
 {
   cJSON *collision_shape_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( collision_shape_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_collision_shape ) ) );

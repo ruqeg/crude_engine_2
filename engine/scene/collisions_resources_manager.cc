@@ -1,6 +1,6 @@
 #include <thirdparty/cgltf/cgltf.h>
 
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/core/file.h>
 
 #include <engine/scene/collisions_resources_manager.h>
@@ -195,6 +195,8 @@ crude_collisions_resources_manager_load_octree_from_gltf_
   octree_handle = CRUDE_COMPOUNT( crude_octree_handle, { crude_resource_pool_obtain_resource( &manager->octree_resource_pool ) } );
   octree = CRUDE_CAST( crude_octree*, crude_resource_pool_access_resource( &manager->octree_resource_pool, octree_handle.index ) );
 
+  crude_string_copy( octree->name, gltf_path, sizeof( octree ) );
+
   crude_octree_initialize( octree, crude_heap_allocator_pack( manager->allocator ) );
 
   crude_memory_copy( gltf_directory, gltf_path, sizeof( gltf_directory ) );
@@ -224,7 +226,7 @@ crude_collisions_resources_manager_initialize
   manager->allocator = allocator;
   manager->cgltf_temporary_allocator = cgltf_temporary_allocator;
 
-  CRUDE_HASHMAP_INITIALIZE( manager->name_hashed_to_octree_resource_hadle, crude_heap_allocator_pack( allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->name_to_octree_resource_hadle, crude_heap_allocator_pack( allocator ) );
   crude_resource_pool_initialize( &manager->octree_resource_pool, crude_heap_allocator_pack( allocator ), CRUDE_SCENE_OCTREE_RESOURCE_POOl_SIZE, sizeof( crude_octree ) );
 }
 
@@ -234,16 +236,16 @@ crude_collisions_resources_manager_deinitialize
   _In_ crude_collisions_resources_manager                 *manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( manager->name_hashed_to_octree_resource_hadle ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->name_to_octree_resource_hadle ); ++i )
   {
-    if ( crude_hashmap_backet_key_valid( manager->name_hashed_to_octree_resource_hadle[ i ].key ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( manager->name_to_octree_resource_hadle[ i ].key.key_hash ) )
     {
-      crude_octree *octree = CRUDE_CAST( crude_octree*, crude_resource_pool_access_resource( &manager->octree_resource_pool, manager->name_hashed_to_octree_resource_hadle[ i ].value.index ) );
+      crude_octree *octree = CRUDE_CAST( crude_octree*, crude_resource_pool_access_resource( &manager->octree_resource_pool, manager->name_to_octree_resource_hadle[ i ].value.index ) );
       crude_octree_deinitialize( octree );
-      crude_resource_pool_release_resource( &manager->octree_resource_pool, manager->name_hashed_to_octree_resource_hadle[ i ].value.index );
+      crude_resource_pool_release_resource( &manager->octree_resource_pool, manager->name_to_octree_resource_hadle[ i ].value.index );
     }
   }
-  CRUDE_HASHMAP_DEINITIALIZE( manager->name_hashed_to_octree_resource_hadle );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->name_to_octree_resource_hadle );
   crude_resource_pool_deinitialize( &manager->octree_resource_pool );
 }
 
@@ -254,19 +256,19 @@ crude_collisions_resources_manager_get_octree_handle
   _In_ char const                                         *filepath
 )
 {
+  crude_octree                                            *octree;
   crude_octree_handle                                      handle;
   int64                                                    handle_index;
-  uint64                                                   name_hashed;
 
-  name_hashed = crude_hash_string( filepath, 0 );
-  handle_index = CRUDE_HASHMAP_GET_INDEX( manager->name_hashed_to_octree_resource_hadle, name_hashed );
+  handle_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->name_to_octree_resource_hadle, filepath );
   if ( handle_index != -1 )
   {
-    return manager->name_hashed_to_octree_resource_hadle[ handle_index ].value;
+    return manager->name_to_octree_resource_hadle[ handle_index ].value;
   }
 
   handle = crude_collisions_resources_manager_load_octree_from_gltf_( manager, filepath );
-  CRUDE_HASHMAP_SET( manager->name_hashed_to_octree_resource_hadle, name_hashed, handle );
+  octree = crude_collisions_resources_manager_access_octree( manager, handle );
+  CRUDE_HASHMAPSTR_SET( manager->name_to_octree_resource_hadle, CRUDE_COMPOUNT( crude_string_link, { octree->name } ), handle );
   return handle;
 }
 

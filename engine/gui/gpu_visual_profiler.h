@@ -21,7 +21,7 @@ typedef struct crude_gui_gpu_visual_profiler
   crude_gfx_gpu_time_query                                *timestamps;
   crude_gfx_gpu_pipeline_statistics                       *pipeline_statistics;
   crude_heap_allocator                                    *allocator;
-  struct { uint64 key; uint32 value; }                    *name_hashed_to_color_index;
+  CRUDE_HASHMAPSTR( uint32 )                              *name_to_color_index;
   uint32                                                   initial_frames_paused;
   bool                                                     paused;
   bool                                                     enabled;

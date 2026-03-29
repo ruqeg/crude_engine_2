@@ -1,5 +1,5 @@
 #include <engine/core/profiler.h>
-#include <engine/core/hash_map.h>
+#include <engine/core/hashmapstr.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/scene_renderer.h>
 

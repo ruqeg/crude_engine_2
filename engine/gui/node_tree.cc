@@ -3,7 +3,9 @@
 static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_COUNT ] =
 {
   "Empty 3D",
-  "GLTF"
+  "GLTF",
+  "Camera",
+  "Node External"
 };
 
 static bool
@@ -86,8 +88,7 @@ crude_gui_node_tree_queue_draw
         ImGui::Separator( );
         if ( ImGui::Button( "Apply" ) )
         {
-          crude_entity new_node = crude_node_copy_hierarchy( world, node_tree->node_reference, node_tree->new_node_name, true, true );
-          crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, node_tree->node_reference ) );
+          crude_entity new_node = crude_node_copy_hierarchy( world, node_tree->node_reference, node_tree->new_node_name, crude_entity_get_parent( world, node_tree->node_reference ), true, true );
           node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
           *selected_node = new_node;
         }
@@ -133,6 +134,18 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_GLTF:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_gltf, { crude_gltf_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_CAMERA:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_camera, { crude_camera_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_NODE_EXTERNAL:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_node_external, { crude_node_external_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
@@ -221,6 +234,11 @@ crude_gui_node_tree_queue_draw_internal_
     {
       can_open_children_nodes = true;
     }
+  }
+
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_node_external ) )
+  {
+    can_open_children_nodes = false;
   }
 
   if ( node_tree->im_text_filter.IsActive( ) && node_tree->im_text_filter.PassFilter( crude_entity_get_name( world, node ) ) )
