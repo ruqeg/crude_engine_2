@@ -252,17 +252,13 @@ crude_node_manager_load_node_from_json_
   if ( is_node_external )
   {
     char const                                            *node_external_relative_filepath;
-    crude_entity                                           node_external;
     crude_node_external                                    node_external_component;
 
     CRUDE_ASSERT( parent ); /* WTF IS GOING ONE, DONT PUT EXTERNAL ON TOP OF SCENE */
 
     node_external_relative_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
     
-    node = crude_entity_create_empty( world, node_name );
-    crude_entity_set_parent( world, node, *parent );
-
-    node_external = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world ), node_name, node, true, true );
+    node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world ), node_name, *parent, true, true );
     
     node_external_component = crude_node_external_empty( );
     crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component ) );

@@ -333,19 +333,12 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
       replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
       if ( strstr( replace_relative_filepath, ".crude_node" ) )
       {
+        crude_entity parent = crude_entity_get_parent( world, node );
         if ( component->node_relative_filepath[ 0 ] )
         {
-          ecs_iter_t it = crude_ecs_children( world, node );
-          while ( ecs_children_next( &it ) )
-          {
-            for ( size_t i = 0; i < it.count; ++i )
-            {
-              crude_entity child = crude_entity_from_iterator( &it, i );
-              crude_entity_destroy_hierarchy( world, child );
-            }
-          }
+          crude_entity_destroy_hierarchy( world, node );
         }
-        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world ), replace_relative_filepath, node, true, true );
+        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world ), replace_relative_filepath, parent, true, true );
         crude_string_copy( component->node_relative_filepath, replace_relative_filepath, sizeof( component->node_relative_filepath ) );
       }
     }
