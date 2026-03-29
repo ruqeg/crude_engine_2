@@ -40,6 +40,12 @@ crude_gui_debug_queue_draw
     {
       debug->engine->camera_node = debug->engine->editor_camera_node;
     }
+    if ( ImGui::Button( "Reset Editor Camera" ) )
+    {
+      CRUDE_ENTITY_SET_COMPONENT( debug->engine->world, debug->engine->editor_camera_node, crude_transform, { crude_transform_empty( ) } );
+    }
+    crude_free_camera *free_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( debug->engine->world, debug->engine->editor_camera_node, crude_free_camera );
+    ImGui::Checkbox( "Input Enabled", &free_camera->input_enabled );
   }
   if ( ImGui::CollapsingHeader( "Render Graph" ) )
   {

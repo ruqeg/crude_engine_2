@@ -425,7 +425,7 @@ crude_physics_system_import
   //  { .id = ecs_id( crude_physics_character_body_handle ) }
   //} );
   
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_update_system_, EcsOnUpdate, ctx, { 
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_update_system_, crude_ecs_on_engine_update, ctx, { 
     { .id = ecs_id( crude_physics_character_body_handle ) },
     { .id = ecs_id( crude_physics_collision_shape ) },
     { .id = ecs_id( crude_transform ) }

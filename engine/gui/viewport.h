@@ -4,8 +4,11 @@
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
 
+typedef struct crude_engine crude_engine;
+
 typedef struct crude_gui_viewport
 {
+  crude_engine                                            *engine; // !TODO move from this place
   crude_gfx_device                                        *gpu;
   crude_gfx_texture_handle                                 viewport_texture_handle;
   uint8                                                    viewport_ratio_index;
@@ -19,7 +22,8 @@ crude_gui_viewport_initialize
   _In_ crude_gui_viewport                                 *viewport,
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_texture_handle                            viewport_texture_handle,
-  _In_ int32                                               viewport_ratio_index
+  _In_ int32                                               viewport_ratio_index,
+  _In_ crude_engine                                       *engine
 );
 
 CRUDE_API void

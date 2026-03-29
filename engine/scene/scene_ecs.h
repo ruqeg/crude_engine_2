@@ -6,6 +6,9 @@
 
 #include <engine/scene/scene_resources.h>
 
+ecs_entity_t const crude_ecs_on_engine_update = EcsOnUpdate;
+ecs_entity_t const crude_ecs_on_game_update = EcsPostUpdate;
+
 /**********************************************************
  *
  *                 Components

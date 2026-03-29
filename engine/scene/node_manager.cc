@@ -288,17 +288,9 @@ crude_node_manager_load_node_from_json_
   }
 
   {
-    cJSON const                                           *node_transform_json;
     cJSON const                                           *node_components_json;
-    cJSON const                                           *node_tags_json;
-    crude_transform                                        transform;
   
-    node_transform_json = cJSON_GetObjectItemCaseSensitive( node_json, "transform" );
     node_components_json = cJSON_GetObjectItemCaseSensitive( node_json, "components" );
-    node_tags_json = cJSON_GetObjectItemCaseSensitive( node_json, "tags" );
-
-    CRUDE_PARSE_JSON_TO_COMPONENT( crude_transform )( &transform, node_transform_json, world, node, manager );
-    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_transform, { transform } );
 
     for ( uint32 component_index = 0; component_index < cJSON_GetArraySize( node_components_json ); ++component_index )
     {
@@ -367,22 +359,6 @@ crude_node_manager_node_to_json_hierarchy_
   if ( is_external_node )
   {
     cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external )->node_relative_filepath ) );
-  }
-
-  {
-    crude_transform const                                 *node_transform;
-    node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform );
-
-    if ( node_transform )
-    {
-      cJSON                                               *node_transform_json;
-
-      node_transform_json = cJSON_CreateObject( );
-      cJSON_AddItemToObject( node_transform_json, "translation", cJSON_CreateFloatArray( &node_transform->translation.x, 3 ) );
-      cJSON_AddItemToObject( node_transform_json, "rotation", cJSON_CreateFloatArray( &node_transform->rotation.x, 4 ) );
-      cJSON_AddItemToObject( node_transform_json, "scale", cJSON_CreateFloatArray( &node_transform->scale.x, 3 ) );
-      cJSON_AddItemToObject( node_json, "transform", node_transform_json );
-    }
   }
   
   {

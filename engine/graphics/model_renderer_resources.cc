@@ -114,29 +114,63 @@ crude_gfx_model_renderer_resources_deinitialize
     CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations[ k ].samplers );
   }
   CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->animations );
+
+  CRUDE_HASHMAPSTR_DEINITIALIZE( model_renderer_resources->animation_name_to_index );
 }
 
-crude_gfx_model_renderer_resources_instance
-crude_gfx_model_renderer_resources_instance_empty
+void
+crude_gfx_model_renderer_resources_instance_initialize
 (
+  _In_ crude_gfx_model_renderer_resources_instance        *instance,
+  _In_opt_ crude_gfx_model_renderer_resources_manager     *manager,
+  _In_opt_ crude_gfx_model_renderer_resources_handle       handle
 )
 {
-  crude_gfx_model_renderer_resources_instance              model_renderer_resources_instance;
-  model_renderer_resources_instance = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
-  model_renderer_resources_instance.model_renderer_resources_handle.index = -1;
-  model_renderer_resources_instance.animation_instance.animation_index = -1;
-  model_renderer_resources_instance.animation_instance.speed = 1.f;
-  model_renderer_resources_instance.cast_shadow = true;
-  XMStoreFloat4x4( &model_renderer_resources_instance.model_to_world, XMMatrixIdentity( ) );
-  return model_renderer_resources_instance;
+  *instance = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
+  instance->model_renderer_resources_handle.index = manager ? handle.index : -1;
+  instance->animation_instance.animation_index = -1;
+  instance->animation_instance.speed = 1.f;
+  instance->cast_shadow = true;
+  XMStoreFloat4x4( &instance->model_to_world, XMMatrixIdentity( ) );
+
+  if ( manager )
+  {
+    crude_gfx_model_renderer_resources                    *model_renderer_resources;
+
+    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, handle );
+    
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( instance->nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( manager->allocator ) );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
+    {
+      instance->nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
+    }
+  }
 }
 
 void
 crude_gfx_model_renderer_resources_instance_deinitialize
 (
-  _In_ crude_gfx_model_renderer_resources_instance        *model_renderer_resources_instance
+  _In_ crude_gfx_model_renderer_resources_instance        *instance
 )
 {
+  if ( instance->nodes_transforms )
+  {
+    CRUDE_ARRAY_DEINITIALIZE( instance->nodes_transforms );
+  }
+}
+
+void
+crude_gfx_model_renderer_resources_instance_set_animation_by_name
+(
+  _In_ crude_gfx_model_renderer_resources_instance        *instance,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_model_renderer_resources *model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, instance->model_renderer_resources_handle );
+  int64 index = CRUDE_HASHMAPSTR_GET_INDEX( model_renderer_resources->animation_name_to_index, name );
+  CRUDE_ASSERT( index != -1 );
+  instance->animation_instance.animation_index = model_renderer_resources->animation_name_to_index[ index ].value;
 }
 
 void

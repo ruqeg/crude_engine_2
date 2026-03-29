@@ -1749,6 +1749,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
   _In_ cgltf_data                                         *gltf
 )
 {
+  CRUDE_HASHMAPSTR_INITIALIZE_WITH_CAPACITY( model_renderer_resources->animation_name_to_index, 4 * gltf->animations_count, crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->animations, gltf->animations_count, crude_heap_allocator_pack( manager->allocator ) );
   for ( uint32 animation_index = 0; animation_index < gltf->animations_count; ++animation_index )
   {
@@ -1765,6 +1766,8 @@ crude_gfx_model_renderer_resources_manager_load_animations_
     {
       crude_snprintf( animation->name, sizeof( animation->name ), "%s_unknown_animation_%i", model_renderer_resources->relative_filepath, animation_index );
     }
+
+    CRUDE_HASHMAPSTR_SET( model_renderer_resources->animation_name_to_index, CRUDE_COMPOUNT( crude_string_link, { animation->name } ), animation_index );
 
     animation->start = 0.f;
     animation->end = 0.f;
@@ -1820,7 +1823,15 @@ crude_gfx_model_renderer_resources_manager_load_animations_
       
       for ( uint32 i = 0; i < gltf_sampler->output->count; ++i )
       {
-        if ( gltf_sampler->output->type == cgltf_type_vec3 )
+        if ( gltf_sampler->output->type == cgltf_type_scalar )
+        {
+          float32 *data = CRUDE_CAST( float32*, outputs_data );
+          sampler->outputs[ i ].x = *data;
+          sampler->outputs[ i ].y = 0;
+          sampler->outputs[ i ].z = 0;
+          sampler->outputs[ i ].w = 0;
+        }
+        else if ( gltf_sampler->output->type == cgltf_type_vec3 )
         {
           XMFLOAT3 *data = CRUDE_CAST( XMFLOAT3*, outputs_data );
           sampler->outputs[ i ].x = data->x;

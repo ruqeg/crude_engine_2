@@ -59,6 +59,10 @@ crude_game_initialize
   game->player_controller_system_context.input = &engine->platform.input;
   crude_player_controller_system_import( engine->world, &engine->components_serialization_manager, &game->player_controller_system_context );
   
+  game->training_area_level_system_context = CRUDE_COMPOUNT_EMPTY( crude_training_area_level_system_context );
+  game->training_area_level_system_context.input = &engine->platform.input;
+  crude_training_area_level_system_import( engine->world, &engine->components_serialization_manager, &game->training_area_level_system_context );
+
   crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\player.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
 
@@ -66,6 +70,8 @@ crude_game_initialize
 
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
+
+  crude_entity_enable( engine->world, crude_ecs_on_game_update, false );
 }
 
 void

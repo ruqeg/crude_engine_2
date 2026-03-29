@@ -11,6 +11,7 @@
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
 #include <game/player_controller_ecs.h>
+#include <game/training_area_level.h>
 
 typedef struct crude_game
 {
@@ -22,6 +23,7 @@ typedef struct crude_game
   /* System Context */
   crude_physics_debug_system_context                       physics_debug_system_context;
   crude_player_controller_system_context                   player_controller_system_context;
+  crude_training_area_level_system_context                 training_area_level_system_context;
 } crude_game;
 
 CRUDE_API void

@@ -21,7 +21,7 @@ typedef enum crude_gfx_animation_sampler_interpolation_type
 
 typedef struct crude_gfx_model_renderer_resources_handle
 {
-  uint32                                                   index;
+  int64                                                    index;
 } crude_gfx_model_renderer_resources_handle;
 
 typedef struct crude_gfx_aabb_cpu
@@ -106,6 +106,7 @@ typedef struct crude_gfx_model_renderer_resources
   crude_transform                                         *default_nodes_transforms;
   crude_gfx_mesh_cpu                                      *meshes;
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
+  CRUDE_HASHMAPSTR( uint64 )                              *animation_name_to_index;  
 } crude_gfx_model_renderer_resources;
 
 typedef struct crude_gfx_model_renderer_resources_animation_instance
@@ -155,9 +156,18 @@ crude_gfx_model_renderer_resources_deinitialize
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
 );
 
-CRUDE_API crude_gfx_model_renderer_resources_instance
-crude_gfx_model_renderer_resources_instance_empty
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_initialize
 (
+  _In_ crude_gfx_model_renderer_resources_instance        *instance,
+  _In_opt_ crude_gfx_model_renderer_resources_manager     *manager,
+  _In_opt_ crude_gfx_model_renderer_resources_handle       handle
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_deinitialize
+(
+  _In_ crude_gfx_model_renderer_resources_instance        *instance
 );
 
 CRUDE_API void
@@ -166,4 +176,12 @@ crude_gfx_model_renderer_resources_instance_update_animation
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
   _In_ float32                                             delta_time
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_set_animation_by_name
+(
+  _In_ crude_gfx_model_renderer_resources_instance        *instance,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ char const                                         *name
 );

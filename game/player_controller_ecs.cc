@@ -18,6 +18,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_player_controller, "crude_player_controller
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
+  component->rotate_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "rotate_speed" ) );
   return true;
 }
 
@@ -25,6 +26,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_player_controller" ) );
+  cJSON_AddItemToObject( free_camera_json, "rotate_speed", cJSON_CreateNumber( component->rotate_speed ) );
   return free_camera_json;
 }
 
@@ -37,6 +39,9 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
   } );
   CRUDE_IMGUI_OPTION( "Input Enabled", {
     ImGui::Checkbox( "##Input Enabled", &component->input_enabled );
+  } );
+  CRUDE_IMGUI_OPTION( "Rotate Speed", {
+    ImGui::DragFloat( "##Rotate Speed", &component->rotate_speed, 0.1 );
   } );
 }
 
@@ -55,66 +60,93 @@ crude_player_controller_update_system_
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_player_controller_update_system" );
 
-  crude_game *game = crude_game_instance( );
-  crude_player_controller_system_context *ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
-  crude_transform *transforms_per_entity = ecs_field( it, crude_transform, 0 );
-  crude_player_controller *player_controller_per_entity = ecs_field( it, crude_player_controller, 1 );
+  crude_game                                              *game;
+  crude_player_controller_system_context                  *ctx;
+  crude_player_controller                                 *player_controller_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
+  player_controller_per_entity = ecs_field( it, crude_player_controller, 0 );
   
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
-      
+    crude_entity                                           entity;  
+
     input = ctx->input;
 
+    entity = crude_entity_from_iterator( it, i );
+
     player_controller = &player_controller_per_entity[ i ];
+
     if ( player_controller->input_enabled )
     {
-      int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
-      int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
-      int32 moving_right = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
+      crude_transform                                     *pivot_transform;
+      crude_entity                                         pivot_entity;
+      XMVECTOR                                             pivot_rotation, pivot_camera_up, pivot_basis_up, pivot_basis_right;
+      XMMATRIX                                             pivot_to_world;
 
-      XMVECTOR translation = XMLoadFloat3( &transforms_per_entity[ i ].translation );
-      XMMATRIX node_to_world = crude_transform_node_to_world( it->world, crude_entity_from_iterator( it, i ), &transforms_per_entity[ i ] );
+      pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "pivot" );
+      pivot_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_entity, crude_transform );
+      //int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
+      //int32 moving_up = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
+      //int32 moving_right = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
+      //
+      //XMVECTOR translation = XMLoadFloat3( &transforms_per_entity[ i ].translation );
+      //XMMATRIX node_to_world = crude_transform_node_to_world( it->world, crude_entity_from_iterator( it, i ), &transforms_per_entity[ i ] );
+      //
+      //XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
+      //XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
+      //XMVECTOR basis_forward = XMVector3Normalize( node_to_world.r[ 2 ] );
+      //
+      //float32 moving_speed = player_controller_per_entity[ i ].moving_speed_multiplier;
+      //if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
+      //{
+      //  moving_speed = moving_speed * 2.f;
+      //}
+      //
+      //if ( moving_right )
+      //{
+      //  translation = XMVectorAdd( translation, XMVectorScale( basis_right, moving_speed * moving_right * it->delta_time * 1.f ) );
+      //}
+      //if ( moving_forward )
+      //{
+      //  translation = XMVectorAdd( translation, XMVectorScale( basis_forward, moving_speed * moving_forward * it->delta_time * -1.f ) );
+      //}
+      //if ( moving_up )
+      //{
+      //  translation = XMVectorAdd( translation, XMVectorScale( basis_up, moving_speed * moving_up * it->delta_time * 1.f ) );
+      //}
+      //XMStoreFloat3( &transforms_per_entity[ i ].translation, translation );
+      //
+      //if ( input->mouse.right.current )
+      //{
+      //  XMVECTOR rotation = XMLoadFloat4( &transforms_per_entity[ i ].rotation );
+      //  XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
+      //
+      //  rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -player_controller_per_entity[ i ].rotating_speed_multiplier * input->mouse.rel.y ) );
+      //  rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -player_controller_per_entity[ i ].rotating_speed_multiplier * input->mouse.rel.x ) );
+      //  XMStoreFloat4( &transforms_per_entity[ i ].rotation, rotation );
+      //}
+      //translation = XMLoadFloat3( &transform->translation );
+      pivot_to_world = crude_transform_node_to_world( it->world, pivot_entity, pivot_transform );
 
-      XMVECTOR basis_right = XMVector3Normalize( node_to_world.r[ 0 ] );
-      XMVECTOR basis_up = XMVector3Normalize( node_to_world.r[ 1 ] );
-      XMVECTOR basis_forward = XMVector3Normalize( node_to_world.r[ 2 ] );
+      pivot_basis_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
+      pivot_basis_up = XMVector3Normalize( pivot_to_world.r[ 1 ] );
       
-      float32 moving_speed = player_controller_per_entity[ i ].moving_speed_multiplier;
-      if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
-      {
-        moving_speed = moving_speed * 2.f;
-      }
+      pivot_camera_up = XMVectorGetY( pivot_basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
 
-      if ( moving_right )
-      {
-        translation = XMVectorAdd( translation, XMVectorScale( basis_right, moving_speed * moving_right * it->delta_time * 1.f ) );
-      }
-      if ( moving_forward )
-      {
-        translation = XMVectorAdd( translation, XMVectorScale( basis_forward, moving_speed * moving_forward * it->delta_time * -1.f ) );
-      }
-      if ( moving_up )
-      {
-        translation = XMVectorAdd( translation, XMVectorScale( basis_up, moving_speed * moving_up * it->delta_time * 1.f ) );
-      }
-      XMStoreFloat3( &transforms_per_entity[ i ].translation, translation );
-
-      if ( input->mouse.right.current )
-      {
-        XMVECTOR rotation = XMLoadFloat4( &transforms_per_entity[ i ].rotation );
-        XMVECTOR camera_up = XMVectorGetY( basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
-
-        rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( basis_right, -player_controller_per_entity[ i ].rotating_speed_multiplier * input->mouse.rel.y ) );
-        rotation = XMQuaternionMultiply( rotation, XMQuaternionRotationAxis( camera_up, -player_controller_per_entity[ i ].rotating_speed_multiplier * input->mouse.rel.x ) );
-        XMStoreFloat4( &transforms_per_entity[ i ].rotation, rotation );
-      }
+      pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
+      //pivot_rotation = XMQuaternionMultiply( pivot_rotation, XMQuaternionRotationAxis( pivot_basis_right, -player_controller->rotate_speed * input->mouse.rel.y ) );
+      pivot_rotation = XMQuaternionMultiply( pivot_rotation, XMQuaternionRotationAxis( g_XMIdentityR1, -player_controller->rotate_speed * input->mouse.rel.x ) );
+      
+      XMStoreFloat4( &pivot_transform->rotation, pivot_rotation );
     }
     
     if ( player_controller->camera_enabled )
     {
-      game->engine->camera_node = crude_ecs_lookup_entity_from_parent( it->world, it->entities[ i ], "camera" );
+      game->engine->camera_node = crude_ecs_lookup_entity_from_parent( it->world, it->entities[ i ], "pivot.camera" );
     }
   }
   CRUDE_PROFILER_ZONE_END;
@@ -137,8 +169,7 @@ crude_player_controller_system_import
 
   crude_scene_components_import( world, manager );
 
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, EcsOnUpdate, ctx, {
-    { .id = ecs_id( crude_transform ) },
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_player_controller ) },
   } );
 }

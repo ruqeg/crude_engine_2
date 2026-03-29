@@ -115,9 +115,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_transform )
   crude_parse_json_to_float3( &component->scale, cJSON_GetObjectItemCaseSensitive( component_json, "scale" ) );
   return true;
 }
+
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_transform )
 {
   cJSON *transform_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( transform_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_transform ) ) );
   cJSON_AddItemToObject( transform_json, "translation", cJSON_CreateFloatArray( &component->translation.x, 3 ) );
   cJSON_AddItemToObject( transform_json, "rotation", cJSON_CreateFloatArray( &component->rotation.x, 4 ) );
   cJSON_AddItemToObject( transform_json, "scale", cJSON_CreateFloatArray( &component->scale.x, 3 ) );
@@ -152,15 +154,10 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
 
   *component = CRUDE_COMPOUNT_EMPTY( crude_gltf );
   
-  component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
-  component->model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL );
-  model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager->model_renderer_resources_manager, component->model_renderer_resources_instance.model_renderer_resources_handle );
-  
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( component->model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( manager->allocator ) );
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
-  {
-    component->model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
-  }
+  crude_gfx_model_renderer_resources_instance_initialize(
+    &component->model_renderer_resources_instance,
+    manager->model_renderer_resources_manager,
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL ) );
 
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   return true;
@@ -221,19 +218,13 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
         
         if ( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
         {
-          CRUDE_ARRAY_DEINITIALIZE( component->model_renderer_resources_instance.nodes_transforms );
+          crude_gfx_model_renderer_resources_instance_deinitialize( &component->model_renderer_resources_instance );
         }
   
-        component->model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
-        component->model_renderer_resources_instance.model_renderer_resources_handle = model_renderer_resources_handle;
-
-        model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager->model_renderer_resources_manager, model_renderer_resources_handle );
-
-        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( component->model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( manager->allocator ) );
-        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
-        {
-          component->model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
-        }
+        crude_gfx_model_renderer_resources_instance_initialize(
+          &component->model_renderer_resources_instance,
+          manager->model_renderer_resources_manager,
+          model_renderer_resources_handle );
       }
     }
     ImGui::EndDragDropTarget();
@@ -252,7 +243,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       animations = model_renderer_resources->animations;
       
       ImGui::Spacing( );
-      
+
       if ( ImGui::BeginCombo( "Animation", animation_instance->animation_index > -1 ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
       {
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( animations ); i++ )
@@ -270,7 +261,15 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
         }
         ImGui::EndCombo( );
       }
-
+      
+      if ( animation_instance->animation_index != -1 )
+      {
+		    ImGui::InputText( "Name", animations[ animation_instance->animation_index ].name, 256, ImGuiInputTextFlags_ReadOnly );
+      }
+      else
+      {
+		    ImGui::Text( "No Name" );
+      }
       if ( animation_instance->animation_index != -1 )
       {
         ImGui::SliderFloat( "Current", &animation_instance->current_time, animations[ animation_instance->animation_index ].start, animations[ animation_instance->animation_index ].end );
@@ -359,6 +358,7 @@ crude_gltf_destroy_observer_
     crude_gltf                                            *gltf;
 
     gltf = &gltf_per_entity[ i ];
-    CRUDE_ARRAY_DEINITIALIZE( gltf->model_renderer_resources_instance.nodes_transforms );
+    
+    crude_gfx_model_renderer_resources_instance_deinitialize( &gltf->model_renderer_resources_instance );
   }
 }

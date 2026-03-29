@@ -272,6 +272,28 @@ crude_gui_node_tree_queue_draw_internal_
     node_tree->node_popup_should_be_opened = true;
   }
 
+  if ( ImGui::BeginDragDropSource( ImGuiDragDropFlags_None ) )
+  {
+    ImGui::SetDragDropPayload( "crude_node_tree_node", &node, sizeof( node ) );
+    ImGui::Text( "Selected %s", crude_entity_get_name( world, node ) );
+    ImGui::EndDragDropSource();
+  }
+
+  if ( ImGui::BeginDragDropTarget( ) )
+  {
+    ImGuiPayload const                                  *im_payload;
+    crude_entity                                        *moved_node;
+  
+    im_payload = ImGui::AcceptDragDropPayload( "crude_node_tree_node" );
+    if ( im_payload )
+    {
+      moved_node = CRUDE_CAST( crude_entity*, im_payload->Data );
+      crude_entity_set_parent( world, *moved_node, node );
+    }
+    ImGui::EndDragDropTarget();
+  }
+
+
   if ( tree_node_opened )
   {
     if ( can_open_children_nodes )

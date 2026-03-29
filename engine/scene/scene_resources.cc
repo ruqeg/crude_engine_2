@@ -30,7 +30,7 @@ crude_gltf_empty
 {
   crude_gltf gltf = CRUDE_COMPOUNT_EMPTY( crude_gltf );
   gltf.hidden = false;
-  gltf.model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
+  crude_gfx_model_renderer_resources_instance_initialize( &gltf.model_renderer_resources_instance, NULL, CRUDE_COMPOUNT( crude_gfx_model_renderer_resources_handle, { -1 } ) );
   return gltf;
 }
 

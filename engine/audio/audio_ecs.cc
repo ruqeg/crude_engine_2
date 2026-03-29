@@ -73,7 +73,7 @@ crude_audio_system_import
   crude_audio_components_import( world );
   crude_scene_components_import( world, manager );
 
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_listener_update_system_, EcsOnUpdate, ctx, { 
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_listener_update_system_, crude_ecs_on_engine_update, ctx, { 
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_audio_listener ) },
   } );

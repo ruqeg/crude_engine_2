@@ -136,28 +136,16 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
   {
-    crude_gfx_model_renderer_resources                    *model_renderer_resources;
-
-    scene_renderer->light_model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
-    scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
-    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle );
-  
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->light_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
-    {
-      scene_renderer->light_model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
-    }
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->light_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL ) );
     scene_renderer->light_model_renderer_resources_instance.cast_shadow = false;
     
-    scene_renderer->camera_model_renderer_resources_instance = crude_gfx_model_renderer_resources_instance_empty( );
-    scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
-    model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle );
-  
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( scene_renderer->camera_model_renderer_resources_instance.nodes_transforms, CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ) , crude_heap_allocator_pack( scene_renderer->allocator ) );
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->default_nodes_transforms ); ++i )
-    {
-      scene_renderer->camera_model_renderer_resources_instance.nodes_transforms[ i ] = model_renderer_resources->default_nodes_transforms[ i ];
-    }
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->camera_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL ) );
     scene_renderer->camera_model_renderer_resources_instance.cast_shadow = false;
   }
 
@@ -256,8 +244,8 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
   
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->light_model_renderer_resources_instance.nodes_transforms );
-  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->camera_model_renderer_resources_instance.nodes_transforms );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
 }
 
 bool

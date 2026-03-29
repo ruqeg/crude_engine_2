@@ -29,7 +29,7 @@ crude_gui_editor_initialize
 {
   editor->engine = engine;
   editor->selected_node = engine->main_node;
-  crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0 );
+  crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0, engine );
   crude_gui_node_inspector_initialize( &editor->node_inspector, &engine->components_serialization_manager, &engine->node_manager );
   crude_gui_node_tree_initialize( &editor->node_tree );
   crude_gui_log_viewer_initialize( &editor->log_viewer );
