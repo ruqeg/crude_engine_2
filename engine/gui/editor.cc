@@ -178,6 +178,19 @@ crude_gui_editor_queue_draw
     ImGui::EndMainMenuBar( );
   }
   
+  if ( !crude_entity_is_enable( editor->engine->world, crude_ecs_on_game_update ) )
+  {
+    if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F ].current )
+    {
+      crude_transform *editor_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->engine->editor_camera_node, crude_transform );
+      crude_transform *selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->selected_node, crude_transform );
+      if ( editor_transform && selected_node_transform )
+      {
+        editor_transform->translation = selected_node_transform->translation;
+      }
+    }
+  }
+  
   window_flags = 0;
 
   if ( crude_entity_is_enable( editor->engine->world, crude_ecs_on_game_update ) )
