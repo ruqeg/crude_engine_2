@@ -11,7 +11,7 @@
 #include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
 #include <game/player_controller_ecs.h>
-#include <game/training_area_level.h>
+#include <game/training_area_level_ecs.h>
 
 typedef struct crude_game
 {

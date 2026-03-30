@@ -75,8 +75,7 @@ crude_player_controller_update_system_
     crude_gltf                                            *player_model;
     crude_entity                                           entity;  
     crude_entity                                           player_model_entity;
-    crude_entity                                           pivot_center_entity;
-    crude_entity                                           pivot_z_offset_entity;
+    crude_entity                                           pivot_entity;
     crude_entity                                           camera_entity;
 
     input = ctx->input;
@@ -85,21 +84,17 @@ crude_player_controller_update_system_
 
     player_controller = &player_controller_per_entity[ i ];
     
-    pivot_center_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "pivot_center" );
-    pivot_z_offset_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_center_entity, "pivot_z_offset" );
-    camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_z_offset_entity, "camera" );
+    pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "pivot" );
+    camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_entity, "camera" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "model" );
 
     if ( player_controller->input_enabled )
     {
-      crude_transform                                     *pivot_center_transform;
-      crude_transform                                     *pivot_z_offset_transform;
-      XMVECTOR                                             pivot_z_offset_rotation;
-      XMVECTOR                                             pivot_center_rotation, pivot_center_camera_up, pivot_center_basis_up, pivot_center_basis_right;
-      XMMATRIX                                             pivot_center_to_world;
+      crude_transform                                     *pivot_transform;
+      XMVECTOR                                             pivot_rotation, pivot_camera_up, pivot_basis_up, pivot_basis_right;
+      XMMATRIX                                             pivot_to_world;
 
-      pivot_center_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_center_entity, crude_transform );
-      pivot_z_offset_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_z_offset_entity, crude_transform );
+      pivot_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_entity, crude_transform );
 
 
       //int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
@@ -143,17 +138,18 @@ crude_player_controller_update_system_
       //  XMStoreFloat4( &transforms_per_entity[ i ].rotation, rotation );
       //}
       //translation = XMLoadFloat3( &transform->translation );
-      pivot_center_to_world = crude_transform_node_to_world( it->world, pivot_center_entity, pivot_center_transform );
+      pivot_to_world = crude_transform_node_to_world( it->world, pivot_entity, pivot_transform );
 
-      pivot_center_basis_right = XMVector3Normalize( pivot_center_to_world.r[ 0 ] );
-      pivot_center_basis_up = XMVector3Normalize( pivot_center_to_world.r[ 1 ] );
+      pivot_basis_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
+      pivot_basis_up = XMVector3Normalize( pivot_to_world.r[ 1 ] );
       
-      pivot_center_camera_up = XMVectorGetY( pivot_center_basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
+      pivot_camera_up = XMVectorGetY( pivot_basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
       
-      pivot_z_offset_rotation = XMLoadFloat4( &pivot_z_offset_transform->rotation );
-      pivot_z_offset_rotation = XMQuaternionMultiply( pivot_z_offset_rotation, XMQuaternionRotationAxis( pivot_center_basis_right, -player_controller->rotate_speed * input->mouse.rel.y ) );
-      XMStoreFloat4( &pivot_z_offset_transform->rotation, pivot_z_offset_rotation );
-
+      pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
+      pivot_rotation = XMQuaternionMultiply( pivot_rotation, XMQuaternionRotationAxis( pivot_basis_right, -player_controller->rotate_speed * input->mouse.rel.y ) );
+      
+      XMStoreFloat4( &pivot_transform->rotation, pivot_rotation );
+      
       //pivot_center_rotation = XMLoadFloat4( &pivot_center_transform->rotation );
       //pivot_center_rotation = XMQuaternionMultiply( pivot_center_rotation, XMQuaternionRotationAxis( pivot_center_camera_up, -player_controller->rotate_speed * input->mouse.rel.x ) );
       //XMStoreFloat4( &pivot_center_transform->rotation, pivot_center_rotation );

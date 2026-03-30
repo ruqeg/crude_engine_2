@@ -5,7 +5,7 @@
 #include <engine/graphics/imgui.h>
 #include <game/game.h>
 
-#include <game/training_area_level.h>
+#include <game/training_area_level_ecs.h>
 
 /**********************************************************
  *
