@@ -60,6 +60,7 @@ crude_gui_editor_queue_draw
 {
   ImGuiViewport                                           *im_viewport;
   ImGuiID                                                  im_dockspace_id;
+  ImGuiWindowFlags                                         window_flags;
   
   crude_gui_editor_push_style_( );
 
@@ -176,34 +177,41 @@ crude_gui_editor_queue_draw
 
     ImGui::EndMainMenuBar( );
   }
+  
+  window_flags = 0;
+
+  if ( crude_entity_is_enable( editor->engine->world, crude_ecs_on_game_update ) )
+  {
+    window_flags = ImGuiWindowFlags_NoInputs;
+  }
 
   ImGui::PushStyleColor( ImGuiCol_WindowBg, CRUDE_COMPOUNT( ImVec4, { 0.25f * 30 / 255.f, 0.25f *23 / 255.f, 0.25f *12 / 255.f, 1.00f } ) );
-  ImGui::Begin( "Viewport" );
+  ImGui::Begin( "Viewport", NULL, window_flags );
   crude_gui_viewport_queue_draw( &editor->viewport, editor->engine->world, editor->selected_node, editor->engine->camera_node );
   ImGui::End( );
   ImGui::PopStyleColor( );
   
-  ImGui::Begin( "Inspector" );
+  ImGui::Begin( "Inspector", NULL, window_flags );
   crude_gui_node_inspector_queue_draw( &editor->node_inspector, editor->engine->world, editor->selected_node );
   ImGui::End( );
   
-  ImGui::Begin( "Node Tree" );
+  ImGui::Begin( "Node Tree", NULL, window_flags );
   crude_gui_node_tree_queue_draw( &editor->node_tree, editor->engine->world, editor->engine->main_node, &editor->selected_node );
   ImGui::End( );
   
-  ImGui::Begin( "Log Viewer" );
+  ImGui::Begin( "Log Viewer", NULL, window_flags );
   crude_gui_log_viewer_queue_draw( &editor->log_viewer );
   ImGui::End( );
   
-  ImGui::Begin( "Content Browser" );
+  ImGui::Begin( "Content Browser", NULL, window_flags );
   crude_gui_content_browser_queue_draw( &editor->content_browser );
   ImGui::End( );
   
-  ImGui::Begin( "GPU Profiler" );
+  ImGui::Begin( "GPU Profiler", NULL, window_flags );
   crude_gui_gpu_visual_profiler_queue_draw( &editor->gpu_visual_profiler );
   ImGui::End( );
 
-  ImGui::Begin( "Debug" );
+  ImGui::Begin( "Debug", NULL, window_flags );
   crude_gui_debug_queue_draw( &editor->debug );
   ImGui::End( );
   

@@ -73,7 +73,8 @@ crude_node_manager_get_node
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_realtive_filepath,
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ bool                                                enabled_on_initialization
 );
 
 CRUDE_API void

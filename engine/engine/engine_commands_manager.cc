@@ -107,7 +107,7 @@ crude_engine_commands_manager_update
       crude_physics_resources_manager_clear( &manager->engine->physics_resources_manager );
       crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
       
-      manager->engine->main_node = crude_node_manager_get_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world );
+      manager->engine->main_node = crude_node_manager_get_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world, true );
 
       crude_gfx_scene_renderer_update_instances_from_node( &manager->engine->scene_renderer, manager->engine->world, manager->engine->main_node );
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &manager->engine->model_renderer_resources_manager );

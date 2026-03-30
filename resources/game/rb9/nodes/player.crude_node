@@ -7,10 +7,11 @@
 			"scale":	[1, 1, 1]
 		}, {
 			"type":	"crude_player_controller",
-			"rotate_speed":	0.00999999977648258
+			"rotate_speed":	0.00999999977648258,
+			"angle_x_limit":	0.6981317400932312
 		}],
 	"children":	[{
-			"name":	"pivot",
+			"name":	"pivot_y",
 			"components":	[{
 					"type":	"crude_transform",
 					"translation":	[0, 9, 0],
@@ -18,20 +19,29 @@
 					"scale":	[1, 1, 1]
 				}],
 			"children":	[{
-					"name":	"camera",
+					"name":	"pivot_z",
 					"components":	[{
 							"type":	"crude_transform",
-							"translation":	[-3, 0, -5.8819999694824219],
-							"rotation":	[0, 1, 0, 0],
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_camera",
-							"fov_radians":	1.0471975803375244,
-							"near_z":	1,
-							"far_z":	300,
-							"aspect_ratio":	1.7999999523162842
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"camera",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[-3, 0, -5.8819999694824219],
+									"rotation":	[0, 1, 0, 0],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_camera",
+									"fov_radians":	1.0471975803375244,
+									"near_z":	1,
+									"far_z":	300,
+									"aspect_ratio":	1.7999999523162842
+								}],
+							"children":	[]
+						}]
 				}]
 		}, {
 			"name":	"model",

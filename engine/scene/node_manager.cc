@@ -106,7 +106,8 @@ crude_node_manager_get_node
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_realtive_filepath,
-  _In_ crude_ecs                                          *world
+  _In_ crude_ecs                                          *world,
+  _In_ bool                                                enabled_on_initialization
 )
 {
   char const                                              *node_absolute_filepath;
@@ -121,6 +122,8 @@ crude_node_manager_get_node
   {
     node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath, world );
     
+    crude_entity_enable_hierarchy( world, node_template, enabled_on_initialization );
+
     CRUDE_HASHMAPSTR_SET(
       manager->relative_filepath_to_node,
       CRUDE_COMPOUNT( crude_string_link, { crude_string_buffer_append_use_f( &manager->relative_filepath_string_buffer, "%s", node_realtive_filepath ) } ),
@@ -245,24 +248,37 @@ crude_node_manager_load_node_from_json_
   crude_entity                                             node;
   char const                                              *node_name;
   bool                                                     is_node_external;
+  bool                                                     copy_components;
   
   node_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( node_json, "name") );
+
+  copy_components = true;
 
   is_node_external = cJSON_HasObjectItem( node_json, "external" );
   if ( is_node_external )
   {
+    cJSON                                                 *node_external_json;
     char const                                            *node_external_relative_filepath;
     crude_node_external                                    node_external_component;
 
     CRUDE_ASSERT( parent ); /* WTF IS GOING ONE, DONT PUT EXTERNAL ON TOP OF SCENE */
 
-    node_external_relative_filepath = cJSON_GetStringValue(  cJSON_GetObjectItemCaseSensitive( node_json, "external") );
+    node_external_json = cJSON_GetObjectItemCaseSensitive( node_json, "external");
+
+    node_external_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "relative_filepath" ) );
     
-    node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world ), node_name, *parent, true, true );
+    node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world, false ), node_name, *parent, true, true );
+    crude_entity_enable_hierarchy( world, node, true );
     
     node_external_component = crude_node_external_empty( );
+    node_external_component.type = CRUDE_CAST( crude_node_external_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "type") ) );
     crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component ) );
     CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external_component } );
+
+    if ( node_external_component.type != CRUDE_NODE_EXTERNAL_TYPE_COPY )
+    {
+      copy_components = false;
+    }
   }
   else
   {
@@ -287,6 +303,7 @@ crude_node_manager_load_node_from_json_
     }
   }
 
+  if ( copy_components )
   {
     cJSON const                                           *node_components_json;
   
@@ -347,7 +364,7 @@ crude_node_manager_node_to_json_hierarchy_
 )
 {
   cJSON                                                   *node_json;
-  bool                                                     is_external_node, is_gltf_node;
+  bool                                                     is_external_node, is_gltf_node, export_components;
   
   is_external_node = is_gltf_node = false;
 
@@ -355,12 +372,27 @@ crude_node_manager_node_to_json_hierarchy_
   
   cJSON_AddItemToObject( node_json, "name", cJSON_CreateString( crude_entity_get_name( world, node ) ) );
 
+  export_components = true;
+
   is_external_node = CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_node_external );
   if ( is_external_node )
   {
-    cJSON_AddItemToObject( node_json, "external", cJSON_CreateString( CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external )->node_relative_filepath ) );
+    crude_node_external const                             *node_external;
+    cJSON                                                 *node_external_json;
+
+    node_external = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external );
+    
+    node_external_json = cJSON_AddObjectToObject( node_json, "external" );
+    cJSON_AddItemToObject( node_external_json, "relative_filepath", cJSON_CreateString( node_external->node_relative_filepath ) );
+    cJSON_AddItemToObject( node_external_json, "type", cJSON_CreateNumber( node_external->type ) );
+
+    if ( node_external->type != CRUDE_NODE_EXTERNAL_TYPE_COPY )
+    {
+      export_components = false;
+    }
   }
   
+  if ( export_components )
   {
     cJSON                                                 *node_components_json;
 
@@ -379,23 +411,22 @@ crude_node_manager_node_to_json_hierarchy_
     }
   }
   
+  if ( !is_gltf_node && !is_external_node )
   {
     cJSON                                                 *children_json;
+    ecs_iter_t                                             it;
 
     children_json = cJSON_AddArrayToObject( node_json, "children" );
     
-    if ( !is_gltf_node && !is_external_node )
+    it = crude_ecs_children( world, node );
+    while ( ecs_children_next( &it ) )
     {
-      ecs_iter_t it = crude_ecs_children( world, node );
-      while ( ecs_children_next( &it ) )
+      for ( size_t i = 0; i < it.count; ++i )
       {
-        for ( size_t i = 0; i < it.count; ++i )
-        {
-          crude_entity                                       child;
+        crude_entity                                       child;
 
-          child = crude_entity_from_iterator( &it, i );
-          cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, world, child ) );
-        }
+        child = crude_entity_from_iterator( &it, i );
+        cJSON_AddItemToArray( children_json, crude_node_manager_node_to_json_hierarchy_( manager, world, child ) );
       }
     }
   }

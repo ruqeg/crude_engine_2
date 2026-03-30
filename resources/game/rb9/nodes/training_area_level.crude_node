@@ -9,6 +9,21 @@
 			"type":	"crude_training_area_level"
 		}],
 	"children":	[{
+			"name":	"player_instance",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 25.801250457763672, 69.112335205078125],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[{
+					"name":	"player_ref",
+					"external":	{
+						"relative_filepath":	"game\\rb9\\nodes\\player.crude_node",
+						"type":	0
+					}
+				}]
+		}, {
 			"name":	"blackout_model",
 			"components":	[{
 					"type":	"crude_transform",
@@ -18,19 +33,6 @@
 				}, {
 					"type":	"crude_gltf",
 					"path":	"game\\rb9\\dev\\blackout\\fb_zn0.gltf"
-				}],
-			"children":	[]
-		}, {
-			"name":	"player",
-			"external":	"game\\rb9\\nodes\\player.crude_node",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[56.908576965332031, 16.799812316894531, 0],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_player_controller",
-					"rotate_speed":	0.00999999977648258
 				}],
 			"children":	[]
 		}]

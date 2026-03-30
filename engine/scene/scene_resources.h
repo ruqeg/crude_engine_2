@@ -5,9 +5,17 @@
 #include <engine/scene/scene_config.h>
 #include <engine/graphics/model_renderer_resources.h>
 
+typedef enum crude_node_external_type
+{
+  CRUDE_NODE_EXTERNAL_TYPE_REFERENCE = 0,
+  CRUDE_NODE_EXTERNAL_TYPE_COPY = 1,
+  CRUDE_NODE_EXTERNAL_TYPE_COUNT = 2
+} crude_node_external_type;
+
 typedef struct crude_node_external
 {
   char                                                     node_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
+  crude_node_external_type                                 type;
 } crude_node_external;
 
 typedef struct crude_transform

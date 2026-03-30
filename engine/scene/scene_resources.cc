@@ -79,11 +79,11 @@ crude_transform_node_to_world
   while ( crude_entity_valid( world, parent ) )
   {
     parent_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, parent, crude_transform );
-    if ( !parent_transform )
+
+    if ( parent_transform )
     {
-      break;
+      node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
     }
-    node_to_world = XMMatrixMultiply( node_to_world, crude_transform_node_to_parent( parent_transform ) );
     
     node = parent;
     parent = crude_entity_get_parent( world, parent );

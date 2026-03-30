@@ -318,9 +318,24 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 {
-  CRUDE_IMGUI_START_OPTIONS;
+  char const *node_external_names[ 2 ] = 
+  {
+    "Reference",
+    "Copy"
+  };
+  CRUDE_ASSERT( CRUDE_COUNTOF( node_external_names ) == CRUDE_NODE_EXTERNAL_TYPE_COUNT );
 
+  CRUDE_IMGUI_START_OPTIONS;
+  
+  CRUDE_IMGUI_OPTION( "Relative Filepath", {
+    int32                                                  component_type;
+
+    component_type = component->type;
+    ImGui::Combo( "##Relative Filepath", &component_type, node_external_names, CRUDE_COUNTOF( node_external_names ) ); 
+  } );
+  
   ImGui::Text( "\"%s\"", component->node_relative_filepath[ 0 ] ? component->node_relative_filepath : "Empty" );
+
   if ( ImGui::BeginDragDropTarget( ) )
   {
     ImGuiPayload const                                  *im_payload;
@@ -337,7 +352,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
         {
           crude_entity_destroy_hierarchy( world, node );
         }
-        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world ), replace_relative_filepath, parent, true, true );
+        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world, false ), replace_relative_filepath, parent, true, true );
+        crude_entity_enable_hierarchy( world, extern_node, true );
         crude_string_copy( component->node_relative_filepath, replace_relative_filepath, sizeof( component->node_relative_filepath ) );
       }
     }

@@ -19,6 +19,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotate_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "rotate_speed" ) );
+  component->angle_x_limit = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "angle_x_limit" ) );
   return true;
 }
 
@@ -27,6 +28,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_player_controller )
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_player_controller" ) );
   cJSON_AddItemToObject( free_camera_json, "rotate_speed", cJSON_CreateNumber( component->rotate_speed ) );
+  cJSON_AddItemToObject( free_camera_json, "angle_x_limit", cJSON_CreateNumber( component->angle_x_limit ) );
   return free_camera_json;
 }
 
@@ -42,6 +44,9 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
   } );
   CRUDE_IMGUI_OPTION( "Rotate Speed", {
     ImGui::DragFloat( "##Rotate Speed", &component->rotate_speed, 0.1 );
+  } );
+  CRUDE_IMGUI_OPTION( "Angle X Limit", {
+    ImGui::SliderAngle( "##Angle X Limit", &component->angle_x_limit, 15, 90 );
   } );
 }
 
@@ -75,7 +80,8 @@ crude_player_controller_update_system_
     crude_gltf                                            *player_model;
     crude_entity                                           entity;  
     crude_entity                                           player_model_entity;
-    crude_entity                                           pivot_entity;
+    crude_entity                                           pivot_y_entity;
+    crude_entity                                           pivot_z_entity;
     crude_entity                                           camera_entity;
 
     input = ctx->input;
@@ -84,17 +90,22 @@ crude_player_controller_update_system_
 
     player_controller = &player_controller_per_entity[ i ];
     
-    pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "pivot" );
-    camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_entity, "camera" );
+    pivot_y_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "pivot_y" );
+    pivot_z_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_y_entity, "pivot_z" );
+    camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_z_entity, "camera" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "model" );
 
     if ( player_controller->input_enabled )
     {
-      crude_transform                                     *pivot_transform;
-      XMVECTOR                                             pivot_rotation, pivot_camera_up, pivot_basis_up, pivot_basis_right;
-      XMMATRIX                                             pivot_to_world;
+      crude_transform                                     *pivot_z_transform;
+      crude_transform                                     *pivot_y_transform;
+      XMVECTOR                                             pivot_z_rotation, pivot_y_rotation;
+      XMVECTOR                                             pivot_z_basis_right;
+      float32                                              pivot_x_angle;
 
-      pivot_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_entity, crude_transform );
+      pivot_y_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_y_entity, crude_transform );
+      pivot_z_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_z_entity, crude_transform );
+
 
 
       //int32 moving_forward = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
@@ -138,21 +149,21 @@ crude_player_controller_update_system_
       //  XMStoreFloat4( &transforms_per_entity[ i ].rotation, rotation );
       //}
       //translation = XMLoadFloat3( &transform->translation );
-      pivot_to_world = crude_transform_node_to_world( it->world, pivot_entity, pivot_transform );
-
-      pivot_basis_right = XMVector3Normalize( pivot_to_world.r[ 0 ] );
-      pivot_basis_up = XMVector3Normalize( pivot_to_world.r[ 1 ] );
+      pivot_z_rotation = XMLoadFloat4( &pivot_z_transform->rotation );
+      pivot_z_rotation = XMQuaternionMultiply( pivot_z_rotation, XMQuaternionRotationAxis( g_XMIdentityR0, player_controller->rotate_speed * input->mouse.rel.y ) );
       
-      pivot_camera_up = XMVectorGetY( pivot_basis_up ) > 0.0f ? g_XMIdentityR1 : XMVectorNegate( g_XMIdentityR1 );
+      /* Clamp from -angle to angle */
+      XMQuaternionToAxisAngle( &pivot_z_basis_right, &pivot_x_angle, pivot_z_rotation );
+      if ( abs( pivot_x_angle ) >= player_controller->angle_x_limit )
+      {
+        pivot_z_rotation = XMQuaternionRotationAxis( pivot_z_basis_right, pivot_x_angle > 0 ? player_controller->angle_x_limit : -player_controller->angle_x_limit );
+      }
       
-      pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
-      pivot_rotation = XMQuaternionMultiply( pivot_rotation, XMQuaternionRotationAxis( pivot_basis_right, -player_controller->rotate_speed * input->mouse.rel.y ) );
+      XMStoreFloat4( &pivot_z_transform->rotation, pivot_z_rotation );
       
-      XMStoreFloat4( &pivot_transform->rotation, pivot_rotation );
-      
-      //pivot_center_rotation = XMLoadFloat4( &pivot_center_transform->rotation );
-      //pivot_center_rotation = XMQuaternionMultiply( pivot_center_rotation, XMQuaternionRotationAxis( pivot_center_camera_up, -player_controller->rotate_speed * input->mouse.rel.x ) );
-      //XMStoreFloat4( &pivot_center_transform->rotation, pivot_center_rotation );
+      pivot_y_rotation = XMLoadFloat4( &pivot_y_transform->rotation );
+      pivot_y_rotation = XMQuaternionMultiply( pivot_y_rotation, XMQuaternionRotationAxis( g_XMIdentityR1, -player_controller->rotate_speed * input->mouse.rel.x ) );
+      XMStoreFloat4( &pivot_y_transform->rotation, pivot_y_rotation );
     }
     
     if ( player_controller->camera_enabled )

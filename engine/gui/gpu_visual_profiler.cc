@@ -115,7 +115,7 @@ crude_gui_gpu_visual_profiler_queue_draw
     char                                                   buf[ 128 ];
     ImVec2                                                 cursor_pos, canvas_size, mouse_pos;
     float64                                                new_average;
-    float32                                                dump_height, widget_height, legend_width, graph_width;
+    float32                                                selected_frame_time, dump_height, widget_height, legend_width, graph_width;
     uint32                                                 rect_width;
     int32                                                  rect_x, selected_frame;
 
@@ -124,6 +124,8 @@ crude_gui_gpu_visual_profiler_queue_draw
     canvas_size = ImGui::GetContentRegionAvail();
     widget_height = canvas_size.y - 100;
     
+    selected_frame_time = 0.f;
+
     legend_width = 250;
     graph_width = fabsf( canvas_size.x - legend_width );
     rect_width = CRUDE_CEIL( graph_width / profiler->max_frames );
@@ -255,9 +257,8 @@ crude_gui_gpu_visual_profiler_queue_draw
           0x0fffffff
         );
       
-        ImGui::SetTooltip( "(%u): %f", frame_index, frame_time );
-      
         selected_frame = frame_index;
+        selected_frame_time = frame_time;
       }
 
       draw_list->AddLine( { frame_x, cursor_pos.y + widget_height }, { frame_x, cursor_pos.y }, 0x0fffffff );
@@ -276,15 +277,26 @@ crude_gui_gpu_visual_profiler_queue_draw
     profiler->average_time = CRUDE_CAST( float32, profiler->new_average ) / profiler->max_frames;
 
     ImGui::Dummy( { canvas_size.x, dump_height } );
-  }
 
-  ImGui::SetNextItemWidth( 100.f );
-  ImGui::LabelText( "", "Max %3.4fms", profiler->max_time );
-  ImGui::SameLine();
-  ImGui::SetNextItemWidth( 100.f );
-  ImGui::LabelText( "", "Min %3.4fms", profiler->min_time );
-  ImGui::SameLine();
-  ImGui::LabelText( "", "Ave %3.4fms", profiler->average_time );
+    ImGui::SetNextItemWidth( 100.f );
+    ImGui::LabelText( "", "Max %3.4fms", profiler->max_time );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 100.f );
+    ImGui::LabelText( "", "Min %3.4fms", profiler->min_time );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 100.f );
+    ImGui::LabelText( "", "Ave %3.4fms", profiler->average_time );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 150.f );
+    if ( selected_frame_time != 0.f )
+    {
+      ImGui::LabelText( "", "Cur %3.4fms", selected_frame_time );
+    }
+    else
+    {
+      ImGui::LabelText( "", "No selected" );
+    }
+  }
   
   ImGui::Separator();
   ImGui::Checkbox( "Pause", &profiler->paused );

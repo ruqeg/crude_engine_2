@@ -14,6 +14,7 @@ typedef struct crude_player_controller
   float32                                                  moving_speed_multiplier;
   float32                                                  rotate_speed;
   crude_input const                                       *input;
+  float32                                                  angle_x_limit;
   bool                                                     input_enabled;
   bool                                                     camera_enabled;
 } crude_player_controller;
