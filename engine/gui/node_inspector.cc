@@ -40,7 +40,13 @@ crude_gui_node_inspector_queue_draw
   {
     return;
   }
+
+  CRUDE_IMGUI_START_OPTIONS;
   
+  CRUDE_IMGUI_OPTION( "Name", {
+    ImGui::InputText( "##Name", CRUDE_CAST( char*, crude_entity_get_name( world, node ) ), 4096, ImGuiInputTextFlags_ReadOnly );
+  } );
+
   for ( uint32 i = 0; i < CRUDE_HASHMAP_CAPACITY( node_inspector->components_serialization_manager->component_id_to_imgui_funs ); ++i )
   {
     if ( crude_hashmap_backet_key_valid( node_inspector->components_serialization_manager->component_id_to_imgui_funs[ i ].key ) )

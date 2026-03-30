@@ -76,11 +76,6 @@ crude_training_area_level_update_system_
     player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_entity, crude_player_controller );
     player_controller->input_enabled = true;
     player_controller->camera_enabled = true;
-
-    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_entity, "model" );
-    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
-    crude_gfx_model_renderer_resources_instance_set_animation_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "Armature|mixamo.com|Layer0" ); 
-    player_model->model_renderer_resources_instance.animation_instance.loop = true;
   }
   CRUDE_PROFILER_ZONE_END;
 }

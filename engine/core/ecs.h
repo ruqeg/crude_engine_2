@@ -180,6 +180,13 @@ crude_entity_enable
   _In_ bool                                                enabled
 );
 
+CRUDE_API bool
+crude_entity_is_enable
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        entity
+);
+
 CRUDE_API void
 crude_entity_enable_hierarchy
 (

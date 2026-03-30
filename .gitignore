@@ -4,5 +4,7 @@ shaders/include/crude_shaders/*
 *.vscode
 compiled_shaders/
 resources/debug/
-resources/game/
-resources/___crude_engine_autosave/
+resources/game/rb9/dev/
+resources/game/rb9/gltf/
+resources/game/rb9/original/
+resources/___crude_engine_autosave/autosave.crude_node

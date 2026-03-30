@@ -105,18 +105,24 @@ crude_gui_viewport_queue_draw
     }
 
     ImGui::SameLine( );
-    if ( ImGui::Button( "Start" ) )
+    if ( ImGui::Button( "Start" ) || ( !crude_entity_is_enable( world, crude_ecs_on_game_update ) && viewport->engine->platform.input.keys[ SDL_SCANCODE_F5 ].current ) )
     {
       crude_node_manager_save_node_to_file( &viewport->engine->node_manager, viewport->engine->world, viewport->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
       crude_entity_enable( world, crude_ecs_on_game_update, true );
+
+      SDL_GetMouseState( &viewport->engine->last_unrelative_mouse_position.x, &viewport->engine->last_unrelative_mouse_position.y );
+      crude_platform_hide_cursor( &viewport->engine->platform );
     }
     
     ImGui::SameLine( );
-    if ( ImGui::Button( "Stop" ) )
+    if ( ImGui::Button( "Stop" ) || ( crude_entity_is_enable( world, crude_ecs_on_game_update ) && viewport->engine->platform.input.keys[ SDL_SCANCODE_F6 ].current ) )
     {
       crude_entity_enable( world, crude_ecs_on_game_update, false );
       crude_engine_commands_manager_push_load_node_command( &viewport->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
       viewport->engine->camera_node = viewport->engine->editor_camera_node;
+      
+      SDL_WarpMouseInWindow( viewport->engine->platform.sdl_window, viewport->engine->last_unrelative_mouse_position.x, viewport->engine->last_unrelative_mouse_position.y );
+      crude_platform_show_cursor( &viewport->engine->platform );
     }
   }
   

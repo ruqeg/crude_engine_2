@@ -106,16 +106,32 @@ crude_game_update_input_
   _In_ crude_game                                         *game
 )
 {
-  if ( game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
+  if ( !crude_entity_is_enable( game->engine->world, crude_ecs_on_game_update ) )
   {
-    SDL_GetMouseState( &game->engine->last_unrelative_mouse_position.x, &game->engine->last_unrelative_mouse_position.y );
-    crude_platform_hide_cursor( &game->engine->platform );
+    if ( game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
+    {
+      SDL_GetMouseState( &game->engine->last_unrelative_mouse_position.x, &game->engine->last_unrelative_mouse_position.y );
+      crude_platform_hide_cursor( &game->engine->platform );
+    }
+    
+    if ( !game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
+    {
+      SDL_WarpMouseInWindow( game->engine->platform.sdl_window, game->engine->last_unrelative_mouse_position.x, game->engine->last_unrelative_mouse_position.y );
+      crude_platform_show_cursor( &game->engine->platform );
+    }
   }
-  
-  if ( !game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
+  else
   {
-    SDL_WarpMouseInWindow( game->engine->platform.sdl_window, game->engine->last_unrelative_mouse_position.x, game->engine->last_unrelative_mouse_position.y );
-    crude_platform_show_cursor( &game->engine->platform );
+    if ( game->engine->platform.input.keys[ SDL_SCANCODE_F9 ].pressed )
+    {
+      SDL_WarpMouseInWindow( game->engine->platform.sdl_window, game->engine->last_unrelative_mouse_position.x, game->engine->last_unrelative_mouse_position.y );
+      crude_platform_show_cursor( &game->engine->platform );
+    }
+    else if ( game->engine->platform.input.keys[ SDL_SCANCODE_F10 ].pressed )
+    {
+      SDL_GetMouseState( &game->engine->last_unrelative_mouse_position.x, &game->engine->last_unrelative_mouse_position.y );
+      crude_platform_hide_cursor( &game->engine->platform );
+    }
   }
 }
 

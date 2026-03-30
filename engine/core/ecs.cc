@@ -248,6 +248,17 @@ crude_entity_enable
   ecs_enable( world, entity, enabled );
 }
 
+bool
+crude_entity_is_enable
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        entity
+)
+{
+  
+  return !ecs_has_id( world, entity, EcsDisabled );
+}
+
 void
 crude_entity_enable_hierarchy
 (
