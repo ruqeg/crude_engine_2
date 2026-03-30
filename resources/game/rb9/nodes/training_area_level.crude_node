@@ -9,7 +9,7 @@
 			"type":	"crude_training_area_level"
 		}],
 	"children":	[{
-			"name":	"player_instance",
+			"name":	"player_spawnpoint",
 			"components":	[{
 					"type":	"crude_transform",
 					"translation":	[0, 25.801250457763672, 69.112335205078125],

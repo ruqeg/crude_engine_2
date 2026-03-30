@@ -63,8 +63,8 @@ crude_training_area_level_update_system_
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
     crude_entity                                           entity;
-    crude_entity                                           player_instance_entity;
-    crude_entity                                           player_entity;
+    crude_entity                                           player_spawnpoint_entity;
+    crude_entity                                           player_ref_entity;
 
     input = ctx->input;
 
@@ -72,9 +72,9 @@ crude_training_area_level_update_system_
 
     training_area_level = &training_area_level_per_entity[ i ];
 
-    player_instance_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "player_instance" );
-    player_entity = crude_ecs_lookup_entity_from_parent( it->world, player_instance_entity, "player_ref" );
-    player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_entity, crude_player_controller );
+    player_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "player_spawnpoint" );
+    player_ref_entity = crude_ecs_lookup_entity_from_parent( it->world, player_spawnpoint_entity, "player_ref" );
+    player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_ref_entity, crude_player_controller );
     player_controller->input_enabled = true;
     player_controller->camera_enabled = true;
   }
