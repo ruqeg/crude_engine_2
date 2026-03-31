@@ -66,6 +66,12 @@ crude_platform_update
   _In_ crude_platform                                     *platform
 );
 
+CRUDE_API bool
+crude_platform_cursor_hidden
+(
+  _In_ crude_platform                                     *platform
+);
+
 CRUDE_API void
 crude_platform_hide_cursor
 (

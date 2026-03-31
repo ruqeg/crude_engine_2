@@ -106,6 +106,7 @@ crude_engine_commands_manager_update
       crude_node_manager_clear( &manager->engine->node_manager, manager->engine->world );
       crude_physics_resources_manager_clear( &manager->engine->physics_resources_manager );
       crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
+      crude_entity_destroy_hierarchy( manager->engine->world, manager->engine->main_node );
       
       manager->engine->main_node = crude_node_manager_get_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world, true );
 

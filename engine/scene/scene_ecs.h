@@ -8,6 +8,13 @@
 
 ecs_entity_t const crude_ecs_on_engine_update = EcsOnUpdate;
 ecs_entity_t const crude_ecs_on_game_update = EcsPostUpdate;
+ecs_entity_t const crude_ecs_on_editor_update = EcsPreStore;
+
+#define CRUDE_ECS_GAME_STAGE_ENABLE( world, value ) crude_entity_enable( world, crude_ecs_on_game_update, value )
+#define CRUDE_ECS_EDITOR_STAGE_ENABLE( world, value ) crude_entity_enable( world, crude_ecs_on_editor_update, value )
+#define CRUDE_ECS_GAME_STAGE_IS_ENABLED( world ) crude_entity_is_enable( world, crude_ecs_on_game_update )
+#define CRUDE_ECS_EDITOR_STAGE_IS_ENABLED( world ) crude_entity_is_enable( world, crude_ecs_on_editor_update )
+
 
 /**********************************************************
  *

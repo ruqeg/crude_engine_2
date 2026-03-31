@@ -12,12 +12,20 @@
 #include <engine/gui/content_browser.h>
 #include <engine/gui/gpu_visual_profiler.h>
 #include <engine/gui/debug.h>
+#include <engine/editor/editor_camera_ecs.h>
 
 typedef struct crude_engine crude_engine;
 
-typedef struct crude_gui_editor
+typedef struct crude_editor
 {
+  /* Context */
   crude_engine                                            *engine;
+
+  /* Common */
+  crude_entity                                             editor_camera_node;
+  crude_editor_camera_system_context                       editor_camera_system_context;
+
+  /* Gui */
   crude_gui_viewport                                       viewport;
   crude_gui_node_inspector                                 node_inspector;
   crude_gui_node_tree                                      node_tree;
@@ -26,37 +34,49 @@ typedef struct crude_gui_editor
   crude_entity                                             selected_node;
   crude_gui_gpu_visual_profiler                            gpu_visual_profiler;
   crude_gui_debug                                          debug;
-} crude_gui_editor;
+} crude_editor;
 
 CRUDE_API void
-crude_gui_editor_initialize
+crude_editor_initialize
 (
-  _In_ crude_gui_editor                                   *editor,
+  _In_ crude_editor                                       *editor,
   _In_ crude_engine                                       *engine
 );
 
 CRUDE_API void
-crude_gui_editor_deinitialize
+crude_editor_deinitialize
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
-crude_gui_editor_queue_draw
+crude_editor_queue_draw
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
-crude_gui_editor_update
+crude_editor_update
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 );
 
 CRUDE_API void
-crude_gui_editor_handle_input
+crude_editor_handle_input
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
+);
+
+CRUDE_API void
+crude_editor_start_game
+(
+  _In_ crude_editor                                       *editor
+);
+
+CRUDE_API void
+crude_editor_stop_game
+(
+  _In_ crude_editor                                       *editor
 );
 
 #endif

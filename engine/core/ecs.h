@@ -150,6 +150,20 @@ crude_entity_get_name
 );
 
 CRUDE_API void
+crude_entity_allocate_path
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        entity,
+  _Out_ char                                             **path
+);
+
+CRUDE_API void
+crude_entity_free_path
+(
+  _In_ char                                               *path
+);
+
+CRUDE_API void
 crude_entity_set_name
 (
   _In_ crude_ecs                                          *world,

@@ -23,7 +23,7 @@ crude_gui_viewport_initialize
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_texture_handle                            viewport_texture_handle,
   _In_ int32                                               viewport_ratio_index,
-  _In_ crude_engine                                       *engine
+  _In_ crude_editor                                       *editor
 )
 {
   viewport->gpu = gpu;
@@ -31,7 +31,7 @@ crude_gui_viewport_initialize
   viewport->viewport_ratio_index = viewport_ratio_index;
   viewport->selected_gizmo_operation = ImGuizmo::TRANSLATE;
   viewport->should_draw_grid = false;
-  viewport->engine = engine;
+  viewport->editor = editor;
 }
 
 void
@@ -105,24 +105,21 @@ crude_gui_viewport_queue_draw
     }
 
     ImGui::SameLine( );
-    if ( ImGui::Button( "Start" ) || ( !crude_entity_is_enable( world, crude_ecs_on_game_update ) && viewport->engine->platform.input.keys[ SDL_SCANCODE_F5 ].current ) )
+    if ( ImGui::Button( "Start" ) )
     {
-      crude_node_manager_save_node_to_file( &viewport->engine->node_manager, viewport->engine->world, viewport->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
-      crude_entity_enable( world, crude_ecs_on_game_update, true );
-
-      SDL_GetMouseState( &viewport->engine->last_unrelative_mouse_position.x, &viewport->engine->last_unrelative_mouse_position.y );
-      crude_platform_hide_cursor( &viewport->engine->platform );
+      if ( !CRUDE_ECS_GAME_STAGE_IS_ENABLED( world ) )
+      {
+        crude_editor_start_game( viewport->editor );
+      }
     }
     
     ImGui::SameLine( );
-    if ( ImGui::Button( "Stop" ) || ( crude_entity_is_enable( world, crude_ecs_on_game_update ) && viewport->engine->platform.input.keys[ SDL_SCANCODE_F6 ].current ) )
+    if ( ImGui::Button( "Stop" ) )
     {
-      crude_entity_enable( world, crude_ecs_on_game_update, false );
-      crude_engine_commands_manager_push_load_node_command( &viewport->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
-      viewport->engine->camera_node = viewport->engine->editor_camera_node;
-      
-      SDL_WarpMouseInWindow( viewport->engine->platform.sdl_window, viewport->engine->last_unrelative_mouse_position.x, viewport->engine->last_unrelative_mouse_position.y );
-      crude_platform_show_cursor( &viewport->engine->platform );
+      if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( world ) )
+      {
+        crude_editor_stop_game( viewport->editor );
+      }
     }
   }
   

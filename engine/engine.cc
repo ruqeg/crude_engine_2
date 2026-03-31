@@ -175,6 +175,12 @@ crude_engine_initialize_editor_
 );
 
 static void
+crude_engine_deinitialize_editor_
+(
+  _In_ crude_engine                                       *engine
+);
+
+static void
 crude_engine_input_callback_
 (
   _In_ void                                               *ctx,
@@ -224,7 +230,7 @@ crude_engine_gui_queue_draw_
   ImGuizmo::SetOrthographic( false );
   ImGuizmo::BeginFrame();
   
-  crude_gui_editor_queue_draw( &engine->editor );
+  crude_editor_queue_draw( &engine->editor );
   crude_gui_devmenu_draw( &engine->devmenu );
 
   if ( engine->imgui_draw_custom_fn )
@@ -275,6 +281,7 @@ crude_engine_deinitialize
 {
   engine->running = false;
 
+  crude_engine_deinitialize_editor_( engine );
   crude_engine_deinitialize_gui_( engine );
   crude_engine_commands_manager_deinitialize( &engine->commands_manager );
   crude_engine_deinitialize_scene_( engine );
@@ -306,7 +313,7 @@ crude_engine_update
   
   crude_platform_update( &engine->platform );
   crude_gui_devmenu_update( &engine->devmenu );
-  crude_gui_editor_update( &engine->editor );
+  crude_editor_update( &engine->editor );
 
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
@@ -364,6 +371,7 @@ crude_engine_initialize_allocators_
   crude_stack_allocator_initialize( &engine->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
   
 #if CRUDE_DEVELOP
+  crude_heap_allocator_initialize( &engine->test_allocator, CRUDE_RMEGA( 16 ), "test_allocator" );
   crude_heap_allocator_initialize( &engine->develop_heap_allocator, CRUDE_RMEGA( 16 ), "develop_heap_allocator" );
   crude_stack_allocator_initialize( &engine->develop_temporary_allocator, CRUDE_RMEGA( 16 ), "develop_temporary_allocator" );
 #endif
@@ -381,6 +389,7 @@ crude_engine_deinitialize_allocators_
   crude_heap_allocator_deinitialize( &engine->cgltf_temporary_allocator );
   crude_stack_allocator_deinitialize( &engine->model_renderer_resources_manager_temporary_allocator );
 #if CRUDE_DEVELOP
+  crude_heap_allocator_deinitialize( &engine->test_allocator );
   crude_heap_allocator_deinitialize( &engine->develop_heap_allocator );
   crude_stack_allocator_deinitialize( &engine->develop_temporary_allocator );
 #endif
@@ -608,6 +617,7 @@ crude_engine_initialize_graphics_
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
   model_renderer_resources_manager_creation.allocator = &engine->common_allocator;
   model_renderer_resources_manager_creation.async_loader = &engine->async_loader;
+  model_renderer_resources_manager_creation.test_allocator = &engine->test_allocator;
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
   model_renderer_resources_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
@@ -754,6 +764,7 @@ crude_engine_input_callback_
   }
   
   crude_gui_devmenu_handle_input( &engine->devmenu );
+  crude_editor_handle_input( &engine->editor );
 }
 
 void
@@ -782,7 +793,8 @@ crude_engine_deinitialize_scene_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_node_manager_deinitialize( &engine->node_manager );
+  crude_entity_destroy_hierarchy( engine->world, engine->main_node );
+  crude_node_manager_deinitialize( &engine->node_manager, engine->world );
 }
 
 void
@@ -792,7 +804,6 @@ crude_engine_initialize_gui_
 )
 {
   crude_gui_devmenu_initialize( &engine->devmenu, engine );
-  crude_gui_editor_initialize( &engine->editor, engine );
 }
 
 void
@@ -802,46 +813,24 @@ crude_engine_deinitialize_gui_
 )
 {
   crude_gui_devmenu_deinitialize( &engine->devmenu );
-  crude_gui_editor_deinitialize( &engine->editor );
 }
+
 void
 crude_engine_initialize_editor_
 (
   _In_ crude_engine                                       *engine
 )
 {
-  crude_transform                                          editor_camera_node_transform;
-  crude_camera                                             editor_camera_node_camera;
-  crude_free_camera                                        editor_camera_node_free_camera;
-  
-  engine->free_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_free_camera_system_context );
-  engine->free_camera_system_context.input = &engine->platform.input;
+  crude_editor_initialize( &engine->editor, engine );
+}
 
-  crude_free_camera_system_import( engine->world, &engine->components_serialization_manager, &engine->free_camera_system_context );
-
-  editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
-  XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
-  XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
-  XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
-
-  editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
-  editor_camera_node_camera.fov_radians = 1;
-  editor_camera_node_camera.aspect_ratio = 1.8;
-  editor_camera_node_camera.near_z = 1;
-  editor_camera_node_camera.far_z = 300;
-
-  editor_camera_node_free_camera = CRUDE_COMPOUNT_EMPTY( crude_free_camera );
-  editor_camera_node_free_camera.moving_speed_multiplier = 10.f;
-  editor_camera_node_free_camera.rotating_speed_multiplier = 0.004f;
-  editor_camera_node_free_camera.input_enabled = true;
-  editor_camera_node_free_camera.input = &engine->platform.input;
-
-  engine->editor_camera_node = crude_entity_create_empty( engine->world, "editor_camera" );
-  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_transform, { editor_camera_node_transform } );
-  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_camera, { editor_camera_node_camera } );
-  CRUDE_ENTITY_SET_COMPONENT( engine->world, engine->editor_camera_node, crude_free_camera, { editor_camera_node_free_camera } );
-
-  engine->camera_node = engine->editor_camera_node;
+void
+crude_engine_deinitialize_editor_
+(
+  _In_ crude_engine                                       *engine
+)
+{
+  crude_editor_deinitialize( &engine->editor );
 }
 
 bool

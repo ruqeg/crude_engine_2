@@ -170,6 +170,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->temporary_allocator = creation->temporary_allocator;
   manager->gpu = creation->async_loader->gpu;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
+  manager->test_allocator = creation->test_allocator;
 
   manager->total_meshes_count = 0;
 
@@ -185,13 +186,13 @@ crude_gfx_model_renderer_resources_manager_intialize
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( manager->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( manager->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->buffers, 0u, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( creation->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( creation->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->buffers, 0u, crude_heap_allocator_pack( creation->allocator ) );
 
-  CRUDE_HASHMAPSTR_INITIALIZE( manager->model_name_to_model_renderer_resource, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->model_name_to_model_renderer_resource, crude_heap_allocator_pack( creation->allocator ) );
 
-  crude_resource_pool_initialize( &manager->model_renderer_resources_pool, crude_heap_allocator_pack( manager->allocator ), 1024, sizeof( crude_gfx_model_renderer_resources ) );
+  crude_resource_pool_initialize( &manager->model_renderer_resources_pool, crude_heap_allocator_pack( creation->allocator ), 1024, sizeof( crude_gfx_model_renderer_resources ) );
 
   crude_linear_allocator_initialize( &manager->linear_allocator, CRUDE_RKILO( 32 ) + 2, "crude_gfx_model_renderer_resources_manager::linear_allocator" );
   crude_string_buffer_initialize( &manager->gltf_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_linear_allocator_pack( &manager->linear_allocator ) );
@@ -449,6 +450,8 @@ cleanup:
     cgltf_free( gltf );
   }
   crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
+  crude_string_buffer_clear( &manager->gltf_absolute_filepath_string_buffer );
+
   return model_renderer_resouces;
 }
 

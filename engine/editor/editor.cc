@@ -2,34 +2,44 @@
 
 #include <engine/engine.h>
 
-#include <engine/gui/editor.h>
+#include <engine/editor/editor.h>
 
 nfdu8filteritem_t                                          crude_gui_editor_node_file_filters_[ ] = 
 { 
   CRUDE_COMPOUNT( nfdu8filteritem_t, { "Crude Node", "crude_node" } )
 };
 
+static void
+crude_editor_initialize_systems_
+(
+  _In_ crude_editor                                       *editor
+);
 
 static void
-crude_gui_editor_push_style_
+crude_editor_push_style_
 (
 );
 
 static void
-crude_gui_editor_pop_style_
+crude_editor_pop_style_
 (
 );
 
 void
-crude_gui_editor_initialize
+crude_editor_initialize
 (
-  _In_ crude_gui_editor                                   *editor,
+  _In_ crude_editor                                       *editor,
   _In_ crude_engine                                       *engine
 )
 {
   editor->engine = engine;
   editor->selected_node = engine->main_node;
-  crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0, engine );
+
+  CRUDE_ECS_EDITOR_STAGE_ENABLE( engine->world, true );
+
+  crude_editor_initialize_systems_( editor );
+
+  crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0, editor );
   crude_gui_node_inspector_initialize( &editor->node_inspector, &engine->components_serialization_manager, &engine->node_manager );
   crude_gui_node_tree_initialize( &editor->node_tree );
   crude_gui_log_viewer_initialize( &editor->log_viewer );
@@ -39,9 +49,9 @@ crude_gui_editor_initialize
 }
 
 void
-crude_gui_editor_deinitialize
+crude_editor_deinitialize
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 )
 {
   crude_gui_node_tree_deinitialize( &editor->node_tree );
@@ -53,16 +63,16 @@ crude_gui_editor_deinitialize
 }
 
 void
-crude_gui_editor_queue_draw
+crude_editor_queue_draw
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 )
 {
   ImGuiViewport                                           *im_viewport;
   ImGuiID                                                  im_dockspace_id;
   ImGuiWindowFlags                                         window_flags;
   
-  crude_gui_editor_push_style_( );
+  crude_editor_push_style_( );
 
   im_dockspace_id = ImGui::GetID( "Crude Editor" );
   im_viewport = ImGui::GetMainViewport( );
@@ -178,22 +188,9 @@ crude_gui_editor_queue_draw
     ImGui::EndMainMenuBar( );
   }
   
-  if ( !crude_entity_is_enable( editor->engine->world, crude_ecs_on_game_update ) )
-  {
-    if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F ].current )
-    {
-      crude_transform *editor_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->engine->editor_camera_node, crude_transform );
-      crude_transform *selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->selected_node, crude_transform );
-      if ( editor_transform && selected_node_transform )
-      {
-        editor_transform->translation = selected_node_transform->translation;
-      }
-    }
-  }
-  
   window_flags = 0;
 
-  if ( crude_entity_is_enable( editor->engine->world, crude_ecs_on_game_update ) )
+  if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
   {
     window_flags = ImGuiWindowFlags_NoInputs;
   }
@@ -228,13 +225,13 @@ crude_gui_editor_queue_draw
   crude_gui_debug_queue_draw( &editor->debug );
   ImGui::End( );
   
-  crude_gui_editor_pop_style_( );
+  crude_editor_pop_style_( );
 }
 
 void
-crude_gui_editor_update
+crude_editor_update
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 )
 {
   crude_gui_gpu_visual_profiler_update( &editor->gpu_visual_profiler );
@@ -242,15 +239,109 @@ crude_gui_editor_update
 }
 
 void
-crude_gui_editor_handle_input
+crude_editor_handle_input
 (
-  _In_ crude_gui_editor                                   *editor
+  _In_ crude_editor                                       *editor
 )
 {
+  if ( !CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
+  {
+    if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
+    {
+      crude_transform                                     *editor_transform;
+      crude_transform                                     *selected_node_transform;
+
+      editor_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform );
+      selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->selected_node, crude_transform );
+      if ( editor_transform && selected_node_transform )
+      {
+        editor_transform->translation = selected_node_transform->translation;
+      }
+    }
+  }
+
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F5 ].pressed )
+  {
+    if ( !CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
+    {
+      crude_editor_start_game( editor );
+    }
+  }
+
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F6 ].pressed )
+  {
+    if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
+    {
+      crude_editor_stop_game( editor );
+    }
+  }
 }
 
 void
-crude_gui_editor_push_style_
+crude_editor_start_game
+(
+  _In_ crude_editor                                       *editor
+)
+{
+  CRUDE_ECS_GAME_STAGE_ENABLE( editor->engine->world, true );
+  CRUDE_ECS_EDITOR_STAGE_ENABLE( editor->engine->world, false );
+
+  crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
+}
+
+void
+crude_editor_stop_game
+(
+  _In_ crude_editor                                       *editor
+)
+{
+  CRUDE_ECS_EDITOR_STAGE_ENABLE( editor->engine->world, true );
+  CRUDE_ECS_GAME_STAGE_ENABLE( editor->engine->world, false );
+  crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
+  editor->engine->camera_node = editor->editor_camera_node;
+}
+
+void
+crude_editor_initialize_systems_
+(
+  _In_ crude_editor                                       *editor
+)
+{
+  crude_transform                                          editor_camera_node_transform;
+  crude_camera                                             editor_camera_node_camera;
+  crude_editor_camera                                      editor_camera;
+
+  editor->editor_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_editor_camera_system_context );
+  editor->editor_camera_system_context.platform = &editor->engine->platform;
+
+  crude_editor_camera_system_import( editor->engine->world, &editor->engine->components_serialization_manager, &editor->editor_camera_system_context );
+
+  editor_camera_node_transform = CRUDE_COMPOUNT_EMPTY( crude_transform );
+  XMStoreFloat4( &editor_camera_node_transform.rotation, XMQuaternionIdentity( ) );
+  XMStoreFloat3( &editor_camera_node_transform.scale, XMVectorSplatOne( ) );
+  XMStoreFloat3( &editor_camera_node_transform.translation, XMVectorZero( ) );
+
+  editor_camera_node_camera = CRUDE_COMPOUNT_EMPTY( crude_camera );
+  editor_camera_node_camera.fov_radians = 1;
+  editor_camera_node_camera.aspect_ratio = 1.8;
+  editor_camera_node_camera.near_z = 1;
+  editor_camera_node_camera.far_z = 300;
+
+  editor_camera = CRUDE_COMPOUNT_EMPTY( crude_editor_camera );
+  editor_camera.walk_speed = 10.f;
+  editor_camera.rotate_speed = 0.004f;
+  editor_camera.input_enabled = true;
+
+  editor->editor_camera_node = crude_entity_create_empty( editor->engine->world, "editor_camera" );
+  CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
+  CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
+  CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_editor_camera, { editor_camera } );
+
+  editor->engine->camera_node = editor->editor_camera_node;
+}
+
+void
+crude_editor_push_style_
 (
 )
 {
@@ -383,7 +474,7 @@ crude_gui_editor_push_style_
 }
 
 void
-crude_gui_editor_pop_style_
+crude_editor_pop_style_
 (
 )
 {

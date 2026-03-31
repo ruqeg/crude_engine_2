@@ -153,27 +153,5 @@ crude_node_copy_hierarchy
   crude_entity_enable( world, new_node, enabled );
   crude_entity_set_name( world, new_node, name );
 
-  if ( CRUDE_ENTITY_HAS_COMPONENT( world, new_node, crude_gltf ) )
-  {
-    crude_gltf const                                      *old_gltf;
-    crude_gltf                                            *new_gltf;
-    crude_transform const                                 *old_transforms;
-    crude_allocator_container                              allocator_container;
-    uint32                                                 nodes_count;
-
-    old_gltf = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_gltf );
-    new_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, new_node, crude_gltf );
-    
-    old_transforms = old_gltf->model_renderer_resources_instance.nodes_transforms;
-    nodes_count = CRUDE_ARRAY_LENGTH( old_transforms );
-    allocator_container = CRUDE_ARRAY_ALLOCATOR( old_transforms );
-
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( new_gltf->model_renderer_resources_instance.nodes_transforms, nodes_count, allocator_container );
-    for ( uint32 i = 0; i < nodes_count; ++i )
-    {
-      new_gltf->model_renderer_resources_instance.nodes_transforms[ i ] = old_transforms[ i ];
-    }
-  }
-
   return new_node;
 }

@@ -59,7 +59,7 @@ crude_scene_components_import
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
-    { .id = ecs_id( crude_gltf ) }
+    { .id = ecs_id( crude_gltf ), .oper = EcsAnd }
   } );
 }
 

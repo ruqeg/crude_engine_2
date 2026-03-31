@@ -58,7 +58,8 @@ crude_node_manager_initialize
 CRUDE_API void
 crude_node_manager_deinitialize
 (
-  _In_ crude_node_manager                                 *manager
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API void

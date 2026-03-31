@@ -120,6 +120,15 @@ crude_platform_deintialize
   SDL_DestroyWindow( platform->sdl_window );
 }
 
+bool
+crude_platform_cursor_hidden
+(
+  _In_ crude_platform                                     *platform
+)
+{
+  return SDL_GetWindowRelativeMouseMode( platform->sdl_window );
+}
+
 void
 crude_platform_update
 (

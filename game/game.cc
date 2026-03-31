@@ -71,7 +71,7 @@ crude_game_initialize
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
 
-  crude_entity_enable( engine->world, crude_ecs_on_game_update, false );
+  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 }
 
 void
@@ -106,33 +106,6 @@ crude_game_update_input_
   _In_ crude_game                                         *game
 )
 {
-  if ( !crude_entity_is_enable( game->engine->world, crude_ecs_on_game_update ) )
-  {
-    if ( game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
-    {
-      SDL_GetMouseState( &game->engine->last_unrelative_mouse_position.x, &game->engine->last_unrelative_mouse_position.y );
-      crude_platform_hide_cursor( &game->engine->platform );
-    }
-    
-    if ( !game->engine->platform.input.mouse.right.current && game->engine->platform.input.mouse.right.current != game->engine->platform.input.prev_mouse.right.current )
-    {
-      SDL_WarpMouseInWindow( game->engine->platform.sdl_window, game->engine->last_unrelative_mouse_position.x, game->engine->last_unrelative_mouse_position.y );
-      crude_platform_show_cursor( &game->engine->platform );
-    }
-  }
-  else
-  {
-    if ( game->engine->platform.input.keys[ SDL_SCANCODE_F9 ].pressed )
-    {
-      SDL_WarpMouseInWindow( game->engine->platform.sdl_window, game->engine->last_unrelative_mouse_position.x, game->engine->last_unrelative_mouse_position.y );
-      crude_platform_show_cursor( &game->engine->platform );
-    }
-    else if ( game->engine->platform.input.keys[ SDL_SCANCODE_F10 ].pressed )
-    {
-      SDL_GetMouseState( &game->engine->last_unrelative_mouse_position.x, &game->engine->last_unrelative_mouse_position.y );
-      crude_platform_hide_cursor( &game->engine->platform );
-    }
-  }
 }
 
 bool

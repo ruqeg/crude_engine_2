@@ -74,9 +74,11 @@ crude_node_manager_initialize
 void
 crude_node_manager_deinitialize
 (
-  _In_ crude_node_manager                                 *manager
+  _In_ crude_node_manager                                 *manager,
+  _In_ crude_ecs                                          *world
 )
 {
+  crude_node_manager_clear( manager, world );
   crude_string_buffer_deinitialize( &manager->absolute_filepath_string_buffer );
   crude_string_buffer_deinitialize( &manager->relative_filepath_string_buffer );
   CRUDE_HASHMAPSTR_DEINITIALIZE( manager->relative_filepath_to_node );

@@ -191,6 +191,26 @@ crude_entity_get_name
 }
 
 void
+crude_entity_allocate_path
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        entity,
+  _Out_ char                                             **path
+)
+{
+  *path = ecs_get_path( world, entity );
+}
+
+void
+crude_entity_free_path
+(
+  _In_ char                                               *path
+)
+{
+  ecs_os_free( path );
+}
+
+void
 crude_entity_set_name
 (
   _In_ crude_ecs                                          *world,
