@@ -78,6 +78,11 @@ crude_player_controller_update_system_
   ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
   player_controller_per_entity = ecs_field( it, crude_player_controller, 0 );
   
+  if ( !crude_platform_cursor_hidden( &game->engine->platform ) )
+  {
+    crude_platform_hide_cursor( &game->engine->platform );
+  }
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input const                                     *input;

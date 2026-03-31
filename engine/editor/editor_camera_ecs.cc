@@ -125,11 +125,15 @@ crude_editor_camera_update_system_
       XMStoreFloat4( &transform->rotation, editor_rotation );
     }
     
+    if ( !crude_platform_cursor_hidden( platform ) )
+    {
+      SDL_GetMouseState( &editor_camera->last_unrelative_mouse_position.x, &editor_camera->last_unrelative_mouse_position.y );
+    }
+    
     if ( input->mouse.right.current )
     {
       if ( !crude_platform_cursor_hidden( platform ) )
       {
-        SDL_GetMouseState( &editor_camera->last_unrelative_mouse_position.x, &editor_camera->last_unrelative_mouse_position.y );
         crude_platform_hide_cursor( platform );
       }
     }
