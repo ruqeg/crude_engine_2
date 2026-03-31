@@ -5,7 +5,6 @@
 #include <engine/core/ecs.h>
 #include <engine/core/file.h>
 #include <engine/platform/platform.h>
-#include <engine/physics/physics_debug_ecs.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/engine/environment.h>
 
@@ -695,22 +694,14 @@ crude_engine_initialize_physics_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_physics_resources_manager_creation                 physics_resources_manager_creation;
   crude_physics_creation                                   physics_creation;
-
-  physics_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_resources_manager_creation );
-  physics_resources_manager_creation.allocator = &engine->common_allocator;
-  crude_physics_resources_manager_initialize( &engine->physics_resources_manager, &physics_resources_manager_creation );
 
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &engine->collision_resources_manager;
-  physics_creation.manager = &engine->physics_resources_manager;
-  
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;
-  
   crude_physics_system_import( engine->world, &engine->components_serialization_manager, &engine->physics_system_context );
 }
 
@@ -721,7 +712,6 @@ crude_engine_deinitialize_physics_
 )
 {
   crude_physics_deinitialize( &engine->physics );
-  crude_physics_resources_manager_deinitialize( &engine->physics_resources_manager );
 }
 
 void
@@ -777,7 +767,6 @@ crude_engine_initialize_scene_
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
-  node_manager_creation.physics_resources_manager = &engine->physics_resources_manager;
   node_manager_creation.collisions_resources_manager = &engine->collision_resources_manager;
   node_manager_creation.components_serialization_manager = &engine->components_serialization_manager;
   node_manager_creation.allocator = &engine->common_allocator;

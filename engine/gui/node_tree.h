@@ -10,6 +10,7 @@ typedef enum crude_gui_node_type
   CRUDE_GUI_NODE_TYPE_GLTF = 1,
   CRUDE_GUI_NODE_TYPE_CAMERA,
   CRUDE_GUI_NODE_TYPE_NODE_EXTERNAL,
+  CRUDE_GUI_NODE_TYPE_,
   CRUDE_GUI_NODE_TYPE_COUNT,
 } crude_gui_node_type;
 

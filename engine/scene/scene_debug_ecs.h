@@ -11,25 +11,16 @@
  *                 Components
  *
  *********************************************************/
-typedef struct crude_debug_collision
-{
-  char const                                              *absolute_filepath;
-  bool                                                     visible;
-} crude_debug_collision;
-
 typedef struct crude_debug_gltf
 {
   char const                                              *absolute_filepath;
   bool                                                     visible;
 } crude_debug_gltf;
 
-CRUDE_API ECS_COMPONENT_DECLARE( crude_debug_collision );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_debug_gltf );
 
-CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_debug_collision );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_debug_gltf );
 
-CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_debug_collision );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_debug_gltf );
 
 CRUDE_API void

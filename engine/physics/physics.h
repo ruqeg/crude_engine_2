@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/physics/physics_resources_manager.h>
+#include <engine/physics/physics_resource.h>
 
 typedef struct crude_physics_raycast_result
 {
@@ -11,14 +11,13 @@ typedef struct crude_physics_raycast_result
 
 typedef struct crude_physics_creation
 {
-  crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
+  ecs_query_t                                             *character_body_handle_query;
   ecs_query_t                                             *static_body_handle_query;
-  crude_physics_resources_manager                         *manager;
   crude_collisions_resources_manager                      *collision_manager;
   bool                                                     simulation_enabled;
 } crude_physics;
@@ -42,6 +41,13 @@ crude_physics_enable_simulation
 (
   _In_ crude_physics                                      *physics,
   _In_ bool                                                enable
+);
+
+CRUDE_API void
+crude_physics_enable_reset_velocity
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_ecs                                          *world
 );
 
 CRUDE_API bool

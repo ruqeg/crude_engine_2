@@ -112,7 +112,6 @@ typedef struct crude_engine
    *
    ******************************/
   crude_collisions_resources_manager                       collision_resources_manager;
-  crude_physics_resources_manager                          physics_resources_manager;
   crude_physics                                            physics;
   crude_physics_system_context                             physics_system_context;
 

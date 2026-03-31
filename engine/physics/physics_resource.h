@@ -4,6 +4,7 @@
 #include <engine/core/math.h>
 #include <engine/core/octree.h>
 #include <engine/scene/collisions_resources_manager.h>
+#include <engine/physics/physics_config.h>
 
 typedef uint32 crude_physics_resource_index;
 
@@ -27,16 +28,6 @@ typedef enum crude_physics_collision_shape_type
   CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE,
   CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH
 } crude_physics_collision_shape_type;
-
-typedef struct crude_physics_static_body_handle
-{
-  crude_physics_resource_index                             index;
-} crude_physics_static_body_handle;
-
-typedef struct crude_physics_character_body_handle
-{
-  crude_physics_resource_index                             index;
-} crude_physics_character_body_handle;
 
 typedef struct crude_physics_character_body
 {
@@ -67,7 +58,7 @@ typedef struct crude_physics_collision_shape
     } sphere;
     struct
     {
-      char                                                 model_relative_filepath[ 1024 ];
+      char                                                 model_relative_filepath[ CRUDE_PHYSICS_OCTREE_RELATIVE_FILEPATH_LENGTH_MAX ];
       crude_octree_handle                                  octree_handle;
     } mesh;
   };

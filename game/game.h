@@ -7,8 +7,6 @@
 #include <engine/core/ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/scene/collisions_resources_manager.h>
-#include <engine/physics/physics_resources_manager.h>
-#include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scene_ecs.h>
 #include <game/player_controller_ecs.h>
 #include <game/training_area_level_ecs.h>
@@ -21,7 +19,6 @@ typedef struct crude_game
   crude_string_buffer                                      debug_constant_strings_buffer;
 
   /* System Context */
-  crude_physics_debug_system_context                       physics_debug_system_context;
   crude_player_controller_system_context                   player_controller_system_context;
   crude_training_area_level_system_context                 training_area_level_system_context;
 } crude_game;

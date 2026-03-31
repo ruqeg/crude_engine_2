@@ -7,7 +7,6 @@
 #include <engine/scene/scene_debug_ecs.h>
 #include <engine/graphics/gpu_resources_loader.h>
 #include <engine/physics/physics_ecs.h>
-#include <engine/physics/physics_debug_ecs.h>
 
 #include <game/game.h>
 
@@ -50,11 +49,6 @@ crude_game_initialize
   crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
   crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
 
-  game->physics_debug_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_debug_system_context );
-  game->physics_debug_system_context.resources_absolute_directory = game->engine->environment.directories.resources_absolute_directory;
-  game->physics_debug_system_context.string_bufffer = &game->debug_strings_buffer;
-  crude_physics_debug_system_import( engine->world, &engine->components_serialization_manager, &game->physics_debug_system_context );
-  
   game->player_controller_system_context = CRUDE_COMPOUNT_EMPTY( crude_player_controller_system_context );
   game->player_controller_system_context.input = &engine->platform.input;
   crude_player_controller_system_import( engine->world, &engine->components_serialization_manager, &game->player_controller_system_context );

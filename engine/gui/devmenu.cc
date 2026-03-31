@@ -9,7 +9,6 @@
 #include <engine/platform/platform.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/scene/scene_debug_ecs.h>
-#include <engine/physics/physics_debug_ecs.h>
 #include <engine/scene/scripts/free_camera_ecs.h>
 #include <engine/graphics/imgui.h>
 #include <engine/engine.h>

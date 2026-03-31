@@ -20,16 +20,20 @@ crude_physics_initialize
 {
   ecs_query_desc_t                                         query_desc;
   
-  physics->manager = creation->manager;
   physics->collision_manager = creation->collision_manager;
   physics->simulation_enabled = false;
   
   query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
-  query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body_handle );
+  query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body );
   query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
   query_desc.terms[ 2 ].id = ecs_id( crude_transform );
-
   physics->static_body_handle_query = crude_ecs_query_create( world, &query_desc );
+  
+  query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
+  query_desc.terms[ 0 ].id = ecs_id( crude_physics_character_body );
+  query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
+  query_desc.terms[ 2 ].id = ecs_id( crude_transform );
+  physics->character_body_handle_query = crude_ecs_query_create( world, &query_desc );
 }
 
 void
@@ -48,14 +52,32 @@ crude_physics_enable_simulation
 )
 {
   physics->simulation_enabled = enable;
+}
 
-  if ( enable )
+void
+crude_physics_enable_reset_velocity
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_ecs                                          *world
+)
+{
+  ecs_iter_t                                               character_body_handle_it;
+
+  character_body_handle_it = ecs_query_iter( world, physics->character_body_handle_query );
+  while ( ecs_query_next( &character_body_handle_it ) )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( physics->manager->character_bodies ); ++i )
+    crude_physics_character_body                          *character_body_per_entity;
+    crude_physics_collision_shape                         *collision_shape_per_entity;
+    crude_transform                                       *transform_per_entity;
+
+    character_body_per_entity = ecs_field( &character_body_handle_it, crude_physics_character_body, 0 );
+    collision_shape_per_entity = ecs_field( &character_body_handle_it, crude_physics_collision_shape, 1 );
+    transform_per_entity = ecs_field( &character_body_handle_it, crude_transform, 2 );
+
+    for ( uint32 i = 0; i < character_body_handle_it.count; ++i )
     {
-      crude_physics_character_body *dynamic_body = crude_physics_resources_manager_access_character_body( physics->manager, physics->manager->character_bodies[ i ] );
-      XMStoreFloat3( &dynamic_body->velocity, XMVectorZero( ) );
-      dynamic_body->on_floor = false;
+      XMStoreFloat3( &character_body_per_entity[ i ].velocity, XMVectorZero( ) );
+      character_body_per_entity[ i ].on_floor = false;
     }
   }
 }
@@ -71,27 +93,26 @@ crude_physics_cast_ray
   _Out_opt_ crude_physics_raycast_result                  *result
 )
 {
-  ecs_iter_t                                               static_body_handle_it;
+  ecs_iter_t                                               static_body_it;
   float32                                                  nearest_t;
 
   nearest_t = FLT_MAX;
 
-  static_body_handle_it = ecs_query_iter( world, physics->static_body_handle_query );
-  while ( ecs_query_next( &static_body_handle_it ) )
+  static_body_it = ecs_query_iter( world, physics->static_body_handle_query );
+  while ( ecs_query_next( &static_body_it ) )
   {
     crude_physics_collision_shape                         *second_collision_shape_per_entity;
     crude_transform                                       *second_transform_per_entity;
-    crude_physics_static_body_handle                      *second_body_handle_per_entity;
+    crude_physics_static_body                             *second_body_handle_per_entity;
 
-    second_body_handle_per_entity = ecs_field( &static_body_handle_it, crude_physics_static_body_handle, 0 );
-    second_collision_shape_per_entity = ecs_field( &static_body_handle_it, crude_physics_collision_shape, 1 );
-    second_transform_per_entity = ecs_field( &static_body_handle_it, crude_transform, 2 );
+    second_body_handle_per_entity = ecs_field( &static_body_it, crude_physics_static_body, 0 );
+    second_collision_shape_per_entity = ecs_field( &static_body_it, crude_physics_collision_shape, 1 );
+    second_transform_per_entity = ecs_field( &static_body_it, crude_transform, 2 );
 
-    for ( uint32 static_body_index = 0; static_body_index < static_body_handle_it.count; ++static_body_index )
+    for ( uint32 static_body_index = 0; static_body_index < static_body_it.count; ++static_body_index )
     {
       crude_physics_collision_shape                       *second_collision_shape;
       crude_transform                                     *second_transform;
-      crude_physics_static_body_handle                    *second_body_handle;
       crude_physics_static_body                           *second_body;
       crude_entity                                         static_body_node;
       XMMATRIX                                             second_transform_mesh_to_world;
@@ -101,10 +122,9 @@ crude_physics_cast_ray
       
       second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
       second_transform = &second_transform_per_entity[ static_body_index ];
-      second_body_handle = &second_body_handle_per_entity[ static_body_index ];
-      static_body_node = crude_entity_from_iterator( &static_body_handle_it, static_body_index );
-    
-      second_body = crude_physics_resources_manager_access_static_body( physics->manager, *second_body_handle );
+      second_body = &second_body_handle_per_entity[ static_body_index ];
+
+      static_body_node = crude_entity_from_iterator( &static_body_it, static_body_index );
   
       if ( !second_body->enabeld )
       {

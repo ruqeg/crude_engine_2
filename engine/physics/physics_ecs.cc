@@ -14,12 +14,12 @@
  *                 Components
  *
  *********************************************************/
-ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
-ECS_COMPONENT_DECLARE( crude_physics_character_body_handle );
+ECS_COMPONENT_DECLARE( crude_physics_static_body );
+ECS_COMPONENT_DECLARE( crude_physics_character_body );
 ECS_COMPONENT_DECLARE( crude_physics_collision_shape );
 
-CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body_handle, "crude_physics_static_body_handle" );
-CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character_body_handle, "crude_physics_character_body_handle" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body, "crude_physics_static_body" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character_body, "crude_physics_character_body" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_physics_collision_shape, "crude_physics_collision_shape" );
 
 void
@@ -30,117 +30,96 @@ crude_physics_components_import
 )
 {
   CRUDE_ECS_MODULE( world, crude_physics_components );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character_body_handle );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character_body );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_collision_shape );
-  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body_handle );
-  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_body );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_collision_shape );
-  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_static_body_handle );
-  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_character_body );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_collision_shape );
-  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_static_body_handle );
-  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_character_body_handle );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_character_body );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_collision_shape );
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
 {
-  crude_physics_static_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body_handle );
-  if ( previous_handle )
-  {
-    crude_physics_resources_manager_destroy_static_body( manager->physics_resources_manager, *previous_handle );
-  }
-
-  *component = crude_physics_resources_manager_create_static_body( manager->physics_resources_manager, node );
-  crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( manager->physics_resources_manager, *component );
-  static_body->layer = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "layer" ) );
+  component->layer = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "layer" ) );
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
-
-  crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( manager->physics_resources_manager, *component );
-
-  cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body_handle ) ) );
-  cJSON_AddItemToObject( static_body_json, "layer", cJSON_CreateNumber( static_body->layer ) );
+  cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) );
+  cJSON_AddItemToObject( static_body_json, "layer", cJSON_CreateNumber( component->layer ) );
   return static_body_json;
 }
 
-CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character_body )
 {
-  crude_physics_character_body_handle *previous_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character_body_handle );
-  if ( previous_handle )
-  {
-    crude_physics_resources_manager_destroy_character_body( manager->physics_resources_manager, *previous_handle );
-  }
-  *component = crude_physics_resources_manager_create_character_body( manager->physics_resources_manager, node );
-  crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager->physics_resources_manager, *component );
-  character_body->mask = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "mask" ) );
+  component->mask = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "mask" ) );
   return true;
 }
 
-CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character_body )
 {
   cJSON *dynamic_body_json = cJSON_CreateObject( );
-  crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager->physics_resources_manager, *component );
-  cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_character_body_handle ) ) );
-  cJSON_AddItemToObject( dynamic_body_json, "mask", cJSON_CreateNumber( character_body->mask ) );
+  cJSON_AddItemToObject( dynamic_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_character_body ) ) );
+  cJSON_AddItemToObject( dynamic_body_json, "mask", cJSON_CreateNumber( component->mask ) );
   return dynamic_body_json;
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_body_handle )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_body )
 {
-  crude_physics_character_body *character_body = crude_physics_resources_manager_access_character_body( manager->physics_resources_manager, *component );
   ImGui::Text( "Mask" );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "0", &character_body->mask, 1 );
+  ImGui::CheckboxFlags( "0", &component->mask, 1 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "1", &character_body->mask, 1 << 2 );
+  ImGui::CheckboxFlags( "1", &component->mask, 1 << 2 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "2", &character_body->mask, 1 << 3 );
+  ImGui::CheckboxFlags( "2", &component->mask, 1 << 3 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "3", &character_body->mask, 1 << 4 );
+  ImGui::CheckboxFlags( "3", &component->mask, 1 << 4 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "4", &character_body->mask, 1 << 5 );
+  ImGui::CheckboxFlags( "4", &component->mask, 1 << 5 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "5", &character_body->mask, 1 << 6 );
+  ImGui::CheckboxFlags( "5", &component->mask, 1 << 6 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "6", &character_body->mask, 1 << 7 );
+  ImGui::CheckboxFlags( "6", &component->mask, 1 << 7 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "7", &character_body->mask, 1 << 8 );
+  ImGui::CheckboxFlags( "7", &component->mask, 1 << 8 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "8", &character_body->mask, 1 << 9 );
+  ImGui::CheckboxFlags( "8", &component->mask, 1 << 9 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "9", &character_body->mask, 1 << 10 );
+  ImGui::CheckboxFlags( "9", &component->mask, 1 << 10 );
 }
 
-CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
 {
-  crude_physics_static_body *static_body = crude_physics_resources_manager_access_static_body( manager->physics_resources_manager, *component );
   ImGui::Text( "Layer" );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "0", &static_body->layer, 1 );
+  ImGui::CheckboxFlags( "0", &component->layer, 1 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "1", &static_body->layer, 1 << 2 );
+  ImGui::CheckboxFlags( "1", &component->layer, 1 << 2 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "2", &static_body->layer, 1 << 3 );
+  ImGui::CheckboxFlags( "2", &component->layer, 1 << 3 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "3", &static_body->layer, 1 << 4 );
+  ImGui::CheckboxFlags( "3", &component->layer, 1 << 4 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "4", &static_body->layer, 1 << 5 );
+  ImGui::CheckboxFlags( "4", &component->layer, 1 << 5 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "5", &static_body->layer, 1 << 6 );
+  ImGui::CheckboxFlags( "5", &component->layer, 1 << 6 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "6", &static_body->layer, 1 << 7 );
+  ImGui::CheckboxFlags( "6", &component->layer, 1 << 7 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "7", &static_body->layer, 1 << 8 );
+  ImGui::CheckboxFlags( "7", &component->layer, 1 << 8 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "8", &static_body->layer, 1 << 9 );
+  ImGui::CheckboxFlags( "8", &component->layer, 1 << 9 );
   ImGui::SameLine( );
-  ImGui::CheckboxFlags( "9", &static_body->layer, 1 << 10 );
+  ImGui::CheckboxFlags( "9", &component->layer, 1 << 10 );
   
 }
 
@@ -223,39 +202,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_collision_shap
  *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_system );
 
-CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_handle_destroy_observer_ );
-CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_body_handle_destroy_observer_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_update_system_ );
-
-static void
-crude_physics_static_body_handle_destroy_observer_ 
-(
-  ecs_iter_t *it
-)
-{
-  crude_physics_system_context *ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
-  crude_physics_static_body_handle *static_body_handle_per_entity = ecs_field( it, crude_physics_static_body_handle, 0 );
-
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-    crude_physics_resources_manager_destroy_static_body( ctx->physics->manager, static_body_handle_per_entity[ i ] );
-  }
-}
-
-static void
-crude_physics_character_body_handle_destroy_observer_ 
-(
-  ecs_iter_t *it
-)
-{
-  crude_physics_system_context *ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
-  crude_physics_character_body_handle *character_body_handle_per_entity = ecs_field( it, crude_physics_character_body_handle, 0 );
-
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-    crude_physics_resources_manager_destroy_character_body( ctx->physics->manager, character_body_handle_per_entity[ i ] );
-  }
-}
 
 static void
 crude_physics_update_system_ 
@@ -263,7 +210,7 @@ crude_physics_update_system_
   ecs_iter_t *it
 )
 {
-  crude_physics_character_body_handle                     *character_body_handle_per_entity;
+  crude_physics_character_body                            *character_body_per_entity;
   crude_physics_collision_shape                           *collision_shape_per_entity;
   crude_transform                                         *transform_per_entity;
   crude_physics_system_context                            *ctx;
@@ -272,7 +219,7 @@ crude_physics_update_system_
   CRUDE_PROFILER_ZONE_NAME( "crude_physics_update_system_" );
 
   ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
-  character_body_handle_per_entity = ecs_field( it, crude_physics_character_body_handle, 0 );
+  character_body_per_entity = ecs_field( it, crude_physics_character_body, 0 );
   collision_shape_per_entity = ecs_field( it, crude_physics_collision_shape, 1 );
   transform_per_entity = ecs_field( it, crude_transform, 2 );
   
@@ -290,20 +237,17 @@ crude_physics_update_system_
     crude_physics_character_body                          *character_body;
     crude_entity                                           character_body_node;
     ecs_iter_t                                             static_body_handle_it;
-    crude_physics_character_body_handle                    character_body_handle;
     XMMATRIX                                               node_to_parent;
     XMMATRIX                                               parent_to_world;
     XMMATRIX                                               node_to_world;
     XMVECTOR                                               translation;
     XMVECTOR                                               velocity;
     
-    character_body_handle = character_body_handle_per_entity[ i ];
+    character_body = &character_body_per_entity[ i ];
     collision_shape = &collision_shape_per_entity[ i ];
     transform = &transform_per_entity[ i ];
 
     character_body_node = crude_entity_from_iterator( it, i );
-
-    character_body = crude_physics_resources_manager_access_character_body( ctx->physics->manager, character_body_handle );
 
     velocity = XMLoadFloat3( &character_body->velocity );
     
@@ -320,9 +264,9 @@ crude_physics_update_system_
     {
       crude_physics_collision_shape                       *second_collision_shape_per_entity;
       crude_transform                                     *second_transform_per_entity;
-      crude_physics_static_body_handle                    *second_body_handle_per_entity;
+      crude_physics_static_body                           *second_body_per_entity;
 
-      second_body_handle_per_entity = ecs_field( &static_body_handle_it, crude_physics_static_body_handle, 0 );
+      second_body_per_entity = ecs_field( &static_body_handle_it, crude_physics_static_body, 0 );
       second_collision_shape_per_entity = ecs_field( &static_body_handle_it, crude_physics_collision_shape, 1 );
       second_transform_per_entity = ecs_field( &static_body_handle_it, crude_transform, 2 );
 
@@ -330,7 +274,6 @@ crude_physics_update_system_
       {
         crude_physics_collision_shape                     *second_collision_shape;
         crude_transform                                   *second_transform;
-        crude_physics_static_body_handle                  *second_body_handle;
         crude_physics_static_body                         *second_body;
         crude_entity                                       second_body_node;
         XMMATRIX                                           second_transform_mesh_to_world;
@@ -339,10 +282,8 @@ crude_physics_update_system_
         
         second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
         second_transform = &second_transform_per_entity[ static_body_index ];
-        second_body_handle = &second_body_handle_per_entity[ static_body_index ];
+        second_body = &second_body_per_entity[ static_body_index ];
         second_body_node = crude_entity_from_iterator( &static_body_handle_it, static_body_index );
-     
-        second_body = crude_physics_resources_manager_access_static_body( ctx->physics->manager, *second_body_handle );
 
         if ( !second_body->enabeld )
         {
@@ -417,16 +358,8 @@ crude_physics_system_import
 {
   crude_physics_components_import( world, manager );
 
-  //CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_handle_destroy_observer_, EcsOnRemove, ctx, { 
-  //  { .id = ecs_id( crude_physics_static_body_handle ) }
-  //} );
-  //
-  //CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_character_body_handle_destroy_observer_, EcsOnRemove, ctx, { 
-  //  { .id = ecs_id( crude_physics_character_body_handle ) }
-  //} );
-  
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_update_system_, crude_ecs_on_engine_update, ctx, { 
-    { .id = ecs_id( crude_physics_character_body_handle ) },
+    { .id = ecs_id( crude_physics_character_body ) },
     { .id = ecs_id( crude_physics_collision_shape ) },
     { .id = ecs_id( crude_transform ) }
   } );
