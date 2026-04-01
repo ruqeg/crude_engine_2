@@ -232,3 +232,7 @@ crude_allocator_container_get_type
 #define CRUDE_ALLOCATE( allocator_container, size ) ( ( allocator_container ).allocate( ( allocator_container ).ctx, size ) )
 #define CRUDE_DEALLOCATE( allocator_container, ptr ) ( ( allocator_container ).deallocate( ( allocator_container ).ctx, ptr ) )
 #define CRUDE_ALLOCATE_ALIGN( allocator_container, size, alignment ) ( ( allocator_container ).allocate_align( ( allocator_container ).ctx, size, alignment ) )
+
+
+#define CRUDE_ALLOCATE_AND_CONSTRUCT( allocator_container, type, ... ) new ( CRUDE_ALLOCATE( allocator_container, sizeof( type ) ) ) type( ##__VA_ARGS__ )
+#define CRUDE_DEALLOCATE_AND_DECONSTRUCT( allocator_container, v, type ) { ( v )->~type( ); CRUDE_DEALLOCATE( allocator_container, v ); }

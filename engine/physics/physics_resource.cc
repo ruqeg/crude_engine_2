@@ -74,3 +74,34 @@ crude_physics_collision_callback_container_fun
     container.fun( container.ctx, character_node, static_body_node, static_body_layer );
   }
 }
+
+crude_physics_character_body
+crude_physics_character_body_empty
+(  
+)
+{
+  crude_physics_character_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_character_body );
+  return body;
+}
+
+CRUDE_API crude_physics_static_body
+crude_physics_static_body_empty
+(
+)
+{
+  crude_physics_static_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body );
+  return body;
+}
+
+CRUDE_API crude_physics_collision_shape
+crude_physics_collision_shape_empty
+(
+)
+{
+  crude_physics_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_collision_shape );
+  shape.type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX;
+  shape.box.half_extent.x = 1;
+  shape.box.half_extent.y = 1;
+  shape.box.half_extent.z = 1;
+  return shape;
+}

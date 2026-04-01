@@ -264,11 +264,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       
       if ( animation_instance->animation_index != -1 )
       {
-		    ImGui::InputText( "Name", animations[ animation_instance->animation_index ].name, 256, ImGuiInputTextFlags_ReadOnly );
+        ImGui::InputText( "Name", animations[ animation_instance->animation_index ].name, 256, ImGuiInputTextFlags_ReadOnly );
       }
       else
       {
-		    ImGui::Text( "No Name" );
+        ImGui::Text( "No Name" );
       }
       if ( animation_instance->animation_index != -1 )
       {

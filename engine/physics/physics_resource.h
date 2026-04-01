@@ -89,3 +89,18 @@ crude_physics_collision_callback_container_fun
   _In_ crude_entity                                        static_body_node,
   _In_ uint32                                              static_body_layer
 );
+
+CRUDE_API crude_physics_character_body
+crude_physics_character_body_empty
+(  
+);
+
+CRUDE_API crude_physics_static_body
+crude_physics_static_body_empty
+(
+);
+
+CRUDE_API crude_physics_collision_shape
+crude_physics_collision_shape_empty
+(
+);

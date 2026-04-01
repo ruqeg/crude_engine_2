@@ -64,6 +64,22 @@
 							"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"
 						}],
 					"children":	[]
+				}, {
+					"name":	"character_body",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_physics_character_body",
+							"mask":	0
+						}, {
+							"type":	"crude_physics_collision_shape",
+							"shape_type":	"box",
+							"half_extent":	[1, 1, 1]
+						}],
+					"children":	[]
 				}]
 		}]
 }

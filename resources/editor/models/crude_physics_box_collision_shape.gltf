@@ -3,6 +3,9 @@
 		"generator":"Khronos glTF Blender I/O v4.5.47",
 		"version":"2.0"
 	},
+	"extensionsUsed":[
+		"KHR_materials_emissive_strength"
+	],
 	"scene":0,
 	"scenes":[
 		{
@@ -22,12 +25,22 @@
 		{
 			"alphaMode":"BLEND",
 			"doubleSided":true,
-			"name":"Material.001",
+			"emissiveFactor":[
+				0.013465809635818005,
+				0,
+				1
+			],
+			"extensions":{
+				"KHR_materials_emissive_strength":{
+					"emissiveStrength":5
+				}
+			},
+			"name":"Material.002",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
-					0.027510009706020355,
+					0.003860425902530551,
 					0,
-					0.8002434968948364,
+					1,
 					0.30000001192092896
 				],
 				"metallicFactor":0
@@ -36,7 +49,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Cube.004",
+			"name":"Cube.001",
 			"primitives":[
 				{
 					"attributes":{

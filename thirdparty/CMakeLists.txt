@@ -30,6 +30,7 @@ add_subdirectory(vma)
 add_subdirectory(DirectXMath)
 add_subdirectory(imgui-node-editor)
 add_subdirectory(NVIDIA_Nsight_Aftermath_SDK_2025.5.0.25317)
+add_subdirectory(JoltPhysics-5.5.0)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})
 
@@ -50,3 +51,4 @@ set_target_properties(TracyClient PROPERTIES FOLDER "thirdparty")
 set_target_properties(meshoptimizer PROPERTIES FOLDER "thirdparty")
 set_target_properties(DirectXMath PROPERTIES FOLDER "thirdparty")
 set_target_properties(imgui-node-editor PROPERTIES FOLDER "thirdparty")
+set_target_properties(Jolt PROPERTIES FOLDER "thirdparty")

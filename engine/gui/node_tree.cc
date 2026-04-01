@@ -1,3 +1,5 @@
+#include <engine/physics/physics_ecs.h>
+
 #include <engine/gui/node_tree.h>
 
 static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_COUNT ] =
@@ -5,7 +7,9 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "Empty 3D",
   "GLTF",
   "Camera",
-  "Node External"
+  "Node External",
+  "Character Body",
+  "Static Body"
 };
 
 static bool
@@ -146,6 +150,20 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_NODE_EXTERNAL:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_node_external, { crude_node_external_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_CHARACTER_BODY:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_character_body, { crude_physics_character_body_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_collision_shape, { crude_physics_collision_shape_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_STATIC_BODY:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_static_body, { crude_physics_static_body_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_collision_shape, { crude_physics_collision_shape_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }

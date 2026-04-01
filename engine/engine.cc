@@ -314,6 +314,8 @@ crude_engine_update
   crude_gui_devmenu_update( &engine->devmenu );
   crude_editor_update( &engine->editor );
 
+  crude_physics_update( &engine->physics );
+
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( engine->world, delta_time );
@@ -698,6 +700,7 @@ crude_engine_initialize_physics_
 
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &engine->collision_resources_manager;
+  physics_creation.allocator = &engine->common_allocator;
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
