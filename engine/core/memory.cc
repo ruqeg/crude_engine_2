@@ -66,7 +66,6 @@ crude_heap_allocator_deinitialize
   pool_t                                                   pool;
   memory_statistics                                        stats;
   
-  
   stats = CRUDE_COMPOUNT( memory_statistics, {
     .allocated_bytes = 0,
     .total_bytes = 0,
@@ -100,7 +99,7 @@ crude_heap_allocator_allocate
 {
   void                                                    *allocated_memory;
   sizet                                                    actual_size;
-
+  
   allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocated_memory, "Failed to allocate %i bytes in \"%s\" allocator!", size, allocator->name ? allocator->name : "unknown allocator" );
   actual_size = tlsf_block_size( allocated_memory );
@@ -121,7 +120,7 @@ crude_heap_allocator_allocate_align
 {
   void                                                    *allocated_memory;
   sizet                                                    actual_size;
-
+  
   allocated_memory = alignment == 1 ? tlsf_malloc( allocator->tlsf_handle, size ) : tlsf_memalign( allocator->tlsf_handle, alignment, size );
   actual_size = tlsf_block_size( allocated_memory );
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
@@ -139,7 +138,7 @@ crude_heap_allocator_reallocate
 {
   void                                                    *allocated_memory;
   sizet                                                    actual_size;
-
+  
   if ( pointer )
   {
     actual_size = tlsf_block_size( pointer );

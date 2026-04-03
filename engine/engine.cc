@@ -270,6 +270,8 @@ crude_engine_initialize
   crude_engine_initialize_editor_( engine );
 
   engine->running = true;
+
+  crude_physics_enable_simulation( &engine->physics, engine->world, false );
 }
 
 void
@@ -365,7 +367,7 @@ crude_engine_initialize_allocators_
   _In_ crude_engine                                       *engine
 )
 { 
-  crude_heap_allocator_initialize( &engine->common_allocator, CRUDE_RMEGA( 16 ), "common_allocator" );
+  crude_heap_allocator_initialize( &engine->common_allocator, CRUDE_RMEGA( 32 ), "common_allocator" );
   crude_heap_allocator_initialize( &engine->resources_allocator, CRUDE_RMEGA( 16 ), "resources_allocator" );
   crude_stack_allocator_initialize( &engine->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
   crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
@@ -700,7 +702,7 @@ crude_engine_initialize_physics_
 
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.collision_manager = &engine->collision_resources_manager;
-  physics_creation.allocator = &engine->common_allocator;
+  physics_creation.physics_allocator = &engine->common_allocator;
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );

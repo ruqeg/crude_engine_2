@@ -3,105 +3,57 @@
 
 #include <engine/physics/physics_resource.h>
 
-char const*
-crude_physics_collision_shape_type_to_string
-(
-  _In_ crude_physics_collision_shape_type                  type
-)
-{
-  if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-  {
-    return "box";
-  }
-  else if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE )
-  {
-    return "sphere";
-  }
-  else if ( type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-  {
-    return "mesh";
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-}
-
-crude_physics_collision_shape_type
-crude_physics_collision_shape_string_to_type
-(
-  _In_ char const*                                         type_str
-)
-{
-  if ( crude_string_cmp( type_str, "box" ) == 0 )
-  {
-    return CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX;
-  }
-  else if ( crude_string_cmp( type_str, "sphere" ) == 0 )
-  {
-    return CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_SPHERE;
-  }
-  else if ( crude_string_cmp( type_str, "mesh" ) == 0 )
-  {
-    return CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH;
-  }
-  else
-  {
-    CRUDE_ASSERT( false );
-  }
-}
-
-crude_physics_collision_callback_container
-crude_physics_collision_callback_container_empty
+crude_physics_character
+crude_physics_character_empty
 (
 )
 {
-  crude_physics_collision_callback_container container = CRUDE_COMPOUNT_EMPTY( crude_physics_collision_callback_container );
-  return container;
+  crude_physics_character character = CRUDE_COMPOUNT_EMPTY( crude_physics_character );
+  character.character_height_standing = 1.35 ;
+  character.character_radius_standing = 0.3;
+  character.friction = 0.5;
+  character.max_slop_angle = XM_PIDIV4;
+  return character;
 }
 
 void
-crude_physics_collision_callback_container_fun
+crude_jph_transform_to_transform
 (
-  _In_ crude_physics_collision_callback_container          container,
-  _In_ crude_entity                                        character_node,
-  _In_ crude_entity                                        static_body_node,
-  _In_ uint32                                              static_body_layer
+  _Out_ crude_transform                                   *transform,
+  _In_ JPH::RMat44                                        *jph_transform
 )
 {
-  if ( container.fun )
-  {
-    container.fun( container.ctx, character_node, static_body_node, static_body_layer );
-  }
+  JPH::Quat                                                jph_quaternion;
+
+  transform->translation.x = jph_transform->GetTranslation( ).GetX( );
+  transform->translation.z = jph_transform->GetTranslation( ).GetY( );
+  transform->translation.y = jph_transform->GetTranslation( ).GetZ( );
+
+  transform->scale.x = 1;
+  transform->scale.y = 1;
+  transform->scale.z = 1;
+
+  jph_quaternion = jph_transform->GetQuaternion( );
+  transform->rotation.x = jph_quaternion.GetX( );
+  transform->rotation.y = jph_quaternion.GetY( );
+  transform->rotation.z = jph_quaternion.GetZ( );
+  transform->rotation.w = jph_quaternion.GetW( );
 }
 
-crude_physics_character_body
-crude_physics_character_body_empty
-(  
+JPH::RVec3
+crude_float3_to_jph_vec3
+(
+  _In_ XMFLOAT3                                           *float3
 )
 {
-  crude_physics_character_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_character_body );
-  return body;
+  return JPH::Vec3( float3->x, float3->y, float3->z );
 }
 
-CRUDE_API crude_physics_static_body
-crude_physics_static_body_empty
+JPH::Quat
+crude_float4_to_jph_quat
 (
+  _In_ XMFLOAT4                                           *float4
 )
 {
-  crude_physics_static_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body );
-  return body;
-}
-
-CRUDE_API crude_physics_collision_shape
-crude_physics_collision_shape_empty
-(
-)
-{
-  crude_physics_collision_shape shape = CRUDE_COMPOUNT_EMPTY( crude_physics_collision_shape );
-  shape.type = CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX;
-  shape.box.half_extent.x = 1;
-  shape.box.half_extent.y = 1;
-  shape.box.half_extent.z = 1;
-  return shape;
+  return JPH::Quat( float4->x, float4->y, float4->z, float4->w );
 }

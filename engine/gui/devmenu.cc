@@ -249,7 +249,6 @@ crude_gui_devmenu_free_camera_callback
 )
 {
   crude_entity player_controller_node = devmenu->engine->player_controller_node;
-  crude_physics_enable_simulation( &devmenu->engine->physics, !devmenu->engine->physics.simulation_enabled );
 }
 
 bool

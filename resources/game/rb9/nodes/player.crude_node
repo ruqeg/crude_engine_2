@@ -12,12 +12,18 @@
 			"pitch_limit":	0.78539818525314331
 		}],
 	"children":	[{
-			"name":	"world_transform",
+			"name":	"character",
 			"components":	[{
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_character",
+					"character_height_standing":	1.3500000238418579,
+					"character_radius_standing":	0.300000011920929,
+					"friction":	0.5,
+					"max_slop_angle":	0.78539818525314331
 				}],
 			"children":	[{
 					"name":	"pivot_yaw",
@@ -62,22 +68,6 @@
 						}, {
 							"type":	"crude_gltf",
 							"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"
-						}],
-					"children":	[]
-				}, {
-					"name":	"character_body",
-					"components":	[{
-							"type":	"crude_transform",
-							"translation":	[0, 0, 0],
-							"rotation":	[0, 0, 0, 1],
-							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_physics_character_body",
-							"mask":	0
-						}, {
-							"type":	"crude_physics_collision_shape",
-							"shape_type":	"box",
-							"half_extent":	[1, 1, 1]
 						}],
 					"children":	[]
 				}]

@@ -6,9 +6,11 @@
 
 #include <engine/scene/scene_resources.h>
 
-ecs_entity_t const crude_ecs_on_engine_update = EcsOnUpdate;
-ecs_entity_t const crude_ecs_on_game_update = EcsPostUpdate;
-ecs_entity_t const crude_ecs_on_editor_update = EcsPreStore;
+ecs_entity_t const crude_ecs_on_pre_physics_update = EcsPostLoad;
+ecs_entity_t const crude_ecs_on_engine_update = EcsPreUpdate;
+ecs_entity_t const crude_ecs_on_game_update = EcsOnUpdate;
+ecs_entity_t const crude_ecs_on_editor_update = EcsPostUpdate;
+ecs_entity_t const crude_ecs_on_post_physics_update = EcsPreStore;
 
 #define CRUDE_ECS_GAME_STAGE_ENABLE( world, value ) crude_entity_enable( world, crude_ecs_on_game_update, value )
 #define CRUDE_ECS_EDITOR_STAGE_ENABLE( world, value ) crude_entity_enable( world, crude_ecs_on_editor_update, value )

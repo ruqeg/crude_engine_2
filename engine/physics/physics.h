@@ -11,10 +11,20 @@
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Physics/Character/Character.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 
-#include <engine/physics/physics_resource.h>
+#include <engine/core/ecs.h>
+#include <engine/core/math.h>
+#include <engine/scene/collisions_resources_manager.h>
+#include <engine/physics/physics_config.h>
 
-/* JPH FORCE ME TO USE CLASSES AND OOP T_T WHY I DONT WAAANT */
+/*********************
+ * Use only when JPH class override new/free!
+ ********************/
+#define CRUDE_JOLT_OVERRIDEN_NEW                                     new
+#define CRUDE_JOLT_OVERRIDEN_FREE                                    delete
 
 const JPH::ObjectLayer g_crude_jph_layer_non_moving        = 0;
 const JPH::ObjectLayer g_crude_jph_layer_moving            = 1;
@@ -131,39 +141,54 @@ public:
   ) override;
 };
 
-typedef struct crude_physics_raycast_result
+typedef struct crude_physics_character_creation
 {
-  crude_raycast_result                                     raycast_result;
-  crude_entity                                             node;
-  uint64                                                   body_layer;
-} crude_physics_raycast_result;
+  float32                                                  character_height_standing;
+  float32                                                  character_radius_standing;
+  float32                                                  friction;
+  float32                                                  max_slop_angle;
+} crude_physics_character_creation;
+
+typedef struct crude_physics_character_handle
+{
+  uint32                                                   index;
+} crude_physics_character_handle;
+
+typedef struct crude_physics_character_container
+{
+  JPH::Ref< JPH::Character >                               jph_character_class;
+} crude_physics_character_container;
 
 typedef struct crude_physics_creation
 {
   crude_collisions_resources_manager                      *collision_manager;
-  crude_heap_allocator                                    *allocator;
+  crude_heap_allocator                                    *physics_allocator;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
-  ecs_query_t                                             *character_body_handle_query;
-  ecs_query_t                                             *static_body_handle_query;
+  /* Context */
   crude_collisions_resources_manager                      *collision_manager;
-  bool                                                     simulation_enabled;
 
-  crude_heap_allocator                                    *allocator;
-  crude_allocator_container                                allocator_container;
+  crude_heap_allocator                                    *physics_allocator;
+  crude_allocator_container                                physics_allocator_container;
   
+  /* Commonm */
+  crude_resource_pool                                      characters_resource_pool;
+  bool                                                     simulation_enabled;                                             
+    
+  /* JPH */
   JPH::PhysicsSystem                                      *jph_physics_system_class;
   JPH::TempAllocatorImpl                                  *jph_temporary_allocator_class;
   JPH::JobSystemThreadPool                                *jph_job_system_class;
-  _crude_jph_bp_layer_interface_class                         *jph_broad_phase_layer_interface_class;
-  _crude_jph_object_vs_broad_phase_layer_filter               *jph_object_vs_broadphase_layer_filter_class;
-  _crude_jph_object_layer_pair_filter_class                   *jph_object_vs_object_layer_filter_class;
-  _crude_jph_body_activation_listener_class                   *jph_body_activation_listener_class;
-  _crude_jph_contact_listener_class                           *jph_contact_listener_class;
+  _crude_jph_bp_layer_interface_class                     *jph_broad_phase_layer_interface_class;
+  _crude_jph_object_vs_broad_phase_layer_filter           *jph_object_vs_broadphase_layer_filter_class;
+  _crude_jph_object_layer_pair_filter_class               *jph_object_vs_object_layer_filter_class;
+  _crude_jph_body_activation_listener_class               *jph_body_activation_listener_class;
+  _crude_jph_contact_listener_class                       *jph_contact_listener_class;
   JPH::Body                                               *jph_floor_class;
   JPH::BodyID                                              jph_sphere_id_class;
+
 } crude_physics;
 
 CRUDE_API void
@@ -190,23 +215,32 @@ CRUDE_API void
 crude_physics_enable_simulation
 (
   _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
   _In_ bool                                                enable
 );
 
-CRUDE_API void
-crude_physics_enable_reset_velocity
+CRUDE_API crude_physics_character_creation
+crude_physics_character_creation_empty
 (
-  _In_ crude_physics                                      *physics,
-  _In_ crude_ecs                                          *world
 );
 
-CRUDE_API bool
-crude_physics_cast_ray
+CRUDE_API crude_physics_character_handle
+crude_physics_create_character
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_ecs                                          *world,
-  _In_ XMVECTOR                                            ray_origin,
-  _In_ XMVECTOR                                            ray_direction,
-  _In_ uint32                                              mask,
-  _Out_opt_ crude_physics_raycast_result                  *result
+  _In_ crude_physics_character_creation const             *creation
+);
+
+CRUDE_API crude_physics_character_container*
+crude_physics_access_character
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_character_handle                      handle
+);
+
+CRUDE_API void
+crude_physics_destroy_character_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_character_handle                      handle
 );

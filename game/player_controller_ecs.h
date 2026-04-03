@@ -3,6 +3,7 @@
 #include <engine/core/ecs.h>
 #include <engine/platform/platform.h>
 #include <engine/scene/components_serialization.h>
+#include <engine/physics/physics.h>
 
 /**********************************************************
  *
@@ -33,6 +34,8 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_player_controll
 typedef struct crude_player_controller_system_context
 {
   crude_input const                                       *input;
+  crude_heap_allocator                                    *player_controller_allocator;
+  crude_allocator_container                                player_controller_allocator_container;
 } crude_player_controller_system_context;
 
 CRUDE_API void

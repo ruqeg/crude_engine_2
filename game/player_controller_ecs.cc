@@ -62,6 +62,34 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
  *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_update_system_ );
 
+static void
+crude_player_controller_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+void
+crude_player_controller_system_import
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_components_serialization_manager             *manager,
+  _In_ crude_player_controller_system_context             *ctx
+)
+{
+  CRUDE_ECS_MODULE( world, crude_player_controller_system );
+  
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_player_controller );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_player_controller );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_player_controller );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player_controller );
+
+  crude_scene_components_import( world, manager );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, crude_ecs_on_game_update, ctx, {
+    { .id = ecs_id( crude_player_controller ) },
+  } );
+}
+
 void
 crude_player_controller_update_system_
 (
@@ -212,26 +240,4 @@ crude_player_controller_update_system_
     player_model->model_renderer_resources_instance.animation_instance.loop = true;
   }
   CRUDE_PROFILER_ZONE_END;
-}
-
-void
-crude_player_controller_system_import
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_components_serialization_manager             *manager,
-  _In_ crude_player_controller_system_context             *ctx
-)
-{
-  CRUDE_ECS_MODULE( world, crude_player_controller_system );
-  
-  CRUDE_ECS_COMPONENT_DEFINE( world, crude_player_controller );
-  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_player_controller );
-  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_player_controller );
-  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player_controller );
-
-  crude_scene_components_import( world, manager );
-
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, crude_ecs_on_game_update, ctx, {
-    { .id = ecs_id( crude_player_controller ) },
-  } );
 }

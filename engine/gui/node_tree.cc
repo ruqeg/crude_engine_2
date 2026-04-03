@@ -8,7 +8,7 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "GLTF",
   "Camera",
   "Node External",
-  "Character Body",
+  "Physics Character",
   "Static Body"
 };
 
@@ -153,20 +153,19 @@ crude_gui_node_tree_queue_draw
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
-          case CRUDE_GUI_NODE_TYPE_CHARACTER_BODY:
+          case CRUDE_GUI_NODE_TYPE_PHYSICS_CHARACTER:
           {
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_character_body, { crude_physics_character_body_empty( ) } );
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_collision_shape, { crude_physics_collision_shape_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_character, { crude_physics_character_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
-          case CRUDE_GUI_NODE_TYPE_STATIC_BODY:
-          {
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_static_body, { crude_physics_static_body_empty( ) } );
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_collision_shape, { crude_physics_collision_shape_empty( ) } );
-            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
-            break;
-          }
+          //case CRUDE_GUI_NODE_TYPE_STATIC_BODY:
+          //{
+          //  CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_static_body, { crude_physics_static_body_empty( ) } );
+          //  CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_collision_shape, { crude_physics_collision_shape_empty( ) } );
+          //  CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+          //  break;
+          //}
           }
           node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
           *selected_node = new_node;

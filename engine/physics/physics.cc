@@ -13,6 +13,59 @@
 
 JPH_SUPPRESS_WARNINGS
 
+crude_heap_allocator                                      *g_physics_heap_allocator_;
+
+static void*
+crude_physics_jph_allocate_implementation
+(
+  _In_ size_t                                              size
+)
+{
+  JPH_ASSERT( size > 0 );
+  return crude_heap_allocator_allocate_align( g_physics_heap_allocator_, size, 16 );
+}
+
+static void*
+crude_physics_jph_reallocate_implementation
+(
+  _In_ void                                               *block,
+  _In_ [[maybe_unused]] size_t                             old_size,
+  _In_ size_t                                              new_size
+)
+{
+  JPH_ASSERT( new_size > 0 );
+  return crude_heap_allocator_reallocate( g_physics_heap_allocator_, block, new_size );
+}
+
+static void
+crude_physics_jph_free_implementation
+(
+  _In_ void                                               *block
+)
+{
+  crude_heap_allocator_deallocate( g_physics_heap_allocator_, block );
+}
+
+static void*
+crude_physics_jph_aligned_allocate_implementation
+(
+  _In_ size_t                                              size,
+  _In_ size_t                                              alignment
+)
+{
+  JPH_ASSERT( size > 0 && alignment > 0 );
+  return crude_heap_allocator_allocate_align( g_physics_heap_allocator_, size, alignment );
+}
+
+static void
+crude_physics_jph_aligned_free_implementation
+(
+  _In_ void                                               *block
+)
+{
+  crude_heap_allocator_deallocate( g_physics_heap_allocator_, block );
+}
+
 #if defined(JPH_ENABLE_ASSERTS)
 
 static void
@@ -219,28 +272,38 @@ crude_physics_initialize
 
   ecs_query_desc_t                                         query_desc;
 
-  physics->allocator = creation->allocator;
-  physics->allocator_container = crude_heap_allocator_pack( creation->allocator );
+  physics->physics_allocator = creation->physics_allocator;
+  physics->physics_allocator_container = crude_heap_allocator_pack( creation->physics_allocator );
 
-  JPH::RegisterDefaultAllocator( );
+  physics->simulation_enabled = true;
 
+  crude_resource_pool_initialize( &physics->characters_resource_pool, physics->physics_allocator_container, 16, sizeof( crude_physics_character_container ) );
+
+  g_physics_heap_allocator_ = creation->physics_allocator;
+  JPH::Allocate = crude_physics_jph_allocate_implementation;
+  JPH::Reallocate = crude_physics_jph_reallocate_implementation;
+  JPH::Free = crude_physics_jph_free_implementation;
+  JPH::AlignedAllocate = crude_physics_jph_aligned_allocate_implementation;
+  JPH::AlignedFree = crude_physics_jph_aligned_free_implementation;
+  
   JPH::Trace = crude_physics_jolt_trace_impl_;
+
   JPH_IF_ENABLE_ASSERTS( JPH::AssertFailed = crude_physics_jolt_assert_failed_impl_ ;);
 
   JPH::Factory::sInstance = new JPH::Factory( );
 
   JPH::RegisterTypes( );
   
-  physics->jph_temporary_allocator_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, JPH::TempAllocatorImpl, 10 * 1024 * 1024 );
-  physics->jph_job_system_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, JPH::JobSystemThreadPool, JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 1u );
-  physics->jph_physics_system_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, JPH::PhysicsSystem );
+  physics->jph_temporary_allocator_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::TempAllocatorImpl( 10 * 1024 * 1024 );
+  physics->jph_job_system_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::JobSystemThreadPool( JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 1u );
+  physics->jph_physics_system_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::PhysicsSystem( );
 
-  physics->jph_broad_phase_layer_interface_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, _crude_jph_bp_layer_interface_class );
-  physics->jph_object_vs_broadphase_layer_filter_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, _crude_jph_object_vs_broad_phase_layer_filter );
-  physics->jph_object_vs_object_layer_filter_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, _crude_jph_object_layer_pair_filter_class );
+  physics->jph_broad_phase_layer_interface_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_bp_layer_interface_class );
+  physics->jph_object_vs_broadphase_layer_filter_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_object_vs_broad_phase_layer_filter );
+  physics->jph_object_vs_object_layer_filter_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_object_layer_pair_filter_class );
   
-  physics->jph_body_activation_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, _crude_jph_body_activation_listener_class );
-  physics->jph_contact_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->allocator_container, _crude_jph_contact_listener_class );
+  physics->jph_body_activation_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_body_activation_listener_class );
+  physics->jph_contact_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_contact_listener_class );
 
   physics->jph_physics_system_class->Init(
     CRUDE_PHYSICS_JOLT_MAX_BODIES, CRUDE_PHYSICS_JOLT_NUM_BODIES_MUTEXES, CRUDE_PHYSICS_JOLT_MAX_BODIES_PAIRS, CRUDE_PHYSICS_JOLT_MAX_CONTACT_CONSTRAINTS,
@@ -264,7 +327,7 @@ crude_physics_initialize
   
   jph_body_interface_class->AddBody( physics->jph_floor_class->GetID( ), JPH::EActivation::DontActivate );
   
-  jph_sphere_settings_class = CRUDE_COMPOUNT( JPH::BodyCreationSettings, { new JPH::SphereShape(0.5f), JPH::RVec3(0.0, 2.0, 0.0), JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, g_crude_jph_layer_moving } );
+  jph_sphere_settings_class = CRUDE_COMPOUNT( JPH::BodyCreationSettings, { CRUDE_JOLT_OVERRIDEN_NEW JPH::SphereShape( 0.5f ), JPH::RVec3( 0.0, 2.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Dynamic, g_crude_jph_layer_moving } );
   physics->jph_sphere_id_class = jph_body_interface_class->CreateAndAddBody( jph_sphere_settings_class, JPH::EActivation::Activate );
   
   jph_body_interface_class->SetLinearVelocity( physics->jph_sphere_id_class, JPH::Vec3( 0.0f, -5.0f, 0.0f ) );
@@ -272,19 +335,6 @@ crude_physics_initialize
   physics->jph_physics_system_class->OptimizeBroadPhase( );
 
   physics->collision_manager = creation->collision_manager;
-  physics->simulation_enabled = false;
-  
-  query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
-  query_desc.terms[ 0 ].id = ecs_id( crude_physics_static_body );
-  query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
-  query_desc.terms[ 2 ].id = ecs_id( crude_transform );
-  physics->static_body_handle_query = crude_ecs_query_create( world, &query_desc );
-  
-  query_desc = CRUDE_COMPOUNT_EMPTY( ecs_query_desc_t );
-  query_desc.terms[ 0 ].id = ecs_id( crude_physics_character_body );
-  query_desc.terms[ 1 ].id = ecs_id( crude_physics_collision_shape );
-  query_desc.terms[ 2 ].id = ecs_id( crude_transform );
-  physics->character_body_handle_query = crude_ecs_query_create( world, &query_desc );
 }
 
 void
@@ -308,16 +358,17 @@ crude_physics_deinitialize
   delete JPH::Factory::sInstance;
   JPH::Factory::sInstance = nullptr;
   
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_temporary_allocator_class, TempAllocatorImpl );
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_job_system_class, JobSystemThreadPool );
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_physics_system_class, PhysicsSystem );
+  CRUDE_JOLT_OVERRIDEN_FREE physics->jph_temporary_allocator_class;
+  CRUDE_JOLT_OVERRIDEN_FREE physics->jph_job_system_class;
+  CRUDE_JOLT_OVERRIDEN_FREE physics->jph_physics_system_class;
 
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_broad_phase_layer_interface_class, _crude_jph_bp_layer_interface_class );
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_object_vs_broadphase_layer_filter_class, _crude_jph_object_vs_broad_phase_layer_filter );
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_object_vs_object_layer_filter_class, _crude_jph_object_layer_pair_filter_class );
+  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_broad_phase_layer_interface_class, _crude_jph_bp_layer_interface_class );
+  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_object_vs_broadphase_layer_filter_class, _crude_jph_object_vs_broad_phase_layer_filter );
+  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_object_vs_object_layer_filter_class, _crude_jph_object_layer_pair_filter_class );
+  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_body_activation_listener_class, _crude_jph_body_activation_listener_class );
+  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_contact_listener_class, _crude_jph_contact_listener_class );
   
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_body_activation_listener_class, _crude_jph_body_activation_listener_class );
-  CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->allocator_container, physics->jph_contact_listener_class, _crude_jph_contact_listener_class );
+  crude_resource_pool_deinitialize( &physics->characters_resource_pool );
 }
 
 void
@@ -333,130 +384,92 @@ void
 crude_physics_enable_simulation
 (
   _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
   _In_ bool                                                enable
 )
 {
   physics->simulation_enabled = enable;
+  crude_entity_enable( world, crude_ecs_on_pre_physics_update, enable );
+  crude_entity_enable( world, crude_ecs_on_post_physics_update, enable );
 }
 
-void
-crude_physics_enable_reset_velocity
+crude_physics_character_creation
+crude_physics_character_creation_empty
 (
-  _In_ crude_physics                                      *physics,
-  _In_ crude_ecs                                          *world
 )
 {
-  ecs_iter_t                                               character_body_handle_it;
-
-  character_body_handle_it = ecs_query_iter( world, physics->character_body_handle_query );
-  while ( ecs_query_next( &character_body_handle_it ) )
-  {
-    crude_physics_character_body                          *character_body_per_entity;
-    crude_physics_collision_shape                         *collision_shape_per_entity;
-    crude_transform                                       *transform_per_entity;
-
-    character_body_per_entity = ecs_field( &character_body_handle_it, crude_physics_character_body, 0 );
-    collision_shape_per_entity = ecs_field( &character_body_handle_it, crude_physics_collision_shape, 1 );
-    transform_per_entity = ecs_field( &character_body_handle_it, crude_transform, 2 );
-
-    for ( uint32 i = 0; i < character_body_handle_it.count; ++i )
-    {
-      XMStoreFloat3( &character_body_per_entity[ i ].velocity, XMVectorZero( ) );
-      character_body_per_entity[ i ].on_floor = false;
-    }
-  }
+  crude_physics_character_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_character_creation );
+  return creation;
 }
 
-bool
-crude_physics_cast_ray
+crude_physics_character_handle
+crude_physics_create_character
 (
   _In_ crude_physics                                      *physics,
-  _In_ crude_ecs                                          *world,
-  _In_ XMVECTOR                                            ray_origin,
-  _In_ XMVECTOR                                            ray_direction,
-  _In_ uint32                                              mask,
-  _Out_opt_ crude_physics_raycast_result                  *result
+  _In_ crude_physics_character_creation const             *creation
 )
 {
-  ecs_iter_t                                               static_body_it;
-  float32                                                  nearest_t;
+  crude_physics_character_container                       *character_container;
+  crude_physics_character_handle                           handle;
+  JPH::Ref< JPH::CharacterSettings >                       jph_settings_class;
+  JPH::RefConst< JPH::Shape >                              jph_standing_shape;
+    
+  jph_standing_shape = JPH::RotatedTranslatedShapeSettings(
+    JPH::Vec3( 0, 0.5f * creation->character_height_standing + creation->character_radius_standing, 0 ),
+    JPH::Quat::sIdentity( ),
+    CRUDE_JOLT_OVERRIDEN_NEW JPH::CapsuleShape( 0.5f * creation->character_height_standing, creation->character_radius_standing )
+  ).Create( ).Get( );
+    
+  jph_settings_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::CharacterSettings( );
+  jph_settings_class->mMaxSlopeAngle = creation->max_slop_angle;
+  jph_settings_class->mLayer = g_crude_jph_layer_moving;
+  jph_settings_class->mShape = jph_standing_shape;
+  jph_settings_class->mFriction = creation->friction;
+  jph_settings_class->mSupportingVolume = JPH::Plane( JPH::Vec3::sAxisY( ), -creation->character_radius_standing );
+    
+  handle.index = crude_resource_pool_obtain_resource( &physics->characters_resource_pool );
 
-  nearest_t = FLT_MAX;
+  character_container = crude_physics_access_character( physics, handle );
+  CRUDE_CXX_CONSTRUCTOR( &character_container->jph_character_class, JPH::Ref< JPH::Character > );
 
-  static_body_it = ecs_query_iter( world, physics->static_body_handle_query );
-  while ( ecs_query_next( &static_body_it ) )
-  {
-    crude_physics_collision_shape                         *second_collision_shape_per_entity;
-    crude_transform                                       *second_transform_per_entity;
-    crude_physics_static_body                             *second_body_handle_per_entity;
+  character_container->jph_character_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::Character(
+    jph_settings_class,
+    JPH::RVec3::sZero( ),
+    JPH::Quat::sIdentity( ),
+    0,
+    physics->jph_physics_system_class );
 
-    second_body_handle_per_entity = ecs_field( &static_body_it, crude_physics_static_body, 0 );
-    second_collision_shape_per_entity = ecs_field( &static_body_it, crude_physics_collision_shape, 1 );
-    second_transform_per_entity = ecs_field( &static_body_it, crude_transform, 2 );
+  character_container->jph_character_class->AddToPhysicsSystem( JPH::EActivation::Activate );
 
-    for ( uint32 static_body_index = 0; static_body_index < static_body_it.count; ++static_body_index )
-    {
-      crude_physics_collision_shape                       *second_collision_shape;
-      crude_transform                                     *second_transform;
-      crude_physics_static_body                           *second_body;
-      crude_entity                                         static_body_node;
-      XMMATRIX                                             second_transform_mesh_to_world;
-      XMVECTOR                                             second_translation;
-      crude_raycast_result                                 current_result;
-      bool                                                 intersected;
-      
-      second_collision_shape = &second_collision_shape_per_entity[ static_body_index ];
-      second_transform = &second_transform_per_entity[ static_body_index ];
-      second_body = &second_body_handle_per_entity[ static_body_index ];
-
-      static_body_node = crude_entity_from_iterator( &static_body_it, static_body_index );
-  
-      if ( !second_body->enabeld )
-      {
-        continue;
-      }
-
-      if ( !( mask & second_body->layer ) )
-      {
-        continue;
-      }
-  
-      second_collision_shape = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, static_body_node, crude_physics_collision_shape );
-      second_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, static_body_node, crude_transform );
-      second_transform_mesh_to_world = crude_transform_node_to_world( world, static_body_node, second_transform );
-      second_translation = second_transform_mesh_to_world.r[ 3 ];
-  
-      if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_BOX )
-      {
-        XMVECTOR second_box_half_extent = XMLoadFloat3( &second_collision_shape->box.half_extent );
-        intersected = crude_raycast_obb( ray_origin, ray_direction, second_translation, second_box_half_extent, second_transform_mesh_to_world, &current_result );
-      }
-      else if ( second_collision_shape->type == CRUDE_PHYSICS_COLLISION_SHAPE_TYPE_MESH )
-      {
-        crude_octree *octree = crude_collisions_resources_manager_access_octree( physics->collision_manager, second_collision_shape->mesh.octree_handle );
-        intersected = crude_octree_cast_ray( octree, ray_origin, ray_direction, &current_result );
-      }
-      else
-      {
-        CRUDE_ASSERT( false );
-      }
-        
-      if ( intersected && current_result.t < nearest_t )
-      {
-        nearest_t = current_result.t;
-        if ( result )
-        {
-          result->raycast_result = current_result;
-          result->node = static_body_node;
-          result->body_layer = second_body->layer;
-        }
-      }
-    }
-  }
-
-  return nearest_t != FLT_MAX;
+  return handle;
 }
 
+crude_physics_character_container*
+crude_physics_access_character
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_character_handle                      handle
+)
+{
+  return CRUDE_CAST( crude_physics_character_container*, crude_resource_pool_access_resource( &physics->characters_resource_pool, handle.index ) );
+}
+
+CRUDE_API void
+crude_physics_destroy_character_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_character_handle                      handle
+)
+{
+  crude_physics_character_container                       *character_container;
+
+  character_container = crude_physics_access_character( physics, handle );
+
+  character_container->jph_character_class->RemoveFromPhysicsSystem( );
+  character_container->jph_character_class.~Ref( );
+
+  crude_resource_pool_release_resource( &physics->characters_resource_pool, handle.index );
+}
 
 #if defined(JPH_ENABLE_ASSERTS)
 

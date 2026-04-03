@@ -1,5 +1,7 @@
 #pragma once
 
+#include <threads.h>
+
 #include <engine/core/alias.h>
 
 #define CRUDE_RKILO( size ) ( size * 1024u )
@@ -236,3 +238,4 @@ crude_allocator_container_get_type
 
 #define CRUDE_ALLOCATE_AND_CONSTRUCT( allocator_container, type, ... ) new ( CRUDE_ALLOCATE( allocator_container, sizeof( type ) ) ) type( ##__VA_ARGS__ )
 #define CRUDE_DEALLOCATE_AND_DECONSTRUCT( allocator_container, v, type ) { ( v )->~type( ); CRUDE_DEALLOCATE( allocator_container, v ); }
+#define CRUDE_CXX_ALLOCATE_AND_CONSTRUCT( type, ... ) new type( ##__VA_ARGS__ )

@@ -38,4 +38,9 @@ crude_gui_debug_queue_draw
   {
     ImGui::Checkbox( "Disable Shadows Pass", &debug->engine->scene_renderer.pointlight_shadow_pass.enabled );
   }
+
+  if ( ImGui::Checkbox( "Enable Simulation", &debug->engine->physics.simulation_enabled ) )
+  {
+    crude_physics_enable_simulation( &debug->engine->physics, debug->engine->world, debug->engine->physics.simulation_enabled );
+  }
 }

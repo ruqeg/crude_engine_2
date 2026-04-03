@@ -46,7 +46,7 @@ crude_resource_pool_deinitialize
   
     for ( uint32 i = 0; i < resource_pool->free_indices_head; ++i )
     {
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tResource %u", resource_pool->free_indices[i] );
+      CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tResource %u", resource_pool->free_indices[ i ] );
     }
   }
 
