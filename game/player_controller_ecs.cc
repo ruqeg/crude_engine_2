@@ -117,7 +117,7 @@ crude_player_controller_update_system_
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
     crude_entity                                           entity;  
-    crude_entity                                           player_world_transform_entity;
+    crude_entity                                           player_character_entity;
     crude_entity                                           player_model_entity;
     crude_entity                                           pivot_pitch_entity;
     crude_entity                                           pivot_yaw_entity;
@@ -129,9 +129,9 @@ crude_player_controller_update_system_
 
     player_controller = &player_controller_per_entity[ i ];
     
-    player_world_transform_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "world_transform" );
-    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_world_transform_entity, "model" );
-    pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_world_transform_entity, "pivot_yaw" );
+    player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
+    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "model" );
+    pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
     player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
 
@@ -186,7 +186,7 @@ crude_player_controller_update_system_
         crude_transform                                   *player_world_transform;
         crude_transform                                   *player_camera_transform;
         XMMATRIX                                           player_camera_to_world;
-        XMVECTOR                                           player_world_translation;
+        XMVECTOR                                           player_translation, player_scale, player_rotation;
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
         XMFLOAT3                                           move_direction;
         float32                                            move_speed;
@@ -198,7 +198,7 @@ crude_player_controller_update_system_
         player_camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_transform );
         player_camera_to_world = crude_transform_node_to_world( it->world, player_camera_entity, player_camera_transform );
 
-        player_world_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_world_transform_entity, crude_transform );
+        player_world_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_character_entity, crude_transform );
       
         player_camera_basis_right = XMVector3Normalize( player_camera_to_world.r[ 0 ] );
         player_camera_basis_up = XMVector3Normalize( player_camera_to_world.r[ 1 ] );
@@ -211,22 +211,24 @@ crude_player_controller_update_system_
         //  moving_speed = moving_speed * 2.f;
         //}
         
-        player_world_translation = XMLoadFloat3( &player_world_transform->translation );
+        XMMatrixDecompose( &player_scale, &player_rotation, &player_translation, player_camera_to_world );
+
+        player_translation = XMLoadFloat3( &player_world_transform->translation );
 
         if ( move_direction.x != 0.f )
         {
-          player_world_translation = XMVectorAdd( player_world_translation, XMVectorScale( player_camera_basis_right, move_speed * move_direction.x * it->delta_time ) );
+          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_right, move_speed * move_direction.x * it->delta_time ) );
         }
         if ( move_direction.y != 0.f )
         {
-          player_world_translation = XMVectorAdd( player_world_translation, XMVectorScale( player_camera_basis_up, move_speed * move_direction.y * it->delta_time ) );
+          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_up, move_speed * move_direction.y * it->delta_time ) );
         }
         if ( move_direction.z != 0.f )
         {
-          player_world_translation = XMVectorAdd( player_world_translation, XMVectorScale( player_camera_basis_forward, move_speed * move_direction.z * it->delta_time ) );
+          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_forward, move_speed * move_direction.z * it->delta_time ) );
         }
 
-        XMStoreFloat3( &player_world_transform->translation, player_world_translation );
+        XMStoreFloat3( &player_world_transform->translation, player_translation );
       }
     }
     

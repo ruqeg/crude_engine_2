@@ -12,7 +12,7 @@
 			"name":	"player_spawnpoint",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[0, 25.801250457763672, 69.112335205078125],
+					"translation":	[0, 36.9733657836914, 69.112335205078125],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}],
@@ -33,6 +33,21 @@
 				}, {
 					"type":	"crude_gltf",
 					"path":	"game\\rb9\\dev\\blackout\\fb_zn0.gltf"
+				}],
+			"children":	[]
+		}, {
+			"name":	"static_body",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-15.094099044799805, 15.827493667602539, 11.206014633178711],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_static_body",
+					"shape_type":	0,
+					"box":	{
+						"extent":	[151.5, 1, 138.5]
+					}
 				}],
 			"children":	[]
 		}]

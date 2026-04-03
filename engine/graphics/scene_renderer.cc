@@ -153,6 +153,12 @@ crude_gfx_scene_renderer_initialize
       scene_renderer->model_renderer_resources_manager,
       crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf", NULL ) );
     scene_renderer->capsule_model_renderer_resources_instance.cast_shadow = false;
+    
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->physics_box_collision_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL ) );
+    scene_renderer->physics_box_collision_model_renderer_resources_instance.cast_shadow = false;
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -253,6 +259,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->capsule_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->physics_box_collision_model_renderer_resources_instance );
 }
 
 bool
@@ -274,6 +281,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
   scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
   scene_renderer->capsule_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf", NULL );
+  scene_renderer->physics_box_collision_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
@@ -773,9 +781,21 @@ crude_scene_renderer_register_nodes_instances_
 
     character = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character );
   
-    model_to_custom_model = XMMatrixScaling( 2.f * character->character_radius_standing, character->character_height_standing, 2.f * character->character_radius_standing );
+    model_to_custom_model = XMMatrixTranslation( 0.f, character->height, 0.f );
+    model_to_custom_model = XMMatrixMultiply( XMMatrixScaling( 2.f * character->radius, character->height, 2.f * character->radius ), model_to_custom_model );
     XMStoreFloat4x4( &scene_renderer->capsule_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
     CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->capsule_model_renderer_resources_instance );
+  }
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_static_body ) )
+  {
+    crude_physics_static_body                             *static_body;
+
+    static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body );
+  
+    model_to_custom_model = XMMatrixScaling( static_body->box.extent.x, static_body->box.extent.y, static_body->box.extent.z );
+    XMStoreFloat4x4( &scene_renderer->physics_box_collision_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->physics_box_collision_model_renderer_resources_instance );
   }
   
   *model_initialized |= local_model_initialized;

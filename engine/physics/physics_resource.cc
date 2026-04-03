@@ -9,11 +9,24 @@ crude_physics_character_empty
 )
 {
   crude_physics_character character = CRUDE_COMPOUNT_EMPTY( crude_physics_character );
-  character.character_height_standing = 1.35 ;
-  character.character_radius_standing = 0.3;
-  character.friction = 0.5;
+  character.height = 1.35f;
+  character.radius = 0.3f;
+  character.friction = 0.5f;
   character.max_slop_angle = XM_PIDIV4;
   return character;
+}
+
+crude_physics_static_body
+crude_physics_static_body_empty
+(
+)
+{
+  crude_physics_static_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body );
+  body.type = CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX;
+  body.box.extent.x = 1.f;
+  body.box.extent.y = 1.f;
+  body.box.extent.z = 1.f;
+  return body;
 }
 
 void

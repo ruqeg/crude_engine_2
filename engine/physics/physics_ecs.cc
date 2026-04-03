@@ -16,9 +16,14 @@
  *********************************************************/
 ECS_COMPONENT_DECLARE( crude_physics_character );
 ECS_COMPONENT_DECLARE( crude_physics_character_handle );
+ECS_COMPONENT_DECLARE( crude_physics_static_body );
+ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character, "crude_physics_character" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character_handle, "crude_physics_character_handle" );
+
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body, "crude_physics_static_body" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_static_body_handle, "crude_physics_static_body_handle" );
 
 void
 crude_physics_components_import
@@ -30,16 +35,22 @@ crude_physics_components_import
   CRUDE_ECS_MODULE( world, crude_physics_components );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_character_handle );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_physics_static_body_handle );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_character );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_character );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_handle );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_static_body );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_static_body_handle );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character )
 {
-  component->character_height_standing = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "character_height_standing" ) );
-  component->character_radius_standing = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "character_radius_standing" ) );
+  component->height = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "height" ) );
+  component->radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
   component->friction = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "friction" ) );
   component->max_slop_angle = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_slop_angle" ) );
   return true;
@@ -49,8 +60,8 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character )
 {
   cJSON *static_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_character ) ) );
-  cJSON_AddItemToObject( static_body_json, "character_height_standing", cJSON_CreateNumber( component->character_height_standing ) );
-  cJSON_AddItemToObject( static_body_json, "character_radius_standing", cJSON_CreateNumber( component->character_radius_standing ) );
+  cJSON_AddItemToObject( static_body_json, "height", cJSON_CreateNumber( component->height ) );
+  cJSON_AddItemToObject( static_body_json, "radius", cJSON_CreateNumber( component->radius ) );
   cJSON_AddItemToObject( static_body_json, "friction", cJSON_CreateNumber( component->friction ) );
   cJSON_AddItemToObject( static_body_json, "max_slop_angle", cJSON_CreateNumber( component->max_slop_angle ) );
   return static_body_json;
@@ -58,6 +69,24 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character )
 {
+  bool                                                     modified;
+
+  CRUDE_IMGUI_START_OPTIONS;
+  
+  modified = false;
+
+  CRUDE_IMGUI_OPTION( "Character Height", {
+    modified |= ImGui::DragFloat( "##Character Height", &component->height, 0.1f );  
+    } );
+
+  CRUDE_IMGUI_OPTION( "Character Radius", {
+    modified |= ImGui::DragFloat( "##Character Radius", &component->radius, 0.1f );  
+    } );
+
+  if ( modified )
+  {
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_character, { *component } );
+  }
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_handle )
@@ -76,6 +105,80 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_hand
   ImGui::LabelText( "Velocity", "%f %f %f", jph_velocity.GetX( ), jph_velocity.GetY( ), jph_velocity.GetZ( ) );
 }
 
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
+{
+  component->type = CRUDE_CAST( crude_physics_static_body_shape_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
+  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  {
+    cJSON *box_json = cJSON_GetObjectItem( component_json, "box" );
+    crude_parse_json_to_float3( &component->box.extent, cJSON_GetObjectItemCaseSensitive( box_json, "extent" ) );
+  }
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
+{
+  cJSON *static_body_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) );
+  cJSON_AddItemToObject( static_body_json, "shape_type",cJSON_CreateNumber( component->type ) );
+  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  {
+    cJSON *box_json = cJSON_CreateObject( );
+    
+    cJSON_AddItemToObject( box_json, "extent", cJSON_CreateFloatArray( &component->box.extent.x, 3 ) );
+    cJSON_AddItemToObject( static_body_json, "box", box_json );
+  }
+  return static_body_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
+{
+  bool                                                     modified;
+
+  CRUDE_IMGUI_START_OPTIONS;
+  
+  char const* physic_static_body_types[ ] =
+  {
+    "Box"
+  };
+
+  modified = false;
+
+  CRUDE_IMGUI_OPTION( "Type", {
+    int32 type = component->type;
+    modified |= ImGui::Combo( "##Shape", &type, physic_static_body_types, CRUDE_COUNTOF( physic_static_body_types ) ); 
+    component->type = CRUDE_CAST( crude_physics_static_body_shape_type, type );
+    } );
+
+  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  {
+    CRUDE_IMGUI_OPTION( "Box Extent", {
+      modified |= ImGui::DragFloat3( "##Box Extent", &component->box.extent.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );  
+      } );
+  }
+
+  if ( modified )
+  {
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_physics_static_body, { *component } );
+  }
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body_handle )
+{
+  crude_physics_static_body_container                     *static_body_container;
+  JPH::BodyInterface                                      *jph_body_interface_class;
+  JPH::RMat44                                              jph_wolrd_transform;
+
+  static_body_container = crude_physics_access_static_body( manager->physics_manager, *component );
+
+  jph_body_interface_class = &manager->physics_manager->jph_physics_system_class->GetBodyInterface( );  
+  jph_wolrd_transform = jph_body_interface_class->GetWorldTransform( static_body_container->jph_body_class );
+
+  ImGui::LabelText( "World Transform", "%f %f %f", jph_wolrd_transform.GetTranslation( ).GetX( ), jph_wolrd_transform.GetTranslation( ).GetY( ), jph_wolrd_transform.GetTranslation( ).GetZ( ) );
+  ImGui::LabelText( "World Rotation", "%f %f %f %f", jph_wolrd_transform.GetQuaternion( ).GetX( ), jph_wolrd_transform.GetQuaternion( ).GetY( ), jph_wolrd_transform.GetQuaternion( ).GetZ( ), jph_wolrd_transform.GetQuaternion( ).GetW( ) );
+}
+
 /**********************************************************
  *
  *                 Systems
@@ -85,8 +188,11 @@ CRUDE_ECS_SYSTEM_DECLARE( crude_physics_system );
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_character_pre_simulation_system_ );
 CRUDE_ECS_SYSTEM_DECLARE( crude_physics_character_post_simulation_system_ );
-CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_destroy_observer_  );
-CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_create_observer_  );
+CRUDE_ECS_SYSTEM_DECLARE( crude_physics_static_body_post_simulation_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_destroy_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_character_create_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_destroy_observer_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_physics_static_body_create_observer_ );
 
 static void
 crude_physics_character_create_observer_
@@ -101,6 +207,18 @@ crude_physics_character_destroy_observer_
 );
 
 static void
+crude_physics_static_body_create_observer_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
+crude_physics_static_body_destroy_observer_ 
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
 crude_physics_character_pre_simulation_system_
 (
   _In_ ecs_iter_t                                         *it
@@ -108,6 +226,12 @@ crude_physics_character_pre_simulation_system_
 
 static void
 crude_physics_character_post_simulation_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+static void
+crude_physics_static_body_post_simulation_system_
 (
   _In_ ecs_iter_t                                         *it
 );
@@ -129,6 +253,14 @@ crude_physics_system_import
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_character_destroy_observer_, EcsOnRemove, ctx, { 
     { .id = ecs_id( crude_physics_character ), .oper = EcsAnd }
   } );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_create_observer_, EcsOnSet, ctx, { 
+    { .id = ecs_id( crude_physics_static_body ), .oper = EcsAnd }
+  } );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_static_body_destroy_observer_, EcsOnRemove, ctx, { 
+    { .id = ecs_id( crude_physics_static_body ), .oper = EcsAnd }
+  } );
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_character_pre_simulation_system_, crude_ecs_on_pre_physics_update, ctx, { 
     { .id = ecs_id( crude_physics_character_handle ) },
@@ -137,6 +269,11 @@ crude_physics_system_import
 
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_character_post_simulation_system_, crude_ecs_on_post_physics_update, ctx, { 
     { .id = ecs_id( crude_physics_character_handle ) },
+    { .id = ecs_id( crude_transform ) }
+  } );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_static_body_post_simulation_system_, crude_ecs_on_post_physics_update, ctx, { 
+    { .id = ecs_id( crude_physics_static_body_handle ) },
     { .id = ecs_id( crude_transform ) }
   } );
 }
@@ -159,26 +296,23 @@ crude_physics_character_create_observer_
   {
     crude_physics_character                               *character;
     crude_physics_character_handle                         character_handle;
+    crude_physics_character_creation                       character_creation;
     
     character = &character_per_entity[ i ];
 
     if ( CRUDE_ENTITY_HAS_COMPONENT( it->world, it->entities[ i ], crude_physics_character_handle ) )
     {
-      // !TODO
+      crude_physics_destroy_character_instant( ctx->physics, *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, it->entities[ i ], crude_physics_character_handle ) );
     }
-    else
-    {
-      crude_physics_character_creation                     character_creation;
-      
-      character_creation = crude_physics_character_creation_empty( );
-      character_creation.character_height_standing = character->character_height_standing;
-      character_creation.character_radius_standing = character->character_radius_standing;
-      character_creation.friction = character->friction;
-      character_creation.max_slop_angle = character->max_slop_angle;
+    
+    character_creation = crude_physics_character_creation_empty( );
+    character_creation.character_height_standing = character->height;
+    character_creation.character_radius_standing = character->radius;
+    character_creation.friction = character->friction;
+    character_creation.max_slop_angle = character->max_slop_angle;
 
-      character_handle = crude_physics_create_character( ctx->physics, &character_creation );
-      CRUDE_ENTITY_SET_COMPONENT( it->world, it->entities[ i ], crude_physics_character_handle, { character_handle } );
-    }
+    character_handle = crude_physics_create_character( ctx->physics, &character_creation );
+    CRUDE_ENTITY_SET_COMPONENT( it->world, it->entities[ i ], crude_physics_character_handle, { character_handle } );
   }
 }
 
@@ -208,6 +342,74 @@ crude_physics_character_destroy_observer_
     if ( character_handle )
     {
       crude_physics_destroy_character_instant( ctx->physics, *character_handle );
+    }
+  }
+  
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_physics_static_body_create_observer_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_physics_system_context                            *ctx;
+  crude_physics_static_body                               *static_body_per_entity;
+
+  CRUDE_PROFILER_ZONE_NAME( "crude_physics_static_body_create_observer_" );
+
+  ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
+  static_body_per_entity = ecs_field( it, crude_physics_static_body, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_static_body                             *static_body;
+    crude_physics_static_body_handle                       static_body_handle;
+    crude_physics_static_body_creation                     static_body_creation;
+    
+    static_body = &static_body_per_entity[ i ];
+    
+    if ( CRUDE_ENTITY_HAS_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle ) )
+    {
+      crude_physics_destroy_static_body_instant( ctx->physics, *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle ) );
+    }
+      
+    static_body_creation = crude_physics_static_body_creation_empty( );
+    static_body_creation.type = static_body->type;
+    static_body_creation.box.extent = static_body->box.extent;
+
+    static_body_handle = crude_physics_create_static_body( ctx->physics, &static_body_creation );
+    CRUDE_ENTITY_SET_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle, { static_body_handle } );
+  }
+}
+
+void
+crude_physics_static_body_destroy_observer_ 
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_physics_system_context                            *ctx;
+  crude_physics_static_body                               *static_body_per_entity;
+
+  CRUDE_PROFILER_ZONE_NAME( "crude_physics_static_body_destroy_observer_" );
+
+  ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
+  static_body_per_entity = ecs_field( it, crude_physics_static_body, 0 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_static_body                             *static_body;
+    crude_physics_static_body_handle const                *static_body_handle;
+    
+    static_body = &static_body_per_entity[ i ];
+
+    static_body_handle = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle );
+
+    if ( static_body_handle )
+    {
+      crude_physics_destroy_static_body_instant( ctx->physics, *static_body_handle );
     }
   }
   
@@ -289,7 +491,7 @@ crude_physics_character_post_simulation_system_
     character_handle = &character_handle_per_entity[ i ];
     transform = &transform_per_entity[ i ]; 
     
-    character_container = crude_physics_access_character( ctx->physics, character_handle[ i ] );
+    character_container = crude_physics_access_character( ctx->physics,*character_handle );
 
     node_to_world = crude_transform_node_to_world( it->world, it->entities[ i ], transform );
 
@@ -297,6 +499,48 @@ crude_physics_character_post_simulation_system_
 
     character_container->jph_character_class->SetPositionAndRotation( crude_vector_to_jph_vec3( translation ), crude_vector_to_jph_quat( rotation ) );
     character_container->manually_stored_transform = character_container->jph_character_class->GetWorldTransform( );
+  }
+cleanup:
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_physics_static_body_post_simulation_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_physics_system_context                            *ctx;
+  crude_physics_static_body_handle                        *static_body_handle_per_entity;
+  crude_transform                                         *transform_per_entity;
+  JPH::BodyInterface                                      *jph_body_interface_class;
+
+  CRUDE_PROFILER_ZONE_NAME( "crude_physics_static_body_post_simulation_system_" );
+
+  ctx = CRUDE_CAST( crude_physics_system_context*, it->ctx );
+  static_body_handle_per_entity = ecs_field( it, crude_physics_static_body_handle, 0 );
+  transform_per_entity = ecs_field( it, crude_transform, 1 );
+
+  jph_body_interface_class = &ctx->physics->jph_physics_system_class->GetBodyInterface( );  
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_physics_static_body_handle                      *static_body_handle;
+    crude_transform                                       *transform;
+    crude_physics_static_body_container                   *static_body_container;
+    XMMATRIX                                               node_to_world;
+    XMVECTOR                                               scale, translation, rotation;
+    
+    static_body_handle = &static_body_handle_per_entity[ i ];
+    transform = &transform_per_entity[ i ]; 
+    
+    static_body_container = crude_physics_access_static_body( ctx->physics, *static_body_handle );
+
+    node_to_world = crude_transform_node_to_world( it->world, it->entities[ i ], transform );
+
+    XMMatrixDecompose( &scale, &rotation, &translation, node_to_world );
+
+    jph_body_interface_class->SetPositionAndRotation( static_body_container->jph_body_class, crude_vector_to_jph_vec3( translation ), crude_vector_to_jph_quat( rotation ), JPH::EActivation::DontActivate );
   }
 cleanup:
   CRUDE_PROFILER_ZONE_END;

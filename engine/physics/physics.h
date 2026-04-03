@@ -1,24 +1,9 @@
 #pragma once
 
-#include <Jolt/Jolt.h>
-#include <Jolt/RegisterTypes.h>
-#include <Jolt/Core/Factory.h>
-#include <Jolt/Core/TempAllocator.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
-#include <Jolt/Physics/PhysicsSettings.h>
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <Jolt/Physics/Collision/Shape/SphereShape.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-#include <Jolt/Physics/Body/BodyActivationListener.h>
-#include <Jolt/Physics/Character/Character.h>
-#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
-#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
-
 #include <engine/core/ecs.h>
 #include <engine/core/math.h>
 #include <engine/scene/collisions_resources_manager.h>
-#include <engine/physics/physics_config.h>
+#include <engine/physics/physics_resource.h>
 
 /*********************
  * Use only when JPH class override new/free!
@@ -141,25 +126,6 @@ public:
   ) override;
 };
 
-typedef struct crude_physics_character_creation
-{
-  float32                                                  character_height_standing;
-  float32                                                  character_radius_standing;
-  float32                                                  friction;
-  float32                                                  max_slop_angle;
-} crude_physics_character_creation;
-
-typedef struct crude_physics_character_handle
-{
-  uint32                                                   index;
-} crude_physics_character_handle;
-
-typedef struct crude_physics_character_container
-{
-  JPH::RMat44                                              manually_stored_transform;
-  JPH::Ref< JPH::Character >                               jph_character_class;
-} crude_physics_character_container;
-
 typedef struct crude_physics_creation
 {
   crude_collisions_resources_manager                      *collision_manager;
@@ -176,6 +142,7 @@ typedef struct crude_physics
   
   /* Commonm */
   crude_resource_pool                                      characters_resource_pool;
+  crude_resource_pool                                      static_body_resource_pool;
   bool                                                     simulation_enabled;
   int64                                                    last_update_time;
     
@@ -225,6 +192,11 @@ crude_physics_character_creation_empty
 (
 );
 
+CRUDE_API crude_physics_static_body_creation
+crude_physics_static_body_creation_empty
+(
+);
+
 CRUDE_API crude_physics_character_handle
 crude_physics_create_character
 (
@@ -244,4 +216,25 @@ crude_physics_destroy_character_instant
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_character_handle                      handle
+);
+
+CRUDE_API crude_physics_static_body_handle
+crude_physics_create_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_creation const           *creation
+);
+
+CRUDE_API crude_physics_static_body_container*
+crude_physics_access_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
+);
+
+CRUDE_API void
+crude_physics_destroy_static_body_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
 );

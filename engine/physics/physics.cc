@@ -271,6 +271,7 @@ crude_physics_initialize
   physics->simulation_enabled = true;
 
   crude_resource_pool_initialize( &physics->characters_resource_pool, physics->physics_allocator_container, 16, sizeof( crude_physics_character_container ) );
+  crude_resource_pool_initialize( &physics->static_body_resource_pool, physics->physics_allocator_container, 256, sizeof( crude_physics_static_body_container ) );
 
   g_physics_heap_allocator_ = creation->physics_allocator;
   JPH::Allocate = crude_physics_jph_allocate_implementation;
@@ -336,6 +337,7 @@ crude_physics_deinitialize
   CRUDE_DEALLOCATE_AND_DECONSTRUCT( physics->physics_allocator_container, physics->jph_contact_listener_class, _crude_jph_contact_listener_class );
   
   crude_resource_pool_deinitialize( &physics->characters_resource_pool );
+  crude_resource_pool_deinitialize( &physics->static_body_resource_pool );
 }
 
 void
@@ -378,6 +380,15 @@ crude_physics_character_creation_empty
 )
 {
   crude_physics_character_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_character_creation );
+  return creation;
+}
+
+crude_physics_static_body_creation
+crude_physics_static_body_creation_empty
+(
+)
+{
+  crude_physics_static_body_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body_creation );
   return creation;
 }
 
@@ -450,6 +461,74 @@ crude_physics_destroy_character_instant
   character_container->jph_character_class.~Ref( );
 
   crude_resource_pool_release_resource( &physics->characters_resource_pool, handle.index );
+}
+
+
+crude_physics_static_body_handle
+crude_physics_create_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_creation const           *creation
+)
+{
+  crude_physics_static_body_container                     *static_body_container;
+  JPH::BodyInterface                                      *jph_body_interface_class;
+  crude_physics_static_body_handle                         handle;
+  JPH::BoxShapeSettings                                    jph_shape_settings_class;
+  JPH::ShapeSettings::ShapeResult                          jph_shape_result_class;
+  JPH::ShapeRefC                                           jph_shape_class;
+  JPH::BodyCreationSettings                                jph_settings_class;
+    
+  handle.index = crude_resource_pool_obtain_resource( &physics->static_body_resource_pool );
+
+  static_body_container = crude_physics_access_static_body( physics, handle );
+
+  jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
+  
+  if ( creation->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  {
+    jph_shape_settings_class = CRUDE_COMPOUNT( JPH::BoxShapeSettings, { JPH::Vec3( creation->box.extent.x, creation->box.extent.y, creation->box.extent.z ) } );
+  }
+  jph_shape_settings_class.SetEmbedded( );
+  
+  jph_shape_result_class = jph_shape_settings_class.Create( );
+  jph_shape_class = jph_shape_result_class.Get( );
+  
+  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving );
+  
+  CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
+
+  return handle;
+}
+
+crude_physics_static_body_container*
+crude_physics_access_static_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
+)
+{ 
+  return CRUDE_CAST( crude_physics_static_body_container*, crude_resource_pool_access_resource( &physics->static_body_resource_pool, handle.index ) );
+}
+
+void
+crude_physics_destroy_static_body_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_static_body_handle                    handle
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface_class;
+  crude_physics_static_body_container                     *static_body_container;
+
+  static_body_container = crude_physics_access_static_body( physics, handle );
+  
+  jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
+
+  jph_body_interface_class->RemoveBody( static_body_container->jph_body_class );
+  jph_body_interface_class->DestroyBody( static_body_container->jph_body_class );
+
+  crude_resource_pool_release_resource( &physics->static_body_resource_pool, handle.index );
 }
 
 #if defined(JPH_ENABLE_ASSERTS)
