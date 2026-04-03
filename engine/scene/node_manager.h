@@ -5,7 +5,6 @@
 #include <engine/core/memory.h>
 #include <engine/core/string.h>
 #include <engine/core/hashmapstr.h>
-#include <engine/scene/collisions_resources_manager.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 #include <engine/physics/physics.h>
 
@@ -20,7 +19,6 @@ typedef void (*crude_node_manager_select_camera)
 typedef struct crude_node_manager_creation
 {
   crude_physics                                           *physics_manager;
-  crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;
   crude_components_serialization_manager                  *components_serialization_manager;
@@ -35,7 +33,6 @@ typedef struct crude_node_manager
   /* Context */
   crude_physics                                           *physics_manager;
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
-  crude_collisions_resources_manager                      *collisions_resources_manager;
   crude_components_serialization_manager                  *components_serialization_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;

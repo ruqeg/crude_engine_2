@@ -6,7 +6,6 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/core/ecs.h>
 #include <engine/platform/platform.h>
-#include <engine/scene/collisions_resources_manager.h>
 #include <engine/scene/scene_ecs.h>
 #include <game/player_controller_ecs.h>
 #include <game/training_area_level_ecs.h>

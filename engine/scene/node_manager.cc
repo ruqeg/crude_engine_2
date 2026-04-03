@@ -60,7 +60,6 @@ crude_node_manager_initialize
   manager->temporary_allocator = creation->temporary_allocator;
   manager->components_serialization_manager = creation->components_serialization_manager;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
-  manager->collisions_resources_manager = creation->collisions_resources_manager;
   manager->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   manager->allocator = creation->allocator;
   manager->select_camera_func = creation->select_camera_func;

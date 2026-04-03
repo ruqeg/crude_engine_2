@@ -2,7 +2,7 @@
 
 #include <engine/core/ecs.h>
 #include <engine/core/math.h>
-#include <engine/scene/collisions_resources_manager.h>
+#include <engine/physics/physics_shapes_manager.h>
 #include <engine/physics/physics_resource.h>
 
 /*********************
@@ -128,14 +128,14 @@ public:
 
 typedef struct crude_physics_creation
 {
-  crude_collisions_resources_manager                      *collision_manager;
+  crude_physics_shapes_manager                            *physics_shapes_manager;
   crude_heap_allocator                                    *physics_allocator;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
   /* Context */
-  crude_collisions_resources_manager                      *collision_manager;
+  crude_physics_shapes_manager                            *physics_shapes_manager;
 
   crude_heap_allocator                                    *physics_allocator;
   crude_allocator_container                                physics_allocator_container;
@@ -155,7 +155,6 @@ typedef struct crude_physics
   _crude_jph_object_layer_pair_filter_class               *jph_object_vs_object_layer_filter_class;
   _crude_jph_body_activation_listener_class               *jph_body_activation_listener_class;
   _crude_jph_contact_listener_class                       *jph_contact_listener_class;
-
 } crude_physics;
 
 CRUDE_API void

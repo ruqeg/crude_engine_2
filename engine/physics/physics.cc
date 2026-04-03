@@ -308,7 +308,7 @@ crude_physics_initialize
   
   //physics->jph_physics_system_class->OptimizeBroadPhase( );
 
-  physics->collision_manager = creation->collision_manager;
+  physics->physics_shapes_manager = creation->physics_shapes_manager;
 }
 
 void

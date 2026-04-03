@@ -120,18 +120,6 @@ crude_engine_deinitialize_graphics_
 );
 
 static void
-crude_engine_initialize_collisions_
-(
-  _In_ crude_engine                                       *engine
-);
-
-static void
-crude_engine_deinitialize_collisions_
-(
-  _In_ crude_engine                                       *engine
-);
-
-static void
 crude_engine_initialize_physics_
 (
   _In_ crude_engine                                       *engine
@@ -262,7 +250,6 @@ crude_engine_initialize
   crude_engine_initialize_debug_( engine );
   crude_engine_initialize_audio_( engine );
   crude_engine_initialize_graphics_( engine );
-  crude_engine_initialize_collisions_( engine );
   crude_engine_initialize_physics_( engine );
   crude_engine_initialize_scene_( engine );
   crude_engine_commands_manager_initialize( &engine->commands_manager, engine, &engine->common_allocator );
@@ -287,7 +274,6 @@ crude_engine_deinitialize
   crude_engine_commands_manager_deinitialize( &engine->commands_manager );
   crude_engine_deinitialize_scene_( engine );
   crude_engine_deinitialize_physics_( engine );
-  crude_engine_deinitialize_collisions_( engine );
   crude_engine_deinitialize_graphics_( engine );
   crude_engine_deinitialize_audio_( engine );
   crude_engine_deinitialize_debug_( engine );
@@ -680,24 +666,6 @@ crude_engine_deinitialize_graphics_
 }
 
 void
-crude_engine_initialize_collisions_
-(
-  _In_ crude_engine                                       *engine
-)
-{
-  crude_collisions_resources_manager_initialize( &engine->collision_resources_manager, &engine->common_allocator, &engine->cgltf_temporary_allocator );
-}
-
-void
-crude_engine_deinitialize_collisions_
-(
-  _In_ crude_engine                                       *engine
-)
-{
-  crude_collisions_resources_manager_deinitialize( &engine->collision_resources_manager );
-}
-
-void
 crude_engine_initialize_physics_
 (
   _In_ crude_engine                                       *engine
@@ -706,9 +674,11 @@ crude_engine_initialize_physics_
   crude_physics_creation                                   physics_creation;
 
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
-  physics_creation.collision_manager = &engine->collision_resources_manager;
+  physics_creation.physics_shapes_manager = &engine->physics_shapes_manager;
   physics_creation.physics_allocator = &engine->common_allocator;
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
+  
+  crude_physics_shapes_manager_initialize( &engine->physics_shapes_manager, &engine->common_allocator, &engine->cgltf_temporary_allocator, &engine->physics, engine->environment.directories.resources_absolute_directory  );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;
@@ -721,6 +691,7 @@ crude_engine_deinitialize_physics_
   _In_ crude_engine                                       *engine
 )
 {
+  crude_physics_shapes_manager_deinitialize( &engine->physics_shapes_manager );
   crude_physics_deinitialize( &engine->physics );
 }
 
@@ -777,7 +748,6 @@ crude_engine_initialize_scene_
   node_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_node_manager_creation );
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
-  node_manager_creation.collisions_resources_manager = &engine->collision_resources_manager;
   node_manager_creation.physics_manager = &engine->physics;
   node_manager_creation.components_serialization_manager = &engine->components_serialization_manager;
   node_manager_creation.allocator = &engine->common_allocator;

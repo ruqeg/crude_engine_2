@@ -14,6 +14,7 @@
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 
 #include <engine/physics/physics_config.h>
 #include <engine/scene/scene_ecs.h>
