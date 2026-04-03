@@ -5,12 +5,13 @@
 #include <engine/core/hashmapstr.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/model_renderer_resources.h>
-#include <engine/graphics/asynchronous_loader.h>
+#include <engine/graphics/texture_manager.h>
 #include <engine/graphics/gpu_memory.h>
 
 typedef struct crude_gfx_model_renderer_resources_manager_creation
 {
   crude_gfx_asynchronous_loader                           *async_loader;
+  crude_gfx_texture_manager                               *texture_manager;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;
@@ -27,6 +28,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    **********************/
   crude_gfx_device                                        *gpu;
   crude_gfx_asynchronous_loader                           *async_loader;
+  crude_gfx_texture_manager                               *texture_manager;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
   crude_stack_allocator                                   *temporary_allocator;

@@ -171,6 +171,7 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->gpu = creation->async_loader->gpu;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
   manager->test_allocator = creation->test_allocator;
+  manager->texture_manager = creation->texture_manager;
 
   manager->total_meshes_count = 0;
 
@@ -228,10 +229,7 @@ crude_gfx_model_renderer_resources_manager_deintialize
   }
   CRUDE_ARRAY_DEINITIALIZE( manager->samplers );
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->images ); ++i )
-  {
-    crude_gfx_destroy_texture( manager->gpu, manager->images[ i ] );
-  }
+  /* Texture manager handle cleaning */
   CRUDE_ARRAY_DEINITIALIZE( manager->images );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->buffers ); ++i )
@@ -280,10 +278,7 @@ crude_gfx_model_renderer_resources_manager_clear
   }
   CRUDE_ARRAY_SET_LENGTH( manager->samplers, 0 );
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->images ); ++i )
-  {
-    crude_gfx_destroy_texture( manager->gpu, manager->images[ i ] );
-  }
+  /* Texture manager will handle cleaning */
   CRUDE_ARRAY_SET_LENGTH( manager->images, 0 );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->buffers ); ++i )
@@ -634,29 +629,14 @@ crude_gfx_model_renderer_resources_manager_gltf_load_images_
     crude_gfx_texture_handle                               texture_handle;
     crude_gfx_texture_creation                             texture_creation;
     cgltf_image const                                     *image;
-    char                                                  *image_full_filename;
+    char                                                  *image_absolute_filename;
     int                                                    comp, width, height;
     
     image = &gltf->images[ image_index ];
-    image_full_filename = crude_string_buffer_append_use_f( &manager->image_absolute_filepath_string_buffer, "%s%s", gltf_directory, image->uri );
-    stbi_info( image_full_filename, &width, &height, &comp );
-    
-    CRUDE_ASSERT( ( width > 0 ) && ( height > 0 ) );
+    image_absolute_filename = crude_string_buffer_append_use_f( &manager->image_absolute_filepath_string_buffer, "%s%s", gltf_directory, image->uri );
 
-    texture_creation = crude_gfx_texture_creation_empty();
-    texture_creation.initial_data = NULL;
-    texture_creation.width = width;
-    texture_creation.height = height;
-    texture_creation.depth = 1u;
-    texture_creation.flags = 0u;
-    texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
-    texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-    texture_creation.subresource.mip_level_count = log2( CRUDE_MAX( width, height ) ) + 1;
-    crude_string_copy( texture_creation.name, image->uri, sizeof( texture_creation.name ) );
-
-    texture_handle = crude_gfx_create_texture( manager->gpu, &texture_creation );
+    texture_handle = crude_gfx_texture_manager_get_texture( manager->texture_manager, image->uri, image_absolute_filename );
     CRUDE_ARRAY_PUSH( manager->images, texture_handle );
-    crude_gfx_asynchronous_loader_request_texture_data( manager->async_loader, image_full_filename, texture_handle );
     crude_string_buffer_clear( &manager->image_absolute_filepath_string_buffer );
   }
 }

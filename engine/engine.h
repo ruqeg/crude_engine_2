@@ -99,6 +99,7 @@ typedef struct crude_engine
   crude_gfx_asynchronous_loader                            async_loader;
   crude_gfx_scene_renderer                                 scene_renderer;
   crude_gfx_model_renderer_resources_manager               model_renderer_resources_manager;
+  crude_gfx_texture_manager                                texture_manager;
   int64                                                    last_graphics_update_time;
   uint32                                                   framerate;
   float32                                                  graphics_absolute_time;

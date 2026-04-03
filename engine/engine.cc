@@ -618,9 +618,12 @@ crude_engine_initialize_graphics_
   crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.crude_techniques", &game->gpu, &game->render_graph, &&engine->temporary_allocator );
 #endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
   
+  crude_gfx_texture_manager_initialize( &engine->texture_manager, &engine->async_loader, &engine->common_allocator );
+
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
   model_renderer_resources_manager_creation.allocator = &engine->common_allocator;
   model_renderer_resources_manager_creation.async_loader = &engine->async_loader;
+  model_renderer_resources_manager_creation.texture_manager = &engine->texture_manager;
   model_renderer_resources_manager_creation.test_allocator = &engine->test_allocator;
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
@@ -669,6 +672,7 @@ crude_engine_deinitialize_graphics_
   crude_gfx_scene_renderer_deinitialize( &engine->scene_renderer );
   crude_gfx_asynchronous_loader_deinitialize( &engine->async_loader );
   crude_gfx_model_renderer_resources_manager_deintialize( &engine->model_renderer_resources_manager );
+  crude_gfx_texture_manager_deinitialize( &engine->texture_manager );
   crude_gfx_render_graph_builder_deinitialize( &engine->render_graph_builder );
   crude_gfx_render_graph_deinitialize( &engine->render_graph );
   crude_gfx_device_deinitialize( &engine->gpu );

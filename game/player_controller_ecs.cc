@@ -183,11 +183,11 @@ crude_player_controller_update_system_
 
       /* Handle movement */
       {
-        crude_transform                                   *player_world_transform;
         crude_transform                                   *player_camera_transform;
+        crude_physics_character_container                 *physcs_character_container;
         XMMATRIX                                           player_camera_to_world;
-        XMVECTOR                                           player_translation, player_scale, player_rotation;
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
+        XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
         float32                                            move_speed;
       
@@ -198,7 +198,7 @@ crude_player_controller_update_system_
         player_camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_transform );
         player_camera_to_world = crude_transform_node_to_world( it->world, player_camera_entity, player_camera_transform );
 
-        player_world_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_character_entity, crude_transform );
+        physcs_character_container = crude_physics_access_character( ctx->physics_manager, *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_character_entity, crude_physics_character_handle ) );
       
         player_camera_basis_right = XMVector3Normalize( player_camera_to_world.r[ 0 ] );
         player_camera_basis_up = XMVector3Normalize( player_camera_to_world.r[ 1 ] );
@@ -211,24 +211,25 @@ crude_player_controller_update_system_
         //  moving_speed = moving_speed * 2.f;
         //}
         
-        XMMatrixDecompose( &player_scale, &player_rotation, &player_translation, player_camera_to_world );
-
-        player_translation = XMLoadFloat3( &player_world_transform->translation );
-
-        if ( move_direction.x != 0.f )
+        player_velocity = crude_jph_vec3_to_vector( physcs_character_container->jph_character_class->GetLinearVelocity( ) );
+        
+        if ( move_direction.x != 0.f || move_direction.z != 0 )
         {
-          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_right, move_speed * move_direction.x * it->delta_time ) );
+          new_player_velocity = XMVectorZero( );
+          new_player_velocity = XMVectorAdd( new_player_velocity, XMVectorScale( player_camera_basis_right, move_direction.x ) );
+          new_player_velocity = XMVectorAdd( new_player_velocity, XMVectorScale( player_camera_basis_forward, move_direction.z ) );
+          new_player_velocity = XMVectorScale( XMVector3Normalize( new_player_velocity ), move_speed );
+        
+          new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
         }
-        if ( move_direction.y != 0.f )
+        else
         {
-          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_up, move_speed * move_direction.y * it->delta_time ) );
-        }
-        if ( move_direction.z != 0.f )
-        {
-          player_translation = XMVectorAdd( player_translation, XMVectorScale( player_camera_basis_forward, move_speed * move_direction.z * it->delta_time ) );
+          new_player_velocity = player_velocity;
+          new_player_velocity = XMVectorLerp( new_player_velocity, XMVectorZero( ), 5 * it->delta_time );
+          new_player_velocity = XMVectorSetY( new_player_velocity, XMVectorGetY( player_velocity ) );
         }
 
-        XMStoreFloat3( &player_world_transform->translation, player_translation );
+        physcs_character_container->jph_character_class->SetLinearVelocity( crude_vector_to_jph_vec3( new_player_velocity ) );
       }
     }
     

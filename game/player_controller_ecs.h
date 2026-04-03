@@ -36,6 +36,7 @@ typedef struct crude_player_controller_system_context
   crude_input const                                       *input;
   crude_heap_allocator                                    *player_controller_allocator;
   crude_allocator_container                                player_controller_allocator_container;
+  crude_physics                                           *physics_manager;
 } crude_player_controller_system_context;
 
 CRUDE_API void
