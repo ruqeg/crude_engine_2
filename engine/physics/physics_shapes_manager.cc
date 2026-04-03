@@ -25,7 +25,7 @@ crude_physics_shapes_manager_gltf_load_nodes_
 );
 
 static crude_physics_mesh_shape_handle
-crude_physics_shapes_manager_load_octree_from_gltf_
+crude_physics_shapes_manager_load_mesh_shape_from_gltf_
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ char const                                         *gltf_realtive_filepath
@@ -64,7 +64,7 @@ crude_physics_shapes_manager_deinitialize
 }
 
 crude_physics_mesh_shape_handle
-crude_physics_shapes_manager_get_octree_handle
+crude_physics_shapes_manager_get_octree_mesh_shape_handle
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ char const                                         *relative_filepath
@@ -80,14 +80,14 @@ crude_physics_shapes_manager_get_octree_handle
     return manager->mesh_shape_relative_filepath_to_hadle[ handle_index ].value;
   }
 
-  mesh_shape_handle = crude_physics_shapes_manager_load_octree_from_gltf_( manager, relative_filepath );
-  mesh_shape_container = crude_physics_shapes_manager_access_octree( manager, mesh_shape_handle );
-  CRUDE_HASHMAPSTR_SET( manager->mesh_shape_relative_filepath_to_hadle, CRUDE_COMPOUNT( crude_string_link, { mesh_shape_container->name } ), mesh_shape_handle );
+  mesh_shape_handle = crude_physics_shapes_manager_load_mesh_shape_from_gltf_( manager, relative_filepath );
+  mesh_shape_container = crude_physics_shapes_manager_access_mesh_shape( manager, mesh_shape_handle );
+  CRUDE_HASHMAPSTR_SET( manager->mesh_shape_relative_filepath_to_hadle, CRUDE_COMPOUNT( crude_string_link, { mesh_shape_container->relative_filepath } ), mesh_shape_handle );
   return mesh_shape_handle;
 }
 
 crude_physics_mesh_shape_container*
-crude_physics_shapes_manager_access_octree
+crude_physics_shapes_manager_access_mesh_shape
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ crude_physics_mesh_shape_handle                     handle
@@ -110,6 +110,7 @@ crude_physics_shapes_manager_clear
       mesh_shape_container->jph_shape_class.~Ref( );
       crude_resource_pool_release_resource( &manager->mesh_shape_resource_pool, manager->mesh_shape_relative_filepath_to_hadle[ i ].value.index );
     }
+    manager->mesh_shape_relative_filepath_to_hadle[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
 
   crude_string_buffer_clear( &manager->gltf_absolute_filepath_string_buffer );
@@ -285,7 +286,7 @@ crude_physics_shapes_manager_gltf_load_nodes_
 }
 
 crude_physics_mesh_shape_handle
-crude_physics_shapes_manager_load_octree_from_gltf_
+crude_physics_shapes_manager_load_mesh_shape_from_gltf_
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ char const                                         *gltf_relative_filepath
@@ -303,7 +304,7 @@ crude_physics_shapes_manager_load_octree_from_gltf_
   gltf_absolute_filepath = crude_string_buffer_append_use_f( &manager->gltf_absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, gltf_relative_filepath );
 
   /* Parse gltf */
-  gltf = crude_physics_shapes_manager_gltf_parse_( manager->cgltf_temporary_allocator, gltf_relative_filepath );
+  gltf = crude_physics_shapes_manager_gltf_parse_( manager->cgltf_temporary_allocator, gltf_absolute_filepath );
   if ( !gltf )
   {
     goto cleanup;
@@ -312,7 +313,7 @@ crude_physics_shapes_manager_load_octree_from_gltf_
   mesh_shape_handle = CRUDE_COMPOUNT( crude_physics_mesh_shape_handle, { crude_resource_pool_obtain_resource( &manager->mesh_shape_resource_pool ) } );
   mesh_shape = CRUDE_CAST( crude_physics_mesh_shape_container*, crude_resource_pool_access_resource( &manager->mesh_shape_resource_pool, mesh_shape_handle.index ) );
 
-  crude_string_copy( mesh_shape->name, gltf_relative_filepath, sizeof( mesh_shape ) );
+  crude_string_copy( mesh_shape->relative_filepath, gltf_relative_filepath, sizeof( mesh_shape->relative_filepath ) );
 
   for ( uint32 i = 0; i < gltf->scenes_count; ++i )
   {

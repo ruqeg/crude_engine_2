@@ -473,11 +473,10 @@ crude_physics_create_static_body
 {
   crude_physics_static_body_container                     *static_body_container;
   JPH::BodyInterface                                      *jph_body_interface_class;
-  crude_physics_static_body_handle                         handle;
-  JPH::BoxShapeSettings                                    jph_shape_settings_class;
   JPH::ShapeSettings::ShapeResult                          jph_shape_result_class;
   JPH::ShapeRefC                                           jph_shape_class;
   JPH::BodyCreationSettings                                jph_settings_class;
+  crude_physics_static_body_handle                         handle;
     
   handle.index = crude_resource_pool_obtain_resource( &physics->static_body_resource_pool );
 
@@ -487,14 +486,19 @@ crude_physics_create_static_body
   
   if ( creation->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
   {
+    JPH::BoxShapeSettings                                    jph_shape_settings_class;
     jph_shape_settings_class = CRUDE_COMPOUNT( JPH::BoxShapeSettings, { JPH::Vec3( creation->box.extent.x, creation->box.extent.y, creation->box.extent.z ) } );
+    jph_shape_settings_class.SetEmbedded( );
+    jph_shape_result_class = jph_shape_settings_class.Create( );
+    jph_shape_class = jph_shape_result_class.Get( );
   }
-  jph_shape_settings_class.SetEmbedded( );
-  
-  jph_shape_result_class = jph_shape_settings_class.Create( );
-  jph_shape_class = jph_shape_result_class.Get( );
-  
+  else if ( creation->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  {
+    jph_shape_class = crude_physics_shapes_manager_access_mesh_shape( physics->physics_shapes_manager, creation->mesh.handle )->jph_shape_class;
+  }
+
   jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving );
+
   
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
 

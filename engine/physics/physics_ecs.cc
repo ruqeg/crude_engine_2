@@ -114,6 +114,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
     cJSON *box_json = cJSON_GetObjectItem( component_json, "box" );
     crude_parse_json_to_float3( &component->box.extent, cJSON_GetObjectItemCaseSensitive( box_json, "extent" ) );
   }
+  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  {
+    cJSON *mesh_json = cJSON_GetObjectItem( component_json, "mesh" );
+    component->mesh.handle = crude_physics_shapes_manager_get_octree_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( mesh_json, "relative_filepath" ) ) );
+  }
   return true;
 }
 
@@ -125,9 +130,15 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
   if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
   {
     cJSON *box_json = cJSON_CreateObject( );
-    
     cJSON_AddItemToObject( box_json, "extent", cJSON_CreateFloatArray( &component->box.extent.x, 3 ) );
     cJSON_AddItemToObject( static_body_json, "box", box_json );
+  }
+  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  {
+    cJSON *mesh_json = cJSON_CreateObject( );
+    crude_physics_mesh_shape_container *mesh_shape = crude_physics_shapes_manager_access_mesh_shape( manager->physics_manager->physics_shapes_manager, component->mesh.handle );
+    cJSON_AddItemToObject( mesh_json, "relative_filepath", cJSON_CreateString( mesh_shape->relative_filepath ) );
+    cJSON_AddItemToObject( static_body_json, "mesh", mesh_json );
   }
   return static_body_json;
 }
@@ -140,15 +151,25 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
   
   char const* physic_static_body_types[ ] =
   {
-    "Box"
+    "Box",
+    "Mesh"
   };
+
+  CRUDE_ASSERT( CRUDE_COUNTOF( physic_static_body_types ) == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_COUNT );
 
   modified = false;
 
   CRUDE_IMGUI_OPTION( "Type", {
     int32 type = component->type;
-    modified |= ImGui::Combo( "##Shape", &type, physic_static_body_types, CRUDE_COUNTOF( physic_static_body_types ) ); 
-    component->type = CRUDE_CAST( crude_physics_static_body_shape_type, type );
+    if ( ImGui::Combo( "##Shape", &type, physic_static_body_types, CRUDE_COUNTOF( physic_static_body_types ) ) )
+    {
+      component->type = CRUDE_CAST( crude_physics_static_body_shape_type, type );
+      if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+      {
+        component->mesh.handle.index = -1;
+      }
+      modified = true;
+    }
     } );
 
   if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
@@ -156,6 +177,35 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     CRUDE_IMGUI_OPTION( "Box Extent", {
       modified |= ImGui::DragFloat3( "##Box Extent", &component->box.extent.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );  
       } );
+  }
+  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  {
+    if ( component->mesh.handle.index != -1 )
+    {
+      crude_physics_mesh_shape_container *shape_container = crude_physics_shapes_manager_access_mesh_shape( manager->physics_manager->physics_shapes_manager, component->mesh.handle );
+      ImGui::Text( "\"%s\"", shape_container->relative_filepath );
+    }
+    else
+    {
+      ImGui::Text( "\"Empty\"" );
+    }
+    if ( ImGui::BeginDragDropTarget( ) )
+    {
+      ImGuiPayload const                                  *im_payload;
+      char                                                *replace_relative_filepath;
+    
+      im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
+      if ( im_payload )
+      {
+        replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
+        if ( strstr( replace_relative_filepath, ".gltf" ) )
+        {
+          component->mesh.handle = crude_physics_shapes_manager_get_octree_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, replace_relative_filepath );
+          modified = true;
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
   }
 
   if ( modified )
@@ -378,7 +428,14 @@ crude_physics_static_body_create_observer_
     static_body_creation = crude_physics_static_body_creation_empty( );
     static_body_creation.type = static_body->type;
     static_body_creation.box.extent = static_body->box.extent;
-
+    static_body_creation.mesh.handle = static_body->mesh.handle;
+    
+    if ( static_body_creation.type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH && static_body_creation.mesh.handle.index == -1 )
+    {
+      CRUDE_ENTITY_REMOVE_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle );
+      continue;
+    }
+    
     static_body_handle = crude_physics_create_static_body( ctx->physics, &static_body_creation );
     CRUDE_ENTITY_SET_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle, { static_body_handle } );
   }

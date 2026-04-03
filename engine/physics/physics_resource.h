@@ -52,10 +52,18 @@ typedef struct crude_physics_static_body_handle
   uint32                                                   index;
 } crude_physics_static_body_handle;
 
+typedef struct crude_physics_mesh_shape_handle
+{
+  uint32                                                   index;
+} crude_physics_mesh_shape_handle;
+
 typedef enum crude_physics_static_body_shape_type
 {
-  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX
+  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX,
+  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH,
+  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_COUNT
 };
+
 typedef struct crude_physics_static_body_creation
 {
   crude_physics_static_body_shape_type                     type;
@@ -65,6 +73,10 @@ typedef struct crude_physics_static_body_creation
     {
       XMFLOAT3                                             extent;
     } box;
+    struct
+    {
+      crude_physics_mesh_shape_handle                      handle;
+    } mesh;
   };
 } crude_physics_static_body_creation;
 
@@ -82,6 +94,10 @@ typedef struct crude_physics_static_body
     {
       XMFLOAT3                                             extent;
     } box;
+    struct
+    {
+      crude_physics_mesh_shape_handle                      handle;
+    } mesh;
   };
 } crude_physics_static_body;
 

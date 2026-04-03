@@ -9,15 +9,10 @@
 
 typedef struct crude_physics crude_physics;
 
-typedef struct crude_physics_mesh_shape_handle
-{
-  uint32                                                   index;
-} crude_physics_mesh_shape_handle;
-
 typedef struct crude_physics_mesh_shape_container
 {
   JPH::Ref< JPH::Shape >                                   jph_shape_class;
-  char                                                     name[ 1024 ];
+  char                                                     relative_filepath[ 1024 ];
 } crude_physics_mesh_shape_container;
 
 typedef struct crude_physics_shapes_manager
@@ -51,14 +46,14 @@ crude_physics_shapes_manager_deinitialize
 );
 
 CRUDE_API crude_physics_mesh_shape_handle
-crude_physics_shapes_manager_get_octree_handle
+crude_physics_shapes_manager_get_octree_mesh_shape_handle
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ char const                                         *relative_filepath
 );
 
 CRUDE_API crude_physics_mesh_shape_container*
-crude_physics_shapes_manager_access_octree
+crude_physics_shapes_manager_access_mesh_shape
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ crude_physics_mesh_shape_handle                     handle
