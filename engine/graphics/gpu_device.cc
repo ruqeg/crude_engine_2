@@ -1213,7 +1213,9 @@ crude_gfx_device_queue_submit
 
   if ( vk_result == VK_ERROR_DEVICE_LOST || vk_result == VK_ERROR_OUT_OF_DEVICE_MEMORY || vk_result == VK_ERROR_UNKNOWN )
   {
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
     crude_gfx_gpu_crash_tracker_handle_device_lost( &gpu->crash_tracker );
+#endif
   }
 }
 

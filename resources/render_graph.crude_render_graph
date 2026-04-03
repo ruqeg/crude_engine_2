@@ -226,43 +226,12 @@
       ]
     },
     {
-      "name": "ssr_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "texture",
-          "name": "radiance"
-        },
-        {
-          "type": "reference",
-          "name": "depth_pyramid_late_pass_marker"
-        },
-        {
-          "type": "texture",
-          "name": "depth"
-        }],
-      "outputs": [
-        {
-          "type": "attachment",
-          "name": "radiance_with_ssr",
-          "format": "VK_FORMAT_R16G16B16A16_UNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
-        },
-        {
-          "type": "marker",
-          "name": "ssr_pass_marker"
-        }
-      ]
-    },
-    {
       "name": "transparent_pass",
       "multisample": 1,
       "inputs": [
         {
           "type": "attachment",
-          "name": "radiance_with_ssr"
+          "name": "direct_radiance"
         },
         {
           "type": "attachment",
@@ -270,13 +239,13 @@
         },
         {
           "type": "reference",
-          "name": "ssr_pass_marker"
+          "name": "depth_pyramid_late_pass_marker"
         }
       ],
       "outputs": [
         {
           "type": "reference",
-          "name": "radiance_with_ssr"
+          "name": "direct_radiance"
         },
         {
           "type": "reference",
@@ -293,7 +262,11 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "radiance_with_ssr"
+          "name": "direct_radiance"
+        },
+        {
+          "type": "reference",
+          "name": "transparent_pass_marker"
         }
       ],
       "outputs": [
@@ -322,7 +295,7 @@
         },
         {
           "type": "marker",
-          "name": "IMGUI_PASS_MARKER"
+          "name": "debug_pass_marker"
         }
       ]
     },
@@ -332,7 +305,7 @@
       "inputs": [
         {
           "type": "reference",
-          "name": "IMGUI_PASS_MARKER"
+          "name": "debug_pass_marker"
         },
         {
           "type": "texture",
@@ -345,10 +318,6 @@
         {
           "type": "texture",
           "name": "radiance"
-        },
-        {
-          "type": "texture",
-          "name": "radiance_with_ssr"
         },
         {
           "type": "texture",

@@ -147,6 +147,12 @@ crude_gfx_scene_renderer_initialize
       scene_renderer->model_renderer_resources_manager,
       crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL ) );
     scene_renderer->camera_model_renderer_resources_instance.cast_shadow = false;
+    
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->capsule_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf", NULL ) );
+    scene_renderer->capsule_model_renderer_resources_instance.cast_shadow = false;
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -168,7 +174,7 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_transparent_pass_initialize( &scene_renderer->transparent_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
-  crude_gfx_ssr_pass_initialize( &scene_renderer->ssr_pass, scene_renderer );
+  //crude_gfx_ssr_pass_initialize( &scene_renderer->ssr_pass, scene_renderer );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
@@ -206,7 +212,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
   crude_gfx_transparent_pass_deinitialize( &scene_renderer->transparent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
-  crude_gfx_ssr_pass_deinitialize( &scene_renderer->ssr_pass );
+  //crude_gfx_ssr_pass_deinitialize( &scene_renderer->ssr_pass );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
@@ -246,6 +252,7 @@ crude_gfx_scene_renderer_deinitialize
   
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->capsule_model_renderer_resources_instance );
 }
 
 bool
@@ -266,6 +273,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   // load debug light (in case it was cleaned because of new model manager resource clean)
   scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
   scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
+  scene_renderer->capsule_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf", NULL );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
@@ -453,7 +461,7 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "postprocessing_pass" ), crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "transparent_pass" ), crude_gfx_transparent_pass_pack( &scene_renderer->transparent_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "light_lut_pass" ), crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ssr_pass" ), crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ssr_pass" ), crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "pointlight_shadows_pass" ), crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
 #if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
@@ -757,6 +765,17 @@ crude_scene_renderer_register_nodes_instances_
   {
     XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
     CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
+  }
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_character ) )
+  {
+    crude_physics_character                               *character;
+
+    character = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character );
+  
+    model_to_custom_model = XMMatrixScaling( 2.f * character->character_radius_standing, character->character_height_standing, 2.f * character->character_radius_standing );
+    XMStoreFloat4x4( &scene_renderer->capsule_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->capsule_model_renderer_resources_instance );
   }
   
   *model_initialized |= local_model_initialized;

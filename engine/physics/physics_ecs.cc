@@ -253,8 +253,7 @@ crude_physics_character_pre_simulation_system_
 
     translation_diff = XMVectorSubtract(
       crude_jph_vec3_to_vector( character_container->jph_character_class->GetPosition( ) ),
-      crude_jph_vec3_to_vector( character_container->manually_stored_transform.GetTranslation( ) )
-    );
+      crude_jph_vec3_to_vector( character_container->manually_stored_transform.GetTranslation( ) ) );
 
     XMStoreFloat3( &transform->translation, XMVectorAdd( XMLoadFloat3( &transform->translation ), translation_diff ) );
     XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), rotation_diff ) );
