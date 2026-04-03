@@ -35,3 +35,27 @@ crude_float4_to_jph_quat
 (
   _In_ XMFLOAT4                                           *float4
 );
+
+CRUDE_API JPH::RVec3
+crude_vector_to_jph_vec3
+(
+  _In_ XMVECTOR                                            vector
+);
+
+CRUDE_API JPH::Quat
+crude_vector_to_jph_quat
+(
+  _In_ XMVECTOR                                            vector
+);
+
+CRUDE_API XMVECTOR
+crude_jph_vec3_to_vector
+(
+  _In_ JPH::RVec3                                          v
+);
+
+CRUDE_API XMVECTOR
+crude_jph_quat_to_vector
+(
+  _In_ JPH::Quat                                           q
+);

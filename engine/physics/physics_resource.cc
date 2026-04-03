@@ -57,3 +57,39 @@ crude_float4_to_jph_quat
 {
   return JPH::Quat( float4->x, float4->y, float4->z, float4->w );
 }
+
+JPH::RVec3
+crude_vector_to_jph_vec3
+(
+  _In_ XMVECTOR                                            vector
+)
+{
+  return JPH::RVec3( XMVectorGetX( vector ), XMVectorGetY( vector ), XMVectorGetZ( vector ) );
+}
+
+JPH::Quat
+crude_vector_to_jph_quat
+(
+  _In_ XMVECTOR                                            vector
+)
+{
+  return JPH::Quat( XMVectorGetX( vector ), XMVectorGetY( vector ), XMVectorGetZ( vector ), XMVectorGetW( vector ) );
+}
+
+XMVECTOR
+crude_jph_vec3_to_vector
+(
+  _In_ JPH::RVec3                                          v
+)
+{
+  return XMVectorSet( v.GetX( ), v.GetY( ), v.GetZ( ), 0.f );
+}
+
+CRUDE_API XMVECTOR
+crude_jph_quat_to_vector
+(
+  _In_ JPH::Quat                                           q
+)
+{
+  return XMVectorSet( q.GetX( ), q.GetY( ), q.GetZ( ), q.GetW( ) );
+}

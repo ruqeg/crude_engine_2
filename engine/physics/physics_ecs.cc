@@ -18,6 +18,7 @@ ECS_COMPONENT_DECLARE( crude_physics_character );
 ECS_COMPONENT_DECLARE( crude_physics_character_handle );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character, "crude_physics_character" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_physics_character_handle, "crude_physics_character_handle" );
 
 void
 crude_physics_components_import
@@ -32,6 +33,7 @@ crude_physics_components_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_physics_character );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_physics_character );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_physics_character_handle );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character )
@@ -56,6 +58,22 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character )
 {
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_handle )
+{
+  crude_physics_character_container                       *character_container;
+  JPH::RMat44                                              jph_wolrd_transform;
+  JPH::Vec3                                                jph_velocity;
+
+  character_container = crude_physics_access_character( manager->physics_manager, *component );
+  
+  jph_wolrd_transform = character_container->jph_character_class->GetWorldTransform( );
+  jph_velocity = character_container->jph_character_class->GetLinearVelocity( );
+
+  ImGui::LabelText( "World Transform", "%f %f %f", jph_wolrd_transform.GetTranslation( ).GetX( ), jph_wolrd_transform.GetTranslation( ).GetY( ), jph_wolrd_transform.GetTranslation( ).GetZ( ) );
+  ImGui::LabelText( "World Rotation", "%f %f %f %f", jph_wolrd_transform.GetQuaternion( ).GetX( ), jph_wolrd_transform.GetQuaternion( ).GetY( ), jph_wolrd_transform.GetQuaternion( ).GetZ( ), jph_wolrd_transform.GetQuaternion( ).GetW( ) );
+  ImGui::LabelText( "Velocity", "%f %f %f", jph_velocity.GetX( ), jph_velocity.GetY( ), jph_velocity.GetZ( ) );
 }
 
 /**********************************************************
@@ -217,6 +235,8 @@ crude_physics_character_pre_simulation_system_
     crude_physics_character_handle                        *character_handle;
     crude_transform                                       *transform;
     crude_physics_character_container                     *character_container;
+    XMVECTOR                                               rotation_diff;
+    XMVECTOR                                               translation_diff;
     JPH::RMat44                                            jph_world_transform;
     
     character_handle = &character_handle_per_entity[ i ];
@@ -224,9 +244,20 @@ crude_physics_character_pre_simulation_system_
     
     character_container = crude_physics_access_character( ctx->physics, character_handle[ i ] );
     character_container->jph_character_class->PostSimulation( 0.05f );
-    
-    jph_world_transform = character_container->jph_character_class->GetWorldTransform( );
-    crude_jph_transform_to_transform( transform, &jph_world_transform );
+
+    rotation_diff = XMQuaternionMultiply(
+      crude_jph_quat_to_vector( character_container->jph_character_class->GetRotation( ) ),
+      XMQuaternionInverse(
+        crude_jph_quat_to_vector( character_container->manually_stored_transform.GetQuaternion( ) )
+      ) );
+
+    translation_diff = XMVectorSubtract(
+      crude_jph_vec3_to_vector( character_container->jph_character_class->GetPosition( ) ),
+      crude_jph_vec3_to_vector( character_container->manually_stored_transform.GetTranslation( ) )
+    );
+
+    XMStoreFloat3( &transform->translation, XMVectorAdd( XMLoadFloat3( &transform->translation ), translation_diff ) );
+    XMStoreFloat4( &transform->rotation, XMQuaternionMultiply( XMLoadFloat4( &transform->rotation ), rotation_diff ) );
   }
 cleanup:
   CRUDE_PROFILER_ZONE_END;
@@ -253,16 +284,20 @@ crude_physics_character_post_simulation_system_
     crude_physics_character_handle                        *character_handle;
     crude_transform                                       *transform;
     crude_physics_character_container                     *character_container;
-    JPH::RMat44                                            jph_world_transform;
+    XMMATRIX                                               node_to_world;
+    XMVECTOR                                               scale, translation, rotation;
     
     character_handle = &character_handle_per_entity[ i ];
     transform = &transform_per_entity[ i ]; 
     
     character_container = crude_physics_access_character( ctx->physics, character_handle[ i ] );
-    
-    character_container->jph_character_class->SetPositionAndRotation(
-      crude_float3_to_jph_vec3( &transform->translation ),
-      crude_float4_to_jph_quat( &transform->rotation ) );
+
+    node_to_world = crude_transform_node_to_world( it->world, it->entities[ i ], transform );
+
+    XMMatrixDecompose( &scale, &rotation, &translation, node_to_world );
+
+    character_container->jph_character_class->SetPositionAndRotation( crude_vector_to_jph_vec3( translation ), crude_vector_to_jph_quat( rotation ) );
+    character_container->manually_stored_transform = character_container->jph_character_class->GetWorldTransform( );
   }
 cleanup:
   CRUDE_PROFILER_ZONE_END;

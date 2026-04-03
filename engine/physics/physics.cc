@@ -1,6 +1,7 @@
 #include <thirdparty/flecs/flecs.h>
 #include <stdarg.h>
 
+#include <engine/core/time.h>
 #include <engine/core/memory.h>
 #include <engine/core/log.h>
 #include <engine/core/array.h>
@@ -263,18 +264,10 @@ crude_physics_initialize
   _In_ crude_ecs                                          *world
 )
 {
-  JPH::BodyInterface                                      *jph_body_interface_class;
-  JPH::BoxShapeSettings                                    jph_floor_shape_settings_class;
-  JPH::ShapeSettings::ShapeResult                          jph_floor_shape_result_class;
-  JPH::ShapeRefC                                           jph_floor_shape_class;
-  JPH::BodyCreationSettings                                jph_floor_settings_class;
-  JPH::BodyCreationSettings                                jph_sphere_settings_class;
-
-  ecs_query_desc_t                                         query_desc;
-
   physics->physics_allocator = creation->physics_allocator;
   physics->physics_allocator_container = crude_heap_allocator_pack( creation->physics_allocator );
 
+  physics->last_update_time = crude_time_now( );
   physics->simulation_enabled = true;
 
   crude_resource_pool_initialize( &physics->characters_resource_pool, physics->physics_allocator_container, 16, sizeof( crude_physics_character_container ) );
@@ -311,28 +304,8 @@ crude_physics_initialize
 
   physics->jph_physics_system_class->SetBodyActivationListener( physics->jph_body_activation_listener_class );
   physics->jph_physics_system_class->SetContactListener( physics->jph_contact_listener_class );
-
-  jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
   
-  jph_floor_shape_settings_class = CRUDE_COMPOUNT( JPH::BoxShapeSettings, { JPH::Vec3( 100.0f, 1.0f, 100.0f ) } );
-  jph_floor_shape_settings_class.SetEmbedded( );
-  
-  jph_floor_shape_result_class = jph_floor_shape_settings_class.Create( );
-  jph_floor_shape_class = jph_floor_shape_result_class.Get( );
-  
-  jph_floor_settings_class = CRUDE_COMPOUNT( JPH::BodyCreationSettings,{
-    jph_floor_shape_class, JPH::RVec3( 0.0, -1.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving } );
-  
-  physics->jph_floor_class = jph_body_interface_class->CreateBody( jph_floor_settings_class );
-  
-  jph_body_interface_class->AddBody( physics->jph_floor_class->GetID( ), JPH::EActivation::DontActivate );
-  
-  jph_sphere_settings_class = CRUDE_COMPOUNT( JPH::BodyCreationSettings, { CRUDE_JOLT_OVERRIDEN_NEW JPH::SphereShape( 0.5f ), JPH::RVec3( 0.0, 2.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Dynamic, g_crude_jph_layer_moving } );
-  physics->jph_sphere_id_class = jph_body_interface_class->CreateAndAddBody( jph_sphere_settings_class, JPH::EActivation::Activate );
-  
-  jph_body_interface_class->SetLinearVelocity( physics->jph_sphere_id_class, JPH::Vec3( 0.0f, -5.0f, 0.0f ) );
-  
-  physics->jph_physics_system_class->OptimizeBroadPhase( );
+  //physics->jph_physics_system_class->OptimizeBroadPhase( );
 
   physics->collision_manager = creation->collision_manager;
 }
@@ -346,12 +319,6 @@ crude_physics_deinitialize
   JPH::BodyInterface                                      *jph_body_interface_class;
 
   jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
-  
-  jph_body_interface_class->RemoveBody( physics->jph_sphere_id_class );
-  jph_body_interface_class->DestroyBody( physics->jph_sphere_id_class );
-  
-  jph_body_interface_class->RemoveBody( physics->jph_floor_class->GetID( ) );
-  jph_body_interface_class->DestroyBody( physics->jph_floor_class->GetID( ) );
   
   JPH::UnregisterTypes();
   
@@ -374,10 +341,22 @@ crude_physics_deinitialize
 void
 crude_physics_update
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ int64                                               current_time
 )
 {
+  if ( !physics->simulation_enabled )
+  {
+    return;
+  }
+
+  if ( crude_time_delta_seconds( physics->last_update_time, current_time ) < CRUDE_PHYSICS_JOLT_DELTA_TIME )
+  {
+    return;
+  }
+
   physics->jph_physics_system_class->Update( CRUDE_PHYSICS_JOLT_DELTA_TIME, CRUDE_PHYSICS_JOLT_COLLISIONS_STEPS, physics->jph_temporary_allocator_class, physics->jph_job_system_class );
+  physics->last_update_time = current_time;
 }
 
 void
@@ -440,6 +419,8 @@ crude_physics_create_character
     physics->jph_physics_system_class );
 
   character_container->jph_character_class->AddToPhysicsSystem( JPH::EActivation::Activate );
+  
+  CRUDE_CXX_CONSTRUCTOR( &character_container->manually_stored_transform, JPH::Mat44 );
 
   return handle;
 }

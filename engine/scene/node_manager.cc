@@ -56,6 +56,7 @@ crude_node_manager_initialize
   _In_ crude_node_manager_creation const                  *creation
 )
 {
+  manager->physics_manager = creation->physics_manager;
   manager->temporary_allocator = creation->temporary_allocator;
   manager->components_serialization_manager = creation->components_serialization_manager;
   manager->resources_absolute_directory = creation->resources_absolute_directory;

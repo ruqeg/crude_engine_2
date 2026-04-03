@@ -315,10 +315,11 @@ crude_engine_update
   crude_platform_update( &engine->platform );
   crude_gui_devmenu_update( &engine->devmenu );
   crude_editor_update( &engine->editor );
-
-  crude_physics_update( &engine->physics );
-
+  
   current_time = crude_time_now( );
+
+  crude_physics_update( &engine->physics, current_time );
+
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( engine->world, delta_time );
   engine->last_update_time = current_time;
@@ -773,6 +774,7 @@ crude_engine_initialize_scene_
   node_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   node_manager_creation.temporary_allocator = &engine->temporary_allocator;
   node_manager_creation.collisions_resources_manager = &engine->collision_resources_manager;
+  node_manager_creation.physics_manager = &engine->physics;
   node_manager_creation.components_serialization_manager = &engine->components_serialization_manager;
   node_manager_creation.allocator = &engine->common_allocator;
   node_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;

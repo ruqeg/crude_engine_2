@@ -20,9 +20,9 @@ crude_gfx_asynchronous_loader_manager_intiailize
   manager->async_loaders_count = 0;
   manager->active_async_loaders_max_count = active_async_loaders_max_count;
   
-  crude_task_sheduler_add_pinned_task( task_sheduler, crude_gfx_asynchronous_loader_manager_pinned_task_asynchronous_loader_loop_, manager, active_async_loaders_max_count );
-  
   mtx_init( &manager->task_mutex, mtx_plain );
+  
+  crude_task_sheduler_add_pinned_task( task_sheduler, crude_gfx_asynchronous_loader_manager_pinned_task_asynchronous_loader_loop_, manager, active_async_loaders_max_count );
 }
 
 void

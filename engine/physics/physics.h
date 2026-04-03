@@ -156,6 +156,7 @@ typedef struct crude_physics_character_handle
 
 typedef struct crude_physics_character_container
 {
+  JPH::RMat44                                              manually_stored_transform;
   JPH::Ref< JPH::Character >                               jph_character_class;
 } crude_physics_character_container;
 
@@ -175,7 +176,8 @@ typedef struct crude_physics
   
   /* Commonm */
   crude_resource_pool                                      characters_resource_pool;
-  bool                                                     simulation_enabled;                                             
+  bool                                                     simulation_enabled;
+  int64                                                    last_update_time;
     
   /* JPH */
   JPH::PhysicsSystem                                      *jph_physics_system_class;
@@ -186,8 +188,6 @@ typedef struct crude_physics
   _crude_jph_object_layer_pair_filter_class               *jph_object_vs_object_layer_filter_class;
   _crude_jph_body_activation_listener_class               *jph_body_activation_listener_class;
   _crude_jph_contact_listener_class                       *jph_contact_listener_class;
-  JPH::Body                                               *jph_floor_class;
-  JPH::BodyID                                              jph_sphere_id_class;
 
 } crude_physics;
 
@@ -208,7 +208,8 @@ crude_physics_deinitialize
 CRUDE_API void
 crude_physics_update
 (
-  _In_ crude_physics                                      *physics
+  _In_ crude_physics                                      *physics,
+  _In_ int64                                               current_time
 );
 
 CRUDE_API void
