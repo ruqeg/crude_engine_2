@@ -94,6 +94,14 @@ crude_transform_parent_to_world
   _In_ crude_entity                                        node
 );
 
+CRUDE_API crude_transform
+crude_transform_lerp
+(
+  _In_ crude_transform                                    *transform1,
+  _In_ crude_transform                                    *transform2,
+  _In_ float32                                             t
+);
+
 CRUDE_API crude_entity
 crude_node_copy_hierarchy
 (

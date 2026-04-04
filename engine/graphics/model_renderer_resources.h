@@ -117,12 +117,14 @@ typedef struct crude_gfx_model_renderer_resources_animation_instance
   bool                                                     paused;
   float32                                                  speed;
   bool                                                     loop;
+  int32                                                    nodes_enabled_bits[ 8 ];
 } crude_gfx_model_renderer_resources_animation_instance;
 
 typedef struct crude_gfx_model_renderer_resources_instance
 {
   crude_transform                                         *nodes_transforms;
-  crude_gfx_model_renderer_resources_animation_instance    animation_instance;
+  crude_gfx_model_renderer_resources_animation_instance    animations_instances[ 8 ];
+  uint32                                                   animations_instances_count;
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
   bool                                                     cast_shadow;
@@ -175,11 +177,46 @@ crude_gfx_model_renderer_resources_instance_update_animation
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ int64                                               animation_instance_index,
   _In_ float32                                             delta_time
 );
 
+CRUDE_API bool
+crude_gfx_model_renderer_resources_animation_instance_is_enabled_node
+(
+  _Inout_ crude_gfx_model_renderer_resources_animation_instance *animation_instance,
+  _In_ int64                                               node_index
+);
+
 CRUDE_API void
-crude_gfx_model_renderer_resources_instance_set_animation_by_name
+crude_gfx_model_renderer_resources_animation_instance_enable_node
+(
+  _Inout_ crude_gfx_model_renderer_resources_animation_instance *animation_instance,
+  _In_ int64                                               node_index,
+  _In_ bool                                                enabled
+);
+
+CRUDE_API int64
+crude_gfx_model_renderer_resources_instance_find_node_by_name
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_blend_animations
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ uint32                                              from_index,
+  _In_ uint32                                              to_index,
+  _In_ uint32                                              blend_factor,
+  _In_ crude_stack_allocator                              *temporary_allocator
+);
+
+CRUDE_API uint64
+crude_gfx_model_renderer_resources_instance_find_animation_index_by_name
 (
   _In_ crude_gfx_model_renderer_resources_instance        *instance,
   _In_ crude_gfx_model_renderer_resources_manager         *manager,

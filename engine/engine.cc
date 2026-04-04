@@ -300,13 +300,15 @@ crude_engine_update
   
   crude_platform_update( &engine->platform );
   crude_gui_devmenu_update( &engine->devmenu );
-  crude_editor_update( &engine->editor );
-  
+
   current_time = crude_time_now( );
+  delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
+
+  crude_editor_update( &engine->editor, delta_time );
+  
 
   crude_physics_update( &engine->physics, current_time );
 
-  delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
   crude_ecs_progress( engine->world, delta_time );
   engine->last_update_time = current_time;
 
@@ -317,12 +319,10 @@ crude_engine_update
   }
 
   crude_engine_commands_manager_update( &engine->commands_manager );
-  crude_gfx_scene_renderer_update_animations_from_node( &engine->scene_renderer, engine->world, engine->main_node, delta_time );
 
   if ( crude_engine_graphics_main_thread_loop_( engine )  )
   {
-    crude_engine_graphics_task_set_thread_loop_( 0, 0, 0, engine );
-    //crude_task_sheduler_start_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
+    crude_task_sheduler_start_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   }
 
   CRUDE_PROFILER_ZONE_END;

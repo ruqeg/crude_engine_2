@@ -58,7 +58,8 @@ crude_editor_queue_draw
 CRUDE_API void
 crude_editor_update
 (
-  _In_ crude_editor                                       *editor
+  _In_ crude_editor                                       *editor,
+  _In_ float32                                             delta_time
 );
 
 CRUDE_API void

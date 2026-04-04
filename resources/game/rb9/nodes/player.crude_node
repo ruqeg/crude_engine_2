@@ -9,7 +9,7 @@
 			"type":	"crude_player_controller",
 			"rotate_speed":	0.00999999977648258,
 			"walk_speed":	25,
-			"pitch_limit":	0.78539818525314331
+			"pitch_limit":	0.43633231520652771
 		}],
 	"children":	[{
 			"name":	"character",
@@ -29,7 +29,7 @@
 					"name":	"pivot_yaw",
 					"components":	[{
 							"type":	"crude_transform",
-							"translation":	[0, 9, 0],
+							"translation":	[0, 9.5, 0],
 							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
 						}],
@@ -45,12 +45,12 @@
 									"name":	"camera",
 									"components":	[{
 											"type":	"crude_transform",
-											"translation":	[-3, 0, -5.8819999694824219],
+											"translation":	[-3, 0, -4],
 											"rotation":	[0, 1, 0, 0],
 											"scale":	[1, 1, 1]
 										}, {
 											"type":	"crude_camera",
-											"fov_radians":	1.0471975803375244,
+											"fov_radians":	1.2217305898666382,
 											"near_z":	1,
 											"far_z":	300,
 											"aspect_ratio":	1.7999999523162842
@@ -71,8 +71,8 @@
 							"components":	[{
 									"type":	"crude_transform",
 									"translation":	[0, 0, 0],
-									"rotation":	[0, 0, 0, 1],
-									"scale":	[7, 7, 7]
+									"rotation":	[0, 0.4501207172870636, 0, 0.89296776056289673],
+									"scale":	[6.99999713897705, 6.9999990463256836, 6.99999713897705]
 								}, {
 									"type":	"crude_gltf",
 									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"

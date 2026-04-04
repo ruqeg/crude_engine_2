@@ -60,7 +60,14 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
  *                 System
  *
  *********************************************************/
+CRUDE_ECS_OBSERVER_DECLARE( crude_player_controller_create_observer );
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_update_system_ );
+
+void
+crude_player_controller_create_observer
+(
+  _In_ ecs_iter_t                                         *it
+);
 
 void
 crude_player_controller_system_import
@@ -78,10 +85,59 @@ crude_player_controller_system_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player_controller );
 
   crude_scene_components_import( world, manager );
-
+  
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_player_controller ) },
   } );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_create_observer, EcsOnSet, ctx, { 
+    { .id = ecs_id( crude_player_controller ), .oper = EcsAnd }
+  } );
+}
+
+void
+crude_player_controller_create_observer
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_player_controller_create_observer" );
+
+  crude_game                                              *game;
+  crude_player_controller_system_context                  *ctx;
+  crude_player_controller                                 *player_controller_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
+  player_controller_per_entity = ecs_field( it, crude_player_controller, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input const                                     *input;
+    crude_player_controller                               *player_controller;
+    crude_gltf                                            *player_model;
+    crude_entity                                           entity;  
+    crude_entity                                           player_character_entity;
+    crude_entity                                           player_orientation_entity;
+    crude_entity                                           player_model_entity;
+
+    input = ctx->input;
+
+    entity = crude_entity_from_iterator( it, i );
+
+    player_controller = &player_controller_per_entity[ i ];
+    
+    player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
+    player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
+    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
+
+    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
+    player_model->model_renderer_resources_instance.animations_instances_count = 2; 
+    
+    player_model->model_renderer_resources_instance.animations_instances[ 0 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
+    player_model->model_renderer_resources_instance.animations_instances[ 1 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
+  }
+  CRUDE_PROFILER_ZONE_END;
 }
 
 void
@@ -179,7 +235,7 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_pitch_transform->rotation, XMQuaternionRotationRollPitchYaw( pivot_pitch_angle, 0.f, 0.f ) );
         
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
-        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 5 * it->delta_time );
+        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 15 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
       }
 
@@ -239,10 +295,18 @@ crude_player_controller_update_system_
     {
       game->engine->camera_node = player_camera_entity;
     }
+
+    crude_gfx_model_renderer_resources_instance_update_animation(
+      &game->engine->model_renderer_resources_manager,
+      &player_model->model_renderer_resources_instance,
+      0,
+      it->delta_time );
     
-    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
-    crude_gfx_model_renderer_resources_instance_set_animation_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "Armature|mixamo.com|Layer0" ); 
-    player_model->model_renderer_resources_instance.animation_instance.loop = true;
+    crude_gfx_model_renderer_resources_instance_update_animation(
+      &game->engine->model_renderer_resources_manager,
+      &player_model->model_renderer_resources_instance,
+      1,
+      it->delta_time );
   }
   CRUDE_PROFILER_ZONE_END;
 }

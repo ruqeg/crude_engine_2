@@ -25,6 +25,15 @@ crude_editor_pop_style_
 (
 );
 
+static void
+crude_editor_update_animations_from_node
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+);
+
 void
 crude_editor_initialize
 (
@@ -231,11 +240,17 @@ crude_editor_queue_draw
 void
 crude_editor_update
 (
-  _In_ crude_editor                                       *editor
+  _In_ crude_editor                                       *editor,
+  _In_ float32                                             delta_time
 )
 {
   crude_gui_gpu_visual_profiler_update( &editor->gpu_visual_profiler );
   crude_gui_debug_update( &editor->debug );
+
+  if ( CRUDE_ECS_EDITOR_STAGE_IS_ENABLED( editor->engine->world ) )
+  {
+    crude_editor_update_animations_from_node( &editor->engine->scene_renderer, editor->engine->world, editor->engine->main_node, delta_time );
+  }
 }
 
 void
@@ -487,4 +502,42 @@ crude_editor_pop_style_
 {
   ImGui::PopStyleVar( 15 );
   ImGui::PopStyleColor( 57 );
+}
+
+void
+crude_editor_update_animations_from_node
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+)
+{
+  ecs_iter_t                                               children_it;
+  bool                                                     local_model_initialized;
+  XMMATRIX                                                 model_to_custom_model;
+
+  children_it = crude_ecs_children( world, node );
+  local_model_initialized = false;
+
+  model_to_custom_model = XMMatrixIdentity( );
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
+  {
+    crude_gltf                                            *child_gltf;
+    child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
+    if ( child_gltf->model_renderer_resources_instance.animations_instances_count )
+    {
+      crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, child_gltf->model_renderer_resources_instance.animations_instances[ 0 ].animation_index, delta_time );
+    }
+  }
+
+  while ( ecs_children_next( &children_it ) )
+  {
+    for ( size_t i = 0; i < children_it.count; ++i )
+    {
+      crude_entity child = crude_entity_from_iterator( &children_it, i );
+      crude_editor_update_animations_from_node( scene_renderer, world, child, delta_time );
+    }
+  }
 }

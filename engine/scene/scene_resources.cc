@@ -119,6 +119,21 @@ crude_transform_parent_to_world
   return XMMatrixIdentity( ) ;
 }
 
+crude_transform
+crude_transform_lerp
+(
+  _In_ crude_transform                                    *transform1,
+  _In_ crude_transform                                    *transform2,
+  _In_ float32                                             t
+)
+{
+  crude_transform result;
+  XMStoreFloat3( &result.translation, XMVectorLerp( XMLoadFloat3( &transform1->translation ), XMLoadFloat3( &transform2->translation ), t ) );
+  XMStoreFloat4( &result.rotation, XMQuaternionSlerp( XMLoadFloat4( &transform1->rotation ), XMLoadFloat4( &transform2->rotation ), t ) );
+  XMStoreFloat3( &result.scale, XMVectorLerp( XMLoadFloat3( &transform1->scale ), XMLoadFloat3( &transform2->scale ), t ) );
+  return result;
+}
+
 crude_entity
 crude_node_copy_hierarchy
 (

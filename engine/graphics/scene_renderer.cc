@@ -367,41 +367,6 @@ crude_gfx_scene_renderer_update_instances_from_node
 }
 
 void
-crude_gfx_scene_renderer_update_animations_from_node
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node,
-  _In_ float32                                             delta_time
-)
-{
-  ecs_iter_t                                               children_it;
-  bool                                                     local_model_initialized;
-  XMMATRIX                                                 model_to_custom_model;
-
-  children_it = crude_ecs_children( world, node );
-  local_model_initialized = false;
-
-  model_to_custom_model = XMMatrixIdentity( );
-  
-  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
-  {
-    crude_gltf                                            *child_gltf;
-    child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
-    crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, delta_time );
-  }
-
-  while ( ecs_children_next( &children_it ) )
-  {
-    for ( size_t i = 0; i < children_it.count; ++i )
-    {
-      crude_entity child = crude_entity_from_iterator( &children_it, i );
-      crude_gfx_scene_renderer_update_animations_from_node( scene_renderer, world, child, delta_time );
-    }
-  }
-}
-
-void
 crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer

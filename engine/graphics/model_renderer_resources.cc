@@ -128,8 +128,14 @@ crude_gfx_model_renderer_resources_instance_initialize
 {
   *instance = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
   instance->model_renderer_resources_handle.index = manager ? handle.index : -1;
-  instance->animation_instance.animation_index = -1;
-  instance->animation_instance.speed = 1.f;
+  instance->animations_instances_count = 0;
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( instance->animations_instances ); ++i )
+  {
+    instance->animations_instances[ i ].speed = 1.f;
+    instance->animations_instances[ i ].loop = true;
+    instance->animations_instances[ i ].animation_index = 1;
+    crude_memory_set( &instance->animations_instances[ i ].nodes_enabled_bits, 0xffffffffffffffff, sizeof( instance->animations_instances[ i ].nodes_enabled_bits ) );
+  }
   instance->cast_shadow = true;
   XMStoreFloat4x4( &instance->model_to_world, XMMatrixIdentity( ) );
 
@@ -159,8 +165,8 @@ crude_gfx_model_renderer_resources_instance_deinitialize
   }
 }
 
-void
-crude_gfx_model_renderer_resources_instance_set_animation_by_name
+uint64
+crude_gfx_model_renderer_resources_instance_find_animation_index_by_name
 (
   _In_ crude_gfx_model_renderer_resources_instance        *instance,
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
@@ -170,7 +176,7 @@ crude_gfx_model_renderer_resources_instance_set_animation_by_name
   crude_gfx_model_renderer_resources *model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, instance->model_renderer_resources_handle );
   int64 index = CRUDE_HASHMAPSTR_GET_INDEX( model_renderer_resources->animation_name_to_index, name );
   CRUDE_ASSERT( index != -1 );
-  instance->animation_instance.animation_index = model_renderer_resources->animation_name_to_index[ index ].value;
+  return model_renderer_resources->animation_name_to_index[ index ].value;
 }
 
 void
@@ -178,20 +184,21 @@ crude_gfx_model_renderer_resources_instance_update_animation
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ int64                                               animation_instance_index,
   _In_ float32                                             delta_time
 )
 {
   crude_gfx_animation                                     *animation;
   crude_gfx_model_renderer_resources                      *model_renderer_resources;
   crude_gfx_model_renderer_resources_animation_instance   *animation_instance;
-
+  
   if ( model_renderer_resources_instance->model_renderer_resources_handle.index == -1 )
   {
     return;
   }
 
   model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, model_renderer_resources_instance->model_renderer_resources_handle );
-  animation_instance = &model_renderer_resources_instance->animation_instance;
+  animation_instance = &model_renderer_resources_instance->animations_instances[ animation_instance_index];
 
   if ( animation_instance->animation_index < 0 )
   {
@@ -250,6 +257,11 @@ crude_gfx_model_renderer_resources_instance_update_animation
     channel = &animation->channels[ channel_index ];
     sampler = &animation->samplers[ channel->sampler_index ];
   
+    if ( !crude_gfx_model_renderer_resources_animation_instance_is_enabled_node( animation_instance, channel->node % 64 ) )
+    {
+      continue;
+    }
+
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( sampler->inputs ) - 1; ++i )
     {
       if ( ( animation_instance->current_time >= sampler->inputs[ i ] ) && ( animation_instance->current_time <= sampler->inputs[ i + 1 ] ) )
@@ -291,4 +303,110 @@ crude_gfx_model_renderer_resources_instance_update_animation
       }
     }
   }
+}
+
+bool
+crude_gfx_model_renderer_resources_animation_instance_is_enabled_node
+(
+  _Inout_ crude_gfx_model_renderer_resources_animation_instance *animation_instance,
+  _In_ int64                                               node_index
+)
+{
+  return animation_instance->nodes_enabled_bits[ node_index / 32 ] & ( 1 << ( node_index % 32 ) );
+}
+
+void
+crude_gfx_model_renderer_resources_animation_instance_enable_node
+(
+  _Inout_ crude_gfx_model_renderer_resources_animation_instance *animation_instance,
+  _In_ int64                                               node_index,
+  _In_ bool                                                enabled
+)
+{
+  if ( enabled )
+  {
+    animation_instance->nodes_enabled_bits[ node_index / 32 ] |= 1 << ( node_index % 32 );
+  }
+  else
+  {
+    animation_instance->nodes_enabled_bits[ node_index / 32 ] &= ~( 1 << ( node_index % 32 ) );
+  }
+}
+
+int64
+crude_gfx_model_renderer_resources_instance_find_node_by_name
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_model_renderer_resources                      *model_renderer_resources;
+  
+  if ( model_renderer_resources_instance->model_renderer_resources_handle.index == -1 )
+  {
+    return -1;
+  }
+
+  model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, model_renderer_resources_instance->model_renderer_resources_handle );
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++i )
+  {
+    if ( crude_string_cmp( model_renderer_resources->nodes[ i ].name, name ) == 0 )
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void
+crude_gfx_model_renderer_resources_instance_blend_animations
+(
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ uint32                                              from_index,
+  _In_ uint32                                              to_index,
+  _In_ uint32                                              blend_factor,
+  _In_ crude_stack_allocator                              *temporary_allocator
+)
+{
+  crude_transform                                         *original_transforms;
+  crude_transform                                         *from_transforms;
+  uint64                                                   nodes_count, temporary_allocator_marker;
+
+  temporary_allocator_marker = crude_stack_allocator_get_marker( temporary_allocator );
+
+  nodes_count = CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->nodes_transforms );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( original_transforms, nodes_count, crude_stack_allocator_pack( temporary_allocator ) );
+
+  for ( uint32 i = 0; i < nodes_count; ++i )
+  {
+    CRUDE_ARRAY_PUSH( original_transforms, model_renderer_resources_instance->nodes_transforms[ i ] );
+  }
+
+  crude_gfx_model_renderer_resources_instance_update_animation( manager, model_renderer_resources_instance, from_index, 0.0f );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( from_transforms, nodes_count, crude_stack_allocator_pack( temporary_allocator ) );
+  
+  for ( uint32 i = 0; i < nodes_count; ++i )
+  {
+    CRUDE_ARRAY_PUSH( from_transforms, model_renderer_resources_instance->nodes_transforms[ i ] );
+  }
+  
+  for ( uint32 i = 0; i < nodes_count; ++i )
+  {
+    model_renderer_resources_instance->nodes_transforms[ i ] = original_transforms[ i ];
+  }
+
+  crude_gfx_model_renderer_resources_instance_update_animation( manager, model_renderer_resources_instance, to_index, 0.0f );
+
+  for ( uint32 i = 0; i < nodes_count; ++i )
+  {
+    model_renderer_resources_instance->nodes_transforms[ i ] = crude_transform_lerp(
+      &from_transforms[ i ],
+      &model_renderer_resources_instance->nodes_transforms[ i ],
+      blend_factor );
+  }
+
+  crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
 }

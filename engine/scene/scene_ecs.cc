@@ -160,12 +160,36 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
     crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL ) );
 
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
+  
+  component->model_renderer_resources_instance.animations_instances_count = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "animations_instances_count" ) );
+  
+  {
+    cJSON const                                           *animations_instances_json;
+
+    animations_instances_json = cJSON_GetObjectItemCaseSensitive( component_json, "animations_instances" );
+    for ( uint32 i = 0; i < ( animations_instances_json && cJSON_GetArraySize( animations_instances_json ) ); ++i )
+    {
+      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+      cJSON const                                       *animation_instance_json;
+
+      animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
+      animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "animation_index" ) );
+      for ( uint32 k = 0; k < CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ); ++k )
+      {
+        animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( component_json, "nodes_enabled_bits" ), 0 ) );
+      }
+
+      animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
+    }
+  }
+
   return true;
 }
 
 CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_gltf )
 {
   cJSON                                                   *gltf_json;
+  cJSON                                                   *animations_instances_array_json;
   crude_gfx_model_renderer_resources                      *model_renderer_resources;
 
   CRUDE_ASSERT( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 );
@@ -179,6 +203,22 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_gltf )
   {
     cJSON_AddItemToObject( gltf_json, "hidden", cJSON_CreateBool( component->hidden ) );
   }
+
+  cJSON_AddItemToObject( gltf_json, "animations_instances_count", cJSON_CreateNumber( component->model_renderer_resources_instance.animations_instances_count ) );
+  
+  animations_instances_array_json = cJSON_CreateArray( );
+  for ( uint32 i = 0; i < component->model_renderer_resources_instance.animations_instances_count; ++i )
+  {
+    crude_gfx_model_renderer_resources_animation_instance const *animation_instance;
+    cJSON                                                 *animation_instance_json;
+
+    animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
+    animation_instance_json = cJSON_CreateObject( );
+    cJSON_AddItemToObject( animation_instance_json, "index", cJSON_CreateNumber( component->model_renderer_resources_instance.animations_instances[ i ].animation_index ) );
+    cJSON_AddItemToObject( animation_instance_json, "nodes_enabled_bits", cJSON_CreateIntArray( animation_instance->nodes_enabled_bits, CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ) ) );
+    cJSON_AddItemToArray( animations_instances_array_json, animation_instance_json );
+  }
+  cJSON_AddItemToObject( gltf_json, "animations_instances", animations_instances_array_json );
   return gltf_json;
 }
 
@@ -233,18 +273,17 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
   CRUDE_IMGUI_OPTION( "Relative Filepath", {
   } );
   
-  CRUDE_IMGUI_OPTION( "Animations", {
     if ( model_renderer_resources )
     {
       crude_gfx_animation                                 *animations;
       crude_gfx_model_renderer_resources_animation_instance *animation_instance;
-
-      animation_instance = &component->model_renderer_resources_instance.animation_instance;
+      
+      animation_instance = &component->model_renderer_resources_instance.animations_instances[ 0 ];
       animations = model_renderer_resources->animations;
       
       ImGui::Spacing( );
 
-      if ( ImGui::BeginCombo( "Animation", animation_instance->animation_index > -1 ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
+      if ( ImGui::BeginCombo( "Animation", ( component->model_renderer_resources_instance.animations_instances_count && ( animation_instance->animation_index != -1 ) ) ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
       {
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( animations ); i++ )
         {
@@ -252,6 +291,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
           if ( ImGui::Selectable( animations[ i ].name, is_selected ) )
           {
             animation_instance->animation_index = i;
+            component->model_renderer_resources_instance.animations_instances_count = 1;
           }
           
           if ( is_selected )
@@ -278,7 +318,27 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       ImGui::Checkbox( "Loop", &animation_instance->loop );
       ImGui::Checkbox( "Paused", &animation_instance->paused );
       ImGui::DragFloat( "Speed", &animation_instance->speed, 0.1f, 0.1f );
+      if ( ImGui::CollapsingHeader( "Affected Nodes" ) )
+      {
+        for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++i )
+        {
+          bool                                             node_enabled;
+          
+          ImGui::PushID( i );
+          
+          node_enabled = crude_gfx_model_renderer_resources_animation_instance_is_enabled_node( animation_instance, i );
+          ImGui::Checkbox( "", &node_enabled );
+          crude_gfx_model_renderer_resources_animation_instance_enable_node( animation_instance, i, node_enabled );
+
+          ImGui::SameLine( );
+          
+          ImGui::Text( "%i | %s", i, model_renderer_resources->nodes[ i ].name );
+
+          ImGui::PopID( );
+        }
+      }
     }
+  CRUDE_IMGUI_OPTION( "Animations", {
     } );
 }
 
