@@ -275,6 +275,11 @@ crude_editor_handle_input
       crude_editor_stop_game( editor );
     }
   }
+
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F7 ].pressed )
+  {
+    crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, !editor->engine->physics.simulation_enabled );
+  }
 }
 
 void
@@ -287,6 +292,7 @@ crude_editor_start_game
   CRUDE_ECS_EDITOR_STAGE_ENABLE( editor->engine->world, false );
 
   crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
+  crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, true );
 }
 
 void
@@ -299,6 +305,7 @@ crude_editor_stop_game
   CRUDE_ECS_GAME_STAGE_ENABLE( editor->engine->world, false );
   crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
   editor->engine->camera_node = editor->editor_camera_node;
+    crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, false );
 }
 
 void

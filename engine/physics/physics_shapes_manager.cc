@@ -35,19 +35,17 @@ void
 crude_physics_shapes_manager_initialize
 (
   _In_ crude_physics_shapes_manager                       *manager,
-  _In_ crude_heap_allocator                               *allocator,
-  _In_ crude_heap_allocator                               *cgltf_temporary_allocator,
-  _In_ crude_physics                                      *physics_manager,
-  _In_ char const                                         *resources_absolute_directory
+  _In_ crude_physics_shapes_manager_creation const        *creation
 )
 {
-  manager->allocator = allocator;
-  manager->cgltf_temporary_allocator = cgltf_temporary_allocator;
-  manager->physics_manager = physics_manager;
-  manager->resources_absolute_directory = resources_absolute_directory;
+  manager->allocator = creation->allocator;
+  manager->cgltf_temporary_allocator = creation->cgltf_temporary_allocator;
+  manager->physics_manager = creation->physics_manager;
+  manager->resources_absolute_directory = creation->resources_absolute_directory;
+  manager->model_renderer_resources_manager = creation->model_renderer_resources_manager;
 
-  CRUDE_HASHMAPSTR_INITIALIZE( manager->mesh_shape_relative_filepath_to_hadle, crude_heap_allocator_pack( allocator ) );
-  crude_resource_pool_initialize( &manager->mesh_shape_resource_pool, crude_heap_allocator_pack( allocator ), 256, sizeof( crude_physics_mesh_shape_container ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->mesh_shape_relative_filepath_to_hadle, crude_heap_allocator_pack( manager->allocator ) );
+  crude_resource_pool_initialize( &manager->mesh_shape_resource_pool, crude_heap_allocator_pack( manager->allocator ), 256, sizeof( crude_physics_mesh_shape_container ) );
   crude_string_buffer_initialize( &manager->gltf_absolute_filepath_string_buffer, CRUDE_RKILO( 16 ), crude_heap_allocator_pack( manager->allocator ) );
 }
 
@@ -64,7 +62,7 @@ crude_physics_shapes_manager_deinitialize
 }
 
 crude_physics_mesh_shape_handle
-crude_physics_shapes_manager_get_octree_mesh_shape_handle
+crude_physics_shapes_manager_get_mesh_shape_handle
 (
   _In_ crude_physics_shapes_manager                       *manager,
   _In_ char const                                         *relative_filepath
@@ -82,6 +80,10 @@ crude_physics_shapes_manager_get_octree_mesh_shape_handle
 
   mesh_shape_handle = crude_physics_shapes_manager_load_mesh_shape_from_gltf_( manager, relative_filepath );
   mesh_shape_container = crude_physics_shapes_manager_access_mesh_shape( manager, mesh_shape_handle );
+  crude_gfx_model_renderer_resources_instance_initialize(
+    &mesh_shape_container->debug_model_renderer_resource_instance,
+    manager->model_renderer_resources_manager,
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, relative_filepath, NULL ) );
   CRUDE_HASHMAPSTR_SET( manager->mesh_shape_relative_filepath_to_hadle, CRUDE_COMPOUNT( crude_string_link, { mesh_shape_container->relative_filepath } ), mesh_shape_handle );
   return mesh_shape_handle;
 }
@@ -108,6 +110,8 @@ crude_physics_shapes_manager_clear
     {
       crude_physics_mesh_shape_container *mesh_shape_container = CRUDE_CAST( crude_physics_mesh_shape_container*, crude_resource_pool_access_resource( &manager->mesh_shape_resource_pool, manager->mesh_shape_relative_filepath_to_hadle[ i ].value.index ) );
       mesh_shape_container->jph_shape_class.~Ref( );
+      
+      crude_gfx_model_renderer_resources_instance_deinitialize( &mesh_shape_container->debug_model_renderer_resource_instance );
       crude_resource_pool_release_resource( &manager->mesh_shape_resource_pool, manager->mesh_shape_relative_filepath_to_hadle[ i ].value.index );
     }
     manager->mesh_shape_relative_filepath_to_hadle[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;

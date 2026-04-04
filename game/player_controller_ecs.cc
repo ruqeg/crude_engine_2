@@ -62,12 +62,6 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
  *********************************************************/
 CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_update_system_ );
 
-static void
-crude_player_controller_update_system_
-(
-  _In_ ecs_iter_t                                         *it
-);
-
 void
 crude_player_controller_system_import
 (
@@ -118,6 +112,7 @@ crude_player_controller_update_system_
     crude_gltf                                            *player_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
+    crude_entity                                           player_orientation_entity;
     crude_entity                                           player_model_entity;
     crude_entity                                           pivot_pitch_entity;
     crude_entity                                           pivot_yaw_entity;
@@ -130,7 +125,8 @@ crude_player_controller_update_system_
     player_controller = &player_controller_per_entity[ i ];
     
     player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
-    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "model" );
+    player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
+    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
     player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
@@ -141,13 +137,14 @@ crude_player_controller_update_system_
       {
         crude_transform                                   *pivot_yaw_transform;
         crude_transform                                   *pivot_pitch_transform;
-        XMVECTOR                                           axis;
+        crude_transform                                   *player_orientation_transform;
+        XMVECTOR                                           pivot_yaw_rotation, player_orientation_rotation, axis;
         float32                                            pivot_yaw_angle, pivot_pitch_angle;
 
         pivot_pitch_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_pitch_entity, crude_transform );
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
+        player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
         
-
         XMQuaternionToAxisAngle( &axis, &pivot_yaw_angle, XMLoadFloat4( &pivot_yaw_transform->rotation ) );
         XMQuaternionToAxisAngle( &axis, &pivot_pitch_angle, XMLoadFloat4( &pivot_pitch_transform->rotation ) );
 
@@ -177,8 +174,13 @@ crude_player_controller_update_system_
           pivot_pitch_angle = pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
         }
 
-        XMStoreFloat4( &pivot_yaw_transform->rotation, XMQuaternionRotationRollPitchYaw( 0.f, pivot_yaw_angle, 0.f ) );
+        pivot_yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, pivot_yaw_angle, 0.f );
+        XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
         XMStoreFloat4( &pivot_pitch_transform->rotation, XMQuaternionRotationRollPitchYaw( pivot_pitch_angle, 0.f, 0.f ) );
+        
+        player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
+        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 5 * it->delta_time );
+        XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
       }
 
       /* Handle movement */

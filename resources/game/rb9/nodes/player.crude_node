@@ -59,17 +59,26 @@
 								}]
 						}]
 				}, {
-					"name":	"model",
+					"name":	"orientation",
 					"components":	[{
 							"type":	"crude_transform",
 							"translation":	[0, 0, 0],
 							"rotation":	[0, 0, 0, 1],
-							"scale":	[7, 7, 7]
-						}, {
-							"type":	"crude_gltf",
-							"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"
+							"scale":	[1, 1, 1]
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"model",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[0, 0, 0],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[7, 7, 7]
+								}, {
+									"type":	"crude_gltf",
+									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"
+								}],
+							"children":	[]
+						}]
 				}]
 		}]
 }

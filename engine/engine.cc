@@ -623,6 +623,7 @@ crude_engine_initialize_graphics_
   scene_renderer_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
   scene_renderer_creation.imgui_pass_enalbed = true;
   scene_renderer_creation.imgui_context = engine->imgui_context;
+  scene_renderer_creation.physics_shapes_manager = &engine->physics_shapes_manager;
   crude_gfx_scene_renderer_initialize( &engine->scene_renderer, &scene_renderer_creation );
 
 #if CRUDE_DEVELOP
@@ -672,13 +673,20 @@ crude_engine_initialize_physics_
 )
 {
   crude_physics_creation                                   physics_creation;
+  crude_physics_shapes_manager_creation                    physics_shapes_manager_creation;
 
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.physics_shapes_manager = &engine->physics_shapes_manager;
   physics_creation.physics_allocator = &engine->common_allocator;
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
   
-  crude_physics_shapes_manager_initialize( &engine->physics_shapes_manager, &engine->common_allocator, &engine->cgltf_temporary_allocator, &engine->physics, engine->environment.directories.resources_absolute_directory  );
+  physics_shapes_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_shapes_manager_creation );
+  physics_shapes_manager_creation.allocator = &engine->common_allocator;
+  physics_shapes_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
+  physics_shapes_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
+  physics_shapes_manager_creation.physics_manager = &engine->physics;
+  physics_shapes_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
+  crude_physics_shapes_manager_initialize( &engine->physics_shapes_manager, &physics_shapes_manager_creation );
 
   engine->physics_system_context = CRUDE_COMPOUNT_EMPTY( crude_physics_system_context );
   engine->physics_system_context.physics = &engine->physics;

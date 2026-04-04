@@ -117,7 +117,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
   else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
   {
     cJSON *mesh_json = cJSON_GetObjectItem( component_json, "mesh" );
-    component->mesh.handle = crude_physics_shapes_manager_get_octree_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( mesh_json, "relative_filepath" ) ) );
+    component->mesh.handle = crude_physics_shapes_manager_get_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( mesh_json, "relative_filepath" ) ) );
   }
   return true;
 }
@@ -200,7 +200,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
         replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
         if ( strstr( replace_relative_filepath, ".gltf" ) )
         {
-          component->mesh.handle = crude_physics_shapes_manager_get_octree_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, replace_relative_filepath );
+          component->mesh.handle = crude_physics_shapes_manager_get_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, replace_relative_filepath );
           modified = true;
         }
       }

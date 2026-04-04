@@ -21,6 +21,10 @@
 #include <engine/graphics/passes/ssr_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
+#if CRUDE_DEVELOP
+#include <engine/physics/physics_shapes_manager.h>
+#endif
+
 typedef struct crude_gfx_scene_renderer_creation
 {
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
@@ -29,6 +33,9 @@ typedef struct crude_gfx_scene_renderer_creation
   crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
   bool                                                     imgui_pass_enalbed;
+#if CRUDE_DEVELOP
+  crude_physics_shapes_manager                            *physics_shapes_manager;
+#endif
 } crude_gfx_scene_renderer_creation;
 
 typedef struct crude_gfx_scene_renderer_options
@@ -107,6 +114,9 @@ typedef struct crude_gfx_scene_renderer
   crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
+#if CRUDE_DEVELOP
+  crude_physics_shapes_manager                            *physics_shapes_manager;
+#endif
   
   /***********************
    * Base
