@@ -115,6 +115,7 @@ typedef struct crude_gfx_model_renderer_resources_animation_instance
   float32                                                  current_time;
   bool                                                     inverse;
   bool                                                     paused;
+  bool                                                     stoped;
   float32                                                  speed;
   bool                                                     loop;
   int32                                                    nodes_enabled_bits[ 8 ];
@@ -124,7 +125,6 @@ typedef struct crude_gfx_model_renderer_resources_instance
 {
   crude_transform                                         *nodes_transforms;
   crude_gfx_model_renderer_resources_animation_instance    animations_instances[ 8 ];
-  uint32                                                   animations_instances_count;
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
   bool                                                     cast_shadow;

@@ -132,8 +132,6 @@ crude_player_controller_create_observer
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
 
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
-    player_model->model_renderer_resources_instance.animations_instances_count = 2; 
-    
     player_model->model_renderer_resources_instance.animations_instances[ 0 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
     player_model->model_renderer_resources_instance.animations_instances[ 1 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
   }

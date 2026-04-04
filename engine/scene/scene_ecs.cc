@@ -161,8 +161,6 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
 
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   
-  component->model_renderer_resources_instance.animations_instances_count = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "animations_instances_count" ) );
-  
   {
     cJSON const                                           *animations_instances_json;
 
@@ -171,15 +169,15 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
     {
       crude_gfx_model_renderer_resources_animation_instance *animation_instance;
       cJSON const                                       *animation_instance_json;
+      
+      animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
 
       animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
-      animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "animation_index" ) );
+      animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "animation_index" ) );
       for ( uint32 k = 0; k < CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ); ++k )
       {
-        animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( component_json, "nodes_enabled_bits" ), 0 ) );
+        animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "nodes_enabled_bits" ), k ) );
       }
-
-      animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
     }
   }
 
@@ -204,10 +202,8 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_gltf )
     cJSON_AddItemToObject( gltf_json, "hidden", cJSON_CreateBool( component->hidden ) );
   }
 
-  cJSON_AddItemToObject( gltf_json, "animations_instances_count", cJSON_CreateNumber( component->model_renderer_resources_instance.animations_instances_count ) );
-  
   animations_instances_array_json = cJSON_CreateArray( );
-  for ( uint32 i = 0; i < component->model_renderer_resources_instance.animations_instances_count; ++i )
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( component->model_renderer_resources_instance.animations_instances ); ++i )
   {
     crude_gfx_model_renderer_resources_animation_instance const *animation_instance;
     cJSON                                                 *animation_instance_json;
@@ -273,17 +269,21 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
   CRUDE_IMGUI_OPTION( "Relative Filepath", {
   } );
   
+  CRUDE_IMGUI_OPTION( "Animations", {
     if ( model_renderer_resources )
     {
       crude_gfx_animation                                 *animations;
       crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+      static int32                                           animation_instance_index = 0;
       
-      animation_instance = &component->model_renderer_resources_instance.animations_instances[ 0 ];
+      animation_instance = &component->model_renderer_resources_instance.animations_instances[ animation_instance_index ];
       animations = model_renderer_resources->animations;
-      
+
       ImGui::Spacing( );
 
-      if ( ImGui::BeginCombo( "Animation", ( component->model_renderer_resources_instance.animations_instances_count && ( animation_instance->animation_index != -1 ) ) ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
+      ImGui::SliderInt( "Animation Instance", &animation_instance_index, 0, 8 );
+      
+      if ( ImGui::BeginCombo( "Animation", ( animation_instance->animation_index != -1 ) ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
       {
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( animations ); i++ )
         {
@@ -291,7 +291,6 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
           if ( ImGui::Selectable( animations[ i ].name, is_selected ) )
           {
             animation_instance->animation_index = i;
-            component->model_renderer_resources_instance.animations_instances_count = 1;
           }
           
           if ( is_selected )
@@ -317,6 +316,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       ImGui::Checkbox( "Inverse", &animation_instance->inverse );
       ImGui::Checkbox( "Loop", &animation_instance->loop );
       ImGui::Checkbox( "Paused", &animation_instance->paused );
+      ImGui::Checkbox( "Stoped", &animation_instance->stoped );
       ImGui::DragFloat( "Speed", &animation_instance->speed, 0.1f, 0.1f );
       if ( ImGui::CollapsingHeader( "Affected Nodes" ) )
       {
@@ -338,7 +338,6 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
         }
       }
     }
-  CRUDE_IMGUI_OPTION( "Animations", {
     } );
 }
 

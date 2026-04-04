@@ -128,11 +128,11 @@ crude_gfx_model_renderer_resources_instance_initialize
 {
   *instance = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_instance );
   instance->model_renderer_resources_handle.index = manager ? handle.index : -1;
-  instance->animations_instances_count = 0;
   for ( uint32 i = 0; i < CRUDE_COUNTOF( instance->animations_instances ); ++i )
   {
     instance->animations_instances[ i ].speed = 1.f;
     instance->animations_instances[ i ].loop = true;
+    instance->animations_instances[ i ].stop = true;
     instance->animations_instances[ i ].animation_index = 1;
     crude_memory_set( &instance->animations_instances[ i ].nodes_enabled_bits, 0xffffffffffffffff, sizeof( instance->animations_instances[ i ].nodes_enabled_bits ) );
   }
@@ -200,7 +200,12 @@ crude_gfx_model_renderer_resources_instance_update_animation
   model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( manager, model_renderer_resources_instance->model_renderer_resources_handle );
   animation_instance = &model_renderer_resources_instance->animations_instances[ animation_instance_index];
 
-  if ( animation_instance->animation_index < 0 )
+  if ( animation_instance->animation_index == -1 )
+  {
+    return;
+  }
+  
+  if ( animation_instance->stoped )
   {
     return;
   }

@@ -75,7 +75,11 @@
 									"scale":	[6.99999713897705, 6.9999990463256836, 6.99999713897705]
 								}, {
 									"type":	"crude_gltf",
-									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf"
+									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf",
+									"animations_instances":	[{
+											"index":	1,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}]
 								}],
 							"children":	[]
 						}]

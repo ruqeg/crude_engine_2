@@ -526,9 +526,9 @@ crude_editor_update_animations_from_node
   {
     crude_gltf                                            *child_gltf;
     child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
-    if ( child_gltf->model_renderer_resources_instance.animations_instances_count )
-    {
-      crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, child_gltf->model_renderer_resources_instance.animations_instances[ 0 ].animation_index, delta_time );
+    for ( uint32 i = 0; i < CRUDE_COUNTOF( child_gltf->model_renderer_resources_instance.animations_instances ); ++i )
+    { 
+      crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, i, delta_time );
     }
   }
 
