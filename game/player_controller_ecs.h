@@ -24,6 +24,8 @@ typedef struct crude_player_controller
   float32                                                  head_pitch_angle;
   float32                                                  head_yaw_angle;
   float32                                                  spine_yaw_angle;
+  float32                                                  pivot_pitch_angle;
+  float32                                                  pivot_yaw_angle;
 } crude_player_controller;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );

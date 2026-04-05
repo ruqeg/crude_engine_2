@@ -202,58 +202,58 @@ crude_player_controller_update_system_
         crude_transform                                   *pivot_yaw_transform;
         crude_transform                                   *pivot_pitch_transform;
         crude_transform                                   *player_orientation_transform;
-        XMVECTOR                                           pivot_yaw_rotation, player_orientation_rotation, axis;
-        float32                                            pivot_yaw_angle, pivot_pitch_angle, player_orientation_yaw_limit;
+        XMVECTOR                                           yaw_rotation, pitch_rotation, pivot_yaw_rotation, pivot_pitch_rotation, player_orientation_rotation;
+        float32                                            player_orientation_yaw_limit;
 
         pivot_pitch_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_pitch_entity, crude_transform );
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
         player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
-        
-        XMQuaternionToAxisAngle( &axis, &pivot_yaw_angle, XMLoadFloat4( &pivot_yaw_transform->rotation ) );
-        XMQuaternionToAxisAngle( &axis, &pivot_pitch_angle, XMLoadFloat4( &pivot_pitch_transform->rotation ) );
 
-        pivot_pitch_angle += player_controller->rotate_speed * input->mouse.rel.y;
-        pivot_yaw_angle -= player_controller->rotate_speed * input->mouse.rel.x;
+        player_controller->pivot_pitch_angle += CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.y, 0.04f, -0.04f );
+        player_controller->pivot_yaw_angle -= CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.x, 0.04f, -0.04f );
 
-        if ( pivot_yaw_angle < 0 )
+        if ( player_controller->pivot_yaw_angle < 0 )
         {
-          pivot_yaw_angle += XM_2PI;
+          player_controller->pivot_yaw_angle += XM_2PI;
         }
-        else if ( pivot_yaw_angle >= XM_2PI )
+        else if ( player_controller->pivot_yaw_angle >= XM_2PI )
         {
-          pivot_yaw_angle -= XM_2PI;
+          player_controller->pivot_yaw_angle -= XM_2PI;
         }
 
-        if ( pivot_pitch_angle < 0 )
+        if ( player_controller->pivot_pitch_angle < 0 )
         {
-          pivot_pitch_angle += XM_2PI;
+          player_controller->pivot_pitch_angle += XM_2PI;
         }
-        else if ( pivot_pitch_angle >= XM_2PI )
+        else if ( player_controller->pivot_pitch_angle >= XM_2PI )
         {
-          pivot_pitch_angle -= XM_2PI;
-        }
-
-        if ( pivot_pitch_angle > player_controller->pitch_limit && pivot_pitch_angle < XM_2PI - player_controller->pitch_limit )
-        {
-          pivot_pitch_angle = pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
+          player_controller->pivot_pitch_angle -= XM_2PI;
         }
 
-        player_orientation_yaw_limit = pivot_yaw_angle;
+        if ( player_controller->pivot_pitch_angle > player_controller->pitch_limit && player_controller->pivot_pitch_angle < XM_2PI - player_controller->pitch_limit )
+        {
+          player_controller->pivot_pitch_angle = player_controller->pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
+        }
 
-        pivot_yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, pivot_yaw_angle, 0.f );
+        player_orientation_yaw_limit = player_controller->pivot_yaw_angle;
+
+        yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->pivot_yaw_angle, 0.f );
+        pivot_yaw_rotation = XMLoadFloat4( &pivot_yaw_transform->rotation );
+        pivot_yaw_rotation = XMQuaternionSlerp( pivot_yaw_rotation, yaw_rotation, 30.0 * it->delta_time );
         XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
-        XMStoreFloat4( &pivot_pitch_transform->rotation, XMQuaternionRotationRollPitchYaw( pivot_pitch_angle, 0.f, 0.f ) );
         
-
+        pitch_rotation = XMQuaternionRotationRollPitchYaw( player_controller->pivot_pitch_angle, 0.f, 0.f );
+        pivot_pitch_rotation = XMLoadFloat4( &pivot_pitch_transform->rotation );
+        pivot_pitch_rotation = XMQuaternionSlerp( pivot_pitch_rotation, pitch_rotation, 30.0 * it->delta_time );
+        XMStoreFloat4( &pivot_pitch_transform->rotation, pivot_pitch_rotation );
+        
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
-        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 10.0 * it->delta_time );
+        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, yaw_rotation, 10.0 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
-        
-        float32 player_orientation_rotation_angle = 2.0f * XMScalarACos( XMVectorGetW( player_orientation_rotation ) );
 
-        player_controller->head_pitch_angle = pivot_pitch_angle;
-        player_controller->head_yaw_angle = pivot_yaw_angle;
-        player_controller->spine_yaw_angle = crude_lerp_angle( player_controller->spine_yaw_angle, pivot_yaw_angle, CRUDE_MIN( 15.0 * it->delta_time, 1.f ) );
+        player_controller->head_pitch_angle = player_controller->pivot_pitch_angle;
+        player_controller->head_yaw_angle = crude_lerp_angle( player_controller->head_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 40.0 * it->delta_time, 1.f ) );
+        player_controller->spine_yaw_angle = crude_lerp_angle( player_controller->spine_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 25.0 * it->delta_time, 1.f ) );
       }
 
       /* Handle movement */
@@ -333,7 +333,7 @@ crude_player_controller_update_system_
       head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, player_controller->head_yaw_angle, 0.f );
       head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
       XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
-
+      
       spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle, 0.f );
       spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
       XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
