@@ -132,8 +132,21 @@ crude_player_controller_create_observer
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
 
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
-    player_model->model_renderer_resources_instance.animations_instances[ 0 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
-    player_model->model_renderer_resources_instance.animations_instances[ 1 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
+    
+    player_controller->idle_animation_index = 0;
+    player_controller->walk_animation_index = 1;
+    player_controller->strafe_animation_index = 2;
+
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "strafe" );
+
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].disabled = false;
     
     player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
@@ -203,7 +216,6 @@ crude_player_controller_update_system_
         crude_transform                                   *pivot_pitch_transform;
         crude_transform                                   *player_orientation_transform;
         XMVECTOR                                           yaw_rotation, pitch_rotation, pivot_yaw_rotation, pivot_pitch_rotation, player_orientation_rotation;
-        float32                                            player_orientation_yaw_limit;
 
         pivot_pitch_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_pitch_entity, crude_transform );
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
@@ -235,8 +247,6 @@ crude_player_controller_update_system_
           player_controller->pivot_pitch_angle = player_controller->pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
         }
 
-        player_orientation_yaw_limit = player_controller->pivot_yaw_angle;
-
         yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->pivot_yaw_angle, 0.f );
         pivot_yaw_rotation = XMLoadFloat4( &pivot_yaw_transform->rotation );
         pivot_yaw_rotation = XMQuaternionSlerp( pivot_yaw_rotation, yaw_rotation, 30.0 * it->delta_time );
@@ -264,7 +274,7 @@ crude_player_controller_update_system_
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        float32                                            move_speed, walk_blend_final;
+        float32                                            move_speed;
       
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
@@ -297,15 +307,17 @@ crude_player_controller_update_system_
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
 
-          walk_blend_final = XMVectorGetX( XMVector3Length( new_player_velocity ) ) / move_speed;
-          player_controller->walk_blend = CRUDE_LERP( player_controller->walk_blend, walk_blend_final, 5 * it->delta_time  );
+          player_controller->walk_blend.x = CRUDE_LERP( player_controller->walk_blend.x, fabs( move_direction.x ), 2 * it->delta_time );
+          player_controller->walk_blend.y = CRUDE_LERP( player_controller->walk_blend.y, fabs( move_direction.z ), 2 * it->delta_time );
+
         }
         else
         {
           new_player_velocity = player_velocity;
           new_player_velocity = XMVectorLerp( new_player_velocity, XMVectorZero( ), 5 * it->delta_time );
           new_player_velocity = XMVectorSetY( new_player_velocity, XMVectorGetY( player_velocity ) );
-          player_controller->walk_blend = CRUDE_LERP( player_controller->walk_blend, 0.f, 5 * it->delta_time  );
+          player_controller->walk_blend.x = CRUDE_LERP( player_controller->walk_blend.x, 0.f, 5 * it->delta_time );
+          player_controller->walk_blend.y = CRUDE_LERP( player_controller->walk_blend.y, 0.f, 5 * it->delta_time );
         }
 
         physcs_character_container->jph_character_class->SetLinearVelocity( crude_vector_to_jph_vec3( new_player_velocity ) );
@@ -319,10 +331,18 @@ crude_player_controller_update_system_
     
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
 
-    player_model->model_renderer_resources_instance.animations_instances[ 0 ].disabled = false;
-    player_model->model_renderer_resources_instance.animations_instances[ 1 ].disabled = false;
-
-    crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, 0, 1, player_controller->walk_blend );
+    {
+      int64                                                animation_indices[ 8 ] { -1 };
+      float32                                              animation_weights[ 8 ]{ 0 };
+      
+      animation_indices[ 0 ] = player_controller->idle_animation_index;
+      animation_weights[ 0 ] = CRUDE_MAX( 1.f - player_controller->walk_blend.y - player_controller->walk_blend.x, 0.05 );;
+      animation_indices[ 1 ] = player_controller->walk_animation_index;
+      animation_weights[ 1 ] = player_controller->walk_blend.y;
+      animation_indices[ 2 ] = player_controller->strafe_animation_index;
+      animation_weights[ 2 ] = player_controller->walk_blend.x;
+      crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, animation_indices, animation_weights );
+    }
 
     {
       crude_transform                                   *player_orientation_transform;

@@ -207,12 +207,12 @@ crude_gfx_model_renderer_resources_update_instance_animations
 
     if ( animation_instance->animation_index == -1 )
     {
-      return;
+      continue;
     }
     
     if ( animation_instance->disabled )
     {
-      return;
+      continue;
     }
     
     animation = &model_renderer_resources->animations[ animation_instance->animation_index ];
@@ -358,7 +358,7 @@ crude_gfx_model_renderer_resources_instance_blend_one_animation
 }
 
 void
-crude_gfx_model_renderer_resources_instance_blend_animations
+crude_gfx_model_renderer_resources_instance_blend_two_animations
 (
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
   _In_ uint32                                              from_index,
@@ -392,6 +392,115 @@ crude_gfx_model_renderer_resources_instance_blend_animations
     else if ( from_node_enabled )
     {
       model_renderer_resources_instance->nodes_transforms[ node_index ] = from_animation_instance->nodes_transforms[ node_index ];
+    }
+  }
+}
+
+void
+crude_gfx_model_renderer_resources_instance_blend_animations
+(
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ int64                                               animations_indices[ 8 ],
+  _In_ float32                                             weights[ 8 ]
+)
+{
+  for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources_instance->nodes_transforms ); ++node_index )
+  {
+    XMVECTOR                                        blended_translation;
+    XMVECTOR                                        blended_scale;
+    XMVECTOR                                        blended_rotation;
+    float32                                         total_weight;
+    bool                                            rotation_was_affected;
+    
+    total_weight = 0.f;
+    blended_translation = XMVectorZero( );
+    blended_scale = XMVectorZero( );
+
+    for ( uint32 i = 0; i < 8; ++i )
+    {
+      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+
+      if ( animations_indices[ i ] == -1 )
+      {
+        continue;
+      }
+
+      animation_instance = &model_renderer_resources_instance->animations_instances[ animations_indices[ i ] ];
+      if ( !crude_gfx_model_renderer_resources_animation_instance_is_enabled_node( animation_instance, node_index ) )
+      {
+        continue;
+      }
+
+      total_weight += weights[ i ];
+    }
+
+    for ( uint32 i = 0; i < 8; ++i )
+    {
+      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+      float32                                              normalized_weight;
+      if ( animations_indices[ i ] == -1 )
+      {
+        continue;
+      }
+
+      animation_instance = &model_renderer_resources_instance->animations_instances[ animations_indices[ i ] ];
+      if ( !crude_gfx_model_renderer_resources_animation_instance_is_enabled_node( animation_instance, node_index ) )
+      {
+        continue;
+      }
+
+      normalized_weight = weights[ i ] / total_weight;
+      blended_translation = XMVectorAdd( blended_translation, XMVectorScale( XMLoadFloat3( &animation_instance->nodes_transforms[ node_index ].translation ), normalized_weight ) );
+      blended_scale = XMVectorAdd( blended_scale, XMVectorScale( XMLoadFloat3( &animation_instance->nodes_transforms[ node_index ].scale ), normalized_weight ) );
+    }
+
+    rotation_was_affected = false;
+    for ( uint32 i = 0; i < 8; ++i )
+    {
+      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+      XMVECTOR                                             animation_instance_rotation;
+      float32                                              normalized_weight;
+
+      if ( animations_indices[ i ] == -1 )
+      {
+        continue;
+      }
+
+      animation_instance = &model_renderer_resources_instance->animations_instances[ animations_indices[ i ] ];
+      if ( !crude_gfx_model_renderer_resources_animation_instance_is_enabled_node( animation_instance, node_index ) )
+      {
+        continue;
+      }
+
+      normalized_weight = weights[ i ] / total_weight;
+      animation_instance_rotation = XMLoadFloat4( &animation_instance->nodes_transforms[ node_index ].rotation );
+        
+      if ( !rotation_was_affected )
+      {
+        blended_rotation = XMVectorScale( animation_instance_rotation, normalized_weight );
+        rotation_was_affected = true;
+      }
+      else
+      {
+
+        if ( XMVectorGetX( XMVector4Dot( blended_rotation, animation_instance_rotation ) ) < 0 )
+        {
+          blended_rotation = XMVectorSubtract( blended_rotation, XMVectorScale( animation_instance_rotation, normalized_weight ) );
+        }
+        else
+        {
+          blended_rotation = XMVectorAdd( blended_rotation, XMVectorScale( animation_instance_rotation, normalized_weight ) );
+        }
+      }
+    }
+      
+    blended_rotation = XMQuaternionNormalize( blended_rotation );
+
+    if ( total_weight > 0.00001f )
+    {
+      XMStoreFloat3( &model_renderer_resources_instance->nodes_transforms[ node_index ].scale, blended_scale );
+      XMStoreFloat3( &model_renderer_resources_instance->nodes_transforms[ node_index ].translation, blended_translation );
+      XMStoreFloat4( &model_renderer_resources_instance->nodes_transforms[ node_index ].rotation, blended_rotation );
     }
   }
 }

@@ -189,12 +189,20 @@ crude_gfx_model_renderer_resources_instance_blend_one_animation
 );
 
 CRUDE_API void
-crude_gfx_model_renderer_resources_instance_blend_animations
+crude_gfx_model_renderer_resources_instance_blend_two_animations
 (
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
   _In_ uint32                                              from_index,
   _In_ uint32                                              to_index,
   _In_ float32                                             blend_factor
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_blend_animations
+(
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ int64                                               animations_indices[ 8 ],
+  _In_ float32                                             weights[ 8 ]
 );
 
 CRUDE_API bool

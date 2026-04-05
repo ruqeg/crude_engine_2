@@ -18,7 +18,7 @@ typedef struct crude_player_controller
   float32                                                  pitch_limit;
   bool                                                     input_enabled;
   bool                                                     camera_enabled;
-  float32                                                  walk_blend;
+  XMFLOAT2                                                 walk_blend;
   uint64                                                   head_joint_node;
   uint64                                                   spine_joint_node;
   float32                                                  head_pitch_angle;
@@ -26,6 +26,9 @@ typedef struct crude_player_controller
   float32                                                  spine_yaw_angle;
   float32                                                  pivot_pitch_angle;
   float32                                                  pivot_yaw_angle;
+  uint32                                                   idle_animation_index;
+  uint32                                                   walk_animation_index;
+  uint32                                                   strafe_animation_index;
 } crude_player_controller;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );

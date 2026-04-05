@@ -175,7 +175,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
         animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
 
         animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
-        animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "animation_index" ) );
+        animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "index" ) );
         for ( uint32 k = 0; k < CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ); ++k )
         {
           animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "nodes_enabled_bits" ), k ) );
@@ -213,7 +213,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_gltf )
 
     animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
     animation_instance_json = cJSON_CreateObject( );
-    cJSON_AddItemToObject( animation_instance_json, "index", cJSON_CreateNumber( component->model_renderer_resources_instance.animations_instances[ i ].animation_index ) );
+    cJSON_AddItemToObject( animation_instance_json, "index", cJSON_CreateNumber( animation_instance->animation_index ) );
     cJSON_AddItemToObject( animation_instance_json, "nodes_enabled_bits", cJSON_CreateIntArray( animation_instance->nodes_enabled_bits, CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ) ) );
     cJSON_AddItemToArray( animations_instances_array_json, animation_instance_json );
   }
