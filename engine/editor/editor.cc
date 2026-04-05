@@ -10,6 +10,15 @@ nfdu8filteritem_t                                          crude_gui_editor_node
 };
 
 static void
+crude_editor_blend_animations_from_node_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+);
+
+static void
 crude_editor_initialize_systems_
 (
   _In_ crude_editor                                       *editor
@@ -23,15 +32,6 @@ crude_editor_push_style_
 static void
 crude_editor_pop_style_
 (
-);
-
-static void
-crude_editor_update_animations_from_node
-(
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node,
-  _In_ float32                                             delta_time
 );
 
 void
@@ -249,7 +249,7 @@ crude_editor_update
 
   if ( CRUDE_ECS_EDITOR_STAGE_IS_ENABLED( editor->engine->world ) )
   {
-    crude_editor_update_animations_from_node( &editor->engine->scene_renderer, editor->engine->world, editor->engine->main_node, delta_time );
+    crude_editor_blend_animations_from_node_( &editor->engine->scene_renderer, editor->engine->world, editor->engine->main_node, delta_time );
   }
 }
 
@@ -294,6 +294,10 @@ crude_editor_handle_input
   if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F7 ].pressed )
   {
     crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, !editor->engine->physics.simulation_enabled );
+  }
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F8 ].pressed )
+  {
+    editor->engine->scene_renderer.options.debug.hide_collision = !editor->engine->scene_renderer.options.debug.hide_collision;
   }
 }
 
@@ -505,7 +509,7 @@ crude_editor_pop_style_
 }
 
 void
-crude_editor_update_animations_from_node
+crude_editor_blend_animations_from_node_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_ecs                                          *world,
@@ -526,10 +530,7 @@ crude_editor_update_animations_from_node
   {
     crude_gltf                                            *child_gltf;
     child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
-    for ( uint32 i = 0; i < CRUDE_COUNTOF( child_gltf->model_renderer_resources_instance.animations_instances ); ++i )
-    { 
-      crude_gfx_model_renderer_resources_instance_update_animation( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, i, delta_time );
-    }
+    crude_gfx_model_renderer_resources_instance_blend_one_animation( &child_gltf->model_renderer_resources_instance, child_gltf->debug_animation_instance_index );
   }
 
   while ( ecs_children_next( &children_it ) )
@@ -537,7 +538,7 @@ crude_editor_update_animations_from_node
     for ( size_t i = 0; i < children_it.count; ++i )
     {
       crude_entity child = crude_entity_from_iterator( &children_it, i );
-      crude_editor_update_animations_from_node( scene_renderer, world, child, delta_time );
+      crude_editor_blend_animations_from_node_( scene_renderer, world, child, delta_time );
     }
   }
 }

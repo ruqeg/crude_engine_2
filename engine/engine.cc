@@ -202,6 +202,15 @@ crude_engine_graphics_task_set_thread_loop_
   _In_ void                                               *ctx
 );
 
+static void
+crude_engine_update_animations_from_node_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+);
+
 void
 crude_engine_gui_queue_draw_
 (
@@ -305,9 +314,9 @@ crude_engine_update
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
 
   crude_editor_update( &engine->editor, delta_time );
-  
-
   crude_physics_update( &engine->physics, current_time );
+
+  crude_engine_update_animations_from_node_( &engine->scene_renderer, engine->world, engine->main_node, delta_time );
 
   crude_ecs_progress( engine->world, delta_time );
   engine->last_update_time = current_time;
@@ -360,6 +369,8 @@ crude_engine_initialize_allocators_
   crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
   crude_stack_allocator_initialize( &engine->model_renderer_resources_manager_temporary_allocator, CRUDE_RMEGA( 64 ), "model_renderer_resources_manager_temporary_allocator" );
   
+  crude_stack_allocator_initialize( &engine->ecs_temporary_allocator, CRUDE_RMEGA( 16 ), "ecs_temporary_allocator" );
+
 #if CRUDE_DEVELOP
   crude_heap_allocator_initialize( &engine->test_allocator, CRUDE_RMEGA( 16 ), "test_allocator" );
   crude_heap_allocator_initialize( &engine->develop_heap_allocator, CRUDE_RMEGA( 16 ), "develop_heap_allocator" );
@@ -378,6 +389,7 @@ crude_engine_deinitialize_allocators_
   crude_stack_allocator_deinitialize( &engine->temporary_allocator );
   crude_heap_allocator_deinitialize( &engine->cgltf_temporary_allocator );
   crude_stack_allocator_deinitialize( &engine->model_renderer_resources_manager_temporary_allocator );
+  crude_stack_allocator_deinitialize( &engine->ecs_temporary_allocator );
 #if CRUDE_DEVELOP
   crude_heap_allocator_deinitialize( &engine->test_allocator );
   crude_heap_allocator_deinitialize( &engine->develop_heap_allocator );
@@ -855,6 +867,14 @@ crude_engine_graphics_main_thread_loop_
   }
 
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
+  
+  if ( engine->gpu.swapchain_resized_last_frame )
+  {
+    crude_gfx_scene_renderer_on_resize( &engine->scene_renderer );
+    crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.renderer_size.x, engine->gpu.renderer_size.y );
+  }
+
+  crude_gfx_scene_renderer_update_dynamic_buffers( &engine->scene_renderer );
 
   CRUDE_PROFILER_ZONE_END;
   return true;
@@ -872,21 +892,50 @@ crude_engine_graphics_task_set_thread_loop_
   crude_engine                                            *engine;
   crude_gfx_texture                                       *final_render_texture;
 
-  engine = CRUDE_REINTERPRET_CAST( crude_engine*, ctx );;
+  engine = CRUDE_REINTERPRET_CAST( crude_engine*, ctx );
   
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_graphics_task_set_thread_loop_" );
   
   final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GFX_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
 
-  if ( engine->gpu.swapchain_resized_last_frame )
-  {
-    crude_gfx_scene_renderer_on_resize( &engine->scene_renderer );
-    crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.renderer_size.x, engine->gpu.renderer_size.y );
-  }
-
-  crude_gfx_scene_renderer_submit_draw_task( &engine->scene_renderer, false );
+  crude_gfx_scene_renderer_submit_draw_task( &engine->scene_renderer );
 
   crude_gfx_present( &engine->gpu, final_render_texture );
 
   CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_engine_update_animations_from_node_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer,
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        node,
+  _In_ float32                                             delta_time
+)
+{
+  ecs_iter_t                                               children_it;
+  bool                                                     local_model_initialized;
+  XMMATRIX                                                 model_to_custom_model;
+
+  children_it = crude_ecs_children( world, node );
+  local_model_initialized = false;
+
+  model_to_custom_model = XMMatrixIdentity( );
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
+  {
+    crude_gltf                                            *child_gltf;
+    child_gltf = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_gltf );
+    crude_gfx_model_renderer_resources_update_instance_animations( scene_renderer->model_renderer_resources_manager, &child_gltf->model_renderer_resources_instance, delta_time );
+  }
+
+  while ( ecs_children_next( &children_it ) )
+  {
+    for ( size_t i = 0; i < children_it.count; ++i )
+    {
+      crude_entity child = crude_entity_from_iterator( &children_it, i );
+      crude_engine_update_animations_from_node_( scene_renderer, world, child, delta_time );
+    }
+  }
 }

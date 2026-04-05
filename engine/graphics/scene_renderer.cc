@@ -389,22 +389,31 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 }
 
 void
-crude_gfx_scene_renderer_submit_draw_task
+crude_gfx_scene_renderer_update_dynamic_buffers
 (
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ bool                                                use_secondary
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
-  crude_gfx_cmd_buffer                                    *primary_cmd;
-
-  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
-  primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
-  crude_gfx_cmd_push_marker( primary_cmd, "render_graph" );
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_dynamic_buffers" );
+  scene_renderer->primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
+  crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers" );
   crude_scene_renderer_cull_lights_( scene_renderer );
-  crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, primary_cmd );
-  crude_gfx_render_graph_render( scene_renderer->render_graph, primary_cmd );
-  crude_gfx_cmd_pop_marker( primary_cmd );
-  crude_gfx_queue_cmd( primary_cmd );
+  crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, scene_renderer->primary_cmd );
+  crude_gfx_cmd_pop_marker( scene_renderer->primary_cmd );
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_gfx_scene_renderer_submit_draw_task
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_submit_draw_task" );
+  crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_submit_draw_task" );
+  crude_gfx_render_graph_render( scene_renderer->render_graph, scene_renderer->primary_cmd );
+  crude_gfx_cmd_pop_marker( scene_renderer->primary_cmd );
+  crude_gfx_queue_cmd( scene_renderer->primary_cmd );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -741,37 +750,40 @@ crude_scene_renderer_register_nodes_instances_
     CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
   }
   
-  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_character ) )
+  if ( scene_renderer->options.debug.hide_collision)
   {
-    crude_physics_character                               *character;
-
-    character = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character );
-  
-    model_to_custom_model = XMMatrixTranslation( 0.f, character->height, 0.f );
-    model_to_custom_model = XMMatrixMultiply( XMMatrixScaling( character->radius, character->height, character->radius ), model_to_custom_model );
-    XMStoreFloat4x4( &scene_renderer->capsule_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
-    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->capsule_model_renderer_resources_instance );
-  }
-  
-  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_static_body ) )
-  {
-    crude_physics_static_body                             *static_body;
-
-    static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body );
-  
-    if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+    if (  CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_character ) )
     {
-      model_to_custom_model = XMMatrixScaling( static_body->box.extent.x, static_body->box.extent.y, static_body->box.extent.z );
-      XMStoreFloat4x4( &scene_renderer->physics_box_collision_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
-      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->physics_box_collision_model_renderer_resources_instance );
+      crude_physics_character                               *character;
+
+      character = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_character );
+    
+      model_to_custom_model = XMMatrixTranslation( 0.f, character->height, 0.f );
+      model_to_custom_model = XMMatrixMultiply( XMMatrixScaling( character->radius, character->height, character->radius ), model_to_custom_model );
+      XMStoreFloat4x4( &scene_renderer->capsule_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->capsule_model_renderer_resources_instance );
     }
-    else if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+    
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_static_body ) )
     {
-      if ( static_body->mesh.handle.index != -1 )
+      crude_physics_static_body                             *static_body;
+
+      static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body );
+    
+      if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
       {
-        crude_physics_mesh_shape_container *mesh_shape_container = crude_physics_shapes_manager_access_mesh_shape( scene_renderer->physics_shapes_manager, static_body->mesh.handle );
-        XMStoreFloat4x4( &mesh_shape_container->debug_model_renderer_resource_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
-        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, mesh_shape_container->debug_model_renderer_resource_instance );
+        model_to_custom_model = XMMatrixScaling( static_body->box.extent.x, static_body->box.extent.y, static_body->box.extent.z );
+        XMStoreFloat4x4( &scene_renderer->physics_box_collision_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->physics_box_collision_model_renderer_resources_instance );
+      }
+      else if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+      {
+        if ( static_body->mesh.handle.index != -1 )
+        {
+          crude_physics_mesh_shape_container *mesh_shape_container = crude_physics_shapes_manager_access_mesh_shape( scene_renderer->physics_shapes_manager, static_body->mesh.handle );
+          XMStoreFloat4x4( &mesh_shape_container->debug_model_renderer_resource_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+          CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, mesh_shape_container->debug_model_renderer_resource_instance );
+        }
       }
     }
   }

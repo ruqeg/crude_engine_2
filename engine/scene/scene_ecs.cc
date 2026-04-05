@@ -165,18 +165,21 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
     cJSON const                                           *animations_instances_json;
 
     animations_instances_json = cJSON_GetObjectItemCaseSensitive( component_json, "animations_instances" );
-    for ( uint32 i = 0; i < ( animations_instances_json && cJSON_GetArraySize( animations_instances_json ) ); ++i )
+    if ( animations_instances_json )
     {
-      crude_gfx_model_renderer_resources_animation_instance *animation_instance;
-      cJSON const                                       *animation_instance_json;
-      
-      animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
-
-      animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
-      animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "animation_index" ) );
-      for ( uint32 k = 0; k < CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ); ++k )
+      for ( uint32 i = 0; i < cJSON_GetArraySize( animations_instances_json ); ++i )
       {
-        animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "nodes_enabled_bits" ), k ) );
+        crude_gfx_model_renderer_resources_animation_instance *animation_instance;
+        cJSON const                                       *animation_instance_json;
+        
+        animation_instance_json = cJSON_GetArrayItem( animations_instances_json, i );
+
+        animation_instance = &component->model_renderer_resources_instance.animations_instances[ i ];
+        animation_instance->animation_index = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "animation_index" ) );
+        for ( uint32 k = 0; k < CRUDE_COUNTOF( animation_instance->nodes_enabled_bits ); ++k )
+        {
+          animation_instance->nodes_enabled_bits[ k ] = cJSON_GetNumberValue( cJSON_GetArrayItem( cJSON_GetObjectItemCaseSensitive( animation_instance_json, "nodes_enabled_bits" ), k ) );
+        }
       }
     }
   }
@@ -274,14 +277,13 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
     {
       crude_gfx_animation                                 *animations;
       crude_gfx_model_renderer_resources_animation_instance *animation_instance;
-      static int32                                           animation_instance_index = 0;
       
-      animation_instance = &component->model_renderer_resources_instance.animations_instances[ animation_instance_index ];
+      animation_instance = &component->model_renderer_resources_instance.animations_instances[ component->debug_animation_instance_index ];
       animations = model_renderer_resources->animations;
 
       ImGui::Spacing( );
 
-      ImGui::SliderInt( "Animation Instance", &animation_instance_index, 0, 8 );
+      ImGui::SliderInt( "Animation Instance", &component->debug_animation_instance_index, 0, 8 );
       
       if ( ImGui::BeginCombo( "Animation", ( animation_instance->animation_index != -1 ) ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
       {
@@ -316,7 +318,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       ImGui::Checkbox( "Inverse", &animation_instance->inverse );
       ImGui::Checkbox( "Loop", &animation_instance->loop );
       ImGui::Checkbox( "Paused", &animation_instance->paused );
-      ImGui::Checkbox( "Stoped", &animation_instance->stoped );
+      ImGui::Checkbox( "Disabled", &animation_instance->disabled );
       ImGui::DragFloat( "Speed", &animation_instance->speed, 0.1f, 0.1f );
       if ( ImGui::CollapsingHeader( "Affected Nodes" ) )
       {

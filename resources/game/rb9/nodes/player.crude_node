@@ -29,7 +29,7 @@
 					"name":	"pivot_yaw",
 					"components":	[{
 							"type":	"crude_transform",
-							"translation":	[0, 9.5, 0],
+							"translation":	[0, 8.8999996185302734, 0],
 							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
 						}],
@@ -45,7 +45,7 @@
 									"name":	"camera",
 									"components":	[{
 											"type":	"crude_transform",
-											"translation":	[-3, 0, -4],
+											"translation":	[-2.4000000953674316, 0, -3.5999999046325684],
 											"rotation":	[0, 1, 0, 0],
 											"scale":	[1, 1, 1]
 										}, {
@@ -71,13 +71,34 @@
 							"components":	[{
 									"type":	"crude_transform",
 									"translation":	[0, 0, 0],
-									"rotation":	[0, 0.4501207172870636, 0, 0.89296776056289673],
-									"scale":	[6.99999713897705, 6.9999990463256836, 6.99999713897705]
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[25, 25, 25]
 								}, {
 									"type":	"crude_gltf",
 									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf",
 									"animations_instances":	[{
+											"index":	0,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
 											"index":	1,
+											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
+											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	-9.2233720368547758e+18,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}]
 								}],

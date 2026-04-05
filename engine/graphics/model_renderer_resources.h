@@ -115,10 +115,11 @@ typedef struct crude_gfx_model_renderer_resources_animation_instance
   float32                                                  current_time;
   bool                                                     inverse;
   bool                                                     paused;
-  bool                                                     stoped;
+  bool                                                     disabled;
   float32                                                  speed;
   bool                                                     loop;
   int32                                                    nodes_enabled_bits[ 8 ];
+  crude_transform                                         *nodes_transforms;
 } crude_gfx_model_renderer_resources_animation_instance;
 
 typedef struct crude_gfx_model_renderer_resources_instance
@@ -173,12 +174,27 @@ crude_gfx_model_renderer_resources_instance_deinitialize
 );
 
 CRUDE_API void
-crude_gfx_model_renderer_resources_instance_update_animation
+crude_gfx_model_renderer_resources_update_instance_animations
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
-  _In_ int64                                               animation_instance_index,
   _In_ float32                                             delta_time
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_blend_one_animation
+(
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ int64                                               animation_instance_index
+);
+
+CRUDE_API void
+crude_gfx_model_renderer_resources_instance_blend_animations
+(
+  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
+  _In_ uint32                                              from_index,
+  _In_ uint32                                              to_index,
+  _In_ float32                                             blend_factor
 );
 
 CRUDE_API bool
@@ -202,17 +218,6 @@ crude_gfx_model_renderer_resources_instance_find_node_by_name
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
   _In_ char const                                         *name
-);
-
-CRUDE_API void
-crude_gfx_model_renderer_resources_instance_blend_animations
-(
-  _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _Inout_ crude_gfx_model_renderer_resources_instance     *model_renderer_resources_instance,
-  _In_ uint32                                              from_index,
-  _In_ uint32                                              to_index,
-  _In_ uint32                                              blend_factor,
-  _In_ crude_stack_allocator                              *temporary_allocator
 );
 
 CRUDE_API uint64

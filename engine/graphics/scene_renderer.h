@@ -123,6 +123,8 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_scene_renderer_options                         options;
   bool                                                     imgui_pass_enalbed;
+
+  crude_gfx_cmd_buffer                                    *primary_cmd;
   
   /***********************
    * Debug
@@ -240,10 +242,15 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 );
 
 CRUDE_API void
+crude_gfx_scene_renderer_update_dynamic_buffers
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
 crude_gfx_scene_renderer_submit_draw_task
 (
-  _In_ crude_gfx_scene_renderer                           *scene_renderer,
-  _In_ bool                                                use_secondary
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
 CRUDE_API void

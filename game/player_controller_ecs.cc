@@ -134,6 +134,16 @@ crude_player_controller_create_observer
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     player_model->model_renderer_resources_instance.animations_instances[ 0 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
     player_model->model_renderer_resources_instance.animations_instances[ 1 ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name( &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
+    
+    player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+      &game->engine->model_renderer_resources_manager,
+      &player_model->model_renderer_resources_instance,
+      "mixamorig:Head" );
+
+    player_controller->spine_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+      &game->engine->model_renderer_resources_manager,
+      &player_model->model_renderer_resources_instance,
+      "mixamorig:Spine2" );
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -232,8 +242,11 @@ crude_player_controller_update_system_
         XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
         XMStoreFloat4( &pivot_pitch_transform->rotation, XMQuaternionRotationRollPitchYaw( pivot_pitch_angle, 0.f, 0.f ) );
         
+        player_controller->head_pitch_angle = pivot_pitch_angle;
+        player_controller->head_yaw_angle = pivot_yaw_angle;
+
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
-        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 15 * it->delta_time );
+        player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 10.0 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
       }
 
@@ -245,7 +258,7 @@ crude_player_controller_update_system_
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        float32                                            move_speed;
+        float32                                            move_speed, walk_blend_final;
       
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
@@ -277,12 +290,16 @@ crude_player_controller_update_system_
           new_player_velocity = XMVectorScale( XMVector3Normalize( new_player_velocity ), move_speed );
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
+
+          walk_blend_final = XMVectorGetX( XMVector3Length( new_player_velocity ) ) / move_speed;
+          player_controller->walk_blend = CRUDE_LERP( player_controller->walk_blend, walk_blend_final, 5 * it->delta_time  );
         }
         else
         {
           new_player_velocity = player_velocity;
           new_player_velocity = XMVectorLerp( new_player_velocity, XMVectorZero( ), 5 * it->delta_time );
           new_player_velocity = XMVectorSetY( new_player_velocity, XMVectorGetY( player_velocity ) );
+          player_controller->walk_blend = CRUDE_LERP( player_controller->walk_blend, 0.f, 5 * it->delta_time  );
         }
 
         physcs_character_container->jph_character_class->SetLinearVelocity( crude_vector_to_jph_vec3( new_player_velocity ) );
@@ -293,18 +310,24 @@ crude_player_controller_update_system_
     {
       game->engine->camera_node = player_camera_entity;
     }
-
-    crude_gfx_model_renderer_resources_instance_update_animation(
-      &game->engine->model_renderer_resources_manager,
-      &player_model->model_renderer_resources_instance,
-      0,
-      it->delta_time );
     
-    crude_gfx_model_renderer_resources_instance_update_animation(
-      &game->engine->model_renderer_resources_manager,
-      &player_model->model_renderer_resources_instance,
-      1,
-      it->delta_time );
+    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
+
+    player_model->model_renderer_resources_instance.animations_instances[ 0 ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ 1 ].disabled = false;
+
+    crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, 0, 1, player_controller->walk_blend );
+
+    {
+      XMVECTOR                                           head_rotation, spine_rotation;
+      
+      head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, player_controller->head_yaw_angle, 0.f );
+      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation,
+        head_rotation );
+      
+      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation,
+        head_rotation );
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }

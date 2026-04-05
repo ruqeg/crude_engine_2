@@ -44,6 +44,9 @@ typedef struct crude_gltf
 {
   crude_gfx_model_renderer_resources_instance              model_renderer_resources_instance;
   bool                                                     hidden;
+#if CRUDE_DEVELOP
+  int                                                      debug_animation_instance_index;
+#endif
 } crude_gltf;
 
 

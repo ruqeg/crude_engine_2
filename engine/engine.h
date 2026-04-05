@@ -47,6 +47,7 @@ typedef struct crude_engine
   crude_stack_allocator                                    develop_temporary_allocator;
   crude_heap_allocator                                     develop_heap_allocator;
 #endif
+  crude_stack_allocator                                    ecs_temporary_allocator;
 
   /******************************
    *
