@@ -50,6 +50,13 @@ crude_lerp_angle
   _In_ float32                                             weight
 );
 
+CRUDE_API float32
+crude_angle_diff
+(
+  _In_ float32                                             from,
+  _In_ float32                                             to
+);
+
 CRUDE_API XMVECTOR
 crude_closest_point_to_obb
 (

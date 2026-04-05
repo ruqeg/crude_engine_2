@@ -203,7 +203,7 @@ crude_player_controller_update_system_
         crude_transform                                   *pivot_pitch_transform;
         crude_transform                                   *player_orientation_transform;
         XMVECTOR                                           pivot_yaw_rotation, player_orientation_rotation, axis;
-        float32                                            pivot_yaw_angle, pivot_pitch_angle;
+        float32                                            pivot_yaw_angle, pivot_pitch_angle, player_orientation_yaw_limit;
 
         pivot_pitch_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_pitch_entity, crude_transform );
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
@@ -238,16 +238,22 @@ crude_player_controller_update_system_
           pivot_pitch_angle = pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
         }
 
+        player_orientation_yaw_limit = pivot_yaw_angle;
+
         pivot_yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, pivot_yaw_angle, 0.f );
         XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
         XMStoreFloat4( &pivot_pitch_transform->rotation, XMQuaternionRotationRollPitchYaw( pivot_pitch_angle, 0.f, 0.f ) );
         
-        player_controller->head_pitch_angle = pivot_pitch_angle;
-        player_controller->head_yaw_angle = pivot_yaw_angle;
 
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
         player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, pivot_yaw_rotation, 10.0 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
+        
+        float32 player_orientation_rotation_angle = 2.0f * XMScalarACos( XMVectorGetW( player_orientation_rotation ) );
+
+        player_controller->head_pitch_angle = pivot_pitch_angle;
+        player_controller->head_yaw_angle = pivot_yaw_angle;
+        player_controller->spine_yaw_angle = crude_lerp_angle( player_controller->spine_yaw_angle, pivot_yaw_angle, CRUDE_MIN( 15.0 * it->delta_time, 1.f ) );
       }
 
       /* Handle movement */
@@ -319,14 +325,18 @@ crude_player_controller_update_system_
     crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, 0, 1, player_controller->walk_blend );
 
     {
+      crude_transform                                   *player_orientation_transform;
       XMVECTOR                                           head_rotation, spine_rotation;
       
-      head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, player_controller->head_yaw_angle, 0.f );
-      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation,
-        head_rotation );
+      player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
       
-      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation,
-        head_rotation );
+      head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, player_controller->head_yaw_angle, 0.f );
+      head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
+      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
+
+      spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle, 0.f );
+      spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
+      XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
     }
   }
   CRUDE_PROFILER_ZONE_END;

@@ -8,15 +8,15 @@
 		}, {
 			"type":	"crude_player_controller",
 			"rotate_speed":	0.00999999977648258,
-			"walk_speed":	25,
+			"walk_speed":	15,
 			"pitch_limit":	0.43633231520652771
 		}],
 	"children":	[{
 			"name":	"character",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[-2.3834836326841469e-09, -6.7856583595275879, 2.1316282072803006e-14],
-					"rotation":	[0, 0, 0, 2],
+					"translation":	[-2.3834836326841469e-09, 0, 2.1316282072803006e-14],
+					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}, {
 					"type":	"crude_physics_character",

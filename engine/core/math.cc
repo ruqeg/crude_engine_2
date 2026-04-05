@@ -41,6 +41,25 @@ crude_lerp_angle
   return from + distance * weight;
 }
 
+float32
+crude_angle_diff
+(
+  _In_ float32                                             from,
+  _In_ float32                                             to
+)
+{
+  float32 diff = fmodf( to - from, 2.f * XM_PI );
+  if ( diff > XM_PI )
+  {
+    diff -= 2.f * XM_PI;
+  }
+  else if ( diff < -XM_PI )
+  {
+    diff += 2.f * XM_PI;
+  }
+  return diff;
+}
+
 XMVECTOR
 crude_closest_point_to_obb
 (
