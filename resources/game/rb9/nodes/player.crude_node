@@ -9,7 +9,8 @@
 			"type":	"crude_player_controller",
 			"rotate_speed":	0.00999999977648258,
 			"walk_speed":	[8.5, 12],
-			"pitch_limit":	0.43633231520652771
+			"pitch_limit":	0.43633231520652771,
+			"run_speed":	24
 		}],
 	"children":	[{
 			"name":	"character",
@@ -80,25 +81,25 @@
 											"index":	0,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}, {
+											"index":	3,
+											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
+										}, {
 											"index":	2,
 											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
 										}, {
 											"index":	1,
 											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
 										}, {
-											"index":	2,
-											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
-										}, {
-											"index":	-9.2233720368547758e+18,
+											"index":	-1,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}, {
-											"index":	-9.2233720368547758e+18,
+											"index":	-1,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}, {
-											"index":	-9.2233720368547758e+18,
+											"index":	-1,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}, {
-											"index":	-9.2233720368547758e+18,
+											"index":	-1,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 										}]
 								}],

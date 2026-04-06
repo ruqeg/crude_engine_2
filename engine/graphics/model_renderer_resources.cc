@@ -203,6 +203,9 @@ crude_gfx_model_renderer_resources_update_instance_animations
 
   for ( uint32 animation_instance_index = 0; animation_instance_index < CRUDE_COUNTOF( model_renderer_resources_instance->animations_instances ); ++animation_instance_index )
   {
+    float32                                                animation_instance_delta_time;
+
+    animation_instance_delta_time = delta_time;
     animation_instance = &model_renderer_resources_instance->animations_instances[ animation_instance_index];
 
     if ( animation_instance->animation_index == -1 )
@@ -217,17 +220,17 @@ crude_gfx_model_renderer_resources_update_instance_animations
     
     animation = &model_renderer_resources->animations[ animation_instance->animation_index ];
     
-    delta_time *= animation_instance->speed;
+    animation_instance_delta_time *= animation_instance->speed;
     if ( animation_instance->inverse )
     {
-      delta_time *= -1.f;
+      animation_instance_delta_time *= -1.f;
     }
 
     if ( !animation_instance->paused )
     {
-      animation_instance->current_time += delta_time;
+      animation_instance->current_time += animation_instance_delta_time;
 
-      if ( delta_time < 0 ) 
+      if ( animation_instance_delta_time < 0 ) 
       {
         if ( animation_instance->current_time < animation->start )
         {

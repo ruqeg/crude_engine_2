@@ -20,6 +20,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_player_controller )
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotate_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "rotate_speed" ) );
   crude_parse_json_to_float2( &component->walk_speed, cJSON_GetObjectItem( component_json, "walk_speed" ) );
+  component->run_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "run_speed" ) );
   component->pitch_limit = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "pitch_limit" ) );
   return true;
 }
@@ -31,6 +32,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_player_controller )
   cJSON_AddItemToObject( free_camera_json, "rotate_speed", cJSON_CreateNumber( component->rotate_speed ) );
   cJSON_AddItemToObject( free_camera_json, "walk_speed", cJSON_CreateFloatArray( &component->walk_speed.x, 2 ) );
   cJSON_AddItemToObject( free_camera_json, "pitch_limit", cJSON_CreateNumber( component->pitch_limit ) );
+  cJSON_AddItemToObject( free_camera_json, "run_speed", cJSON_CreateNumber( component->run_speed ) );
   return free_camera_json;
 }
 
@@ -49,6 +51,9 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
   } );
   CRUDE_IMGUI_OPTION( "Walk Speed", {
     ImGui::DragFloat2( "##Walk Speed", &component->walk_speed.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
+  } );
+  CRUDE_IMGUI_OPTION( "Run Speed", {
+    ImGui::DragFloat( "##Run Speed", &component->run_speed, 0.1 );
   } );
   CRUDE_IMGUI_OPTION( "Pitch Limit", {
     ImGui::SliderAngle( "##Pitch Limit", &component->pitch_limit, 15, 90 );
@@ -136,6 +141,7 @@ crude_player_controller_create_observer
     player_controller->idle_animation_index = 0;
     player_controller->walk_animation_index = 1;
     player_controller->strafe_animation_index = 2;
+    player_controller->run_animation_index = 3;
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
@@ -143,10 +149,13 @@ crude_player_controller_create_observer
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "strafe" );
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "run" );
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].disabled = false;
     
     player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
@@ -157,6 +166,9 @@ crude_player_controller_create_observer
       &game->engine->model_renderer_resources_manager,
       &player_model->model_renderer_resources_instance,
       "mixamorig:Spine2" );
+
+    player_controller->move_blend_max.x = player_controller->walk_speed.x;
+    player_controller->move_blend_max.y = player_controller->walk_speed.y;
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -276,8 +288,8 @@ crude_player_controller_update_system_
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        XMFLOAT2                                           move_speed;
-      
+        XMFLOAT2                                           move, move_speed;
+
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
         move_direction.z = input->keys[ SDL_SCANCODE_S ].current - input->keys[ SDL_SCANCODE_W ].current;
@@ -293,16 +305,31 @@ crude_player_controller_update_system_
       
         move_speed = player_controller->walk_speed;
 
-        //if ( input->keys[ SDL_SCANCODE_LSHIFT ].current )
-        //{
-        //  moving_speed = moving_speed * 2.f;
-        //}
+        if ( input->keys[ SDL_SCANCODE_LSHIFT ].current && move_direction.z < 0 )
+        {
+          move_speed.y = player_controller->run_speed;
+        }
         
         player_velocity = crude_jph_vec3_to_vector( physcs_character_container->jph_character_class->GetLinearVelocity( ) );
         
         if ( move_direction.z > 0 )
         {
           move_speed.y *= 0.32;
+        }
+        
+        move.x = move_direction.x * move_speed.x;
+        move.y = -move_direction.z * move_speed.y;
+
+        player_controller->move_blend.x = CRUDE_LERP( player_controller->move_blend.x, fabs( move.x ), 4 * it->delta_time );
+        player_controller->move_blend.y = CRUDE_LERP( player_controller->move_blend.y, fabs( move.y ), 4 * it->delta_time );
+
+        if ( move_direction.x != 0.f )
+        {
+          player_controller->move_blend_max.x = CRUDE_LERP( player_controller->move_blend_max.x, fabs( move.x ), 4 * it->delta_time );
+        }
+        if ( move_direction.z != 0.f )
+        {
+          player_controller->move_blend_max.y = CRUDE_LERP( player_controller->move_blend_max.y, fabs( move.y ), 4 * it->delta_time );
         }
 
         if ( move_direction.x != 0.f || move_direction.z != 0 )
@@ -319,21 +346,16 @@ crude_player_controller_update_system_
           new_player_velocity = XMVectorScale( new_player_velocity, 1.f / length );
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
-
-          player_controller->walk_blend.x = CRUDE_LERP( player_controller->walk_blend.x, fabs( move_direction.x ), 2 * it->delta_time );
-          player_controller->walk_blend.y = CRUDE_LERP( player_controller->walk_blend.y, fabs( move_direction.z ), 2 * it->delta_time );
           
-
-          player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].speed = move_direction.z < 0 ? 1 : -0.5;
-          player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].speed = 2 * move_direction.x;
+          player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].speed = move_direction.z < 0 ? 1.2 : -0.85;
+          player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].speed = 1.2 * move_direction.x;
+          player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].speed = 0.75;
         }
         else
         {
           new_player_velocity = player_velocity;
           new_player_velocity = XMVectorLerp( new_player_velocity, XMVectorZero( ), 5 * it->delta_time );
           new_player_velocity = XMVectorSetY( new_player_velocity, XMVectorGetY( player_velocity ) );
-          player_controller->walk_blend.x = CRUDE_LERP( player_controller->walk_blend.x, 0.f, 5 * it->delta_time );
-          player_controller->walk_blend.y = CRUDE_LERP( player_controller->walk_blend.y, 0.f, 5 * it->delta_time );
         }
 
         physcs_character_container->jph_character_class->SetLinearVelocity( crude_vector_to_jph_vec3( new_player_velocity ) );
@@ -348,13 +370,21 @@ crude_player_controller_update_system_
     {
       int64                                                animation_indices[ 8 ] { -1 };
       float32                                              animation_weights[ 8 ]{ 0 };
+      XMFLOAT2                                             normaliazed_move_blend;
+      float32                                              run_weight;
       
+      normaliazed_move_blend.x = player_controller->move_blend.x / player_controller->move_blend_max.x;
+      normaliazed_move_blend.y = player_controller->move_blend.y / player_controller->move_blend_max.y;
+      run_weight = CRUDE_MAX( ( player_controller->move_blend.y - player_controller->walk_speed.y ) / ( player_controller->run_speed - player_controller->walk_speed.y ), 0.f );
+
       animation_indices[ 0 ] = player_controller->idle_animation_index;
-      animation_weights[ 0 ] = CRUDE_MAX( 1.f - player_controller->walk_blend.y - player_controller->walk_blend.x, 0.05 );;
+      animation_weights[ 0 ] = CRUDE_MAX( 1.f - normaliazed_move_blend.y - normaliazed_move_blend.x, 0.05 );
       animation_indices[ 1 ] = player_controller->walk_animation_index;
-      animation_weights[ 1 ] = player_controller->walk_blend.y;
+      animation_weights[ 1 ] = player_controller->move_blend.y > player_controller->walk_speed.y ? 1.f - run_weight : normaliazed_move_blend.y;
       animation_indices[ 2 ] = player_controller->strafe_animation_index;
-      animation_weights[ 2 ] = player_controller->walk_blend.x;
+      animation_weights[ 2 ] = normaliazed_move_blend.x;
+      animation_indices[ 3 ] = player_controller->run_animation_index;
+      animation_weights[ 3 ] = player_controller->move_blend.y > player_controller->walk_speed.y ? run_weight : 0.f;
       crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, animation_indices, animation_weights );
     }
 

@@ -283,7 +283,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
 
       ImGui::Spacing( );
 
-      ImGui::SliderInt( "Animation Instance", &component->debug_animation_instance_index, 0, 8 );
+      ImGui::SliderInt( "Animation Instance", &component->debug_animation_instance_index, 0, 7 );
       
       if ( ImGui::BeginCombo( "Animation", ( animation_instance->animation_index != -1 ) ? animations[ animation_instance->animation_index ].name : "None", ImGuiComboFlags_WidthFitPreview ) )
       {
@@ -301,6 +301,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
           }
         }
         ImGui::EndCombo( );
+      }
+
+      if ( ImGui::Button( "Reset" ) )
+      {
+        animation_instance->animation_index = -1;
       }
       
       if ( animation_instance->animation_index != -1 )
