@@ -68,30 +68,54 @@
 							"scale":	[1, 1, 1]
 						}],
 					"children":	[{
+							"name":	"weapon_grab",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[-0.744420826435089, 7.257720947265625, 1.7922365665435791],
+									"rotation":	[0.80222094058990479, 0.56565243005752563, 0.189275324344635, 0.025568714365363121],
+									"scale":	[1, 1, 1]
+								}],
+							"children":	[{
+									"name":	"weapon_spawnpoint",
+									"components":	[{
+											"type":	"crude_transform",
+											"translation":	[-0.12337213754653931, -0.13083821535110474, 0.15081897377967834],
+											"rotation":	[0.71520102024078369, 0.68300390243530273, 0.0518815852701664, -0.13892976939678192],
+											"scale":	[0.99998492002487183, 0.999982714653015, 0.99998849630355835]
+										}],
+									"children":	[{
+											"name":	"weapon",
+											"external":	{
+												"relative_filepath":	"game\\rb9\\nodes\\weapon.crude_node",
+												"type":	0
+											}
+										}]
+								}]
+						}, {
 							"name":	"model",
 							"components":	[{
 									"type":	"crude_transform",
 									"translation":	[0, 0, 0],
 									"rotation":	[0, 0, 0, 1],
-									"scale":	[25, 25, 25]
+									"scale":	[24.999996185302734, 25, 24.999996185302734]
 								}, {
 									"type":	"crude_gltf",
 									"path":	"game\\rb9\\gltf\\fb_ch0\\fb_ch0.gltf",
 									"animations_instances":	[{
-											"index":	0,
+											"index":	2,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	5,
+											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
+										}, {
+											"index":	4,
+											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
 										}, {
 											"index":	3,
 											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
 										}, {
-											"index":	2,
-											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
-										}, {
-											"index":	1,
-											"nodes_enabled_bits":	[-524288, -2, -1, -1, -1, -1, -1, -1]
-										}, {
-											"index":	-1,
-											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+											"index":	0,
+											"nodes_enabled_bits":	[-1, -7, -1, -1, -1, -1, -1, -1]
 										}, {
 											"index":	-1,
 											"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
@@ -104,12 +128,6 @@
 										}]
 								}],
 							"children":	[]
-						}, {
-							"name":	"weapon",
-							"external":	{
-								"relative_filepath":	"game\\rb9\\nodes\\weapon.crude_node",
-								"type":	0
-							}
 						}]
 				}]
 		}]

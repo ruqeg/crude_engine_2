@@ -39,6 +39,8 @@ typedef struct crude_player_controller
   uint32                                                   walk_animation_index;
   uint32                                                   strafe_animation_index;
   uint32                                                   run_animation_index;
+  uint32                                                   aim_down_animation_index;
+  uint32                                                   fire_animation_index;
 
   /* Animations blending */
   XMFLOAT2                                                 move_blend;

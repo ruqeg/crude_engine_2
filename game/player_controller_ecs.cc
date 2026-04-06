@@ -126,7 +126,6 @@ crude_player_controller_create_observer
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
-    crude_transform                                       *weapon_transform;
     XMMATRIX                                               right_hand_joint_node_to_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
@@ -151,6 +150,7 @@ crude_player_controller_create_observer
     player_controller->walk_animation_index = 1;
     player_controller->strafe_animation_index = 2;
     player_controller->run_animation_index = 3;
+    player_controller->aim_down_animation_index = 4;
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
@@ -160,11 +160,15 @@ crude_player_controller_create_observer
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "strafe" );
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "run" );
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "aim_down" );
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].loop = false;
 
     player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
@@ -179,21 +183,8 @@ crude_player_controller_create_observer
     player_controller->right_hand_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
       &player_model->model_renderer_resources_instance,
-      "mixamorig:RightHand.Grab" );
+      "mixamorig:RightHand" );
     
-    weapon_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_transform );
-    right_hand_joint_node_to_model = crude_gfx_node_to_model(
-      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
-        &game->engine->model_renderer_resources_manager,
-        player_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
-      player_model->model_renderer_resources_instance.nodes_transforms,
-      player_controller->right_hand_joint_node );
-
-    XMVECTOR t, s, r;
-    XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
-    XMStoreFloat3( &weapon_transform->translation, XMVectorScale( t, 25 ) );
-    XMStoreFloat4( &weapon_transform->rotation, r );
-
     player_controller->move_blend_max.x = player_controller->walk_speed.x;
     player_controller->move_blend_max.y = player_controller->walk_speed.y;
   }
@@ -227,6 +218,7 @@ crude_player_controller_game_update_system_
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
     crude_gltf                                            *weapon_model;
+    crude_camera                                          *player_camera;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           player_orientation_entity;
@@ -254,9 +246,26 @@ crude_player_controller_game_update_system_
 
     weapon_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_model_entity, crude_gltf );
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
+    player_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_camera );
 
     if ( player_controller->input_enabled )
     {
+      /* Handle actions */
+      if ( input->mouse.right.current )
+      {
+        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 40.f ), 2 * it->delta_time );
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].inverse = true;
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].current_time = 0.2;
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
+      }
+      else
+      {
+        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), 2 * it->delta_time );
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].inverse = false;
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].current_time = 0;
+        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
+      }
+
       /* Handle Rotation */
       {
         crude_transform                                   *pivot_yaw_transform;
@@ -349,7 +358,12 @@ crude_player_controller_game_update_system_
         {
           move_speed.y *= 0.32;
         }
-        
+
+        if ( input->mouse.right.current )
+        {
+          move_speed.x *= 0.4;
+          move_speed.y *= 0.4;
+        }
         move.x = move_direction.x * move_speed.x;
         move.y = -move_direction.z * move_speed.y;
 
@@ -418,6 +432,14 @@ crude_player_controller_game_update_system_
       animation_weights[ 2 ] = normaliazed_move_blend.x;
       animation_indices[ 3 ] = player_controller->run_animation_index;
       animation_weights[ 3 ] = player_controller->move_blend.y > player_controller->walk_speed.y ? run_weight : 0.f;
+      animation_indices[ 4 ] = player_controller->aim_down_animation_index;
+      animation_weights[ 4 ] = input->mouse.right.current ? 2.f : 0.f;
+
+      if ( input->mouse.right.current )
+      {
+        animation_weights[ 0 ] = animation_weights[ 1 ] = animation_weights[ 2 ] = animation_weights[ 3 ];
+        animation_weights[ 0 ] = 0.1;
+      }
       crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, animation_indices, animation_weights );
     }
 
@@ -427,11 +449,11 @@ crude_player_controller_game_update_system_
       
       player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
       
-      head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, player_controller->head_yaw_angle, 0.f );
+      head_rotation = XMQuaternionRotationRollPitchYaw( player_controller->head_pitch_angle, input->mouse.right.current ? ( player_controller->head_yaw_angle + 0.8 * XM_PIDIV4 ) : player_controller->head_yaw_angle, 0.f );
       head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
       XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
       
-      spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle, 0.f );
+      spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, input->mouse.right.current ? ( player_controller->spine_yaw_angle - 0.8 * XM_PIDIV4 ) : player_controller->spine_yaw_angle, 0.f );
       spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
       XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
     }
@@ -461,13 +483,13 @@ crude_player_controller_engine_update_system_
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
-    crude_transform                                       *weapon_transform;
+    crude_transform                                       *weapon_grab_transform;
     XMMATRIX                                               right_hand_joint_node_to_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           player_orientation_entity;
     crude_entity                                           player_model_entity;
-    crude_entity                                           weapon_entity;
+    crude_entity                                           weapon_spawnpoint_entity, weapon_grab_entity;
 
     input = ctx->input;
 
@@ -478,11 +500,12 @@ crude_player_controller_engine_update_system_
     player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
     player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
-    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+    weapon_grab_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon_grab" );
+    weapon_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_grab_entity, "weapon_spawnpoint" );
 
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     
-    weapon_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_transform );
+    weapon_grab_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_grab_entity, crude_transform );
     right_hand_joint_node_to_model = crude_gfx_node_to_model(
       crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
         &game->engine->model_renderer_resources_manager,
@@ -492,8 +515,8 @@ crude_player_controller_engine_update_system_
 
     XMVECTOR t, s, r;
     XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
-    XMStoreFloat3( &weapon_transform->translation, XMVectorScale( t, 25 ) );
-    XMStoreFloat4( &weapon_transform->rotation, r );
+    XMStoreFloat3( &weapon_grab_transform->translation, XMVectorScale( t, 25 ) );
+    XMStoreFloat4( &weapon_grab_transform->rotation, r );
   }
   CRUDE_PROFILER_ZONE_END;
 }

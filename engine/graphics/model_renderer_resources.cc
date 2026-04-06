@@ -241,7 +241,7 @@ crude_gfx_model_renderer_resources_update_instance_animations
           else
           {
             // !TODO
-            animation_instance->animation_index = -1;
+            animation_instance->disabled = true;
           }
         }
       }
@@ -256,7 +256,7 @@ crude_gfx_model_renderer_resources_update_instance_animations
           else
           {
             // !TODO
-            animation_instance->animation_index = -1;
+            animation_instance->disabled = true;
           }
         }
       }
