@@ -56,6 +56,9 @@ crude_game_initialize
 
   game->weapon_system_context = CRUDE_COMPOUNT_EMPTY( crude_weapon_system_context );
   crude_weapon_system_import( engine->world, &engine->components_serialization_manager, &game->weapon_system_context );
+
+  game->zombie_system_context = CRUDE_COMPOUNT_EMPTY( crude_zombie_system_context );
+  crude_zombie_system_import( engine->world, &engine->components_serialization_manager, &game->zombie_system_context );
   
   game->training_area_level_system_context = CRUDE_COMPOUNT_EMPTY( crude_training_area_level_system_context );
   game->training_area_level_system_context.input = &engine->platform.input;

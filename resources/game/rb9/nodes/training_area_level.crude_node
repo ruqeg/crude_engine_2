@@ -12,7 +12,7 @@
 			"name":	"player_spawnpoint",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[0, 36.9733657836914, 69.112335205078125],
+					"translation":	[55.861000061035156, 18.363622665405273, -26.193332672119141],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}],
@@ -20,6 +20,21 @@
 					"name":	"player_ref",
 					"external":	{
 						"relative_filepath":	"game\\rb9\\nodes\\player.crude_node",
+						"type":	0
+					}
+				}]
+		}, {
+			"name":	"zombie_spawnpoint",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[56.410205841064453, 42.285820007324219, -9.46933174133301],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[{
+					"name":	"zombie",
+					"external":	{
+						"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
 						"type":	0
 					}
 				}]
@@ -32,7 +47,32 @@
 					"scale":	[1, 1, 1]
 				}, {
 					"type":	"crude_gltf",
-					"path":	"game\\rb9\\dev\\blackout\\fb_zn0.gltf"
+					"path":	"game\\rb9\\dev\\blackout\\fb_zn0.gltf",
+					"animations_instances":	[{
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}]
 				}],
 			"children":	[]
 		}, {

@@ -78,6 +78,7 @@ typedef struct crude_physics_static_body_creation
       crude_physics_mesh_shape_handle                      handle;
     } mesh;
   };
+  uint32                                                   layers;
 } crude_physics_static_body_creation;
 
 typedef struct crude_physics_static_body_container
@@ -99,6 +100,7 @@ typedef struct crude_physics_static_body
       crude_physics_mesh_shape_handle                      handle;
     } mesh;
   };
+  uint32                                                   layers;
 } crude_physics_static_body;
 
 CRUDE_API crude_physics_character

@@ -13,7 +13,12 @@
 
 const JPH::ObjectLayer g_crude_jph_layer_non_moving        = 0;
 const JPH::ObjectLayer g_crude_jph_layer_moving            = 1;
-const JPH::ObjectLayer g_crude_jph_num_layers              = 2;
+const JPH::ObjectLayer g_crude_jph_layer_custom0           = 2;
+const JPH::ObjectLayer g_crude_jph_layer_custom1           = 3;
+const JPH::ObjectLayer g_crude_jph_layer_custom2           = 4;
+const JPH::ObjectLayer g_crude_jph_layer_custom3           = 5;
+const JPH::ObjectLayer g_crude_jph_layer_custom4           = 6;
+const JPH::ObjectLayer g_crude_jph_num_layers              = 7;
 
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_non_moving_class      { 0 };
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_moving_class          { 1 };

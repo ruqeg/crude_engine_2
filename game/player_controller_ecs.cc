@@ -169,6 +169,8 @@ crude_player_controller_create_observer
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].loop = false;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].current_time = 0.1;
+    player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].paused = true;
 
     player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
@@ -256,9 +258,6 @@ crude_player_controller_game_update_system_
       /* Handle actions */
       if ( input->mouse.right.current )
       {
-        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].current_time = 0.0;
-        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].paused = true;
-        player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
         player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 40.f ), 2 * it->delta_time );
         player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 5 * it->delta_time );
       }

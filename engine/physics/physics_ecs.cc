@@ -119,6 +119,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
     cJSON *mesh_json = cJSON_GetObjectItem( component_json, "mesh" );
     component->mesh.handle = crude_physics_shapes_manager_get_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( mesh_json, "relative_filepath" ) ) );
   }
+  component->layers = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "layers" ) );
   return true;
 }
 
@@ -140,6 +141,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
     cJSON_AddItemToObject( mesh_json, "relative_filepath", cJSON_CreateString( mesh_shape->relative_filepath ) );
     cJSON_AddItemToObject( static_body_json, "mesh", mesh_json );
   }
+  cJSON_AddItemToObject( static_body_json, "layers", cJSON_CreateNumber( component->layers ) );
   return static_body_json;
 }
 
@@ -207,6 +209,18 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
       ImGui::EndDragDropTarget();
     }
   }
+
+  CRUDE_IMGUI_OPTION( "Layer", {
+    modified |= ImGui::CheckboxFlags( "0", &component->layers, 1 << g_crude_jph_layer_custom0 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "1", &component->layers, 1 << g_crude_jph_layer_custom1 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "2", &component->layers, 1 << g_crude_jph_layer_custom2 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "3", &component->layers, 1 << g_crude_jph_layer_custom3 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "4", &component->layers, 1 << g_crude_jph_layer_custom4 );
+    } );
 
   if ( modified )
   {

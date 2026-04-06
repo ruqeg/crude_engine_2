@@ -1,0 +1,58 @@
+{
+	"name":	"zombie",
+	"components":	[{
+			"type":	"crude_transform",
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		}, {
+			"type":	"crude_zombie"
+		}],
+	"children":	[{
+			"name":	"pivot",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[{
+					"name":	"model",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[7, 7, 7]
+						}, {
+							"type":	"crude_gltf",
+							"path":	"game\\rb9\\gltf\\zombie\\zombie.gltf",
+							"animations_instances":	[{
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}]
+						}],
+					"children":	[]
+				}]
+		}]
+}

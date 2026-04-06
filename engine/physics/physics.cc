@@ -497,9 +497,8 @@ crude_physics_create_static_body
     jph_shape_class = crude_physics_shapes_manager_access_mesh_shape( physics->physics_shapes_manager, creation->mesh.handle )->jph_shape_class;
   }
 
-  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving );
+  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving | creation->layers );
 
-  
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
 
   return handle;
