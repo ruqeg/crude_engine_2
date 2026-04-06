@@ -12,7 +12,7 @@
  *********************************************************/
 typedef struct crude_player_controller
 {
-  float32                                                  walk_speed;
+  XMFLOAT2                                                 walk_speed;
   float32                                                  rotate_speed;
   crude_input const                                       *input;
   float32                                                  pitch_limit;

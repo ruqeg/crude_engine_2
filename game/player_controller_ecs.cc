@@ -19,7 +19,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotate_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "rotate_speed" ) );
-  component->walk_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "walk_speed" ) );
+  crude_parse_json_to_float2( &component->walk_speed, cJSON_GetObjectItem( component_json, "walk_speed" ) );
   component->pitch_limit = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "pitch_limit" ) );
   return true;
 }
@@ -29,7 +29,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_player_controller )
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_player_controller" ) );
   cJSON_AddItemToObject( free_camera_json, "rotate_speed", cJSON_CreateNumber( component->rotate_speed ) );
-  cJSON_AddItemToObject( free_camera_json, "walk_speed", cJSON_CreateNumber( component->walk_speed ) );
+  cJSON_AddItemToObject( free_camera_json, "walk_speed", cJSON_CreateFloatArray( &component->walk_speed.x, 2 ) );
   cJSON_AddItemToObject( free_camera_json, "pitch_limit", cJSON_CreateNumber( component->pitch_limit ) );
   return free_camera_json;
 }
@@ -48,7 +48,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
     ImGui::DragFloat( "##Rotate Speed", &component->rotate_speed, 0.1 );
   } );
   CRUDE_IMGUI_OPTION( "Walk Speed", {
-    ImGui::DragFloat( "##Walk Speed", &component->walk_speed, 0.1 );
+    ImGui::DragFloat2( "##Walk Speed", &component->walk_speed.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
   } );
   CRUDE_IMGUI_OPTION( "Pitch Limit", {
     ImGui::SliderAngle( "##Pitch Limit", &component->pitch_limit, 15, 90 );
@@ -207,6 +207,8 @@ crude_player_controller_update_system_
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
     player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
+    
+    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
 
     if ( player_controller->input_enabled )
     {
@@ -221,8 +223,8 @@ crude_player_controller_update_system_
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
         player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
 
-        player_controller->pivot_pitch_angle += CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.y, 0.04f, -0.04f );
-        player_controller->pivot_yaw_angle -= CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.x, 0.04f, -0.04f );
+        player_controller->pivot_pitch_angle += CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.y, it->delta_time * 8.f, it->delta_time * -8.f );
+        player_controller->pivot_yaw_angle -= CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.x, it->delta_time * 8.f, it->delta_time * -8.f );
 
         if ( player_controller->pivot_yaw_angle < 0 )
         {
@@ -274,7 +276,7 @@ crude_player_controller_update_system_
         XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        float32                                            move_speed;
+        XMFLOAT2                                           move_speed;
       
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
@@ -298,18 +300,32 @@ crude_player_controller_update_system_
         
         player_velocity = crude_jph_vec3_to_vector( physcs_character_container->jph_character_class->GetLinearVelocity( ) );
         
+        if ( move_direction.z > 0 )
+        {
+          move_speed.y *= 0.32;
+        }
+
         if ( move_direction.x != 0.f || move_direction.z != 0 )
         {
-          new_player_velocity = XMVectorZero( );
-          new_player_velocity = XMVectorAdd( new_player_velocity, XMVectorScale( player_camera_basis_right, move_direction.x ) );
-          new_player_velocity = XMVectorAdd( new_player_velocity, XMVectorScale( player_camera_basis_forward, move_direction.z ) );
-          new_player_velocity = XMVectorScale( XMVector3Normalize( new_player_velocity ), move_speed );
+          XMVECTOR                                         player_velocity_forward, player_velocity_right;
+          float32                                          length;
+
+          player_velocity_right = XMVectorScale( player_camera_basis_right, move_direction.x );
+          player_velocity_forward = XMVectorScale( player_camera_basis_forward, move_direction.z );
+          
+          length = XMVectorGetX( XMVector3Length( XMVectorAdd( player_velocity_forward, player_velocity_right ) ) );
+
+          new_player_velocity = XMVectorAdd( XMVectorScale( player_velocity_forward, move_speed.y ), XMVectorScale( player_velocity_right, move_speed.x ) );
+          new_player_velocity = XMVectorScale( new_player_velocity, 1.f / length );
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
 
           player_controller->walk_blend.x = CRUDE_LERP( player_controller->walk_blend.x, fabs( move_direction.x ), 2 * it->delta_time );
           player_controller->walk_blend.y = CRUDE_LERP( player_controller->walk_blend.y, fabs( move_direction.z ), 2 * it->delta_time );
+          
 
+          player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].speed = move_direction.z < 0 ? 1 : -0.5;
+          player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].speed = 2 * move_direction.x;
         }
         else
         {
@@ -328,8 +344,6 @@ crude_player_controller_update_system_
     {
       game->engine->camera_node = player_camera_entity;
     }
-    
-    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
 
     {
       int64                                                animation_indices[ 8 ] { -1 };

@@ -8,7 +8,7 @@
 		}, {
 			"type":	"crude_player_controller",
 			"rotate_speed":	0.00999999977648258,
-			"walk_speed":	12,
+			"walk_speed":	[8.5, 12],
 			"pitch_limit":	0.43633231520652771
 		}],
 	"children":	[{
