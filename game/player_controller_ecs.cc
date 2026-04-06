@@ -189,6 +189,7 @@ crude_player_controller_create_observer
     player_controller->move_blend_max.y = player_controller->walk_speed.y;
 
     player_controller->aim_blend = 0.f;
+    player_controller->shot_blend = 0.f;
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -266,6 +267,15 @@ crude_player_controller_game_update_system_
         player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), 2 * it->delta_time );
         player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 7 * it->delta_time );
       }
+      
+      if ( input->mouse.right.current )
+      {
+        if ( input->mouse.left.current )
+        {
+          player_controller->shot_blend = 1.f;
+        }
+      }
+      player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, it->delta_system_time );
 
 
       /* Handle Rotation */
@@ -451,7 +461,7 @@ crude_player_controller_game_update_system_
         head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
         
-        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, -player_controller->head_pitch_angle );
+        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, -player_controller->head_pitch_angle + 0.5 * XM_PIDIV2 * player_controller->shot_blend );
         spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
       }
@@ -461,7 +471,7 @@ crude_player_controller_game_update_system_
         head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
         
-        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle, 0.f );
+        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle, 0.5 * XM_PIDIV2 * player_controller->shot_blend );
         spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
       }
@@ -524,8 +534,8 @@ crude_player_controller_engine_update_system_
 
     XMVECTOR t, s, r;
     XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
-    XMStoreFloat3( &weapon_grab_transform->translation, XMVectorLerp( XMLoadFloat3( &weapon_grab_transform->translation ), XMVectorScale( t, 25 ), 35 * it->delta_time ) );
-    XMStoreFloat4( &weapon_grab_transform->rotation, XMVectorLerp( XMLoadFloat4( &weapon_grab_transform->rotation ), r, 35 * it->delta_time ) );
+    XMStoreFloat3( &weapon_grab_transform->translation, XMVectorLerp( XMLoadFloat3( &weapon_grab_transform->translation ), XMVectorScale( t, 25 ), 70 * it->delta_time ) );
+    XMStoreFloat4( &weapon_grab_transform->rotation, XMVectorLerp( XMLoadFloat4( &weapon_grab_transform->rotation ), r, 70 * it->delta_time ) );
   }
   CRUDE_PROFILER_ZONE_END;
 }
