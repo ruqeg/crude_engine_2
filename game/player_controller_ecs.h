@@ -45,6 +45,7 @@ typedef struct crude_player_controller
   /* Animations blending */
   XMFLOAT2                                                 move_blend;
   XMFLOAT2                                                 move_blend_max;
+  float32                                                  aim_blend;
 } crude_player_controller;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );
