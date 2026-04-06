@@ -53,6 +53,9 @@ crude_game_initialize
   game->player_controller_system_context.input = &engine->platform.input;
   game->player_controller_system_context.physics_manager = &engine->physics;
   crude_player_controller_system_import( engine->world, &engine->components_serialization_manager, &game->player_controller_system_context );
+
+  game->weapon_system_context = CRUDE_COMPOUNT_EMPTY( crude_weapon_system_context );
+  crude_weapon_system_import( engine->world, &engine->components_serialization_manager, &game->weapon_system_context );
   
   game->training_area_level_system_context = CRUDE_COMPOUNT_EMPTY( crude_training_area_level_system_context );
   game->training_area_level_system_context.input = &engine->platform.input;

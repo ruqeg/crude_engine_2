@@ -8,6 +8,7 @@
 #include <engine/platform/platform.h>
 #include <engine/scene/scene_ecs.h>
 #include <game/player_controller_ecs.h>
+#include <game/weapon_ecs.h>
 #include <game/training_area_level_ecs.h>
 
 typedef struct crude_game
@@ -19,6 +20,7 @@ typedef struct crude_game
 
   /* System Context */
   crude_player_controller_system_context                   player_controller_system_context;
+  crude_weapon_system_context                              weapon_system_context;
   crude_training_area_level_system_context                 training_area_level_system_context;
 } crude_game;
 

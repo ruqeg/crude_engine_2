@@ -104,6 +104,12 @@
 										}]
 								}],
 							"children":	[]
+						}, {
+							"name":	"weapon",
+							"external":	{
+								"relative_filepath":	"game\\rb9\\nodes\\weapon.crude_node",
+								"type":	0
+							}
 						}]
 				}]
 		}]

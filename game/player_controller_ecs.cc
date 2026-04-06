@@ -66,7 +66,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
  *
  *********************************************************/
 CRUDE_ECS_OBSERVER_DECLARE( crude_player_controller_create_observer );
-CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_game_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_player_controller_engine_update_system_ );
 
 void
 crude_player_controller_create_observer
@@ -90,8 +91,12 @@ crude_player_controller_system_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player_controller );
 
   crude_scene_components_import( world, manager );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_engine_update_system_, crude_ecs_on_engine_update, ctx, {
+    { .id = ecs_id( crude_player_controller ) },
+  } );
   
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_update_system_, crude_ecs_on_game_update, ctx, {
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_game_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_player_controller ) },
   } );
   
@@ -121,10 +126,13 @@ crude_player_controller_create_observer
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
+    crude_transform                                       *weapon_transform;
+    XMMATRIX                                               right_hand_joint_node_to_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           player_orientation_entity;
     crude_entity                                           player_model_entity;
+    crude_entity                                           weapon_entity;
 
     input = ctx->input;
 
@@ -135,6 +143,7 @@ crude_player_controller_create_observer
     player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
     player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
+    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
 
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     
@@ -156,7 +165,7 @@ crude_player_controller_create_observer
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].disabled = false;
-    
+
     player_controller->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
       &game->engine->model_renderer_resources_manager,
       &player_model->model_renderer_resources_instance,
@@ -167,6 +176,24 @@ crude_player_controller_create_observer
       &player_model->model_renderer_resources_instance,
       "mixamorig:Spine2" );
 
+    player_controller->right_hand_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+      &game->engine->model_renderer_resources_manager,
+      &player_model->model_renderer_resources_instance,
+      "mixamorig:RightHand.Grab" );
+    
+    weapon_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_transform );
+    right_hand_joint_node_to_model = crude_gfx_node_to_model(
+      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+        &game->engine->model_renderer_resources_manager,
+        player_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+      player_model->model_renderer_resources_instance.nodes_transforms,
+      player_controller->right_hand_joint_node );
+
+    XMVECTOR t, s, r;
+    XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
+    XMStoreFloat3( &weapon_transform->translation, XMVectorScale( t, 25 ) );
+    XMStoreFloat4( &weapon_transform->rotation, r );
+
     player_controller->move_blend_max.x = player_controller->walk_speed.x;
     player_controller->move_blend_max.y = player_controller->walk_speed.y;
   }
@@ -174,12 +201,12 @@ crude_player_controller_create_observer
 }
 
 void
-crude_player_controller_update_system_
+crude_player_controller_game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "crude_player_controller_update_system" );
+  CRUDE_PROFILER_ZONE_NAME( "crude_player_controller_game_update_system_" );
 
   crude_game                                              *game;
   crude_player_controller_system_context                  *ctx;
@@ -199,6 +226,7 @@ crude_player_controller_update_system_
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
+    crude_gltf                                            *weapon_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           player_orientation_entity;
@@ -206,6 +234,8 @@ crude_player_controller_update_system_
     crude_entity                                           pivot_pitch_entity;
     crude_entity                                           pivot_yaw_entity;
     crude_entity                                           player_camera_entity;
+    crude_entity                                           weapon_entity;
+    crude_entity                                           weapon_model_entity;
 
     input = ctx->input;
 
@@ -219,7 +249,10 @@ crude_player_controller_update_system_
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
     player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
-    
+    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+    weapon_model_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_entity, "model" );
+
+    weapon_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_model_entity, crude_gltf );
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
 
     if ( player_controller->input_enabled )
@@ -402,6 +435,65 @@ crude_player_controller_update_system_
       spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
       XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
     }
+  }
+  CRUDE_PROFILER_ZONE_END;
+}
+
+
+void
+crude_player_controller_engine_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_player_controller_engine_update_system_" );
+
+  crude_game                                              *game;
+  crude_player_controller_system_context                  *ctx;
+  crude_player_controller                                 *player_controller_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
+  player_controller_per_entity = ecs_field( it, crude_player_controller, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input const                                     *input;
+    crude_player_controller                               *player_controller;
+    crude_gltf                                            *player_model;
+    crude_transform                                       *weapon_transform;
+    XMMATRIX                                               right_hand_joint_node_to_model;
+    crude_entity                                           entity;  
+    crude_entity                                           player_character_entity;
+    crude_entity                                           player_orientation_entity;
+    crude_entity                                           player_model_entity;
+    crude_entity                                           weapon_entity;
+
+    input = ctx->input;
+
+    entity = crude_entity_from_iterator( it, i );
+
+    player_controller = &player_controller_per_entity[ i ];
+    
+    player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
+    player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
+    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
+    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+
+    player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
+    
+    weapon_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_transform );
+    right_hand_joint_node_to_model = crude_gfx_node_to_model(
+      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+        &game->engine->model_renderer_resources_manager,
+        player_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+      player_model->model_renderer_resources_instance.nodes_transforms,
+      player_controller->right_hand_joint_node );
+
+    XMVECTOR t, s, r;
+    XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
+    XMStoreFloat3( &weapon_transform->translation, XMVectorScale( t, 25 ) );
+    XMStoreFloat4( &weapon_transform->rotation, r );
   }
   CRUDE_PROFILER_ZONE_END;
 }

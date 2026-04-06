@@ -1,0 +1,49 @@
+{
+	"name":	"weapon",
+	"components":	[{
+			"type":	"crude_transform",
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		}, {
+			"type":	"crude_weapon"
+		}],
+	"children":	[{
+			"name":	"model",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0.19925183057785034, 0.21054947376251221, 0],
+					"rotation":	[0.57601803541183472, 0.5547785758972168, -0.48278146982193, 0.3568558394908905],
+					"scale":	[24.999961853027344, 24.999946594238281, 24.999967575073242]
+				}, {
+					"type":	"crude_gltf",
+					"path":	"game\\rb9\\gltf\\weapons\\pump_action_shotgun.gltf",
+					"animations_instances":	[{
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	-1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}]
+				}],
+			"children":	[]
+		}]
+}
