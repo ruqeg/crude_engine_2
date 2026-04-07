@@ -273,8 +273,10 @@ crude_player_controller_game_update_system_
       {
         if ( input->mouse.left.current )
         {
-          crude_weapon_fire( weapon );
-          player_controller->shot_blend = 1.f;
+          if ( crude_weapon_fire( weapon ) )
+          {
+            player_controller->shot_blend = 1.f;
+          }
         }
       }
       player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, it->delta_system_time );

@@ -19,6 +19,8 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_weapon )
 {
   crude_memory_set( component, 0, sizeof( crude_weapon ) );
   component->max_ammo = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_ammo" ) );
+  component->damage = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "damage" ) );
+  component->max_cooldown = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_cooldown" ) );
   return true;
 }
 
@@ -27,6 +29,8 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_weapon )
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_weapon ) ) );
   cJSON_AddItemToObject( free_camera_json, "max_ammo", cJSON_CreateNumber( component->max_ammo ) );
+  cJSON_AddItemToObject( free_camera_json, "damage", cJSON_CreateNumber( component->damage ) );
+  cJSON_AddItemToObject( free_camera_json, "max_cooldown", cJSON_CreateNumber( component->max_cooldown ) );
   return free_camera_json;
 }
 
@@ -37,6 +41,14 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_weapon )
   CRUDE_IMGUI_OPTION( "Max ammo", {
     ImGui::DragInt( "##Max ammo", &component->max_ammo );
     });
+
+  CRUDE_IMGUI_OPTION( "Damage", {
+    ImGui::DragInt( "##Damage", &component->damage );
+    });
+
+  CRUDE_IMGUI_OPTION( "Max Cooldown", {
+    ImGui::DragFloat( "##Max Cooldown", &component->max_cooldown );
+    });
 }
 
 /**********************************************************
@@ -44,7 +56,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_weapon )
  *                 API
  *
  *********************************************************/
-void
+bool
 crude_weapon_fire
 (
   _In_ crude_weapon                                       *weapon
@@ -59,15 +71,22 @@ crude_weapon_fire
 
   if ( weapon->wasted_ammo >= weapon->max_ammo )
   {
-    return;
+    return false;
   }
+
+  if ( weapon->cooldown < weapon->max_cooldown )
+  {
+    return false;
+  }
+
+  weapon->cooldown = 0.f;
+
+  weapon->wasted_ammo += 1;
 
   view_to_world = crude_transform_node_to_world( game->engine->world, game->engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->engine->world, game->engine->camera_node, crude_transform ) );
   
   direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 0, 0, -1, 0 ), view_to_world ), 10000000 );
   origin = view_to_world.r[ 3 ];
-
-  ++weapon->wasted_ammo;
 
   if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving, &ray_cast_result ) )
   {
@@ -90,6 +109,8 @@ crude_weapon_fire
       }
     }
   }
+
+  return true;
 }
 
 void
@@ -120,29 +141,7 @@ crude_weapon_fill_ammo
  *                 System
  *
  *********************************************************/
-CRUDE_ECS_SYSTEM_DECLARE( crude_weapon_update_system_ );
-
-void
-crude_weapon_update_system_
-(
-  _In_ ecs_iter_t                                         *it
-)
-{
-  CRUDE_PROFILER_ZONE_NAME( "crude_weapon_update_system_" );
-
-  crude_game                                              *game;
-  crude_weapon_system_context                             *ctx;
-  crude_weapon                                            *weapon_per_entity;
-
-  game = crude_game_instance( );
-  ctx = CRUDE_CAST( crude_weapon_system_context*, it->ctx );
-  weapon_per_entity = ecs_field( it, crude_weapon, 0 );
-  
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-  }
-  CRUDE_PROFILER_ZONE_END;
-}
+CRUDE_ECS_SYSTEM_DECLARE( crude_weapon_game_update_system_ );
 
 void
 crude_weapon_system_import
@@ -160,4 +159,35 @@ crude_weapon_system_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_weapon );
 
   crude_scene_components_import( world, manager );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_weapon_game_update_system_, crude_ecs_on_game_update, ctx, {
+    { .id = ecs_id( crude_weapon ) },
+  } );
+}
+
+void
+crude_weapon_game_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_weapon_game_update_system_" );
+
+  crude_game                                              *game;
+  crude_weapon_system_context                             *ctx;
+  crude_weapon                                            *weapon_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_weapon_system_context*, it->ctx );
+  weapon_per_entity = ecs_field( it, crude_weapon, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_weapon                                          *weapon;
+
+    weapon = &weapon_per_entity[ i ];
+
+    weapon->cooldown += it->delta_time;
+  }
+  CRUDE_PROFILER_ZONE_END;
 }

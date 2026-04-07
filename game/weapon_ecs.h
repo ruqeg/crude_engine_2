@@ -14,6 +14,8 @@ typedef struct crude_weapon
   int32                                                    max_ammo;
   int32                                                    wasted_ammo;
   int32                                                    damage;
+  float32                                                  max_cooldown;
+  float32                                                  cooldown;
 } crude_weapon;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_weapon );
@@ -40,7 +42,7 @@ crude_weapon_fill_ammo
   _In_ crude_weapon                                       *weapon
 );
 
-CRUDE_API void
+CRUDE_API bool
 crude_weapon_fire
 (
   _In_ crude_weapon                                       *weapon
@@ -56,7 +58,7 @@ typedef struct crude_weapon_system_context
 } crude_weapon_system_context;
 
 CRUDE_API void
-crude_weapon_update_system_
+crude_weapon_game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 );

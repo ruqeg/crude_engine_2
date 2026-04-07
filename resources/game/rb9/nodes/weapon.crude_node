@@ -7,7 +7,9 @@
 			"scale":	[1, 1, 1]
 		}, {
 			"type":	"crude_weapon",
-			"max_ammo":	10
+			"max_ammo":	10,
+			"damage":	20,
+			"max_cooldown":	3
 		}],
 	"children":	[{
 			"name":	"model",
