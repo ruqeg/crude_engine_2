@@ -265,21 +265,28 @@ crude_node_manager_load_node_from_json_
     CRUDE_ASSERT( parent ); /* WTF IS GOING ONE, DONT PUT EXTERNAL ON TOP OF SCENE */
 
     node_external_json = cJSON_GetObjectItemCaseSensitive( node_json, "external");
-
     node_external_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "relative_filepath" ) );
-    
-    node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, node_external_relative_filepath, world, false ), node_name, *parent, true, true );
-    crude_entity_enable_hierarchy( world, node, true );
     
     node_external_component = crude_node_external_empty( );
     node_external_component.type = CRUDE_CAST( crude_node_external_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "type") ) );
     crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component ) );
-    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external_component } );
-
-    if ( node_external_component.type != CRUDE_NODE_EXTERNAL_TYPE_COPY )
+    
+    if ( node_external_component.type == CRUDE_NODE_EXTERNAL_TYPE_REFERENCE )
     {
+      node = crude_node_manager_get_node( manager, node_external_relative_filepath, world, true );
+      crude_entity_set_parent( world, node, *parent );
       copy_components = false;
     }
+    else if ( node_external_component.type == CRUDE_NODE_EXTERNAL_TYPE_COPY)
+    {
+      CRUDE_ASSERT( false );
+    }
+    else
+    {
+      CRUDE_ASSERT( false );
+    }
+    
+    CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external_component } );
   }
   else
   {

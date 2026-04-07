@@ -126,7 +126,7 @@ crude_player_create_observer_
 
       player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, it->entities[ i ], "character" );
       player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
-      weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+      weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon_grab.weapon_spawnpoint.weapon" );
 
       weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_weapon );
 
