@@ -15,6 +15,9 @@
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
 
 #include <engine/physics/physics_config.h>
 #include <engine/scene/scene_ecs.h>
@@ -79,6 +82,7 @@ typedef struct crude_physics_static_body_creation
     } mesh;
   };
   uint32                                                   layers;
+  crude_entity                                             entity;
 } crude_physics_static_body_creation;
 
 typedef struct crude_physics_static_body_container
@@ -102,6 +106,11 @@ typedef struct crude_physics_static_body
   };
   uint32                                                   layers;
 } crude_physics_static_body;
+
+typedef struct crude_physics_ray_cast_result
+{
+  crude_entity                                             entity;
+} crude_physics_ray_cast_result;
 
 CRUDE_API crude_physics_character
 crude_physics_character_empty

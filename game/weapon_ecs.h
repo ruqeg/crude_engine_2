@@ -11,6 +11,8 @@
  *********************************************************/
 typedef struct crude_weapon
 {
+  int32                                                    ammo;
+  int32                                                    damage;
 } crude_weapon;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_weapon );
@@ -18,6 +20,17 @@ CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_weapon );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_weapon );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_weapon );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_weapon );
+
+/**********************************************************
+ *
+ *                 API
+ *
+ *********************************************************/
+CRUDE_API void
+crude_weapon_fire
+(
+  _In_ crude_weapon                                       *weapon
+);
 
 /**********************************************************
  *

@@ -24,6 +24,8 @@ typedef struct crude_editor
   /* Common */
   crude_entity                                             editor_camera_node;
   crude_editor_camera_system_context                       editor_camera_system_context;
+  ImVec2                                                   viewport_position;
+  ImVec2                                                   viewport_size;
 
   /* Gui */
   crude_gui_viewport                                       viewport;

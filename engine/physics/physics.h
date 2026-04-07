@@ -242,3 +242,14 @@ crude_physics_destroy_static_body_instant
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_static_body_handle                    handle
 );
+
+CRUDE_API bool
+crude_physics_ray_cast
+(
+  _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
+  _In_ XMVECTOR                                            origin,
+  _In_ XMVECTOR                                            direction,
+  _In_ uint32                                              layers,
+  _Out_ crude_physics_ray_cast_result                     *ray_cast_result
+);

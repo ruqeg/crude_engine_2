@@ -443,6 +443,7 @@ crude_physics_static_body_create_observer_
     static_body_creation.type = static_body->type;
     static_body_creation.box.extent = static_body->box.extent;
     static_body_creation.mesh.handle = static_body->mesh.handle;
+    static_body_creation.entity = it->entities[ i ];
     
     if ( static_body_creation.type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH && static_body_creation.mesh.handle.index == -1 )
     {

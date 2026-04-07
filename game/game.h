@@ -10,6 +10,7 @@
 #include <game/player_controller_ecs.h>
 #include <game/weapon_ecs.h>
 #include <game/zombie_ecs.h>
+#include <game/health_ecs.h>
 #include <game/training_area_level_ecs.h>
 
 typedef struct crude_game
@@ -24,6 +25,7 @@ typedef struct crude_game
   crude_weapon_system_context                              weapon_system_context;
   crude_zombie_system_context                              zombie_system_context;
   crude_training_area_level_system_context                 training_area_level_system_context;
+  crude_health_system_context                              health_system_context;
 } crude_game;
 
 CRUDE_API void

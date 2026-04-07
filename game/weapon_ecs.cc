@@ -35,6 +35,59 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_weapon )
 
 /**********************************************************
  *
+ *                 API
+ *
+ *********************************************************/
+void
+crude_weapon_fire
+(
+  _In_ crude_weapon                                       *weapon
+)
+{
+  crude_game                                             *game;
+  XMVECTOR                                                direction, origin;
+  XMMATRIX                                                view_to_world;
+  crude_physics_ray_cast_result                           ray_cast_result;
+  
+  game = crude_game_instance( );
+
+  if ( weapon->ammo < 0 )
+  {
+    return;
+  }
+
+  view_to_world = crude_transform_node_to_world( game->engine->world, game->engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->engine->world, game->engine->camera_node, crude_transform ) );
+  
+  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 0, 0, -1, 0 ), view_to_world ), 10000000 );
+  origin = view_to_world.r[ 3 ];
+
+  weapon->ammo -= 1;
+
+  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving, &ray_cast_result ) )
+  {
+    crude_health                                          *health;
+    crude_entity                                           entity;
+
+    entity = ray_cast_result.entity;
+    while ( entity = crude_entity_get_parent( game->engine->world, entity ) )
+    {
+      if ( !crude_entity_valid( game->engine->world, entity ) )
+      {
+        break;
+      }
+
+      health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, entity, crude_health );
+
+      if ( health )
+      {
+        crude_heal_receive_damage( health, weapon->damage );
+      }
+    }
+  }
+}
+
+/**********************************************************
+ *
  *                 System
  *
  *********************************************************/

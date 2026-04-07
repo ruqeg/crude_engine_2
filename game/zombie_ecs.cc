@@ -39,7 +39,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_zombie )
  *
  *********************************************************/
 CRUDE_ECS_OBSERVER_DECLARE( crude_zombie_create_observer_ );
-CRUDE_ECS_SYSTEM_DECLARE( crude_zombie_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_zombie_game_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_zombie_engine_update_system_ );
 
 static void
 crude_zombie_create_observer_
@@ -62,10 +63,14 @@ crude_zombie_system_import
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_zombie );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_zombie );
   
-  CRUDE_ECS_SYSTEM_DEFINE( world, crude_zombie_update_system_, crude_ecs_on_game_update, ctx, {
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_zombie_game_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_zombie ) },
   } );
   
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_zombie_engine_update_system_, crude_ecs_on_engine_update, ctx, {
+    { .id = ecs_id( crude_zombie ) },
+  } );
+
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_zombie_create_observer_, EcsOnSet, ctx, { 
     { .id = ecs_id( crude_zombie ), .oper = EcsAnd }
   } );
@@ -113,18 +118,28 @@ crude_zombie_create_observer_
       &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "crazy" );
 
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].disabled = false;
+
+    zombie->spine_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+      &game->engine->model_renderer_resources_manager,
+      &zombie_model->model_renderer_resources_instance,
+      "mixamorig:Spine" );
+
+    zombie->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+      &game->engine->model_renderer_resources_manager,
+      &zombie_model->model_renderer_resources_instance,
+      "mixamorig:Head" );
   }
   CRUDE_PROFILER_ZONE_END;
 }
 
 
 void
-crude_zombie_update_system_
+crude_zombie_game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 )
 {
-  CRUDE_PROFILER_ZONE_NAME( "crude_zombie_update_system_" );
+  CRUDE_PROFILER_ZONE_NAME( "crude_zombie_game_update_system_" );
   
   crude_game                                              *game;
   crude_zombie_system_context                             *ctx;
@@ -153,6 +168,70 @@ crude_zombie_update_system_
     zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
     
     crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->idle_animation_index );
+  }
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_zombie_engine_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_zombie_engine_update_system_" );
+  
+  crude_game                                              *game;
+  crude_zombie_system_context                             *ctx;
+  crude_zombie                                            *zombie_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_zombie_system_context*, it->ctx );
+  zombie_per_entity = ecs_field( it, crude_zombie, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_input const                                     *input;
+    crude_zombie                                          *zombie;
+    crude_transform                                       *hitbox_body_transform;
+    crude_transform                                       *hitbox_head_transform;
+    crude_gltf                                            *zombie_model;
+    crude_entity                                           zombie_pivot_entity;
+    crude_entity                                           zombie_model_entity;
+    crude_entity                                           zombie_entity;
+    crude_entity                                           hitbox_body_entity;
+    crude_entity                                           hitbox_head_entity;
+
+    zombie_entity = crude_entity_from_iterator( it, i );
+
+    zombie = &zombie_per_entity[ i ];
+    
+    hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "hitbox_pivot_body.hitbox_body" );
+    hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "hitbox_pivot_head.hitbox_head" );
+    zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
+    zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
+
+    zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
+ 
+    XMMATRIX zombie_spine_joint_node_to_model = crude_gfx_node_to_model(
+      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+        &game->engine->model_renderer_resources_manager,
+        zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+      zombie_model->model_renderer_resources_instance.nodes_transforms,
+      zombie->spine_joint_node );
+    
+    hitbox_body_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_body_entity, crude_transform );
+    hitbox_head_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_head_entity, crude_transform );
+    
+    XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 7.f ) );
+
+    XMMATRIX zombie_head_joint_node_to_model = crude_gfx_node_to_model(
+      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+        &game->engine->model_renderer_resources_manager,
+        zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+      zombie_model->model_renderer_resources_instance.nodes_transforms,
+      zombie->head_joint_node );
+    
+    XMStoreFloat3( &hitbox_head_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_head_joint_node_to_model ), 7.f ) );
   }
   CRUDE_PROFILER_ZONE_END;
 }

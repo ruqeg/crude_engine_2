@@ -206,6 +206,8 @@ crude_editor_queue_draw
 
   ImGui::PushStyleColor( ImGuiCol_WindowBg, CRUDE_COMPOUNT( ImVec4, { 0.25f * 30 / 255.f, 0.25f *23 / 255.f, 0.25f *12 / 255.f, 1.00f } ) );
   ImGui::Begin( "Viewport", NULL, window_flags );
+  editor->viewport_size = ImGui::GetWindowSize();
+  editor->viewport_position = ImGui::GetWindowPos();
   crude_gui_viewport_queue_draw( &editor->viewport, editor->engine->world, editor->selected_node, editor->engine->camera_node );
   ImGui::End( );
   ImGui::PopStyleColor( );

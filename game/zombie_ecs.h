@@ -11,6 +11,10 @@
  *********************************************************/
 typedef struct crude_zombie
 {
+  /* Joints */
+  uint64                                                   head_joint_node;
+  uint64                                                   spine_joint_node;
+
   /* Animations */
   uint32                                                   idle_animation_index;
 } crude_zombie;
@@ -31,7 +35,13 @@ typedef struct crude_zombie_system_context
 } crude_zombie_system_context;
 
 CRUDE_API void
-crude_zombie_update_system_
+crude_zombie_game_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+CRUDE_API void
+crude_zombie_engine_update_system_
 (
   _In_ ecs_iter_t                                         *it
 );

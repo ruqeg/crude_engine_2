@@ -224,6 +224,7 @@ crude_player_controller_game_update_system_
     crude_gltf                                            *player_model;
     crude_gltf                                            *weapon_model;
     crude_camera                                          *player_camera;
+    crude_weapon                                          *weapon;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           player_orientation_entity;
@@ -249,6 +250,7 @@ crude_player_controller_game_update_system_
     weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
     weapon_model_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_entity, "model" );
 
+    weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_weapon );
     weapon_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_model_entity, crude_gltf );
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     player_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_camera );
@@ -271,6 +273,7 @@ crude_player_controller_game_update_system_
       {
         if ( input->mouse.left.current )
         {
+          crude_weapon_fire( weapon );
           player_controller->shot_blend = 1.f;
         }
       }

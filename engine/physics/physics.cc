@@ -498,6 +498,7 @@ crude_physics_create_static_body
   }
 
   jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving | creation->layers );
+  jph_settings_class.mUserData = creation->entity;
 
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
 
@@ -532,6 +533,34 @@ crude_physics_destroy_static_body_instant
   jph_body_interface_class->DestroyBody( static_body_container->jph_body_class );
 
   crude_resource_pool_release_resource( &physics->static_body_resource_pool, handle.index );
+}
+
+bool
+crude_physics_ray_cast
+(
+  _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
+  _In_ XMVECTOR                                            origin,
+  _In_ XMVECTOR                                            direction,
+  _In_ uint32                                              layers,
+  _Out_ crude_physics_ray_cast_result                     *ray_cast_result
+)
+{
+  JPH::RRayCast                                           jph_ray_cast;
+  JPH::RayCastResult                                      jph_ray_cast_result;
+  XMMATRIX                                                view_to_world;
+  
+  jph_ray_cast.mDirection = crude_vector_to_jph_vec3( direction );
+  jph_ray_cast.mOrigin = crude_vector_to_jph_vec3( origin );
+  
+  *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
+  if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, JPH::SpecifiedBroadPhaseLayerFilter( g_crude_jph_broad_phase_layer_non_moving_class ), JPH::SpecifiedObjectLayerFilter( layers ) ) )
+  {
+    ray_cast_result->entity = CRUDE_CAST( crude_entity, physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID ) );
+    return true;
+  }
+
+  return false;
 }
 
 #if defined(JPH_ENABLE_ASSERTS)
