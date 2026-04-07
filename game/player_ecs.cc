@@ -38,29 +38,14 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player )
  *                 System
  *
  *********************************************************/
-CRUDE_ECS_SYSTEM_DECLARE( crude_player_update_system_ );
+CRUDE_ECS_OBSERVER_DECLARE( crude_player_create_observer_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_player_game_update_system_ );
 
 void
-crude_player_update_system_
+crude_player_create_observer_
 (
   _In_ ecs_iter_t                                         *it
-)
-{
-  CRUDE_PROFILER_ZONE_NAME( "crude_player_update_system_" );
-
-  crude_game                                              *game;
-  crude_player_system_context                             *ctx;
-  crude_player                                            *player_per_entity;
-
-  game = crude_game_instance( );
-  ctx = CRUDE_CAST( crude_player_system_context*, it->ctx );
-  player_per_entity = ecs_field( it, crude_player, 0 );
-  
-  for ( uint32 i = 0; i < it->count; ++i )
-  {
-  }
-  CRUDE_PROFILER_ZONE_END;
-}
+);
 
 void
 crude_player_system_import
@@ -78,4 +63,75 @@ crude_player_system_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_player );
 
   crude_scene_components_import( world, manager );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_game_update_system_, EcsOnSet, ctx, { 
+    { .id = ecs_id( crude_player ), .oper = EcsAnd }
+  } );
+  
+  CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_create_observer_, EcsOnSet, ctx, { 
+    { .id = ecs_id( crude_player ), .oper = EcsAnd }
+  } );
+}
+
+void
+crude_player_game_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_player_game_update_system_" );
+
+  crude_game                                              *game;
+  crude_player_system_context                             *ctx;
+  crude_player                                            *player_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_player_system_context*, it->ctx );
+  player_per_entity = ecs_field( it, crude_player, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+  }
+  CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_player_create_observer_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  CRUDE_PROFILER_ZONE_NAME( "crude_player_create_observer_" );
+
+  crude_game                                              *game;
+  crude_player_system_context                             *ctx;
+  crude_player                                            *player_per_entity;
+
+  game = crude_game_instance( );
+  ctx = CRUDE_CAST( crude_player_system_context*, it->ctx );
+  player_per_entity = ecs_field( it, crude_player, 0 );
+  
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_player                                          *player;
+
+    player = &player_per_entity[ i ];
+
+    /* Weapon */
+    {
+      crude_weapon                                        *weapon;
+      crude_entity                                         player_character_entity;
+      crude_entity                                         player_orientation_entity;
+      crude_entity                                         weapon_entity;
+
+      player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, it->entities[ i ], "character" );
+      player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
+      weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+
+      weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_weapon );
+
+      crude_weapon_fill_ammo( weapon );
+    }
+  }
+  CRUDE_PROFILER_ZONE_END;
 }

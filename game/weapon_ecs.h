@@ -11,7 +11,8 @@
  *********************************************************/
 typedef struct crude_weapon
 {
-  int32                                                    ammo;
+  int32                                                    max_ammo;
+  int32                                                    wasted_ammo;
   int32                                                    damage;
 } crude_weapon;
 
@@ -26,6 +27,19 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_weapon );
  *                 API
  *
  *********************************************************/
+CRUDE_API void
+crude_weapon_give_ammo
+(
+  _In_ crude_weapon                                       *weapon,
+  _In_ int32                                               ammo
+);
+
+CRUDE_API void
+crude_weapon_fill_ammo
+(
+  _In_ crude_weapon                                       *weapon
+);
+
 CRUDE_API void
 crude_weapon_fire
 (

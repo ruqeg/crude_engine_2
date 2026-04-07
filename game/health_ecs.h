@@ -11,9 +11,9 @@
  *********************************************************/
 typedef struct crude_health crude_health;
 
-typedef void* (*crude_health_damage_callback_fn)
+typedef void (*crude_health_damage_callback_fn)
 (
-  _In_ void                                               *ctx,
+  _In_ crude_entity                                        health_entity,
   _In_ crude_health                                       *health,
   _In_ int32                                               damage
 );
@@ -21,7 +21,6 @@ typedef void* (*crude_health_damage_callback_fn)
 typedef struct crude_health_callback_container
 {
   crude_health_damage_callback_fn                          damage_callback;
-  void                                                    *ctx;
 } crude_health_callback_container;
 
 typedef struct crude_health
@@ -45,6 +44,7 @@ CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_health );
 CRUDE_API void
 crude_heal_receive_damage 
 (
+  _In_ crude_entity                                        health_entity,
   _In_ crude_health                                       *health,
   _In_ int32                                               damage
 );
@@ -59,7 +59,7 @@ typedef struct crude_health_system_context
 } crude_health_system_context;
 
 CRUDE_API void
-crude_health_update_system_
+crude_health_game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 );

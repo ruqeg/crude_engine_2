@@ -35,6 +35,19 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_zombie )
 
 /**********************************************************
  *
+ *                 API
+ *
+ *********************************************************/
+static void
+crude_zombie_health_damage_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+);
+
+/**********************************************************
+ *
  *                 System
  *
  *********************************************************/
@@ -78,6 +91,11 @@ crude_zombie_system_import
   crude_scene_components_import( world, manager );
 }
 
+/**********************************************************
+ *
+ *                 System
+ *
+ *********************************************************/
 void
 crude_zombie_create_observer_
 (
@@ -93,41 +111,59 @@ crude_zombie_create_observer_
   game = crude_game_instance( );
   ctx = CRUDE_CAST( crude_zombie_system_context*, it->ctx );
   zombie_per_entity = ecs_field( it, crude_zombie, 0 );
-  
+
   for ( uint32 i = 0; i < it->count; ++i )
   {
     crude_input const                                     *input;
     crude_zombie                                          *zombie;
-    crude_gltf                                            *zombie_model;
-    crude_entity                                           zombie_pivot_entity;
-    crude_entity                                           zombie_model_entity;
     crude_entity                                           zombie_entity;
 
     zombie_entity = crude_entity_from_iterator( it, i );
 
     zombie = &zombie_per_entity[ i ];
     
-    zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
-    zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
+    /* Health setup */
+    {
+      crude_health                                        *health;
+      crude_entity                                         health_entity;
+      crude_health_callback_container                      health_callback_container;
 
-    zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
-    
-    zombie->idle_animation_index = 0;
+      health_callback_container.damage_callback = crude_zombie_health_damage_callback_;
 
-    zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
-      &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "crazy" );
+      health_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health" );
+      health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, health_entity, crude_health );
+      health->callback_container = health_callback_container;
+    }
 
-    zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].disabled = false;
 
-    zombie->spine_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
-      &game->engine->model_renderer_resources_manager,
-      &zombie_model->model_renderer_resources_instance,
-      "mixamorig:Spine" );
+    /* Model setup */
+    {
+      crude_gltf                                          *zombie_model;
+      crude_entity                                         zombie_pivot_entity;
+      crude_entity                                         zombie_model_entity;
 
-    zombie->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
-      &game->engine->model_renderer_resources_manager,
-      &zombie_model->model_renderer_resources_instance,
-      "mixamorig:Head" );
+      zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
+      zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
+
+      zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
+      
+      zombie->idle_animation_index = 0;
+
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+        &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "crazy" );
+
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].disabled = false;
+
+      zombie->spine_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+        &game->engine->model_renderer_resources_manager,
+        &zombie_model->model_renderer_resources_instance,
+        "mixamorig:Spine" );
+
+      zombie->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
+        &game->engine->model_renderer_resources_manager,
+        &zombie_model->model_renderer_resources_instance,
+        "mixamorig:Head" );
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -205,8 +241,8 @@ crude_zombie_engine_update_system_
 
     zombie = &zombie_per_entity[ i ];
     
-    hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "hitbox_pivot_body.hitbox_body" );
-    hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "hitbox_pivot_head.hitbox_head" );
+    hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health.hitbox_pivot_body.hitbox_body" );
+    hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health.hitbox_pivot_head.hitbox_head" );
     zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
 
@@ -234,4 +270,33 @@ crude_zombie_engine_update_system_
     XMStoreFloat3( &hitbox_head_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_head_joint_node_to_model ), 7.f ) );
   }
   CRUDE_PROFILER_ZONE_END;
+}
+
+/**********************************************************
+ *
+ *                 API
+ *
+ *********************************************************/
+void
+crude_zombie_health_damage_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+)
+{
+  crude_game                                              *game;
+  crude_zombie                                            *zombie;
+  crude_entity                                             zombie_entity;
+
+  game = crude_game_instance( );
+  
+  zombie_entity = crude_entity_get_parent( game->engine->world, health_entity );
+
+  CRUDE_ASSERT( crude_entity_valid( game->engine->world, zombie_entity ) );
+
+  zombie = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_entity, crude_zombie );
+  CRUDE_ASSERT( zombie );
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GAMEPLAY, "Zombie %i got hit and get %i damage", zombie_entity, damage );
 }

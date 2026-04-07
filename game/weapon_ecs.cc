@@ -18,6 +18,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_weapon, "crude_weapon" );
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_weapon )
 {
   crude_memory_set( component, 0, sizeof( crude_weapon ) );
+  component->max_ammo = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_ammo" ) );
   return true;
 }
 
@@ -25,12 +26,17 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_weapon )
 {
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_weapon ) ) );
+  cJSON_AddItemToObject( free_camera_json, "max_ammo", cJSON_CreateNumber( component->max_ammo ) );
   return free_camera_json;
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_weapon )
 {
   CRUDE_IMGUI_START_OPTIONS;
+
+  CRUDE_IMGUI_OPTION( "Max ammo", {
+    ImGui::DragInt( "##Max ammo", &component->max_ammo );
+    });
 }
 
 /**********************************************************
@@ -51,7 +57,7 @@ crude_weapon_fire
   
   game = crude_game_instance( );
 
-  if ( weapon->ammo < 0 )
+  if ( weapon->wasted_ammo >= weapon->max_ammo )
   {
     return;
   }
@@ -61,7 +67,7 @@ crude_weapon_fire
   direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 0, 0, -1, 0 ), view_to_world ), 10000000 );
   origin = view_to_world.r[ 3 ];
 
-  weapon->ammo -= 1;
+  ++weapon->wasted_ammo;
 
   if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving, &ray_cast_result ) )
   {
@@ -80,10 +86,33 @@ crude_weapon_fire
 
       if ( health )
       {
-        crude_heal_receive_damage( health, weapon->damage );
+        crude_heal_receive_damage( entity, health, weapon->damage );
       }
     }
   }
+}
+
+void
+crude_weapon_give_ammo
+(
+  _In_ crude_weapon                                       *weapon,
+  _In_ int32                                               ammo
+)
+{
+  weapon->wasted_ammo -= ammo;
+  if ( weapon->wasted_ammo < 0 )
+  {
+    weapon->wasted_ammo = 0;
+  }
+}
+
+void
+crude_weapon_fill_ammo
+(
+  _In_ crude_weapon                                       *weapon
+)
+{
+  weapon->wasted_ammo = 0;
 }
 
 /**********************************************************

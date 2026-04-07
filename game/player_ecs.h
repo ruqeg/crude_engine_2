@@ -29,7 +29,7 @@ typedef struct crude_player_system_context
 } crude_player_system_context;
 
 CRUDE_API void
-crude_player_update_system_
+crude_player_game_update_system_
 (
   _In_ ecs_iter_t                                         *it
 );
