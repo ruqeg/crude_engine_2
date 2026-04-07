@@ -232,8 +232,7 @@ crude_player_controller_game_update_system_
     crude_entity                                           pivot_pitch_entity;
     crude_entity                                           pivot_yaw_entity;
     crude_entity                                           player_camera_entity;
-    crude_entity                                           weapon_entity;
-    crude_entity                                           weapon_model_entity;
+    crude_entity                                           weapon_entity, weapon_model_entity, weapon_grab_entity, weapon_spawnpoint_entity;
 
     input = ctx->input;
 
@@ -247,7 +246,9 @@ crude_player_controller_game_update_system_
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
     player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
-    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+    weapon_grab_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon_grab" );
+    weapon_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_grab_entity, "weapon_spawnpoint" );
+    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_spawnpoint_entity, "weapon" );
     weapon_model_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_entity, "model" );
 
     weapon = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_entity, crude_weapon );
