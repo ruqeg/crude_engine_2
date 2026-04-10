@@ -81,39 +81,12 @@ crude_game_initialize
   CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 }
 
-static float spread_radius = 10.0f;
-static ImVec4 color = ImVec4(1, 1, 1, 0.7);  // Green
-
-void DrawShotgunCrosshair()
-{
-  
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 center = crude_game_instance( )->engine->editor.viewport_position + ImVec2( 0.5, 0.5 ) * crude_game_instance( )->engine->editor.viewport_size;
-    ImDrawList* draw = ImGui::GetForegroundDrawList();
-    
-    ImU32 col = ImGui::ColorConvertFloat4ToU32(color);
-    
-    // Center dot
-    draw->AddCircleFilled(center, 3, col);
-    
-    // Spread circle
-    draw->AddCircle(center, spread_radius, col, 0, 2.0f);
-    
-    // 4 dots at spread edges (pellet indicators)
-    float offset = spread_radius * 0.7f;
-    draw->AddCircleFilled(ImVec2(center.x - offset, center.y - offset), 2, col);
-    draw->AddCircleFilled(ImVec2(center.x + offset, center.y - offset), 2, col);
-    draw->AddCircleFilled(ImVec2(center.x - offset, center.y + offset), 2, col);
-    draw->AddCircleFilled(ImVec2(center.x + offset, center.y + offset), 2, col);
-}
-
 void
 crude_game_imgui_custom_draw
 (
   _In_ void                                               *ctx
 )
 {
-  DrawShotgunCrosshair( );
 }
 
 void

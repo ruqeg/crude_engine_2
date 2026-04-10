@@ -92,6 +92,21 @@ crude_transform_node_to_world
   return node_to_world;
 }
 
+void
+crude_transform_decompose
+(
+  _Out_ crude_transform                                   *transform,
+  _In_ XMMATRIX                                            node_to_parent
+)
+{
+  XMVECTOR                                                 t, s, r;
+  
+  XMMatrixDecompose( &s, &r, &t, node_to_parent );
+  XMStoreFloat3( &transform->translation, t );
+  XMStoreFloat3( &transform->scale, s );
+  XMStoreFloat4( &transform->rotation, r );
+}
+
 XMMATRIX
 crude_transform_node_to_parent
 (

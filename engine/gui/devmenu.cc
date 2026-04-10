@@ -1014,11 +1014,7 @@ crude_gui_devmenu_viewport_draw
   ImGuizmo::SetID( 0 );
   if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL ) )
   {
-    XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
-  
-    XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
-    XMStoreFloat3( &selected_node_transform->scale, new_scale );
-    XMStoreFloat3( &selected_node_transform->translation, new_translation );
+    crude_transform_decompose( selected_node_transform, XMLoadFloat4x4( &selected_node_to_parent ) );
   
     CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
   }

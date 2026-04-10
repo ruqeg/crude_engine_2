@@ -19,9 +19,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_player_controller )
 {
   crude_memory_set( component, 0, sizeof( crude_player_controller ) );
   component->rotate_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "rotate_speed" ) );
-  crude_parse_json_to_float2( &component->walk_speed, cJSON_GetObjectItem( component_json, "walk_speed" ) );
-  component->run_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "run_speed" ) );
-  component->pitch_limit = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "pitch_limit" ) );
+  component->walk_speed = cJSON_GetNumberValue( cJSON_GetObjectItem( component_json, "walk_speed" ) );
   return true;
 }
 
@@ -30,9 +28,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_player_controller )
   cJSON *free_camera_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( free_camera_json, "type", cJSON_CreateString( "crude_player_controller" ) );
   cJSON_AddItemToObject( free_camera_json, "rotate_speed", cJSON_CreateNumber( component->rotate_speed ) );
-  cJSON_AddItemToObject( free_camera_json, "walk_speed", cJSON_CreateFloatArray( &component->walk_speed.x, 2 ) );
-  cJSON_AddItemToObject( free_camera_json, "pitch_limit", cJSON_CreateNumber( component->pitch_limit ) );
-  cJSON_AddItemToObject( free_camera_json, "run_speed", cJSON_CreateNumber( component->run_speed ) );
+  cJSON_AddItemToObject( free_camera_json, "walk_speed", cJSON_CreateNumber( component->walk_speed ) );
   return free_camera_json;
 }
 
@@ -50,13 +46,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
     ImGui::DragFloat( "##Rotate Speed", &component->rotate_speed, 0.1 );
   } );
   CRUDE_IMGUI_OPTION( "Walk Speed", {
-    ImGui::DragFloat2( "##Walk Speed", &component->walk_speed.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
-  } );
-  CRUDE_IMGUI_OPTION( "Run Speed", {
-    ImGui::DragFloat( "##Run Speed", &component->run_speed, 0.1 );
-  } );
-  CRUDE_IMGUI_OPTION( "Pitch Limit", {
-    ImGui::SliderAngle( "##Pitch Limit", &component->pitch_limit, 15, 90 );
+    ImGui::DragFloat( "##Walk Speed", &component->walk_speed, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );
   } );
 }
 
@@ -149,25 +139,17 @@ crude_player_controller_create_observer
     
     player_controller->idle_animation_index = 0;
     player_controller->walk_animation_index = 1;
-    player_controller->strafe_animation_index = 2;
-    player_controller->run_animation_index = 3;
     player_controller->aim_down_animation_index = 4;
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "idle" );
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
-    player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
-      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "strafe" );
-    player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
-      &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "run" );
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
       &player_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "aim_down" );
 
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->idle_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].disabled = false;
-    player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].disabled = false;
-    player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].disabled = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].loop = false;
     player_model->model_renderer_resources_instance.animations_instances[ player_controller->aim_down_animation_index ].current_time = 0.1;
@@ -188,9 +170,7 @@ crude_player_controller_create_observer
       &player_model->model_renderer_resources_instance,
       "mixamorig:RightHand" );
     
-    player_controller->move_blend_max.x = player_controller->walk_speed.x;
-    player_controller->move_blend_max.y = player_controller->walk_speed.y;
-
+    player_controller->move_blend_max = player_controller->walk_speed;
     player_controller->aim_blend = 0.f;
     player_controller->shot_blend = 0.f;
   }
@@ -272,30 +252,31 @@ crude_player_controller_game_update_system_
     if ( player_controller->input_enabled )
     {
       /* Handle actions */
-      if ( input->mouse.right.current )
       {
-        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 120.f ), 2 * it->delta_time ); 
-        player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 5 * it->delta_time );
-        player_controller->camera_target_node = camera_grab_point_entity;
-      }
-      else
-      {
-        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), 2 * it->delta_time );
-        player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 7 * it->delta_time );
-      }
-      
-      if ( input->mouse.right.current )
-      {
-        if ( input->mouse.left.current )
+        if ( input->mouse.right.current )
         {
-          if ( crude_weapon_fire( weapon ) )
+          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 90.f ), 2 * it->delta_time ); 
+          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 5 * it->delta_time );
+          player_controller->camera_target_node = camera_grab_point_entity;
+        }
+        else
+        {
+          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), 2 * it->delta_time );
+          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 7 * it->delta_time );
+        }
+        
+        if ( input->mouse.right.current )
+        {
+          if ( input->mouse.left.current )
           {
-            player_controller->shot_blend = 1.f;
+            if ( crude_weapon_fire( weapon ) )
+            {
+              player_controller->shot_blend = 1.f;
+            }
           }
         }
+        player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, it->delta_system_time );
       }
-      player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, it->delta_system_time );
-
 
       /* Handle Rotation */
       {
@@ -308,9 +289,6 @@ crude_player_controller_game_update_system_
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
         player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
         
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-        player_controller->pivot_pitch_angle += CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.y, it->delta_time * 8.f, it->delta_time * -8.f );
-#endif
         player_controller->pivot_yaw_angle -= CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.x, it->delta_time * 8.f, it->delta_time * -8.f );
 
         if ( player_controller->pivot_yaw_angle < 0 )
@@ -321,42 +299,16 @@ crude_player_controller_game_update_system_
         {
           player_controller->pivot_yaw_angle -= XM_2PI;
         }
-        
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-        if ( player_controller->pivot_pitch_angle < 0 )
-        {
-          player_controller->pivot_pitch_angle += XM_2PI;
-        }
-        else if ( player_controller->pivot_pitch_angle >= XM_2PI )
-        {
-          player_controller->pivot_pitch_angle -= XM_2PI;
-        }
-
-        if ( player_controller->pivot_pitch_angle > player_controller->pitch_limit && player_controller->pivot_pitch_angle < XM_2PI - player_controller->pitch_limit )
-        {
-          player_controller->pivot_pitch_angle = player_controller->pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
-        }
-#endif
 
         yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->pivot_yaw_angle, 0.f );
         pivot_yaw_rotation = XMLoadFloat4( &pivot_yaw_transform->rotation );
         pivot_yaw_rotation = XMQuaternionSlerp( pivot_yaw_rotation, yaw_rotation, 30.0 * it->delta_time );
         XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
         
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-        //pitch_rotation = XMQuaternionRotationRollPitchYaw( player_controller->pivot_pitch_angle, 0.f, 0.f );
-        //pivot_pitch_rotation = XMLoadFloat4( &pivot_pitch_transform->rotation );
-        //pivot_pitch_rotation = XMQuaternionSlerp( pivot_pitch_rotation, pitch_rotation, 30.0 * it->delta_time );
-        //XMStoreFloat4( &pivot_pitch_transform->rotation, pivot_pitch_rotation );
-#endif
-
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
         player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, yaw_rotation, 10.0 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
         
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-        player_controller->head_pitch_angle = player_controller->pivot_pitch_angle;
-#endif
         player_controller->head_yaw_angle = crude_lerp_angle( player_controller->head_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 40.0 * it->delta_time, 1.f ) );
         player_controller->spine_yaw_angle = crude_lerp_angle( player_controller->spine_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 25.0 * it->delta_time, 1.f ) );
       }
@@ -366,76 +318,54 @@ crude_player_controller_game_update_system_
         crude_transform                                   *pivot_yaw_transform;
         crude_physics_character_container                 *physcs_character_container;
         XMMATRIX                                           pivot_yaw_to_world;
-        XMVECTOR                                           pivot_yaw_basis_right, pivot_yaw_basis_forward, pivot_yaw_basis_up;
+        XMVECTOR                                           pivot_yaw_basis_forward;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        XMFLOAT2                                           move, move_speed;
+        float32                                            move, move_speed;
 
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
-        move_direction.z = input->keys[ SDL_SCANCODE_S ].current - input->keys[ SDL_SCANCODE_W ].current;
+        move_direction.z = input->keys[ SDL_SCANCODE_W ].current - input->keys[ SDL_SCANCODE_S ].current;
         
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
         pivot_yaw_to_world = crude_transform_node_to_world( it->world, pivot_yaw_entity, pivot_yaw_transform );
 
         physcs_character_container = crude_physics_access_character( ctx->physics_manager, *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_character_entity, crude_physics_character_handle ) );
       
-        pivot_yaw_basis_right = XMVector3Normalize( pivot_yaw_to_world.r[ 0 ] );
-        pivot_yaw_basis_up = XMVector3Normalize( pivot_yaw_to_world.r[ 1 ] );
         pivot_yaw_basis_forward = XMVector3Normalize( pivot_yaw_to_world.r[ 2 ] );
       
         move_speed = player_controller->walk_speed;
-
-        if ( input->keys[ SDL_SCANCODE_LSHIFT ].current && move_direction.z < 0 )
-        {
-          move_speed.y = player_controller->run_speed;
-        }
         
         player_velocity = crude_jph_vec3_to_vector( physcs_character_container->jph_character_class->GetLinearVelocity( ) );
         
-        if ( move_direction.z > 0 )
+        if ( move_direction.z < 0 )
         {
-          move_speed.y *= 0.32;
+          move_speed *= 0.32;
         }
 
         if ( input->mouse.right.current )
         {
-          move_speed.x *= 0.4;
-          move_speed.y *= 0.4;
+          move_speed *= 0.4;
         }
-        move.x = move_direction.x * move_speed.x;
-        move.y = -move_direction.z * move_speed.y;
 
-        player_controller->move_blend.x = CRUDE_LERP( player_controller->move_blend.x, fabs( move.x ), 4 * it->delta_time );
-        player_controller->move_blend.y = CRUDE_LERP( player_controller->move_blend.y, fabs( move.y ), 4 * it->delta_time );
+        move = move_direction.z * move_speed;
 
-        if ( move_direction.x != 0.f )
-        {
-          player_controller->move_blend_max.x = CRUDE_LERP( player_controller->move_blend_max.x, fabs( move.x ), 4 * it->delta_time );
-        }
+        player_controller->move_blend = CRUDE_LERP( player_controller->move_blend, fabs( move ), 4 * it->delta_time );
+
         if ( move_direction.z != 0.f )
         {
-          player_controller->move_blend_max.y = CRUDE_LERP( player_controller->move_blend_max.y, fabs( move.y ), 4 * it->delta_time );
+          player_controller->move_blend_max = CRUDE_LERP( player_controller->move_blend_max, fabs( move ), 4 * it->delta_time );
         }
 
-        if ( move_direction.x != 0.f || move_direction.z != 0 )
+        if ( move_direction.z != 0 )
         {
-          XMVECTOR                                         player_velocity_forward, player_velocity_right;
-          float32                                          length;
-
-          player_velocity_right = XMVectorScale( pivot_yaw_basis_right, move_direction.x );
-          player_velocity_forward = XMVectorScale( pivot_yaw_basis_forward, move_direction.z );
-          
-          length = XMVectorGetX( XMVector3Length( XMVectorAdd( player_velocity_forward, player_velocity_right ) ) );
-
-          new_player_velocity = XMVectorAdd( XMVectorScale( player_velocity_forward, move_speed.y ), XMVectorScale( player_velocity_right, move_speed.x ) );
-          new_player_velocity = XMVectorScale( new_player_velocity, 1.f / length );
+          new_player_velocity = XMVectorScale( pivot_yaw_basis_forward, move_direction.z );
+          new_player_velocity = XMVector3Normalize( new_player_velocity );
+          new_player_velocity = XMVectorScale( new_player_velocity, move_speed );
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
           
           player_model->model_renderer_resources_instance.animations_instances[ player_controller->walk_animation_index ].speed = move_direction.z < 0 ? 1.2 : -0.85;
-          player_model->model_renderer_resources_instance.animations_instances[ player_controller->strafe_animation_index ].speed = 1.2 * move_direction.x;
-          player_model->model_renderer_resources_instance.animations_instances[ player_controller->run_animation_index ].speed = 0.75;
         }
         else
         {
@@ -451,41 +381,34 @@ crude_player_controller_game_update_system_
     /* Handle camera */
     if ( player_controller->camera_enabled )
     {
+      XMMATRIX                                             camera_target_to_world, world_to_player, camera_target_to_player;
+
       game->engine->camera_node = player_camera_entity;
 
-      XMVECTOR t, s, r;
-      XMMatrixDecompose( &s, &r, &t, 
-        XMMatrixMultiply(
-          crude_transform_node_to_world( it->world, player_controller->camera_target_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, player_controller->camera_target_node, crude_transform ) ),
-          XMMatrixInverse( NULL, crude_transform_node_to_world( it->world, entity, player_transform ) ) ) );
-      XMStoreFloat3( &player_camera_transform->translation, t );
-      XMStoreFloat3( &player_camera_transform->scale, s );
-      XMStoreFloat4( &player_camera_transform->rotation, r );
+      camera_target_to_world = crude_transform_node_to_world( it->world, player_controller->camera_target_node, NULL );
+      world_to_player = XMMatrixInverse( NULL, crude_transform_node_to_world( it->world, entity, player_transform ) );
+      camera_target_to_player = XMMatrixMultiply( camera_target_to_world, world_to_player );
+      crude_transform_decompose( player_camera_transform, camera_target_to_player );
     }
-
+    
+    /* Handle animations */
     {
       int64                                                animation_indices[ 8 ] { -1 };
       float32                                              animation_weights[ 8 ]{ 0 };
-      XMFLOAT2                                             normaliazed_move_blend;
-      float32                                              run_weight;
+      float32                                              normaliazed_move_blend;
       
-      normaliazed_move_blend.x = player_controller->move_blend.x / player_controller->move_blend_max.x;
-      normaliazed_move_blend.y = player_controller->move_blend.y / player_controller->move_blend_max.y;
-      run_weight = CRUDE_MAX( ( player_controller->move_blend.y - player_controller->walk_speed.y ) / ( player_controller->run_speed - player_controller->walk_speed.y ), 0.f );
+      normaliazed_move_blend = player_controller->move_blend / player_controller->move_blend_max;
 
       animation_indices[ 0 ] = player_controller->idle_animation_index;
-      animation_weights[ 0 ] = CRUDE_MAX( 1.f - normaliazed_move_blend.y - normaliazed_move_blend.x, 0.05 );
+      animation_weights[ 0 ] = CRUDE_MAX( 1.f - normaliazed_move_blend, 0.05 );
       animation_indices[ 1 ] = player_controller->walk_animation_index;
-      animation_weights[ 1 ] = player_controller->move_blend.y > player_controller->walk_speed.y ? 1.f - run_weight : normaliazed_move_blend.y;
-      animation_indices[ 2 ] = player_controller->strafe_animation_index;
-      animation_weights[ 2 ] = normaliazed_move_blend.x;
-      animation_indices[ 3 ] = player_controller->run_animation_index;
-      animation_weights[ 3 ] = player_controller->move_blend.y > player_controller->walk_speed.y ? run_weight : 0.f;
-      animation_indices[ 4 ] = player_controller->aim_down_animation_index;
-      animation_weights[ 4 ] = 2 * player_controller->aim_blend;
+      animation_weights[ 1 ] = normaliazed_move_blend;
+      animation_indices[ 2 ] = player_controller->aim_down_animation_index;
+      animation_weights[ 2 ] = 2 * player_controller->aim_blend;
       crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, animation_indices, animation_weights );
     }
 
+    /* Handle bones */
     {
       crude_transform                                   *player_orientation_transform;
       XMVECTOR                                           head_rotation, spine_rotation;
@@ -498,12 +421,7 @@ crude_player_controller_game_update_system_
         head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
         
-        
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, -player_controller->head_pitch_angle + 0.5 * XM_PIDIV2 * player_controller->shot_blend );
-#else
         spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, 0.5 * XM_PIDIV2 * player_controller->shot_blend );
-#endif
         spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
       }

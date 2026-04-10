@@ -5,8 +5,6 @@
 #include <engine/scene/components_serialization.h>
 #include <engine/physics/physics.h>
 
-#define CRUDE_PLAYER_CONTROLLER_PITCH 0
-
 /**********************************************************
  *
  *                 Component
@@ -17,11 +15,9 @@ typedef struct crude_player_controller
   crude_input const                                       *input;
 
   /* Publix settings */
-  float32                                                  pitch_limit;
   bool                                                     input_enabled;
   bool                                                     camera_enabled;
-  XMFLOAT2                                                 walk_speed;
-  float32                                                  run_speed;
+  float32                                                  walk_speed;
   float32                                                  rotate_speed;
   
   /* Other */
@@ -35,23 +31,17 @@ typedef struct crude_player_controller
   /* Angles */
   float32                                                  head_yaw_angle;
   float32                                                  spine_yaw_angle;
-#if CRUDE_PLAYER_CONTROLLER_PITCH
-  float32                                                  head_pitch_angle;
-  float32                                                  pivot_pitch_angle;
-#endif
   float32                                                  pivot_yaw_angle;
 
   /* Animations */
   uint32                                                   idle_animation_index;
   uint32                                                   walk_animation_index;
-  uint32                                                   strafe_animation_index;
-  uint32                                                   run_animation_index;
   uint32                                                   aim_down_animation_index;
   uint32                                                   fire_animation_index;
 
   /* Animations blending */
-  XMFLOAT2                                                 move_blend;
-  XMFLOAT2                                                 move_blend_max;
+  float32                                                  move_blend;
+  float32                                                  move_blend_max;
   float32                                                  aim_blend;
   float32                                                  shot_blend;
 } crude_player_controller;

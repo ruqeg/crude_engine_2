@@ -1253,10 +1253,7 @@ crude_gfx_model_renderer_resources_manager_get_cgltf_node_transform
     CRUDE_ASSERT( !gltf_node->has_scale );
     CRUDE_ASSERT( !gltf_node->has_rotation );
     gltf_node_matrix = XMFLOAT4X4{ gltf_node->matrix };
-    XMMatrixDecompose( &decompose_scale, &decompose_rotation_quat, &decompose_translation, XMLoadFloat4x4( &gltf_node_matrix ) );
-    XMStoreFloat3( &transform->translation, decompose_translation );
-    XMStoreFloat4( &transform->rotation, decompose_rotation_quat );
-    XMStoreFloat3( &transform->scale, decompose_scale );
+    crude_transform_decompose( transform, XMLoadFloat4x4( &gltf_node_matrix ) );
   }
 }
 

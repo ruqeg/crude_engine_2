@@ -84,6 +84,13 @@ crude_transform_node_to_world
   _In_opt_ crude_transform const                          *transform
 );
 
+CRUDE_API void
+crude_transform_decompose
+(
+  _Out_ crude_transform                                   *transform,
+  _In_ XMMATRIX                                            node_to_parent
+);
+
 CRUDE_API XMMATRIX
 crude_transform_node_to_parent
 (

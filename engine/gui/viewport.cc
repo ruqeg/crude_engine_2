@@ -132,7 +132,6 @@ crude_gui_viewport_queue_draw
     crude_transform                                         *selected_node_parent_transform;
     crude_entity                                             selected_node_parent;
     XMFLOAT4X4                                               camera_world_to_view, camera_view_to_clip, selected_node_to_parent, selected_parent_to_camera_view;
-    XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
     
     selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
     camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_camera  );
@@ -202,11 +201,7 @@ crude_gui_viewport_queue_draw
     ImGuizmo::SetID( 0 );
     if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, viewport->selected_gizmo_operation, ImGuizmo::MODE::WORLD, &selected_node_to_parent._11, NULL, NULL ) )
     {
-      XMMatrixDecompose( &new_scale, &new_rotation_quat, &new_translation, XMLoadFloat4x4( &selected_node_to_parent ) );
-    
-      XMStoreFloat4( &selected_node_transform->rotation, new_rotation_quat );
-      XMStoreFloat3( &selected_node_transform->scale, new_scale );
-      XMStoreFloat3( &selected_node_transform->translation, new_translation );
+      crude_transform_decompose( selected_node_transform, XMLoadFloat4x4( &selected_node_to_parent ) );
     
       CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
     }
