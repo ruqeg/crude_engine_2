@@ -21,6 +21,9 @@ typedef struct crude_game
   crude_string_buffer                                      debug_strings_buffer;
   crude_string_buffer                                      debug_constant_strings_buffer;
 
+  /* Game related */
+  crude_entity                                             player_node;
+
   /* System Context */
   crude_player_system_context                              player_system_context;
   crude_player_controller_system_context                   player_controller_system_context;

@@ -173,6 +173,8 @@ crude_player_controller_create_observer
     player_controller->aim_blend = 0.f;
     player_controller->shot_blend = 0.f;
     player_controller->move_speed = 0.f;
+
+    game->player_node = it->entities[ i ];
   }
   CRUDE_PROFILER_ZONE_END;
 }

@@ -89,24 +89,25 @@ crude_weapon_fire
   direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 1, 0, 0, 0 ), weapon_to_world ), 10000000 );
   origin = weapon_to_world.r[ 3 ];
 
-  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving, &ray_cast_result ) )
+  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_custom0 | g_crude_jph_layer_non_moving, &ray_cast_result ) )
   {
     crude_health                                          *health;
     crude_entity                                           entity;
 
-    entity = ray_cast_result.entity;
-    while ( entity = crude_entity_get_parent( game->engine->world, entity ) )
+    if ( ray_cast_result.layer & g_crude_jph_layer_custom0 )
     {
-      if ( !crude_entity_valid( game->engine->world, entity ) )
+      entity = ray_cast_result.entity;
+      while ( entity = crude_entity_get_parent( game->engine->world, entity ) )
       {
-        break;
-      }
+        if ( crude_entity_valid( game->engine->world, entity ) )
+        {
+          health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, entity, crude_health );
 
-      health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, entity, crude_health );
-
-      if ( health )
-      {
-        crude_heal_receive_damage( entity, health, weapon->damage );
+          if ( health )
+          {
+            crude_heal_receive_damage( entity, health, weapon->damage );
+          }
+        }
       }
     }
   }

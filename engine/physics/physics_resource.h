@@ -110,6 +110,7 @@ typedef struct crude_physics_static_body
 typedef struct crude_physics_ray_cast_result
 {
   crude_entity                                             entity;
+  uint32                                                   layer;
 } crude_physics_ray_cast_result;
 
 CRUDE_API crude_physics_character

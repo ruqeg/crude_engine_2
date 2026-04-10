@@ -109,97 +109,6 @@ crude_intersection_sphere_obb
   return XMVectorGetX( XMVector3LengthSq( sphere_position - closest_point ) ) < sphere_radius * sphere_radius;
 }
 
-float32
-crude_raycast_obb
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             obb_position,
-  _In_ XMVECTOR                                             obb_size,
-  _In_ XMMATRIX                                             obb_orientation,
-  _Out_opt_ crude_raycast_result                           *result
-)
-{
-  float32                                                  t[ 6 ];
-  XMVECTOR                                                 x_axis, y_axis, z_axis, p, f, e;
-  float32                                                  tmin, tmax;
-  
-  if ( result )
-  {
-    *result = crude_raycast_result_empty( );
-  }
-
-  crude_memory_set( t, 0, sizeof( t ) );
-
-  x_axis = XMVector3Normalize( obb_orientation.r[ 0 ] );
-  y_axis = XMVector3Normalize( obb_orientation.r[ 1 ] );
-  z_axis = XMVector3Normalize( obb_orientation.r[ 2 ] );
-  p = XMVectorSubtract( obb_position, ray_origin );
-  f = XMVectorSet( XMVectorGetX( XMVector3Dot( x_axis, ray_direction ) ), XMVectorGetX( XMVector3Dot( y_axis, ray_direction ) ), XMVectorGetX( XMVector3Dot( z_axis, ray_direction ) ), 1 );
-  e = XMVectorSet( XMVectorGetX( XMVector3Dot( x_axis, p ) ), XMVectorGetX( XMVector3Dot( y_axis, p ) ), XMVectorGetX( XMVector3Dot( z_axis, p ) ), 1 );
-  
-  for ( int32 i = 0; i < 3; ++i)
-  {
-    if ( fabsf( XMVectorGetByIndex( f, i ) ) < 0.00001f )
-    {
-      if ( -XMVectorGetByIndex( e, i ) - XMVectorGetByIndex( obb_size, i ) > 0 || -XMVectorGetByIndex( e, i ) + XMVectorGetByIndex( obb_size, i ) < 0 )
-      {
-        return false;
-      }
-      XMVectorSetByIndex( f, 0.00001f, i );
-    }
-
-    t[ i * 2 + 0 ] = ( XMVectorGetByIndex( e, i ) + XMVectorGetByIndex( obb_size, i ) ) / XMVectorGetByIndex( f, i );
-    t[ i * 2 + 1 ] = ( XMVectorGetByIndex( e, i ) - XMVectorGetByIndex( obb_size, i ) ) / XMVectorGetByIndex( f, i );
-  }
-
-  tmin = CRUDE_MAX( CRUDE_MAX( CRUDE_MIN( t[ 0 ], t[ 1 ] ), CRUDE_MIN( t[ 2 ], t[ 3 ] ) ), CRUDE_MIN( t[ 4 ], t[ 5 ] ) );
-  tmax = CRUDE_MIN( CRUDE_MIN( CRUDE_MAX( t[ 0 ], t[ 1 ] ), CRUDE_MAX( t[ 2 ], t[ 3 ] ) ), CRUDE_MAX( t[ 4 ], t[ 5 ] ) );
-
-  if ( tmax < 0 )
-  {
-    return false;
-  }
-
-  if ( tmin > tmax )
-  {
-    return false;
-  }
-  
-  float32 t_result = tmin;
-  if ( tmin < 0.0f )
-  {
-    t_result = tmax;
-  }
-
-  if ( result )
-  {
-    result->hit = true;
-    result->t = t_result;
-    result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t_result ) );
-
-    XMVECTOR normals[ ] =
-    {
-      g_XMIdentityR0,
-      XMVectorNegate( g_XMIdentityR0 ),
-      g_XMIdentityR1,
-      XMVectorNegate( g_XMIdentityR1 ),
-      g_XMIdentityR2,
-      XMVectorNegate( g_XMIdentityR2 )
-    };
-
-    for ( uint32 i = 0; i < 6; ++i )
-    {
-      if ( fabsf( t_result - t[ i ] ) < 0.0001f )
-      {
-        result->normal = XMVector3Normalize( normals[ i ] );
-      }
-    }
-  }
-
-  return tmin;
-}
-
 XMVECTOR
 crude_project_vector3
 (
@@ -242,87 +151,6 @@ crude_barycentric
   float32 c = 1.0f - ( XMVectorGetX( XMVector3Dot( v, cp ) / XMVectorGetX( XMVector3Dot( v, ca ) ) ) );
 
   return XMVectorSet( a, b, c, 0 );
-}
-
-bool
-crude_raycast_plane
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             plane,
-  _Out_opt_ crude_raycast_result                           *result
-)
-{
-  float32 nd = XMVectorGetX( XMVector3Dot( ray_direction, plane ) );
-  float32 pn = XMVectorGetX( XMVector3Dot( ray_origin, plane ) );
-
-  if ( result )
-  {
-    *result = crude_raycast_result_empty( );
-  }
-
-  if ( nd >= 0.f )
-  {
-    return false;
-  }
-
-  float32 t = ( XMVectorGetW( plane ) - pn ) / nd;
-
-  if ( t >= 0.0f )
-  {
-    if ( result )
-    {
-      result->t = t;
-      result->hit = true;
-      result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, t ) );
-      result->normal = XMVector3Normalize( plane );
-    }
-    return true;
-  }
-
-  return false;
-}
-
-bool
-crude_raycast_triangle
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             t0,
-  _In_ XMVECTOR                                             t1,
-  _In_ XMVECTOR                                             t2,
-  _Out_opt_ crude_raycast_result                           *result
-)
-{
-  XMVECTOR plane = crude_plane_from_points( t0, t1, t2 );
-
-  if ( !crude_raycast_plane( ray_origin, ray_direction, plane, result ) )
-  {
-    return false;
-  }
-
-  XMVECTOR result_point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
- 
-  XMVECTOR barycentric = crude_barycentric( result_point, t0, t1, t2 );
-
-  if
-  (
-    XMVectorGetX( barycentric ) >= 0.f && XMVectorGetX( barycentric ) <= 1.f &&
-    XMVectorGetY( barycentric ) >= 0.f && XMVectorGetY( barycentric ) <= 1.f &&
-    XMVectorGetZ( barycentric ) >= 0.f && XMVectorGetZ( barycentric ) <= 1.f
-  )
-  {
-    if ( result )
-    {
-      result->t = result->t;
-      result->hit = true;
-      result->point = XMVectorAdd( ray_origin, XMVectorScale( ray_direction, result->t ) );
-      result->normal = XMVector3Normalize( plane );
-    }
-    return true;
-  }
-
-  return false;
 }
 
 XMVECTOR
@@ -479,19 +307,6 @@ crude_compute_projected_sphere_aabb
   }
   
   return XMVectorSet( XMVectorGetX( aabb_min ), -1.f * XMVectorGetY( aabb_max ), XMVectorGetX( aabb_max ), -1.f * XMVectorGetY( aabb_min ) );
-}
-
-crude_raycast_result
-crude_raycast_result_empty
-(
-)
-{
-  crude_raycast_result result = CRUDE_COMPOUNT_EMPTY( crude_raycast_result );
-  result.t = -1.f;
-  result.hit = false;
-  result.normal = g_XMIdentityR1;
-  result.point = XMVectorZero( );
-  return result;
 }
 
 void

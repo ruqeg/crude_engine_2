@@ -556,6 +556,7 @@ crude_physics_ray_cast
   *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
   if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, JPH::SpecifiedBroadPhaseLayerFilter( g_crude_jph_broad_phase_layer_non_moving_class ), JPH::SpecifiedObjectLayerFilter( layers ) ) )
   {
+    ray_cast_result->layer = physics->jph_physics_system_class->GetBodyInterface().GetObjectLayer( jph_ray_cast_result.mBodyID );
     ray_cast_result->entity = CRUDE_CAST( crude_entity, physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID ) );
     return true;
   }

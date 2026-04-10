@@ -311,6 +311,28 @@ crude_zombie_engine_update_system_
       
       XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 6.f ) );
     }
+
+    if ( crude_entity_valid( it->world, game->player_node ) )
+    {
+      crude_physics_ray_cast_result                        ray_cast_result;
+      XMMATRIX                                             player_to_world;
+      XMMATRIX                                             zombie_to_world;
+      XMVECTOR                                             ray_direction, ray_origin;
+
+      zombie_to_world = crude_transform_node_to_world( it->world, it->entities[ i ], NULL );
+      
+      player_to_world = crude_transform_node_to_world( it->world, game->player_node, NULL );
+      
+      ray_direction = XMVectorScale( XMVectorSubtract( player_to_world.r[ 3 ], zombie_to_world.r[ 3 ] ), 1.5 );
+      ray_origin = zombie_to_world.r[ 3 ];
+
+      if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, ray_origin, ray_direction, g_crude_jph_layer_custom1 | g_crude_jph_layer_non_moving, &ray_cast_result ) )
+      {
+        if (ray_cast_result.layer & g_crude_jph_layer_custom1)
+        {
+        }
+      }
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }

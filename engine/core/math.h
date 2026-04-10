@@ -22,14 +22,6 @@ using namespace DirectX;
 #define CRUDE_CLAMP( x, u, l ) CRUDE_MIN( u, CRUDE_MAX( x, l ) )
 #define CRUDE_LERP( a, b, c ) ( a * ( 1.f - c ) + b * c )
 
-typedef struct crude_raycast_result
-{
-  XMVECTOR                                                 point;
-  XMVECTOR                                                 normal;
-  float32                                                  t;
-  bool                                                     hit;
-} crude_raycast_result;
-
 
 CRUDE_API XMVECTOR
 crude_quaternion_to_pitch_yaw_roll
@@ -90,37 +82,6 @@ crude_barycentric
   _In_ XMVECTOR                                             tc
 );
 
-CRUDE_API float32
-crude_raycast_obb
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             obb_position,
-  _In_ XMVECTOR                                             obb_size,
-  _In_ XMMATRIX                                             obb_orientation,
-  _Out_opt_ crude_raycast_result                           *result
-);
-
-CRUDE_API bool
-crude_raycast_plane
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             plane,
-  _Out_opt_ crude_raycast_result                           *result
-);
-
-CRUDE_API bool
-crude_raycast_triangle
-(
-  _In_ XMVECTOR                                             ray_origin,
-  _In_ XMVECTOR                                             ray_direction,
-  _In_ XMVECTOR                                             t0,
-  _In_ XMVECTOR                                             t1,
-  _In_ XMVECTOR                                             t2,
-  _Out_opt_ crude_raycast_result                           *result
-);
-
 CRUDE_API XMVECTOR
 crude_closest_point_to_plane
 (
@@ -178,11 +139,6 @@ crude_compute_projected_sphere_aabb
   _In_ XMMATRIX                                            camera_world_to_view,
   _In_ XMMATRIX                                            camera_view_to_clip,
   _In_ float32                                             camera_near_z
-);
-
-CRUDE_API crude_raycast_result
-crude_raycast_result_empty
-(
 );
 
 CRUDE_API void
