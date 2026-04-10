@@ -192,11 +192,6 @@ crude_zombie_create_observer_
         &game->engine->model_renderer_resources_manager,
         &zombie_model->model_renderer_resources_instance,
         "mixamorig:Spine" );
-
-      zombie->head_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
-        &game->engine->model_renderer_resources_manager,
-        &zombie_model->model_renderer_resources_instance,
-        "mixamorig:Head" );
     }
   }
   CRUDE_PROFILER_ZONE_END;
@@ -294,15 +289,12 @@ crude_zombie_engine_update_system_
     if ( crude_entity_valid( it->world, hitbox_entity ) )
     {
       crude_transform                                     *hitbox_body_transform;
-      crude_transform                                     *hitbox_head_transform;
       crude_gltf                                          *zombie_model;
       crude_entity                                         hitbox_body_entity;
-      crude_entity                                         hitbox_head_entity;
       crude_entity                                         zombie_pivot_entity;
       crude_entity                                         zombie_model_entity;
 
       hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, hitbox_entity, "hitbox_pivot_body.hitbox_body" );
-      hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, hitbox_entity, "hitbox_pivot_head.hitbox_head" );
       zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
       zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
 
@@ -316,18 +308,8 @@ crude_zombie_engine_update_system_
         zombie->spine_joint_node );
       
       hitbox_body_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_body_entity, crude_transform );
-      hitbox_head_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_head_entity, crude_transform );
       
-      XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 7.f ) );
-
-      XMMATRIX zombie_head_joint_node_to_model = crude_gfx_node_to_model(
-        crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
-          &game->engine->model_renderer_resources_manager,
-          zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
-        zombie_model->model_renderer_resources_instance.nodes_transforms,
-        zombie->head_joint_node );
-      
-      XMStoreFloat3( &hitbox_head_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_head_joint_node_to_model ), 7.f ) );
+      XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 6.f ) );
     }
   }
   CRUDE_PROFILER_ZONE_END;

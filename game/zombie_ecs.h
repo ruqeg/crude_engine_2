@@ -14,7 +14,6 @@ typedef struct crude_dead {} crude_dead;
 typedef struct crude_zombie
 {
   /* Joints */
-  uint64                                                   head_joint_node;
   uint64                                                   spine_joint_node;
 
   /* Animations */

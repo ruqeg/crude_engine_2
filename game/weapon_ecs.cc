@@ -59,12 +59,13 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_weapon )
 bool
 crude_weapon_fire
 (
+  _In_ crude_entity                                        weapon_entity,
   _In_ crude_weapon                                       *weapon
 )
 {
   crude_game                                             *game;
   XMVECTOR                                                direction, origin;
-  XMMATRIX                                                view_to_world;
+  XMMATRIX                                                weapon_to_world;
   crude_physics_ray_cast_result                           ray_cast_result;
   
   game = crude_game_instance( );
@@ -83,10 +84,10 @@ crude_weapon_fire
 
   weapon->wasted_ammo += 1;
 
-  view_to_world = crude_transform_node_to_world( game->engine->world, game->engine->camera_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->engine->world, game->engine->camera_node, crude_transform ) );
+  weapon_to_world = crude_transform_node_to_world( game->engine->world, weapon_entity, NULL );
   
-  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 0, 0, -1, 0 ), view_to_world ), 10000000 );
-  origin = view_to_world.r[ 3 ];
+  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 1, 0, 0, 0 ), weapon_to_world ), 10000000 );
+  origin = weapon_to_world.r[ 3 ];
 
   if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving, &ray_cast_result ) )
   {

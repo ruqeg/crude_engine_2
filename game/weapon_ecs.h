@@ -45,6 +45,7 @@ crude_weapon_fill_ammo
 CRUDE_API bool
 crude_weapon_fire
 (
+  _In_ crude_entity                                        weapon_entity,
   _In_ crude_weapon                                       *weapon
 );
 

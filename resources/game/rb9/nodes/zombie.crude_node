@@ -33,10 +33,10 @@
 									"index":	5,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	2,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	10,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
 									"index":	1,
@@ -72,39 +72,14 @@
 							"name":	"hitbox_body",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[0.081990182399749756, 6.1098036766052246, -0.032410293817520142],
+									"translation":	[-0.11494934558868408, 5.4180974960327148, -0.05163438618183136],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {
 									"type":	"crude_physics_static_body",
 									"shape_type":	0,
 									"box":	{
-										"extent":	[1.2999999523162842, 1.7000000476837158, 1]
-									},
-									"layers":	4
-								}],
-							"children":	[]
-						}]
-				}, {
-					"name":	"hitbox_pivot_head",
-					"components":	[{
-							"type":	"crude_transform",
-							"translation":	[0, 0.432398796081543, 0.11601722240448],
-							"rotation":	[0, 0, 0, 1],
-							"scale":	[1, 1, 1]
-						}],
-					"children":	[{
-							"name":	"hitbox_head",
-							"components":	[{
-									"type":	"crude_transform",
-									"translation":	[-0.47034856677055359, 8.23276138305664, 1.4765318632125854],
-									"rotation":	[0, 0, 0, 1],
-									"scale":	[1, 1, 1]
-								}, {
-									"type":	"crude_physics_static_body",
-									"shape_type":	0,
-									"box":	{
-										"extent":	[0.699999988079071, 0.800000011920929, 0.800000011920929]
+										"extent":	[2, 5.5999999046325684, 1.2000000476837158]
 									},
 									"layers":	4
 								}],

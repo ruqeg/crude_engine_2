@@ -170,9 +170,9 @@ crude_player_controller_create_observer
       &player_model->model_renderer_resources_instance,
       "mixamorig:RightHand" );
     
-    player_controller->move_blend_max = player_controller->walk_speed;
     player_controller->aim_blend = 0.f;
     player_controller->shot_blend = 0.f;
+    player_controller->move_speed = 0.f;
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -269,7 +269,7 @@ crude_player_controller_game_update_system_
         {
           if ( input->mouse.left.current )
           {
-            if ( crude_weapon_fire( weapon ) )
+            if ( crude_weapon_fire( weapon_entity, weapon ) )
             {
               player_controller->shot_blend = 1.f;
             }
@@ -321,7 +321,6 @@ crude_player_controller_game_update_system_
         XMVECTOR                                           pivot_yaw_basis_forward;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
-        float32                                            move, move_speed;
 
         move_direction.x = input->keys[ SDL_SCANCODE_D ].current - input->keys[ SDL_SCANCODE_A ].current;
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
@@ -334,34 +333,26 @@ crude_player_controller_game_update_system_
       
         pivot_yaw_basis_forward = XMVector3Normalize( pivot_yaw_to_world.r[ 2 ] );
       
-        move_speed = player_controller->walk_speed;
+        player_controller->move_speed = player_controller->walk_speed;
         
         player_velocity = crude_jph_vec3_to_vector( physcs_character_container->jph_character_class->GetLinearVelocity( ) );
         
         if ( move_direction.z < 0 )
         {
-          move_speed *= 0.32;
+          player_controller->move_speed *= 0.32;
         }
 
         if ( input->mouse.right.current )
         {
-          move_speed *= 0.4;
+          player_controller->move_speed *= 0;
         }
 
-        move = move_direction.z * move_speed;
-
-        player_controller->move_blend = CRUDE_LERP( player_controller->move_blend, fabs( move ), 4 * it->delta_time );
-
-        if ( move_direction.z != 0.f )
-        {
-          player_controller->move_blend_max = CRUDE_LERP( player_controller->move_blend_max, fabs( move ), 4 * it->delta_time );
-        }
+        player_controller->move_speed *= move_direction.z;
 
         if ( move_direction.z != 0 )
         {
-          new_player_velocity = XMVectorScale( pivot_yaw_basis_forward, move_direction.z );
-          new_player_velocity = XMVector3Normalize( new_player_velocity );
-          new_player_velocity = XMVectorScale( new_player_velocity, move_speed );
+          new_player_velocity = XMVector3Normalize( pivot_yaw_basis_forward );
+          new_player_velocity = XMVectorScale( new_player_velocity, player_controller->move_speed );
         
           new_player_velocity = XMVectorSet( XMVectorGetX( new_player_velocity ), XMVectorGetY( player_velocity ), XMVectorGetZ( new_player_velocity ), 1.f );
           
@@ -395,14 +386,13 @@ crude_player_controller_game_update_system_
     {
       int64                                                animation_indices[ 8 ] { -1 };
       float32                                              animation_weights[ 8 ]{ 0 };
-      float32                                              normaliazed_move_blend;
       
-      normaliazed_move_blend = player_controller->move_blend / player_controller->move_blend_max;
+      player_controller->move_blend = CRUDE_LERP( player_controller->move_blend, player_controller->move_speed / player_controller->walk_speed, 5 * it->delta_time );
 
       animation_indices[ 0 ] = player_controller->idle_animation_index;
-      animation_weights[ 0 ] = CRUDE_MAX( 1.f - normaliazed_move_blend, 0.05 );
+      animation_weights[ 0 ] = 1.f - player_controller->move_blend;
       animation_indices[ 1 ] = player_controller->walk_animation_index;
-      animation_weights[ 1 ] = normaliazed_move_blend;
+      animation_weights[ 1 ] = player_controller->move_blend;
       animation_indices[ 2 ] = player_controller->aim_down_animation_index;
       animation_weights[ 2 ] = 2 * player_controller->aim_blend;
       crude_gfx_model_renderer_resources_instance_blend_animations( &player_model->model_renderer_resources_instance, animation_indices, animation_weights );

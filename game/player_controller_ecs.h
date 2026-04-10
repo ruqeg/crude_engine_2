@@ -18,6 +18,7 @@ typedef struct crude_player_controller
   bool                                                     input_enabled;
   bool                                                     camera_enabled;
   float32                                                  walk_speed;
+  float32                                                  move_speed;
   float32                                                  rotate_speed;
   
   /* Other */
@@ -40,10 +41,9 @@ typedef struct crude_player_controller
   uint32                                                   fire_animation_index;
 
   /* Animations blending */
-  float32                                                  move_blend;
-  float32                                                  move_blend_max;
   float32                                                  aim_blend;
   float32                                                  shot_blend;
+  float32                                                  move_blend;
 } crude_player_controller;
 
 CRUDE_API ECS_COMPONENT_DECLARE( crude_player_controller );
