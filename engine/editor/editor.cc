@@ -50,7 +50,7 @@ crude_editor_initialize
 
   crude_gui_viewport_initialize( &editor->viewport, &engine->gpu, crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle, 0, editor );
   crude_gui_node_inspector_initialize( &editor->node_inspector, &engine->components_serialization_manager, &engine->node_manager );
-  crude_gui_node_tree_initialize( &editor->node_tree );
+  crude_gui_node_tree_initialize( &editor->node_tree, &editor->engine->node_manager );
   crude_gui_log_viewer_initialize( &editor->log_viewer );
   crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
   crude_gui_gpu_visual_profiler_initialize( &editor->gpu_visual_profiler, &engine->gpu, &engine->develop_heap_allocator );
@@ -301,6 +301,19 @@ crude_editor_handle_input
   {
     editor->engine->scene_renderer.options.debug.hide_collision = !editor->engine->scene_renderer.options.debug.hide_collision;
   }
+
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F9 ].pressed )
+  {
+    if ( crude_entity_valid( editor->engine->world, editor->selected_node ) && CRUDE_ENTITY_HAS_COMPONENT( editor->engine->world, editor->selected_node, crude_camera ) )
+    {
+      editor->engine->camera_node = editor->selected_node;
+    }
+  }
+
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F10 ].pressed )
+  {
+    editor->engine->camera_node = editor->editor_camera_node;
+  }
 }
 
 void
@@ -326,7 +339,7 @@ crude_editor_stop_game
   CRUDE_ECS_GAME_STAGE_ENABLE( editor->engine->world, false );
   crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
   editor->engine->camera_node = editor->editor_camera_node;
-    crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, false );
+  crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, false );
 }
 
 void

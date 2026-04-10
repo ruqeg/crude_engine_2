@@ -16,6 +16,12 @@ typedef void (*crude_node_manager_select_camera)
   _In_ crude_entity                                        camera_node
 );
 
+typedef struct crude_node_manager_node_json
+{
+  cJSON                                                   *json;
+  char                                                     relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
+} crude_node_manager_node_json;
+
 typedef struct crude_node_manager_creation
 {
   crude_physics                                           *physics_manager;
@@ -41,9 +47,8 @@ typedef struct crude_node_manager
   crude_node_manager_select_camera                         select_camera_func;
   void                                                    *select_camera_ctx;
   char const                                              *resources_absolute_directory;
-  CRUDE_HASHMAPSTR( crude_entity )                        *relative_filepath_to_node;
+  CRUDE_HASHMAPSTR( crude_node_manager_node_json )        *relative_filepath_to_node_json;
   crude_string_buffer                                      absolute_filepath_string_buffer;
-  crude_string_buffer                                      relative_filepath_string_buffer;
 } crude_node_manager;
 
 CRUDE_API void
@@ -56,40 +61,20 @@ crude_node_manager_initialize
 CRUDE_API void
 crude_node_manager_deinitialize
 (
-  _In_ crude_node_manager                                 *manager,
-  _In_ crude_ecs                                          *world
+  _In_ crude_node_manager                                 *manager
 );
 
 CRUDE_API void
 crude_node_manager_clear
 (
-  _In_ crude_node_manager                                 *manager,
-  _In_ crude_ecs                                          *world
+  _In_ crude_node_manager                                 *manager
 );
 
 CRUDE_API crude_entity
-crude_node_manager_get_node
+crude_node_manager_create_node
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_realtive_filepath,
-  _In_ crude_ecs                                          *world,
-  _In_ bool                                                enabled_on_initialization
-);
-
-CRUDE_API void
-crude_node_manager_remove_node
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_realtive_filepath,
-  _In_ crude_ecs                                          *world
-);
-
-CRUDE_API void
-crude_node_manager_save_node_by_file_to_file
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_relative_filepath,
-  _In_ char const                                         *saved_relative_filepath,
   _In_ crude_ecs                                          *world
 );
 

@@ -12,6 +12,7 @@
  *                 Component
  *
  *********************************************************/
+ECS_COMPONENT_DECLARE( crude_dead );
 ECS_COMPONENT_DECLARE( crude_zombie );
 CRUDE_COMPONENT_STRING_DEFINE( crude_zombie, "crude_zombie" );
 
@@ -46,6 +47,14 @@ crude_zombie_health_damage_callback_
   _In_ int32                                               damage
 );
 
+static void
+crude_zombie_health_death_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+);
+
 /**********************************************************
  *
  *                 System
@@ -72,16 +81,21 @@ crude_zombie_system_import
   CRUDE_ECS_MODULE( world, crude_zombie_system );
   
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_zombie );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_dead );
+
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_zombie );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_zombie );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_zombie );
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_zombie_game_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_zombie ) },
+    { .id = ecs_id( crude_dead ), .oper = EcsNot },
   } );
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_zombie_engine_update_system_, crude_ecs_on_engine_update, ctx, {
     { .id = ecs_id( crude_zombie ) },
+    { .id = ecs_id( crude_dead ), .oper = EcsNot },
+
   } );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_zombie_create_observer_, EcsOnSet, ctx, { 
@@ -122,6 +136,8 @@ crude_zombie_create_observer_
 
     zombie = &zombie_per_entity[ i ];
     
+    zombie->dying = false;
+
     /* Health setup */
     {
       crude_health                                        *health;
@@ -129,6 +145,7 @@ crude_zombie_create_observer_
       crude_health_callback_container                      health_callback_container;
 
       health_callback_container.damage_callback = crude_zombie_health_damage_callback_;
+      health_callback_container.death_callback = crude_zombie_health_death_callback_;
 
       health_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health" );
       health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, health_entity, crude_health );
@@ -148,11 +165,28 @@ crude_zombie_create_observer_
       zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
       
       zombie->idle_animation_index = 0;
+      zombie->hit_animation_index = 1;
+      zombie->dead_animation_index = 2;
+      zombie->walk_animation_index = 3;
 
       zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
         &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "crazy" );
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+        &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "hit" );
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+        &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "dead" );
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].animation_index = crude_gfx_model_renderer_resources_instance_find_animation_index_by_name(
+        &zombie_model->model_renderer_resources_instance, &game->engine->model_renderer_resources_manager, "walk" );
 
       zombie_model->model_renderer_resources_instance.animations_instances[ zombie->idle_animation_index ].disabled = false;
+
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled = true;
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].loop = false;
+
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].disabled = true;
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].loop = false;
+
+      zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled = false;
 
       zombie->spine_joint_node = crude_gfx_model_renderer_resources_instance_find_node_by_name(
         &game->engine->model_renderer_resources_manager,
@@ -203,7 +237,28 @@ crude_zombie_game_update_system_
 
     zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
     
-    crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->idle_animation_index );
+    if ( zombie->dying )
+    {
+      if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].disabled )
+      {
+        crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->dead_animation_index );
+      }
+      else
+      {
+        CRUDE_ENTITY_ADD_COMPONENT( game->engine->world, zombie_entity, crude_dead );
+      }
+    }
+    else
+    {
+      if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled )
+      {
+        crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->hit_animation_index );
+      }
+      else
+      {
+        crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->idle_animation_index );
+      }
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -228,46 +283,52 @@ crude_zombie_engine_update_system_
   {
     crude_input const                                     *input;
     crude_zombie                                          *zombie;
-    crude_transform                                       *hitbox_body_transform;
-    crude_transform                                       *hitbox_head_transform;
-    crude_gltf                                            *zombie_model;
-    crude_entity                                           zombie_pivot_entity;
-    crude_entity                                           zombie_model_entity;
     crude_entity                                           zombie_entity;
-    crude_entity                                           hitbox_body_entity;
-    crude_entity                                           hitbox_head_entity;
+    crude_entity                                           hitbox_entity;
 
     zombie_entity = crude_entity_from_iterator( it, i );
 
     zombie = &zombie_per_entity[ i ];
     
-    hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health.hitbox_pivot_body.hitbox_body" );
-    hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health.hitbox_pivot_head.hitbox_head" );
-    zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
-    zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
+    hitbox_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health" );
+    if ( crude_entity_valid( it->world, hitbox_entity ) )
+    {
+      crude_transform                                     *hitbox_body_transform;
+      crude_transform                                     *hitbox_head_transform;
+      crude_gltf                                          *zombie_model;
+      crude_entity                                         hitbox_body_entity;
+      crude_entity                                         hitbox_head_entity;
+      crude_entity                                         zombie_pivot_entity;
+      crude_entity                                         zombie_model_entity;
 
-    zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
+      hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, hitbox_entity, "hitbox_pivot_body.hitbox_body" );
+      hitbox_head_entity = crude_ecs_lookup_entity_from_parent( it->world, hitbox_entity, "hitbox_pivot_head.hitbox_head" );
+      zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
+      zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
+
+      zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
  
-    XMMATRIX zombie_spine_joint_node_to_model = crude_gfx_node_to_model(
-      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
-        &game->engine->model_renderer_resources_manager,
-        zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
-      zombie_model->model_renderer_resources_instance.nodes_transforms,
-      zombie->spine_joint_node );
-    
-    hitbox_body_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_body_entity, crude_transform );
-    hitbox_head_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_head_entity, crude_transform );
-    
-    XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 7.f ) );
+      XMMATRIX zombie_spine_joint_node_to_model = crude_gfx_node_to_model(
+        crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+          &game->engine->model_renderer_resources_manager,
+          zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+        zombie_model->model_renderer_resources_instance.nodes_transforms,
+        zombie->spine_joint_node );
+      
+      hitbox_body_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_body_entity, crude_transform );
+      hitbox_head_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_head_entity, crude_transform );
+      
+      XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 7.f ) );
 
-    XMMATRIX zombie_head_joint_node_to_model = crude_gfx_node_to_model(
-      crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
-        &game->engine->model_renderer_resources_manager,
-        zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
-      zombie_model->model_renderer_resources_instance.nodes_transforms,
-      zombie->head_joint_node );
-    
-    XMStoreFloat3( &hitbox_head_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_head_joint_node_to_model ), 7.f ) );
+      XMMATRIX zombie_head_joint_node_to_model = crude_gfx_node_to_model(
+        crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
+          &game->engine->model_renderer_resources_manager,
+          zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
+        zombie_model->model_renderer_resources_instance.nodes_transforms,
+        zombie->head_joint_node );
+      
+      XMStoreFloat3( &hitbox_head_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_head_joint_node_to_model ), 7.f ) );
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -287,10 +348,13 @@ crude_zombie_health_damage_callback_
 {
   crude_game                                              *game;
   crude_zombie                                            *zombie;
+  crude_gltf                                              *zombie_model;
   crude_entity                                             zombie_entity;
+  crude_entity                                             zombie_pivot_entity;
+  crude_entity                                             zombie_model_entity;
 
   game = crude_game_instance( );
-  
+
   zombie_entity = crude_entity_get_parent( game->engine->world, health_entity );
 
   CRUDE_ASSERT( crude_entity_valid( game->engine->world, zombie_entity ) );
@@ -299,4 +363,51 @@ crude_zombie_health_damage_callback_
   CRUDE_ASSERT( zombie );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GAMEPLAY, "Zombie %i got hit and get %i damage", zombie_entity, damage );
+  
+  zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_entity, "pivot" );
+  zombie_model_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "model" );
+
+  zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_model_entity, crude_gltf );
+
+  zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled = false;
+  zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].current_time = 0;
+}
+
+void
+crude_zombie_health_death_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+)
+{
+  crude_game                                              *game;
+  crude_zombie                                            *zombie;
+  crude_gltf                                              *zombie_model;
+  crude_entity                                             zombie_entity;
+  crude_entity                                             zombie_pivot_entity;
+  crude_entity                                             zombie_model_entity;
+
+  game = crude_game_instance( );
+
+  zombie_entity = crude_entity_get_parent( game->engine->world, health_entity );
+
+  CRUDE_ASSERT( crude_entity_valid( game->engine->world, zombie_entity ) );
+
+  zombie = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_entity, crude_zombie );
+  CRUDE_ASSERT( zombie );
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GAMEPLAY, "Zombie %i got hit and get %i damage", zombie_entity, damage );
+  
+  zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_entity, "pivot" );
+  zombie_model_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "model" );
+
+  zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_model_entity, crude_gltf );
+
+  zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].disabled = false;
+  zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].current_time = 0;
+
+  zombie->dying = true;
+
+  crude_entity_destroy_hierarchy( game->engine->world, health_entity );
 }

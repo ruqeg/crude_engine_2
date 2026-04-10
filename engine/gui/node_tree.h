@@ -28,7 +28,8 @@ typedef struct crude_gui_node_tree
 CRUDE_API void
 crude_gui_node_tree_initialize
 (
-  _In_ crude_gui_node_tree                                *node_tree
+  _In_ crude_gui_node_tree                                *node_tree,
+  _In_ crude_node_manager                                 *node_manager
 );
 
 CRUDE_API void

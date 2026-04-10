@@ -18,9 +18,17 @@ typedef void (*crude_health_damage_callback_fn)
   _In_ int32                                               damage
 );
 
+typedef void (*crude_health_death_callback_fn)
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+);
+
 typedef struct crude_health_callback_container
 {
   crude_health_damage_callback_fn                          damage_callback;
+  crude_health_death_callback_fn                           death_callback;
 } crude_health_callback_container;
 
 typedef struct crude_health

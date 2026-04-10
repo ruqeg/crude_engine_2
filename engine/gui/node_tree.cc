@@ -1,4 +1,5 @@
 #include <engine/physics/physics_ecs.h>
+#include <engine/scene/node_manager.h>
 
 #include <engine/gui/node_tree.h>
 
@@ -32,12 +33,14 @@ crude_gui_node_tree_queue_draw_internal_
 void
 crude_gui_node_tree_initialize
 (
-  _In_ crude_gui_node_tree                                *node_tree
+  _In_ crude_gui_node_tree                                *node_tree,
+  _In_ crude_node_manager                                 *node_manager
 )
 {
   node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
   node_tree->new_node_name[ 0 ] = 0;
   node_tree->node_popup_should_be_opened = false;
+  node_tree->node_manager = node_manager;  
 }
 
 void
@@ -92,9 +95,14 @@ crude_gui_node_tree_queue_draw
         ImGui::Separator( );
         if ( ImGui::Button( "Apply" ) )
         {
-          crude_entity new_node = crude_node_copy_hierarchy( world, node_tree->node_reference, node_tree->new_node_name, crude_entity_get_parent( world, node_tree->node_reference ), true, true );
-          node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
+          crude_entity                                     new_node;
+          
+          new_node = crude_entity_copy( world, node_tree->node_reference, true );
+          crude_entity_set_name( world, new_node, node_tree->new_node_name );
+          crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, node_tree->node_reference ) );
           *selected_node = new_node;
+
+          node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
         }
         ImGui::SameLine( );
         if ( ImGui::Button( "Cancel" ) )

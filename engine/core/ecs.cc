@@ -2,8 +2,6 @@
 
 #include <engine/core/ecs.h>
 
-ECS_DECLARE( crude_entity_tag );
-
 /************************************************
  *
  * ECS World Functions Implementatino
@@ -122,7 +120,6 @@ crude_entity_create_empty_without_name
 )
 {
   crude_entity entity = ecs_new( world );
-  ecs_add( world, entity, crude_entity_tag );
   return entity;
 }
 
@@ -135,7 +132,6 @@ crude_entity_create_empty
 {
   crude_entity entity = ecs_new( world );
   entity = ecs_set_name( world, entity, name == NULL || name[0] == '\0' ? "entity" : name );
-  ecs_add( world, entity, crude_entity_tag );
   return entity;
 }
 
@@ -257,6 +253,18 @@ crude_entity_copy
   return ecs_clone( world, 0, src, copy_value );
 }
 
+crude_entity
+crude_entity_copy_to_entity
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        dst,
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
+)
+{
+  return ecs_clone( world, dst, src, copy_value );
+}
+
 void
 crude_entity_enable
 (
@@ -277,33 +285,6 @@ crude_entity_is_enable
 {
   
   return !ecs_has_id( world, entity, EcsDisabled );
-}
-
-void
-crude_entity_enable_hierarchy
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        entity,
-  _In_ bool                                                enabled
-)
-{
-  if ( !crude_entity_valid( world, entity ) )
-  {
-    return;
-  }
-  
-  ecs_iter_t it = crude_ecs_children( world, entity );
-
-  while ( ecs_children_next( &it ) )
-  {
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-      crude_entity child = crude_entity_from_iterator( &it, i );
-      crude_entity_enable_hierarchy( world, child, enabled );
-    }
-  }
-  
-  crude_entity_enable( world, entity, enabled );
 }
 
 void

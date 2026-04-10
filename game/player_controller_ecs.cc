@@ -245,7 +245,7 @@ crude_player_controller_game_update_system_
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
-    player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera" );
+    player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera_front" );
     weapon_grab_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon_grab" );
     weapon_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_grab_entity, "weapon_spawnpoint" );
     weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_spawnpoint_entity, "weapon" );

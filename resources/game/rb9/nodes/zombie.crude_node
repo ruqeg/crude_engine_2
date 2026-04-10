@@ -30,7 +30,7 @@
 									"index":	1,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	5,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
 									"index":	1,
@@ -72,7 +72,7 @@
 							"name":	"hitbox_body",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.2677970826625824, 6.15105962753296, -0.11661715060472488],
+									"translation":	[0.081990182399749756, 6.1098036766052246, -0.032410293817520142],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {
@@ -97,7 +97,7 @@
 							"name":	"hitbox_head",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-1.0432310104370117, 8.0278968811035156, 1.5832233428955078],
+									"translation":	[-0.47034856677055359, 8.23276138305664, 1.4765318632125854],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {

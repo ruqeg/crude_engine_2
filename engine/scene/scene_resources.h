@@ -104,14 +104,3 @@ crude_transform_lerp
   _In_ crude_transform                                    *transform2,
   _In_ float32                                             t
 );
-
-CRUDE_API crude_entity
-crude_node_copy_hierarchy
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node,
-  _In_ char const                                         *name,
-  _In_ crude_entity                                        parent,
-  _In_ bool                                                copy_value,
-  _In_ bool                                                enabled
-);

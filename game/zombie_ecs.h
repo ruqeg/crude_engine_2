@@ -9,6 +9,8 @@
  *                 Component
  *
  *********************************************************/
+typedef struct crude_dead {} crude_dead;
+
 typedef struct crude_zombie
 {
   /* Joints */
@@ -17,8 +19,15 @@ typedef struct crude_zombie
 
   /* Animations */
   uint32                                                   idle_animation_index;
+  uint32                                                   hit_animation_index;
+  uint32                                                   dead_animation_index;
+  uint32                                                   walk_animation_index;
+
+  /* Common */
+  bool                                                     dying;
 } crude_zombie;
 
+CRUDE_API ECS_COMPONENT_DECLARE( crude_dead );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_zombie );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_zombie );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_zombie );

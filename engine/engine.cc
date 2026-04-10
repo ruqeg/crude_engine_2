@@ -410,8 +410,6 @@ crude_engine_initialize_ecs_
 
   engine->world = crude_ecs_create( );
   
-  CRUDE_ECS_TAG_DEFINE( engine->world, crude_entity_tag );
-  
   crude_ecs_set_threads( engine->world, 1 );
 
   crude_components_serialization_manager_initialize( &engine->components_serialization_manager, &engine->common_allocator );
@@ -784,7 +782,7 @@ crude_engine_deinitialize_scene_
 )
 {
   crude_entity_destroy_hierarchy( engine->world, engine->main_node );
-  crude_node_manager_deinitialize( &engine->node_manager, engine->world );
+  crude_node_manager_deinitialize( &engine->node_manager );
 }
 
 void

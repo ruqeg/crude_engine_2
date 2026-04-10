@@ -10,13 +10,6 @@ typedef ecs_entity_t crude_entity;
 
 /************************************************
  *
- * ECS Entity Tag Declaration 
- * 
- ***********************************************/
-CRUDE_API ECS_TAG_DECLARE( crude_entity_tag );
-
-/************************************************
- *
  * ECS World Functions Declaration 
  * 
  ***********************************************/
@@ -186,6 +179,15 @@ crude_entity_copy
   _In_ bool                                                copy_value
 );
 
+CRUDE_API crude_entity
+crude_entity_copy_to_entity
+(
+  _In_ crude_ecs                                          *world,
+  _In_ crude_entity                                        dst,
+  _In_ crude_entity                                        src,
+  _In_ bool                                                copy_value
+);
+
 CRUDE_API void
 crude_entity_enable
 (
@@ -199,14 +201,6 @@ crude_entity_is_enable
 (
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        entity
-);
-
-CRUDE_API void
-crude_entity_enable_hierarchy
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        entity,
-  _In_ bool                                                enabled
 );
 
 CRUDE_API void

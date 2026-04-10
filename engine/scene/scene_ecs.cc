@@ -398,6 +398,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
 
     component_type = component->type;
     ImGui::Combo( "##Relative Filepath", &component_type, node_external_names, CRUDE_COUNTOF( node_external_names ) ); 
+    component->type = CRUDE_CAST( crude_node_external_type, component_type );
   } );
   
   ImGui::Text( "\"%s\"", component->node_relative_filepath[ 0 ] ? component->node_relative_filepath : "Empty" );
@@ -418,9 +419,10 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
         {
           crude_entity_destroy_hierarchy( world, node );
         }
-        crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world, false ), replace_relative_filepath, parent, true, true );
-        crude_entity_enable_hierarchy( world, extern_node, true );
-        crude_string_copy( component->node_relative_filepath, replace_relative_filepath, sizeof( component->node_relative_filepath ) );
+        CRUDE_ASSERT( false );
+        //crude_entity extern_node = crude_node_copy_hierarchy( world, crude_node_manager_get_node( manager, replace_relative_filepath, world, false ), replace_relative_filepath, parent, true, true );
+        //crude_entity_enable_hierarchy( world, extern_node, true );
+        //crude_string_copy( component->node_relative_filepath, replace_relative_filepath, sizeof( component->node_relative_filepath ) );
       }
     }
     ImGui::EndDragDropTarget();

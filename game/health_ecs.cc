@@ -52,11 +52,19 @@ crude_heal_receive_damage
   _In_ int32                                               damage
 )
 {
-  health->total_damage -= damage;
+  health->total_damage += damage;
 
   if ( health->callback_container.damage_callback )
   {
     health->callback_container.damage_callback( health_entity, health, damage );
+  }
+
+  if ( health->total_damage >= health->max_health )
+  {
+    if ( health->callback_container.death_callback )
+    {
+      health->callback_container.death_callback( health_entity, health, damage );
+    }
   }
 }
 

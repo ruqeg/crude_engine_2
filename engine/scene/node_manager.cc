@@ -11,18 +11,10 @@
 #include <engine/scene/node_manager.h>
 
 static crude_entity
-crude_node_manager_load_node_from_file_
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *absolute_filepath,
-  _In_ crude_ecs                                          *world
-);
-
-static crude_entity
 crude_node_manager_load_node_from_json_
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ cJSON                                              *node_json,
+  _In_ cJSON                                              *json,
   _In_ crude_ecs                                          *world,
   _In_opt_ crude_entity                                   *parent
 );
@@ -43,13 +35,6 @@ crude_node_manager_node_to_json_hierarchy_
 );
 
 void
-crude_node_destroy_hierarchy_
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        entity
-);
-
-void
 crude_node_manager_initialize
 (
   _In_ crude_node_manager                                 *manager,
@@ -65,81 +50,39 @@ crude_node_manager_initialize
   manager->select_camera_func = creation->select_camera_func;
   manager->select_camera_ctx = creation->select_camera_ctx;
 
-  CRUDE_HASHMAPSTR_INITIALIZE( manager->relative_filepath_to_node, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->relative_filepath_to_node_json, crude_heap_allocator_pack( manager->allocator ) );
   crude_string_buffer_initialize( &manager->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( manager->allocator ) );
-  crude_string_buffer_initialize( &manager->relative_filepath_string_buffer, CRUDE_NODE_COUNT_MAX * ( 1 + CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ), crude_heap_allocator_pack( manager->allocator ) );
 }
 
 void
 crude_node_manager_deinitialize
 (
-  _In_ crude_node_manager                                 *manager,
-  _In_ crude_ecs                                          *world
+  _In_ crude_node_manager                                 *manager
 )
 {
-  crude_node_manager_clear( manager, world );
+  crude_node_manager_clear( manager );
   crude_string_buffer_deinitialize( &manager->absolute_filepath_string_buffer );
-  crude_string_buffer_deinitialize( &manager->relative_filepath_string_buffer );
-  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->relative_filepath_to_node );
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->relative_filepath_to_node_json );
 }
 
 void
 crude_node_manager_clear
 (
-  _In_ crude_node_manager                                 *manager,
-  _In_ crude_ecs                                          *world
+  _In_ crude_node_manager                                 *manager
 )
 {
-  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->relative_filepath_to_node ); ++i )
+  for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->relative_filepath_to_node_json ); ++i )
   {
-    if ( crude_hashmapstr_backet_key_hash_valid( manager->relative_filepath_to_node[ i ].key.key_hash ) )
+    if ( crude_hashmapstr_backet_key_hash_valid( manager->relative_filepath_to_node_json[ i ].key.key_hash ) )
     {
-      crude_node_destroy_hierarchy_( world, manager->relative_filepath_to_node[ i ].value );
+      cJSON_Delete( manager->relative_filepath_to_node_json[ i ].value.json );
     }
-    manager->relative_filepath_to_node[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
+    manager->relative_filepath_to_node_json[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
-
-  crude_string_buffer_clear( &manager->relative_filepath_string_buffer );
 }
 
 crude_entity
-crude_node_manager_get_node
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_realtive_filepath,
-  _In_ crude_ecs                                          *world,
-  _In_ bool                                                enabled_on_initialization
-)
-{
-  char const                                              *node_absolute_filepath;
-  crude_entity                                             node_template;
-  int64                                                    node_index;
-
-  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
-  node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
-
-  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
-  if ( node_index == -1 )
-  {
-    node_template = crude_node_manager_load_node_from_file_( manager, node_absolute_filepath, world );
-    
-    crude_entity_enable_hierarchy( world, node_template, enabled_on_initialization );
-
-    CRUDE_HASHMAPSTR_SET(
-      manager->relative_filepath_to_node,
-      CRUDE_COMPOUNT( crude_string_link, { crude_string_buffer_append_use_f( &manager->relative_filepath_string_buffer, "%s", node_realtive_filepath ) } ),
-      node_template );
-  }
-  else
-  {
-    node_template = manager->relative_filepath_to_node[ node_index ].value;
-  }
-
-  return node_template;
-}
-
-void
-crude_node_manager_remove_node
+crude_node_manager_create_node
 (
   _In_ crude_node_manager                                 *manager,
   _In_ char const                                         *node_realtive_filepath,
@@ -147,43 +90,28 @@ crude_node_manager_remove_node
 )
 {
   char const                                              *node_absolute_filepath;
+  crude_node_manager_node_json                            *node_json;
   int64                                                    node_index;
-  
+  crude_node_manager_node_json                             new_node_json;
+
   crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
   node_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, node_realtive_filepath );
 
-  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
+  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node_json, node_realtive_filepath );
   if ( node_index == -1 )
   {
-    return;
-  }
-  
-  crude_node_destroy_hierarchy_( world, manager->relative_filepath_to_node[ node_index ].value );
-  CRUDE_HASHMAPSTR_REMOVE( manager->relative_filepath_to_node, node_realtive_filepath );
-}
+    new_node_json.json = crude_node_manager_parse_json_( manager, node_absolute_filepath );
+    crude_string_copy( new_node_json.relative_filepath, node_realtive_filepath, sizeof( new_node_json.relative_filepath ) );
 
-void
-crude_node_manager_save_node_by_file_to_file
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_realtive_filepath,
-  _In_ char const                                         *saved_relative_filepath,
-  _In_ crude_ecs                                          *world
-)
-{
-  char const                                              *saved_absolute_filepath;
-  int64                                                    node_index;
-    
-  node_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->relative_filepath_to_node, node_realtive_filepath );
-  if ( node_index != -1 )
+    CRUDE_HASHMAPSTR_SET( manager->relative_filepath_to_node_json, CRUDE_COMPOUNT( crude_string_link, { new_node_json.relative_filepath } ), new_node_json );
+    node_json = &new_node_json;
+  }
+  else 
   {
-    return;
+    node_json = &manager->relative_filepath_to_node_json[ node_index ].value;
   }
 
-  crude_string_buffer_clear( &manager->absolute_filepath_string_buffer );
-  saved_absolute_filepath = crude_string_buffer_append_use_f( &manager->absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, saved_relative_filepath );
-
-  crude_node_manager_save_node_to_file( manager, world, manager->relative_filepath_to_node[ node_index ].value, saved_absolute_filepath );
+  return crude_node_manager_load_node_from_json_( manager, node_json->json, world, NULL );
 }
 
 void
@@ -206,35 +134,6 @@ crude_node_manager_save_node_to_file
   node_str = cJSON_Print( node_json );
   crude_write_file( saved_absolute_filepath, node_str, crude_string_length( node_str ) ); // TODO
   cJSON_Delete( node_json );
-}
-
-crude_entity
-crude_node_manager_load_node_from_file_
-(
-  _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *absolute_filepath,
-  _In_ crude_ecs                                          *world
-)
-{
-  cJSON                                                   *node_json;
-  crude_entity                                             node;
-  size_t                                                   temporary_allocated_marker;
-  
-  
-  temporary_allocated_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
- 
-  node_json = crude_node_manager_parse_json_( manager, absolute_filepath );
-  if ( node_json == NULL )
-  {
-    return CRUDE_COMPOUNT_EMPTY( crude_entity );
-  }
-
-  node = crude_node_manager_load_node_from_json_( manager, node_json, world, NULL );
-
-  cJSON_Delete( node_json );
-  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocated_marker );
-
-  return node;
 }
 
 crude_entity
@@ -269,21 +168,14 @@ crude_node_manager_load_node_from_json_
     
     node_external_component = crude_node_external_empty( );
     node_external_component.type = CRUDE_CAST( crude_node_external_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "type") ) );
-    crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component ) );
-    
+    crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component.node_relative_filepath ) );
+    node = crude_node_manager_create_node( manager, node_external_relative_filepath, world );
+    crude_entity_set_parent( world, node, *parent );
+    crude_entity_set_name( world, node, node_name );
+
     if ( node_external_component.type == CRUDE_NODE_EXTERNAL_TYPE_REFERENCE )
     {
-      node = crude_node_manager_get_node( manager, node_external_relative_filepath, world, true );
-      crude_entity_set_parent( world, node, *parent );
       copy_components = false;
-    }
-    else if ( node_external_component.type == CRUDE_NODE_EXTERNAL_TYPE_COPY)
-    {
-      CRUDE_ASSERT( false );
-    }
-    else
-    {
-      CRUDE_ASSERT( false );
     }
     
     CRUDE_ENTITY_SET_COMPONENT( world, node, crude_node_external, { node_external_component } );
@@ -440,29 +332,4 @@ crude_node_manager_node_to_json_hierarchy_
   }
 
   return node_json;
-}
-
-void
-crude_node_destroy_hierarchy_
-(
-  _In_ crude_ecs                                          *world,
-  _In_ crude_entity                                        node
-)
-{
-  if ( !crude_entity_valid( world, node ) )
-  {
-    return;
-  }
-
-  ecs_iter_t it = crude_ecs_children( world, node );
-  while ( ecs_children_next( &it ) )
-  {
-    for ( size_t i = 0; i < it.count; ++i )
-    {
-      crude_entity child = crude_entity_from_iterator( &it, i );
-      crude_entity_destroy_hierarchy( world, child );
-    }
-  }
-
-  crude_entity_destroy( world, node );
 }
