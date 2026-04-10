@@ -5,6 +5,8 @@
 #include <engine/scene/components_serialization.h>
 #include <engine/physics/physics.h>
 
+#define CRUDE_PLAYER_CONTROLLER_PITCH 0
+
 /**********************************************************
  *
  *                 Component
@@ -22,16 +24,21 @@ typedef struct crude_player_controller
   float32                                                  run_speed;
   float32                                                  rotate_speed;
   
+  /* Other */
+  crude_entity                                             camera_target_node;
+
   /* Joints */
   uint64                                                   head_joint_node;
   uint64                                                   spine_joint_node;
   uint64                                                   right_hand_joint_node;
 
   /* Angles */
-  float32                                                  head_pitch_angle;
   float32                                                  head_yaw_angle;
   float32                                                  spine_yaw_angle;
+#if CRUDE_PLAYER_CONTROLLER_PITCH
+  float32                                                  head_pitch_angle;
   float32                                                  pivot_pitch_angle;
+#endif
   float32                                                  pivot_yaw_angle;
 
   /* Animations */

@@ -45,18 +45,12 @@
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
-									"name":	"camera",
+									"name":	"camera_front_point",
 									"components":	[{
 											"type":	"crude_transform",
-											"translation":	[-2.4000000953674316, 0, -3.5999999046325684],
-											"rotation":	[0, 1, 0, 0],
+											"translation":	[-1.2760000228881836, -1.5499999523162842, 3.6170001029968262],
+											"rotation":	[0.16899999976158142, -0.40599998831748962, 0.097000002861022949, 0.89300000667572021],
 											"scale":	[1, 1, 1]
-										}, {
-											"type":	"crude_camera",
-											"fov_radians":	1.2217305898666382,
-											"near_z":	1,
-											"far_z":	300,
-											"aspect_ratio":	1.7999999523162842
 										}],
 									"children":	[]
 								}, {
@@ -88,8 +82,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.87760555744171143, 7.2643604278564453, 1.78303599357605],
-									"rotation":	[0.79635560512542725, 0.57362198829650879, 0.18721425533294678, 0.041548259556293488],
+									"translation":	[-0.44389259815216064, 7.2645721435546875, 1.8827058076858521],
+									"rotation":	[0.80878418684005737, 0.55852246284484863, 0.18293829262256622, 0.021329419687390327],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -106,6 +100,30 @@
 												"relative_filepath":	"game\\rb9\\nodes\\weapon.crude_node",
 												"type":	0
 											}
+										}, {
+											"name":	"camera_grab_point",
+											"components":	[{
+													"type":	"crude_transform",
+													"translation":	[8.66600036621094, 1.1000000238418579, 0],
+													"rotation":	[0, 0.684000015258789, 0, 0.72899997234344482],
+													"scale":	[1, 1, 1]
+												}],
+											"children":	[]
+										}, {
+											"name":	"weapon_spawnpoint_child",
+											"components":	[{
+													"type":	"crude_transform",
+													"translation":	[8.6655950546264648, 1.1000000238418579, 0],
+													"rotation":	[0, 0.68441486358642578, 0, 0.72909277677536],
+													"scale":	[0.99999690055847168, 1, 0.99999690055847168]
+												}, {
+													"type":	"crude_camera",
+													"fov_radians":	1,
+													"near_z":	1,
+													"far_z":	300,
+													"aspect_ratio":	1.7999999523162842
+												}],
+											"children":	[]
 										}]
 								}]
 						}, {
@@ -147,5 +165,20 @@
 							"children":	[]
 						}]
 				}]
+		}, {
+			"name":	"camera",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-2.4000000953674316, 0, -3.5999999046325684],
+					"rotation":	[0, 1, 0, 0],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_camera",
+					"fov_radians":	1.2217305898666382,
+					"near_z":	1,
+					"far_z":	300,
+					"aspect_ratio":	1.7999999523162842
+				}],
+			"children":	[]
 		}]
 }

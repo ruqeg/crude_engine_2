@@ -732,7 +732,9 @@ crude_scene_renderer_register_nodes_instances_
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, child_gltf->model_renderer_resources_instance );
     }
   }
-
+  
+  if ( scene_renderer->options.debug.hide_collision)
+  {
   if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )
   {
     crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
@@ -748,6 +750,7 @@ crude_scene_renderer_register_nodes_instances_
   {
     XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
     CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
+  }
   }
   
   if ( scene_renderer->options.debug.hide_collision)

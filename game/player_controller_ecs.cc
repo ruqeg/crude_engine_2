@@ -98,6 +98,7 @@ crude_player_controller_system_import
   
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_player_controller_game_update_system_, crude_ecs_on_game_update, ctx, {
     { .id = ecs_id( crude_player_controller ) },
+    { .id = ecs_id( crude_transform ) },
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_player_controller_create_observer, EcsOnSet, ctx, { 
@@ -207,10 +208,12 @@ crude_player_controller_game_update_system_
   crude_game                                              *game;
   crude_player_controller_system_context                  *ctx;
   crude_player_controller                                 *player_controller_per_entity;
+  crude_transform                                         *player_transform_per_entity;
 
   game = crude_game_instance( );
   ctx = CRUDE_CAST( crude_player_controller_system_context*, it->ctx );
   player_controller_per_entity = ecs_field( it, crude_player_controller, 0 );
+  player_transform_per_entity = ecs_field( it, crude_transform, 1 );
   
   if ( !crude_platform_cursor_hidden( &game->engine->platform ) )
   {
@@ -221,12 +224,16 @@ crude_player_controller_game_update_system_
   {
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
+    crude_transform                                       *player_transform;
     crude_gltf                                            *player_model;
     crude_gltf                                            *weapon_model;
     crude_camera                                          *player_camera;
     crude_weapon                                          *weapon;
+    crude_transform                                       *player_camera_transform;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
+    crude_entity                                           camera_grab_point_entity;
+    crude_entity                                           camera_front_point_entity;
     crude_entity                                           player_orientation_entity;
     crude_entity                                           player_model_entity;
     crude_entity                                           pivot_pitch_entity;
@@ -239,15 +246,18 @@ crude_player_controller_game_update_system_
     entity = crude_entity_from_iterator( it, i );
 
     player_controller = &player_controller_per_entity[ i ];
+    player_transform = &player_transform_per_entity[ i ];
     
     player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
     player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
     pivot_yaw_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "pivot_yaw" );
     pivot_pitch_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_yaw_entity, "pivot_pitch" );
-    player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera_front" );
+    player_camera_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "camera" );
     weapon_grab_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon_grab" );
     weapon_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_grab_entity, "weapon_spawnpoint" );
+    camera_grab_point_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_spawnpoint_entity, "camera_grab_point" );
+    camera_front_point_entity = crude_ecs_lookup_entity_from_parent( it->world, pivot_pitch_entity, "camera_front_point" );
     weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_spawnpoint_entity, "weapon" );
     weapon_model_entity = crude_ecs_lookup_entity_from_parent( it->world, weapon_entity, "model" );
 
@@ -255,14 +265,18 @@ crude_player_controller_game_update_system_
     weapon_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, weapon_model_entity, crude_gltf );
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     player_camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_camera );
+    player_camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_transform );
+
+    player_controller->camera_target_node = camera_front_point_entity;
 
     if ( player_controller->input_enabled )
     {
       /* Handle actions */
       if ( input->mouse.right.current )
       {
-        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 40.f ), 2 * it->delta_time );
+        player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 120.f ), 2 * it->delta_time ); 
         player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 5 * it->delta_time );
+        player_controller->camera_target_node = camera_grab_point_entity;
       }
       else
       {
@@ -293,8 +307,10 @@ crude_player_controller_game_update_system_
         pivot_pitch_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_pitch_entity, crude_transform );
         pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
         player_orientation_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_orientation_entity, crude_transform );
-
+        
+#if CRUDE_PLAYER_CONTROLLER_PITCH
         player_controller->pivot_pitch_angle += CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.y, it->delta_time * 8.f, it->delta_time * -8.f );
+#endif
         player_controller->pivot_yaw_angle -= CRUDE_CLAMP( player_controller->rotate_speed * input->mouse.rel.x, it->delta_time * 8.f, it->delta_time * -8.f );
 
         if ( player_controller->pivot_yaw_angle < 0 )
@@ -305,7 +321,8 @@ crude_player_controller_game_update_system_
         {
           player_controller->pivot_yaw_angle -= XM_2PI;
         }
-
+        
+#if CRUDE_PLAYER_CONTROLLER_PITCH
         if ( player_controller->pivot_pitch_angle < 0 )
         {
           player_controller->pivot_pitch_angle += XM_2PI;
@@ -319,32 +336,37 @@ crude_player_controller_game_update_system_
         {
           player_controller->pivot_pitch_angle = player_controller->pivot_pitch_angle > XM_PI ? ( XM_2PI - player_controller->pitch_limit ) : player_controller->pitch_limit;
         }
+#endif
 
         yaw_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->pivot_yaw_angle, 0.f );
         pivot_yaw_rotation = XMLoadFloat4( &pivot_yaw_transform->rotation );
         pivot_yaw_rotation = XMQuaternionSlerp( pivot_yaw_rotation, yaw_rotation, 30.0 * it->delta_time );
         XMStoreFloat4( &pivot_yaw_transform->rotation, pivot_yaw_rotation );
         
-        pitch_rotation = XMQuaternionRotationRollPitchYaw( player_controller->pivot_pitch_angle, 0.f, 0.f );
-        pivot_pitch_rotation = XMLoadFloat4( &pivot_pitch_transform->rotation );
-        pivot_pitch_rotation = XMQuaternionSlerp( pivot_pitch_rotation, pitch_rotation, 30.0 * it->delta_time );
-        XMStoreFloat4( &pivot_pitch_transform->rotation, pivot_pitch_rotation );
-        
+#if CRUDE_PLAYER_CONTROLLER_PITCH
+        //pitch_rotation = XMQuaternionRotationRollPitchYaw( player_controller->pivot_pitch_angle, 0.f, 0.f );
+        //pivot_pitch_rotation = XMLoadFloat4( &pivot_pitch_transform->rotation );
+        //pivot_pitch_rotation = XMQuaternionSlerp( pivot_pitch_rotation, pitch_rotation, 30.0 * it->delta_time );
+        //XMStoreFloat4( &pivot_pitch_transform->rotation, pivot_pitch_rotation );
+#endif
+
         player_orientation_rotation = XMLoadFloat4( &player_orientation_transform->rotation );
         player_orientation_rotation = XMQuaternionSlerp( player_orientation_rotation, yaw_rotation, 10.0 * it->delta_time );
         XMStoreFloat4( &player_orientation_transform->rotation, player_orientation_rotation );
-
+        
+#if CRUDE_PLAYER_CONTROLLER_PITCH
         player_controller->head_pitch_angle = player_controller->pivot_pitch_angle;
+#endif
         player_controller->head_yaw_angle = crude_lerp_angle( player_controller->head_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 40.0 * it->delta_time, 1.f ) );
         player_controller->spine_yaw_angle = crude_lerp_angle( player_controller->spine_yaw_angle, player_controller->pivot_yaw_angle, CRUDE_MIN( 25.0 * it->delta_time, 1.f ) );
       }
 
       /* Handle movement */
       {
-        crude_transform                                   *player_camera_transform;
+        crude_transform                                   *pivot_yaw_transform;
         crude_physics_character_container                 *physcs_character_container;
-        XMMATRIX                                           player_camera_to_world;
-        XMVECTOR                                           player_camera_basis_right, player_camera_basis_forward, player_camera_basis_up;
+        XMMATRIX                                           pivot_yaw_to_world;
+        XMVECTOR                                           pivot_yaw_basis_right, pivot_yaw_basis_forward, pivot_yaw_basis_up;
         XMVECTOR                                           player_velocity, new_player_velocity;
         XMFLOAT3                                           move_direction;
         XMFLOAT2                                           move, move_speed;
@@ -353,14 +375,14 @@ crude_player_controller_game_update_system_
         move_direction.y = input->keys[ SDL_SCANCODE_E ].current - input->keys[ SDL_SCANCODE_Q ].current;
         move_direction.z = input->keys[ SDL_SCANCODE_S ].current - input->keys[ SDL_SCANCODE_W ].current;
         
-        player_camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_camera_entity, crude_transform );
-        player_camera_to_world = crude_transform_node_to_world( it->world, player_camera_entity, player_camera_transform );
+        pivot_yaw_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, pivot_yaw_entity, crude_transform );
+        pivot_yaw_to_world = crude_transform_node_to_world( it->world, pivot_yaw_entity, pivot_yaw_transform );
 
         physcs_character_container = crude_physics_access_character( ctx->physics_manager, *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_character_entity, crude_physics_character_handle ) );
       
-        player_camera_basis_right = XMVector3Normalize( player_camera_to_world.r[ 0 ] );
-        player_camera_basis_up = XMVector3Normalize( player_camera_to_world.r[ 1 ] );
-        player_camera_basis_forward = XMVector3Normalize( player_camera_to_world.r[ 2 ] );
+        pivot_yaw_basis_right = XMVector3Normalize( pivot_yaw_to_world.r[ 0 ] );
+        pivot_yaw_basis_up = XMVector3Normalize( pivot_yaw_to_world.r[ 1 ] );
+        pivot_yaw_basis_forward = XMVector3Normalize( pivot_yaw_to_world.r[ 2 ] );
       
         move_speed = player_controller->walk_speed;
 
@@ -401,8 +423,8 @@ crude_player_controller_game_update_system_
           XMVECTOR                                         player_velocity_forward, player_velocity_right;
           float32                                          length;
 
-          player_velocity_right = XMVectorScale( player_camera_basis_right, move_direction.x );
-          player_velocity_forward = XMVectorScale( player_camera_basis_forward, move_direction.z );
+          player_velocity_right = XMVectorScale( pivot_yaw_basis_right, move_direction.x );
+          player_velocity_forward = XMVectorScale( pivot_yaw_basis_forward, move_direction.z );
           
           length = XMVectorGetX( XMVector3Length( XMVectorAdd( player_velocity_forward, player_velocity_right ) ) );
 
@@ -425,10 +447,20 @@ crude_player_controller_game_update_system_
         physcs_character_container->jph_character_class->SetLinearVelocity( crude_vector_to_jph_vec3( new_player_velocity ) );
       }
     }
-    
+
+    /* Handle camera */
     if ( player_controller->camera_enabled )
     {
       game->engine->camera_node = player_camera_entity;
+
+      XMVECTOR t, s, r;
+      XMMatrixDecompose( &s, &r, &t, 
+        XMMatrixMultiply(
+          crude_transform_node_to_world( it->world, player_controller->camera_target_node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, player_controller->camera_target_node, crude_transform ) ),
+          XMMatrixInverse( NULL, crude_transform_node_to_world( it->world, entity, player_transform ) ) ) );
+      XMStoreFloat3( &player_camera_transform->translation, t );
+      XMStoreFloat3( &player_camera_transform->scale, s );
+      XMStoreFloat4( &player_camera_transform->rotation, r );
     }
 
     {
@@ -466,7 +498,12 @@ crude_player_controller_game_update_system_
         head_rotation = XMQuaternionMultiply( head_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->head_joint_node ].rotation, head_rotation );
         
+        
+#if CRUDE_PLAYER_CONTROLLER_PITCH
         spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, -player_controller->head_pitch_angle + 0.5 * XM_PIDIV2 * player_controller->shot_blend );
+#else
+        spine_rotation = XMQuaternionRotationRollPitchYaw( 0.f, player_controller->spine_yaw_angle - 0.43 * XM_PIDIV2 * player_controller->aim_blend, 0.5 * XM_PIDIV2 * player_controller->shot_blend );
+#endif
         spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
       }
@@ -539,8 +576,8 @@ crude_player_controller_engine_update_system_
 
     XMVECTOR t, s, r;
     XMMatrixDecompose( &s, &r, &t, right_hand_joint_node_to_model );
-    XMStoreFloat3( &weapon_grab_transform->translation, XMVectorLerp( XMLoadFloat3( &weapon_grab_transform->translation ), XMVectorScale( t, 25 ), 70 * it->delta_time ) );
-    XMStoreFloat4( &weapon_grab_transform->rotation, XMVectorLerp( XMLoadFloat4( &weapon_grab_transform->rotation ), r, 70 * it->delta_time ) );
+    XMStoreFloat3( &weapon_grab_transform->translation, XMVectorLerp( XMLoadFloat3( &weapon_grab_transform->translation ), XMVectorScale( t, 25 ), 35 * it->delta_time ) );
+    XMStoreFloat4( &weapon_grab_transform->rotation, XMVectorLerp( XMLoadFloat4( &weapon_grab_transform->rotation ), r, 35 * it->delta_time ) );
   }
   CRUDE_PROFILER_ZONE_END;
 }
