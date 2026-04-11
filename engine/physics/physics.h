@@ -76,6 +76,10 @@ public:
 class _crude_jph_contact_listener_class : public JPH::ContactListener
 {
 public:
+  _crude_jph_contact_listener_class
+  (
+    _In_ crude_physics                                    *physics
+  );
   virtual JPH::ValidateResult
   OnContactValidate
   (
@@ -108,6 +112,8 @@ public:
   (
     _In_ const JPH::SubShapeIDPair                        &subshapepair
   ) override;
+private:
+  crude_physics                                           *physics;
 };
 
 class _crude_jph_body_activation_listener_class : public JPH::BodyActivationListener

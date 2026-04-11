@@ -176,6 +176,15 @@ _crude_jph_object_vs_broad_phase_layer_filter::ShouldCollide
   return false;
 }
 
+_crude_jph_contact_listener_class::_crude_jph_contact_listener_class
+(
+  _In_ crude_physics                                      *physics
+)
+{
+  this->physics = physics;
+}
+
+
 JPH::ValidateResult
 _crude_jph_contact_listener_class::OnContactValidate
 (
@@ -199,7 +208,14 @@ _crude_jph_contact_listener_class::OnContactAdded
   _In_ JPH::ContactSettings                               &settings
 )
 {
-  //cout << "A contact was added" << endl;
+  crude_physics_static_body_handle                         static_body1_handle;
+  crude_physics_static_body_handle                         static_body2_handle;
+
+  static_body1_handle.index = body1.GetUserData( );
+  static_body2_handle.index = body2.GetUserData( );
+
+  crude_physics_access_static_body( this->physics, static_body1_handle )->contact_added_callback( );
+  crude_physics_access_static_body( this->physics, static_body2_handle )->contact_added_callback( );
 }
 
 void
@@ -284,7 +300,7 @@ crude_physics_initialize
   physics->jph_object_vs_object_layer_filter_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_object_layer_pair_filter_class );
   
   physics->jph_body_activation_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_body_activation_listener_class );
-  physics->jph_contact_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_contact_listener_class );
+  physics->jph_contact_listener_class = CRUDE_ALLOCATE_AND_CONSTRUCT( physics->physics_allocator_container, _crude_jph_contact_listener_class, physics );
 
   physics->jph_physics_system_class->Init(
     CRUDE_PHYSICS_JOLT_MAX_BODIES, CRUDE_PHYSICS_JOLT_NUM_BODIES_MUTEXES, CRUDE_PHYSICS_JOLT_MAX_BODIES_PAIRS, CRUDE_PHYSICS_JOLT_MAX_CONTACT_CONSTRAINTS,
@@ -485,9 +501,12 @@ crude_physics_create_static_body
   }
 
   jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, creation->layers );
-  jph_settings_class.mUserData = creation->entity;
-
+  jph_settings_class.mUserData = handle.index;
+  
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
+  
+  static_body_container->contact_added_callback = creation->contact_added_callback;
+  static_body_container->entity = static_body_container->entity;
 
   return handle;
 }
@@ -565,8 +584,13 @@ crude_physics_ray_cast
   *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
   if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, JPH::SpecifiedBroadPhaseLayerFilter( g_crude_jph_broad_phase_layer_non_moving_class ), _crude_ray_cast_layer_filter_class( mask ) ) )
   {
+    crude_physics_static_body_handle                       static_body_handle;
+
     ray_cast_result->layer = physics->jph_physics_system_class->GetBodyInterface().GetObjectLayer( jph_ray_cast_result.mBodyID );
-    ray_cast_result->entity = CRUDE_CAST( crude_entity, physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID ) );
+    
+    static_body_handle.index = physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID );
+
+    ray_cast_result->entity = crude_physics_access_static_body( physics, static_body_handle )->entity;
     return true;
   }
 

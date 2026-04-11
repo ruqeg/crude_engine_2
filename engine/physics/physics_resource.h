@@ -67,6 +67,10 @@ typedef enum crude_physics_static_body_shape_type
   CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_COUNT
 };
 
+typedef void (*crude_physics_static_body_contact_added_callback)
+(
+);
+
 typedef struct crude_physics_static_body_creation
 {
   crude_physics_static_body_shape_type                     type;
@@ -83,11 +87,14 @@ typedef struct crude_physics_static_body_creation
   };
   uint32                                                   layers;
   crude_entity                                             entity;
+  crude_physics_static_body_contact_added_callback         contact_added_callback;
 } crude_physics_static_body_creation;
 
 typedef struct crude_physics_static_body_container
 {
   JPH::BodyID                                              jph_body_class;
+  crude_entity                                             entity;
+  crude_physics_static_body_contact_added_callback         contact_added_callback;
 } crude_physics_static_body_container;
 
 typedef struct crude_physics_static_body
