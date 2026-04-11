@@ -8,9 +8,7 @@
 		}, {
 			"type":	"crude_player_controller",
 			"rotate_speed":	0.00999999977648258,
-			"walk_speed":	12,
-			"pitch_limit":	0.43633231520652771,
-			"run_speed":	24
+			"walk_speed":	12
 		}, {
 			"type":	"crude_player"
 		}],
@@ -82,8 +80,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-1.5195804834365845, 8.95424556732178, 0.619448721408844],
-									"rotation":	[0.42859205603599548, 0.5175819993019104, 0.38476395606994629, 0.632688343524933],
+									"translation":	[-0.49171063303947449, 7.2613654136657715, 1.9411343336105347],
+									"rotation":	[0.801580786705017, 0.562433421611786, 0.19943206012248993, 0.036882758140563965],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -164,6 +162,22 @@
 								}],
 							"children":	[]
 						}]
+				}, {
+					"name":	"player_collision",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 5.72230100631714, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_physics_static_body",
+							"shape_type":	0,
+							"box":	{
+								"extent":	[1.3999999761581421, 5.5, 1.6000000238418579]
+							},
+							"layers":	8
+						}],
+					"children":	[]
 				}]
 		}, {
 			"name":	"camera",

@@ -86,10 +86,10 @@ crude_weapon_fire
 
   weapon_to_world = crude_transform_node_to_world( game->engine->world, weapon_entity, NULL );
   
-  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 1, 0, 0, 0 ), weapon_to_world ), 10000000 );
+  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 1, 0, 0, 0 ), weapon_to_world ), 10000 );
   origin = weapon_to_world.r[ 3 ];
 
-  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_custom0 | g_crude_jph_layer_non_moving, &ray_cast_result ) )
+  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_layer_non_moving | g_crude_jph_layer_custom0, &ray_cast_result ) )
   {
     crude_health                                          *health;
     crude_entity                                           entity;

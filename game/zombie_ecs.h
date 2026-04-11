@@ -22,6 +22,8 @@ typedef struct crude_zombie
   uint32                                                   dead_animation_index;
   uint32                                                   walk_animation_index;
 
+  XMFLOAT3                                                 target_point;
+
   /* Common */
   bool                                                     dying;
 } crude_zombie;

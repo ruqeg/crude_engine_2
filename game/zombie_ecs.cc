@@ -192,6 +192,8 @@ crude_zombie_create_observer_
         &game->engine->model_renderer_resources_manager,
         &zombie_model->model_renderer_resources_instance,
         "mixamorig:Spine" );
+
+      zombie->target_point.y = 0.f;
     }
   }
   CRUDE_PROFILER_ZONE_END;
@@ -218,6 +220,8 @@ crude_zombie_game_update_system_
   {
     crude_input const                                     *input;
     crude_zombie                                          *zombie;
+    crude_transform                                       *pivot_transform;
+    crude_transform                                       *zombie_transform;
     crude_gltf                                            *zombie_model;
     crude_entity                                           zombie_pivot_entity;
     crude_entity                                           zombie_model_entity;
@@ -231,7 +235,9 @@ crude_zombie_game_update_system_
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
 
     zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
-    
+    zombie_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_entity, crude_transform );
+    pivot_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_pivot_entity, crude_transform );
+
     if ( zombie->dying )
     {
       if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].disabled )
@@ -245,9 +251,75 @@ crude_zombie_game_update_system_
     }
     else
     {
+      if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && zombie->target_point.y != 0 )
+      {
+        zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled = false;
+      }
+      else
+      {
+        zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled = true;
+      }
+      
+      if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && ( zombie->target_point.y != 0 ) )
+      {
+        XMVECTOR                                           target_position;
+        XMVECTOR                                           pivot_rotation;
+        XMVECTOR                                           direction_to_taget;
+        XMVECTOR                                           zombie_translation, zombie_new_translation;
+        XMMATRIX                                           zombie_pivot_to_world;
+        XMVECTOR                                           target_rotation;
+        
+        zombie_pivot_to_world = crude_transform_node_to_world( it->world, zombie_pivot_entity, NULL );
+        target_position = XMLoadFloat3( &zombie->target_point );
+
+        target_rotation = XMQuaternionRotationMatrix( XMMatrixLookAtRH( target_position, zombie_pivot_to_world.r[ 3 ], XMVectorSet( 0, 1, 0, 0 ) ) );
+        
+        pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
+        pivot_rotation = XMQuaternionSlerp( pivot_rotation, XMQuaternionInverse( target_rotation ), 15 * it->delta_time );
+        XMStoreFloat4( &pivot_transform->rotation, pivot_rotation);
+        
+        direction_to_taget = XMVector3Normalize( XMVectorSubtract( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ) ) );
+
+        zombie_translation = XMLoadFloat3( &zombie_transform->translation );
+        zombie_new_translation = XMVectorAdd( zombie_translation, XMVectorScale( direction_to_taget, 5 * it->delta_time ) );
+        zombie_new_translation = XMVectorSetY( zombie_new_translation, XMVectorGetY( zombie_translation ) );
+        XMStoreFloat3( &zombie_transform->translation, zombie_new_translation );
+      }
+
+      if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && crude_entity_valid( it->world, game->player_node ) )
+      {
+        crude_physics_ray_cast_result                        ray_cast_result;
+        XMMATRIX                                             player_to_world;
+        XMMATRIX                                             ray_to_player_to_world;
+        XMVECTOR                                             ray_direction, ray_origin;
+
+        ray_to_player_to_world = crude_transform_node_to_world( it->world, crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "ray_player_start" ), NULL );
+        
+        player_to_world = crude_transform_node_to_world( it->world, crude_ecs_lookup_entity_from_parent( it->world, game->player_node, "character.player_collision" ), NULL );
+        
+        ray_direction = XMVectorScale( XMVectorSubtract( player_to_world.r[ 3 ], ray_to_player_to_world.r[ 3 ] ), 1.5 );
+        ray_origin = ray_to_player_to_world.r[ 3 ];
+
+        float32 angle = XMVectorGetX( XMVector3Dot( XMVector3Normalize( XMVectorSetY( ray_direction, 0 ) ), XMVector3Normalize( XMVectorSetY( XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), ray_to_player_to_world ), 0 ) ) ) );
+        if ( acos( angle ) < XM_PIDIV2 )
+        {
+          if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, ray_origin, ray_direction, g_crude_jph_layer_non_moving | g_crude_jph_layer_custom1, &ray_cast_result ) )
+          {
+            if ( ray_cast_result.layer & g_crude_jph_layer_custom1 )
+            {
+              XMStoreFloat3( &zombie->target_point, player_to_world.r[ 3 ] );
+            }
+          }
+        }
+      }
+
       if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled )
       {
         crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->hit_animation_index );
+      }
+      else if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled )
+      {
+        crude_gfx_model_renderer_resources_instance_blend_one_animation( &zombie_model->model_renderer_resources_instance, zombie->walk_animation_index );
       }
       else
       {
@@ -284,55 +356,6 @@ crude_zombie_engine_update_system_
     zombie_entity = crude_entity_from_iterator( it, i );
 
     zombie = &zombie_per_entity[ i ];
-    
-    hitbox_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "health" );
-    if ( crude_entity_valid( it->world, hitbox_entity ) )
-    {
-      crude_transform                                     *hitbox_body_transform;
-      crude_gltf                                          *zombie_model;
-      crude_entity                                         hitbox_body_entity;
-      crude_entity                                         zombie_pivot_entity;
-      crude_entity                                         zombie_model_entity;
-
-      hitbox_body_entity = crude_ecs_lookup_entity_from_parent( it->world, hitbox_entity, "hitbox_pivot_body.hitbox_body" );
-      zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
-      zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
-
-      zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
- 
-      XMMATRIX zombie_spine_joint_node_to_model = crude_gfx_node_to_model(
-        crude_gfx_model_renderer_resources_manager_access_model_renderer_resources(
-          &game->engine->model_renderer_resources_manager,
-          zombie_model->model_renderer_resources_instance.model_renderer_resources_handle )->nodes,
-        zombie_model->model_renderer_resources_instance.nodes_transforms,
-        zombie->spine_joint_node );
-      
-      hitbox_body_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, hitbox_body_entity, crude_transform );
-      
-      XMStoreFloat3( &hitbox_body_transform->translation, XMVectorScale( XMVector4Transform( XMVectorSet( 0, 0, 0, 1 ), zombie_spine_joint_node_to_model ), 6.f ) );
-    }
-
-    if ( crude_entity_valid( it->world, game->player_node ) )
-    {
-      crude_physics_ray_cast_result                        ray_cast_result;
-      XMMATRIX                                             player_to_world;
-      XMMATRIX                                             zombie_to_world;
-      XMVECTOR                                             ray_direction, ray_origin;
-
-      zombie_to_world = crude_transform_node_to_world( it->world, it->entities[ i ], NULL );
-      
-      player_to_world = crude_transform_node_to_world( it->world, game->player_node, NULL );
-      
-      ray_direction = XMVectorScale( XMVectorSubtract( player_to_world.r[ 3 ], zombie_to_world.r[ 3 ] ), 1.5 );
-      ray_origin = zombie_to_world.r[ 3 ];
-
-      if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, ray_origin, ray_direction, g_crude_jph_layer_custom1 | g_crude_jph_layer_non_moving, &ray_cast_result ) )
-      {
-        if (ray_cast_result.layer & g_crude_jph_layer_custom1)
-        {
-        }
-      }
-    }
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -375,6 +398,8 @@ crude_zombie_health_damage_callback_
 
   zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled = false;
   zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].current_time = 0;
+
+  zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled = false;
 }
 
 void

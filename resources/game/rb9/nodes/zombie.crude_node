@@ -17,6 +17,15 @@
 					"scale":	[1, 1, 1]
 				}],
 			"children":	[{
+					"name":	"ray_player_start",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 8.6963596343994141, 3],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}],
+					"children":	[]
+				}, {
 					"name":	"model",
 					"components":	[{
 							"type":	"crude_transform",
@@ -39,16 +48,16 @@
 									"index":	10,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	-1,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	-1,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	-1,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	1,
+									"index":	-1,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}]
 						}],
@@ -72,14 +81,14 @@
 							"name":	"hitbox_body",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.11494934558868408, 5.4180974960327148, -0.05163438618183136],
+									"translation":	[0.025725975632667542, 6.1124124526977539, -0.3434072732925415],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {
 									"type":	"crude_physics_static_body",
 									"shape_type":	0,
 									"box":	{
-										"extent":	[2, 5.5999999046325684, 1.2000000476837158]
+										"extent":	[1.5, 5.5999999046325684, 1.5]
 									},
 									"layers":	4
 								}],

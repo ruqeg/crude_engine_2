@@ -94,30 +94,21 @@ _crude_jph_object_layer_pair_filter_class::ShouldCollide
   _In_ JPH::ObjectLayer                                    object2
 ) const
 {
-  switch ( object1 )
+  if ( object1 & g_crude_jph_layer_non_moving )
   {
-  case g_crude_jph_layer_non_moving:
+    return object2 & g_crude_jph_layer_moving;
+  }
+  if ( object1 & g_crude_jph_layer_moving )
   {
-    return object2 == g_crude_jph_layer_moving;
+    return ( object2 & g_crude_jph_layer_non_moving ) || ( object2 & g_crude_jph_layer_moving );
   }
-  case g_crude_jph_layer_moving:
-  {
-    return true;
-  }
-  default:
-  {
-    JPH_ASSERT(false);
-    return false;
-  }
-  }
+  return false;
 }
 
 _crude_jph_bp_layer_interface_class::_crude_jph_bp_layer_interface_class
 (
 )
 {
-  this->object_to_broad_phase[ g_crude_jph_layer_non_moving ] = g_crude_jph_broad_phase_layer_non_moving_class;
-  this->object_to_broad_phase[ g_crude_jph_layer_moving ] = g_crude_jph_broad_phase_layer_moving_class;
 }
 
 JPH::uint
@@ -134,8 +125,11 @@ _crude_jph_bp_layer_interface_class::GetBroadPhaseLayer
   _In_ JPH::ObjectLayer                                    layer
 ) const
 {
-  JPH_ASSERT( layer < g_crude_jph_num_layers );
-  return this->object_to_broad_phase[ layer ];
+  if ( layer & g_crude_jph_layer_moving )
+  {
+    return g_crude_jph_broad_phase_layer_moving_class;
+  }
+  return g_crude_jph_broad_phase_layer_non_moving_class;
 }
 
 #if defined( JPH_EXTERNAL_PROFILE ) || defined( JPH_PROFILE_ENABLED )
@@ -171,22 +165,15 @@ _crude_jph_object_vs_broad_phase_layer_filter::ShouldCollide
   _In_ JPH::BroadPhaseLayer                              layer2
 ) const
 {
-  switch ( layer1 )
-  {
-  case g_crude_jph_layer_non_moving:
+  if ( layer1 & g_crude_jph_layer_non_moving )
   {
     return layer2 == g_crude_jph_broad_phase_layer_moving_class;
   }
-  case g_crude_jph_layer_moving:
+  if ( layer1 & g_crude_jph_layer_moving )
   {
     return true;
   }
-  default:
-  {
-    JPH_ASSERT( false );
-    return false;
-  }
-  }
+  return false;
 }
 
 JPH::ValidateResult
@@ -497,7 +484,7 @@ crude_physics_create_static_body
     jph_shape_class = crude_physics_shapes_manager_access_mesh_shape( physics->physics_shapes_manager, creation->mesh.handle )->jph_shape_class;
   }
 
-  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, g_crude_jph_layer_non_moving | creation->layers );
+  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, creation->layers );
   jph_settings_class.mUserData = creation->entity;
 
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
@@ -542,10 +529,32 @@ crude_physics_ray_cast
   _In_ ecs_world_t                                        *world,
   _In_ XMVECTOR                                            origin,
   _In_ XMVECTOR                                            direction,
-  _In_ uint32                                              layers,
+  _In_ uint32                                              mask,
   _Out_ crude_physics_ray_cast_result                     *ray_cast_result
 )
 {
+  class _crude_ray_cast_layer_filter_class : public JPH::ObjectLayerFilter
+  {
+  public:
+    _crude_ray_cast_layer_filter_class
+    (
+      _In_ uint32                                          mask
+    )
+    {
+      this->mask = mask;
+    }
+    virtual bool
+    ShouldCollide
+    ( 
+      _In_ JPH::ObjectLayer                                layer
+    ) const override
+    {
+      return mask & layer;
+    }
+  private:
+    uint32                                                 mask;
+  };
+
   JPH::RRayCast                                           jph_ray_cast;
   JPH::RayCastResult                                      jph_ray_cast_result;
   XMMATRIX                                                view_to_world;
@@ -554,7 +563,7 @@ crude_physics_ray_cast
   jph_ray_cast.mOrigin = crude_vector_to_jph_vec3( origin );
   
   *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
-  if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, JPH::SpecifiedBroadPhaseLayerFilter( g_crude_jph_broad_phase_layer_non_moving_class ), JPH::SpecifiedObjectLayerFilter( layers ) ) )
+  if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, JPH::SpecifiedBroadPhaseLayerFilter( g_crude_jph_broad_phase_layer_non_moving_class ), _crude_ray_cast_layer_filter_class( mask ) ) )
   {
     ray_cast_result->layer = physics->jph_physics_system_class->GetBodyInterface().GetObjectLayer( jph_ray_cast_result.mBodyID );
     ray_cast_result->entity = CRUDE_CAST( crude_entity, physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID ) );

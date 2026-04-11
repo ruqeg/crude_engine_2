@@ -12,7 +12,7 @@
 			"name":	"player_spawnpoint",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[55.861000061035156, 18.363622665405273, -26.193332672119141],
+					"translation":	[60, 16, -26],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}],
@@ -27,8 +27,8 @@
 			"name":	"zombie_spawnpoint",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[56.410205841064453, 16.46514892578125, -9.46933174133301],
-					"rotation":	[0, 0.976678431034088, 0, -0.21470740437507629],
+					"translation":	[60, 16, 12],
+					"rotation":	[0, 0, 0, 1],
 					"scale":	[0.99999910593032837, 1, 0.99999910593032837]
 				}],
 			"children":	[{
@@ -36,7 +36,15 @@
 					"external":	{
 						"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
 						"type":	1
-					}
+					},
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_zombie"
+						}]
 				}]
 		}, {
 			"name":	"blackout_model",
@@ -88,7 +96,23 @@
 					"box":	{
 						"extent":	[151.5, 1, 138.5]
 					},
-					"layers":	0
+					"layers":	1
+				}],
+			"children":	[]
+		}, {
+			"name":	"vertical_static_body",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[58.961101531982422, 27.156465530395508, -6.1512384414672852],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_static_body",
+					"shape_type":	0,
+					"box":	{
+						"extent":	[10.800000190734863, 20, 1]
+					},
+					"layers":	1
 				}],
 			"children":	[]
 		}]

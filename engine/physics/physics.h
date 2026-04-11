@@ -11,14 +11,14 @@
 #define CRUDE_JOLT_OVERRIDEN_NEW                                     new
 #define CRUDE_JOLT_OVERRIDEN_FREE                                    delete
 
-const JPH::ObjectLayer g_crude_jph_layer_non_moving        = 0;
-const JPH::ObjectLayer g_crude_jph_layer_moving            = 1;
-const JPH::ObjectLayer g_crude_jph_layer_custom0           = 2;
-const JPH::ObjectLayer g_crude_jph_layer_custom1           = 3;
-const JPH::ObjectLayer g_crude_jph_layer_custom2           = 4;
-const JPH::ObjectLayer g_crude_jph_layer_custom3           = 5;
-const JPH::ObjectLayer g_crude_jph_layer_custom4           = 6;
-const JPH::ObjectLayer g_crude_jph_num_layers              = 7;
+const JPH::ObjectLayer g_crude_jph_layer_non_moving        = 1 << 0;
+const JPH::ObjectLayer g_crude_jph_layer_moving            = 1 << 1;
+const JPH::ObjectLayer g_crude_jph_layer_custom0           = 1 << 2;
+const JPH::ObjectLayer g_crude_jph_layer_custom1           = 1 << 3;
+const JPH::ObjectLayer g_crude_jph_layer_custom2           = 1 << 4;
+const JPH::ObjectLayer g_crude_jph_layer_custom3           = 1 << 5;
+const JPH::ObjectLayer g_crude_jph_layer_custom4           = 1 << 6;
+const JPH::ObjectLayer g_crude_jph_num_layers              = 1 << 7;
 
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_non_moving_class      { 0 };
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_moving_class          { 1 };
@@ -60,9 +60,6 @@ public:
     _In_ JPH::BroadPhaseLayer                              layer
   ) const override;
 #endif /* JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED */
-
-private:
-  JPH::BroadPhaseLayer                                     object_to_broad_phase[ g_crude_jph_num_layers ];
 };
 
 class _crude_jph_object_vs_broad_phase_layer_filter : public JPH::ObjectVsBroadPhaseLayerFilter
@@ -250,6 +247,6 @@ crude_physics_ray_cast
   _In_ ecs_world_t                                        *world,
   _In_ XMVECTOR                                            origin,
   _In_ XMVECTOR                                            direction,
-  _In_ uint32                                              layers,
+  _In_ uint32                                              mask,
   _Out_ crude_physics_ray_cast_result                     *ray_cast_result
 );

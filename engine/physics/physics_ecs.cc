@@ -211,15 +211,19 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
   }
 
   CRUDE_IMGUI_OPTION( "Layer", {
-    modified |= ImGui::CheckboxFlags( "0", &component->layers, 1 << g_crude_jph_layer_custom0 );
+    modified |= ImGui::CheckboxFlags( "s", &component->layers, g_crude_jph_layer_non_moving );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "1", &component->layers, 1 << g_crude_jph_layer_custom1 );
+    modified |= ImGui::CheckboxFlags( "m", &component->layers, g_crude_jph_layer_moving );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "2", &component->layers, 1 << g_crude_jph_layer_custom2 );
+    modified |= ImGui::CheckboxFlags( "0", &component->layers, g_crude_jph_layer_custom0 );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "3", &component->layers, 1 << g_crude_jph_layer_custom3 );
+    modified |= ImGui::CheckboxFlags( "1", &component->layers, g_crude_jph_layer_custom1 );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "4", &component->layers, 1 << g_crude_jph_layer_custom4 );
+    modified |= ImGui::CheckboxFlags( "2", &component->layers, g_crude_jph_layer_custom2 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "3", &component->layers, g_crude_jph_layer_custom3 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "4", &component->layers, g_crude_jph_layer_custom4 );
     } );
 
   if ( modified )
@@ -444,7 +448,8 @@ crude_physics_static_body_create_observer_
     static_body_creation.box.extent = static_body->box.extent;
     static_body_creation.mesh.handle = static_body->mesh.handle;
     static_body_creation.entity = it->entities[ i ];
-    
+    static_body_creation.layers = static_body->layers;
+
     if ( static_body_creation.type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH && static_body_creation.mesh.handle.index == -1 )
     {
       CRUDE_ENTITY_REMOVE_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle );
