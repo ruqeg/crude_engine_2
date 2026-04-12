@@ -30,8 +30,8 @@ constexpr uint8 g_crude_jph_broad_phase_layer_dynamic_mask                      
 constexpr uint8 g_crude_jph_broad_phase_layer_static_mask                       { 1 << 1 };
 constexpr uint8 g_crude_jph_broad_phase_layer_area_mask                         { 1 << 2 };
 
-#define CRUDE_JPH_OBJECT_LAYER( v ) ( ( v << 2 ) & 0xff00 )
-#define CRUDE_JPH_OBJECT_MASK( v ) ( ( v << 6 ) & 0xff00 )
+#define CRUDE_JPH_OBJECT_LAYER( v ) ( ( v >> 2 ) & 0x00ff )
+#define CRUDE_JPH_OBJECT_MASK( v ) ( ( v >> 6 ) & 0x00ff )
 
 class _crude_jph_object_layer_pair_filter_class : public JPH::ObjectLayerPairFilter
 {

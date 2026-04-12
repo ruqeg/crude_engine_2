@@ -223,7 +223,7 @@ _crude_jph_contact_listener_class::OnContactAdded
   {
     static_body1->contact_added_callback( );
   }
-
+ 
   if ( static_body2->contact_added_callback )
   {
     static_body2->contact_added_callback( );
@@ -518,7 +518,7 @@ crude_physics_create_static_body
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
   
   static_body_container->contact_added_callback = creation->contact_added_callback;
-  static_body_container->entity = static_body_container->entity;
+  static_body_container->entity = creation->entity;
 
   return handle;
 }
@@ -581,7 +581,7 @@ crude_physics_ray_cast
       _In_ JPH::ObjectLayer                                layer
     ) const override
     {
-      return mask & layer;
+      return CRUDE_JPH_OBJECT_MASK( mask ) & CRUDE_JPH_OBJECT_LAYER( layer );
     }
   private:
     uint32                                                 mask;
@@ -602,20 +602,19 @@ crude_physics_ray_cast
       _In_ JPH::BroadPhaseLayer                            layer
     ) const override
 	  {
-      if ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_dynamic_mask )
+      if ( ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_dynamic_mask ) && ( layer == g_crude_jph_broad_phase_layer_dynamic_class ) )
       {
-        return layer == g_crude_jph_broad_phase_layer_dynamic_class;
+        return true;
       }
-      if ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_static_mask )
+      if ( ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_static_mask ) && ( layer == g_crude_jph_broad_phase_layer_static_class ) )
       {
-        return layer == g_crude_jph_broad_phase_layer_static_class;
+        return true;
       }
-      if ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_area_mask )
+      if ( ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_area_mask ) && ( layer == g_crude_jph_broad_phase_layer_area_class ) )
       {
-        return layer == g_crude_jph_broad_phase_layer_area_class;
+        return true;
       }
-      CRUDE_ASSERT( false );
-      return layer == g_crude_jph_broad_phase_layer_area_class;
+      return false;
 	  }
   private:
     uint8                                                  jph_broad_phase_mask;
