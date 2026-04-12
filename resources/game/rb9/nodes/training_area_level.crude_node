@@ -96,7 +96,7 @@
 					"box":	{
 						"extent":	[151.5, 1, 138.5]
 					},
-					"layers":	1
+					"layers":	10
 				}],
 			"children":	[]
 		}, {
@@ -112,7 +112,7 @@
 					"box":	{
 						"extent":	[10.800000190734863, 20, 1]
 					},
-					"layers":	1
+					"layers":	10
 				}],
 			"children":	[]
 		}]

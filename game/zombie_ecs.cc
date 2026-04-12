@@ -300,17 +300,17 @@ crude_zombie_game_update_system_
         ray_direction = XMVectorScale( XMVectorSubtract( player_to_world.r[ 3 ], ray_to_player_to_world.r[ 3 ] ), 1.5 );
         ray_origin = ray_to_player_to_world.r[ 3 ];
 
-        float32 angle = XMVectorGetX( XMVector3Dot( XMVector3Normalize( XMVectorSetY( ray_direction, 0 ) ), XMVector3Normalize( XMVectorSetY( XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), ray_to_player_to_world ), 0 ) ) ) );
-        if ( acos( angle ) < XM_PIDIV2 )
-        {
-          if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, ray_origin, ray_direction, g_crude_jph_layer_non_moving | g_crude_jph_layer_custom1, &ray_cast_result ) )
-          {
-            if ( ray_cast_result.layer & g_crude_jph_layer_custom1 )
-            {
-              XMStoreFloat3( &zombie->target_point, player_to_world.r[ 3 ] );
-            }
-          }
-        }
+        //float32 angle = XMVectorGetX( XMVector3Dot( XMVector3Normalize( XMVectorSetY( ray_direction, 0 ) ), XMVector3Normalize( XMVectorSetY( XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), ray_to_player_to_world ), 0 ) ) ) );
+        //if ( acos( angle ) < XM_PIDIV2 )
+        //{
+        //  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, ray_origin, ray_direction, g_crude_jph_layer_non_moving | g_crude_jph_layer_custom1, &ray_cast_result ) )
+        //  {
+        //    if ( ray_cast_result.layer & g_crude_jph_layer_custom1 )
+        //    {
+        //      XMStoreFloat3( &zombie->target_point, player_to_world.r[ 3 ] );
+        //    }
+        //  }
+        //}
       }
 
       if ( !zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled )

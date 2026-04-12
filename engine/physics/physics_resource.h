@@ -33,6 +33,7 @@ typedef struct crude_physics_character_creation
   float32                                                  character_radius_standing;
   float32                                                  friction;
   float32                                                  max_slop_angle;
+  uint16                                                   layers;
 } crude_physics_character_creation;
 
 typedef struct crude_physics_character_container
@@ -48,6 +49,7 @@ typedef struct crude_physics_character
   float32                                                  friction;
   float32                                                  max_slop_angle;
   crude_physics_character_handle                           handle;
+  int32                                                    layers;
 } crude_physics_character;
 
 typedef struct crude_physics_static_body_handle
@@ -85,7 +87,7 @@ typedef struct crude_physics_static_body_creation
       crude_physics_mesh_shape_handle                      handle;
     } mesh;
   };
-  uint32                                                   layers;
+  uint16                                                   layers;
   crude_entity                                             entity;
   crude_physics_static_body_contact_added_callback         contact_added_callback;
 } crude_physics_static_body_creation;

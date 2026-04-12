@@ -11,18 +11,27 @@
 #define CRUDE_JOLT_OVERRIDEN_NEW                                     new
 #define CRUDE_JOLT_OVERRIDEN_FREE                                    delete
 
-const JPH::ObjectLayer g_crude_jph_layer_non_moving        = 1 << 0;
-const JPH::ObjectLayer g_crude_jph_layer_moving            = 1 << 1;
-const JPH::ObjectLayer g_crude_jph_layer_custom0           = 1 << 2;
-const JPH::ObjectLayer g_crude_jph_layer_custom1           = 1 << 3;
-const JPH::ObjectLayer g_crude_jph_layer_custom2           = 1 << 4;
-const JPH::ObjectLayer g_crude_jph_layer_custom3           = 1 << 5;
-const JPH::ObjectLayer g_crude_jph_layer_custom4           = 1 << 6;
-const JPH::ObjectLayer g_crude_jph_num_layers              = 1 << 7;
+const JPH::ObjectLayer g_crude_jph_dynamic                 = 1 << 0;
+const JPH::ObjectLayer g_crude_jph_static                  = 1 << 1;
+const JPH::ObjectLayer g_crude_jph_layer_custom0           = 1 << 3;
+const JPH::ObjectLayer g_crude_jph_layer_custom1           = 1 << 4;
+const JPH::ObjectLayer g_crude_jph_layer_custom2           = 1 << 5;
+const JPH::ObjectLayer g_crude_jph_layer_custom3           = 1 << 6;
+const JPH::ObjectLayer g_crude_jph_mask_custom0            = 1 << 7;
+const JPH::ObjectLayer g_crude_jph_mask_custom1            = 1 << 8;
+const JPH::ObjectLayer g_crude_jph_mask_custom2            = 1 << 9;
+const JPH::ObjectLayer g_crude_jph_mask_custom3            = 1 << 10;
 
-constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_non_moving_class      { 0 };
-constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_moving_class          { 1 };
-constexpr JPH::uint g_crude_jph_broad_phase_layer_num_layers                       = 2;
+constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_dynamic_class      { 0 };
+constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_static_class       { 1 };
+constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_area_class         { 2 };
+constexpr JPH::uint g_crude_jph_broad_phase_layer_num_layers                    = 3;
+constexpr uint8 g_crude_jph_broad_phase_layer_dynamic_mask                      { 1 << 0 };
+constexpr uint8 g_crude_jph_broad_phase_layer_static_mask                       { 1 << 1 };
+constexpr uint8 g_crude_jph_broad_phase_layer_area_mask                         { 1 << 2 };
+
+#define CRUDE_JPH_OBJECT_LAYER( v ) ( ( v << 2 ) & 0xff00 )
+#define CRUDE_JPH_OBJECT_MASK( v ) ( ( v << 6 ) & 0xff00 )
 
 class _crude_jph_object_layer_pair_filter_class : public JPH::ObjectLayerPairFilter
 {
@@ -253,6 +262,7 @@ crude_physics_ray_cast
   _In_ ecs_world_t                                        *world,
   _In_ XMVECTOR                                            origin,
   _In_ XMVECTOR                                            direction,
-  _In_ uint32                                              mask,
+  _In_ uint8                                               broad_phase_mask,
+  _In_ uint32                                              layer_mask,
   _Out_ crude_physics_ray_cast_result                     *ray_cast_result
 );

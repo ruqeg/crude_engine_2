@@ -53,6 +53,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_character )
   component->radius = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "radius" ) );
   component->friction = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "friction" ) );
   component->max_slop_angle = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_slop_angle" ) );
+  component->layers = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "layers" ) );
   return true;
 }
 
@@ -64,6 +65,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_character )
   cJSON_AddItemToObject( static_body_json, "radius", cJSON_CreateNumber( component->radius ) );
   cJSON_AddItemToObject( static_body_json, "friction", cJSON_CreateNumber( component->friction ) );
   cJSON_AddItemToObject( static_body_json, "max_slop_angle", cJSON_CreateNumber( component->max_slop_angle ) );
+  cJSON_AddItemToObject( static_body_json, "layers", cJSON_CreateNumber( component->layers ) );
   return static_body_json;
 }
 
@@ -81,6 +83,35 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character )
 
   CRUDE_IMGUI_OPTION( "Character Radius", {
     modified |= ImGui::DragFloat( "##Character Radius", &component->radius, 0.1f );  
+    } );
+  
+  CRUDE_IMGUI_OPTION( "Flags", {
+    ImGui::Spacing( );
+    modified |= ImGui::CheckboxFlags( "static", &component->layers, g_crude_jph_static );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "dynamic", &component->layers, g_crude_jph_dynamic );
+
+    ImGui::PushID( "Layers" );
+    ImGui::Text( "Layers" );
+    modified |= ImGui::CheckboxFlags( "0", &component->layers, g_crude_jph_layer_custom0 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "1", &component->layers, g_crude_jph_layer_custom1 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "2", &component->layers, g_crude_jph_layer_custom2 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "3", &component->layers, g_crude_jph_layer_custom3 );
+    ImGui::PopID( );
+    
+    ImGui::PushID( "Mask" );
+    ImGui::Text( "Mask" );
+    modified |= ImGui::CheckboxFlags( "0", &component->layers, g_crude_jph_mask_custom0 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "1", &component->layers, g_crude_jph_mask_custom1 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "2", &component->layers, g_crude_jph_mask_custom2 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "3", &component->layers, g_crude_jph_mask_custom3 );
+    ImGui::PopID( );
     } );
 
   if ( modified )
@@ -210,11 +241,14 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     }
   }
 
-  CRUDE_IMGUI_OPTION( "Layer", {
-    modified |= ImGui::CheckboxFlags( "s", &component->layers, g_crude_jph_layer_non_moving );
+  CRUDE_IMGUI_OPTION( "Flags", {
+    ImGui::Spacing( );
+    modified |= ImGui::CheckboxFlags( "static", &component->layers, g_crude_jph_static );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "m", &component->layers, g_crude_jph_layer_moving );
-    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "dynamic", &component->layers, g_crude_jph_dynamic );
+    
+    ImGui::PushID( "Layers" );
+    ImGui::Text( "Layers" );
     modified |= ImGui::CheckboxFlags( "0", &component->layers, g_crude_jph_layer_custom0 );
     ImGui::SameLine( );
     modified |= ImGui::CheckboxFlags( "1", &component->layers, g_crude_jph_layer_custom1 );
@@ -222,8 +256,18 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     modified |= ImGui::CheckboxFlags( "2", &component->layers, g_crude_jph_layer_custom2 );
     ImGui::SameLine( );
     modified |= ImGui::CheckboxFlags( "3", &component->layers, g_crude_jph_layer_custom3 );
+    ImGui::PopID( );
+    
+    ImGui::PushID( "Mask" );
+    ImGui::Text( "Mask" );
+    modified |= ImGui::CheckboxFlags( "0", &component->layers, g_crude_jph_mask_custom0 );
     ImGui::SameLine( );
-    modified |= ImGui::CheckboxFlags( "4", &component->layers, g_crude_jph_layer_custom4 );
+    modified |= ImGui::CheckboxFlags( "1", &component->layers, g_crude_jph_mask_custom1 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "2", &component->layers, g_crude_jph_mask_custom2 );
+    ImGui::SameLine( );
+    modified |= ImGui::CheckboxFlags( "3", &component->layers, g_crude_jph_mask_custom3 );
+    ImGui::PopID( );
     } );
 
   if ( modified )
@@ -378,6 +422,7 @@ crude_physics_character_create_observer_
     character_creation.character_radius_standing = character->radius;
     character_creation.friction = character->friction;
     character_creation.max_slop_angle = character->max_slop_angle;
+    character_creation.layers = character->layers;
 
     character_handle = crude_physics_create_character( ctx->physics, &character_creation );
     CRUDE_ENTITY_SET_COMPONENT( it->world, it->entities[ i ], crude_physics_character_handle, { character_handle } );
