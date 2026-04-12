@@ -13,12 +13,16 @@ typedef struct crude_dead {} crude_dead;
 
 typedef struct crude_zombie
 {
+  /* Public */
+  float32                                                  damage;
+
   /* Joints */
   uint64                                                   spine_joint_node;
 
   /* Animations */
   uint32                                                   idle_animation_index;
   uint32                                                   hit_animation_index;
+  uint32                                                   attack_animation_index;
   uint32                                                   dead_animation_index;
   uint32                                                   walk_animation_index;
 

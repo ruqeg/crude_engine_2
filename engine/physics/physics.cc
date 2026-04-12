@@ -281,6 +281,7 @@ crude_physics_initialize
 {
   physics->physics_allocator = creation->physics_allocator;
   physics->physics_allocator_container = crude_heap_allocator_pack( creation->physics_allocator );
+  physics->physics_system_context = creation->physics_system_context;
 
   physics->last_update_time = crude_time_now( );
   physics->simulation_enabled = true;
@@ -499,7 +500,7 @@ crude_physics_create_static_body
 
   jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
   
-  if ( creation->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  if ( creation->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
   {
     JPH::BoxShapeSettings                                    jph_shape_settings_class;
     jph_shape_settings_class = CRUDE_COMPOUNT( JPH::BoxShapeSettings, { JPH::Vec3( creation->box.extent.x, creation->box.extent.y, creation->box.extent.z ) } );
@@ -507,17 +508,22 @@ crude_physics_create_static_body
     jph_shape_result_class = jph_shape_settings_class.Create( );
     jph_shape_class = jph_shape_result_class.Get( );
   }
-  else if ( creation->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  else if ( creation->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
   {
     jph_shape_class = crude_physics_shapes_manager_access_mesh_shape( physics->physics_shapes_manager, creation->mesh.handle )->jph_shape_class;
   }
 
   jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, creation->layers );
   jph_settings_class.mUserData = handle.index;
+
+  if ( creation->sensor )
+  {
+    jph_settings_class.mIsSensor = true;
+    jph_settings_class.mCollideKinematicVsNonDynamic = true;
+  }
+
+  CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::Activate ) );
   
-  CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::DontActivate ) );
-  
-  static_body_container->contact_added_callback = creation->contact_added_callback;
   static_body_container->entity = creation->entity;
 
   return handle;

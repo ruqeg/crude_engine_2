@@ -1,8 +1,9 @@
 #pragma once
 
-#include <engine/physics/physics.h>
 #include <engine/physics/physics_resource.h>
 #include <engine/scene/components_serialization.h>
+
+typedef struct crude_physics crude_physics;
 
 /**********************************************************
  *

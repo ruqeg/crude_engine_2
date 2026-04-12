@@ -222,6 +222,14 @@ crude_entity_set_component
 );
 
 CRUDE_API void*
+crude_entity_find_component_from_parents
+(
+  _In_ crude_ecs                                          *world,
+  _Out_ crude_entity                                      *entity,
+  _In_ ecs_id_t                                            id
+);
+
+CRUDE_API void*
 crude_entity_get_or_add_component
 (
   _In_ crude_ecs                                          *world,
@@ -354,6 +362,12 @@ crude_entity_remove_id
 (\
   crude_entity_remove_id( world, entity, tag )\
 )
+
+#define CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( world, dst, component )\
+(\
+  ( component* )crude_entity_find_component_from_parents( world, dst, ecs_id( component ) )\
+)
+
 
 #define CRUDE_ECS_SYSTEM_DECLARE( id )\
   ecs_entity_t ecs_id( id )

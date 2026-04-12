@@ -6,6 +6,7 @@
 #include <engine/scene/node_manager.h>
 #include <engine/core/profiler.h>
 #include <engine/scene/scene_ecs.h>
+#include <engine/physics/physics.h>
 
 #include <engine/physics/physics_ecs.h>
 
@@ -136,21 +137,21 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_character_hand
   ImGui::LabelText( "Velocity", "%f %f %f", jph_velocity.GetX( ), jph_velocity.GetY( ), jph_velocity.GetZ( ) );
 }
 
-
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_physics_static_body )
 {
-  component->type = CRUDE_CAST( crude_physics_static_body_shape_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
-  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  component->type = CRUDE_CAST( crude_physics_body_shape_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "shape_type" ) ) );
+  if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
   {
     cJSON *box_json = cJSON_GetObjectItem( component_json, "box" );
     crude_parse_json_to_float3( &component->box.extent, cJSON_GetObjectItemCaseSensitive( box_json, "extent" ) );
   }
-  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  else if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
   {
     cJSON *mesh_json = cJSON_GetObjectItem( component_json, "mesh" );
     component->mesh.handle = crude_physics_shapes_manager_get_mesh_shape_handle( manager->physics_manager->physics_shapes_manager, cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( mesh_json, "relative_filepath" ) ) );
   }
   component->layers = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "layers" ) );
+  component->sensor = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "sensor" ) );
   return true;
 }
 
@@ -159,13 +160,13 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
   cJSON *static_body_json = cJSON_CreateObject( );
   cJSON_AddItemToObject( static_body_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_physics_static_body ) ) );
   cJSON_AddItemToObject( static_body_json, "shape_type",cJSON_CreateNumber( component->type ) );
-  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
   {
     cJSON *box_json = cJSON_CreateObject( );
     cJSON_AddItemToObject( box_json, "extent", cJSON_CreateFloatArray( &component->box.extent.x, 3 ) );
     cJSON_AddItemToObject( static_body_json, "box", box_json );
   }
-  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  else if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
   {
     cJSON *mesh_json = cJSON_CreateObject( );
     crude_physics_mesh_shape_container *mesh_shape = crude_physics_shapes_manager_access_mesh_shape( manager->physics_manager->physics_shapes_manager, component->mesh.handle );
@@ -173,6 +174,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_physics_static_body )
     cJSON_AddItemToObject( static_body_json, "mesh", mesh_json );
   }
   cJSON_AddItemToObject( static_body_json, "layers", cJSON_CreateNumber( component->layers ) );
+  cJSON_AddItemToObject( static_body_json, "sensor", cJSON_CreateNumber( component->sensor ) );
   return static_body_json;
 }
 
@@ -188,7 +190,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     "Mesh"
   };
 
-  CRUDE_ASSERT( CRUDE_COUNTOF( physic_static_body_types ) == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_COUNT );
+  CRUDE_ASSERT( CRUDE_COUNTOF( physic_static_body_types ) == CRUDE_PHYSICS_BODY_SHAPE_TYPE_COUNT );
 
   modified = false;
 
@@ -196,8 +198,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     int32 type = component->type;
     if ( ImGui::Combo( "##Shape", &type, physic_static_body_types, CRUDE_COUNTOF( physic_static_body_types ) ) )
     {
-      component->type = CRUDE_CAST( crude_physics_static_body_shape_type, type );
-      if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+      component->type = CRUDE_CAST( crude_physics_body_shape_type, type );
+      if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
       {
         component->mesh.handle.index = -1;
       }
@@ -205,13 +207,13 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
     }
     } );
 
-  if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+  if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
   {
     CRUDE_IMGUI_OPTION( "Box Extent", {
-      modified |= ImGui::DragFloat3( "##Box Extent", &component->box.extent.x, 0.1f, 0.f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );  
+      modified |= ImGui::DragFloat3( "##Box Extent", &component->box.extent.x, 0.1f, 0.001f, 0.f, "%.3f", ImGuiSliderFlags_ColorMarkers );  
       } );
   }
-  else if ( component->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+  else if ( component->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
   {
     if ( component->mesh.handle.index != -1 )
     {
@@ -240,6 +242,10 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_physics_static_body )
       ImGui::EndDragDropTarget();
     }
   }
+  
+  CRUDE_IMGUI_OPTION( "Sensor", {
+    modified |= ImGui::Checkbox( "##Sensor", &component->sensor );
+    } );
 
   CRUDE_IMGUI_OPTION( "Flags", {
     ImGui::Spacing( );
@@ -356,6 +362,8 @@ crude_physics_system_import
   _In_ crude_physics_system_context                       *ctx
 )
 {
+  ecs_system_desc_t                                        system_desc;
+
   crude_physics_components_import( world, manager );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_physics_character_create_observer_, EcsOnSet, ctx, { 
@@ -494,8 +502,9 @@ crude_physics_static_body_create_observer_
     static_body_creation.mesh.handle = static_body->mesh.handle;
     static_body_creation.entity = it->entities[ i ];
     static_body_creation.layers = static_body->layers;
+    static_body_creation.sensor = static_body->sensor;
 
-    if ( static_body_creation.type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH && static_body_creation.mesh.handle.index == -1 )
+    if ( static_body_creation.type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH && static_body_creation.mesh.handle.index == -1 )
     {
       CRUDE_ENTITY_REMOVE_COMPONENT( it->world, it->entities[ i ], crude_physics_static_body_handle );
       continue;

@@ -4,6 +4,7 @@
 #include <engine/core/math.h>
 #include <engine/physics/physics_shapes_manager.h>
 #include <engine/physics/physics_resource.h>
+#include <engine/physics/physics_ecs.h>
 
 /*********************
  * Use only when JPH class override new/free!
@@ -13,25 +14,25 @@
 
 const JPH::ObjectLayer g_crude_jph_dynamic                 = 1 << 0;
 const JPH::ObjectLayer g_crude_jph_static                  = 1 << 1;
-const JPH::ObjectLayer g_crude_jph_layer_custom0           = 1 << 3;
-const JPH::ObjectLayer g_crude_jph_layer_custom1           = 1 << 4;
-const JPH::ObjectLayer g_crude_jph_layer_custom2           = 1 << 5;
-const JPH::ObjectLayer g_crude_jph_layer_custom3           = 1 << 6;
-const JPH::ObjectLayer g_crude_jph_mask_custom0            = 1 << 7;
-const JPH::ObjectLayer g_crude_jph_mask_custom1            = 1 << 8;
-const JPH::ObjectLayer g_crude_jph_mask_custom2            = 1 << 9;
-const JPH::ObjectLayer g_crude_jph_mask_custom3            = 1 << 10;
+const JPH::ObjectLayer g_crude_jph_layer_custom0           = 1 << 2;
+const JPH::ObjectLayer g_crude_jph_layer_custom1           = 1 << 3;
+const JPH::ObjectLayer g_crude_jph_layer_custom2           = 1 << 4;
+const JPH::ObjectLayer g_crude_jph_layer_custom3           = 1 << 5;
+const JPH::ObjectLayer g_crude_jph_mask_custom0            = 1 << 6;
+const JPH::ObjectLayer g_crude_jph_mask_custom1            = 1 << 7;
+const JPH::ObjectLayer g_crude_jph_mask_custom2            = 1 << 8;
+const JPH::ObjectLayer g_crude_jph_mask_custom3            = 1 << 9;
 
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_dynamic_class      { 0 };
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_static_class       { 1 };
 constexpr JPH::BroadPhaseLayer g_crude_jph_broad_phase_layer_area_class         { 2 };
 constexpr JPH::uint g_crude_jph_broad_phase_layer_num_layers                    = 3;
-constexpr uint8 g_crude_jph_broad_phase_layer_dynamic_mask                      { 1 << 0 };
-constexpr uint8 g_crude_jph_broad_phase_layer_static_mask                       { 1 << 1 };
-constexpr uint8 g_crude_jph_broad_phase_layer_area_mask                         { 1 << 2 };
+constexpr uint8 g_crude_jph_broad_phase_layer_dynamic_mask                      = 1 << 0;
+constexpr uint8 g_crude_jph_broad_phase_layer_static_mask                       = 1 << 1;
+constexpr uint8 g_crude_jph_broad_phase_layer_area_mask                         = 1 << 2;
 
-#define CRUDE_JPH_OBJECT_LAYER( v ) ( ( v >> 2 ) & 0x00ff )
-#define CRUDE_JPH_OBJECT_MASK( v ) ( ( v >> 6 ) & 0x00ff )
+#define CRUDE_JPH_OBJECT_LAYER( v ) ( ( v >> 2 ) & 0x000f )
+#define CRUDE_JPH_OBJECT_MASK( v ) ( ( v >> 6 ) & 0x000f )
 
 class _crude_jph_object_layer_pair_filter_class : public JPH::ObjectLayerPairFilter
 {
@@ -147,19 +148,21 @@ typedef struct crude_physics_creation
 {
   crude_physics_shapes_manager                            *physics_shapes_manager;
   crude_heap_allocator                                    *physics_allocator;
+  crude_physics_system_context                            *physics_system_context;
 } crude_physics_creation;
 
 typedef struct crude_physics
 {
   /* Context */
   crude_physics_shapes_manager                            *physics_shapes_manager;
-
   crude_heap_allocator                                    *physics_allocator;
+  crude_physics_system_context                            *physics_system_context;
   crude_allocator_container                                physics_allocator_container;
   
-  /* Commonm */
+  /* Common */
   crude_resource_pool                                      characters_resource_pool;
   crude_resource_pool                                      static_body_resource_pool;
+  crude_resource_pool                                      kinematic_body_resource_pool;
   bool                                                     simulation_enabled;
   int64                                                    last_update_time;
     

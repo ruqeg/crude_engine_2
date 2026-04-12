@@ -6,7 +6,8 @@
 			"rotation":	[0, 0, 0, 1],
 			"scale":	[1, 1, 1]
 		}, {
-			"type":	"crude_zombie"
+			"type":	"crude_zombie",
+			"damage":	null
 		}],
 	"children":	[{
 			"name":	"pivot",
@@ -48,7 +49,7 @@
 									"index":	10,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
-									"index":	-1,
+									"index":	6,
 									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
 								}, {
 									"index":	-1,
@@ -81,7 +82,7 @@
 							"name":	"hitbox_body",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[0.025725975632667542, 6.1124124526977539, -0.3434072732925415],
+									"translation":	[0.025725975632667542, 5.5842766761779785, -0.3434072732925415],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {
@@ -90,26 +91,42 @@
 									"box":	{
 										"extent":	[1.5, 5.5999999046325684, 1.5]
 									},
-									"layers":	20
+									"layers":	14
+								}],
+							"children":	[]
+						}, {
+							"name":	"dead_static",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[0, 0.0775701403617859, 0],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_physics_static_body",
+									"shape_type":	0,
+									"box":	{
+										"extent":	[1, 0.10000000149011612, 1]
+									},
+									"layers":	6
 								}],
 							"children":	[]
 						}]
-				}, {
-					"name":	"attack_collision",
-					"components":	[{
-							"type":	"crude_transform",
-							"translation":	[0, 5.54962682723999, 2.0999999046325684],
-							"rotation":	[0, 0, 0, 1],
-							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_physics_static_body",
-							"shape_type":	0,
-							"box":	{
-								"extent":	[1.7000000476837158, 4.4000000953674316, 1]
-							},
-							"layers":	0
-						}],
-					"children":	[]
 				}]
+		}, {
+			"name":	"attack_collision",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 5.54962682723999, 0.24041098356246948],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_static_body",
+					"shape_type":	0,
+					"box":	{
+						"extent":	[2, 6.4000000953674316, 2]
+					},
+					"layers":	256
+				}],
+			"children":	[]
 		}]
 }

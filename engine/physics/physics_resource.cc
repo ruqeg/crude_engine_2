@@ -22,7 +22,7 @@ crude_physics_static_body_empty
 )
 {
   crude_physics_static_body body = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body );
-  body.type = CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX;
+  body.type = CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX;
   body.box.extent.x = 1.f;
   body.box.extent.y = 1.f;
   body.box.extent.z = 1.f;

@@ -62,12 +62,12 @@ typedef struct crude_physics_mesh_shape_handle
   uint32                                                   index;
 } crude_physics_mesh_shape_handle;
 
-typedef enum crude_physics_static_body_shape_type
+typedef enum crude_physics_body_shape_type
 {
-  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX,
-  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH,
-  CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_COUNT
-};
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX,
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH,
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_COUNT
+} crude_physics_body_shape_type;
 
 typedef void (*crude_physics_static_body_contact_added_callback)
 (
@@ -75,7 +75,7 @@ typedef void (*crude_physics_static_body_contact_added_callback)
 
 typedef struct crude_physics_static_body_creation
 {
-  crude_physics_static_body_shape_type                     type;
+  crude_physics_body_shape_type                            type;
   union
   {
     struct
@@ -90,6 +90,7 @@ typedef struct crude_physics_static_body_creation
   uint16                                                   layers;
   crude_entity                                             entity;
   crude_physics_static_body_contact_added_callback         contact_added_callback;
+  bool                                                     sensor;
 } crude_physics_static_body_creation;
 
 typedef struct crude_physics_static_body_container
@@ -101,7 +102,7 @@ typedef struct crude_physics_static_body_container
 
 typedef struct crude_physics_static_body
 {
-  crude_physics_static_body_shape_type                     type;
+  crude_physics_body_shape_type                            type;
   union
   {
     struct
@@ -114,6 +115,7 @@ typedef struct crude_physics_static_body
     } mesh;
   };
   uint32                                                   layers;
+  bool                                                     sensor;
 } crude_physics_static_body;
 
 typedef struct crude_physics_ray_cast_result

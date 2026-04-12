@@ -773,13 +773,13 @@ crude_scene_renderer_register_nodes_instances_
 
       static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_static_body );
     
-      if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_BOX )
+      if ( static_body->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
       {
         model_to_custom_model = XMMatrixScaling( static_body->box.extent.x, static_body->box.extent.y, static_body->box.extent.z );
         XMStoreFloat4x4( &scene_renderer->physics_box_collision_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
         CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->physics_box_collision_model_renderer_resources_instance );
       }
-      else if ( static_body->type == CRUDE_PHYSICS_STATIC_BODY_SHAPE_TYPE_MESH )
+      else if ( static_body->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
       {
         if ( static_body->mesh.handle.index != -1 )
         {

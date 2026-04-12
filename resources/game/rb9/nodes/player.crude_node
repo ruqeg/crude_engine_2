@@ -25,7 +25,7 @@
 					"radius":	1,
 					"friction":	0.5,
 					"max_slop_angle":	0.78539818525314331,
-					"layers":	-2147483519
+					"layers":	-2147483583
 				}],
 			"children":	[{
 					"name":	"pivot_yaw",
@@ -81,8 +81,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.9007103443145752, 7.2678365707397461, 1.7806148529052734],
-									"rotation":	[0.79426157474517822, 0.57587724924087524, 0.18797436356544495, 0.0466865748167038],
+									"translation":	[-0.61266368627548218, 7.2611379623413086, 2.0291264057159424],
+									"rotation":	[0.790412425994873, 0.56572377681732178, 0.22553297877311707, 0.065862700343132],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -164,21 +164,28 @@
 							"children":	[]
 						}]
 				}, {
-					"name":	"player_collision",
+					"name":	"health",
 					"components":	[{
-							"type":	"crude_transform",
-							"translation":	[0, 5.72230100631714, 0],
-							"rotation":	[0, 0, 0, 1],
-							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_physics_static_body",
-							"shape_type":	0,
-							"box":	{
-								"extent":	[1.3999999761581421, 5.5, 1.6000000238418579]
-							},
-							"layers":	0
+							"type":	"crude_health",
+							"max_health":	100
 						}],
-					"children":	[]
+					"children":	[{
+							"name":	"player_collision",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[0, 5.72230100631714, 0],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_physics_static_body",
+									"shape_type":	0,
+									"box":	{
+										"extent":	[1.3999999761581421, 5.5, 1.6000000238418579]
+									},
+									"layers":	16
+								}],
+							"children":	[]
+						}]
 				}]
 		}, {
 			"name":	"camera",

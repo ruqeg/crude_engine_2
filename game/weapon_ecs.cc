@@ -91,23 +91,18 @@ crude_weapon_fire
 
   if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_broad_phase_layer_static_mask | g_crude_jph_broad_phase_layer_area_mask, g_crude_jph_mask_custom0 | g_crude_jph_mask_custom1, &ray_cast_result ) )
   {
-    crude_health                                          *health;
-    crude_entity                                           entity;
-
     if ( ray_cast_result.layer & g_crude_jph_layer_custom1 )
     {
-      entity = ray_cast_result.entity;
-      while ( entity = crude_entity_get_parent( game->engine->world, entity ) )
-      {
-        if ( crude_entity_valid( game->engine->world, entity ) )
-        {
-          health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, entity, crude_health );
+      crude_health                                        *health;
+      crude_entity                                         entity;
 
-          if ( health )
-          {
-            crude_heal_receive_damage( entity, health, weapon->damage );
-          }
-        }
+      entity = ray_cast_result.entity;
+
+      health = CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( game->engine->world, &entity, crude_health );
+
+      if ( health )
+      {
+        crude_heal_receive_damage( entity, health, weapon->damage );
       }
     }
   }

@@ -688,6 +688,7 @@ crude_engine_initialize_physics_
   physics_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_creation );
   physics_creation.physics_shapes_manager = &engine->physics_shapes_manager;
   physics_creation.physics_allocator = &engine->common_allocator;
+  physics_creation.physics_system_context = &engine->physics_system_context;
   crude_physics_initialize( &engine->physics, &physics_creation, engine->world );
   
   physics_shapes_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_shapes_manager_creation );

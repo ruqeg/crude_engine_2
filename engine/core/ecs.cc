@@ -312,6 +312,32 @@ crude_entity_set_component
 }
 
 void*
+crude_entity_find_component_from_parents
+(
+  _In_ crude_ecs                                          *world,
+  _Out_ crude_entity                                      *entity,
+  _In_ ecs_id_t                                            id
+)
+{
+  while ( *entity = crude_entity_get_parent( world, *entity ) )
+  {
+    if ( crude_entity_valid( world, *entity ) )
+    {
+      void                                                *component;
+
+      component = crude_entity_get_mutable_component( world, *entity, id );
+  
+      if ( component )
+      {
+        return component;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+void*
 crude_entity_get_or_add_component
 (
   _In_ crude_ecs                                          *world,

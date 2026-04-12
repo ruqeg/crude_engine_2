@@ -17,7 +17,6 @@ ecs_entity_t const crude_ecs_on_post_physics_update = EcsPreStore;
 #define CRUDE_ECS_GAME_STAGE_IS_ENABLED( world ) crude_entity_is_enable( world, crude_ecs_on_game_update )
 #define CRUDE_ECS_EDITOR_STAGE_IS_ENABLED( world ) crude_entity_is_enable( world, crude_ecs_on_editor_update )
 
-
 /**********************************************************
  *
  *                 Components
