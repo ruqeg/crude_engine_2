@@ -662,6 +662,8 @@ crude_engine_deinitialize_graphics_
   _In_ crude_engine                                       *engine
 )
 {
+  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
+
   vkDeviceWaitIdle( engine->gpu.vk_device );
   crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   crude_task_sheduler_destroy_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );

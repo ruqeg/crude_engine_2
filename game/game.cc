@@ -72,12 +72,12 @@ crude_game_initialize
 
   crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\player.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
-
+  
   crude_game_setup_custom_nodes_to_scene_( game );
-
+  
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
-
+  
   CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 }
 

@@ -293,7 +293,7 @@ crude_gfx_asynchronous_loader_update
       submit_info.pCommandBufferInfos      = command_buffers;
     
       crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );;
-      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue submitted" );
+      //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue submitted" );
     }
     
     if ( vkGetFenceStatus( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
@@ -301,7 +301,7 @@ crude_gfx_asynchronous_loader_update
       vkWaitForFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
     }
     vkResetFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence );
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue done" );
+    //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue done" );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )
     {

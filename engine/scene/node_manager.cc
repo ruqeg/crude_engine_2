@@ -238,11 +238,16 @@ crude_node_manager_parse_json_
   cJSON                                                 *json;
   uint8                                                 *json_buffer;
   uint32                                                 json_buffer_size;
+  uint32                                                 temporary_allocator_marker;
   
+  temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
+
+  json = NULL;
+
   if ( !crude_file_exist( absolute_filepath ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse scene", absolute_filepath );
-    return NULL;
+    goto cleanup;
   }
   
   crude_read_file( absolute_filepath, crude_stack_allocator_pack( manager->temporary_allocator ), &json_buffer, &json_buffer_size );
@@ -251,8 +256,12 @@ crude_node_manager_parse_json_
   if ( !json )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot parse a file for scene... Error %s", cJSON_GetErrorPtr() );
-    return NULL;
+    goto cleanup;
   }
+
+cleanup:
+  crude_stack_allocator_free_marker( manager->temporary_allocator, temporary_allocator_marker );
+  return json;
 }
 
 cJSON*
