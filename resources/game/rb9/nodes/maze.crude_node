@@ -61,22 +61,6 @@
 				}],
 			"children":	[]
 		}, {
-			"name":	"vertical_static_body",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[58.961101531982422, 27.156465530395508, -6.1512384414672852],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_static_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[10.800000190734863, 20, 1]
-					},
-					"layers":	6
-				}],
-			"children":	[]
-		}, {
 			"name":	"maze_collision",
 			"components":	[{
 					"type":	"crude_transform",
@@ -96,7 +80,226 @@
 			"name":	"zombie",
 			"external":	{
 				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
-				"type":	0
-			}
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, -13.0543270111084, -13.471473693847656],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie2",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[72.80767822265625, -12.961901664733887, -27.48419189453125],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie3",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-93.420623779296875, -12.133792877197266, -65.9851531982422],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie4",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, -12.724609375, -170.95893859863281],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie5",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-166.03274536132812, -12.460311889648438, -220.72872924804688],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie6",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[36.7632942199707, -13.150278091430664, -177.81280517578125],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie7",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[101.80363464355469, -13.108968734741211, -256.64822387695312],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie8",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-92.1118621826172, -13.074482917785645, -185.91073608398438],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie9",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[41.5253677368164, -13.024482727050781, -328.54550170898438],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie10",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-60.6363639831543, -13.190903663635254, -402.1929931640625],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie11",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[68.477775573730469, -12.969517707824707, -404.65768432617188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie12",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-111.74480438232422, -13.119721412658691, -306.07302856445312],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie13",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-184.698486328125, -13.014981269836426, -282.5306396484375],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie14",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[133.11891174316406, -13.001508712768555, -82.027740478515625],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
+		}, {
+			"name":	"zombie15",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	1
+			},
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-2.0916328430175781, -13.0546817779541, -285.83151245117188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_zombie",
+					"damage":	25
+				}]
 		}]
 }

@@ -98,7 +98,15 @@ crude_gui_node_tree_queue_draw
         {
           crude_entity                                     new_node;
           
-          new_node = crude_entity_copy( world, node_tree->node_reference, true );
+          if ( CRUDE_ENTITY_HAS_COMPONENT( world, node_tree->node_reference, crude_node_external ) )
+          {
+            new_node = crude_node_manager_create_node( node_tree->node_manager, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node_tree->node_reference, crude_node_external )->node_relative_filepath ,world );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_node_external, { *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node_tree->node_reference, crude_node_external ) } );
+          }
+          else
+          {
+            new_node = crude_entity_copy( world, node_tree->node_reference, true );
+          }
           crude_entity_set_name( world, new_node, node_tree->new_node_name );
           crude_entity_set_parent( world, new_node, crude_entity_get_parent( world, node_tree->node_reference ) );
           *selected_node = new_node;

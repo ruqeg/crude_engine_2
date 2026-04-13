@@ -291,30 +291,48 @@ crude_zombie_game_update_system_
         zombie_model->model_renderer_resources_instance.animations_instances[ zombie->walk_animation_index ].disabled = true;
       }
       
-      if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].disabled && zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && ( zombie->target_point.y != 0 ) )
+      if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].disabled && zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled )
       {
-        XMVECTOR                                           target_position;
-        XMVECTOR                                           pivot_rotation;
-        XMVECTOR                                           direction_to_taget;
-        XMVECTOR                                           zombie_translation, zombie_new_translation;
-        XMMATRIX                                           zombie_pivot_to_world;
-        XMVECTOR                                           target_rotation;
-        
-        zombie_pivot_to_world = crude_transform_node_to_world( it->world, zombie_pivot_entity, NULL );
-        target_position = XMLoadFloat3( &zombie->target_point );
+        if ( zombie->target_point.y != 0 )
+        {
+          XMVECTOR                                           target_position;
+          XMVECTOR                                           pivot_rotation;
+          XMVECTOR                                           direction_to_taget;
+          XMVECTOR                                           zombie_translation, zombie_new_translation;
+          XMMATRIX                                           zombie_pivot_to_world;
+          XMVECTOR                                           target_rotation;
+          
+          zombie_pivot_to_world = crude_transform_node_to_world( it->world, zombie_pivot_entity, NULL );
+          target_position = XMLoadFloat3( &zombie->target_point );
 
-        target_rotation = XMQuaternionRotationMatrix( XMMatrixLookAtRH( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ), XMVectorSet( 0, 1, 0, 0 ) ) );
-        
-        pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
-        pivot_rotation = XMQuaternionSlerp( pivot_rotation, XMQuaternionInverse( target_rotation ), 15 * it->delta_time );
-        XMStoreFloat4( &pivot_transform->rotation, pivot_rotation);
-        
-        direction_to_taget = XMVector3Normalize( XMVectorSubtract( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ) ) );
+          if ( XMVectorGetX( XMVector3Length( XMVectorSubtract( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ) ) ) ) < 0.3 )
+          {
+            zombie->target_point.y = 0;
+          }
+          else
+          {
+            target_rotation = XMQuaternionRotationMatrix( XMMatrixLookAtRH( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ), XMVectorSet( 0, 1, 0, 0 ) ) );
+            
+            pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
+            pivot_rotation = XMQuaternionSlerp( pivot_rotation, XMQuaternionInverse( target_rotation ), 15 * it->delta_time );
+            XMStoreFloat4( &pivot_transform->rotation, pivot_rotation);
+            
+            direction_to_taget = XMVector3Normalize( XMVectorSubtract( XMVectorSetY( target_position, 0 ), XMVectorSetY( zombie_pivot_to_world.r[ 3 ], 0 ) ) );
 
-        zombie_translation = XMLoadFloat3( &zombie_transform->translation );
-        zombie_new_translation = XMVectorAdd( zombie_translation, XMVectorScale( direction_to_taget, 5 * it->delta_time ) );
-        zombie_new_translation = XMVectorSetY( zombie_new_translation, XMVectorGetY( zombie_translation ) );
-        XMStoreFloat3( &zombie_transform->translation, zombie_new_translation );
+            zombie_translation = XMLoadFloat3( &zombie_transform->translation );
+            zombie_new_translation = XMVectorAdd( zombie_translation, XMVectorScale( direction_to_taget, 5 * it->delta_time ) );
+            zombie_new_translation = XMVectorSetY( zombie_new_translation, XMVectorGetY( zombie_translation ) );
+            XMStoreFloat3( &zombie_transform->translation, zombie_new_translation );
+          }
+        }
+        else
+        {
+          XMVECTOR                                           pivot_rotation;
+
+          pivot_rotation = XMLoadFloat4( &pivot_transform->rotation );
+          pivot_rotation = XMQuaternionMultiply( pivot_rotation, XMQuaternionRotationAxis( XMVectorSet( 0, 1, 0, 0 ), 0.3 * it->delta_time ) );
+          XMStoreFloat4( &pivot_transform->rotation, pivot_rotation);
+        }
       }
 
       if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && crude_entity_valid( it->world, game->player_node ) )
@@ -472,8 +490,10 @@ crude_zombie_health_death_callback_
   zombie_model->model_renderer_resources_instance.animations_instances[ zombie->dead_animation_index ].current_time = 0;
 
   zombie->dying = true;
-
+  
+  crude_entity zombie_attack_sensor_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "attack_sensor" );
   crude_entity_destroy_hierarchy( game->engine->world, health_entity );
+  crude_entity_destroy_hierarchy( game->engine->world, zombie_attack_sensor_entity );
 }
 
 void
