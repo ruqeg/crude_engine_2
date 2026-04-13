@@ -14,21 +14,29 @@ CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_character );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_character_handle );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_static_body );
 CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_static_body_handle );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_kinematic_body );
+CRUDE_API ECS_COMPONENT_DECLARE( crude_physics_kinematic_body_handle );
 
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_character );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_character );
 CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_static_body );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_static_body );
+CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_physics_kinematic_body );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_physics_kinematic_body );
 
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_character );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_character_handle );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_static_body );
 CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_static_body_handle );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_kinematic_body );
+CRUDE_API CRUDE_COMPONENT_STRING_DECLARE( crude_physics_kinematic_body_handle );
 
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_character_handle );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_static_body_handle );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_kinematic_body );
+CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_physics_kinematic_body_handle );
 
 
 CRUDE_API void

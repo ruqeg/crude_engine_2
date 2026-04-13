@@ -789,6 +789,29 @@ crude_scene_renderer_register_nodes_instances_
         }
       }
     }
+    
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_physics_kinematic_body ) )
+    {
+      crude_physics_kinematic_body                             *static_body;
+
+      static_body = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_physics_kinematic_body );
+    
+      if ( static_body->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
+      {
+        model_to_custom_model = XMMatrixScaling( static_body->box.extent.x, static_body->box.extent.y, static_body->box.extent.z );
+        XMStoreFloat4x4( &scene_renderer->physics_box_collision_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+        CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->physics_box_collision_model_renderer_resources_instance );
+      }
+      else if ( static_body->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
+      {
+        if ( static_body->mesh.handle.index != -1 )
+        {
+          crude_physics_mesh_shape_container *mesh_shape_container = crude_physics_shapes_manager_access_mesh_shape( scene_renderer->physics_shapes_manager, static_body->mesh.handle );
+          XMStoreFloat4x4( &mesh_shape_container->debug_model_renderer_resource_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+          CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, mesh_shape_container->debug_model_renderer_resource_instance );
+        }
+      }
+    }
   }
   
   *model_initialized |= local_model_initialized;

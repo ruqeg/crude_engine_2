@@ -22,10 +22,36 @@
 #include <engine/physics/physics_config.h>
 #include <engine/scene/scene_ecs.h>
 
+typedef enum crude_physics_body_shape_type
+{
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX,
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH,
+  CRUDE_PHYSICS_BODY_SHAPE_TYPE_COUNT
+} crude_physics_body_shape_type;
+
 typedef struct crude_physics_character_handle
 {
   uint32                                                   index;
 } crude_physics_character_handle;
+
+typedef struct crude_physics_static_body_handle
+{
+  uint32                                                   index;
+} crude_physics_static_body_handle;
+
+typedef struct crude_physics_kinematic_body_handle
+{
+  uint32                                                   index;
+} crude_physics_kinematic_body_handle;
+
+typedef struct crude_physics_mesh_shape_handle
+{
+  uint32                                                   index;
+} crude_physics_mesh_shape_handle;
+
+typedef void (*crude_physics_kinematic_body_contact_added_callback)
+(
+);
 
 typedef struct crude_physics_character_creation
 {
@@ -52,27 +78,6 @@ typedef struct crude_physics_character
   int32                                                    layers;
 } crude_physics_character;
 
-typedef struct crude_physics_static_body_handle
-{
-  uint32                                                   index;
-} crude_physics_static_body_handle;
-
-typedef struct crude_physics_mesh_shape_handle
-{
-  uint32                                                   index;
-} crude_physics_mesh_shape_handle;
-
-typedef enum crude_physics_body_shape_type
-{
-  CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX,
-  CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH,
-  CRUDE_PHYSICS_BODY_SHAPE_TYPE_COUNT
-} crude_physics_body_shape_type;
-
-typedef void (*crude_physics_static_body_contact_added_callback)
-(
-);
-
 typedef struct crude_physics_static_body_creation
 {
   crude_physics_body_shape_type                            type;
@@ -89,15 +94,12 @@ typedef struct crude_physics_static_body_creation
   };
   uint16                                                   layers;
   crude_entity                                             entity;
-  crude_physics_static_body_contact_added_callback         contact_added_callback;
-  bool                                                     sensor;
 } crude_physics_static_body_creation;
 
 typedef struct crude_physics_static_body_container
 {
   JPH::BodyID                                              jph_body_class;
   crude_entity                                             entity;
-  crude_physics_static_body_contact_added_callback         contact_added_callback;
 } crude_physics_static_body_container;
 
 typedef struct crude_physics_static_body
@@ -115,8 +117,50 @@ typedef struct crude_physics_static_body
     } mesh;
   };
   uint32                                                   layers;
-  bool                                                     sensor;
 } crude_physics_static_body;
+
+typedef struct crude_physics_kinematic_body_creation
+{
+  crude_physics_body_shape_type                            type;
+  union
+  {
+    struct
+    {
+      XMFLOAT3                                             extent;
+    } box;
+    struct
+    {
+      crude_physics_mesh_shape_handle                      handle;
+    } mesh;
+  };
+  uint16                                                   layers;
+  crude_entity                                             entity;
+  bool                                                     sensor;
+} crude_physics_kinematic_body_creation;
+
+typedef struct crude_physics_kinematic_body_container
+{
+  JPH::BodyID                                              jph_body_class;
+  crude_entity                                             entity;
+} crude_physics_kinematic_body_container;
+
+typedef struct crude_physics_kinematic_body
+{
+  crude_physics_body_shape_type                            type;
+  union
+  {
+    struct
+    {
+      XMFLOAT3                                             extent;
+    } box;
+    struct
+    {
+      crude_physics_mesh_shape_handle                      handle;
+    } mesh;
+  };
+  uint32                                                   layers;
+  bool                                                     sensor;
+} crude_physics_kinematic_body;
 
 typedef struct crude_physics_ray_cast_result
 {
@@ -131,6 +175,11 @@ crude_physics_character_empty
 
 CRUDE_API crude_physics_static_body
 crude_physics_static_body_empty
+(
+);
+
+CRUDE_API crude_physics_kinematic_body
+crude_physics_kinematic_body_empty
 (
 );
 

@@ -216,6 +216,11 @@ crude_physics_static_body_creation_empty
 (
 );
 
+CRUDE_API crude_physics_kinematic_body_creation
+crude_physics_kinematic_body_creation_empty
+(
+);
+
 CRUDE_API crude_physics_character_handle
 crude_physics_create_character
 (
@@ -256,6 +261,27 @@ crude_physics_destroy_static_body_instant
 (
   _In_ crude_physics                                      *physics,
   _In_ crude_physics_static_body_handle                    handle
+);
+
+CRUDE_API crude_physics_kinematic_body_handle
+crude_physics_create_kinematic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_creation const        *creation
+);
+
+CRUDE_API crude_physics_kinematic_body_container*
+crude_physics_access_kinematic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_handle                 handle
+);
+
+CRUDE_API void
+crude_physics_destroy_kinematic_body_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_handle                 handle
 );
 
 CRUDE_API bool

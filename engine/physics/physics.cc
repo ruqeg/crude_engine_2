@@ -219,15 +219,15 @@ _crude_jph_contact_listener_class::OnContactAdded
   static_body1 = crude_physics_access_static_body( this->physics, static_body1_handle );
   static_body2 = crude_physics_access_static_body( this->physics, static_body2_handle );
   
-  if ( static_body1->contact_added_callback )
-  {
-    static_body1->contact_added_callback( );
-  }
- 
-  if ( static_body2->contact_added_callback )
-  {
-    static_body2->contact_added_callback( );
-  }
+  //if ( static_body1->contact_added_callback )
+  //{
+  //  static_body1->contact_added_callback( );
+  //}
+  //
+  //if ( static_body2->contact_added_callback )
+  //{
+  //  static_body2->contact_added_callback( );
+  //}
 }
 
 void
@@ -288,6 +288,7 @@ crude_physics_initialize
 
   crude_resource_pool_initialize( &physics->characters_resource_pool, physics->physics_allocator_container, 16, sizeof( crude_physics_character_container ) );
   crude_resource_pool_initialize( &physics->static_body_resource_pool, physics->physics_allocator_container, 256, sizeof( crude_physics_static_body_container ) );
+  crude_resource_pool_initialize( &physics->kinematic_body_resource_pool, physics->physics_allocator_container, 256, sizeof( crude_physics_kinematic_body_container ) );
 
   g_physics_heap_allocator_ = creation->physics_allocator;
   JPH::Allocate = crude_physics_jph_allocate_implementation;
@@ -354,6 +355,7 @@ crude_physics_deinitialize
   
   crude_resource_pool_deinitialize( &physics->characters_resource_pool );
   crude_resource_pool_deinitialize( &physics->static_body_resource_pool );
+  crude_resource_pool_deinitialize( &physics->kinematic_body_resource_pool );
 }
 
 void
@@ -405,6 +407,15 @@ crude_physics_static_body_creation_empty
 )
 {
   crude_physics_static_body_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_static_body_creation );
+  return creation;
+}
+
+crude_physics_kinematic_body_creation
+crude_physics_kinematic_body_creation_empty
+(
+)
+{
+  crude_physics_kinematic_body_creation creation = CRUDE_COMPOUNT_EMPTY( crude_physics_kinematic_body_creation );
   return creation;
 }
 
@@ -516,12 +527,6 @@ crude_physics_create_static_body
   jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Static, creation->layers );
   jph_settings_class.mUserData = handle.index;
 
-  if ( creation->sensor )
-  {
-    jph_settings_class.mIsSensor = true;
-    jph_settings_class.mCollideKinematicVsNonDynamic = true;
-  }
-
   CRUDE_CXX_CONSTRUCTOR( &static_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::Activate ) );
   
   static_body_container->entity = creation->entity;
@@ -557,6 +562,85 @@ crude_physics_destroy_static_body_instant
   jph_body_interface_class->DestroyBody( static_body_container->jph_body_class );
 
   crude_resource_pool_release_resource( &physics->static_body_resource_pool, handle.index );
+}
+
+crude_physics_kinematic_body_handle
+crude_physics_create_kinematic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_creation const        *creation
+)
+{
+  crude_physics_kinematic_body_container                  *kinematic_body_container;
+  JPH::BodyInterface                                      *jph_body_interface_class;
+  JPH::ShapeSettings::ShapeResult                          jph_shape_result_class;
+  JPH::ShapeRefC                                           jph_shape_class;
+  JPH::BodyCreationSettings                                jph_settings_class;
+  crude_physics_kinematic_body_handle                      handle;
+    
+  handle.index = crude_resource_pool_obtain_resource( &physics->kinematic_body_resource_pool );
+
+  kinematic_body_container = crude_physics_access_kinematic_body( physics, handle );
+
+  jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
+  
+  if ( creation->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_BOX )
+  {
+    JPH::BoxShapeSettings                                    jph_shape_settings_class;
+    jph_shape_settings_class = CRUDE_COMPOUNT( JPH::BoxShapeSettings, { JPH::Vec3( creation->box.extent.x, creation->box.extent.y, creation->box.extent.z ) } );
+    jph_shape_settings_class.SetEmbedded( );
+    jph_shape_result_class = jph_shape_settings_class.Create( );
+    jph_shape_class = jph_shape_result_class.Get( );
+  }
+  else if ( creation->type == CRUDE_PHYSICS_BODY_SHAPE_TYPE_MESH )
+  {
+    jph_shape_class = crude_physics_shapes_manager_access_mesh_shape( physics->physics_shapes_manager, creation->mesh.handle )->jph_shape_class;
+  }
+
+  jph_settings_class = JPH::BodyCreationSettings( jph_shape_class, JPH::RVec3( 0.0, 0.0, 0.0 ), JPH::Quat::sIdentity( ), JPH::EMotionType::Kinematic, creation->layers );
+  jph_settings_class.mUserData = handle.index;
+
+  if ( creation->sensor )
+  {
+    jph_settings_class.mIsSensor = true;
+    jph_settings_class.mCollideKinematicVsNonDynamic = true;
+  }
+
+  CRUDE_CXX_CONSTRUCTOR( &kinematic_body_container->jph_body_class, JPH::BodyID, jph_body_interface_class->CreateAndAddBody( jph_settings_class, JPH::EActivation::Activate ) );
+  
+  kinematic_body_container->entity = creation->entity;
+
+  return handle;
+}
+
+crude_physics_kinematic_body_container*
+crude_physics_access_kinematic_body
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_handle                 handle
+)
+{
+  return CRUDE_CAST( crude_physics_kinematic_body_container*, crude_resource_pool_access_resource( &physics->kinematic_body_resource_pool, handle.index ) );
+}
+
+void
+crude_physics_destroy_kinematic_body_instant
+(
+  _In_ crude_physics                                      *physics,
+  _In_ crude_physics_kinematic_body_handle                 handle
+)
+{
+  JPH::BodyInterface                                      *jph_body_interface_class;
+  crude_physics_kinematic_body_container                  *kinematic_body_container;
+
+  kinematic_body_container = crude_physics_access_kinematic_body( physics, handle );
+  
+  jph_body_interface_class = &physics->jph_physics_system_class->GetBodyInterface( );
+
+  jph_body_interface_class->RemoveBody( kinematic_body_container->jph_body_class );
+  jph_body_interface_class->DestroyBody( kinematic_body_container->jph_body_class );
+
+  crude_resource_pool_release_resource( &physics->kinematic_body_resource_pool, handle.index );
 }
 
 bool
@@ -626,9 +710,9 @@ crude_physics_ray_cast
     uint8                                                  jph_broad_phase_mask;
   };
 
-  JPH::RRayCast                                           jph_ray_cast;
-  JPH::RayCastResult                                      jph_ray_cast_result;
-  XMMATRIX                                                view_to_world;
+  JPH::RRayCast                                            jph_ray_cast;
+  JPH::RayCastResult                                       jph_ray_cast_result;
+  XMMATRIX                                                 view_to_world;
   
   jph_ray_cast.mDirection = crude_vector_to_jph_vec3( direction );
   jph_ray_cast.mOrigin = crude_vector_to_jph_vec3( origin );
@@ -654,11 +738,11 @@ crude_physics_ray_cast
 static void
 crude_physics_jolt_trace_impl_
 (
-  _In_ char const                                          *fmt,
+  _In_ char const                                         *fmt,
   _In_ ...
 )
 {
-  char                                                    buffer[ 1024 ];
+  char                                                     buffer[ 1024 ];
   va_list                                                  list;
 
   va_start( list, fmt );

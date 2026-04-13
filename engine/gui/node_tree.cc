@@ -10,7 +10,8 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "Camera",
   "Node External",
   "Physics Character",
-  "Physics Static Body"
+  "Physics Static Body",
+  "Physics Kinematic Body"
 };
 
 static bool
@@ -170,6 +171,12 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_PHYSICS_STATIC_BODY:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_static_body, { crude_physics_static_body_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_PHYSICS_KINEMATIC_BODY:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_kinematic_body, { crude_physics_kinematic_body_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
