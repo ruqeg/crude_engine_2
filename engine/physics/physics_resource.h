@@ -51,6 +51,8 @@ typedef struct crude_physics_mesh_shape_handle
 
 typedef void (*crude_physics_kinematic_body_contact_added_callback)
 (
+  _In_ crude_entity                                        signal_entity,
+  _In_ crude_entity                                        hitted_entity
 );
 
 typedef struct crude_physics_character_creation
@@ -142,6 +144,7 @@ typedef struct crude_physics_kinematic_body_container
 {
   JPH::BodyID                                              jph_body_class;
   crude_entity                                             entity;
+  crude_physics_kinematic_body_contact_added_callback      contact_added_callback;
 } crude_physics_kinematic_body_container;
 
 typedef struct crude_physics_kinematic_body

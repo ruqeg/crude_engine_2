@@ -113,19 +113,20 @@
 						}]
 				}]
 		}, {
-			"name":	"attack_collision",
+			"name":	"attack_sensor",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[0, 5.54962682723999, 0.24041098356246948],
+					"translation":	[0, 5.5109157562255859, 0],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}, {
-					"type":	"crude_physics_static_body",
+					"type":	"crude_physics_kinematic_body",
 					"shape_type":	0,
 					"box":	{
 						"extent":	[2, 6.4000000953674316, 2]
 					},
-					"layers":	256
+					"layers":	256,
+					"sensor":	1
 				}],
 			"children":	[]
 		}]

@@ -63,3 +63,9 @@ crude_physics_system_import
   _In_ crude_components_serialization_manager             *manager,
   _In_ crude_physics_system_context                       *ctx
 );
+
+CRUDE_API void
+crude_physics_run_system_on_start
+(
+  _In_ crude_ecs                                          *world
+);

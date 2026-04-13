@@ -64,8 +64,8 @@ crude_zombie_health_death_callback_
 static void
 crude_zombie_attack_callback_
 (
-  _In_ crude_entity                                        mask_entity,
-  _In_ crude_entity                                        layer_entity
+  _In_ crude_entity                                        signal_entity,
+  _In_ crude_entity                                        hitted_entity
 );
 
 /**********************************************************
@@ -169,9 +169,15 @@ crude_zombie_create_observer_
 
     /* Attack setup */
     {
-      crude_entity                                         zombie_attack_collision_entity;
+      crude_physics_kinematic_body_container              *zombie_attack_sensor_kinematic_body_container;
+      crude_entity                                         zombie_attack_sensor_entity;
+      crude_physics_kinematic_body_handle                  zombie_attack_sensor_kinematic_body_handle;
 
-      zombie_attack_collision_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "attack_collision" );
+
+      zombie_attack_sensor_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "attack_sensor" );
+      zombie_attack_sensor_kinematic_body_handle = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, zombie_attack_sensor_entity, crude_physics_kinematic_body_handle );
+      zombie_attack_sensor_kinematic_body_container = crude_physics_access_kinematic_body( &game->engine->physics, zombie_attack_sensor_kinematic_body_handle );
+      zombie_attack_sensor_kinematic_body_container->contact_added_callback = crude_zombie_attack_callback_;
     }
 
     /* Model setup */
@@ -473,31 +479,33 @@ crude_zombie_health_death_callback_
 void
 crude_zombie_attack_callback_
 (
-  _In_ crude_entity                                        mask_entity,
-  _In_ crude_entity                                        layer_entity
+  _In_ crude_entity                                        signal_entity,
+  _In_ crude_entity                                        hitted_entity
 )
 {
   crude_game                                              *game;
   crude_zombie const                                      *zombie;
   crude_health                                            *health;
-  crude_entity                                             health_entity;
   crude_gltf                                              *zombie_model;
+  crude_entity                                             health_entity;
+  crude_entity                                             zombie_entity;
   crude_entity                                             zombie_pivot_entity;
   crude_entity                                             zombie_model_entity;
 
   game = crude_game_instance( );
   
-  health_entity = layer_entity;
+  health_entity = hitted_entity;
+  zombie_entity = signal_entity;
+
   health = CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( game->engine->world, &health_entity, crude_health );
 
-  zombie = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( game->engine->world, mask_entity, crude_zombie );
+  zombie = CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( game->engine->world, &zombie_entity, crude_zombie );
   
   if ( health )
   {
     crude_heal_receive_damage( health_entity, health, zombie->damage );
     
-
-    zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, mask_entity, "pivot" );
+    zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, signal_entity, "pivot" );
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "model" );
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].disabled = false;
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].current_time = 0;

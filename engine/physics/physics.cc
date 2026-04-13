@@ -202,32 +202,56 @@ _crude_jph_contact_listener_class::OnContactValidate
 void
 _crude_jph_contact_listener_class::OnContactAdded
 (
-  _In_ const JPH::Body                                    &body1,
-  _In_ const JPH::Body                                    &body2,
-  _In_ const JPH::ContactManifold                         &manifold,
+  _In_ JPH::Body const                                    &body1,
+  _In_ JPH::Body const                                    &body2,
+  _In_ JPH::ContactManifold const                         &manifold,
   _In_ JPH::ContactSettings                               &settings
 )
 {
-  crude_physics_static_body_container                     *static_body1;
-  crude_physics_static_body_container                     *static_body2;
-  crude_physics_static_body_handle                         static_body1_handle;
-  crude_physics_static_body_handle                         static_body2_handle;
+  JPH::Body const                                         *jph_static_body;
+  JPH::Body const                                         *jph_kinematic_body;
+  crude_physics_kinematic_body_container                  *kinematic_body;
+  crude_physics_static_body_container                     *static_body;
+  crude_physics_kinematic_body_handle                      kinematic_body_handle;
+  crude_physics_static_body_handle                         static_body_handle;
+  crude_entity                                             signal_entity;
+  crude_entity                                             hitted_entity;
 
-  static_body1_handle.index = body1.GetUserData( );
-  static_body2_handle.index = body2.GetUserData( );
+  if ( body1.GetMotionType( ) == JPH::EMotionType::Dynamic || body2.GetMotionType( ) == JPH::EMotionType::Dynamic )
+  {
+    // !TODO idk how to disable contant handle for jph::character T_T
+    return;
+  }
 
-  static_body1 = crude_physics_access_static_body( this->physics, static_body1_handle );
-  static_body2 = crude_physics_access_static_body( this->physics, static_body2_handle );
+  if ( body1.GetMotionType( ) == JPH::EMotionType::Kinematic )
+  {
+    jph_kinematic_body = &body1;
+    jph_static_body = &body2;
+    CRUDE_ASSERT( body2.GetMotionType( ) == JPH::EMotionType::Static );
+  }
+  else if ( body2.GetMotionType( ) == JPH::EMotionType::Kinematic )
+  {
+    jph_kinematic_body = &body2;
+    jph_static_body = &body1;
+    CRUDE_ASSERT( body1.GetMotionType( ) == JPH::EMotionType::Static );
+  }
+  else
+  {
+    // !TODO WHY THE FUCK IT CALLED FOR CHARACTER!!!!!!!!
+    CRUDE_ASSERT( false );
+    return;
+  }
+
+  kinematic_body_handle.index = jph_kinematic_body->GetUserData( );
+  kinematic_body = crude_physics_access_kinematic_body( this->physics, kinematic_body_handle );
+  signal_entity = kinematic_body->entity;
   
-  //if ( static_body1->contact_added_callback )
-  //{
-  //  static_body1->contact_added_callback( );
-  //}
-  //
-  //if ( static_body2->contact_added_callback )
-  //{
-  //  static_body2->contact_added_callback( );
-  //}
+  static_body_handle.index = jph_kinematic_body->GetUserData( );
+  static_body = crude_physics_access_static_body( this->physics, static_body_handle );
+  hitted_entity = static_body->entity;
+  
+  CRUDE_ASSERT( kinematic_body->contact_added_callback );
+  kinematic_body->contact_added_callback( signal_entity, hitted_entity );
 }
 
 void
@@ -436,7 +460,7 @@ crude_physics_create_character
     JPH::Quat::sIdentity( ),
     CRUDE_JOLT_OVERRIDEN_NEW JPH::CapsuleShape( 0.5f * creation->character_height_standing, creation->character_radius_standing )
   ).Create( ).Get( );
-    
+
   jph_settings_class = CRUDE_JOLT_OVERRIDEN_NEW JPH::CharacterSettings( );
   jph_settings_class->mMaxSlopeAngle = creation->max_slop_angle;
   jph_settings_class->mLayer = creation->layers;
@@ -455,7 +479,7 @@ crude_physics_create_character
     JPH::Quat::sIdentity( ),
     0,
     physics->jph_physics_system_class );
-
+  
   character_container->jph_character_class->AddToPhysicsSystem( JPH::EActivation::Activate );
   
   CRUDE_CXX_CONSTRUCTOR( &character_container->manually_stored_transform, JPH::Mat44 );

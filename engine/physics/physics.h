@@ -102,10 +102,10 @@ public:
   virtual void
   OnContactAdded
   (
-    _In_ const JPH::Body                                   &body1,
-    _In_ const JPH::Body                                   &body2,
-    _In_ const JPH::ContactManifold                        &manifold,
-    _In_ JPH::ContactSettings                              &settings
+  _In_ JPH::Body const                                    &body1,
+  _In_ JPH::Body const                                    &body2,
+  _In_ JPH::ContactManifold const                         &manifold,
+  _In_ JPH::ContactSettings                               &settings
   ) override;
 
   virtual void

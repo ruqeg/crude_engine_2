@@ -48,37 +48,5 @@
 						}]
 				}],
 			"children":	[]
-		}, {
-			"name":	"weapon_child",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[0, 0.750787377357483, 0],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_static_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[1, 1, 1]
-					},
-					"layers":	136
-				}],
-			"children":	[]
-		}, {
-			"name":	"weapon_childd",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[0, 0, -1.0703794956207275],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_static_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[1, 1, 1]
-					},
-					"layers":	136
-				}],
-			"children":	[]
 		}]
 }

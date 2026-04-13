@@ -116,37 +116,5 @@
 					"layers":	6
 				}],
 			"children":	[]
-		}, {
-			"name":	"trigger",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[70.312469482421875, 30.8757495880127, -64.407699584960938],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_static_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[18.600000381469727, 20.399999618530273, 27.700000762939453]
-					},
-					"layers":	256
-				}],
-			"children":	[]
-		}, {
-			"name":	"to_actiae",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[95.0851516723633, 52.1636085510254, -49.188991546630859],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_static_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[21.200000762939453, 4.8000001907348633, 1]
-					},
-					"layers":	16
-				}],
-			"children":	[]
 		}]
 }

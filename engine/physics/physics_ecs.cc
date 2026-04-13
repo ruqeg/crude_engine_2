@@ -596,7 +596,18 @@ crude_physics_system_import
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_physics_kinematic_body_post_simulation_system_, crude_ecs_on_post_physics_update, ctx, { 
     { .id = ecs_id( crude_physics_kinematic_body_handle ) },
     { .id = ecs_id( crude_transform ) }
-  } );
+  } );  
+}
+
+void
+crude_physics_run_system_on_start
+(
+  _In_ crude_ecs                                          *world
+)
+{
+  ecs_run( world, ecs_id( crude_physics_character_post_simulation_system_ ), 0, NULL );
+  ecs_run( world, ecs_id( crude_physics_static_body_post_simulation_system_ ), 0, NULL );
+  ecs_run( world, ecs_id( crude_physics_kinematic_body_post_simulation_system_ ), 0, NULL );
 }
 
 void

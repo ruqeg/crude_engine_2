@@ -268,11 +268,14 @@ crude_editor_handle_input
       crude_transform                                     *editor_transform;
       crude_transform                                     *selected_node_transform;
 
-      editor_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform );
-      selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->selected_node, crude_transform );
-      if ( editor_transform && selected_node_transform )
+      if ( crude_entity_valid( editor->engine->world, editor->selected_node ) )
       {
-        editor_transform->translation = selected_node_transform->translation;
+        editor_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform );
+        selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( editor->engine->world, editor->selected_node, crude_transform );
+        if ( editor_transform && selected_node_transform )
+        {
+          editor_transform->translation = selected_node_transform->translation;
+        }
       }
     }
   }
@@ -324,7 +327,8 @@ crude_editor_start_game
 {
   CRUDE_ECS_GAME_STAGE_ENABLE( editor->engine->world, true );
   CRUDE_ECS_EDITOR_STAGE_ENABLE( editor->engine->world, false );
-
+  
+  crude_physics_run_system_on_start( editor->engine->world );
   crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
   crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, true );
 }
