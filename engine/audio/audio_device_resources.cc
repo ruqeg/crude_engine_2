@@ -11,3 +11,16 @@ crude_sound_creation_empty
   creation.sound_group_handle = CRUDE_SOUND_GROUP_HANDLE_INVALID;
   return creation;
 }
+
+crude_audio_player
+crude_audio_player_empty
+(
+)
+{
+  crude_audio_player audio_player = CRUDE_COMPOUNT_EMPTY( crude_audio_player );
+  audio_player.looping = true;
+  audio_player.positioning = CRUDE_AUDIO_SOUND_POSITIONING_RELATIVE;
+  audio_player.relative_filepath[ 0 ] = 0;
+  audio_player.stream = true;
+  return audio_player;
+}

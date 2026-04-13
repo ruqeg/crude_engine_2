@@ -463,9 +463,6 @@ crude_engine_initialize_imgui_
   
   ImGui_ImplSDL3_InitForVulkan( engine->platform.sdl_window );
 
-  engine->pub_engine_should_proccess_imgui_input = true;
-
-
   //engine->imgui_font = imgui_io->Fonts->AddFontFromFileTTF( /* TODO */ game->game_font_absolute_filepath, 20.f );
   //CRUDE_ASSERT( engine->imgui_font );
 }
@@ -476,7 +473,6 @@ crude_engine_deinitialize_imgui_
   _In_ crude_engine                                       *engine
 )
 {
-  engine->pub_engine_should_proccess_imgui_input = false;
   ImGui_ImplSDL3_Shutdown( );
   ImGui::DestroyContext( engine->imgui_context );
 }
@@ -503,9 +499,7 @@ crude_engine_initialize_audio_
   _In_ crude_engine                                       *engine
 )
 {
-  engine->pub_engine_audio_volume = 1.f;
-
-  crude_audio_device_initialize( &engine->audio_device, &engine->common_allocator );
+  crude_audio_device_initialize( &engine->audio_device, &engine->common_allocator, engine->environment.directories.resources_absolute_directory );
   
   engine->audio_system_context = CRUDE_COMPOUNT_EMPTY( crude_audio_system_context );
   engine->audio_system_context.device = &engine->audio_device;
@@ -750,10 +744,7 @@ crude_engine_input_callback_
   
   ImGui::SetCurrentContext( engine->imgui_context );
 
-  if ( engine->pub_engine_should_proccess_imgui_input )
-  {
-    ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
-  }
+  ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
   
   crude_gui_devmenu_handle_input( &engine->devmenu );
   crude_editor_handle_input( &engine->editor );
@@ -775,6 +766,7 @@ crude_engine_initialize_scene_
   node_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
   node_manager_creation.select_camera_func = crude_engine_select_camera_;
   node_manager_creation.select_camera_ctx = engine;
+  node_manager_creation.audio_device = &engine->audio_device;
   crude_node_manager_initialize( &engine->node_manager, &node_manager_creation );
 }
 

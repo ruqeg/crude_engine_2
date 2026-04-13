@@ -1,4 +1,5 @@
 #include <engine/physics/physics_ecs.h>
+#include <engine/audio/audio_ecs.h>
 #include <engine/scene/node_manager.h>
 
 #include <engine/gui/node_tree.h>
@@ -11,7 +12,9 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "Node External",
   "Physics Character",
   "Physics Static Body",
-  "Physics Kinematic Body"
+  "Physics Kinematic Body",
+  "Audio Relative",
+  "Audio Listener"
 };
 
 static bool
@@ -185,6 +188,18 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_PHYSICS_KINEMATIC_BODY:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_physics_kinematic_body, { crude_physics_kinematic_body_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_AUDO_RELATIVE:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_audio_player, { crude_audio_player_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_AUDIO_LISTENER:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_audio_listener, { } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }

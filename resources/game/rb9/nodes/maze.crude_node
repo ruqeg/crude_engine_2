@@ -6,7 +6,7 @@
 			"rotation":	[0, 0, 0, 1],
 			"scale":	[1, 1, 1]
 		}, {
-			"type":	"crude_training_area_level"
+			"type":	"crude_maze_level"
 		}],
 	"children":	[{
 			"name":	"player_spawnpoint",
@@ -301,5 +301,20 @@
 					"type":	"crude_zombie",
 					"damage":	25
 				}]
+		}, {
+			"name":	"ambient_sound",
+			"components":	[{
+					"type":	"crude_audio_player",
+					"path":	"game\\rb9\\sounds\\maze_ambient.mp3",
+					"looping":	1,
+					"positioning":	1,
+					"stream":	1
+				}, {
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[]
 		}]
 }

@@ -49,6 +49,7 @@ crude_node_manager_initialize
   manager->allocator = creation->allocator;
   manager->select_camera_func = creation->select_camera_func;
   manager->select_camera_ctx = creation->select_camera_ctx;
+  manager->audio_device = creation->audio_device;
 
   CRUDE_HASHMAPSTR_INITIALIZE( manager->relative_filepath_to_node_json, crude_heap_allocator_pack( manager->allocator ) );
   crude_string_buffer_initialize( &manager->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( manager->allocator ) );
@@ -170,8 +171,8 @@ crude_node_manager_load_node_from_json_
     node_external_component.type = CRUDE_CAST( crude_node_external_type, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( node_external_json, "type") ) );
     crude_string_copy( node_external_component.node_relative_filepath, node_external_relative_filepath, sizeof( node_external_component.node_relative_filepath ) );
     node = crude_node_manager_create_node( manager, node_external_relative_filepath, world );
-    crude_entity_set_parent( world, node, *parent );
     crude_entity_set_name( world, node, node_name );
+    crude_entity_set_parent( world, node, *parent );
 
     if ( node_external_component.type == CRUDE_NODE_EXTERNAL_TYPE_REFERENCE )
     {

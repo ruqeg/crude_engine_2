@@ -4,6 +4,7 @@
 
 #include <engine/core/alias.h>
 #include <engine/core/resource_pool.h>
+#include <engine/audio/audio_config.h>
 
 typedef struct crude_sound_handle
 {
@@ -34,7 +35,7 @@ typedef enum crude_audio_sound_attenuation_model
 
 typedef struct crude_sound_creation
 {
-  char const                                              *absolute_filepath;
+  char                                                     relative_filepath[ CRUDE_AUDIO_RELATIVE_FILEPATH_LENGTH_MAX ];
   bool                                                     looping;
   bool                                                     async_loading;
   bool                                                     stream;
@@ -47,7 +48,30 @@ typedef struct crude_sound_creation
   crude_sound_group_handle                                 sound_group_handle;
 } crude_sound_creation;
 
+typedef struct crude_audio_player
+{
+  char                                                     relative_filepath[ CRUDE_AUDIO_RELATIVE_FILEPATH_LENGTH_MAX ];
+  bool                                                     looping;
+  bool                                                     stream;
+  crude_audio_sound_positioning                            positioning;
+} crude_audio_player;
+
+typedef struct crude_audio_player_handle
+{
+  crude_sound_handle                                       sound_handle;
+} crude_audio_player_handle;
+
+typedef struct crude_audio_listener
+{
+  float32                                                  last_local_to_world_update_time;
+} crude_audio_listener;
+
 CRUDE_API crude_sound_creation
 crude_sound_creation_empty
+(
+);
+
+CRUDE_API crude_audio_player
+crude_audio_player_empty
 (
 );

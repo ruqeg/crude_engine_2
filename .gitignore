@@ -4,6 +4,7 @@ shaders/include/crude_shaders/*
 *.vscode
 compiled_shaders/
 resources/debug/
+resources/game/rb9/sounds/
 resources/game/rb9/dev/
 resources/game/rb9/gltf/
 resources/game/rb9/original/

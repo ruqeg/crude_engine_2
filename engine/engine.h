@@ -134,14 +134,6 @@ typedef struct crude_engine
   crude_gui_devmenu                                        devmenu;
   crude_editor                                             editor;
 #endif
-
-  /******************************
-   *
-   * Public
-   *
-   ******************************/
-  bool                                                     pub_engine_should_proccess_imgui_input;
-  float32                                                  pub_engine_audio_volume;
 } crude_engine;
 
 CRUDE_API void

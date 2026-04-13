@@ -19,7 +19,8 @@ void
 crude_audio_device_initialize
 (
   _In_ crude_audio_device                                  *audio,
-  _In_ crude_heap_allocator                                *allocator
+  _In_ crude_heap_allocator                                *allocator,
+  _In_ char const                                          *resources_absolute_directory
 )
 {
   ma_device_info                                          *lma_playback_infos;
@@ -29,6 +30,7 @@ crude_audio_device_initialize
   uint32                                                   selected_device_index;
 
   audio->allocator = allocator;
+  audio->resources_absolute_directory = resources_absolute_directory;
 
   crude_resource_pool_initialize( &audio->sounds, crude_heap_allocator_pack( audio->allocator ), 512, sizeof( ma_sound ) );
   crude_resource_pool_initialize( &audio->sounds_groups, crude_heap_allocator_pack( audio->allocator ), 512, sizeof( ma_sound_group ) );
@@ -83,6 +85,8 @@ crude_audio_device_initialize
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed initialize audio fence!" );
     return;
   }
+
+  crude_string_buffer_initialize( &audio->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( audio->allocator ) ); 
 }
 
 void
@@ -97,6 +101,7 @@ crude_audio_device_deinitialize
   ma_context_uninit( &audio->lma_context );
   crude_resource_pool_deinitialize( &audio->sounds );
   crude_resource_pool_deinitialize( &audio->sounds_groups );
+  crude_string_buffer_deinitialize( &audio->absolute_filepath_string_buffer ); 
 }
 
 void
@@ -188,6 +193,7 @@ crude_audio_device_create_sound
 )
 {
   ma_sound                                                *lma_sound;
+  char const                                              *absolute_filepath;
   crude_sound_handle                                       sound_handle;
   ma_result                                                result;
   ma_uint32                                                sounnd_flags;
@@ -214,10 +220,13 @@ crude_audio_device_create_sound
     sounnd_flags |= MA_SOUND_FLAG_LOOPING;
   }
   
-  result = ma_sound_init_from_file( &audio->lma_engine, creation->absolute_filepath, sounnd_flags, NULL, creation->async_loading ? &audio->lma_fence : NULL, lma_sound );
+  crude_string_buffer_clear( &audio->absolute_filepath_string_buffer ); 
+  absolute_filepath = crude_string_buffer_append_use_f( &audio->absolute_filepath_string_buffer, "%s%s", audio->resources_absolute_directory, creation->relative_filepath );
+
+  result = ma_sound_init_from_file( &audio->lma_engine, absolute_filepath, sounnd_flags, NULL, creation->async_loading ? &audio->lma_fence : NULL, lma_sound );
   if ( result != MA_SUCCESS )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed load sound \"%s\"", creation->absolute_filepath );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_AUDIO, "Failed load sound \"%s\"", absolute_filepath );
     return CRUDE_SOUND_HANDLE_INVALID;
   }
 
@@ -330,6 +339,18 @@ crude_audio_device_sound_set_volume
   ma_sound_set_volume( lma_sound, volume );
 }
 
+float32
+crude_audio_device_sound_get_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  return ma_sound_get_volume( lma_sound );
+}
+
 void
 crude_audio_device_sound_set_attenuation_model
 (
@@ -368,4 +389,28 @@ crude_audio_device_set_global_volume
 )
 {
   ma_engine_set_volume( &audio->lma_engine, volume );
+}
+
+bool
+crude_audio_device_sound_get_looping
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  return ma_sound_is_looping( lma_sound );
+}
+
+crude_audio_sound_positioning
+crude_audio_device_sound_get_positiong
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+)
+{
+  ma_sound                                                *lma_sound;
+  lma_sound = CRUDE_CAST( ma_sound*, crude_resource_pool_access_resource( &audio->sounds, sound_handle.index ) );
+  return CRUDE_CAST( crude_audio_sound_positioning, ma_sound_get_positioning( lma_sound ) );
 }

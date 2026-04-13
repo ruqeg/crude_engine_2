@@ -12,18 +12,6 @@
 
 crude_game                                              *crude_game_instance_;
 
-static void
-crude_game_deinitialize_constant_strings_
-(
-  _In_ crude_game                                         *game
-);
-
-static void
-crude_game_setup_custom_nodes_to_scene_
-( 
-  _In_ crude_game                                         *game
-);
-
 void
 crude_game_update_input_
 (
@@ -45,9 +33,6 @@ crude_game_initialize
 )
 {
   game->engine = engine;
-  
-  crude_string_buffer_initialize( &game->debug_constant_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
-  crude_string_buffer_initialize( &game->debug_strings_buffer, 4096, crude_heap_allocator_pack( &game->engine->common_allocator ) );
 
   game->player_controller_system_context = CRUDE_COMPOUNT_EMPTY( crude_player_controller_system_context );
   game->player_controller_system_context.input = &engine->platform.input;
@@ -69,11 +54,13 @@ crude_game_initialize
   game->training_area_level_system_context = CRUDE_COMPOUNT_EMPTY( crude_training_area_level_system_context );
   game->training_area_level_system_context.input = &engine->platform.input;
   crude_training_area_level_system_import( engine->world, &engine->components_serialization_manager, &game->training_area_level_system_context );
+  
+  game->maze_level_system_context = CRUDE_COMPOUNT_EMPTY( crude_maze_level_system_context );
+  game->maze_level_system_context.input = &engine->platform.input;
+  crude_maze_level_system_import( engine->world, &engine->components_serialization_manager, &game->maze_level_system_context );
 
   crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\player.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
-  
-  crude_game_setup_custom_nodes_to_scene_( game );
   
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
@@ -95,7 +82,6 @@ crude_game_deinitialize
   _In_ crude_game                                         *game
 )
 {
-  crude_game_deinitialize_constant_strings_( game );
 }
 
 void
@@ -110,46 +96,6 @@ crude_game_update
 void
 crude_game_update_input_
 (
-  _In_ crude_game                                         *game
-)
-{
-}
-
-bool
-crude_game_parse_json_to_component_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON const                                        *component_json,
-  _In_ char const                                         *component_name,
-  _In_ crude_node_manager                                 *manager
-)
-{
-  return true;
-}
-
-void
-crude_game_parse_all_components_to_json_
-( 
-  _In_ crude_entity                                        node, 
-  _In_ cJSON                                              *node_components_json,
-  _In_ crude_node_manager                                 *manager
-)
-{
-}
-
-void
-crude_game_deinitialize_constant_strings_
-(
-  _In_ crude_game                                       *editor
-)
-{
-  crude_string_buffer_deinitialize( &editor->debug_strings_buffer );
-  crude_string_buffer_deinitialize( &editor->debug_constant_strings_buffer );
-}
-
-void
-crude_game_setup_custom_nodes_to_scene_
-( 
   _In_ crude_game                                         *game
 )
 {

@@ -13,13 +13,11 @@
 #include <game/zombie_ecs.h>
 #include <game/health_ecs.h>
 #include <game/training_area_level_ecs.h>
+#include <game/maze_level_ecs.h>
 
 typedef struct crude_game
 {
   crude_engine                                            *engine;
-
-  crude_string_buffer                                      debug_strings_buffer;
-  crude_string_buffer                                      debug_constant_strings_buffer;
 
   /* Game related */
   crude_entity                                             player_node;
@@ -30,6 +28,7 @@ typedef struct crude_game
   crude_weapon_system_context                              weapon_system_context;
   crude_zombie_system_context                              zombie_system_context;
   crude_training_area_level_system_context                 training_area_level_system_context;
+  crude_maze_level_system_context                          maze_level_system_context;
   crude_health_system_context                              health_system_context;
 } crude_game;
 

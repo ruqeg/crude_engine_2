@@ -14,13 +14,16 @@ typedef struct crude_audio_device
   crude_resource_pool                                      sounds_groups;
   crude_resource_pool                                      sounds;
   crude_heap_allocator                                    *allocator;
+  char const                                              *resources_absolute_directory;
+  crude_string_buffer                                      absolute_filepath_string_buffer;
 } crude_audio_device;
 
 CRUDE_API void
 crude_audio_device_initialize
 (
   _In_ crude_audio_device                                  *audio,
-  _In_ crude_heap_allocator                                *allocator
+  _In_ crude_heap_allocator                                *allocator,
+  _In_ char const                                          *resources_absolute_directory
 );
 
 CRUDE_API void
@@ -128,6 +131,13 @@ crude_audio_device_sound_set_volume
   _In_ float32                                              volume
 );
 
+CRUDE_API float32
+crude_audio_device_sound_get_volume
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+);
+
 CRUDE_API void
 crude_audio_device_sound_set_attenuation_model
 (
@@ -148,4 +158,18 @@ crude_audio_device_set_global_volume
 (
   _In_ crude_audio_device                                  *audio,
   _In_ float32                                              volume
+);
+
+CRUDE_API bool
+crude_audio_device_sound_get_looping
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
+);
+
+CRUDE_API crude_audio_sound_positioning
+crude_audio_device_sound_get_positiong
+(
+  _In_ crude_audio_device                                  *audio,
+  _In_ crude_sound_handle                                   sound_handle
 );

@@ -236,40 +236,38 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
   CRUDE_IMGUI_OPTION( "Cast Shadow", {
     ImGui::Checkbox( "##Cast Shadow", &component->model_renderer_resources_instance.cast_shadow );
   } );
-  
-
-  ImGui::Text( "\"%s\"", model_renderer_resources ? model_renderer_resources->relative_filepath : "Empty" );
-  if ( ImGui::BeginDragDropTarget( ) )
-  {
-    ImGuiPayload const                                  *im_payload;
-    char                                                *replace_relative_filepath;
-  
-    im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
-    if ( im_payload )
-    {
-      replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
-      if ( strstr( replace_relative_filepath, ".gltf" ) )
-      {
-        crude_gfx_model_renderer_resources              *model_renderer_resources;
-        crude_gfx_model_renderer_resources_handle        model_renderer_resources_handle;
-
-        model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath, NULL );
-        
-        if ( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
-        {
-          crude_gfx_model_renderer_resources_instance_deinitialize( &component->model_renderer_resources_instance );
-        }
-  
-        crude_gfx_model_renderer_resources_instance_initialize(
-          &component->model_renderer_resources_instance,
-          manager->model_renderer_resources_manager,
-          model_renderer_resources_handle );
-      }
-    }
-    ImGui::EndDragDropTarget();
-  }
 
   CRUDE_IMGUI_OPTION( "Relative Filepath", {
+    ImGui::Text( "\"%s\"", model_renderer_resources ? model_renderer_resources->relative_filepath : "Empty" );
+    if ( ImGui::BeginDragDropTarget( ) )
+    {
+      ImGuiPayload const                                  *im_payload;
+      char                                                *replace_relative_filepath;
+    
+      im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
+      if ( im_payload )
+      {
+        replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
+        if ( strstr( replace_relative_filepath, ".gltf" ) )
+        {
+          crude_gfx_model_renderer_resources              *model_renderer_resources;
+          crude_gfx_model_renderer_resources_handle        model_renderer_resources_handle;
+
+          model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath, NULL );
+          
+          if ( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
+          {
+            crude_gfx_model_renderer_resources_instance_deinitialize( &component->model_renderer_resources_instance );
+          }
+    
+          crude_gfx_model_renderer_resources_instance_initialize(
+            &component->model_renderer_resources_instance,
+            manager->model_renderer_resources_manager,
+            model_renderer_resources_handle );
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
   } );
   
   CRUDE_IMGUI_OPTION( "Animations", {
