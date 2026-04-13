@@ -52,6 +52,19 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_player_controller )
 
 /**********************************************************
  *
+ *                 API
+ *
+ *********************************************************/
+static void
+crude_player_health_death_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+);
+
+/**********************************************************
+ *
  *                 System
  *
  *********************************************************/
@@ -490,4 +503,15 @@ crude_player_controller_engine_update_system_
     XMStoreFloat4( &weapon_grab_transform->rotation, XMVectorLerp( XMLoadFloat4( &weapon_grab_transform->rotation ), r, 35 * it->delta_time ) );
   }
   CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_player_health_death_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+)
+{
+  crude_engine_commands_manager_push_load_node_command( &crude_game_instance()->engine->commands_manager, "" );
 }

@@ -43,4 +43,10 @@ crude_gui_debug_queue_draw
   {
     crude_physics_enable_simulation( &debug->engine->physics, debug->engine->world, debug->engine->physics.simulation_enabled );
   }
+
+  if ( ImGui::CollapsingHeader( "Editor Camera" ) )
+  {
+    crude_editor_camera *editor_camerae = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( debug->engine->world, debug->engine->editor.editor_camera_node, crude_editor_camera );
+    ImGui::DragFloat( "Walk Speed", &editor_camerae->walk_speed );
+  }
 }

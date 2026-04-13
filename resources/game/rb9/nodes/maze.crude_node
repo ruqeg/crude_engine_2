@@ -1,0 +1,102 @@
+{
+	"name":	"maze",
+	"components":	[{
+			"type":	"crude_transform",
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		}, {
+			"type":	"crude_training_area_level"
+		}],
+	"children":	[{
+			"name":	"player_spawnpoint",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[17.5721549987793, -11.16988468170166, 75.91754150390625],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[{
+					"name":	"player",
+					"external":	{
+						"relative_filepath":	"game\\rb9\\nodes\\player.crude_node",
+						"type":	0
+					}
+				}]
+		}, {
+			"name":	"maze_model",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_gltf",
+					"path":	"game\\rb9\\gltf\\mazes\\maze.gltf",
+					"animations_instances":	[{
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}]
+				}],
+			"children":	[]
+		}, {
+			"name":	"vertical_static_body",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[58.961101531982422, 27.156465530395508, -6.1512384414672852],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_static_body",
+					"shape_type":	0,
+					"box":	{
+						"extent":	[10.800000190734863, 20, 1]
+					},
+					"layers":	6
+				}],
+			"children":	[]
+		}, {
+			"name":	"maze_collision",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_physics_static_body",
+					"shape_type":	1,
+					"mesh":	{
+						"relative_filepath":	"game\\rb9\\gltf\\mazes\\maze.gltf"
+					},
+					"layers":	6
+				}],
+			"children":	[]
+		}, {
+			"name":	"zombie",
+			"external":	{
+				"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
+				"type":	0
+			}
+		}]
+}
