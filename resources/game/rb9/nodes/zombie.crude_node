@@ -7,7 +7,7 @@
 			"scale":	[1, 1, 1]
 		}, {
 			"type":	"crude_zombie",
-			"damage":	null
+			"damage":	25
 		}],
 	"children":	[{
 			"name":	"pivot",
@@ -63,6 +63,23 @@
 								}]
 						}],
 					"children":	[]
+				}, {
+					"name":	"attack_sensor",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 6.030785083770752, 2.3339333534240723],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_physics_kinematic_body",
+							"shape_type":	0,
+							"box":	{
+								"extent":	[2, 6.4000000953674316, 2]
+							},
+							"layers":	256,
+							"sensor":	1
+						}],
+					"children":	[]
 				}]
 		}, {
 			"name":	"health",
@@ -112,22 +129,5 @@
 							"children":	[]
 						}]
 				}]
-		}, {
-			"name":	"attack_sensor",
-			"components":	[{
-					"type":	"crude_transform",
-					"translation":	[0, 5.5109157562255859, 0],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}, {
-					"type":	"crude_physics_kinematic_body",
-					"shape_type":	0,
-					"box":	{
-						"extent":	[2, 6.4000000953674316, 2]
-					},
-					"layers":	256,
-					"sensor":	1
-				}],
-			"children":	[]
 		}]
 }

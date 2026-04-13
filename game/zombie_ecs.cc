@@ -174,7 +174,7 @@ crude_zombie_create_observer_
       crude_physics_kinematic_body_handle                  zombie_attack_sensor_kinematic_body_handle;
 
 
-      zombie_attack_sensor_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "attack_sensor" );
+      zombie_attack_sensor_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "attack_sensor" );
       zombie_attack_sensor_kinematic_body_handle = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, zombie_attack_sensor_entity, crude_physics_kinematic_body_handle );
       zombie_attack_sensor_kinematic_body_container = crude_physics_access_kinematic_body( &game->engine->physics, zombie_attack_sensor_kinematic_body_handle );
       zombie_attack_sensor_kinematic_body_container->contact_added_callback = crude_zombie_attack_callback_;
@@ -507,6 +507,8 @@ crude_zombie_attack_callback_
     
     zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, signal_entity, "pivot" );
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "model" );
+    zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_model_entity, crude_gltf );
+
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].disabled = false;
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].current_time = 0;
   }

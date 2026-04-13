@@ -35,17 +35,8 @@
 					"name":	"zombie",
 					"external":	{
 						"relative_filepath":	"game\\rb9\\nodes\\zombie.crude_node",
-						"type":	1
-					},
-					"components":	[{
-							"type":	"crude_transform",
-							"translation":	[0, 0, 0],
-							"rotation":	[0, 0, 0, 1],
-							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_zombie",
-							"damage":	null
-						}]
+						"type":	0
+					}
 				}]
 		}, {
 			"name":	"blackout_model",
