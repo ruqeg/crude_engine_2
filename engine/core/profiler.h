@@ -1,6 +1,6 @@
 #pragma once
 
-#if CRUDE_DEVELOP && 0
+#if CRUDE_DEVELOP && 1
 #include <thirdparty/tracy/public/tracy/TracyC.h>
 
 #include <engine/core/alias.h>
@@ -22,7 +22,24 @@ TracyCZoneEnd( _ctx );\
 #define CRUDE_PROFILER_FREE_NAME( ptr, name )          TracyCFreeN( ptr, name )
 #define CRUDE_PROFILER_SECURE_ALLOC( ptr, size )       TracyCSecureAlloc( ptr, size )
 #define CRUDE_PROFILER_SECURE_FREE( ptr )              TracyCSecureFree( ptr )
+#elif 1
 
+#include <engine/core/alias.h>
+#include <engine/core/log.h>
+
+#define CRUDE_PROFILER_ZONE
+#define CRUDE_PROFILER_ZONE_NAME( name )\
+static char const *____crude_zone_name = name; CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] start", name ); 
+#define CRUDE_PROFILER_ZONE_END \
+CRUDE_LOG_INFO( CRUDE_CHANNEL_ALL, "[%s] end", ____crude_zone_name );
+#define CRUDE_PROFILER_MARK_FRAME
+#define CRUDE_PROFILER_SET_THREAD_NAME( name )
+#define CRUDE_PROFILER_ALLOC( ptr, size )
+#define CRUDE_PROFILER_FREE( ptr )
+#define CRUDE_PROFILER_ALLOC_NAME( ptr, size, name )
+#define CRUDE_PROFILER_FREE_NAME( ptr, name )
+#define CRUDE_PROFILER_SECURE_ALLOC( ptr, size )
+#define CRUDE_PROFILER_SECURE_FREE( ptr )
 #else
 #define CRUDE_PROFILER_ZONE
 #define CRUDE_PROFILER_ZONE_NAME( name )
