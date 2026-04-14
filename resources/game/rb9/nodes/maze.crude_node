@@ -317,17 +317,87 @@
 				}],
 			"children":	[]
 		}, {
-			"name":	"light",
+			"name":	"light1",
 			"components":	[{
 					"type":	"crude_transform",
-					"translation":	[19.997451782226562, 6.5018129348754883, 80.868644714355469],
+					"translation":	[5.9380683898925781, 6.5018119812011719, 26.659225463867188],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
 				}, {
 					"type":	"crude_light",
 					"radius":	50,
-					"color":	[1, 1, 1],
-					"intensity":	25
+					"color":	[0.973451316356659, 0, 0],
+					"intensity":	7
+				}],
+			"children":	[]
+		}, {
+			"name":	"light2",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[61.292121887207031, 6.5018119812011719, 26.659225463867188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[0.706398367881775, 0.973451316356659, 0],
+					"intensity":	7
+				}],
+			"children":	[]
+		}, {
+			"name":	"light3",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[104.09641265869141, 6.5018119812011719, 26.659225463867188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[0, 0.017229350283741951, 0.973451316356659],
+					"intensity":	7
+				}],
+			"children":	[]
+		}, {
+			"name":	"light4",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[163.18882751464844, 6.5018119812011719, 26.659225463867188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[0.913148581981659, 0, 0.973451316356659],
+					"intensity":	7
+				}],
+			"children":	[]
+		}, {
+			"name":	"light5",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-76.889373779296875, 6.5018119812011719, 26.659225463867188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[0.973451316356659, 0, 0.46518918871879578],
+					"intensity":	7
+				}],
+			"children":	[]
+		}, {
+			"name":	"light6",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-179.02638244628906, 6.5018119812011719, 26.659225463867188],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[0, 0.895919919013977, 0.973451316356659],
+					"intensity":	7
 				}],
 			"children":	[]
 		}]

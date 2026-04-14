@@ -81,8 +81,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.61266368627548218, 7.2611379623413086, 2.0291264057159424],
-									"rotation":	[0.790412425994873, 0.56572377681732178, 0.22553297877311707, 0.065862700343132],
+									"translation":	[-0.50355398654937744, 7.26109504699707, 1.9509773254394531],
+									"rotation":	[0.799881935119629, 0.563780426979065, 0.20198296010494232, 0.03923310711979866],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -162,6 +162,20 @@
 										}]
 								}],
 							"children":	[]
+						}, {
+							"name":	"light_front",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[0, 4.8074774742126465, 4.6918249130249023],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_light",
+									"radius":	25,
+									"color":	[1, 1, 1],
+									"intensity":	5
+								}],
+							"children":	[]
 						}]
 				}, {
 					"name":	"health",
@@ -186,6 +200,20 @@
 								}],
 							"children":	[]
 						}]
+				}, {
+					"name":	"light_top",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[-1.0010745525360107, 16.947650909423828, 0.27963638305664062],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_light",
+							"radius":	15,
+							"color":	[1, 1, 1],
+							"intensity":	5
+						}],
+					"children":	[]
 				}]
 		}, {
 			"name":	"camera",

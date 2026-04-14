@@ -254,8 +254,14 @@ crude_calculate_lighting
 
   for ( uint i = 0; i < scene.data.active_lights_count; ++i )
   {
-    float shadow = crude_calculate_point_light_shadow_contribution( lights.data[ i ], i, vertex_position, scene, lights_world_to_texture );
-    direct_radiance += shadow * crude_calculate_point_light_contribution( lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+    vec3                                                   light_to_vertex;
+
+    light_to_vertex = lights.data[ i ].world_position - vertex_position;
+    if ( dot( light_to_vertex, light_to_vertex ) < lights.data[ i ].radius * lights.data[ i ].radius )
+    {
+      float shadow = crude_calculate_point_light_shadow_contribution( lights.data[ i ], i, vertex_position, scene, lights_world_to_texture );
+      direct_radiance += shadow * crude_calculate_point_light_contribution( lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+    }
   }
 
   return direct_radiance;

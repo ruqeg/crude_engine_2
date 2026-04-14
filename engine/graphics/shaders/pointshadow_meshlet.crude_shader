@@ -119,7 +119,6 @@ void main()
       break;
     }
   }
-  accept = true;
 
   uvec4 ballot = subgroupBallot( accept );
   uint index = subgroupBallotExclusiveBitCount( ballot );
@@ -288,26 +287,32 @@ void main()
   {
     return;
   }
-
-  uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], mesh_draw.meshletes_count );
-  for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
+  
+  if ( ( mesh_instance_draws.data[ mesh_instance_index ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED ) == 0)
   {
-    uint meshlet_index = mesh_draw.meshletes_offset + i;
-    pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
+    /* Remove meshletes that's not affected by light if mesh is not animated (have issues with meshletes bounding box during animation) */
+    for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
+    {
+      uint meshlet_index = mesh_draw.meshletes_offset + i;
+      float meshlet_radius = meshlets.data[ meshlet_index ].radius * scale * 1.1;
+      vec4 meshlet_world_center = vec4( meshlets.data[ meshlet_index ].center, 1 ) * mesh_to_world;
+    
+      if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
+      {
+        uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], 1 );
+        pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+      }
+    }
   }
-  //  pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
-  //  for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
-  //  {
-  //    uint meshlet_index = mesh_draw.meshletes_offset + i;
-  //    float meshlet_radius = meshlets.data[ meshlet_index ].radius * scale * 1.1;
-  //    vec4 meshlet_world_center = vec4( meshlets.data[ meshlet_index ].center, 1 ) * mesh_to_world;
-  //
-  //    if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
-  //    {
-  //      uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], 1 );
-  //     pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
-  //    }
-  //  }
+  else
+  {
+    uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], mesh_draw.meshletes_count );
+    for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
+    {
+      uint meshlet_index = mesh_draw.meshletes_offset + i;
+      pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
+    }
+  }
 }
 
 #endif /* POINTSHADOW_CULLING */

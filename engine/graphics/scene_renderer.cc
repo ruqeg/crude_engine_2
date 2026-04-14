@@ -631,9 +631,16 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
               gpu_meshe_instance_draw->joints_matrices_offset = 0;
             }
 
+            gpu_meshe_instance_draw->flags = 0;
+
             if ( model_renderer_resources_instance->cast_shadow )
             {
-              gpu_meshe_instance_draw->flags = CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW;
+              gpu_meshe_instance_draw->flags |= CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW;
+            }
+            
+            if ( node->skin != -1 )
+            {
+              gpu_meshe_instance_draw->flags |= CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED;
             }
 
             ++scene_renderer->total_visible_meshes_instances_count;
@@ -733,24 +740,30 @@ crude_scene_renderer_register_nodes_instances_
     }
   }
   
-  if ( scene_renderer->options.debug.hide_collision)
-  {
   if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )
   {
     crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
     light_gpu.light = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_light );
     XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
-    CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu );
-    
-    XMStoreFloat4x4( &scene_renderer->light_model_renderer_resources_instance.model_to_world, XMMatrixTranslation( light_gpu.translation.x, light_gpu.translation.y, light_gpu.translation.z ) );
-    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->light_model_renderer_resources_instance );
+    CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu ); 
   }
-  
-  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_camera ) )
+
+  if ( scene_renderer->options.debug.hide_collision)
   {
-    XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
-    CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
-  }
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )
+    {
+      crude_gfx_light_cpu light_gpu = CRUDE_COMPOUNT_EMPTY( crude_gfx_light_cpu );
+      XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
+      
+      XMStoreFloat4x4( &scene_renderer->light_model_renderer_resources_instance.model_to_world, XMMatrixTranslation( light_gpu.translation.x, light_gpu.translation.y, light_gpu.translation.z ) );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->light_model_renderer_resources_instance );
+    }
+  
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_camera ) )
+    {
+      XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
+    }
   }
   
   if ( scene_renderer->options.debug.hide_collision)

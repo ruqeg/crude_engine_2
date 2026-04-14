@@ -115,6 +115,8 @@ crude_engine_commands_manager_update
       crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &manager->engine->model_renderer_resources_manager );
       crude_audio_device_wait_wait_till_uploaded( &manager->engine->audio_device );
 
+      crude_physics_run_system_on_start( manager->engine->world );
+
       break;
     }
     case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:

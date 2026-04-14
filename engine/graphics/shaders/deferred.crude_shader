@@ -164,26 +164,27 @@ void main()
   bool accept = true;
 
 #if defined( DEFERRED_MESHLET )
-  // FLAG TO DO IT FOR MESH (ONLY STATIC, NO ANIMATIONS)
-  //// !TODO
-  //accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
-  //
-  //vec4 view_center = world_center * scene.data.camera.world_to_view;
-  //
-  //bool frustum_visible = accept && crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
-  //
-  //bool occlusion_visible = false;
-  //if ( frustum_visible )
-  //{
-  //  occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
-  //    scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
-  //    visible_mesh_count.depth_pyramid_texture_index,
-  //    world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip,
-  //    debug_line_vertices,
-  //    debug_counts
-  //  );
-  //}
-  //accept = occlusion_visible;
+  if ( ( mesh_instance_draws.data[ draw_id ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED ) == 0)
+  {
+    accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
+    
+    vec4 view_center = world_center * scene.data.camera.world_to_view;
+    
+    bool frustum_visible = accept && crude_frustum_culling( scene.data.camera, view_center.xyz, radius );
+    
+    bool occlusion_visible = false;
+    if ( frustum_visible )
+    {
+      occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
+        scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
+        visible_mesh_count.depth_pyramid_texture_index,
+        world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip,
+        debug_line_vertices,
+        debug_counts
+      );
+    }
+    accept = occlusion_visible;
+  }
 #endif
 
   uvec4 ballot = subgroupBallot( accept );

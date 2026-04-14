@@ -6,7 +6,8 @@
 #include <engine/graphics/shaders/common/platform.h>
 #endif
 
-#define CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW      1u
+#define CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_CAST_SHADOW      ( 1 << 0 )
+#define CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED         ( 1 << 1 )
 
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshPositionsRef, XMFLOAT3 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshTexcoordsRef, float32 );

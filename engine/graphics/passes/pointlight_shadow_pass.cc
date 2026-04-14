@@ -202,6 +202,7 @@ crude_gfx_pointlight_shadow_pass_render
 
     crude_gfx_cmd_dispatch( primary_cmd, ( CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) + 31 ) / 32, 1u, 1u );
   
+    // !TODO idk why but it kills all the perf XDXDXD
     crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->pointshadow_meshlet_draw_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
     crude_gfx_cmd_pop_marker( primary_cmd );
   }
