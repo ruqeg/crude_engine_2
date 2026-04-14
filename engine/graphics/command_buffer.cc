@@ -742,8 +742,8 @@ crude_gfx_cmd_memory_copy_to_texture
   vk_region.imageSubresource.baseArrayLayer = 0;
   vk_region.imageSubresource.layerCount = 1;
   vk_region.imageOffset = CRUDE_COMPOUNT( VkOffset3D, { 0, 0, 0 } );
-  vk_region.imageExtent = CRUDE_COMPOUNT( VkExtent3D, { texture->width, texture->height, texture->depth }  );
-
+  vk_region.imageExtent = CRUDE_COMPOUNT( VkExtent3D, { texture->width, texture->height, 1 }  );
+  
   crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
   vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, buffer->vk_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
   crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );

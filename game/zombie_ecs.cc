@@ -525,7 +525,6 @@ crude_zombie_attack_callback_
   zombie_entity = signal_entity;
 
   health = CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( game->engine->world, &health_entity, crude_health );
-
   zombie = CRUDE_ENTITY_FIND_COMPONENT_FROM_PARENTS( game->engine->world, &zombie_entity, crude_zombie );
   
   if ( health )

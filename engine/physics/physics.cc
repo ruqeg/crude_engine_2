@@ -246,7 +246,7 @@ _crude_jph_contact_listener_class::OnContactAdded
   kinematic_body = crude_physics_access_kinematic_body( this->physics, kinematic_body_handle );
   signal_entity = kinematic_body->entity;
   
-  static_body_handle.index = jph_kinematic_body->GetUserData( );
+  static_body_handle.index = jph_static_body->GetUserData( );
   static_body = crude_physics_access_static_body( this->physics, static_body_handle );
   hitted_entity = static_body->entity;
   

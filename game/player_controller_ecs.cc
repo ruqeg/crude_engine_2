@@ -63,6 +63,14 @@ crude_player_health_death_callback_
   _In_ int32                                               damage
 );
 
+static void
+crude_player_health_damage_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+);
+
 /**********************************************************
  *
  *                 System
@@ -151,6 +159,20 @@ crude_player_controller_create_observer
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
     weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
     
+    /* Health setup */
+    {
+      crude_health                                        *health;
+      crude_entity                                         health_entity;
+      crude_health_callback_container                      health_callback_container;
+       
+      health_callback_container.damage_callback = crude_player_health_damage_callback_;
+      health_callback_container.death_callback = crude_player_health_death_callback_;
+
+      health_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "health" );
+      health = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, health_entity, crude_health );
+      health->callback_container = health_callback_container;
+    }
+
     if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( game->engine->world ) )
     {
       player_walk_audio_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_walk_audio_entity, crude_audio_player_handle );
@@ -545,4 +567,31 @@ crude_player_health_death_callback_
 )
 {
   crude_engine_commands_manager_push_load_node_command( &crude_game_instance()->engine->commands_manager, "game\\rb9\\nodes\\maze.crude_node" );
+}
+
+void
+crude_player_health_damage_callback_
+(
+  _In_ crude_entity                                        health_entity,
+  _In_ crude_health                                       *health,
+  _In_ int32                                               damage
+)
+{
+  crude_game                                              *game;
+
+  game = crude_game_instance( );
+  
+  if ( rand(  ) % 8  > 6 )
+  {
+    crude_audio_player_handle *critical_hit_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, crude_ecs_lookup_entity_from_parent( game->engine->world, game->player_node, "critical_hit_audio_player" ), crude_audio_player_handle );
+    crude_audio_device_sound_reset( &game->engine->audio_device, critical_hit_audio_player_handle->sound_handle );
+    crude_audio_device_sound_start( &game->engine->audio_device, critical_hit_audio_player_handle->sound_handle );
+    /* Crit */
+  }
+  else
+  {
+    crude_audio_player_handle *default_hit_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, crude_ecs_lookup_entity_from_parent( game->engine->world, game->player_node, "default_hit_audio_player" ), crude_audio_player_handle );
+    crude_audio_device_sound_reset( &game->engine->audio_device, default_hit_audio_player_handle->sound_handle );
+    crude_audio_device_sound_start( &game->engine->audio_device, default_hit_audio_player_handle->sound_handle );
+  }
 }

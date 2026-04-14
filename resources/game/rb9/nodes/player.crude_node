@@ -92,8 +92,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.88122498989105225, 7.2647061347961426, 1.7827268838882446],
-									"rotation":	[0.79611432552337646, 0.57388085126876831, 0.18731047213077545, 0.042153358459472656],
+									"translation":	[-0.6081162691116333, 7.26169490814209, 2.0303866863250732],
+									"rotation":	[0.78883171081542969, 0.56869363784790039, 0.22408746182918549, 0.064149275422096252],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -250,7 +250,8 @@
 							"min_distance":	0,
 							"max_distance":	0,
 							"rolloff":	0,
-							"start_volume":	5
+							"start_volume":	5,
+							"autoplay":	0
 						}, {
 							"type":	"crude_transform",
 							"translation":	[0, 0, 0],
@@ -272,6 +273,46 @@
 					"near_z":	1,
 					"far_z":	300,
 					"aspect_ratio":	1.7999999523162842
+				}],
+			"children":	[]
+		}, {
+			"name":	"critical_hit_audio_player",
+			"components":	[{
+					"type":	"crude_audio_player",
+					"path":	"game\\rb9\\sounds\\hit1.mp3",
+					"looping":	0,
+					"positioning":	1,
+					"stream":	0,
+					"min_distance":	0,
+					"max_distance":	0,
+					"rolloff":	0,
+					"start_volume":	5,
+					"autoplay":	0
+				}, {
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[]
+		}, {
+			"name":	"default_hit_audio_player",
+			"components":	[{
+					"type":	"crude_audio_player",
+					"path":	"game\\rb9\\sounds\\hit0.mp3",
+					"looping":	0,
+					"positioning":	1,
+					"stream":	0,
+					"min_distance":	0,
+					"max_distance":	0,
+					"rolloff":	0,
+					"start_volume":	5,
+					"autoplay":	0
+				}, {
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
 				}],
 			"children":	[]
 		}]

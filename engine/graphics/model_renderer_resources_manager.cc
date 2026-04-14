@@ -354,6 +354,7 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
   crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GFX_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {

@@ -1348,6 +1348,7 @@ crude_gfx_add_texture_to_update
 {
   mtx_lock( &gpu->texture_update_mutex );
   gpu->textures_to_update[ gpu->num_textures_to_update++ ] = texture;
+  CRUDE_ASSERT( gpu->num_textures_to_update < 128 );
   mtx_unlock( &gpu->texture_update_mutex );
 }
 
@@ -1372,6 +1373,7 @@ crude_gfx_add_texture_update_commands
   for ( uint32 i = 0; i < gpu->num_textures_to_update; ++i )
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( gpu, gpu->textures_to_update[ i ] );
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_add_texture_update_commands %s", texture->name );
     crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, gpu->vk_transfer_queue_family, gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
     texture->ready = true;
     texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;

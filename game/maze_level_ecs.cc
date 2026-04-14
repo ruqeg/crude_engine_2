@@ -183,7 +183,7 @@ crude_key_sensor_callback_
 
   game = crude_game_instance( );
 
-  end_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, crude_entity_get_parent( game->engine->world, end_audio_player_entity ), "key_sound" ); 
+  end_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, crude_entity_get_parent( game->engine->world, signal_entity ), "key_sound" ); 
   end_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, end_audio_player_entity, crude_audio_player_handle );
   crude_audio_device_sound_reset( &game->engine->audio_device, end_audio_player_handle->sound_handle );
   crude_audio_device_sound_start( &game->engine->audio_device, end_audio_player_handle->sound_handle );

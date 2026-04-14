@@ -259,8 +259,8 @@ crude_gfx_asynchronous_loader_update
       texture_channels = 4;
       texture_alignment = 4;
       aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );
-      
-      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s start copy", texture->name );
+
+      CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s %i start copy", texture->name, aligned_image_size );
       crude_memory_copy( asynloader->staging_allocation.cpu_address, request.data, aligned_image_size );
 
       crude_gfx_cmd_memory_copy_to_texture( cmd, texture->handle, asynloader->staging_allocation );
@@ -337,16 +337,16 @@ crude_gfx_asynchronous_loader_update
     if ( texture_data )
     {
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "File %s read in %fs", load_request.absolute_filpath, crude_time_delta_seconds( start_reading_file, crude_time_now() ) );
-      
-      mtx_lock( &asynloader->request_mutex );
-      --asynloader->total_requests_count;
-      mtx_unlock( &asynloader->request_mutex );
 
       crude_gfx_upload_request upload_request;
       upload_request.data = texture_data;
       upload_request.texture = load_request.texture;
       upload_request.cpu_allocation = crude_gfx_memory_allocation_empty( );
       crude_gfx_asynchronous_loader_push_upload_requests_( asynloader, upload_request );
+      
+      mtx_lock( &asynloader->request_mutex );
+      --asynloader->total_requests_count;
+      mtx_unlock( &asynloader->request_mutex );
     }
     else
     {
@@ -361,11 +361,19 @@ crude_gfx_asynchronous_loader_has_requests
   _In_ crude_gfx_asynchronous_loader                      *asynloader
 )
 {
+  bool                                                     has_requests;
+  
+  has_requests = false;
+
+  mtx_lock( &asynloader->gpu->texture_update_mutex );
+  has_requests |= asynloader->gpu->num_textures_to_update;
+  mtx_unlock( &asynloader->gpu->texture_update_mutex );
+
   mtx_lock( &asynloader->request_mutex );
-  bool has_requests = asynloader->total_requests_count;
+  has_requests |= asynloader->total_requests_count;
   mtx_unlock( &asynloader->request_mutex );
+
   return has_requests;
-;
 }
 
 void
