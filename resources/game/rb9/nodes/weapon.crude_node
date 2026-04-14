@@ -8,7 +8,7 @@
 		}, {
 			"type":	"crude_weapon",
 			"max_ammo":	1000,
-			"damage":	25,
+			"damage":	50,
 			"max_cooldown":	4
 		}],
 	"children":	[{
