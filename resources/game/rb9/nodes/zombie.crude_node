@@ -137,10 +137,11 @@
 					"looping":	1,
 					"positioning":	0,
 					"stream":	1,
-					"min_distance":	0,
-					"max_distance":	0,
+					"min_distance":	0.10000000149011612,
+					"max_distance":	15,
 					"rolloff":	0.15000000596046448,
-					"start_volume":	3
+					"start_volume":	1,
+					"autoplay":	0
 				}, {
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],
@@ -159,7 +160,8 @@
 					"min_distance":	0,
 					"max_distance":	0,
 					"rolloff":	0.15000000596046448,
-					"start_volume":	3
+					"start_volume":	3,
+					"autoplay":	0
 				}, {
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],
@@ -178,7 +180,8 @@
 					"min_distance":	0,
 					"max_distance":	0,
 					"rolloff":	0.15000000596046448,
-					"start_volume":	3
+					"start_volume":	3,
+					"autoplay":	0
 				}, {
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],

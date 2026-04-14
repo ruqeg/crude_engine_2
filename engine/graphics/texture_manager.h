@@ -5,6 +5,7 @@
 typedef struct crude_gfx_texture_manager
 {
   crude_gfx_asynchronous_loader                           *asynchronous_loader;
+  crude_heap_allocator                                    *texture_manager_allocator;
   CRUDE_HASHMAPSTR( crude_gfx_texture_handle )            *texture_relative_filepath_to_handle;
 } crude_gfx_texture_manager;
 

@@ -13,6 +13,7 @@ crude_gfx_texture_manager_initialize
 )
 {
   manager->asynchronous_loader = asynchronous_loader;
+  manager->texture_manager_allocator = texture_manager_allocator;
   CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( texture_manager_allocator ) );
 }
 
@@ -36,10 +37,12 @@ crude_gfx_texture_manager_clear
   {
     if ( crude_hashmapstr_backet_key_hash_valid( manager->texture_relative_filepath_to_handle[ i ].key.key_hash ) )
     {
-      crude_gfx_destroy_texture( manager->asynchronous_loader->gpu, manager->texture_relative_filepath_to_handle[ i ].value );
+      crude_gfx_destroy_texture_instant( manager->asynchronous_loader->gpu, manager->texture_relative_filepath_to_handle[ i ].value );
     }
     manager->texture_relative_filepath_to_handle[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
+  CRUDE_HASHMAPSTR_DEINITIALIZE( manager->texture_relative_filepath_to_handle );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( manager->texture_manager_allocator ) );
 }
 
 crude_gfx_texture_handle

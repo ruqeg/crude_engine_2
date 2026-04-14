@@ -56,4 +56,4 @@
 #define CRUDE_GFX_SAMPLE_RATE_SHADING                      1
 #define CRUDE_GFX_USE_NSIGHT_AFTERMATH                     0
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        1
-#define CRUDE_GFX_GPU_AV_ENABLE                            0
+#define CRUDE_GFX_GPU_AV_ENABLE                            1

@@ -320,6 +320,7 @@ crude_audio_player_create_observer_
       sound_creation.rolloff = audio_player->rolloff;
 
       audio_player_handle.sound_handle = crude_audio_device_create_sound( ctx->device, &sound_creation );
+      audio_player_handle.last_local_to_world_update_time = 0;
       CRUDE_ENTITY_SET_COMPONENT( it->world, audio_player_node, crude_audio_player_handle, { audio_player_handle } );
 
       crude_audio_device_sound_set_volume( ctx->device, audio_player_handle.sound_handle, audio_player->start_volume );
@@ -380,11 +381,18 @@ crude_audio_player_update_system_
     audio_player_handle = &audio_player_per_entity[ i ];
     audio_player_node = crude_entity_from_iterator( it, i );
 
-    audio_player_handle->last_local_to_world_update_time += it->delta_time;
-    if ( audio_player_handle->last_local_to_world_update_time > 0.016f )
+    if ( crude_audio_device_sound_get_positiong( ctx->device, audio_player_handle->sound_handle ) != CRUDE_AUDIO_SOUND_POSITIONING_ABSOLUTE )
     {
-      crude_audio_device_sound_set_translation( ctx->device, audio_player_handle->sound_handle, crude_transform_node_to_world( it->world, audio_player_node, transform ).r[ 3 ] );
-      audio_player_handle->last_local_to_world_update_time = 0.f;
+      continue;
     }
+
+    audio_player_handle->last_local_to_world_update_time += it->delta_time;
+    if ( audio_player_handle->last_local_to_world_update_time < 0.016f )
+    {
+      continue;
+    }
+
+    crude_audio_device_sound_set_translation( ctx->device, audio_player_handle->sound_handle, crude_transform_node_to_world( it->world, audio_player_node, transform ).r[ 3 ] );
+    audio_player_handle->last_local_to_world_update_time = 0.f;
   }
 }
