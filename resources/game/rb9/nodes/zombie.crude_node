@@ -134,7 +134,7 @@
 			"components":	[{
 					"type":	"crude_audio_player",
 					"path":	"game\\rb9\\sounds\\zombie_dead.mp3",
-					"looping":	1,
+					"looping":	0,
 					"positioning":	1,
 					"stream":	1,
 					"min_distance":	0,
@@ -154,7 +154,7 @@
 			"components":	[{
 					"type":	"crude_audio_player",
 					"path":	"game\\rb9\\sounds\\zombie_scream.mp3",
-					"looping":	1,
+					"looping":	0,
 					"positioning":	1,
 					"stream":	1,
 					"min_distance":	0,
