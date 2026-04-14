@@ -48,5 +48,24 @@
 						}]
 				}],
 			"children":	[]
+		}, {
+			"name":	"shot_audio_player",
+			"components":	[{
+					"type":	"crude_audio_player",
+					"path":	"game\\rb9\\sounds\\shot.mp3",
+					"looping":	0,
+					"positioning":	1,
+					"stream":	0,
+					"min_distance":	0,
+					"max_distance":	0,
+					"rolloff":	0,
+					"start_volume":	4
+				}, {
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[]
 		}]
 }

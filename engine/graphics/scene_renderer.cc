@@ -784,13 +784,13 @@ crude_scene_renderer_register_nodes_instances_
   
     if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_audio_player ) )
     {
-      XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      XMStoreFloat4x4( &scene_renderer->audo_player_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->audo_player_model_renderer_resources_instance );
     }
   
     if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_audio_listener ) )
     {
-      XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      XMStoreFloat4x4( &scene_renderer->audio_listener_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->audio_listener_model_renderer_resources_instance );
     }
   }

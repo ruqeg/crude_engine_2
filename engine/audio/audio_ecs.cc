@@ -66,6 +66,14 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_audio_player )
   component->looping = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "looping" ) );
   component->positioning = CRUDE_CAST( crude_audio_sound_positioning, cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "positioning" ) ) );
   component->stream = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "stream" ) );
+  component->min_distance = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "min_distance" ) );
+  component->max_distance = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_distance" ) );
+  component->rolloff = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "rolloff" ) );
+  component->start_volume = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "start_volume" ) );
+  if ( cJSON_GetObjectItemCaseSensitive( component_json, "autoplay" ) )
+  {
+    component->autoplay = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "autoplay" ) );
+  }
   return true;
 }
 
@@ -77,6 +85,11 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_audio_player )
   cJSON_AddItemToObject( component_json, "looping", cJSON_CreateNumber( component->looping ) );
   cJSON_AddItemToObject( component_json, "positioning", cJSON_CreateNumber( component->positioning ) );
   cJSON_AddItemToObject( component_json, "stream", cJSON_CreateNumber( component->stream ) );
+  cJSON_AddItemToObject( component_json, "min_distance", cJSON_CreateNumber( component->min_distance ) );
+  cJSON_AddItemToObject( component_json, "max_distance", cJSON_CreateNumber( component->max_distance ) );
+  cJSON_AddItemToObject( component_json, "rolloff", cJSON_CreateNumber( component->rolloff ) );
+  cJSON_AddItemToObject( component_json, "start_volume", cJSON_CreateNumber( component->start_volume ) );
+  cJSON_AddItemToObject( component_json, "autoplay", cJSON_CreateNumber( component->autoplay ) );
   return component_json;
 }
 
@@ -127,6 +140,27 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_audio_player )
     int32 current_item = component->positioning;
     modified |= ImGui::Combo( "##Positioning", &current_item, positioning_items, CRUDE_COUNTOF( positioning_items ) );
     component->positioning = CRUDE_CAST( crude_audio_sound_positioning, current_item );
+    } );
+  
+
+  CRUDE_IMGUI_OPTION( "Max Distance", {
+    modified |= ImGui::DragFloat( "##Max Distance", &component->max_distance, 0.1, 0.000001 );
+    } );
+  
+  CRUDE_IMGUI_OPTION( "Min Distance", {
+    modified |= ImGui::DragFloat( "##Min Distance", &component->min_distance, 0.1, 0.000001 );
+    } );
+
+  CRUDE_IMGUI_OPTION( "Rollof", {
+    modified |= ImGui::DragFloat( "##Rolloff", &component->rolloff, 0.1, 0.000001 );
+    } );
+
+  CRUDE_IMGUI_OPTION( "Start Volume", {
+    modified |= ImGui::DragFloat( "##Start Volume", &component->start_volume, 0.1, 0.000001 );
+    } );
+
+  CRUDE_IMGUI_OPTION( "Autoplay", {
+    ImGui::Checkbox( "##Autoplay", &component->autoplay );
     } );
 
   if ( modified )
@@ -281,9 +315,19 @@ crude_audio_player_create_observer_
       crude_string_copy( sound_creation.relative_filepath, audio_player->relative_filepath, sizeof( sound_creation.relative_filepath ) );
       sound_creation.positioning = audio_player->positioning;
       sound_creation.async_loading = false;
+      sound_creation.min_distance = audio_player->min_distance;
+      sound_creation.max_distance = audio_player->max_distance;
+      sound_creation.rolloff = audio_player->rolloff;
 
       audio_player_handle.sound_handle = crude_audio_device_create_sound( ctx->device, &sound_creation );
       CRUDE_ENTITY_SET_COMPONENT( it->world, audio_player_node, crude_audio_player_handle, { audio_player_handle } );
+
+      crude_audio_device_sound_set_volume( ctx->device, audio_player_handle.sound_handle, audio_player->start_volume );
+
+      if ( audio_player->autoplay && CRUDE_ECS_GAME_STAGE_IS_ENABLED( it->world ) )
+      {
+        crude_audio_device_sound_start( ctx->device, audio_player_handle.sound_handle );
+      }
     }
   }
 }

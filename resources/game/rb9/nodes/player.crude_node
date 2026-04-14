@@ -73,7 +73,7 @@
 											"type":	"crude_audio_listener"
 										}, {
 											"type":	"crude_transform",
-											"translation":	[0, 7.62939453125e-06, 0],
+											"translation":	[0, 4.0353622436523438, 0],
 											"rotation":	[0, 0, 0, 1],
 											"scale":	[1, 1, 1]
 										}],
@@ -92,8 +92,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.73981809616088867, 7.2836575508117676, 1.8267356157302856],
-									"rotation":	[0.79120969772338867, 0.572771728038788, 0.20557469129562378, 0.06048516184091568],
+									"translation":	[-0.88122498989105225, 7.2647061347961426, 1.7827268838882446],
+									"rotation":	[0.79611432552337646, 0.57388085126876831, 0.18731047213077545, 0.042153358459472656],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -246,7 +246,11 @@
 							"path":	"game\\rb9\\sounds\\walk.mp3",
 							"looping":	1,
 							"positioning":	1,
-							"stream":	0
+							"stream":	0,
+							"min_distance":	0,
+							"max_distance":	0,
+							"rolloff":	0,
+							"start_volume":	5
 						}, {
 							"type":	"crude_transform",
 							"translation":	[0, 0, 0],

@@ -54,6 +54,11 @@ typedef struct crude_audio_player
   bool                                                     looping;
   bool                                                     stream;
   crude_audio_sound_positioning                            positioning;
+  float32                                                  max_distance;
+  float32                                                  min_distance;
+  float32                                                  rolloff;
+  float32                                                  start_volume;
+  bool                                                     autoplay;
 } crude_audio_player;
 
 typedef struct crude_audio_player_handle

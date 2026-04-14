@@ -64,9 +64,11 @@ crude_weapon_fire
 )
 {
   crude_game                                             *game;
+  crude_audio_player_handle                              *weapon_shot_audio_player_handle;
   XMVECTOR                                                direction, origin;
   XMMATRIX                                                weapon_to_world;
   crude_physics_ray_cast_result                           ray_cast_result;
+  crude_entity                                            weapon_shot_audio_player_entity;
   
   game = crude_game_instance( );
 
@@ -79,6 +81,10 @@ crude_weapon_fire
   {
     return false;
   }
+
+  weapon_shot_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, weapon_entity, "shot_audio_player" );
+  weapon_shot_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, weapon_shot_audio_player_entity, crude_audio_player_handle );
+  crude_audio_device_sound_start( &game->engine->audio_device, weapon_shot_audio_player_handle->sound_handle );
 
   weapon->cooldown = 0.f;
 

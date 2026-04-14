@@ -19,15 +19,21 @@
 		{
 			"mesh":0,
 			"name":"Cube.005",
+			"rotation":[
+				0,
+				0.7071068286895752,
+				0,
+				0.7071068286895752
+			],
 			"scale":[
-				0.1922561675310135,
-				0.1922561675310135,
-				0.1922561675310135
+				0.0910438597202301,
+				0.0910438597202301,
+				0.0910438597202301
 			],
 			"translation":[
-				-0.08097173273563385,
-				0.13297513127326965,
-				-0.12829801440238953
+				-0.2593613564968109,
+				0.027102187275886536,
+				-0.07002097368240356
 			]
 		}
 	],
@@ -35,15 +41,10 @@
 		{
 			"doubleSided":true,
 			"emissiveFactor":[
-				1,
-				0.26511519304488546,
-				0.08768280303604674
+				0.27240632101893425,
+				0.07221905048936605,
+				0.023885348346084356
 			],
-			"extensions":{
-				"KHR_materials_emissive_strength":{
-					"emissiveStrength":1.3620315492153168
-				}
-			},
 			"name":"Material.003",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
@@ -57,12 +58,7 @@
 		},
 		{
 			"doubleSided":true,
-			"emissiveFactor":[
-				0.3756459057331085,
-				0.3756459057331085,
-				0.3756459057331085
-			],
-			"name":"Material.001",
+			"name":"Material",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
 					0.22593604028224945,
@@ -76,16 +72,16 @@
 		{
 			"doubleSided":true,
 			"emissiveFactor":[
-				0.6959174871444702,
+				0.6959175152642942,
 				1,
 				0
 			],
 			"extensions":{
 				"KHR_materials_emissive_strength":{
-					"emissiveStrength":5
+					"emissiveStrength":2.079279124736786
 				}
 			},
-			"name":"Material.002",
+			"name":"Material.001",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
 					0.10047812759876251,
@@ -99,16 +95,16 @@
 		{
 			"doubleSided":true,
 			"emissiveFactor":[
-				0.533254861831665,
-				0.9130600690841675,
+				0.5332548359064039,
+				0.9130600764589971,
 				1
 			],
 			"extensions":{
 				"KHR_materials_emissive_strength":{
-					"emissiveStrength":5.000120162963867
+					"emissiveStrength":5.000120401382446
 				}
 			},
-			"name":"Material.004",
+			"name":"Material.002",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
 					0.5329959392547607,
@@ -235,7 +231,7 @@
 		{
 			"bufferView":8,
 			"componentType":5126,
-			"count":2247,
+			"count":2053,
 			"max":[
 				1.598813533782959,
 				-0.08433735370635986,
@@ -251,13 +247,13 @@
 		{
 			"bufferView":9,
 			"componentType":5126,
-			"count":2247,
+			"count":2053,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":10,
 			"componentType":5126,
-			"count":2247,
+			"count":2053,
 			"type":"VEC2"
 		},
 		{
@@ -269,7 +265,7 @@
 		{
 			"bufferView":12,
 			"componentType":5126,
-			"count":1059,
+			"count":1056,
 			"max":[
 				0.8598272800445557,
 				4.165765762329102,
@@ -285,13 +281,13 @@
 		{
 			"bufferView":13,
 			"componentType":5126,
-			"count":1059,
+			"count":1056,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":14,
 			"componentType":5126,
-			"count":1059,
+			"count":1056,
 			"type":"VEC2"
 		},
 		{
@@ -352,56 +348,56 @@
 		},
 		{
 			"buffer":0,
-			"byteLength":26964,
+			"byteLength":24636,
 			"byteOffset":100688,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":26964,
-			"byteOffset":127652,
+			"byteLength":24636,
+			"byteOffset":125324,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":17976,
-			"byteOffset":154616,
+			"byteLength":16424,
+			"byteOffset":149960,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":9288,
-			"byteOffset":172592,
+			"byteOffset":166384,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":12708,
-			"byteOffset":181880,
+			"byteLength":12672,
+			"byteOffset":175672,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":12708,
-			"byteOffset":194588,
+			"byteLength":12672,
+			"byteOffset":188344,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":8472,
-			"byteOffset":207296,
+			"byteLength":8448,
+			"byteOffset":201016,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":6936,
-			"byteOffset":215768,
+			"byteOffset":209464,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":222704,
+			"byteLength":216400,
 			"uri":"crude_audio_listener.bin"
 		}
 	]
