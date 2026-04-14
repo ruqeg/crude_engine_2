@@ -2935,7 +2935,9 @@ crude_gfx_create_technique
 
   technique = crude_gfx_access_technique( gpu, technique_handle );
   
+#if CRUDE_DEVELOP
   crude_string_copy( technique->technique_relative_filepath, creation->technique_relative_filepath, sizeof( technique->technique_relative_filepath ) );
+#endif
   crude_string_copy( technique->name, creation->name, sizeof( technique->name ) );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, gpu->allocator_container );

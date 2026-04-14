@@ -1,5 +1,7 @@
 #pragma once
 
+#if CRUDE_DEVELOP
+
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
@@ -46,3 +48,5 @@ crude_gui_viewport_queue_draw
   _In_ crude_entity                                        selected_node,
   _In_ crude_entity                                        camera_node
 );
+
+#endif /* CRUDE_DEVELOP */

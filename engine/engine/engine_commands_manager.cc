@@ -104,9 +104,9 @@ crude_engine_commands_manager_update
       vkDeviceWaitIdle( manager->engine->gpu.vk_device );
 
       crude_node_manager_clear( &manager->engine->node_manager );
-      crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
       crude_physics_shapes_manager_clear( &manager->engine->physics_shapes_manager );
       crude_gfx_texture_manager_clear( &manager->engine->texture_manager );
+      crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
       crude_entity_destroy_hierarchy( manager->engine->world, manager->engine->main_node );
 
       vkDeviceWaitIdle( manager->engine->gpu.vk_device );
@@ -123,6 +123,7 @@ crude_engine_commands_manager_update
     }
     case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_RELOAD_TECHNIQUES:
     {
+#if CRUDE_DEVELOP
       for ( uint32 i = 0; i < CRUDE_HASHMAPSTR_CAPACITY( manager->engine->gpu.resource_cache.techniques ); ++i )
       {
         if ( !crude_hashmapstr_backet_key_hash_valid( manager->engine->gpu.resource_cache.techniques[ i ].key.key_hash ) )
@@ -137,6 +138,7 @@ crude_engine_commands_manager_update
       
       crude_gfx_render_graph_on_techniques_reloaded( &manager->engine->render_graph );
       break;
+#endif /* CRUDE_DEVELOP */
     }
     }
   }

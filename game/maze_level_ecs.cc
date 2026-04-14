@@ -113,6 +113,17 @@ crude_maze_level_create_observer_
       crude_audio_device_sound_reset( &game->engine->audio_device, ambient_sound_player_handle->sound_handle );
       crude_audio_device_sound_start( &game->engine->audio_device, ambient_sound_player_handle->sound_handle );
     }
+
+    {
+      crude_physics_kinematic_body_container              *key_sensor_kinematic_body_container;
+      crude_entity                                         key_sensor_entity;
+      crude_physics_kinematic_body_handle                  key_sensor_kinematic_body_handle;
+
+      key_sensor_entity = crude_ecs_lookup_entity_from_parent( it->world, maze_area_level_entity, "key.sensor" );
+      key_sensor_kinematic_body_handle = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( it->world, key_sensor_entity, crude_physics_kinematic_body_handle );
+      key_sensor_kinematic_body_container = crude_physics_access_kinematic_body( &game->engine->physics, key_sensor_kinematic_body_handle );
+      key_sensor_kinematic_body_container->contact_added_callback = crude_key_sensor_callback_;
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }
@@ -156,4 +167,24 @@ crude_maze_level_update_system_
     player_controller->camera_enabled = true;
   }
   CRUDE_PROFILER_ZONE_END;
+}
+
+
+void
+crude_key_sensor_callback_
+(
+  _In_ crude_entity                                        signal_entity,
+  _In_ crude_entity                                        hitted_entity
+)
+{
+  crude_game                                              *game;
+  crude_audio_player_handle                               *end_audio_player_handle;
+  crude_entity                                             end_audio_player_entity;
+
+  game = crude_game_instance( );
+
+  end_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, crude_entity_get_parent( game->engine->world, end_audio_player_entity ), "key_sound" ); 
+  end_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, end_audio_player_entity, crude_audio_player_handle );
+  crude_audio_device_sound_reset( &game->engine->audio_device, end_audio_player_handle->sound_handle );
+  crude_audio_device_sound_start( &game->engine->audio_device, end_audio_player_handle->sound_handle );
 }

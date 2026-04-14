@@ -254,8 +254,6 @@ crude_zombie_game_update_system_
     crude_transform                                       *pivot_transform;
     crude_transform                                       *zombie_transform;
     crude_gltf                                            *zombie_model;
-    crude_audio_player_handle                             *zombie_idle_audio_player_handle;
-    crude_entity                                           zombie_idle_audio_player_entity;
     crude_entity                                           zombie_pivot_entity;
     crude_entity                                           zombie_model_entity;
     crude_entity                                           zombie_entity;
@@ -266,19 +264,14 @@ crude_zombie_game_update_system_
 
     zombie = &zombie_per_entity[ i ];
     
-    zombie_idle_audio_player_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "zombie_idle" );
     zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_entity, "pivot" );
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( it->world, zombie_pivot_entity, "model" );
 
     zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_model_entity, crude_gltf );
     zombie_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_entity, crude_transform );
     pivot_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_pivot_entity, crude_transform );
-    zombie_idle_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, zombie_idle_audio_player_entity, crude_audio_player_handle );
 
     player_to_world = crude_transform_node_to_world( it->world, crude_ecs_lookup_entity_from_parent( it->world, game->player_node, "character.health.player_collision" ), NULL );
-
-    float32 player_to_zombie_distance = XMVectorGetX( XMVector3Length( XMVectorSubtract( crude_transform_node_to_world( it->world, zombie_entity, zombie_transform ).r[ 3 ], player_to_world.r[ 3 ] ) ) );
-    crude_audio_device_sound_set_volume( &game->engine->audio_device, zombie_idle_audio_player_handle->sound_handle, 15 / CRUDE_MIN( 0.1 * player_to_zombie_distance, 1 ) );
 
     if ( zombie->dying )
     {
@@ -474,9 +467,11 @@ crude_zombie_health_death_callback_
   crude_game                                              *game;
   crude_zombie                                            *zombie;
   crude_gltf                                              *zombie_model;
+  crude_audio_player_handle                               *zombie_death_audio_player_handle;
   crude_entity                                             zombie_entity;
   crude_entity                                             zombie_pivot_entity;
   crude_entity                                             zombie_model_entity;
+  crude_entity                                             zombie_death_audio_player_entity;
 
   game = crude_game_instance( );
 
@@ -502,6 +497,10 @@ crude_zombie_health_death_callback_
   crude_entity zombie_attack_sensor_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "attack_sensor" );
   crude_entity_destroy_hierarchy( game->engine->world, health_entity );
   crude_entity_destroy_hierarchy( game->engine->world, zombie_attack_sensor_entity );
+
+  zombie_death_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_entity, "zombie_dead" );
+  zombie_death_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_death_audio_player_entity, crude_audio_player_handle );
+  crude_audio_device_sound_start( &game->engine->audio_device, zombie_death_audio_player_handle->sound_handle );
 }
 
 void
@@ -531,11 +530,18 @@ crude_zombie_attack_callback_
   
   if ( health )
   {
+    crude_audio_player_handle                             *zombie_attack_audio_player_handle;
+    crude_entity                                           zombie_attack_audio_player_entity;
+
     crude_heal_receive_damage( health_entity, health, zombie->damage );
     
     zombie_pivot_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, signal_entity, "pivot" );
     zombie_model_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_pivot_entity, "model" );
     zombie_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_model_entity, crude_gltf );
+
+    zombie_attack_audio_player_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, zombie_entity, "zombie_attack" );
+    zombie_attack_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, zombie_attack_audio_player_entity, crude_audio_player_handle );
+    crude_audio_device_sound_start( &game->engine->audio_device, zombie_attack_audio_player_handle->sound_handle );
 
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].disabled = false;
     zombie_model->model_renderer_resources_instance.animations_instances[ zombie->attack_animation_index ].current_time = 0;

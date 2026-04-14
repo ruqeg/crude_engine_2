@@ -1,5 +1,7 @@
 #pragma once
 
+#if CRUDE_DEVELOP
+
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/imgui.h>
@@ -35,3 +37,5 @@ crude_gui_debug_queue_draw
 (
   _In_ crude_gui_debug                                    *debug
 );
+
+#endif /* CRUDE_DEVELOP */

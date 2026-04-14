@@ -50,10 +50,14 @@
 #define CRUDE_GFX_DEVICE_HEAP_ALLOCATOR_DEFAULT_ALIGN      ( 16 )
 #define CRUDE_GFX_DEVICE_HEAP_ALLOCATOR_DEFAULT_ALLOCATION_STRATEGY ( 1 )
 
+#if CRUDE_PRODUCTION
+#define CRUDE_GFX_PRESENT_TEXTURE_NAME "game_final"
+#else
 #define CRUDE_GFX_PRESENT_TEXTURE_NAME "editor_final"
+#endif
 
 #define CRUDE_GFX_SAMPLE_COUNT                             ( VK_SAMPLE_COUNT_16_BIT )
 #define CRUDE_GFX_SAMPLE_RATE_SHADING                      1
 #define CRUDE_GFX_USE_NSIGHT_AFTERMATH                     0
-#define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        1
-#define CRUDE_GFX_GPU_AV_ENABLE                            1
+#define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        0
+#define CRUDE_GFX_GPU_AV_ENABLE                            0

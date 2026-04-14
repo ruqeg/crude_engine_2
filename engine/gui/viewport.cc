@@ -1,3 +1,5 @@
+#if CRUDE_DEVELOP
+
 #include <engine/engine.h>
 
 #include <engine/gui/viewport.h>
@@ -217,3 +219,5 @@ crude_gui_viewport_queue_draw
   }
 
 }
+
+#endif /* CRUDE_DEVELOP */

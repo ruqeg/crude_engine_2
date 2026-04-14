@@ -1,3 +1,5 @@
+#if CRUDE_DEVELOP
+
 #include <nfd.h>
 
 #include <engine/engine.h>
@@ -561,3 +563,5 @@ crude_editor_blend_animations_from_node_
     }
   }
 }
+
+#endif /* CRUDE_DEVELOP */

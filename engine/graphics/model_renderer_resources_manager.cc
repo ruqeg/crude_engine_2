@@ -170,7 +170,9 @@ crude_gfx_model_renderer_resources_manager_intialize
   manager->temporary_allocator = creation->temporary_allocator;
   manager->gpu = creation->async_loader->gpu;
   manager->resources_absolute_directory = creation->resources_absolute_directory;
+#if CRUDE_DEVELOP
   manager->test_allocator = creation->test_allocator;
+#endif
   manager->texture_manager = creation->texture_manager;
 
   manager->total_meshes_count = 0;

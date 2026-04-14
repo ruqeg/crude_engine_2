@@ -2,6 +2,8 @@
 
 #include <engine/gui/blueprint_node_builder.h>
 
+#if CRUDE_DEVELOP
+
 CRUDE_API bool
 crude_gui_blueprint_node_builder_set_stage_
 (
@@ -393,3 +395,5 @@ crude_gui_blueprint_node_builder_end_pin_
 {
   ax::NodeEditor::EndPin();
 }
+
+#endif /* CRUDE_DEVELOP */

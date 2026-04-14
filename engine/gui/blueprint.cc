@@ -1,3 +1,5 @@
+#if CRUDE_DEVELOP
+
 #include <engine/core/hashmapstr.h>
 #include <engine/gui/hardcoded_icon.h>
 #include <engine/gui/blueprint_node_builder.h>
@@ -2030,3 +2032,5 @@ crude_gui_blueprint_build_node_
     node->outputs[ i ].kind = CRUDE_GUI_BLUEPRINT_PIN_KIND_OUTPUT;
   }
 }
+
+#endif /* CRUDE_DEVELOP */

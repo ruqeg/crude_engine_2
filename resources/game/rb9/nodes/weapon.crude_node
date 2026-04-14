@@ -7,9 +7,9 @@
 			"scale":	[1, 1, 1]
 		}, {
 			"type":	"crude_weapon",
-			"max_ammo":	100,
-			"damage":	50,
-			"max_cooldown":	0.10000000149011612
+			"max_ammo":	1000,
+			"damage":	25,
+			"max_cooldown":	4
 		}],
 	"children":	[{
 			"name":	"model",
@@ -59,7 +59,8 @@
 					"min_distance":	0,
 					"max_distance":	0,
 					"rolloff":	0,
-					"start_volume":	4
+					"start_volume":	4,
+					"autoplay":	0
 				}, {
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],

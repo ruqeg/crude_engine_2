@@ -34,7 +34,12 @@ crude_game_initialize
 {
   game->engine = engine;
   
+#if CRUDE_PRODUCTION
+  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, true );
+  crude_physics_enable_simulation( &engine->physics, engine->world, true );
+#else
   CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
+#endif
 
   game->player_controller_system_context = CRUDE_COMPOUNT_EMPTY( crude_player_controller_system_context );
   game->player_controller_system_context.input = &engine->platform.input;
@@ -61,7 +66,7 @@ crude_game_initialize
   game->maze_level_system_context.input = &engine->platform.input;
   crude_maze_level_system_import( engine->world, &engine->components_serialization_manager, &game->maze_level_system_context );
 
-  crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\player.crude_node" );
+  crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\maze.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
   
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
@@ -99,6 +104,15 @@ crude_game_update_input_
   _In_ crude_game                                         *game
 )
 {
+  SDL_Window *sdl_window = game->engine->platform.sdl_window;
+  if ( game->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
+  {
+    SDL_SetWindowFullscreen( sdl_window, true );
+  }
+  else if ( game->engine->platform.input.keys[ SDL_SCANCODE_G ].pressed )
+  {
+    SDL_SetWindowFullscreen( sdl_window, false );
+  }
 }
 
 void

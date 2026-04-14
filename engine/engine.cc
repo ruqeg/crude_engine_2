@@ -219,15 +219,20 @@ crude_engine_gui_queue_draw_
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_gui_queue_draw_" );
   ImGui::SetCurrentContext( engine->imgui_context );
+#if CRUDE_DEVELOP
   ImGuizmo::SetImGuiContext( engine->imgui_context );
- 
+#endif 
+
   ImGui_ImplSDL3_NewFrame( );
   ImGui::NewFrame( );
+
+#if CRUDE_DEVELOP
   ImGuizmo::SetOrthographic( false );
   ImGuizmo::BeginFrame();
   
   crude_editor_queue_draw( &engine->editor );
   crude_gui_devmenu_draw( &engine->devmenu );
+#endif /* CRUDE_DEVELOP */
 
   if ( engine->imgui_draw_custom_fn )
   {
@@ -308,12 +313,18 @@ crude_engine_update
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_update" );
   
   crude_platform_update( &engine->platform );
+
+#if CRUDE_DEVELOP
   crude_gui_devmenu_update( &engine->devmenu );
+#endif /* CRUDE_DEVELOP */
 
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
 
+#if CRUDE_DEVELOP
   crude_editor_update( &engine->editor, delta_time );
+#endif /* CRUDE_DEVELOP */
+
   crude_physics_update( &engine->physics, current_time );
 
   crude_engine_update_animations_from_node_( &engine->scene_renderer, engine->world, engine->main_node, delta_time );
@@ -588,6 +599,15 @@ crude_engine_initialize_graphics_
 
   crude_snprintf( render_graph_file_path, sizeof( render_graph_file_path ), "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.crude_render_graph" );
   crude_gfx_render_graph_parse_from_file( &engine->render_graph, render_graph_file_path, &engine->temporary_allocator );
+  
+#if CRUDE_PRODUCTION
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_game_pass" )->enabled = true;
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_editor_pass" )->enabled = false;
+#else
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_game_pass" )->enabled = false;
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_editor_pass" )->enabled = true;
+#endif
+
   crude_gfx_render_graph_compile( &engine->render_graph, &engine->temporary_allocator );
   
   if ( engine->gpu.mesh_shaders_extension_present )
@@ -614,7 +634,9 @@ crude_engine_initialize_graphics_
   model_renderer_resources_manager_creation.allocator = &engine->common_allocator;
   model_renderer_resources_manager_creation.async_loader = &engine->async_loader;
   model_renderer_resources_manager_creation.texture_manager = &engine->texture_manager;
+#if CRUDE_DEVELOP
   model_renderer_resources_manager_creation.test_allocator = &engine->test_allocator;
+#endif
   model_renderer_resources_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
   model_renderer_resources_manager_creation.temporary_allocator = &engine->model_renderer_resources_manager_temporary_allocator;
   model_renderer_resources_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
@@ -627,7 +649,9 @@ crude_engine_initialize_graphics_
   scene_renderer_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
   scene_renderer_creation.imgui_pass_enalbed = true;
   scene_renderer_creation.imgui_context = engine->imgui_context;
+#if CRUDE_DEVELOP
   scene_renderer_creation.physics_shapes_manager = &engine->physics_shapes_manager;
+#endif
   crude_gfx_scene_renderer_initialize( &engine->scene_renderer, &scene_renderer_creation );
 
 #if CRUDE_DEVELOP
@@ -636,7 +660,7 @@ crude_engine_initialize_graphics_
 #endif
 
   engine->scene_renderer.options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
-  //engine->scene_renderer.options.scene.ambient_intensity = 0.f;
+  engine->scene_renderer.options.scene.ambient_intensity = 0.f;
   engine->scene_renderer.options.scene.background_intensity = 0.f;
 
   engine->graphics_absolute_time = 0.f;
@@ -690,7 +714,9 @@ crude_engine_initialize_physics_
   physics_shapes_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_physics_shapes_manager_creation );
   physics_shapes_manager_creation.allocator = &engine->common_allocator;
   physics_shapes_manager_creation.cgltf_temporary_allocator = &engine->cgltf_temporary_allocator;
+#if CRUDE_DEVELOP
   physics_shapes_manager_creation.model_renderer_resources_manager = &engine->model_renderer_resources_manager;
+#endif
   physics_shapes_manager_creation.physics_manager = &engine->physics;
   physics_shapes_manager_creation.resources_absolute_directory = engine->environment.directories.resources_absolute_directory;
   crude_physics_shapes_manager_initialize( &engine->physics_shapes_manager, &physics_shapes_manager_creation );
@@ -746,8 +772,10 @@ crude_engine_input_callback_
 
   ImGui_ImplSDL3_ProcessEvent( CRUDE_CAST( SDL_Event*, sdl_event ) );
   
+#if CRUDE_DEVELOP
   crude_gui_devmenu_handle_input( &engine->devmenu );
   crude_editor_handle_input( &engine->editor );
+#endif
 }
 
 void
@@ -786,7 +814,9 @@ crude_engine_initialize_gui_
   _In_ crude_engine                                       *engine
 )
 {
+#if CRUDE_DEVELOP
   crude_gui_devmenu_initialize( &engine->devmenu, engine );
+#endif
 }
 
 void
@@ -795,7 +825,9 @@ crude_engine_deinitialize_gui_
   _In_ crude_engine                                       *engine
 )
 {
+#if CRUDE_DEVELOP
   crude_gui_devmenu_deinitialize( &engine->devmenu );
+#endif
 }
 
 void
@@ -804,7 +836,9 @@ crude_engine_initialize_editor_
   _In_ crude_engine                                       *engine
 )
 {
+#if CRUDE_DEVELOP
   crude_editor_initialize( &engine->editor, engine );
+#endif
 }
 
 void
@@ -813,7 +847,9 @@ crude_engine_deinitialize_editor_
   _In_ crude_engine                                       *engine
 )
 {
+#if CRUDE_DEVELOP
   crude_editor_deinitialize( &engine->editor );
+#endif
 }
 
 bool

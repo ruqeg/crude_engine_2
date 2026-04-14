@@ -1,3 +1,5 @@
+#if CRUDE_DEVELOP
+
 #include <engine/gui/gpu_visual_profiler.h>
 
 static void
@@ -399,3 +401,5 @@ crude_gui_gpu_visual_profiler_pool_queue_draw_
 {
   ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
 }
+
+#endif /* CRUDE_DEVELOP */

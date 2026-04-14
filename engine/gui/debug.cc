@@ -1,3 +1,5 @@
+#if CRUDE_DEVELOP
+
 #include <engine/engine.h>
 
 #include <engine/gui/debug.h>
@@ -50,3 +52,5 @@ crude_gui_debug_queue_draw
     ImGui::DragFloat( "Walk Speed", &editor_camerae->walk_speed );
   }
 }
+
+#endif /* CRUDE_DEVELOP */

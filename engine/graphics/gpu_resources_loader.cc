@@ -116,7 +116,10 @@ crude_gfx_technique_load_from_file
   
   technique_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_technique_creation );
   
+#if CRUDE_DEVELOP
   crude_string_copy( technique_creation.technique_relative_filepath, technique_relative_filepath, sizeof( technique_creation.technique_relative_filepath ) );
+#endif
+
   {
     cJSON const                                           *technique_name_json;
     char const                                            *technique_name;
@@ -402,6 +405,14 @@ parse_gpu_pipeline_
     if ( render_pass_output_reference_json )
     {
       char const *render_pass_name = cJSON_GetStringValue( render_pass_output_reference_json );
+      if ( crude_string_cmp( render_pass_name, "template_imgui_pass" ) == 0 )
+      {
+#if CRUDE_PRODUCTION
+        render_pass_name = "imgui_game_pass";
+#else
+        render_pass_name = "imgui_editor_pass";
+#endif
+      }
     
       crude_gfx_render_graph_node *node = crude_gfx_render_graph_builder_access_node_by_name( render_graph->builder, render_pass_name );
     

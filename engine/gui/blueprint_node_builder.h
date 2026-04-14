@@ -5,6 +5,8 @@
 
 #pragma once
 
+#if CRUDE_DEVELOP
+
 #include <engine/core/alias.h>
 #include <engine/graphics/gpu_resources.h>
 #include <engine/graphics/imgui.h>
@@ -103,3 +105,5 @@ crude_gui_blueprint_node_builder_end_output
 (
   _In_ crude_gui_blueprint_node_builder                   *builder
 );
+
+#endif /* CRUDE_DEVELOP */

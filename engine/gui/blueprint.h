@@ -1,5 +1,7 @@
 #pragma once
 
+#if CRUDE_DEVELOP
+
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/imgui.h>
 
@@ -174,3 +176,5 @@ crude_gui_blueprint_build_nodes
 (
   _In_ crude_gui_blueprint                                *blueprint
 );
+
+#endif /* CRUDE_DEVELOP */

@@ -24,6 +24,103 @@
 					}
 				}]
 		}, {
+			"name":	"key",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-209.52110290527344, -5.2209300994873047, -482.04901123046875],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}],
+			"children":	[{
+					"name":	"key_model",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0.36750602722167969, -5.35474967956543, -3.0712671279907227],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[25, 25, 25]
+						}, {
+							"type":	"crude_gltf",
+							"path":	"game\\rb9\\gltf\\key\\key.gltf",
+							"animations_instances":	[{
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}, {
+									"index":	1,
+									"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+								}]
+						}],
+					"children":	[]
+				}, {
+					"name":	"key_light",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[1.9850457906723022, 1.52587890625e-05, 1.85609495639801],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_light",
+							"radius":	25,
+							"color":	[1, 0.87610620260238647, 0],
+							"intensity":	25
+						}],
+					"children":	[]
+				}, {
+					"name":	"sensor",
+					"components":	[{
+							"type":	"crude_transform",
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}, {
+							"type":	"crude_physics_kinematic_body",
+							"shape_type":	0,
+							"box":	{
+								"extent":	[8.3999996185302734, 10.199999809265137, 12.699999809265137]
+							},
+							"layers":	256,
+							"sensor":	1
+						}],
+					"children":	[]
+				}, {
+					"name":	"key_sound",
+					"components":	[{
+							"type":	"crude_audio_player",
+							"path":	"game\\rb9\\sounds\\final.mp3",
+							"looping":	0,
+							"positioning":	1,
+							"stream":	0,
+							"min_distance":	0,
+							"max_distance":	0,
+							"rolloff":	0,
+							"start_volume":	0,
+							"autoplay":	0
+						}, {
+							"type":	"crude_transform",
+							"translation":	[0, 0, 0],
+							"rotation":	[0, 0, 0, 1],
+							"scale":	[1, 1, 1]
+						}],
+					"children":	[]
+				}]
+		}, {
 			"name":	"maze_model",
 			"components":	[{
 					"type":	"crude_transform",
@@ -312,7 +409,8 @@
 					"min_distance":	0,
 					"max_distance":	0,
 					"rolloff":	0,
-					"start_volume":	1
+					"start_volume":	1,
+					"autoplay":	0
 				}, {
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],

@@ -71,7 +71,7 @@ crude_log_common_va
   _In_ va_list                                             args
 );
 
-#if CRUDE_PRODUCTION
+#if 0
 #define CRUDE_LOG( channel, format, ... )
 #define CRUDE_LOG_INFO( channel, format, ... )
 #define CRUDE_LOG_WARNING( channel, format, ... )

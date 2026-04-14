@@ -20,6 +20,14 @@ CRUDE_API CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DECLARATION( crude_maze_level );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DECLARATION( crude_maze_level );
 CRUDE_API CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DECLARATION( crude_maze_level );
 
+/**/
+CRUDE_API void
+crude_key_sensor_callback_
+(
+  _In_ crude_entity                                        signal_entity,
+  _In_ crude_entity                                        hitted_entity
+);
+
 /**********************************************************
  *
  *                 System

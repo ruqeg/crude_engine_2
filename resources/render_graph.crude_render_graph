@@ -301,7 +301,7 @@
     },
     {
       "name": "imgui_editor_pass",
-      "enabled": 1,
+      "enabled": 0,
       "inputs": [
         {
           "type": "reference",
@@ -341,15 +341,11 @@
       "inputs": [
         {
           "type": "reference",
-          "name": "IMGUI_PASS_MARKER"
+          "name": "debug_pass_marker"
         },
         {
           "type": "texture",
           "name": "depth"
-        },
-        {
-          "type": "texture",
-          "name": "direct_radiance"
         },
         {
           "type": "attachment",

@@ -130,32 +130,12 @@
 						}]
 				}]
 		}, {
-			"name":	"zombie_idle",
+			"name":	"zombie_dead",
 			"components":	[{
 					"type":	"crude_audio_player",
-					"path":	"game\\rb9\\sounds\\zombie_idle.mp3",
+					"path":	"game\\rb9\\sounds\\zombie_dead.mp3",
 					"looping":	1,
-					"positioning":	0,
-					"stream":	1,
-					"min_distance":	0.10000000149011612,
-					"max_distance":	15,
-					"rolloff":	0.15000000596046448,
-					"start_volume":	1,
-					"autoplay":	0
-				}, {
-					"type":	"crude_transform",
-					"translation":	[0, 0, 0],
-					"rotation":	[0, 0, 0, 1],
-					"scale":	[1, 1, 1]
-				}],
-			"children":	[]
-		}, {
-			"name":	"zombie_attack",
-			"components":	[{
-					"type":	"crude_audio_player",
-					"path":	"game\\rb9\\sounds\\zombie_scream.mp3",
-					"looping":	1,
-					"positioning":	0,
+					"positioning":	1,
 					"stream":	1,
 					"min_distance":	0,
 					"max_distance":	0,
@@ -170,12 +150,12 @@
 				}],
 			"children":	[]
 		}, {
-			"name":	"zombie_dead",
+			"name":	"zombie_attack",
 			"components":	[{
 					"type":	"crude_audio_player",
-					"path":	"game\\rb9\\sounds\\zombie_dead.mp3",
+					"path":	"game\\rb9\\sounds\\zombie_scream.mp3",
 					"looping":	1,
-					"positioning":	0,
+					"positioning":	1,
 					"stream":	1,
 					"min_distance":	0,
 					"max_distance":	0,

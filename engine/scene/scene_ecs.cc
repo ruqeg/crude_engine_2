@@ -270,6 +270,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
     }
   } );
   
+#if CRUDE_DEVELOP
   CRUDE_IMGUI_OPTION( "Animations", {
     if ( model_renderer_resources )
     {
@@ -344,6 +345,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
       }
     }
     } );
+#endif /* CRUDE_DEVELOP */
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_light )

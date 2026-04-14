@@ -70,7 +70,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->model_renderer_resources_manager = creation->model_renderer_resources_manager;
   scene_renderer->imgui_pass_enalbed = creation->imgui_pass_enalbed;
   scene_renderer->total_visible_meshes_instances_count = 0u;
+#if CRUDE_DEVELOP
   scene_renderer->physics_shapes_manager = creation->physics_shapes_manager;
+#endif
 
   scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
 
@@ -137,6 +139,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
   scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
+#if CRUDE_DEVELOP
   {
     crude_gfx_model_renderer_resources_instance_initialize(
       &scene_renderer->light_model_renderer_resources_instance,
@@ -174,7 +177,7 @@ crude_gfx_scene_renderer_initialize
       crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL ) );
     scene_renderer->audio_listener_model_renderer_resources_instance.cast_shadow = false;
   }
-
+#endif /* CRUDE_DEVELOP */
   crude_gfx_scene_renderer_on_resize( scene_renderer );
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize scene renderer passes." );
@@ -270,12 +273,14 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
   
+#if CRUDE_DEVELOP
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->capsule_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->physics_box_collision_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audio_listener_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audo_player_model_renderer_resources_instance );
+#endif /* CRUDE_DEVELOP */
 }
 
 bool
@@ -293,6 +298,7 @@ crude_gfx_scene_renderer_update_instances_from_node
 
   model_initialized = false;
   
+#if CRUDE_DEVELOP
   // load debug light (in case it was cleaned because of new model manager resource clean)
   scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf", NULL );
   scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
@@ -300,7 +306,8 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->physics_box_collision_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL );
   scene_renderer->audo_player_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_player.gltf", NULL );
   scene_renderer->audio_listener_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL );
-
+#endif /* CRUDE_DEVELOP */
+  
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0u );
@@ -447,7 +454,11 @@ crude_gfx_scene_renderer_register_passes
   
   if ( scene_renderer->imgui_pass_enalbed )
   {
+#if CRUDE_DEVELOP
     crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "imgui_editor_pass" ), crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+#else
+    crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "imgui_game_pass" ), crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
+#endif
   }
 
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "opaque_early_pass" ), crude_gfx_opaque_early_pass_pack( &scene_renderer->opaque_early_pass ) );
@@ -527,10 +538,12 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     scene->ambient_intensity = scene_renderer->options.scene.ambient_intensity;
     scene->absolute_time = scene_renderer->options.absolute_time;
     scene->absolute_frame = scene_renderer->gpu->absolute_frame;
+#if CRUDE_DEVELOP
     scene->debug_mode = scene_renderer->options.debug.debug_mode;
     scene->debug_flags1 = scene_renderer->options.debug.flags1;
     scene->debug_force_metalness = scene_renderer->options.debug.force_metalness;
     scene->debug_force_roughness = scene_renderer->options.debug.force_roughness;
+#endif
 
     crude_gfx_cmd_memory_copy( primary_cmd, scene_tca, scene_renderer->scene_hga, 0, 0 );
   }
@@ -764,7 +777,8 @@ crude_scene_renderer_register_nodes_instances_
     XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu ); 
   }
-
+  
+#if CRUDE_DEVELOP
   if ( scene_renderer->options.debug.hide_collision)
   {
     if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )
@@ -855,6 +869,7 @@ crude_scene_renderer_register_nodes_instances_
       }
     }
   }
+#endif /* CRUDE_DEVELOP */
   
   *model_initialized |= local_model_initialized;
 

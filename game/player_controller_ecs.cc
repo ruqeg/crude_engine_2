@@ -296,14 +296,14 @@ crude_player_controller_game_update_system_
       {
         if ( input->mouse.right.current )
         {
-          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 90.f ), 2 * it->delta_time ); 
-          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 5 * it->delta_time );
+          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 90.f ), CRUDE_MIN( 1,2 * it->delta_time )); 
+          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, CRUDE_MIN( 1,5 * it->delta_time ));
           player_controller->camera_target_node = camera_grab_point_entity;
         }
         else
         {
-          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), 2 * it->delta_time );
-          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, 7 * it->delta_time );
+          player_camera->fov_radians = crude_lerp_angle( player_camera->fov_radians, XMConvertToRadians( 70.f ), CRUDE_MIN( 1,2 * it->delta_time ));
+          player_controller->aim_blend = CRUDE_LERP( player_controller->aim_blend, input->mouse.right.current, CRUDE_MIN( 1, 7 * it->delta_time ) );
         }
         
         if ( input->mouse.right.current )
@@ -316,7 +316,7 @@ crude_player_controller_game_update_system_
             }
           }
         }
-        player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, it->delta_system_time );
+        player_controller->shot_blend = CRUDE_LERP( player_controller->shot_blend, 0, CRUDE_MIN( 1, it->delta_system_time ) );
       }
 
       /* Handle Rotation */
@@ -428,7 +428,7 @@ crude_player_controller_game_update_system_
       int64                                                animation_indices[ 8 ] { -1 };
       float32                                              animation_weights[ 8 ]{ 0 };
       
-      player_controller->move_blend = CRUDE_LERP( player_controller->move_blend, player_controller->move_speed / player_controller->walk_speed, 5 * it->delta_time );
+      player_controller->move_blend = CRUDE_LERP( player_controller->move_blend, player_controller->move_speed / player_controller->walk_speed, CRUDE_MIN( 1, 5 * it->delta_time ) );
 
       animation_indices[ 0 ] = player_controller->idle_animation_index;
       animation_weights[ 0 ] = 1.f - player_controller->move_blend;
@@ -544,5 +544,5 @@ crude_player_health_death_callback_
   _In_ int32                                               damage
 )
 {
-  crude_engine_commands_manager_push_load_node_command( &crude_game_instance()->engine->commands_manager, "" );
+  crude_engine_commands_manager_push_load_node_command( &crude_game_instance()->engine->commands_manager, "game\\rb9\\nodes\\maze.crude_node" );
 }
