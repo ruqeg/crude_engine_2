@@ -119,6 +119,7 @@ void main()
       break;
     }
   }
+  accept = true;
 
   uvec4 ballot = subgroupBallot( accept );
   uint index = subgroupBallotExclusiveBitCount( ballot );

@@ -321,9 +321,11 @@ crude_physics_initialize
   JPH::AlignedAllocate = crude_physics_jph_aligned_allocate_implementation;
   JPH::AlignedFree = crude_physics_jph_aligned_free_implementation;
   
+#if defined(JPH_ENABLE_ASSERTS)
   JPH::Trace = crude_physics_jolt_trace_impl_;
 
   JPH_IF_ENABLE_ASSERTS( JPH::AssertFailed = crude_physics_jolt_assert_failed_impl_ ;);
+#endif
 
   JPH::Factory::sInstance = new JPH::Factory( );
 

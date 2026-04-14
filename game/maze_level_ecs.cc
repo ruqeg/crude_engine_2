@@ -87,18 +87,32 @@ crude_maze_level_create_observer_
   {
     crude_input const                                     *input;
     crude_maze_level                                      *maze_area_level;
+    crude_player_controller                               *player_controller;
+    crude_audio_player_handle                             *ambient_sound_player_handle;
+    crude_entity                                           maze_area_level_entity;
+    crude_entity                                           player_entity;
+    crude_entity                                           player_spawnpoint_entity;
+    crude_entity                                           ambient_sound_player_entity;
     
     input = ctx->input;
     
-    entity = crude_entity_from_iterator( it, i );
+    maze_area_level_entity = crude_entity_from_iterator( it, i );
     
     maze_area_level = &maze_area_level_per_entity[ i ];
     
-    player_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "player_spawnpoint" );
+    player_spawnpoint_entity = crude_ecs_lookup_entity_from_parent( it->world, maze_area_level_entity, "player_spawnpoint" );
     player_entity = crude_ecs_lookup_entity_from_parent( it->world, player_spawnpoint_entity, "player" );
     player_controller = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_entity, crude_player_controller );
     player_controller->input_enabled = true;
     player_controller->camera_enabled = true;
+
+    if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( it->world ) )
+    {
+      ambient_sound_player_entity = crude_ecs_lookup_entity_from_parent( it->world, maze_area_level_entity, "ambient_sound" );
+      ambient_sound_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, ambient_sound_player_entity, crude_audio_player_handle );
+      crude_audio_device_sound_reset( &game->engine->audio_device, ambient_sound_player_handle->sound_handle );
+      crude_audio_device_sound_start( &game->engine->audio_device, ambient_sound_player_handle->sound_handle );
+    }
   }
   CRUDE_PROFILER_ZONE_END;
 }

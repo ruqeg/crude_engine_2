@@ -153,6 +153,12 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_audio_player_handle )
         crude_audio_device_sound_stop( manager->audio_device, component->sound_handle );
       }
       }); 
+    CRUDE_IMGUI_OPTION( "Reset", {
+      if (ImGui::Button( "##Reset" ) )
+      {
+        crude_audio_device_sound_reset( manager->audio_device, component->sound_handle );
+      }
+      }); 
     CRUDE_IMGUI_OPTION( "Volume", {
       float32 volume = crude_audio_device_sound_get_volume( manager->audio_device, component->sound_handle );
       if ( ImGui::DragFloat( "##Volume", &volume, 0.1f, 0.01f ) )

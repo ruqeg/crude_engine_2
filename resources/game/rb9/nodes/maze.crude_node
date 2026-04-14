@@ -316,5 +316,19 @@
 					"scale":	[1, 1, 1]
 				}],
 			"children":	[]
+		}, {
+			"name":	"light",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[19.997451782226562, 6.5018129348754883, 80.868644714355469],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	50,
+					"color":	[1, 1, 1],
+					"intensity":	25
+				}],
+			"children":	[]
 		}]
 }

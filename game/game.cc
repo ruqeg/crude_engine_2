@@ -33,6 +33,8 @@ crude_game_initialize
 )
 {
   game->engine = engine;
+  
+  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 
   game->player_controller_system_context = CRUDE_COMPOUNT_EMPTY( crude_player_controller_system_context );
   game->player_controller_system_context.input = &engine->platform.input;
@@ -64,8 +66,6 @@ crude_game_initialize
   
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
-  
-  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 }
 
 void

@@ -148,3 +148,19 @@ crude_transform_lerp
   XMStoreFloat3( &result.scale, XMVectorLerp( XMLoadFloat3( &transform1->scale ), XMLoadFloat3( &transform2->scale ), t ) );
   return result;
 }
+
+crude_light
+crude_light_empty
+(
+)
+{
+  crude_light                                              light;
+
+  light = CRUDE_COMPOUNT_EMPTY( crude_light );
+  light.color.x = 1;
+  light.color.y = 1;
+  light.color.z = 1;
+  light.intensity = 1;
+  light.radius = 1;
+  return light;
+}

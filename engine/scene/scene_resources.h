@@ -111,3 +111,8 @@ crude_transform_lerp
   _In_ crude_transform                                    *transform2,
   _In_ float32                                             t
 );
+
+CRUDE_API crude_light
+crude_light_empty
+(
+);

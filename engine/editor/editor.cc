@@ -331,6 +331,7 @@ crude_editor_start_game
   crude_physics_run_system_on_start( editor->engine->world );
   crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, "___crude_engine_autosave/autosave.crude_node" );
   crude_physics_enable_simulation( &editor->engine->physics, editor->engine->world, true );
+  crude_engine_commands_manager_push_load_node_command( &editor->engine->commands_manager, "___crude_engine_autosave/autosave.crude_node" );
 }
 
 void
