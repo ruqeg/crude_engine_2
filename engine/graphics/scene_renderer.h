@@ -134,6 +134,8 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_model_renderer_resources_instance              camera_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              capsule_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              physics_box_collision_model_renderer_resources_instance;
+  crude_gfx_model_renderer_resources_instance              audo_player_model_renderer_resources_instance;
+  crude_gfx_model_renderer_resources_instance              audio_listener_model_renderer_resources_instance;
 #endif
 
   /***********************

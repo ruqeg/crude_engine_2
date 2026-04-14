@@ -255,8 +255,8 @@ void main()
     
     vec4 tangent = vec4( int( vertices.data[ vertex_index ].tx ), int( vertices.data[ vertex_index ].ty ), int( vertices.data[ vertex_index ].tz ),  int( vertices.data[ vertex_index ].tw ) ) * i8_inverse - 1.0;
     vec3 normal = vec3( int( vertices.data[ vertex_index ].nx ), int( vertices.data[ vertex_index ].ny ), int( vertices.data[ vertex_index ].nz ) ) * i8_inverse - 1.0;
-    normal = normal * mat3( mesh_to_world );
-    tangent.xyz = tangent.xyz * mat3( mesh_to_world );
+    normal = normal * mat3( mesh_to_skin ) * mat3( mesh_to_world );
+    tangent.xyz = tangent.xyz * mat3( mesh_to_skin ) * mat3( mesh_to_world );
     vec3 bitangent = cross( normal, tangent.xyz ) * tangent.w;
 
     vec3 view_normal = normal * mat3( scene.data.camera.world_to_view );

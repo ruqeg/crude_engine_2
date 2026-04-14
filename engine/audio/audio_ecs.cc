@@ -177,6 +177,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_audio_player_handle )
 CRUDE_ECS_SYSTEM_DECLARE( crude_audio_system );
 
 CRUDE_ECS_SYSTEM_DECLARE( crude_audio_listener_update_system_ );
+CRUDE_ECS_SYSTEM_DECLARE( crude_audio_player_update_system_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_audio_player_create_observer_ );
 CRUDE_ECS_OBSERVER_DECLARE( crude_audio_player_destroy_observer_ );
 
@@ -194,6 +195,11 @@ crude_audio_system_import
   CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_listener_update_system_, crude_ecs_on_engine_update, ctx, { 
     { .id = ecs_id( crude_transform ) },
     { .id = ecs_id( crude_audio_listener ) },
+  } );
+
+  CRUDE_ECS_SYSTEM_DEFINE( world, crude_audio_player_update_system_, crude_ecs_on_engine_update, ctx, { 
+    { .id = ecs_id( crude_audio_player_handle ) },
+    { .id = ecs_id( crude_transform ) },
   } );
   
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_audio_player_create_observer_, EcsOnSet, ctx, { 
@@ -303,5 +309,38 @@ crude_audio_player_destroy_observer_
     audio_player_node = crude_entity_from_iterator( it, i );
     
     crude_audio_device_destroy_sound( ctx->device, audio_player_handle->sound_handle );
+  }
+}
+
+void
+crude_audio_player_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+)
+{
+  crude_audio_system_context                              *ctx;
+  crude_transform                                         *transform_per_entity;
+  crude_audio_player_handle                               *audio_player_per_entity;
+
+  ctx = CRUDE_CAST( crude_audio_system_context*, it->ctx );
+  audio_player_per_entity = ecs_field( it, crude_audio_player_handle, 0 );
+  transform_per_entity = ecs_field( it, crude_transform, 1 );
+
+  for ( uint32 i = 0; i < it->count; ++i )
+  {
+    crude_transform                                       *transform;
+    crude_audio_player_handle                             *audio_player_handle;
+    crude_entity                                           audio_player_node;
+    
+    transform = &transform_per_entity[ i ];
+    audio_player_handle = &audio_player_per_entity[ i ];
+    audio_player_node = crude_entity_from_iterator( it, i );
+
+    audio_player_handle->last_local_to_world_update_time += it->delta_time;
+    if ( audio_player_handle->last_local_to_world_update_time > 0.016f )
+    {
+      crude_audio_device_sound_set_translation( ctx->device, audio_player_handle->sound_handle, crude_transform_node_to_world( it->world, audio_player_node, transform ).r[ 3 ] );
+      audio_player_handle->last_local_to_world_update_time = 0.f;
+    }
   }
 }

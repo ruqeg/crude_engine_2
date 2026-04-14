@@ -67,6 +67,17 @@
 											"aspect_ratio":	1.7999999523162842
 										}],
 									"children":	[]
+								}, {
+									"name":	"audio_listener",
+									"components":	[{
+											"type":	"crude_audio_listener"
+										}, {
+											"type":	"crude_transform",
+											"translation":	[0, 7.62939453125e-06, 0],
+											"rotation":	[0, 0, 0, 1],
+											"scale":	[1, 1, 1]
+										}],
+									"children":	[]
 								}]
 						}]
 				}, {
@@ -81,8 +92,8 @@
 							"name":	"weapon_grab",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[-0.50355398654937744, 7.26109504699707, 1.9509773254394531],
-									"rotation":	[0.799881935119629, 0.563780426979065, 0.20198296010494232, 0.03923310711979866],
+									"translation":	[-0.73981809616088867, 7.2836575508117676, 1.8267356157302856],
+									"rotation":	[0.79120969772338867, 0.572771728038788, 0.20557469129562378, 0.06048516184091568],
 									"scale":	[1, 1, 1]
 								}],
 							"children":	[{
@@ -166,12 +177,40 @@
 							"name":	"light_front",
 							"components":	[{
 									"type":	"crude_transform",
-									"translation":	[0, 4.8074774742126465, 4.6918249130249023],
+									"translation":	[-0.96891909837722778, 10.321145057678223, 1.4059360027313232],
 									"rotation":	[0, 0, 0, 1],
 									"scale":	[1, 1, 1]
 								}, {
 									"type":	"crude_light",
-									"radius":	25,
+									"radius":	15,
+									"color":	[1, 1, 1],
+									"intensity":	5
+								}],
+							"children":	[]
+						}, {
+							"name":	"light_top",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[0.31062465906143188, 8.58561706542969, 2.3704342842102051],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_light",
+									"radius":	5,
+									"color":	[0.256284773349762, 0.33281964063644409, 0.526548683643341],
+									"intensity":	10
+								}],
+							"children":	[]
+						}, {
+							"name":	"light_right",
+							"components":	[{
+									"type":	"crude_transform",
+									"translation":	[1.8387484550476074, 10.321145057678223, 1.4059360027313232],
+									"rotation":	[0, 0, 0, 1],
+									"scale":	[1, 1, 1]
+								}, {
+									"type":	"crude_light",
+									"radius":	15,
 									"color":	[1, 1, 1],
 									"intensity":	5
 								}],
@@ -201,17 +240,18 @@
 							"children":	[]
 						}]
 				}, {
-					"name":	"light_top",
+					"name":	"move_audio",
 					"components":	[{
+							"type":	"crude_audio_player",
+							"path":	"game\\rb9\\sounds\\walk.mp3",
+							"looping":	1,
+							"positioning":	1,
+							"stream":	0
+						}, {
 							"type":	"crude_transform",
-							"translation":	[-1.0010745525360107, 16.947650909423828, 0.27963638305664062],
+							"translation":	[0, 0, 0],
 							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
-						}, {
-							"type":	"crude_light",
-							"radius":	15,
-							"color":	[1, 1, 1],
-							"intensity":	5
 						}],
 					"children":	[]
 				}]

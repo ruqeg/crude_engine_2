@@ -59,6 +59,7 @@ typedef struct crude_audio_player
 typedef struct crude_audio_player_handle
 {
   crude_sound_handle                                       sound_handle;
+  float32                                                  last_local_to_world_update_time;
 } crude_audio_player_handle;
 
 typedef struct crude_audio_listener

@@ -52,6 +52,12 @@ crude_audio_listener_update_system_
 );
 
 CRUDE_API void
+crude_audio_player_update_system_
+(
+  _In_ ecs_iter_t                                         *it
+);
+
+CRUDE_API void
 crude_audio_player_create_observer_
 (
   _In_ ecs_iter_t                                         *it

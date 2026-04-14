@@ -9,6 +9,7 @@
 #include <engine/core/file.h>
 #include <engine/core/hashmapstr.h>
 
+#include <engine/audio/audio_ecs.h>
 #include <engine/scene/scene_ecs.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/scene/scene_debug_ecs.h>
@@ -160,6 +161,18 @@ crude_gfx_scene_renderer_initialize
       scene_renderer->model_renderer_resources_manager,
       crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL ) );
     scene_renderer->physics_box_collision_model_renderer_resources_instance.cast_shadow = false;
+    
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->audo_player_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_player.gltf", NULL ) );
+    scene_renderer->audo_player_model_renderer_resources_instance.cast_shadow = false;
+    
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->audio_listener_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL ) );
+    scene_renderer->audio_listener_model_renderer_resources_instance.cast_shadow = false;
   }
 
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -261,6 +274,8 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->capsule_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->physics_box_collision_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audio_listener_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audo_player_model_renderer_resources_instance );
 }
 
 bool
@@ -283,6 +298,8 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf", NULL );
   scene_renderer->capsule_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf", NULL );
   scene_renderer->physics_box_collision_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL );
+  scene_renderer->audo_player_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_player.gltf", NULL );
+  scene_renderer->audio_listener_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL );
 
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
@@ -763,6 +780,18 @@ crude_scene_renderer_register_nodes_instances_
     {
       XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->camera_model_renderer_resources_instance );
+    }
+  
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_audio_player ) )
+    {
+      XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->audo_player_model_renderer_resources_instance );
+    }
+  
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_audio_listener ) )
+    {
+      XMStoreFloat4x4( &scene_renderer->camera_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->audio_listener_model_renderer_resources_instance );
     }
   }
   

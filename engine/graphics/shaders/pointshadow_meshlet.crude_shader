@@ -91,7 +91,7 @@ void main()
 
   const vec4 camera_sphere = pointlight_spheres.data[ light_index ];
 
-  bool accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
+  bool accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
 
   if ( accept )
   {

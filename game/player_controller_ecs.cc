@@ -130,9 +130,11 @@ crude_player_controller_create_observer
     crude_input const                                     *input;
     crude_player_controller                               *player_controller;
     crude_gltf                                            *player_model;
+    crude_audio_player_handle                             *player_walk_audio_handle;
     XMMATRIX                                               right_hand_joint_node_to_model;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
+    crude_entity                                           player_walk_audio_entity;
     crude_entity                                           player_orientation_entity;
     crude_entity                                           player_model_entity;
     crude_entity                                           weapon_entity;
@@ -144,9 +146,16 @@ crude_player_controller_create_observer
     player_controller = &player_controller_per_entity[ i ];
     
     player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
+    player_walk_audio_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "move_audio" );
     player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
     player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
     weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+    
+    if ( CRUDE_ECS_GAME_STAGE_IS_ENABLED( game->engine->world ) )
+    {
+      player_walk_audio_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_walk_audio_entity, crude_audio_player_handle );
+      crude_audio_device_sound_start( &game->engine->audio_device, player_walk_audio_handle->sound_handle );
+    }
 
     player_model = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_model_entity, crude_gltf );
     
@@ -225,6 +234,7 @@ crude_player_controller_game_update_system_
     crude_camera                                          *player_camera;
     crude_weapon                                          *weapon;
     crude_transform                                       *player_camera_transform;
+    crude_audio_player_handle                             *player_walk_audio_handle;
     crude_entity                                           entity;  
     crude_entity                                           player_character_entity;
     crude_entity                                           camera_grab_point_entity;
@@ -233,8 +243,24 @@ crude_player_controller_game_update_system_
     crude_entity                                           player_model_entity;
     crude_entity                                           pivot_pitch_entity;
     crude_entity                                           pivot_yaw_entity;
+    crude_entity                                           player_walk_audio_entity;
     crude_entity                                           player_camera_entity;
     crude_entity                                           weapon_entity, weapon_model_entity, weapon_grab_entity, weapon_spawnpoint_entity;
+
+    input = ctx->input;
+
+    entity = crude_entity_from_iterator( it, i );
+
+    player_controller = &player_controller_per_entity[ i ];
+    
+    player_character_entity = crude_ecs_lookup_entity_from_parent( it->world, entity, "character" );
+    player_walk_audio_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "move_audio" );
+    player_orientation_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "orientation" );
+    player_model_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "model" );
+    weapon_entity = crude_ecs_lookup_entity_from_parent( it->world, player_orientation_entity, "weapon" );
+    player_walk_audio_entity = crude_ecs_lookup_entity_from_parent( it->world, player_character_entity, "move_audio" );
+
+    player_walk_audio_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( it->world, player_walk_audio_entity, crude_audio_player_handle );
 
     input = ctx->input;
 
@@ -440,6 +466,11 @@ crude_player_controller_game_update_system_
         spine_rotation = XMQuaternionMultiply( spine_rotation, XMQuaternionConjugate( XMLoadFloat4( &player_orientation_transform->rotation ) ) );
         XMStoreFloat4( &player_model->model_renderer_resources_instance.nodes_transforms[ player_controller->spine_joint_node ].rotation, spine_rotation );
       }
+    }
+
+    /* Handle sounds */
+    {
+      crude_audio_device_sound_set_volume( &game->engine->audio_device, player_walk_audio_handle->sound_handle, 5 * player_controller->move_blend );
     }
   }
   CRUDE_PROFILER_ZONE_END;
