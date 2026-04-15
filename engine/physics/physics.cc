@@ -746,13 +746,17 @@ crude_physics_ray_cast
   *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
   if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, _crude_ray_cast_broad_layer_filter_class( broad_phase_mask ), _crude_ray_cast_layer_filter_class( layer_mask ) ) )
   {
+    JPH::RVec3                                             jph_hit_point;
     crude_physics_static_body_handle                       static_body_handle;
+
+    jph_hit_point = jph_ray_cast.GetPointOnRay( jph_ray_cast_result.mFraction );
 
     ray_cast_result->layer = physics->jph_physics_system_class->GetBodyInterface().GetObjectLayer( jph_ray_cast_result.mBodyID );
     
     static_body_handle.index = physics->jph_physics_system_class->GetBodyInterface().GetUserData( jph_ray_cast_result.mBodyID );
 
     ray_cast_result->entity = crude_physics_access_static_body( physics, static_body_handle )->entity;
+    XMStoreFloat3( &ray_cast_result->point, crude_jph_vec3_to_vector( jph_hit_point ) );
     return true;
   }
 

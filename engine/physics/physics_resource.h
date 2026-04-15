@@ -169,6 +169,7 @@ typedef struct crude_physics_ray_cast_result
 {
   crude_entity                                             entity;
   uint32                                                   layer;
+  XMFLOAT3                                                 point;
 } crude_physics_ray_cast_result;
 
 CRUDE_API crude_physics_character
