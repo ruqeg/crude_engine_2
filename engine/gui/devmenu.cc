@@ -493,7 +493,7 @@ crude_gui_devmenu_texture_inspector_draw
   if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
   {
     crude_gfx_texture *selected_texture = crude_gfx_access_texture( &dev_texture_inspector->devmenu->engine->gpu, dev_texture_inspector->texture_handle );
-    if ( selected_texture && selected_texture->name )
+    if ( selected_texture && selected_texture->name[ 0 ] )
     {
       preview_texture_name = selected_texture->name;
     };

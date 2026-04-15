@@ -71,6 +71,11 @@ crude_game_initialize
   
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
+
+#if CRUDE_PRODUCTION
+  SDL_Window *sdl_window = game->engine->platform.sdl_window;
+  SDL_SetWindowFullscreen( sdl_window, true );
+#endif
 }
 
 void

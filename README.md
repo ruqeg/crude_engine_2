@@ -50,6 +50,8 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 ],
 ```
 
+## Games
 
-TODO:
-REMOVE MOST crude_stack_allocator_pack( temporary_allocator ), it's fucking unpredictable
+[![RB7](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/rb7.png?raw=true)](https://attila-dev.itch.io/red-ball-1-ce2-remake)
+
+[![VS1](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/vs1.png?raw=true)](https://attila-dev.itch.io/vladimirs-collection-maze)
