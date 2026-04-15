@@ -67,14 +67,14 @@
 					"name":	"attack_sensor",
 					"components":	[{
 							"type":	"crude_transform",
-							"translation":	[0, 6.030785083770752, 2.3339333534240723],
+							"translation":	[0, 6.030785083770752, 1.7786538600921631],
 							"rotation":	[0, 0, 0, 1],
 							"scale":	[1, 1, 1]
 						}, {
 							"type":	"crude_physics_kinematic_body",
 							"shape_type":	0,
 							"box":	{
-								"extent":	[2, 6.4000000953674316, 2]
+								"extent":	[2, 6.4000000953674316, 1]
 							},
 							"layers":	256,
 							"sensor":	1

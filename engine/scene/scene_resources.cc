@@ -1,4 +1,5 @@
 #include <engine/scene/scene_ecs.h>
+#include <engine/physics/physics.h>
 
 #include <engine/scene/scene_resources.h>
 
@@ -32,6 +33,15 @@ crude_gltf_empty
   gltf.hidden = false;
   crude_gfx_model_renderer_resources_instance_initialize( &gltf.model_renderer_resources_instance, NULL, CRUDE_COMPOUNT( crude_gfx_model_renderer_resources_handle, { -1 } ) );
   return gltf;
+}
+
+crude_ray
+crude_ray_empty
+(
+)
+{
+  crude_ray ray = CRUDE_COMPOUNT_EMPTY( crude_ray );
+  return ray;
 }
 
 crude_camera
@@ -147,6 +157,28 @@ crude_transform_lerp
   XMStoreFloat4( &result.rotation, XMQuaternionSlerp( XMLoadFloat4( &transform1->rotation ), XMLoadFloat4( &transform2->rotation ), t ) );
   XMStoreFloat3( &result.scale, XMVectorLerp( XMLoadFloat3( &transform1->scale ), XMLoadFloat3( &transform2->scale ), t ) );
   return result;
+}
+
+bool
+crude_ray_cast
+(
+  _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
+  _In_ crude_entity                                        ray_entity,
+  _Out_ crude_ray_cast_result                             *ray_cast_result
+)
+{
+  crude_ray const                                         *ray;
+  XMMATRIX                                                 ray_to_world;
+  XMVECTOR                                                 ray_direction, ray_origin;
+  
+  ray_to_world = crude_transform_node_to_world( world, ray_entity, NULL );
+  ray = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, ray_entity, crude_ray );
+
+  ray_direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 0, 0, 1, 0 ), ray_to_world ), ray->distance );
+  ray_origin = ray_to_world.r[ 3 ];
+
+  return crude_physics_ray_cast( physics, world, ray_origin, ray_direction, ray->broad_phase_mask, ray->layer_mask, ray_cast_result );
 }
 
 crude_light

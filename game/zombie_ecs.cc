@@ -341,7 +341,7 @@ crude_zombie_game_update_system_
 
       if ( zombie_model->model_renderer_resources_instance.animations_instances[ zombie->hit_animation_index ].disabled && crude_entity_valid( it->world, game->player_node ) )
       {
-        crude_physics_ray_cast_result                        ray_cast_result;
+        crude_ray_cast_result                                ray_cast_result;
         XMMATRIX                                             ray_to_player_to_world;
         XMVECTOR                                             ray_direction, ray_origin;
 

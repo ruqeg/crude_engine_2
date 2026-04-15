@@ -24,12 +24,14 @@ ECS_COMPONENT_DECLARE( crude_light );
 ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
+ECS_COMPONENT_DECLARE( crude_ray );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_ray, "crude_ray" );
 
 void
 crude_scene_components_import
@@ -44,19 +46,23 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_camera );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_gltf );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_gltf );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ray );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_gltf ), .oper = EcsAnd }
@@ -380,6 +386,54 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
   CRUDE_IMGUI_OPTION( "Radius", {
     ImGui::DragFloat( "##Radius", &component->radius );
   } );
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_ray )
+{
+  crude_memory_set( component, 0, sizeof( crude_ray ) );
+  component->distance = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "distance" ) );
+  component->broad_phase_mask = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "broad_phase_mask" ) );
+  component->layer_mask = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "layer_mask" ) );
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_ray )
+{
+  cJSON *light_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( light_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_ray ) ) );
+  cJSON_AddItemToObject( light_json, "distance", cJSON_CreateNumber( component->distance ) );
+  cJSON_AddItemToObject( light_json, "broad_phase_mask", cJSON_CreateNumber( component->broad_phase_mask ) );
+  cJSON_AddItemToObject( light_json, "layer_mask", cJSON_CreateNumber( component->layer_mask ) );
+  return light_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ray )
+{
+  CRUDE_IMGUI_START_OPTIONS;
+
+  CRUDE_IMGUI_OPTION( "Distance", {
+    ImGui::DragFloat( "##Distance", &component->distance );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Broad Phase Mask", {
+    ImGui::Spacing( );
+    ImGui::CheckboxFlags( "Area", &component->broad_phase_mask, g_crude_jph_broad_phase_layer_area_mask );
+    ImGui::SameLine( );
+    ImGui::CheckboxFlags( "Static", &component->broad_phase_mask, g_crude_jph_broad_phase_layer_static_mask );
+    ImGui::SameLine( );
+    ImGui::CheckboxFlags( "Dynamic", &component->broad_phase_mask, g_crude_jph_broad_phase_layer_dynamic_mask );
+    } );
+  
+  CRUDE_IMGUI_OPTION( "Layer Mask", {
+    ImGui::Spacing( );
+    ImGui::CheckboxFlags( "0", &component->layer_mask, g_crude_jph_mask_custom0 );
+    ImGui::SameLine( );
+    ImGui::CheckboxFlags( "1", &component->layer_mask, g_crude_jph_mask_custom1 );
+    ImGui::SameLine( );
+    ImGui::CheckboxFlags( "2", &component->layer_mask, g_crude_jph_mask_custom2 );
+    ImGui::SameLine( );
+    ImGui::CheckboxFlags( "3", &component->layer_mask, g_crude_jph_mask_custom3 );
+    } );
 }
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )

@@ -1,6 +1,6 @@
 #pragma once
 
-#if CRUDE_DEVELOP && 1
+#if CRUDE_DEVELOP && 0
 #include <thirdparty/tracy/public/tracy/TracyC.h>
 
 #include <engine/core/alias.h>
@@ -22,7 +22,7 @@ TracyCZoneEnd( _ctx );\
 #define CRUDE_PROFILER_FREE_NAME( ptr, name )          TracyCFreeN( ptr, name )
 #define CRUDE_PROFILER_SECURE_ALLOC( ptr, size )       TracyCSecureAlloc( ptr, size )
 #define CRUDE_PROFILER_SECURE_FREE( ptr )              TracyCSecureFree( ptr )
-#elif 1
+#elif 0
 
 #include <engine/core/alias.h>
 #include <engine/core/log.h>

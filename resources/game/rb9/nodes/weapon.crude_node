@@ -68,5 +68,19 @@
 					"scale":	[1, 1, 1]
 				}],
 			"children":	[]
+		}, {
+			"name":	"shot_ray",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[2.6789035797119141, 0.35546892881393433, -0.0032452642917633057],
+					"rotation":	[0, 0.69985544681549072, 0, 0.71428447961807251],
+					"scale":	[0.98020464181900024, 1, 0.98020464181900024]
+				}, {
+					"type":	"crude_ray",
+					"distance":	10000,
+					"broad_phase_mask":	6,
+					"layer_mask":	192
+				}],
+			"children":	[]
 		}]
 }

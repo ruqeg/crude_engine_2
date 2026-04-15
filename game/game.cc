@@ -104,6 +104,7 @@ crude_game_update_input_
   _In_ crude_game                                         *game
 )
 {
+#if CRUDE_PRODUCTION
   SDL_Window *sdl_window = game->engine->platform.sdl_window;
   if ( game->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
   {
@@ -113,6 +114,7 @@ crude_game_update_input_
   {
     SDL_SetWindowFullscreen( sdl_window, false );
   }
+#endif
 }
 
 void

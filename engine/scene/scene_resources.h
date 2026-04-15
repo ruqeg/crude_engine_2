@@ -5,6 +5,8 @@
 #include <engine/scene/scene_config.h>
 #include <engine/graphics/model_renderer_resources.h>
 
+typedef struct crude_physics crude_physics;
+
 typedef enum crude_node_external_type
 {
   CRUDE_NODE_EXTERNAL_TYPE_REFERENCE = 0,
@@ -49,6 +51,19 @@ typedef struct crude_gltf
 #endif
 } crude_gltf;
 
+typedef struct crude_ray_cast_result
+{
+  crude_entity                                             entity;
+  uint32                                                   layer;
+  XMFLOAT3                                                 point;
+} crude_ray_cast_result;
+
+typedef struct crude_ray
+{
+  float32                                                  distance;
+  uint32                                                   layer_mask;
+  uint32                                                   broad_phase_mask;
+} crude_ray;
 
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip
@@ -63,6 +78,11 @@ crude_transform_empty
 
 CRUDE_API crude_gltf
 crude_gltf_empty
+(
+);
+
+CRUDE_API crude_ray
+crude_ray_empty
 (
 );
 
@@ -110,6 +130,15 @@ crude_transform_lerp
   _In_ crude_transform                                    *transform1,
   _In_ crude_transform                                    *transform2,
   _In_ float32                                             t
+);
+
+CRUDE_API bool
+crude_ray_cast
+(
+  _In_ crude_physics                                      *physics,
+  _In_ ecs_world_t                                        *world,
+  _In_ crude_entity                                        ray_entity,
+  _Out_ crude_ray_cast_result                             *ray_cast_result
 );
 
 CRUDE_API crude_light

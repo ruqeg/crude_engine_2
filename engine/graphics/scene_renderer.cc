@@ -176,6 +176,12 @@ crude_gfx_scene_renderer_initialize
       scene_renderer->model_renderer_resources_manager,
       crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL ) );
     scene_renderer->audio_listener_model_renderer_resources_instance.cast_shadow = false;
+    
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->ray_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_ray.gltf", NULL ) );
+    scene_renderer->ray_model_renderer_resources_instance.cast_shadow = false;
   }
 #endif /* CRUDE_DEVELOP */
   crude_gfx_scene_renderer_on_resize( scene_renderer );
@@ -280,6 +286,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->physics_box_collision_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audio_listener_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->audo_player_model_renderer_resources_instance );
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->ray_model_renderer_resources_instance );
 #endif /* CRUDE_DEVELOP */
 }
 
@@ -306,6 +313,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->physics_box_collision_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_physics_box_collision_shape.gltf", NULL );
   scene_renderer->audo_player_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_player.gltf", NULL );
   scene_renderer->audio_listener_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_audio_listener.gltf", NULL );
+  scene_renderer->ray_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_ray.gltf", NULL );
 #endif /* CRUDE_DEVELOP */
   
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
@@ -806,6 +814,19 @@ crude_scene_renderer_register_nodes_instances_
     {
       XMStoreFloat4x4( &scene_renderer->audio_listener_model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->audio_listener_model_renderer_resources_instance );
+    }
+  
+    if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_ray ) )
+    {
+      float32 ray_distance = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_ray )->distance;
+      XMMATRIX node_to_world = crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) );
+      XMMATRIX scale_matrix = XMMatrixScaling( 1, 1, ray_distance );
+      XMMATRIX model_to_world = model_to_custom_model;
+
+      model_to_world = XMMatrixMultiply( model_to_world, scale_matrix );
+      model_to_world = XMMatrixMultiply( model_to_world, node_to_world );
+      XMStoreFloat4x4( &scene_renderer->ray_model_renderer_resources_instance.model_to_world, model_to_world );
+      CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, scene_renderer->ray_model_renderer_resources_instance );
     }
   }
   

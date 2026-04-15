@@ -293,5 +293,5 @@ crude_physics_ray_cast
   _In_ XMVECTOR                                            direction,
   _In_ uint8                                               broad_phase_mask,
   _In_ uint32                                              layer_mask,
-  _Out_ crude_physics_ray_cast_result                     *ray_cast_result
+  _Out_ crude_ray_cast_result                             *ray_cast_result
 );

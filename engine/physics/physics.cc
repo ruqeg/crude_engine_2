@@ -678,7 +678,7 @@ crude_physics_ray_cast
   _In_ XMVECTOR                                            direction,
   _In_ uint8                                               broad_phase_mask,
   _In_ uint32                                              layer_mask,
-  _Out_ crude_physics_ray_cast_result                     *ray_cast_result
+  _Out_ crude_ray_cast_result                             *ray_cast_result
 )
 {
   class _crude_ray_cast_layer_filter_class : public JPH::ObjectLayerFilter
@@ -743,7 +743,7 @@ crude_physics_ray_cast
   jph_ray_cast.mDirection = crude_vector_to_jph_vec3( direction );
   jph_ray_cast.mOrigin = crude_vector_to_jph_vec3( origin );
   
-  *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_physics_ray_cast_result );
+  *ray_cast_result = CRUDE_COMPOUNT_EMPTY( crude_ray_cast_result );
   if ( physics->jph_physics_system_class->GetNarrowPhaseQuery( ).CastRay( jph_ray_cast, jph_ray_cast_result, _crude_ray_cast_broad_layer_filter_class( broad_phase_mask ), _crude_ray_cast_layer_filter_class( layer_mask ) ) )
   {
     JPH::RVec3                                             jph_hit_point;

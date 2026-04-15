@@ -65,10 +65,9 @@ crude_weapon_fire
 {
   crude_game                                             *game;
   crude_audio_player_handle                              *weapon_shot_audio_player_handle;
-  XMVECTOR                                                direction, origin;
-  XMMATRIX                                                weapon_to_world;
-  crude_physics_ray_cast_result                           ray_cast_result;
+  crude_ray_cast_result                                   ray_cast_result;
   crude_entity                                            weapon_shot_audio_player_entity;
+  crude_entity                                            weapon_shot_ray_entity;
   
   game = crude_game_instance( );
 
@@ -86,16 +85,13 @@ crude_weapon_fire
   weapon_shot_audio_player_handle = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( game->engine->world, weapon_shot_audio_player_entity, crude_audio_player_handle );
   crude_audio_device_sound_start( &game->engine->audio_device, weapon_shot_audio_player_handle->sound_handle );
 
+  weapon_shot_ray_entity = crude_ecs_lookup_entity_from_parent( game->engine->world, weapon_entity, "shot_ray" );
+
   weapon->cooldown = 0.f;
 
   weapon->wasted_ammo += 1;
 
-  weapon_to_world = crude_transform_node_to_world( game->engine->world, weapon_entity, NULL );
-  
-  direction = XMVectorScale( XMVector3TransformNormal( XMVectorSet( 1, 0, 0, 0 ), weapon_to_world ), 10000 );
-  origin = weapon_to_world.r[ 3 ];
-
-  if ( crude_physics_ray_cast( &game->engine->physics, game->engine->world, origin, direction, g_crude_jph_broad_phase_layer_static_mask | g_crude_jph_broad_phase_layer_area_mask, g_crude_jph_mask_custom0 | g_crude_jph_mask_custom1, &ray_cast_result ) )
+  if ( crude_ray_cast( &game->engine->physics, game->engine->world, weapon_shot_ray_entity, &ray_cast_result ) )
   {
     if ( ray_cast_result.layer & g_crude_jph_layer_custom1 )
     {
