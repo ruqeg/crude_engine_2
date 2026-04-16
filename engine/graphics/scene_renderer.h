@@ -16,7 +16,7 @@
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
 #include <engine/graphics/passes/indirect_light_pass.h>
-#include <engine/graphics/passes/transparent_pass.h>
+#include <engine/graphics/passes/translucent_pass.h>
 #include <engine/graphics/passes/light_lut_pass.h>
 #include <engine/graphics/passes/ssr_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
@@ -200,7 +200,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_compose_pass                                   compose_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
-  crude_gfx_transparent_pass                               transparent_pass;
+  crude_gfx_translucent_pass                               translucent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
   crude_gfx_ssr_pass                                       ssr_pass;
 #if CRUDE_GFX_RAY_TRACING_ENABLED

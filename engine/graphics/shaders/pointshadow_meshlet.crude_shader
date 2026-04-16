@@ -1,27 +1,33 @@
 
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-#define POINTSHADOW
-#define CRUDE_STAGE_MESH
-//#define CRUDE_STAGE_TASK
-//#define POINTSHADOW_COMMANDS_GENERATION
-//#define POINTSHADOW_CULLING
-//#define CRUDE_STAGE_COMPUTE
-//#define CRUDE_STAGE_FRAGMENT
+#if defined( POINTSHADOW_CULLING  )
+CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
 
-#include "common/platform.h"
-#include "common/debug.h"
-#include "common/scene.h"
-#include "common/culling.h"
-#include "common/light.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
+
+  LightsRef                                                lights;
+  PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
+
+  PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
+  XMFLOAT2                                                 _padding;
+};
+#endif /* POINTSHADOW_CULLING */
+
+#if defined ( POINTSHADOW_COMMANDS_GENERATION )
+CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_commands_generation_pass_push_constant_ )
+{
+  SceneRef                                             scene;
+  PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
+  PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
+  XMFLOAT2                                             push_constant_padding_;
+};
+#endif /* POINTSHADOW_COMMANDS_GENERATION */
 
 #if defined( POINTSHADOW ) 
-
-#extension GL_ARB_shader_draw_parameters : require
-#extension GL_KHR_shader_subgroup_ballot: require
-
-CRUDE_PUSH_CONSTANT
+CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_pass_push_constant_ )
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
@@ -47,6 +53,31 @@ CRUDE_PUSH_CONSTANT
   LightsWorldToTextureRef                                  lights_world_to_texture;
   XMFLOAT2                                                 _padding;
 };
+#endif /* POINTSHADOW */
+
+#ifndef __cplusplus
+
+#ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
+#define POINTSHADOW
+#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_TASK
+//#define POINTSHADOW_COMMANDS_GENERATION
+//#define POINTSHADOW_CULLING
+//#define CRUDE_STAGE_COMPUTE
+//#define CRUDE_STAGE_FRAGMENT
+
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
+#endif /* CRUDE_VALIDATOR_LINTING */
+
+#if defined( POINTSHADOW ) 
+
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
 
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
@@ -234,21 +265,6 @@ void main()
 
 layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  MeshDrawsRef                                             mesh_draws;
-
-  MeshInstancesDrawsRef                                    mesh_instance_draws;
-  MeshletsRef                                              meshlets;
-
-  LightsRef                                                lights;
-  PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
-
-  PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
-  XMFLOAT2                                                 _padding;
-};
-
 void main()
 {
   uint light_index = gl_GlobalInvocationID.x % scene.data.active_lights_count;
@@ -321,14 +337,6 @@ void main()
 
 layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                             scene;
-  PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-  PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
-  XMFLOAT2                                             push_constant_padding_;
-};
-
 void main()
 {
   uint light_index = gl_GlobalInvocationID.x;
@@ -351,3 +359,4 @@ void main()
 }
 
 #endif /* POINTSHADOW_COMMANDS_GENERATION */
+#endif /* __cplusplus */

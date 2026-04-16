@@ -1,6 +1,85 @@
 
-#if defined( CULLING_EARLY ) || defined( CULLING_LATE )
+#if defined( SSR_COMPOSE )
+CRUDE_PUSH_CONSTANT( crude_gfx_ssr_compose_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  XMFLOAT2                                                 depth_texture_size;
 
+  uint32                                                   ssr_hit_uv_depth_rdotv_texture_index;
+  uint32                                                   output_texture_index;
+  uint32                                                   depth_texture_index;
+  uint32                                                   normal_texture_index;
+
+  uint32                                                   radiance_hierarchy_texture_index;
+  uint32                                                   packed_roughness_metalness_texture_index;
+  uint32                                                   radiance_hierarchy_mips_count;
+  float32                                                  fade_end;
+
+  float32                                                  fade_start;
+  float32                                                  max_distance;
+  XMFLOAT2                                                 _padding;
+};
+#endif /* SSR_COMPOSE */
+
+#if defined( SSR_CONVOLVE_VERTICAL ) || defined( SSR_CONVOLVE_HORIZONTAL )
+CRUDE_PUSH_CONSTANT( crude_gfx_convolve_pass_push_constant_ )
+{
+  uint32                                                   src_texture_index;
+  uint32                                                   dst_texture_index;
+  XMFLOAT2                                                 src_div_dst_texture_size; /* src_size / dst_size */
+};
+
+#endif /* SSR_CONVOLVE_VERTICAL || SSR_CONVOLVE_HORIZONTAL */
+
+#if defined( SSR_HIT_CALCULATION )
+CRUDE_PUSH_CONSTANT( crude_gfx_ssr_hit_calculation_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  float                                                    ssr_max_steps;
+  float                                                    ssr_max_distance;
+
+  float                                                    ssr_stride;
+  float                                                    ssr_z_thickness;
+  float                                                    ssr_stride_zcutoff;
+  uint                                                     depth_texture_index;
+
+  vec2                                                     depth_texture_size;
+  uint                                                     normal_texture_index;
+  uint                                                     ssr_hit_uv_depth_rdotv_texture_index;
+};
+#endif /* SSR_HIT_CALCULATION */
+
+#if defined( LUMINANCE_HISTOGRAM_GENERATION ) || defined( LUMINANCE_AVERAGE_CALCULATION )
+CRUDE_SHADER_RBUFFER_REF( HistogramRef, uint32 );
+#endif /* LUMINANCE_HISTOGRAM_GENERATION || LUMINANCE_AVERAGE_CALCULATION */
+
+#if defined( LUMINANCE_HISTOGRAM_GENERATION )
+CRUDE_PUSH_CONSTANT( crude_gfx_luminance_histogram_generation_pass_push_constant_ )
+{
+  HistogramRef                                             histogram;
+  float32                                                  inverse_log_lum_range;
+  float32                                                  min_log_lum;
+
+  uint32                                                   hdr_color_texture_index;
+  XMFLOAT2                                                 _padding;
+};
+#endif /* LUMINANCE_HISTOGRAM_GENERATION */
+
+#if defined( LUMINANCE_AVERAGE_CALCULATION )
+CRUDE_PUSH_CONSTANT( crude_gfx_luminance_average_calculation_pass_push_constant_ )
+{
+  HistogramRef                                             histogram;
+  float32                                                  log_lum_range;
+  float32                                                  min_log_lum;
+
+  float32                                                  time_coeff;
+  uint32                                                   num_pixels;
+  uint32                                                   luminance_avarage_texture;
+  uint32                                                   _padding;
+};
+#endif /* LUMINANCE_AVERAGE_CALCULATION */
+
+#if defined( CULLING_EARLY ) || defined( CULLING_LATE )
 CRUDE_PUSH_CONSTANT( crude_gfx_culling_pass_push_constant_ )
 {
   SceneRef                                                 scene;
@@ -15,13 +94,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_culling_pass_push_constant_ )
   DebugLinesVerticesRef                                    debug_line_vertices;
   DebugCountsRef                                           debug_counts;
 };
-
 #endif /* defined( CULLING_EARLY ) || defined( CULLING_LATE ) */
 
 #if defined( COMPOSE_LIGHT )
-
-CRUDE_SHADER_RBUFFER_REF( HistogramRef, uint32 );
-
 CRUDE_PUSH_CONSTANT( crude_gfx_compose_light_pass_push_constant_ )
 {
   uint32                                                   direct_radiance_texture_index;
@@ -32,6 +107,16 @@ CRUDE_PUSH_CONSTANT( crude_gfx_compose_light_pass_push_constant_ )
 
 #endif /* COMPOSE_LIGHT */
 
+#if defined( DEPTH_PYRAMID )
+
+CRUDE_PUSH_CONSTANT( crude_gfx_depth_pyramid_pass_push_constant_ )
+{
+  uint32                                                   src_image_index;
+  uint32                                                   dst_image_index;
+  XMFLOAT2                                                 _padding;
+};
+
+#endif /* DEPTH_PYRAMID */
 
 #ifndef __cplusplus
 #ifdef CRUDE_VALIDATOR_LINTING
@@ -171,13 +256,6 @@ void main()
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT
-{
-  uint                                                     src_image_index;
-  uint                                                     dst_image_index;
-  vec2                                                     _padding;
-};
-
 void main()
 {
   ivec2 src_size = textureSize( global_textures[ nonuniformEXT( src_image_index ) ], 0 );
@@ -231,18 +309,6 @@ void main()
 #if defined( LUMINANCE_AVERAGE_CALCULATION )
 layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT
-{
-  HistogramRef                                             histogram;
-  float                                                    log_lum_range;
-  float                                                    min_log_lum;
-
-  float                                                    time_coeff;
-  uint32                                                   num_pixels;
-  uint32                                                   luminance_avarage_texture;
-  uint32                                                   _padding;
-};
-
 shared uint histogram_shared[ 256 ];
 
 void main()
@@ -284,16 +350,6 @@ CRUDE_BARRIER
 
 /* Thanks to https://www.alextardif.com/HistogramLuminance.html */
 layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
-
-CRUDE_PUSH_CONSTANT
-{
-  HistogramRef                                             histogram;
-  float                                                    inverse_log_lum_range;
-  float                                                    min_log_lum;
-
-  uint                                                     hdr_color_texture_index;
-  vec2                                                     _padding;
-};
 
 shared uint histogram_shared[ 256 ];
 
@@ -345,22 +401,6 @@ void main()
 #if defined( SSR_HIT_CALCULATION )
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
-
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  float                                                    ssr_max_steps;
-  float                                                    ssr_max_distance;
-
-  float                                                    ssr_stride;
-  float                                                    ssr_z_thickness;
-  float                                                    ssr_stride_zcutoff;
-  uint                                                     depth_texture_index;
-
-  vec2                                                     depth_texture_size;
-  uint                                                     normal_texture_index;
-  uint                                                     ssr_hit_uv_depth_rdotv_texture_index;
-};
 
 float
 distance_squared
@@ -561,13 +601,6 @@ const ivec2 offsets[ 7 ] =  {{0, -3}, {0, -2}, {0, -1}, {0, 0}, {0, 1}, {0, 2}, 
 #endif
 const float weights[7] = {0.001f, 0.028f, 0.233f, 0.474f, 0.233f, 0.028f, 0.001f};
 
-CRUDE_PUSH_CONSTANT
-{
-  uint                                                     src_texture_index;
-  uint                                                     dst_texture_index;
-  vec2                                                     src_div_dst_texture_size; /* src_size / dst_size */
-};
-
 void main()
 {
   ivec2 dst_coords = ivec2( gl_GlobalInvocationID.xy );
@@ -662,25 +695,6 @@ cone_sample_weighted_color
   vec3 sample_radiance = CRUDE_TEXTURE_LOD( radiance_texture_index, sample_pos, mip_channel ).rgb;
   return vec4( sample_radiance * gloss, gloss );
 }
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  vec2                                                     depth_texture_size;
-
-  uint                                                     ssr_hit_uv_depth_rdotv_texture_index;
-  uint                                                     output_texture_index;
-  uint                                                     depth_texture_index;
-  uint                                                     normal_texture_index;
-
-  uint                                                     radiance_hierarchy_texture_index;
-  uint                                                     packed_roughness_metalness_texture_index;
-  uint                                                     radiance_hierarchy_mips_count;
-  float                                                    fade_end;
-
-  float                                                    fade_start;
-  float                                                    max_distance;
-  vec2                                                     _padding;
-};
 
 void main()
 {

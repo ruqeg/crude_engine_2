@@ -4,6 +4,10 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/shaders/common/light.h>
 
+#define OPAQUE_MESHLET
+#define OPAQUE_CLASSIC
+#include <engine/graphics/shaders/geometry.crude_shader>
+
 #include <engine/graphics/passes/opaque_early_pass.h>
 
 void
@@ -63,31 +67,9 @@ crude_gfx_opaque_early_pass_render
   
   if ( gpu->mesh_shaders_extension_present )
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      VkDeviceAddress                                      scene;
-      VkDeviceAddress                                      mesh_draws;
+    crude_gfx_opaque_meshlet_pass_push_constant_           push_constant;
 
-      VkDeviceAddress                                      mesh_instance_draws;
-      VkDeviceAddress                                      meshlets;
-
-      VkDeviceAddress                                      vertices;
-      VkDeviceAddress                                      triangles_indices;
-
-      VkDeviceAddress                                      vertices_indices;
-      VkDeviceAddress                                      visible_mesh_count;
-
-      VkDeviceAddress                                      mesh_draw_commands;
-      VkDeviceAddress                                      debug_line_vertices;
-
-      VkDeviceAddress                                      debug_counts;
-      JointMatricesRef                                     joint_matrices;
-
-      LightsRef                                            lights;
-      LightsWorldToTextureRef                              lights_world_to_texture;
-    };
-    push_constant_                                         push_constant;
-
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_opaque_meshlet_pass_push_constant_ );
     push_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
@@ -110,37 +92,30 @@ crude_gfx_opaque_early_pass_render
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ),
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_early_count ),
+      CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_early_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
       sizeof( crude_gfx_mesh_draw_command )
     );
   }
   else
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      VkDeviceAddress                                      scene;
-      VkDeviceAddress                                      mesh_draws;
-      VkDeviceAddress                                      mesh_instance_draws;
-      VkDeviceAddress                                      visible_mesh_count;
-      VkDeviceAddress                                      mesh_draw_commands;
-    };
-    push_constant_                                         pust_constant;
+    crude_gfx_opaque_classic_pass_push_constant_           push_constant;
 
-    pust_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
-    pust_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
-    pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
-    pust_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
-    pust_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_opaque_classic_pass_push_constant_ );
+    push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
+    push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
+    push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
+    push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
+    push_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
 
-    crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
+    crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_draw_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_mesh ),
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_counts_gpu, opaque_mesh_visible_early_count ),
+      CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_early_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
       sizeof( crude_gfx_mesh_draw_command )
     );

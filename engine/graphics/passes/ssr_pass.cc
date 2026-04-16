@@ -2,6 +2,11 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/scene_renderer.h>
 
+#define SSR_COMPOSE
+#define SSR_CONVOLVE_VERTICAL
+#define SSR_HIT_CALCULATION
+#include <engine/graphics/shaders/compute.crude_shader>
+
 #include <engine/graphics/passes/ssr_pass.h>
 
 void
@@ -80,31 +85,15 @@ crude_gfx_ssr_pass_render
 
   /* SSR Hit Calculation Pass  */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      VkDeviceAddress                                      scene;
-      float32                                              ssr_max_steps;
-      float32                                              ssr_max_distance;
-
-      float32                                              ssr_stride;
-      float32                                              ssr_z_thickness;
-      float32                                              ssr_stride_zcutoff;
-      uint32                                               depth_texture_index;
-
-      XMFLOAT2                                             depth_texture_size;
-      uint32                                               normal_texture_index;
-      uint32                                               ssr_hit_uv_depth_rdotv_texture_index;
-    };
-
     crude_gfx_pipeline_handle                              pipeline;
-    push_constant_                                         pust_constant;
+    crude_gfx_ssr_hit_calculation_pass_push_constant_      pust_constant;
 
     crude_gfx_cmd_push_marker( primary_cmd, "ssr_hit_calculation" );
 
     pipeline = crude_gfx_access_technique_pass_by_name( gpu, "compute", "ssr_hit_calculation" )->pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
-    pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
+    pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_ssr_hit_calculation_pass_push_constant_ );
     pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     pust_constant.ssr_max_steps = pass->scene_renderer->options.ssr_pass.max_steps;
     pust_constant.ssr_max_distance = pass->scene_renderer->options.ssr_pass.max_distance;
@@ -128,13 +117,6 @@ crude_gfx_ssr_pass_render
 
   /* SSR Blurring Pass  */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      uint32                                               src_texture_index;
-      uint32                                               dst_texture_index;
-      XMFLOAT2                                             src_div_dst_texture_size;
-    };
-    
     crude_gfx_cmd_add_image_barrier( primary_cmd, direct_radiance_texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0u, 1, false );
     crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
     
@@ -145,7 +127,7 @@ crude_gfx_ssr_pass_render
     for ( uint32 pass_name_index = 0; pass_name_index < CRUDE_COUNTOF( convolve_passes_names ); ++pass_name_index )
     {
       crude_gfx_pipeline_handle                            pipeline;
-      push_constant_                                       pust_constant;
+      crude_gfx_convolve_pass_push_constant_               pust_constant;
       uint64                                               mip_width, mip_height;
 
       crude_gfx_cmd_push_marker( primary_cmd, convolve_passes_names[ pass_name_index ] );
@@ -172,12 +154,12 @@ crude_gfx_ssr_pass_render
       
         crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
         
-        pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
+        pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_convolve_pass_push_constant_ );
         pust_constant.dst_texture_index = pass->radiance_hierarchy_views_handles[ mip_index ].index;
         pust_constant.src_texture_index = pass->radiance_hierarchy_views_handles[ mip_index - 1 ].index;
         pust_constant.src_div_dst_texture_size.x = prev_mip_width / CRUDE_CAST( float32, mip_width );
         pust_constant.src_div_dst_texture_size.y = prev_mip_height / CRUDE_CAST( float32, mip_height );
-        crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( push_constant_ ) );
+        crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
         
         crude_gfx_cmd_dispatch( primary_cmd, ( mip_width + 7 ) / 8, ( mip_height + 7 ) / 8, 1 );
         
@@ -192,35 +174,15 @@ crude_gfx_ssr_pass_render
 
   /* SSR Resolve Pass (Cone Tracing ) */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      VkDeviceAddress                                      scene;
-      XMFLOAT2                                             depth_texture_size;
-
-      uint32                                               ssr_hit_uv_depth_rdotv_texture_index;
-      uint32                                               output_texture_index;
-      uint32                                               depth_texture_index;
-      uint32                                               normal_texture_index;
-      
-      uint32                                               radiance_hierarchy_texture_index;
-      uint32                                               packed_roughness_metalness_texture_index;
-      uint32                                               radiance_hierarchy_mips_count;
-      float32                                              fade_end;
-      
-      float32                                              fade_start;
-      float32                                              max_distance;
-      XMFLOAT2                                             _padding;
-    };
-
     crude_gfx_pipeline_handle                            pipeline;
-    push_constant_                                       pust_constant;
+    crude_gfx_ssr_compose_pass_push_constant_            pust_constant;
     
     crude_gfx_cmd_push_marker( primary_cmd, "ssr_compose" );
 
     pipeline = crude_gfx_access_technique_pass_by_name( gpu, "compute", "ssr_compose" )->pipeline;
     
     crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
-    pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
+    pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_ssr_compose_pass_push_constant_ );
     pust_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     pust_constant.depth_texture_index = depth_texture->handle.index;
     pust_constant.depth_texture_size.x = depth_texture->width;

@@ -1,9 +1,9 @@
 {
-  "name" : "deferred",
+  "name" : "geometry",
   "buffers": [
     {
-      "name": "deferred",
-      "filename": "deferred.crude_shader",
+      "name": "geometry",
+      "filename": "geometry.crude_shader",
       "includes": [
         "common/platform.h",
         "common/debug.h",
@@ -15,7 +15,7 @@
   ],
   "pipelines" : [
     {
-      "name" : "deferred_classic",
+      "name" : "opaque_classic",
       "render_pass_output":
       {
         "reference": "opaque_early_pass" 
@@ -37,10 +37,10 @@
       ]
     },
     {
-      "name" : "transparent_no_cull_classic",
+      "name" : "translucent_no_cull_classic",
       "render_pass_output":
       {
-        "reference": "transparent_pass" 
+        "reference": "translucent_pass" 
       },
       "depth" : {
         "write" : 0,

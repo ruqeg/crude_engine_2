@@ -1,6 +1,8 @@
-
 #include <engine/core/hashmapstr.h>
 #include <engine/graphics/scene_renderer.h>
+
+#define DEPTH_PYRAMID
+#include <engine/graphics/shaders/compute.crude_shader>
 
 #include <engine/graphics/passes/depth_pyramid_pass.h>
 
@@ -61,18 +63,12 @@ crude_gfx_depth_pyramid_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-  {
-    uint32                                                 src_image_index;
-    uint32                                                 dst_image_index;
-  };
-  
   crude_gfx_depth_pyramid_pass                            *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_texture                                       *depth_pyramid_texture;
   uint64                                                   depth_texture_handle_index;
   crude_gfx_pipeline_handle                                depth_pyramid_pipeline;
-  push_constant_                                           push_constant;
+  crude_gfx_depth_pyramid_pass_push_constant_              push_constant;
   uint32                                                   width, height, group_x, group_y;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_depth_pyramid_pass*, ctx );

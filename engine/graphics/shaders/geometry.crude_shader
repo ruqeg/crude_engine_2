@@ -1,23 +1,31 @@
+#if defined( OPAQUE_MESHLET )
+CRUDE_PUSH_CONSTANT( crude_gfx_opaque_meshlet_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
 
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-//#define TRANSPARENT_NO_CULL_CLASSIC
-#define DEFERRED_MESHLET
-//#define DEFERRED_CLASSIC
-//#define TRANSPARENT_NO_CULL
-//#define CRUDE_STAGE_TASK
-//#define CRUDE_STAGE_MESH
-//#define CRUDE_STAGE_VERTEX
-#define CRUDE_STAGE_FRAGMENT
-#include "common/platform.h"
-#include "common/debug.h"
-#include "common/scene.h"
-#include "common/culling.h"
-#include "common/light.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
 
-#if defined( DEFERRED_CLASSIC ) 
-CRUDE_PUSH_CONSTANT
+  VerticesRef                                              vertices;
+  TrianglesIndicesRef                                      triangles_indices;
+
+  VerticesIndicesRef                                       vertices_indices;
+  MeshDrawCountRef                                         visible_mesh_count;
+
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+  DebugLinesVerticesRef                                    debug_line_vertices;
+
+  DebugCountsRef                                           debug_counts;
+  JointMatricesRef                                         joint_matrices;
+
+  LightsRef                                                lights;
+  LightsWorldToTextureRef                                  lights_world_to_texture;
+};
+#endif /* OPAQUE_MESHLET */
+
+#if defined( OPAQUE_CLASSIC ) 
+CRUDE_PUSH_CONSTANT( crude_gfx_opaque_classic_pass_push_constant_ )
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
@@ -26,10 +34,12 @@ CRUDE_PUSH_CONSTANT
   MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
-  vec2                                                     _padding;
+  XMFLOAT2                                                 _padding;
 };
-#elif defined( TRANSPARENT_NO_CULL_CLASSIC ) 
-CRUDE_PUSH_CONSTANT
+#endif /* OPAQUE_CLASSIC */
+
+#if defined( TRANSLUCENT_NO_CULL_CLASSIC ) 
+CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_classic_pass_push_constant_ )
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
@@ -50,8 +60,10 @@ CRUDE_PUSH_CONSTANT
   float                                                    inv_radiance_texture_height;
   vec2                                                     _pust_constant_padding;
 };
-#elif defined( DEFERRED_MESHLET )
-CRUDE_PUSH_CONSTANT
+#endif /* TRANSLUCENT_NO_CULL_CLASSIC */
+
+#if defined( TRANSLUCENT_NO_CULL ) 
+CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
@@ -74,33 +86,28 @@ CRUDE_PUSH_CONSTANT
   LightsRef                                                lights;
   LightsWorldToTextureRef                                  lights_world_to_texture;
 };
-#elif defined( TRANSPARENT_NO_CULL )
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  MeshDrawsRef                                             mesh_draws;
+#endif /* TRANSLUCENT_NO_CULL */
 
-  MeshInstancesDrawsRef                                    mesh_instance_draws;
-  MeshletsRef                                              meshlets;
+#ifndef __cplusplus
 
-  VerticesRef                                              vertices;
-  TrianglesIndicesRef                                      triangles_indices;
+#ifdef CRUDE_VALIDATOR_LINTING
+#extension GL_GOOGLE_include_directive : enable
+//#define TRANSLUCENT_NO_CULL_CLASSIC
+#define OPAQUE_MESHLET
+//#define DEFERRED_CLASSIC
+//#define TRANSLUCENT_NO_CULL
+//#define CRUDE_STAGE_TASK
+//#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_VERTEX
+#define CRUDE_STAGE_FRAGMENT
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
+#endif /* CRUDE_VALIDATOR_LINTING */
 
-  VerticesIndicesRef                                       vertices_indices;
-  MeshDrawCountRef                                         visible_mesh_count;
-
-  MeshDrawCommandsRef                                      mesh_draw_commands;
-  DebugLinesVerticesRef                                    debug_line_vertices;
-
-  DebugCountsRef                                           debug_counts;
-  JointMatricesRef                                         joint_matrices;
-
-  LightsRef                                                lights;
-  LightsWorldToTextureRef                                  lights_world_to_texture;
-};
-#endif
-
-#if defined( DEFERRED_MESHLET ) || defined ( TRANSPARENT_NO_CULL ) 
+#if defined( OPAQUE_MESHLET ) || defined ( TRANSLUCENT_NO_CULL ) 
 
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
@@ -119,9 +126,9 @@ layout(local_size_x=32) in;
 
 void main()
 {
-#if defined( DEFERRED_MESHLET )
+#if defined( OPAQUE_MESHLET )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
-#else /* TRANSPARENT_NO_CULL */
+#else /* TRANSLUCENT_NO_CULL */
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
@@ -145,7 +152,7 @@ void main()
   
   bool accept = true;
 
-#if defined( DEFERRED_MESHLET )
+#if defined( OPAQUE_MESHLET )
   if ( ( mesh_instance_draws.data[ draw_id ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED ) == 0)
   {
     accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
@@ -261,9 +268,9 @@ void main()
   }
 }
 #endif /* CRUDE_STAGE_MESH */
-#endif /* DEFERRED_MESHLET || TRANSPARENT_NO_CULL */
+#endif /* OPAQUE_MESHLET || TRANSLUCENT_NO_CULL */
 
-#if defined( CRUDE_STAGE_VERTEX ) && ( defined( DEFERRED_CLASSIC ) || defined( TRANSPARENT_NO_CULL_CLASSIC ) )
+#if defined( CRUDE_STAGE_VERTEX ) && ( defined( DEFERRED_CLASSIC ) || defined( TRANSLUCENT_NO_CULL_CLASSIC ) )
 
 layout(location=0) out vec2 out_texcoord;
 layout(location=1) out vec3 out_normal;
@@ -277,7 +284,7 @@ void main()
 {
 #if defined( DEFERRED_CLASSIC )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
-#else /* TRANSPARENT_NO_CULL_CLASSIC */
+#else /* TRANSLUCENT_NO_CULL_CLASSIC */
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
@@ -319,9 +326,9 @@ void main()
   out_view_surface_normal = view_normal;
   out_view_position = scene.data.camera.position - world_position.xyz;
 }
-#endif /* CRUDE_STAGE_VERTEX && ( DEFERRED_CLASSIC || TRANSPARENT_NO_CULL_CLASSIC ) */
+#endif /* CRUDE_STAGE_VERTEX && ( DEFERRED_CLASSIC || TRANSLUCENT_NO_CULL_CLASSIC ) */
 
-#if defined( DEFERRED_MESHLET ) || defined( DEFERRED_CLASSIC )
+#if defined( OPAQUE_MESHLET ) || defined( DEFERRED_CLASSIC )
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_direct_radiance;
@@ -388,9 +395,9 @@ void main()
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
-#endif /* DEFERRED_MESHLET || DEFERRED_CLASSIC*/
+#endif /* OPAQUE_MESHLET || DEFERRED_CLASSIC*/
 
-#if defined( TRANSPARENT_NO_CULL ) || defined( TRANSPARENT_NO_CULL_CLASSIC )
+#if defined( TRANSLUCENT_NO_CULL ) || defined( TRANSLUCENT_NO_CULL_CLASSIC )
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_radiance;
@@ -450,4 +457,5 @@ void main()
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
-#endif /* TRANSPARENT_NO_CULL */
+#endif /* TRANSLUCENT_NO_CULL */
+#endif /* __cplusplus */

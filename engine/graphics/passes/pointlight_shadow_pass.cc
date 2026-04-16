@@ -1,6 +1,11 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
+#define POINTSHADOW_CULLING
+#define POINTSHADOW_COMMANDS_GENERATION
+#define POINTSHADOW
+#include <engine/graphics/shaders/pointshadow_meshlet.crude_shader>
+
 #include <engine/graphics/passes/pointlight_shadow_pass.h>
 
 static int
@@ -130,22 +135,7 @@ crude_gfx_pointlight_shadow_pass_render
   
   /* Pointshadow Culling */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      SceneRef                                             scene;
-      MeshDrawsRef                                         mesh_draws;
-
-      MeshInstancesDrawsRef                                mesh_instance_draws;
-      MeshletsRef                                          meshlets;
-
-      LightsRef                                            lights;
-      PointshadowMeshletesInstancesRef                     pointshadow_meshletes_instances;
-
-      PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-      XMFLOAT2                                             padding;
-    };
-    
-    push_constant_                                         push_constant;
+    crude_gfx_pointshadow_culling_pass_push_constant_      push_constant;
 
     crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_culling" );
     
@@ -156,6 +146,7 @@ crude_gfx_pointlight_shadow_pass_render
 
     crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_culling_pipeline );
     
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_culling_pass_push_constant_ );
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
@@ -177,15 +168,7 @@ crude_gfx_pointlight_shadow_pass_render
   
   /* Pointshadow Commands Generation */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      SceneRef                                             scene;
-      PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-      PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
-      XMFLOAT2                                             push_constant_padding_;
-    };
-    
-    push_constant_                                         push_constant;
+    crude_gfx_pointshadow_commands_generation_pass_push_constant_ push_constant;
 
     crude_gfx_cmd_push_marker( primary_cmd, "pointshadow_commands_generation" );
 
@@ -193,6 +176,7 @@ crude_gfx_pointlight_shadow_pass_render
     
     crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_commands_generation_pipeline );
 
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_commands_generation_pass_push_constant_ );
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.pointshadow_meshletes_instances_count = pass->pointshadow_meshletes_instances_count_hga.gpu_address;
     push_constant.pointshadow_meshlet_draw_commands = pass->pointshadow_meshlet_draw_commands_hga.gpu_address;
@@ -238,36 +222,9 @@ crude_gfx_pointlight_shadow_pass_render
   
   /* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi, mixed with http://www.hd-prg.com/tileBasedShadows.html */
   {
-    CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-    {
-      SceneRef                                             scene;
-      MeshDrawsRef                                         mesh_draws;
-
-      MeshInstancesDrawsRef                                mesh_instance_draws;
-      MeshletsRef                                          meshlets;
-
-      VerticesRef                                          vertices;
-      TrianglesIndicesRef                                  triangles_indices;
-
-      VerticesIndicesRef                                   vertices_indices;
-      VkDeviceAddress                                      debug_counts;
-
-      JointMatricesRef                                     joint_matrices;
-      LightsRef                                            lights;
-
-      PointshadowMeshletesInstancesRef                     pointshadow_meshletes_instances;
-      PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-
-      PointlightSpheresRef                                 pointlight_spheres;
-      PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
-
-      LightsWorldToTextureRef                              lights_world_to_texture;
-      XMFLOAT2                                             padding;
-    };
-    
     XMFLOAT4                                              *pointlight_spheres;
     XMFLOAT4X4                                            *pointlight_world_to_clip;
-    push_constant_                                         push_constant;
+    crude_gfx_pointshadow_pass_push_constant_              push_constant;
     crude_gfx_memory_allocation                            pointlight_spheres_tca;
     crude_gfx_memory_allocation                            pointlight_world_to_clip_tca;
     float32                                                fov0, fov1; 
@@ -380,6 +337,7 @@ crude_gfx_pointlight_shadow_pass_render
     crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
     crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_pipeline );
   
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_pass_push_constant_ );
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
