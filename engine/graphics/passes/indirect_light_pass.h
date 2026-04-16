@@ -3,7 +3,7 @@
 #include <engine/graphics/render_graph.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
-#if CRUDE_GFX_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
@@ -123,4 +123,4 @@ crude_gfx_indirect_light_pass_pack
   _In_ crude_gfx_indirect_light_pass                      *pass
 );
 
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */

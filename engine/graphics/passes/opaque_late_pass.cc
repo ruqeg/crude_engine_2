@@ -60,7 +60,7 @@ crude_gfx_opaque_late_pass_render
 
   gpu = pass->scene_renderer->gpu;
 
-  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred", gpu->mesh_shaders_extension_present ? "deferred_meshlet" : "deferred_classic" )->pipeline;
+  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "geometry", gpu->mesh_shaders_extension_present ? "opaque_meshlet" : "opaque_classic" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
     
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

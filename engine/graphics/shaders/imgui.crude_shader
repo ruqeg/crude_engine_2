@@ -18,7 +18,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_imgui_vertex )
   uint32                                                   color;
 };
 
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( ImguiVerticesRef, imgui_vertex );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( ImguiVerticesRef, crude_gfx_imgui_vertex );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( ImguiIndicesRef, uint16 );
 
 CRUDE_PUSH_CONSTANT( crude_gfx_imgui_pass_push_constant_ )
@@ -44,7 +44,7 @@ layout(location=2) flat out uint out_texture_id;
 
 void main()
 {
-  imgui_vertex vertex = vertices.data[ vertex_offset + indices.data[ index_offset + gl_VertexIndex ] ];
+  crude_gfx_imgui_vertex vertex = vertices.data[ vertex_offset + indices.data[ index_offset + gl_VertexIndex ] ];
   out_uv = vertex.uv;
   out_color = crude_unpack_color_rgba( vertex.color );
   out_texture_id = texture_index;

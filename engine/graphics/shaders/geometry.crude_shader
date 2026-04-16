@@ -132,7 +132,7 @@ void main()
 #if defined( OPAQUE_MESHLET )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSLUCENT_NO_CULL */
-  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data.total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
   uint meshlet_index = mesh_draws.data[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
@@ -169,7 +169,7 @@ void main()
     {
       occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
         scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
-        visible_mesh_count.data[ 0 ].depth_pyramid_texture_index,
+        visible_mesh_count.data.depth_pyramid_texture_index,
         world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip,
         debug_line_vertices,
         debug_counts
@@ -288,7 +288,7 @@ void main()
 #if defined( DEFERRED_CLASSIC )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSLUCENT_NO_CULL_CLASSIC */
-  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data.total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
   crude_gfx_mesh_draw mesh_draw = mesh_draws.data[ mesh_draw_index ];

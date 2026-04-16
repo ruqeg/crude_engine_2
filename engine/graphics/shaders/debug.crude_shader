@@ -16,7 +16,7 @@
 CRUDE_PUSH_CONSTANT( crude_gfx_debug_line2d_pass_push_constant_ )
 {
   DebugLinesVerticesRef                                    debug_lines_vertices;
-  vec2                                                     _padding;
+  XMFLOAT2                                                 _padding;
 };
 #endif /* DEBUG_LINE2D */
 
@@ -51,7 +51,7 @@ layout(location=0) out vec4 out_color;
 
 void main()
 {
-  crude_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
+  crude_gfx_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
   out_color = crude_unpack_color_rgba( vertex.color );
   gl_Position = vec4( vertex.position, 1.0 );
 }
@@ -84,7 +84,7 @@ layout(location=0) out vec4 out_color;
 
 void main()
 {
-  crude_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
+  crude_gfx_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
   out_color = crude_unpack_color_rgba( vertex.color );
   gl_Position = vec4( vertex.position, 1.0 ) * scene.data.camera.world_to_view * scene.data.camera.view_to_clip;
 }

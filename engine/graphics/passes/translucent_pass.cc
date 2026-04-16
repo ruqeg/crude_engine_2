@@ -40,7 +40,7 @@ crude_gfx_translucent_pass_render
 
   gpu = pass->scene_renderer->gpu;
 
-  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "deferred", gpu->mesh_shaders_extension_present ? "transparent_no_cull" : "transparent_no_cull_classic" )->pipeline;
+  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "geometry", gpu->mesh_shaders_extension_present ? "translucent_no_cull" : "translucent_no_cull_classic" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

@@ -28,7 +28,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_cube_instance )
 
 CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
 {
-#if __cplusplus
+#if defined( __cplusplus )
   VkDrawIndirectCommand                                    draw_indirect_3dline;
   VkDrawIndirectCommand                                    draw_indirect_2dline;
   VkDrawIndirectCommand                                    draw_indirect_cube;
@@ -48,8 +48,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
 #endif
 };
 
-CRUDE_SHADER_RBUFFER_REF( DebugCubesInstancesRef, crude_gfx_debug_cube_instance );
-CRUDE_SHADER_RBUFFER_REF( DebugLinesVerticesRef, crude_gfx_debug_line_vertex );
+CRUDE_SHADER_RBUFFER_REF_ARRAY( DebugCubesInstancesRef, crude_gfx_debug_cube_instance );
+CRUDE_SHADER_RBUFFER_REF_ARRAY( DebugLinesVerticesRef, crude_gfx_debug_line_vertex );
 CRUDE_SHADER_RBUFFER_REF( DebugCountsRef, crude_gfx_debug_counts );
 
 #ifndef __cplusplus
@@ -63,7 +63,7 @@ void crude_debug_draw_line_coloru
   in uint                                                  end_color
 )
 {
-  uint offset = atomicAdd( debug_counts.data[ 0 ].debug_lines_3d_vertices_count, 2 );
+  uint offset = atomicAdd( debug_counts.data.debug_lines_3d_vertices_count, 2 );
 
   debug_line_vertices.data[ offset ].position = start;
   debug_line_vertices.data[ offset ].color = start_color;
@@ -126,7 +126,7 @@ void crude_debug_draw_line_2d_coloru
   in uint                                                  start_color,
   in uint                                                  end_color )
 {
-  uint offset = CRUDE_DEBUG_LINE_2D_OFFSET + atomicAdd( debug_counts.data[ 0 ].debug_lines_2d_vertices_count, 2 );
+  uint offset = CRUDE_DEBUG_LINE_2D_OFFSET + atomicAdd( debug_counts.data.debug_lines_2d_vertices_count, 2 );
 
   debug_line_vertices.data[ offset ].position = vec3( start.xy, 0 );
   debug_line_vertices.data[ offset ].color = start_color;
@@ -174,7 +174,7 @@ void crude_debug_draw_cube
   in vec4                                                  color
 )
 {
-  uint offset = atomicAdd( debug_counts.data[ 0 ].debug_cubes_instances_count, 1 );
+  uint offset = atomicAdd( debug_counts.data.debug_cubes_instances_count, 1 );
 
   debug_cube_instances.data[ offset ].translation = translation;
   debug_cube_instances.data[ offset ].scale = scale;

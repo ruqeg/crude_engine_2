@@ -28,15 +28,15 @@
       "shaders": [
         {
           "stage": "mesh",
-          "buffer": "deferred"
+          "buffer": "geometry"
         },
         {
           "stage": "task",
-          "buffer": "deferred"
+          "buffer": "geometry"
         },
         {
           "stage": "fragment",
-          "buffer": "deferred"
+          "buffer": "geometry"
         }
       ]
     },
@@ -61,15 +61,15 @@
       "shaders": [
         {
           "stage": "mesh",
-          "buffer": "deferred"
+          "buffer": "geometry"
         },
         {
           "stage": "task",
-          "buffer": "deferred"
+          "buffer": "geometry"
         },
         {
           "stage": "fragment",
-          "buffer": "deferred"
+          "buffer": "geometry"
         }
       ]
     }

@@ -511,7 +511,7 @@ crude_gfx_model_renderer_resources_manager_gltf_create_mesh_material_
   }
   else if ( material->alpha_mode == cgltf_alpha_mode_blend )
   {
-    mesh_draw->flags |= CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK;
+    mesh_draw->flags |= CRUDE_MESH_DRAW_FLAGS_TRANSLUCENT_MASK;
   }
 
   if ( material->pbr_metallic_roughness.base_color_texture.texture )

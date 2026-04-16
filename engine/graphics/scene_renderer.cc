@@ -13,6 +13,7 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/scene/scene_debug_ecs.h>
+#include <engine/graphics/shaders/common/debug.h>
 
 #include <engine/graphics/gpu_profiler.h>
 #include <engine/graphics/scene_renderer.h>
@@ -135,9 +136,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->mesh_task_indirect_commands_culled_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands_culled_hga" );
   scene_renderer->mesh_task_indirect_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_draw_count ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_count_hga" );
 
-  scene_renderer->debug_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_draw_command_gpu ), CRUDE_GFX_MEMORY_TYPE_GPU, "debug_commands_hga" );
-  scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
-  scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance_gpu ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
+  scene_renderer->debug_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_counts ), CRUDE_GFX_MEMORY_TYPE_GPU, "debug_commands_hga" );
+  scene_renderer->debug_line_vertices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_line_vertex ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_LINES * 2u, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_line_vertices_hga" );
+  scene_renderer->debug_cubes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_debug_cube_instance ) * CRUDE_GFX_SCENE_RENDERER_MAX_DEBUG_CUBES, CRUDE_GFX_MEMORY_TYPE_GPU, "debug_cubes_instances_hga" );
 
 #if CRUDE_DEVELOP
   {
@@ -204,12 +205,12 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_translucent_pass_initialize( &scene_renderer->translucent_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
   //crude_gfx_ssr_pass_initialize( &scene_renderer->ssr_pass, scene_renderer );
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_ray_tracing_solid_pass_initialize( &scene_renderer->ray_tracing_solid_pass, scene_renderer );
 #endif
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#endif
 }
 
 void
@@ -219,12 +220,12 @@ crude_gfx_scene_renderer_deinitialize
 )
 {
   crude_gfx_render_graph_builder_unregister_all_render_passes( scene_renderer->render_graph->builder );
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "ray_tracing_solid_pass" );
 #endif
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#endif
   
   if ( scene_renderer->imgui_pass_enalbed )
   {
@@ -242,13 +243,16 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_translucent_pass_deinitialize( &scene_renderer->translucent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
   //crude_gfx_ssr_pass_deinitialize( &scene_renderer->ssr_pass );
-
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+  
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_ray_tracing_solid_pass_deinitialize( &scene_renderer->ray_tracing_solid_pass );
 #endif
-  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
 
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
+  crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
+#endif
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->blases_buffers ); ++i )
   {
     crude_gfx_destroy_buffer( scene_renderer->gpu, scene_renderer->blases_buffers[ i ] );
@@ -483,12 +487,12 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "light_lut_pass" ), crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ssr_pass" ), crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "pointlight_shadows_pass" ), crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, "ray_tracing_solid_pass", crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ray_tracing_solid_pass" ), crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
 #endif
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_pass" ), crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
+  //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_pass" ), crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
+#endif
 }
 
 void
@@ -536,7 +540,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
     scene->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
     scene->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
-#if CRUDE_GFX_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
     scene->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
 #else
     scene->indirect_light_texture_index = -1;
@@ -733,13 +737,13 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
   
   /* Update debug draw commands */
   {
-    crude_gfx_debug_draw_command_gpu                      *debug_draw_command;
+    crude_gfx_debug_counts                                *debug_draw_command;
     crude_gfx_memory_allocation                            debug_draw_command_tca;
 
-    debug_draw_command_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_debug_draw_command_gpu ) );
-    debug_draw_command = CRUDE_CAST( crude_gfx_debug_draw_command_gpu*, debug_draw_command_tca.cpu_address );
+    debug_draw_command_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_debug_counts ) );
+    debug_draw_command = CRUDE_CAST( crude_gfx_debug_counts*, debug_draw_command_tca.cpu_address );
 
-    *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_draw_command_gpu );
+    *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_counts );
     debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_cube.vertexCount = 36u;

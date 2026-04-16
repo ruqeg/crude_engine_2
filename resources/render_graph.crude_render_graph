@@ -226,7 +226,7 @@
       ]
     },
     {
-      "name": "transparent_pass",
+      "name": "translucent_pass",
       "multisample": 1,
       "inputs": [
         {

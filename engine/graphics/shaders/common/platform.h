@@ -23,7 +23,7 @@
 #define CRUDE_RIGHT_HAND 1
 
 #define CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK ( 1 << 1 )
-#define CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ( 1 << 2 )
+#define CRUDE_MESH_DRAW_FLAGS_TRANSLUCENT_MASK ( 1 << 2 )
 #define CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ( 1 << 3 )
 #define CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
 #define CRUDE_MESH_DRAW_FLAGS_INDEX_16 ( 1 << 5 )
@@ -44,10 +44,9 @@
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data[]; };
 #define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data; };
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
-
-layout(buffer_reference, scalar) buffer ASRef {
-    accelerationStructureEXT as;
-};
+//layout(buffer_reference, scalar) buffer ASRef {
+//    accelerationStructureEXT as;
+//};
 #endif
 
 #ifndef __cplusplus

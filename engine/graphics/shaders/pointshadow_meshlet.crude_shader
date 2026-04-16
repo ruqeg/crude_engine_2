@@ -1,3 +1,4 @@
+
 #if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
 #ifndef __cplusplus
 #extension GL_GOOGLE_include_directive : enable

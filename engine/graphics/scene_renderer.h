@@ -203,12 +203,12 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_translucent_pass                               translucent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
   crude_gfx_ssr_pass                                       ssr_pass;
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-#if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
 #endif
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_indirect_light_pass                            indirect_light_pass;
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#endif
 } crude_gfx_scene_renderer;
 
 

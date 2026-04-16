@@ -612,11 +612,11 @@ crude_engine_initialize_graphics_
   
   if ( engine->gpu.mesh_shaders_extension_present )
   {
-    crude_gfx_technique_load_from_file( "deferred_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+    crude_gfx_technique_load_from_file( "geometry_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   }
   else
   {
-    crude_gfx_technique_load_from_file( "deferred_classic.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+    crude_gfx_technique_load_from_file( "geometry_classic.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   }
   crude_gfx_technique_load_from_file( "pointshadow_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "compute.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
@@ -624,9 +624,12 @@ crude_engine_initialize_graphics_
   crude_gfx_technique_load_from_file( "fullscreen.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   crude_gfx_technique_load_from_file( "imgui.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
   
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
-  crude_gfx_renderer_technique_load_from_file( "ray_tracing_solid.crude_techniques", &game->gpu, &game->render_graph, &&engine->temporary_allocator );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
+  crude_gfx_technique_load_from_file( "ddgi.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+#endif
+#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
+  crude_gfx_technique_load_from_file( "ray_tracing_debug.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
+#endif
   
   crude_gfx_texture_manager_initialize( &engine->texture_manager, &engine->async_loader, &engine->common_allocator );
 

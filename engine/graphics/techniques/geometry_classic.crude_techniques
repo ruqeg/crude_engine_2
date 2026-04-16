@@ -28,11 +28,11 @@
       "shaders" : [
         {
           "stage" : "vertex",
-          "buffer" : "deferred"
+          "buffer" : "geometry"
         },
         {
           "stage" : "fragment",
-          "buffer" : "deferred"
+          "buffer" : "geometry"
         }
       ]
     },
@@ -57,11 +57,11 @@
       "shaders" : [
         {
           "stage" : "vertex",
-          "buffer" : "deferred"
+          "buffer" : "geometry"
         },
         {
           "stage" : "fragment",
-          "buffer" : "deferred"
+          "buffer" : "geometry"
         }
       ]
     }

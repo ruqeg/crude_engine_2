@@ -5,7 +5,7 @@
 
 #include <engine/graphics/passes/indirect_light_pass.h>
 
-#if CRUDE_GFX_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
 
 void
 crude_gfx_indirect_light_pass_initialize
@@ -308,4 +308,4 @@ crude_gfx_indirect_light_pass_pack
   return container;
 }
 
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */

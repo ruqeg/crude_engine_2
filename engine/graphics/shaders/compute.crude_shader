@@ -73,7 +73,7 @@ CRUDE_PUSH_CONSTANT( crude_gfx_ssr_hit_calculation_pass_push_constant_ )
 #endif /* SSR_HIT_CALCULATION */
 
 #if defined( LUMINANCE_HISTOGRAM_GENERATION ) || defined( LUMINANCE_AVERAGE_CALCULATION )
-CRUDE_SHADER_RBUFFER_REF( HistogramRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY( HistogramRef, uint32 );
 #endif /* LUMINANCE_HISTOGRAM_GENERATION || LUMINANCE_AVERAGE_CALCULATION */
 
 #if defined( LUMINANCE_HISTOGRAM_GENERATION )
@@ -167,23 +167,21 @@ void main()
 {
   uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
 
-  crude_gfx_mesh_draw_count mesh_draw_count_data = mesh_draw_count.data[ 0 ];
-
 #if defined( CULLING_LATE )
-  if ( mesh_instance_draw_index < mesh_draw_count_data.opaque_mesh_culled_count )
+  if ( mesh_instance_draw_index < mesh_draw_count.data.opaque_mesh_culled_count )
   {
     mesh_instance_draw_index = mesh_draw_commands_culled.data[ mesh_instance_draw_index ].draw_id;
   }
-  else if ( int(mesh_instance_draw_index) - mesh_draw_count_data.opaque_mesh_culled_count < mesh_draw_count_data.transparent_mesh_culled_count )
+  else if ( int(mesh_instance_draw_index) - mesh_draw_count.data.opaque_mesh_culled_count < mesh_draw_count.data.transparent_mesh_culled_count )
   {
-    mesh_instance_draw_index = mesh_draw_commands_culled.data[ int(mesh_instance_draw_index) - mesh_draw_count_data.opaque_mesh_culled_count + mesh_draw_count_data.total_mesh_count ].draw_id;
+    mesh_instance_draw_index = mesh_draw_commands_culled.data[ int(mesh_instance_draw_index) - mesh_draw_count.data.opaque_mesh_culled_count + mesh_draw_count.data.total_mesh_count ].draw_id;
   }
   else
   {
     return;
   }
 #else
-  if ( mesh_instance_draw_index >= mesh_draw_count_data.total_mesh_count )
+  if ( mesh_instance_draw_index >= mesh_draw_count.data.total_mesh_count )
   {
     return;
   }
@@ -210,7 +208,7 @@ void main()
       view_center.xyz, radius, scene.data.camera.znear, 
       scene.data.camera.view_to_clip[ 0 ][ 0 ],
       scene.data.camera.view_to_clip[ 1 ][ 1 ],
-      mesh_draw_count_data.depth_pyramid_texture_index, world_center.xyz,
+      mesh_draw_count.data.depth_pyramid_texture_index, world_center.xyz,
       scene.data.camera.position,
       scene.data.camera.world_to_clip,
       debug_line_vertices,
@@ -218,37 +216,37 @@ void main()
     );
   }
 
-  bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSPARENT_MASK ) ) == 0 );
+  bool is_mesh_opaque = ( ( mesh_draws.data[ mesh_draw_index ].flags & ( CRUDE_MESH_DRAW_FLAGS_ALPHA_MASK | CRUDE_MESH_DRAW_FLAGS_TRANSLUCENT_MASK ) ) == 0 );
 #if defined( CULLING_LATE )
   if ( occlusion_visible )
   {
     if ( is_mesh_opaque )
     {
-      uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_visible_late_count, 1 );
+      uint draw_index = atomicAdd( mesh_draw_count.data.opaque_mesh_visible_late_count, 1 );
       write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
     else
     {
-      uint draw_index = atomicAdd( mesh_draw_count_data.transparent_mesh_visible_count, 1 ) + mesh_draw_count_data.total_mesh_count;
+      uint draw_index = atomicAdd( mesh_draw_count.data.transparent_mesh_visible_count, 1 ) + mesh_draw_count.data.total_mesh_count;
       write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
   }
 #else
   if ( occlusion_visible && is_mesh_opaque ) /* Add only opaque objects for early draw */
   {
-    uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_visible_early_count, 1 );
+    uint draw_index = atomicAdd( mesh_draw_count.data.opaque_mesh_visible_early_count, 1 );
     write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
   else if ( is_mesh_opaque )
   {
     /* Add culled opaque object for re-test */
-    uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_culled_count, 1 );
+    uint draw_index = atomicAdd( mesh_draw_count.data.opaque_mesh_culled_count, 1 );
     write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
   else
   {
     /* Add culled transparent object for re-test */
-    uint draw_index = atomicAdd( mesh_draw_count_data.transparent_mesh_culled_count, 1 ) + mesh_draw_count_data.total_mesh_count;
+    uint draw_index = atomicAdd( mesh_draw_count.data.transparent_mesh_culled_count, 1 ) + mesh_draw_count.data.total_mesh_count;
     write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
 #endif
