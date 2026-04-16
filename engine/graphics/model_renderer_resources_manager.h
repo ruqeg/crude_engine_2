@@ -68,6 +68,8 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_memory_allocation                              meshes_draws_hga;
   uint64                                                   total_meshes_count;
 
+  crude_gfx_memory_allocation                              bottom_level_acceleration_structure_transform_hga;
+
   crude_resource_pool                                      model_renderer_resources_pool;
 } crude_gfx_model_renderer_resources_manager;
 
@@ -94,8 +96,7 @@ CRUDE_API crude_gfx_model_renderer_resources_handle
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
   _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ char const                                          *filepath,
-  _Out_opt_ bool                                           *model_initialized
+  _In_ char const                                          *filepath
 );
 
 CRUDE_API void

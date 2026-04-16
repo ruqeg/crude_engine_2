@@ -163,7 +163,7 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_gltf )
   crude_gfx_model_renderer_resources_instance_initialize(
     &component->model_renderer_resources_instance,
     manager->model_renderer_resources_manager,
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath, NULL ) );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, gltf_relative_filepath ) );
 
   component->hidden = cJSON_HasObjectItem( component_json, "hidden" ) ? cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hidden" ) ) : false;
   
@@ -259,7 +259,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_gltf )
           crude_gfx_model_renderer_resources              *model_renderer_resources;
           crude_gfx_model_renderer_resources_handle        model_renderer_resources_handle;
 
-          model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath, NULL );
+          model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, replace_relative_filepath );
           
           if ( component->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
           {

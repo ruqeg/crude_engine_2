@@ -132,5 +132,6 @@ crude_gfx_memory_allocate_with_name
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
-  _In_ char const                                         *name
+  _In_ char const                                         *name,
+  _In_ VkBufferUsageFlags2                                 additional_flags
 );

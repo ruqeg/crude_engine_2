@@ -49,8 +49,8 @@ crude_gfx_imgui_pass_initialize
   imgui_io->Fonts->TexID = CRUDE_CAST( ImTextureID, &pass->font_texture );
   
   /* Create vertex and index buffers */
-  pass->vertex_hga = crude_gfx_memory_allocate_with_name( gpu, vertex_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_vertex_hga" );
-  pass->index_hga = crude_gfx_memory_allocate_with_name( gpu, index_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_index_hga" );
+  pass->vertex_hga = crude_gfx_memory_allocate_with_name( gpu, vertex_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_vertex_hga", 0 );
+  pass->index_hga = crude_gfx_memory_allocate_with_name( gpu, index_buffer_size_, CRUDE_GFX_MEMORY_TYPE_GPU, "imgui_index_hga", 0 );
 }
 
 void

@@ -40,10 +40,10 @@ crude_gfx_pointlight_shadow_pass_initialize
   pass->scene_renderer = scene_renderer;
     
   pass->enabled = true;
-  pass->pointlight_spheres_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointlight_spheres_hga" );
-  pass->pointshadow_meshlet_draw_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * ( CRUDE_LIGHTS_MAX_COUNT * 4u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshlet_draw_commands_hga" );
-  pass->pointshadow_meshletes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT2 ) * CRUDE_MAX_MESHLETS_PER_LIGHT * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_hga" );
-  pass->pointshadow_meshletes_instances_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * ( CRUDE_LIGHTS_MAX_COUNT + 1u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_count_hga" );
+  pass->pointlight_spheres_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointlight_spheres_hga", 0 );
+  pass->pointshadow_meshlet_draw_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT4 ) * ( CRUDE_LIGHTS_MAX_COUNT * 4u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshlet_draw_commands_hga", 0 );
+  pass->pointshadow_meshletes_instances_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMUINT2 ) * CRUDE_MAX_MESHLETS_PER_LIGHT * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_hga", 0 );
+  pass->pointshadow_meshletes_instances_count_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( uint32 ) * ( CRUDE_LIGHTS_MAX_COUNT + 1u ), CRUDE_GFX_MEMORY_TYPE_GPU, "pointshadow_meshletes_instances_count_hga", 0 );
 
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;

@@ -87,7 +87,7 @@ crude_physics_shapes_manager_get_mesh_shape_handle
   crude_gfx_model_renderer_resources_instance_initialize(
     &mesh_shape_container->debug_model_renderer_resource_instance,
     manager->model_renderer_resources_manager,
-    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, relative_filepath, NULL ) );
+    crude_gfx_model_renderer_resources_manager_get_gltf_model( manager->model_renderer_resources_manager, relative_filepath ) );
   CRUDE_HASHMAPSTR_SET( manager->mesh_shape_relative_filepath_to_hadle, CRUDE_COMPOUNT( crude_string_link, { mesh_shape_container->relative_filepath } ), mesh_shape_handle );
 #endif
   return mesh_shape_handle;

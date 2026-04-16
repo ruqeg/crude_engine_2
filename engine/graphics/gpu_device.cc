@@ -915,17 +915,6 @@ crude_gfx_get_primary_cmd
   return cmd;
 }
 
-crude_gfx_cmd_buffer*
-crude_gfx_get_secondary_cmd
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ uint32                                              thread_index
-)
-{
-  crude_gfx_cmd_buffer *cmd = crude_gfx_cmd_manager_get_secondary_cmd( &gpu->cmd_buffer_manager, gpu->current_frame, thread_index );
-  return cmd;
-}
-
 void
 crude_gfx_queue_cmd
 (
@@ -3790,37 +3779,40 @@ vk_create_device_
   //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
   //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
   
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
   physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
+  physical_device_ray_tracing_position_fetch_features.pNext = next_feature;
   physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = true;
+  next_feature = &physical_device_ray_tracing_position_fetch_features;
 
   physical_device_ray_query_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayQueryFeaturesKHR );
   physical_device_ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+  physical_device_ray_query_features.pNext = next_feature;
   physical_device_ray_query_features.rayQuery = true;
-  physical_device_ray_query_features.pNext = &physical_device_ray_tracing_position_fetch_features;
+  next_feature = &physical_device_ray_query_features;
 
   physical_device_ray_tracing_pipeline_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelineFeaturesKHR );
   physical_device_ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-  physical_device_ray_tracing_pipeline_features.pNext = &physical_device_ray_query_features;
+  physical_device_ray_tracing_pipeline_features.pNext = next_feature;
   physical_device_ray_tracing_pipeline_features.rayTracingPipeline = true;
+  next_feature = &physical_device_ray_tracing_pipeline_features;
   
   physical_device_acceleration_structure_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceAccelerationStructureFeaturesKHR );
   physical_device_acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-  physical_device_acceleration_structure_features.pNext = &physical_device_ray_tracing_pipeline_features;
+  physical_device_acceleration_structure_features.pNext = next_feature;
   physical_device_acceleration_structure_features.accelerationStructure = true;
+  next_feature = &physical_device_acceleration_structure_features;
   
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
   physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
-  physical_device_ray_tracing_validation_features_nv.pNext = &physical_device_buffer_defice_address_features;
+  physical_device_ray_tracing_validation_features_nv.pNext = next_feature;
   physical_device_ray_tracing_validation_features_nv.rayTracingValidation = true;
-
-  bit16_storage_features.pNext = &physical_device_ray_tracing_validation_features_nv;
-#else
-  bit16_storage_features.pNext = &physical_device_buffer_defice_address_features;
+  next_feature = &physical_device_ray_tracing_validation_features_nv;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
 #if CRUDE_GFX_USE_NSIGHT_AFTERMATH
   physical_device_diagnostics_config_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDiagnosticsConfigFeaturesNV );

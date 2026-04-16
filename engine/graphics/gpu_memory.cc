@@ -12,7 +12,7 @@ crude_gfx_stack_allocator_initialize
 )
 {
   allocator->gpu = gpu;
-  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name );
+  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
   allocator->capacity = capacity;
   allocator->occupied = 0u;
   allocator->name = name;
@@ -89,7 +89,7 @@ crude_gfx_linear_allocator_initialize
 )
 {
   allocator->gpu = gpu;
-  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name );
+  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
   allocator->capacity = capacity;
   allocator->occupied = 0u;
   allocator->name = name;
@@ -169,7 +169,7 @@ crude_gfx_memory_allocate
   _In_ crude_gfx_memory_type                               type
 )
 {
-  return crude_gfx_memory_allocate_with_name( gpu, size, type, "default_allocated_buffer" );
+  return crude_gfx_memory_allocate_with_name( gpu, size, type, "default_allocated_buffer", 0 );
 }
 
 crude_gfx_memory_allocation
@@ -178,7 +178,8 @@ crude_gfx_memory_allocate_with_name
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
-  _In_ char const                                         *name
+  _In_ char const                                         *name,
+  _In_ VkBufferUsageFlags2                                 additional_flags
 )
 {
   crude_gfx_memory_allocation                              memory_allocation;
@@ -192,7 +193,7 @@ crude_gfx_memory_allocate_with_name
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
     buffer_creation.name = name;
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;
     buffer_creation.persistent = true;
@@ -208,7 +209,7 @@ crude_gfx_memory_allocate_with_name
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
     buffer_creation.name = name;
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;
     buffer_creation.device_only = true;

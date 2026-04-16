@@ -29,7 +29,6 @@ typedef struct crude_gfx_cmd_buffer_manager
   crude_gfx_device                                        *gpu;
 
   crude_gfx_cmd_buffer                                    *primary_cmd_buffers;
-  crude_gfx_cmd_buffer                                    *secondary_cmd_buffers;
 
   uint32                                                   num_pools_per_frame;
   uint32                                                   num_primary_cmd_buffers_per_thread;
@@ -405,12 +404,4 @@ crude_gfx_cmd_manager_get_primary_cmd
   _In_ uint32                                              frame,
   _In_ uint32                                              thread_index,
   _In_ bool                                                begin
-);
-
-CRUDE_API crude_gfx_cmd_buffer*
-crude_gfx_cmd_manager_get_secondary_cmd
-(
-  _In_ crude_gfx_cmd_buffer_manager                       *cmd_manager,
-  _In_ uint32                                              frame,
-  _In_ uint32                                              thread_index
 );
