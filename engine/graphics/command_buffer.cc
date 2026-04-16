@@ -786,7 +786,7 @@ crude_gfx_cmd_push_marker
   _In_ char const                                         *name
 )
 {
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
 #endif
@@ -845,7 +845,7 @@ crude_gfx_cmd_pop_marker
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
   vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
 #endif
@@ -889,7 +889,7 @@ crude_gfx_cmd_trace_rays
   _In_ uint32                                              depth
 )
 {
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_pipeline                                      *pipeline;
   VkStridedDeviceAddressRegionKHR                          raygen_table, hit_table, miss_table, callable_table;
   uint32                                                   shader_group_handle_size;
@@ -918,7 +918,7 @@ crude_gfx_cmd_trace_rays
   cmd->gpu->vkCmdTraceRaysKHR( cmd->vk_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can proccess crude_gfx_cmd_trace_rays, CRUDE_GRAPHICS_RAY_TRACING_ENABLED wasn't enabled" );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }
 
 /************************************************
@@ -1095,7 +1095,7 @@ crude_gfx_cmd_manager_get_primary_cmd
     CRUDE_ASSERT( current_used_buffer < cmd_manager->num_primary_cmd_buffers_per_thread );
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
     
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
     crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
     crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
     vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count * 2 );

@@ -485,9 +485,9 @@ typedef struct crude_gfx_descriptor_set_creation
   crude_gfx_descriptor_set_layout_handle                   layout;
   uint32                                                   num_resources;
   char const                                              *name;
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                               vk_acceleration_structure;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set_creation;
 
 typedef struct crude_gfx_shader_descriptor_reflect
@@ -592,9 +592,9 @@ typedef struct crude_gfx_descriptor_set
   crude_gfx_descriptor_set_layout const                   *layout;
   uint32                                                   num_resources;
   char const                                              *name;
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                               vk_acceleration_structure;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set;
 
 typedef struct crude_gfx_pipeline
@@ -613,11 +613,11 @@ typedef struct crude_gfx_pipeline
   bool                                                     graphics_pipeline;
   char                                                     name[ 512 ];
 
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_buffer_handle                                  shader_binding_table_raygen;
   crude_gfx_buffer_handle                                  shader_binding_table_hit;
   crude_gfx_buffer_handle                                  shader_binding_table_miss;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_pipeline;
 
 typedef struct crude_gfx_render_pass
@@ -644,9 +644,9 @@ typedef struct crude_gfx_framebuffer
 typedef struct crude_gfx_shader_state
 {
   VkPipelineShaderStageCreateInfo                          shader_stage_info[ CRUDE_GFX_SHADER_STAGES_MAX_COUNT ];
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkRayTracingShaderGroupCreateInfoKHR                     shader_group_info[ CRUDE_GFX_SHADER_STAGES_MAX_COUNT];
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED*/
   const char                                              *name;
   uint32                                                   active_shaders;
   crude_gfx_pipeline_type                                  pipeline_type;

@@ -4,48 +4,55 @@
 
 #define CRUDE_DEBUG_LINE_2D_OFFSET 1000
 
+#ifdef __cplusplus
+#include <vulkan/vulkan.h>
+#include <engine/core/alias.h>
+#include <engine/core/math.h>
+#include <engine/graphics/shaders/common/platform.h>
+#endif
+
+CRUDE_SHADER_STRUCT( crude_gfx_debug_line_vertex )
+{
+  XMFLOAT3                                                 position;
+  uint32                                                   color;
+};
+
+CRUDE_SHADER_STRUCT( crude_gfx_debug_cube_instance )
+{
+  XMFLOAT3                                                 translation;
+  uint32                                                   padding1;
+  XMFLOAT4                                                 color;
+  XMFLOAT3                                                 scale;
+  uint32                                                   padding2;
+};
+
+CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
+{
+#if __cplusplus
+  VkDrawIndirectCommand                                    draw_indirect_3dline;
+  VkDrawIndirectCommand                                    draw_indirect_2dline;
+  VkDrawIndirectCommand                                    draw_indirect_cube;
+#else
+  uint32                                                   debug_lines_3d_vertices_count;
+  uint32                                                   debug_lines_3d_instances_count;
+  uint32                                                   debug_lines_3d_first_vertex;
+  uint32                                                   debug_lines_3d_first_instance;
+  uint32                                                   debug_lines_2d_vertices_count;
+  uint32                                                   debug_lines_2d_instances_count;
+  uint32                                                   debug_lines_2d_first_vertex;
+  uint32                                                   debug_lines_2d_first_instance;
+  uint32                                                   debug_cubes_vertices_count;
+  uint32                                                   debug_cubes_instances_count;
+  uint32                                                   debug_cubes_first_vertex;
+  uint32                                                   debug_cubes_first_instance;
+#endif
+};
+
+CRUDE_SHADER_RBUFFER_REF( DebugCubesInstancesRef, crude_gfx_debug_cube_instance );
+CRUDE_SHADER_RBUFFER_REF( DebugLinesVerticesRef, crude_gfx_debug_line_vertex );
+CRUDE_SHADER_RBUFFER_REF( DebugCountsRef, crude_gfx_debug_counts );
+
 #ifndef __cplusplus
-struct crude_debug_cube_instance
-{
-  vec3                                                     translation;
-  uint                                                     padding1;
-  vec4                                                     color;
-  vec3                                                     scale;
-  uint                                                     padding2;
-};
-
-struct crude_debug_line_vertex
-{
-  vec3                                                     position;
-  uint                                                     color;
-};
-
-CRUDE_RBUFFER_REF( DebugCountsRef )
-{
-  uint                                                     debug_lines_3d_vertices_count;
-  uint                                                     debug_lines_3d_instances_count;
-  uint                                                     debug_lines_3d_first_vertex;
-  uint                                                     debug_lines_3d_first_instance;
-  uint                                                     debug_lines_2d_vertices_count;
-  uint                                                     debug_lines_2d_instances_count;
-  uint                                                     debug_lines_2d_first_vertex;
-  uint                                                     debug_lines_2d_first_instance;
-  uint                                                     debug_cubes_vertices_count;
-  uint                                                     debug_cubes_instances_count;
-  uint                                                     debug_cubes_first_vertex;
-  uint                                                     debug_cubes_first_instance;
-};
-
-CRUDE_RBUFFER_REF( DebugLinesVerticesRef )
-{
-  crude_debug_line_vertex                                  data[];
-};
-
-CRUDE_RBUFFER_REF( DebugCubesInstancesRef )
-{
-  crude_debug_cube_instance                                data[];
-};
-
 void crude_debug_draw_line_coloru
 (
   in DebugLinesVerticesRef                                 debug_line_vertices,
@@ -56,7 +63,7 @@ void crude_debug_draw_line_coloru
   in uint                                                  end_color
 )
 {
-  uint offset = atomicAdd( debug_counts.debug_lines_3d_vertices_count, 2 );
+  uint offset = atomicAdd( debug_counts.data[ 0 ].debug_lines_3d_vertices_count, 2 );
 
   debug_line_vertices.data[ offset ].position = start;
   debug_line_vertices.data[ offset ].color = start_color;
@@ -119,7 +126,7 @@ void crude_debug_draw_line_2d_coloru
   in uint                                                  start_color,
   in uint                                                  end_color )
 {
-  uint offset = CRUDE_DEBUG_LINE_2D_OFFSET + atomicAdd( debug_counts.debug_lines_2d_vertices_count, 2 );
+  uint offset = CRUDE_DEBUG_LINE_2D_OFFSET + atomicAdd( debug_counts.data[ 0 ].debug_lines_2d_vertices_count, 2 );
 
   debug_line_vertices.data[ offset ].position = vec3( start.xy, 0 );
   debug_line_vertices.data[ offset ].color = start_color;
@@ -167,7 +174,7 @@ void crude_debug_draw_cube
   in vec4                                                  color
 )
 {
-  uint offset = atomicAdd( debug_counts.debug_cubes_instances_count, 1 );
+  uint offset = atomicAdd( debug_counts.data[ 0 ].debug_cubes_instances_count, 1 );
 
   debug_cube_instances.data[ offset ].translation = translation;
   debug_cube_instances.data[ offset ].scale = scale;

@@ -145,6 +145,25 @@ CRUDE_SHADER_STRUCT( crude_gfx_scene )
 #endif
 };
 
+CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_count )
+{
+  uint32                                                   opaque_mesh_visible_early_count;
+  uint32                                                   opaque_mesh_visible_late_count;
+  uint32                                                   opaque_mesh_culled_count;
+  uint32                                                   transparent_mesh_visible_count;
+
+  uint32                                                   transparent_mesh_culled_count;
+  uint32                                                   total_mesh_count;
+  uint32                                                   depth_pyramid_texture_index;
+  uint32                                                   meshlet_index_count;
+
+  uint32                                                   dispatch_task_x;
+  uint32                                                   dispatch_task_y;
+  uint32                                                   dispatch_task_z;
+  uint32                                                   meshlet_instances_count;
+};
+
+CRUDE_SHADER_RBUFFER_REF( MeshDrawCountRef, crude_gfx_mesh_draw_count );
 CRUDE_SHADER_RBUFFER_REF( SceneRef, crude_gfx_scene );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshDrawCommandsRef, crude_gfx_mesh_draw_command );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshInstancesDrawsRef, crude_gfx_mesh_instance_draw );

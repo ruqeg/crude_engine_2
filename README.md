@@ -8,7 +8,7 @@ CE2 is a 3D game engine with gpu driven rendering created to have fun at free ti
 ## Features
 - Render Graph, Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping, Automatic Exposure
 - Asynchronous Resources Loading, Multi-Threading Commands Recording
-- Json Scene, GLTF Models
+- Physics, Editor, Animations, Json Scene, GLTF Models
 - GPU Profiler, Shader Hot Reloading, Task/Mesh Shader, ECS, etc
 
 ## Setup

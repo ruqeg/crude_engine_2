@@ -3,7 +3,7 @@
 #include <engine/graphics/render_graph.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
@@ -59,12 +59,6 @@ typedef struct crude_gfx_indirect_light_pass_options
 typedef struct crude_gfx_indirect_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
-  crude_gfx_descriptor_set_handle                          probe_raytrace_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_descriptor_set_handle                          probe_debug_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_descriptor_set_handle                          calculate_probe_offsets_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_descriptor_set_handle                          probe_update_irradiance_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_descriptor_set_handle                          probe_update_visibility_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_descriptor_set_handle                          sample_irradiance_ds[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   crude_gfx_texture_handle                                 probe_grid_irradiance_texture_handle;
   crude_gfx_texture_handle                                 probe_grid_visibility_texture_handle;
   crude_gfx_texture_handle                                 probe_offsets_texture_handle;
@@ -123,16 +117,10 @@ crude_gfx_indirect_light_pass_on_resize
   _In_ uint32                                              new_height
 );
 
-CRUDE_API void
-crude_gfx_indirect_light_pass_on_techniques_reloaded
-(
-  _In_ void                                               *ctx
-);
-
 CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_indirect_light_pass_pack
 (
   _In_ crude_gfx_indirect_light_pass                      *pass
 );
 
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */

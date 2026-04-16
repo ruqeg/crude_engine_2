@@ -1871,7 +1871,7 @@ create_bottom_level_acceleration_structure_
   _In_ uint64                                              meshes_offset
 )
 {
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_cmd_buffer                                    *cmd;
   crude_gfx_buffer_handle                                 *blas_scratch_buffers_handle;
   VkAccelerationStructureBuildRangeInfoKHR               **vk_acceleration_structure_build_range_infos;
@@ -2004,7 +2004,7 @@ create_bottom_level_acceleration_structure_
   crude_gfx_destroy_buffer( scene_renderer->renderer->gpu, scratch_transform_buffer );
 
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }
 
 void
@@ -2013,7 +2013,7 @@ create_top_level_acceleration_structure_
   _In_ crude_gfx_model_renderer_resources_manager         *manager
 )
 {
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_buffer                                        *tlas_buffer;
   crude_gfx_cmd_buffer                                    *cmd;
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
@@ -2150,7 +2150,7 @@ create_top_level_acceleration_structure_
   crude_gfx_submit_immediate( cmd );
 
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }
 
 void
@@ -2159,7 +2159,7 @@ update_top_level_acceleration_structure_
   _In_ crude_gfx_model_renderer_resources_manager         *manager
 )
 {
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_buffer                                        *tlas_buffer;
   crude_gfx_cmd_buffer                                    *cmd;
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
@@ -2261,5 +2261,5 @@ update_top_level_acceleration_structure_
   crude_gfx_submit_immediate( cmd );
 
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }

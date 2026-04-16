@@ -16,24 +16,6 @@
 #include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-CRUDE_RBUFFER_REF( VisibleMeshCountRef )
-{
-  uint                                                     opaque_mesh_visible_early_count;
-  uint                                                     opaque_mesh_visible_late_count;
-  uint                                                     opaque_mesh_culled_count;
-  uint                                                     transparent_mesh_visible_count;
-
-  uint                                                     transparent_mesh_culled_count;
-  uint                                                     total_mesh_count;
-  uint                                                     depth_pyramid_texture_index;
-  uint                                                     meshlet_index_count;
-
-  uint                                                     dispatch_task_x;
-  uint                                                     dispatch_task_y;
-  uint                                                     dispatch_task_z;
-  uint                                                     meshlet_instances_count;
-};
-
 #if defined( DEFERRED_CLASSIC ) 
 CRUDE_PUSH_CONSTANT
 {
@@ -41,7 +23,7 @@ CRUDE_PUSH_CONSTANT
   MeshDrawsRef                                             mesh_draws;
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
-  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
   vec2                                                     _padding;
@@ -53,7 +35,7 @@ CRUDE_PUSH_CONSTANT
   MeshDrawsRef                                             mesh_draws;
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
-  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
   LightsZBinsRef                                           zbins;
@@ -81,7 +63,7 @@ CRUDE_PUSH_CONSTANT
   TrianglesIndicesRef                                      triangles_indices;
 
   VerticesIndicesRef                                       vertices_indices;
-  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
   DebugLinesVerticesRef                                    debug_line_vertices;
@@ -105,7 +87,7 @@ CRUDE_PUSH_CONSTANT
   TrianglesIndicesRef                                      triangles_indices;
 
   VerticesIndicesRef                                       vertices_indices;
-  VisibleMeshCountRef                                      visible_mesh_count;
+  MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
   DebugLinesVerticesRef                                    debug_line_vertices;
@@ -140,7 +122,7 @@ void main()
 #if defined( DEFERRED_MESHLET )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSPARENT_NO_CULL */
-  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
   uint meshlet_index = mesh_draws.data[ mesh_draw_index ].meshletes_offset + gl_GlobalInvocationID.x;
@@ -177,7 +159,7 @@ void main()
     {
       occlusion_visible = crude_occlusion_culling( mesh_draw_index, view_center.xyz, radius, scene.data.camera.znear,
         scene.data.camera.view_to_clip[ 0 ][ 0 ], scene.data.camera.view_to_clip[ 1 ][ 1 ],
-        visible_mesh_count.depth_pyramid_texture_index,
+        visible_mesh_count.data[ 0 ].depth_pyramid_texture_index,
         world_center.xyz, scene.data.camera.position, scene.data.camera.world_to_clip,
         debug_line_vertices,
         debug_counts
@@ -296,7 +278,7 @@ void main()
 #if defined( DEFERRED_CLASSIC )
   uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB ].draw_id;
 #else /* TRANSPARENT_NO_CULL_CLASSIC */
-  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.total_mesh_count ].draw_id;
+  uint draw_id = mesh_draw_commands.data[ gl_DrawIDARB + visible_mesh_count.data[ 0 ].total_mesh_count ].draw_id;
 #endif
   uint mesh_draw_index = mesh_instance_draws.data[ draw_id ].mesh_draw_index;
   crude_gfx_mesh_draw mesh_draw = mesh_draws.data[ mesh_draw_index ];

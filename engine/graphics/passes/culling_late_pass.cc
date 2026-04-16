@@ -2,6 +2,9 @@
 #include <engine/graphics/scene_renderer.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
+#define CULLING_LATE
+#include <engine/graphics/shaders/compute.crude_shader>
+
 #include <engine/graphics/passes/culling_late_pass.h>
 
 void
@@ -29,25 +32,10 @@ crude_gfx_culling_late_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-  {
-    VkDeviceAddress                                        scene;
-    VkDeviceAddress                                        mesh_draws;
-
-    VkDeviceAddress                                        mesh_instance_draws;
-    VkDeviceAddress                                        mesh_draw_commands;
-
-    VkDeviceAddress                                        mesh_draw_commands_culled;
-    VkDeviceAddress                                        mesh_draw_count;
-
-    VkDeviceAddress                                        debug_line_vertices;
-    VkDeviceAddress                                        debug_counts;
-  };
-
   crude_gfx_device                                        *gpu;
   crude_gfx_culling_late_pass                             *pass;
   crude_gfx_pipeline_handle                                mesh_culling_pipeline;
-  push_constant_                                           push_constant;
+  crude_gfx_culling_pass_push_constant_                    push_constant;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_culling_late_pass*, ctx );
 
@@ -65,6 +53,7 @@ crude_gfx_culling_late_pass_render
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
   
+  push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_culling_pass_push_constant_ );
   push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
   push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;

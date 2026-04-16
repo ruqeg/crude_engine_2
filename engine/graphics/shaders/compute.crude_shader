@@ -1,4 +1,39 @@
 
+#if defined( CULLING_EARLY ) || defined( CULLING_LATE )
+
+CRUDE_PUSH_CONSTANT( crude_gfx_culling_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+
+  MeshDrawCommandsRef                                      mesh_draw_commands_culled;
+  MeshDrawCountRef                                         mesh_draw_count;
+
+  DebugLinesVerticesRef                                    debug_line_vertices;
+  DebugCountsRef                                           debug_counts;
+};
+
+#endif /* defined( CULLING_EARLY ) || defined( CULLING_LATE ) */
+
+#if defined( COMPOSE_LIGHT )
+
+CRUDE_SHADER_RBUFFER_REF( HistogramRef, uint32 );
+
+CRUDE_PUSH_CONSTANT( crude_gfx_compose_light_pass_push_constant_ )
+{
+  uint32                                                   direct_radiance_texture_index;
+  uint32                                                   ssr_texture_index;
+  uint32                                                   output_texture_index;
+  uint32                                                   packed_roughness_metalness_texture_index;
+};
+
+#endif /* COMPOSE_LIGHT */
+
+
+#ifndef __cplusplus
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 //#define LUMINANCE_AVERAGE_CALCULATION
@@ -23,39 +58,6 @@
 #if defined( CULLING_EARLY ) || defined( CULLING_LATE )
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 
-CRUDE_RBUFFER_REF( MeshDrawCountRef )
-{
-  uint                                                     opaque_mesh_visible_early_count;
-  uint                                                     opaque_mesh_visible_late_count;
-  uint                                                     opaque_mesh_culled_count;
-  uint                                                     transparent_mesh_visible_count;
-
-  uint                                                     transparent_mesh_culled_count;
-  uint                                                     total_mesh_count;
-  uint                                                     depth_pyramid_texture_index;
-  uint                                                     meshlet_index_count;
-
-  uint                                                     dispatch_task_x;
-  uint                                                     dispatch_task_y;
-  uint                                                     dispatch_task_z;
-  uint                                                     meshlet_instances_count;
-};
-
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  MeshDrawsRef                                             mesh_draws;
-
-  MeshInstancesDrawsRef                                    mesh_instance_draws;
-  MeshDrawCommandsRef                                      mesh_draw_commands;
-
-  MeshDrawCommandsRef                                      mesh_draw_commands_culled;
-  MeshDrawCountRef                                         mesh_draw_count;
-
-  DebugLinesVerticesRef                                    debug_line_vertices;
-  DebugCountsRef                                           debug_counts;
-};
-
 void write_mesh_draw_command
 (
   out crude_gfx_mesh_draw_command                          mesh_draw_command,
@@ -77,21 +79,23 @@ void main()
 {
   uint mesh_instance_draw_index = gl_GlobalInvocationID.x;
 
+  crude_gfx_mesh_draw_count mesh_draw_count_data = mesh_draw_count.data[ 0 ];
+
 #if defined( CULLING_LATE )
-  if ( mesh_instance_draw_index < mesh_draw_count.opaque_mesh_culled_count )
+  if ( mesh_instance_draw_index < mesh_draw_count_data.opaque_mesh_culled_count )
   {
     mesh_instance_draw_index = mesh_draw_commands_culled.data[ mesh_instance_draw_index ].draw_id;
   }
-  else if ( int(mesh_instance_draw_index) - mesh_draw_count.opaque_mesh_culled_count < mesh_draw_count.transparent_mesh_culled_count )
+  else if ( int(mesh_instance_draw_index) - mesh_draw_count_data.opaque_mesh_culled_count < mesh_draw_count_data.transparent_mesh_culled_count )
   {
-    mesh_instance_draw_index = mesh_draw_commands_culled.data[ int(mesh_instance_draw_index) - mesh_draw_count.opaque_mesh_culled_count + mesh_draw_count.total_mesh_count ].draw_id;
+    mesh_instance_draw_index = mesh_draw_commands_culled.data[ int(mesh_instance_draw_index) - mesh_draw_count_data.opaque_mesh_culled_count + mesh_draw_count_data.total_mesh_count ].draw_id;
   }
   else
   {
     return;
   }
 #else
-  if ( mesh_instance_draw_index >= mesh_draw_count.total_mesh_count )
+  if ( mesh_instance_draw_index >= mesh_draw_count_data.total_mesh_count )
   {
     return;
   }
@@ -118,7 +122,7 @@ void main()
       view_center.xyz, radius, scene.data.camera.znear, 
       scene.data.camera.view_to_clip[ 0 ][ 0 ],
       scene.data.camera.view_to_clip[ 1 ][ 1 ],
-      mesh_draw_count.depth_pyramid_texture_index, world_center.xyz,
+      mesh_draw_count_data.depth_pyramid_texture_index, world_center.xyz,
       scene.data.camera.position,
       scene.data.camera.world_to_clip,
       debug_line_vertices,
@@ -132,31 +136,31 @@ void main()
   {
     if ( is_mesh_opaque )
     {
-      uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_visible_late_count, 1 );
+      uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_visible_late_count, 1 );
       write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
     else
     {
-      uint draw_index = atomicAdd( mesh_draw_count.transparent_mesh_visible_count, 1 ) + mesh_draw_count.total_mesh_count;
+      uint draw_index = atomicAdd( mesh_draw_count_data.transparent_mesh_visible_count, 1 ) + mesh_draw_count_data.total_mesh_count;
       write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
     }
   }
 #else
   if ( occlusion_visible && is_mesh_opaque ) /* Add only opaque objects for early draw */
   {
-    uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_visible_early_count, 1 );
+    uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_visible_early_count, 1 );
     write_mesh_draw_command( mesh_draw_commands.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
   else if ( is_mesh_opaque )
   {
     /* Add culled opaque object for re-test */
-    uint draw_index = atomicAdd( mesh_draw_count.opaque_mesh_culled_count, 1 );
+    uint draw_index = atomicAdd( mesh_draw_count_data.opaque_mesh_culled_count, 1 );
     write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
   else
   {
     /* Add culled transparent object for re-test */
-    uint draw_index = atomicAdd( mesh_draw_count.transparent_mesh_culled_count, 1 ) + mesh_draw_count.total_mesh_count;
+    uint draw_index = atomicAdd( mesh_draw_count_data.transparent_mesh_culled_count, 1 ) + mesh_draw_count_data.total_mesh_count;
     write_mesh_draw_command( mesh_draw_commands_culled.data[ draw_index ], mesh_instance_draw_index, mesh_draw_index );
   }
 #endif
@@ -223,15 +227,6 @@ void main()
   CRUDE_IMAGE_STORE( dst_image_index, ivec2( gl_GlobalInvocationID.xy ), vec4( result, 0, 0, 0 ) );
 }
 #endif /* DEPTH_PYRAMID */
-
-#if defined( LUMINANCE_AVERAGE_CALCULATION ) || defined( LUMINANCE_HISTOGRAM_GENERATION )
-
-CRUDE_RWBUFFER_REF( HistogramRef )
-{
-  uint                                                     data[];
-};
-
-#endif
 
 #if defined( LUMINANCE_AVERAGE_CALCULATION )
 layout(local_size_x=256, local_size_y=1, local_size_z=1) in;
@@ -787,14 +782,6 @@ void main()
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
-CRUDE_PUSH_CONSTANT
-{
-  uint                                                     direct_radiance_texture_index;
-  uint                                                     ssr_texture_index;
-  uint                                                     output_texture_index;
-  uint                                                     packed_roughness_metalness_texture_index;
-};
-
 void main()
 {
   ivec2 coords = ivec2( gl_GlobalInvocationID.xy );
@@ -806,3 +793,4 @@ void main()
 }
 
 #endif /* COMPOSE_LIGHT */
+#endif /* __cplusplus */

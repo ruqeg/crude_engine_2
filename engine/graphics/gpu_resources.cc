@@ -217,12 +217,12 @@ crude_gfx_descriptor_set_creation_add_acceleration_structure
   _In_ uint16                                              binding
 )
 {
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   creation->vk_acceleration_structure = vk_acceleration_structure;
   creation->bindings[ creation->num_resources++ ] = binding;
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can't add acceleration structure to descriptor set. CRUDE_GRAPHICS_RAY_TRACING_ENABLED wasn't enabled" );
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED*/
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED*/
 }
 
 void

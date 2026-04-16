@@ -13,7 +13,7 @@
 
 #include <engine/graphics/shaders/common/platform.h>
 
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
 typedef struct crude_gfx_gpu_time_query crude_gfx_gpu_time_query;
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 typedef struct crude_gfx_gpu_time_queries_manager crude_gfx_gpu_time_queries_manager;
@@ -34,7 +34,7 @@ typedef struct crude_gfx_resource_cache
 typedef struct crude_gfx_gpu_thread_frame_pools
 {
   VkCommandPool                                            vk_command_pool;
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
   VkQueryPool                                              vk_timestamp_query_pool;
   VkQueryPool                                              vk_pipeline_stats_query_pool;
   crude_gfx_gpu_time_query_tree                           *time_queries;
@@ -181,7 +181,7 @@ typedef struct crude_gfx_device
 
   VkFence                                                  vk_immediate_fence;
 
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
 
@@ -201,7 +201,7 @@ typedef struct crude_gfx_device
   PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
 
   PFN_vkGetAccelerationStructureBuildSizesKHR              vkGetAccelerationStructureBuildSizesKHR;
@@ -212,7 +212,7 @@ typedef struct crude_gfx_device
   PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
   PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
   PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 
 /************************************************
@@ -358,7 +358,7 @@ crude_gfx_device_queue_submit
   _In_ VkFence                                             vk_fence
 );
 
-#if CRUDE_GPU_PROFILER
+#if CRUDE_GFX_GPU_PROFILER
 CRUDE_API uint32
 crude_gfx_copy_gpu_timestamps
 (

@@ -1,6 +1,8 @@
 #include <engine/graphics/imgui.h>
-
 #include <engine/graphics/scene_renderer.h>
+
+#define IMGUI 1
+#include <engine/graphics/shaders/imgui.crude_shader>
 
 #include <engine/graphics/passes/imgui_pass.h>
 
@@ -147,16 +149,6 @@ crude_gfx_imgui_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-  {
-    XMFLOAT4X4                                             projection;
-    VkDeviceAddress                                        vertices;
-    VkDeviceAddress                                        indices;
-    uint32                                                 index_offset;
-    uint32                                                 vertex_offset;
-    uint32                                                 texture_index;
-  };
-
   crude_gfx_imgui_pass                                    *pass;
   crude_gfx_device                                        *gpu;
   ImDrawData                                              *imgui_draw_data;
@@ -166,7 +158,6 @@ crude_gfx_imgui_pass_render
   ImVec2                                                   clip_off, clip_scale;
   uint64                                                   vtx_buffer_offset, index_buffer_offset;
   int32                                                    draw_counts, framebuffer_width, framebuffer_height;
-  push_constant_                                           push_constant;
   bool                                                     clip_origin_lower_left;
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_imgui_pass*, ctx );
@@ -262,13 +253,18 @@ crude_gfx_imgui_pass_render
           
           /* Retrieve */
           crude_gfx_texture_handle new_texture = *( crude_gfx_texture_handle* )( pcmd->TexRef.GetTexID() );
-          push_constant.vertices = pass->vertex_hga.gpu_address;
-          push_constant.indices = pass->index_hga.gpu_address;
-          push_constant.projection = ortho_projection;
-          push_constant.index_offset = index_buffer_offset + pcmd->IdxOffset;
-          push_constant.vertex_offset = vtx_buffer_offset + pcmd->VtxOffset;
-          push_constant.texture_index = new_texture.index;
-          crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
+
+          {
+            
+            crude_gfx_imgui_pass_push_constant_            push_constant;
+            push_constant.vertices = pass->vertex_hga.gpu_address;
+            push_constant.indices = pass->index_hga.gpu_address;
+            push_constant.projection = ortho_projection;
+            push_constant.index_offset = index_buffer_offset + pcmd->IdxOffset;
+            push_constant.vertex_offset = vtx_buffer_offset + pcmd->VtxOffset;
+            push_constant.texture_index = new_texture.index;
+            crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
+          }
 
           crude_gfx_cmd_draw( primary_cmd, 0, pcmd->ElemCount, 0, 1 );
         }

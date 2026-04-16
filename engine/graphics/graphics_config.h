@@ -62,7 +62,14 @@
 #if CRUDE_PRODUCTION
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        0
 #define CRUDE_GFX_GPU_AV_ENABLE                            0
-#else
+#elif 0
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        1
 #define CRUDE_GFX_GPU_AV_ENABLE                            1
+#else
+#define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        0
+#define CRUDE_GFX_GPU_AV_ENABLE                            0
 #endif
+
+#define CRUDE_GFX_GPU_PROFILER CRUDE_DEVELOP
+
+#define CRUDE_GFX_RAY_TRACING_ENABLED                      1

@@ -178,14 +178,14 @@ typedef struct crude_gfx_scene_renderer
   /***********************
    * Ray Tracing CPU & GPU Data
    **********************/
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                              *vk_blases;
   crude_gfx_buffer_handle                                 *blases_buffers;
   VkAccelerationStructureKHR                               vk_tlas;
   crude_gfx_buffer_handle                                  tlas_buffer;
   crude_gfx_buffer_handle                                  tlas_instances_buffer_handle;
   crude_gfx_buffer_handle                                  tlas_scratch_buffer_handle;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /***********************
    * Render Graph Passes 
@@ -203,12 +203,12 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_transparent_pass                               transparent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
   crude_gfx_ssr_pass                                       ssr_pass;
-#if CRUDE_GRAPHICS_RAY_TRACING_ENABLED
+#if CRUDE_GFX_RAY_TRACING_ENABLED
 #if CRUDE_DEBUG_RAY_TRACING_SOLID_PASS
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
 #endif
   crude_gfx_indirect_light_pass                            indirect_light_pass;
-#endif /* CRUDE_GRAPHICS_RAY_TRACING_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_scene_renderer;
 
 

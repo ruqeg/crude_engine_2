@@ -38,15 +38,22 @@
 #define CRUDE_SHADER_RBUFFER_REF( name, type )  typedef VkDeviceAddress name;
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type )  typedef VkDeviceAddress name;
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) typedef VkDeviceAddress name;
-#define CRUDE_SHADER_RWBUFFER_REF( name, type )  typedef VkDeviceAddress name;
+#define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type )  typedef VkDeviceAddress name;
 #else
 #define CRUDE_SHADER_RBUFFER_REF( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data; };
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data[]; };
+#define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data; };
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
-#define CRUDE_SHADER_RWBUFFER_REF( name, type ) layout(buffer_reference, row_major, std430) buffer name { type data[]; };
-#define CRUDE_RBUFFER_REF_SCALAR( name ) layout(buffer_reference, row_major, scalar) readonly buffer name
-#define CRUDE_RBUFFER_REF( name ) layout(buffer_reference, row_major, std430) readonly buffer name
-#define CRUDE_RWBUFFER_REF( name ) layout(buffer_reference, row_major, std430) buffer name
+
+layout(buffer_reference, scalar) buffer ASRef {
+    accelerationStructureEXT as;
+};
+#endif
+
+#ifndef __cplusplus
+#define CRUDE_PUSH_CONSTANT(name) layout(push_constant) uniform name
+#else
+#define CRUDE_PUSH_CONSTANT(name) CRUDE_ALIGNED_STRUCT( 16 ) name
 #endif
 
 #ifndef __cplusplus
@@ -86,8 +93,6 @@
 #extension GL_EXT_buffer_reference : require
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_scalar_block_layout : require
-
-#define CRUDE_PUSH_CONSTANT layout(push_constant) uniform _Crude_Push_Constant
 
 #define CRUDE_TEXTURE( ti, uv ) texture( global_textures[ nonuniformEXT( ti ) ], uv )
 #define CRUDE_TEXTURE_FETCH( ti, coords, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], coords, mip )

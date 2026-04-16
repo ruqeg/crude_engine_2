@@ -1,4 +1,28 @@
+#if defined( IMGUI )
 
+CRUDE_SHADER_STRUCT( crude_gfx_imgui_vertex )
+{
+  XMFLOAT2                                                 position;
+  XMFLOAT2                                                 uv;
+  uint32                                                   color;
+};
+
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( ImguiVerticesRef, imgui_vertex );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( ImguiIndicesRef, uint16 );
+
+CRUDE_PUSH_CONSTANT( crude_gfx_imgui_pass_push_constant_ )
+{
+  XMFLOAT4X4                                               projection;
+  ImguiVerticesRef                                         vertices;
+  ImguiIndicesRef                                          indices;
+  uint32                                                   index_offset;
+  uint32                                                   vertex_offset;
+  uint32                                                   texture_index;
+  float                                                    _padding;
+};
+#endif
+
+#ifndef __cplusplus
 #ifdef CRUDE_VALIDATOR_LINTING
 #extension GL_GOOGLE_include_directive : enable
 #define IMGUI
@@ -8,40 +32,12 @@
 #include "common/platform.h"
 #endif /* CRUDE_VALIDATOR_LINTING */
 
-struct imgui_vertex
-{
-  vec2                                                     position;
-  vec2                                                     uv;
-  uint                                                     color;
-};
-
-CRUDE_RBUFFER_REF_SCALAR( ImguiVerticesRef )
-{
-  imgui_vertex                                             data[];
-};
-
-CRUDE_RBUFFER_REF_SCALAR( ImguiIndicesRef )
-{
-  uint16_t                                                 data[];
-};
-
 #if defined( IMGUI )
 #if defined( CRUDE_STAGE_VERTEX )
 
 layout(location=0) out vec2 out_uv;
 layout(location=1) out vec4 out_color;
 layout(location=2) flat out uint out_texture_id;
-
-CRUDE_PUSH_CONSTANT
-{
-  mat4                                                     projection;
-  ImguiVerticesRef                                         vertices;
-  ImguiIndicesRef                                          indices;
-  uint32                                                   index_offset;
-  uint32                                                   vertex_offset;
-  uint32                                                   texture_index;
-  float                                                    _padding;
-};
 
 void main()
 {
@@ -67,3 +63,4 @@ void main()
 }
 #endif /* CRUDE_STAGE_FRAGMENT */
 #endif /* IMGUI */
+#endif /* __cplusplus */

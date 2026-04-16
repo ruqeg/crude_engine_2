@@ -3,6 +3,9 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/scene_renderer.h>
 
+#define COMPOSE_LIGHT
+#include <engine/graphics/shaders/compute.crude_shader>
+
 #include <engine/graphics/passes/compose_pass.h>
 
 void
@@ -30,18 +33,10 @@ crude_gfx_compose_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  CRUDE_ALIGNED_STRUCT( 16 ) push_constant_
-  {
-    uint32                                                 direct_radiance_texture_index;
-    uint32                                                 ssr_texture_index;
-    uint32                                                 output_texture_index;
-    uint32                                                 packed_roughness_metalness_texture_index;
-  };
-  
   crude_gfx_compose_pass                                  *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
-  push_constant_                                           pust_constant;
+  crude_gfx_compose_light_pass_push_constant_              pust_constant;
 
 #if !CRUDE_GFX_SSR_ENABLED
   return;
@@ -53,7 +48,7 @@ crude_gfx_compose_pass_render
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "compute", "compose_light" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   
-  pust_constant = CRUDE_COMPOUNT_EMPTY( push_constant_ );
+  pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_compose_light_pass_push_constant_ );
   pust_constant.direct_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.direct_radiance_texture );
   pust_constant.ssr_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.ssr_texture );
   pust_constant.output_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.output_texture );

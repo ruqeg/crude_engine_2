@@ -1,9 +1,9 @@
 #pragma once
 
-#if CRUDE_GPU_PROFILER
-
 #include <engine/core/color.h>
 #include <engine/graphics/gpu_device.h>
+
+#if CRUDE_GFX_GPU_PROFILER
 
 typedef enum crude_gfx_gpu_pipeline_statistics_v
 {
@@ -123,4 +123,4 @@ crude_gfx_gpu_pipeline_statistics_reset
   _In_ crude_gfx_gpu_pipeline_statistics                  *statistics
 );
 
-#endif /* CRUDE_GPU_PROFILER */
+#endif /* CRUDE_GFX_GPU_PROFILER */
