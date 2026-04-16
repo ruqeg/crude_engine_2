@@ -1,17 +1,30 @@
 
-#ifdef CRUDE_VALIDATOR_LINTING
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#if !defined( __cplusplus )
 #extension GL_GOOGLE_include_directive : enable
-#define CRUDE_STAGE_FRAGMENT
-#define POSTPROCESSING
-#define COMPOSE_DIRECT_LIGHT
+#endif
+//#define CRUDE_STAGE_FRAGMENT
+//#define POSTPROCESSING
+//#define COMPOSE_DIRECT_LIGHT
 //#define SSR
-
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
 #include "common/light.h"
 #include "common/culling.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
+
+#if defined( POSTPROCESSING )
+CRUDE_PUSH_CONSTANT( crude_gfx_postprocessing_pass_push_constant_ )
+{
+  uint32                                                   luminance_average_texture_index;
+  uint32                                                   pbr_texture_index;
+  float32                                                  inv_gamma;
+  float32                                                  _pust_constant_padding;
+};
+#endif /* POSTPROCESSING */
+
+#if !defined( __cplusplus )
 
 #if defined( CRUDE_STAGE_VERTEX )
 
@@ -43,14 +56,6 @@ void main()
 layout(location = 0) out vec4 out_color;
 layout(location=0) in vec2 in_texcoord;
 
-CRUDE_PUSH_CONSTANT
-{
-  uint                                                     luminance_average_texture_index;
-  uint                                                     pbr_texture_index;
-  float                                                    inv_gamma;
-  float                                                    _pust_constant_padding;
-};
-
 void main()
 { 
   vec4 color = CRUDE_TEXTURE_FETCH( pbr_texture_index, ivec2( gl_FragCoord.xy ), 0 );
@@ -63,3 +68,4 @@ void main()
   out_color = color;
 }
 #endif /* POSTPROCESSING && CRUDE_STAGE_FRAGMENT */
+#endif /* !__cplusplus */

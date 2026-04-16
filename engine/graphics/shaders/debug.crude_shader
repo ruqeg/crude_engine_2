@@ -1,15 +1,42 @@
 
-#ifdef CRUDE_VALIDATOR_LINTING
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#if !defined( __cplusplus )
 #extension GL_GOOGLE_include_directive : enable
+#endif /* !__cplusplus */
 //#define DEBUG_LINE2D
-#define DEBUG_LINE3D
+//#define DEBUG_LINE3D
 //#define DEBUG_CUBE
-#define CRUDE_STAGE_VERTEX
-
+//#define CRUDE_STAGE_VERTEX
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
+
+#if defined( DEBUG_LINE2D )
+CRUDE_PUSH_CONSTANT( crude_gfx_debug_line2d_pass_push_constant_ )
+{
+  DebugLinesVerticesRef                                    debug_lines_vertices;
+  vec2                                                     _padding;
+};
+#endif /* DEBUG_LINE2D */
+
+#if defined( DEBUG_LINE3D )
+CRUDE_PUSH_CONSTANT( crude_gfx_debug_line3d_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  DebugLinesVerticesRef                                    debug_lines_vertices;
+};
+#endif /* DEBUG_LINE3D */
+
+#if defined( DEBUG_CUBE )
+CRUDE_PUSH_CONSTANT( crude_gfx_debug_cube_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  DebugCubesInstancesRef                                   debug_cube_instances;
+};
+#endif /* DEBUG_CUBE */
+
+#if !defined(__cplusplus)
 
 /********************
   *
@@ -21,12 +48,6 @@
 
 #if defined( CRUDE_STAGE_VERTEX )
 layout(location=0) out vec4 out_color;
-
-CRUDE_PUSH_CONSTANT
-{
-  DebugLinesVerticesRef                                    debug_lines_vertices;
-  vec2                                                     _padding;
-};
 
 void main()
 {
@@ -61,12 +82,6 @@ void main()
 
 layout(location=0) out vec4 out_color;
 
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  DebugLinesVerticesRef                                    debug_lines_vertices;
-};
-
 void main()
 {
   crude_debug_line_vertex vertex = debug_lines_vertices.data[ gl_BaseVertex + gl_VertexIndex ];
@@ -98,12 +113,6 @@ void main()
   *
   *******************/
 #if defined( DEBUG_CUBE )
-
-CRUDE_PUSH_CONSTANT
-{
-  SceneRef                                                 scene;
-  DebugCubesInstancesRef                                   debug_cube_instances;
-};
 
 #if defined( CRUDE_STAGE_VERTEX )
 
@@ -179,3 +188,4 @@ void main()
 #endif /* CRUDE_STAGE_FRAGMENT */
 
 #endif /* DEBUG_CUBE */
+#endif /* !__cplusplus */

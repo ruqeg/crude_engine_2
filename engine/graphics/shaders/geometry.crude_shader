@@ -1,3 +1,23 @@
+
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#ifndef __cplusplus
+#extension GL_GOOGLE_include_directive : enable
+#endif
+//#define TRANSLUCENT_NO_CULL_CLASSIC
+//#define OPAQUE_MESHLET
+//#define DEFERRED_CLASSIC
+//#define TRANSLUCENT_NO_CULL
+//#define CRUDE_STAGE_TASK
+//#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_VERTEX
+//#define CRUDE_STAGE_FRAGMENT
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
+
 #if defined( OPAQUE_MESHLET )
 CRUDE_PUSH_CONSTANT( crude_gfx_opaque_meshlet_pass_push_constant_ )
 {
@@ -54,11 +74,11 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_classic_pass_push_constant_ )
   LightsIndicesRef                                         lights_indices;
 
   LightsRef                                                lights;
-  LightsShadowViewsRef                                     light_shadow_views;
+  LightsWorldToTextureRef                                  light_shadow_views;
 
-  float                                                    inv_radiance_texture_width;
-  float                                                    inv_radiance_texture_height;
-  vec2                                                     _pust_constant_padding;
+  float32                                                  inv_radiance_texture_width;
+  float32                                                  inv_radiance_texture_height;
+  XMFLOAT2                                                 _pust_constant_padding;
 };
 #endif /* TRANSLUCENT_NO_CULL_CLASSIC */
 
@@ -89,23 +109,6 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
 #endif /* TRANSLUCENT_NO_CULL */
 
 #ifndef __cplusplus
-
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-//#define TRANSLUCENT_NO_CULL_CLASSIC
-#define OPAQUE_MESHLET
-//#define DEFERRED_CLASSIC
-//#define TRANSLUCENT_NO_CULL
-//#define CRUDE_STAGE_TASK
-//#define CRUDE_STAGE_MESH
-//#define CRUDE_STAGE_VERTEX
-#define CRUDE_STAGE_FRAGMENT
-#include "common/platform.h"
-#include "common/debug.h"
-#include "common/scene.h"
-#include "common/culling.h"
-#include "common/light.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( OPAQUE_MESHLET ) || defined ( TRANSLUCENT_NO_CULL ) 
 

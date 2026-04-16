@@ -1,4 +1,27 @@
 
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#ifndef __cplusplus
+#extension GL_GOOGLE_include_directive : enable
+#endif
+//#define LUMINANCE_AVERAGE_CALCULATION
+//#define LIGHT_LUT
+//#define LUMINANCE_HISTOGRAM_GENERATION
+//#define CULLING_EARLY
+//#define CULLING_LATE
+//#define DEPTH_PYRAMID
+//#define SSR_COMPOSE
+//#define SSR_CONVOLVE_VERTICAL
+//#define SSR_CONVOLVE_HORIZONTAL
+//#define SSR_HIT_CALCULATION
+//#define COMPOSE_LIGHT
+#define CRUDE_COMPUTE
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
+
 #if defined( SSR_COMPOSE )
 CRUDE_PUSH_CONSTANT( crude_gfx_ssr_compose_pass_push_constant_ )
 {
@@ -35,17 +58,17 @@ CRUDE_PUSH_CONSTANT( crude_gfx_convolve_pass_push_constant_ )
 CRUDE_PUSH_CONSTANT( crude_gfx_ssr_hit_calculation_pass_push_constant_ )
 {
   SceneRef                                                 scene;
-  float                                                    ssr_max_steps;
-  float                                                    ssr_max_distance;
+  float32                                                  ssr_max_steps;
+  float32                                                  ssr_max_distance;
 
-  float                                                    ssr_stride;
-  float                                                    ssr_z_thickness;
-  float                                                    ssr_stride_zcutoff;
-  uint                                                     depth_texture_index;
+  float32                                                  ssr_stride;
+  float32                                                  ssr_z_thickness;
+  float32                                                  ssr_stride_zcutoff;
+  uint32                                                   depth_texture_index;
 
-  vec2                                                     depth_texture_size;
-  uint                                                     normal_texture_index;
-  uint                                                     ssr_hit_uv_depth_rdotv_texture_index;
+  XMFLOAT2                                                 depth_texture_size;
+  uint32                                                   normal_texture_index;
+  uint32                                                   ssr_hit_uv_depth_rdotv_texture_index;
 };
 #endif /* SSR_HIT_CALCULATION */
 
@@ -119,26 +142,6 @@ CRUDE_PUSH_CONSTANT( crude_gfx_depth_pyramid_pass_push_constant_ )
 #endif /* DEPTH_PYRAMID */
 
 #ifndef __cplusplus
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-//#define LUMINANCE_AVERAGE_CALCULATION
-//#define LIGHT_LUT
-//#define LUMINANCE_HISTOGRAM_GENERATION
-//#define CULLING_EARLY
-#define CULLING_LATE
-//#define DEPTH_PYRAMID
-//#define SSR_COMPOSE
-//#define SSR_CONVOLVE_VERTICAL
-//#define SSR_CONVOLVE_HORIZONTAL
-//#define SSR_HIT_CALCULATION
-//#define COMPOSE_LIGHT
-#define CRUDE_COMPUTE
-#include "common/platform.h"
-#include "common/debug.h"
-#include "common/scene.h"
-#include "common/culling.h"
-#include "common/light.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( CULLING_EARLY ) || defined( CULLING_LATE )
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;

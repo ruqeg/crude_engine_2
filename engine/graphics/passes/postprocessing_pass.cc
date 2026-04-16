@@ -2,32 +2,13 @@
 #include <engine/core/time.h>
 #include <engine/graphics/scene_renderer.h>
 
+#define LUMINANCE_AVERAGE_CALCULATION 
+#define LUMINANCE_HISTOGRAM_GENERATION
+#define POSTPROCESSING
+#include <engine/graphics/shaders/fullscreen.crude_shader>
+#include <engine/graphics/shaders/compute.crude_shader>
+
 #include <engine/graphics/passes/postprocessing_pass.h>
-
-CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_luminance_histogram_generation_push_constant
-{
-  VkDeviceAddress                                          histogram;
-  float32                                                  inverse_log_lum_range;
-  float32                                                  min_log_lum;
-  uint32                                                   hdr_color_texture_index;
-};
-
-CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_luminance_average_calculation_push_constant
-{
-  VkDeviceAddress                                          histogram;
-  float32                                                  log_lum_range;
-  float32                                                  min_log_lum;
-  float32                                                  time_coeff;
-  uint32                                                   num_pixels;
-  uint32                                                   luminance_avarage_texture;
-};
-
-CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_postprocessing_push_constant
-{
-  uint32                                                   luminance_average_texture_index;
-  uint32                                                   pbr_texture_index;
-  float32                                                  inv_gamma;
-};
 
 void
 crude_gfx_postprocessing_pass_initialize
@@ -81,8 +62,6 @@ crude_gfx_postprocessing_pass_pre_render
   crude_gfx_texture                                       *hdr_color_texture;
   crude_gfx_pipeline_handle                                luminance_average_calculation_pipeline;
   crude_gfx_pipeline_handle                                luminance_histogram_generation_pipeline;
-  crude_gfx_luminance_histogram_generation_push_constant   histogram_generation_constant;
-  crude_gfx_luminance_average_calculation_push_constant    luminance_avarge_constant;
   crude_gfx_texture_handle                                 hdr_color_texture_handle;
   float32                                                  luminance_avarge_last_update_delta_time;
 
@@ -97,17 +76,19 @@ crude_gfx_postprocessing_pass_pre_render
   
   crude_gfx_cmd_push_marker( primary_cmd, "luminance_histogram_generation_pass" );
   {
+    crude_gfx_luminance_histogram_generation_pass_push_constant_ push_constant;
+
     luminance_histogram_generation_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "luminance_histogram_generation" )->pipeline;
   
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_histogram_generation_pipeline );
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
   
-    histogram_generation_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_histogram_generation_push_constant );
-    histogram_generation_constant.histogram = pass->luminance_histogram_hga.gpu_address;
-    histogram_generation_constant.hdr_color_texture_index = hdr_color_texture_handle.index;
-    histogram_generation_constant.inverse_log_lum_range = 1.f / ( pass->max_log_lum - pass->min_log_lum );
-    histogram_generation_constant.min_log_lum = pass->min_log_lum;
-    crude_gfx_cmd_push_constant( primary_cmd, &histogram_generation_constant, sizeof( histogram_generation_constant ) );
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_histogram_generation_pass_push_constant_ );
+    push_constant.histogram = pass->luminance_histogram_hga.gpu_address;
+    push_constant.hdr_color_texture_index = hdr_color_texture_handle.index;
+    push_constant.inverse_log_lum_range = 1.f / ( pass->max_log_lum - pass->min_log_lum );
+    push_constant.min_log_lum = pass->min_log_lum;
+    crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
   
     crude_gfx_cmd_dispatch( primary_cmd, ( hdr_color_texture->width + 15u ) / 16u, ( hdr_color_texture->height + 15u ) / 16u, 1u );
   }
@@ -115,18 +96,20 @@ crude_gfx_postprocessing_pass_pre_render
   
   crude_gfx_cmd_push_marker( primary_cmd, "luminance_average_calculation_pass" );
   {
+    crude_gfx_luminance_average_calculation_pass_push_constant_ push_constant;
+
     luminance_average_calculation_pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "compute", "luminance_average_calculation" )->pipeline;
     crude_gfx_cmd_bind_pipeline( primary_cmd, luminance_average_calculation_pipeline );
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
  
-    luminance_avarge_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_average_calculation_push_constant );
-    luminance_avarge_constant.histogram = pass->luminance_histogram_hga.gpu_address;
-    luminance_avarge_constant.luminance_avarage_texture = pass->luminance_average_texture_handle.index;
-    luminance_avarge_constant.log_lum_range = ( pass->max_log_lum - pass->min_log_lum );
-    luminance_avarge_constant.min_log_lum = pass->min_log_lum;
-    luminance_avarge_constant.num_pixels = hdr_color_texture->width * hdr_color_texture->height;
-    luminance_avarge_constant.time_coeff = CRUDE_CLAMP( ( 1 - exp( -luminance_avarge_last_update_delta_time * 1.1f ) ), 1.0, 0.001 );
-    crude_gfx_cmd_push_constant( primary_cmd, &luminance_avarge_constant, sizeof( luminance_avarge_constant ) );
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_luminance_average_calculation_pass_push_constant_ );
+    push_constant.histogram = pass->luminance_histogram_hga.gpu_address;
+    push_constant.luminance_avarage_texture = pass->luminance_average_texture_handle.index;
+    push_constant.log_lum_range = ( pass->max_log_lum - pass->min_log_lum );
+    push_constant.min_log_lum = pass->min_log_lum;
+    push_constant.num_pixels = hdr_color_texture->width * hdr_color_texture->height;
+    push_constant.time_coeff = CRUDE_CLAMP( ( 1 - exp( -luminance_avarge_last_update_delta_time * 1.1f ) ), 1.0, 0.001 );
+    crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
   
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0u, 1u, false );
     crude_gfx_cmd_dispatch( primary_cmd, 1u, 1u, 1u );
@@ -144,7 +127,7 @@ crude_gfx_postprocessing_pass_render
 {
   crude_gfx_postprocessing_pass                           *pass;
   crude_gfx_device                                        *gpu;
-  crude_gfx_postprocessing_push_constant                   postprocessing_constant;
+  crude_gfx_postprocessing_pass_push_constant_             push_constant;
   crude_gfx_pipeline_handle                                postprocessing_pipeline;
   crude_gfx_texture_handle                                 pbr_texture_handle;
 
@@ -160,11 +143,12 @@ crude_gfx_postprocessing_pass_render
 
   pbr_texture_handle = CRUDE_GFX_PASS_TEXTURE_HANDLE( postprocessing_pass.hdr_pre_tonemapping );
   
-  postprocessing_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_push_constant );
-  postprocessing_constant.luminance_average_texture_index = pass->luminance_average_texture_handle.index;
-  postprocessing_constant.pbr_texture_index = pbr_texture_handle.index;
-  postprocessing_constant.inv_gamma = 1.f / pass->scene_renderer->options.postprocessing_pass.gamma;
-  crude_gfx_cmd_push_constant( primary_cmd, &postprocessing_constant, sizeof( postprocessing_constant ) );
+  push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_postprocessing_pass_push_constant_ );
+  push_constant.luminance_average_texture_index = pass->luminance_average_texture_handle.index;
+  push_constant.pbr_texture_index = pbr_texture_handle.index;
+  push_constant.inv_gamma = 1.f / pass->scene_renderer->options.postprocessing_pass.gamma;
+  crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
+
   crude_gfx_cmd_draw( primary_cmd, 0u, 3u, 0u, 1u );
 
   crude_gfx_cmd_pop_marker( primary_cmd );

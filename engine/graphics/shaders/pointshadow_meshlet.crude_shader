@@ -1,3 +1,21 @@
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#ifndef __cplusplus
+#extension GL_GOOGLE_include_directive : enable
+#endif
+//#define POINTSHADOW
+//#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_TASK
+//#define POINTSHADOW_COMMANDS_GENERATION
+//#define POINTSHADOW_CULLING
+//#define CRUDE_STAGE_COMPUTE
+//#define CRUDE_STAGE_FRAGMENT
+
+#include "common/platform.h"
+#include "common/debug.h"
+#include "common/scene.h"
+#include "common/culling.h"
+#include "common/light.h"
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
 
 #if defined( POINTSHADOW_CULLING  )
 CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
@@ -56,23 +74,6 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_pass_push_constant_ )
 #endif /* POINTSHADOW */
 
 #ifndef __cplusplus
-
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-#define POINTSHADOW
-#define CRUDE_STAGE_MESH
-//#define CRUDE_STAGE_TASK
-//#define POINTSHADOW_COMMANDS_GENERATION
-//#define POINTSHADOW_CULLING
-//#define CRUDE_STAGE_COMPUTE
-//#define CRUDE_STAGE_FRAGMENT
-
-#include "common/platform.h"
-#include "common/debug.h"
-#include "common/scene.h"
-#include "common/culling.h"
-#include "common/light.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( POINTSHADOW ) 
 

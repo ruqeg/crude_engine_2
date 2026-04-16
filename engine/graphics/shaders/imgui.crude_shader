@@ -1,3 +1,14 @@
+
+#if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
+#ifndef __cplusplus
+#extension GL_GOOGLE_include_directive : enable
+#endif
+//#define IMGUI
+//#define CRUDE_STAGE_VERTEX
+//#define CRUDE_STAGE_FRAGMENT
+#include "common/platform.h"
+#endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
+
 #if defined( IMGUI )
 
 CRUDE_SHADER_STRUCT( crude_gfx_imgui_vertex )
@@ -23,14 +34,6 @@ CRUDE_PUSH_CONSTANT( crude_gfx_imgui_pass_push_constant_ )
 #endif
 
 #ifndef __cplusplus
-#ifdef CRUDE_VALIDATOR_LINTING
-#extension GL_GOOGLE_include_directive : enable
-#define IMGUI
-#define CRUDE_STAGE_VERTEX
-//#define CRUDE_STAGE_FRAGMENT
-
-#include "common/platform.h"
-#endif /* CRUDE_VALIDATOR_LINTING */
 
 #if defined( IMGUI )
 #if defined( CRUDE_STAGE_VERTEX )
