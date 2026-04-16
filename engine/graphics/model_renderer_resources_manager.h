@@ -76,38 +76,39 @@ typedef struct crude_gfx_model_renderer_resources_manager
 CRUDE_API void
 crude_gfx_model_renderer_resources_manager_intialize
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ crude_gfx_model_renderer_resources_manager_creation const *creation
 );
 
 CRUDE_API void
 crude_gfx_model_renderer_resources_manager_deintialize
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager
+  _In_ crude_gfx_model_renderer_resources_manager         *manager
 );
 
 CRUDE_API void
 crude_gfx_model_renderer_resources_manager_clear
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager
+  _In_ crude_gfx_model_renderer_resources_manager         *manager
 );
 
 CRUDE_API crude_gfx_model_renderer_resources_handle
 crude_gfx_model_renderer_resources_manager_get_gltf_model
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ char const                                          *filepath
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ char const                                         *filepath
 );
 
 CRUDE_API void
 crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
 CRUDE_API crude_gfx_model_renderer_resources*
 crude_gfx_model_renderer_resources_manager_access_model_renderer_resources
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ crude_gfx_model_renderer_resources_handle            handle
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ crude_gfx_model_renderer_resources_handle           handle
 );

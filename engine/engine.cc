@@ -585,7 +585,7 @@ crude_engine_initialize_graphics_
   device_creation.allocator = &engine->common_allocator;
   device_creation.temporary_allocator = &engine->temporary_allocator;
   device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = 3;
+  device_creation.num_threads = 1u;
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
   device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
@@ -905,7 +905,8 @@ crude_engine_graphics_main_thread_loop_
     crude_gfx_scene_renderer_on_resize( &engine->scene_renderer );
     crude_gfx_render_graph_on_resize( &engine->render_graph, engine->gpu.renderer_size.x, engine->gpu.renderer_size.y );
   }
-
+  
+  crude_gfx_scene_renderer_start_frame( &engine->scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers( &engine->scene_renderer );
 
   CRUDE_PROFILER_ZONE_END;
@@ -930,7 +931,8 @@ crude_engine_graphics_task_set_thread_loop_
   
   final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GFX_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
 
-  crude_gfx_scene_renderer_submit_draw_task( &engine->scene_renderer );
+  crude_gfx_scene_renderer_render( &engine->scene_renderer );
+  crude_gfx_scene_renderer_queue( &engine->scene_renderer );
 
   crude_gfx_present( &engine->gpu, final_render_texture );
 

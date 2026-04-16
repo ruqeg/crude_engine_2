@@ -356,17 +356,16 @@ crude_gfx_model_renderer_resources_manager_get_gltf_model
 void
 crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 (
-  _In_ crude_gfx_model_renderer_resources_manager          *manager
+  _In_ crude_gfx_model_renderer_resources_manager         *manager,
+  _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
-  crude_gfx_cmd_buffer *cmd = crude_gfx_get_primary_cmd( manager->gpu, CRUDE_GFX_TEXTURE_UPDATE_COMMANDS_THREAD_ID, true );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {
     crude_gfx_add_texture_update_commands( manager->gpu, cmd );
   }
-  crude_gfx_submit_immediate( cmd );
   CRUDE_PROFILER_ZONE_END;
 }
 
@@ -1952,7 +1951,8 @@ crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_struct
     vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = blas_scratch_buffers_hga[ i].gpu_address;
   }
 
-  cmd_instant = crude_gfx_get_primary_cmd( manager->gpu, 0, true );
+  CRUDE_ASSERT( false );
+  //cmd_instant = crude_gfx_get_primary_cmd( manager->gpu, 0, true );
   manager->gpu->vkCmdBuildAccelerationStructuresKHR( cmd_instant->vk_cmd_buffer, CRUDE_ARRAY_LENGTH( vk_acceleration_build_geometry_infos ), vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
   crude_gfx_submit_immediate( cmd_instant );
   

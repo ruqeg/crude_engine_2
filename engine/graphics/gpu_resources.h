@@ -10,6 +10,8 @@
 #include <engine/core/array.h>
 #include <engine/core/resource_pool.h>
 
+typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
+
 /************************************************
  *
  * GPU Resoruces Handles
@@ -71,6 +73,16 @@ typedef struct crude_gfx_technique_handle
 {
   crude_gfx_resource_index                                 index;
 } crude_gfx_technique_handle;
+
+typedef struct crude_gfx_cmd_pool_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_cmd_pool_handle;
+
+typedef struct crude_gfx_cmd_buffer_handle
+{
+  crude_gfx_resource_index                                 index;
+} crude_gfx_cmd_buffer_handle;
 
 /************************************************
  *
@@ -329,6 +341,16 @@ typedef struct crude_gfx_framebuffer_creation
   uint32                                                   height;
   uint8                                                    resize;
 } crude_gfx_framebuffer_creation;
+
+typedef struct crude_gfx_cmd_pool_creation
+{
+} crude_gfx_cmd_pool_creation;
+
+typedef struct crude_gfx_cmd_buffer_creation
+{
+  crude_gfx_cmd_pool_handle                                cmd_pool;
+  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
+} crude_gfx_cmd_buffer_creation;
 
 typedef struct crude_gfx_depth_stencil_creation
 {
@@ -692,20 +714,32 @@ typedef struct crude_gfx_technique
 #endif
 } crude_gfx_technique;
 
-typedef struct crude_gfx_material_creation
+typedef struct crude_gfx_cmd_pool
 {
-  crude_gfx_technique                                     *technique;
-  char const                                              *name;
-  uint32                                                   render_index;
-} crude_gfx_material_creation;
+  VkCommandPool                                            vk_cmd_pool;
+} crude_gfx_cmd_pool;
 
-typedef struct crude_gfx_material
+typedef struct crude_gfx_gpu_thread_frame_pools
 {
-  crude_gfx_technique                                     *technique;
-  uint32                                                   render_index;
-  uint32                                                   pool_index;
-  char const                                              *name;
-} crude_gfx_material;
+  crude_gfx_cmd_pool_handle                                cmd_pool;
+#if CRUDE_GFX_GPU_PROFILER
+  VkQueryPool                                              vk_timestamp_query_pool;
+  VkQueryPool                                              vk_pipeline_stats_query_pool;
+  crude_gfx_gpu_time_query_tree                           *time_queries;
+#endif
+} crude_gfx_gpu_thread_frame_pools;
+
+typedef struct crude_gfx_cmd_buffer
+{
+  bool                                                     is_recording;
+  crude_gfx_render_pass                                   *current_render_pass;
+  crude_gfx_framebuffer                                   *current_framebuffer;
+  crude_gfx_pipeline                                      *current_pipeline;
+  VkClearValue                                             clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
+  VkCommandBuffer                                          vk_cmd_buffer;
+
+  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
+} crude_gfx_cmd_buffer;
 
 /************************************************
  *

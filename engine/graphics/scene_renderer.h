@@ -245,13 +245,25 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 );
 
 CRUDE_API void
+crude_gfx_scene_renderer_start_frame
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
 crude_gfx_scene_renderer_update_dynamic_buffers
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
 
 CRUDE_API void
-crude_gfx_scene_renderer_submit_draw_task
+crude_gfx_scene_renderer_render
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+CRUDE_API void
+crude_gfx_scene_renderer_queue
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );

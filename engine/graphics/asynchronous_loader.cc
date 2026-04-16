@@ -66,7 +66,7 @@ crude_gfx_asynchronous_loader_initialize
     VkCommandPoolCreateInfo                                vk_cmd_pool_info;
     VkCommandBufferAllocateInfo                            vk_cmd_info;
 
-    vk_cmd_pool_info = CRUDE_COMPOUNT_EMPTY( VkCommandPoolCreateInfo );
+   hhj vk_cmd_pool_info = CRUDE_COMPOUNT_EMPTY( VkCommandPoolCreateInfo );
     vk_cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     vk_cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     vk_cmd_pool_info.queueFamilyIndex = gpu->vk_transfer_queue_family;

@@ -426,13 +426,21 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 }
 
 void
+crude_gfx_scene_renderer_start_frame
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  scene_renderer->primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
+}
+
+void
 crude_gfx_scene_renderer_update_dynamic_buffers
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_dynamic_buffers" );
-  scene_renderer->primary_cmd = crude_gfx_get_primary_cmd( scene_renderer->gpu, 0, true );
   crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers" );
   crude_scene_renderer_cull_lights_( scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, scene_renderer->primary_cmd );
@@ -450,8 +458,16 @@ crude_gfx_scene_renderer_submit_draw_task
   crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_submit_draw_task" );
   crude_gfx_render_graph_render( scene_renderer->render_graph, scene_renderer->primary_cmd );
   crude_gfx_cmd_pop_marker( scene_renderer->primary_cmd );
-  crude_gfx_queue_cmd( scene_renderer->primary_cmd );
   CRUDE_PROFILER_ZONE_END;
+}
+
+void
+crude_gfx_scene_renderer_queue
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_queue_cmd( scene_renderer->primary_cmd );
 }
 
 void
