@@ -43,6 +43,8 @@ crude_gfx_cmd_begin_primary
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
+  VkCommandBufferBeginInfo                                 vk_begin_info;
+
   if ( cmd->is_recording )
   {
     return;
@@ -50,15 +52,14 @@ crude_gfx_cmd_begin_primary
 
   cmd->is_recording = true;
 
-  VkCommandBufferBeginInfo begin_info = {
-    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-  };
-  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &begin_info );
+  vk_begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
+  vk_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  vk_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &vk_begin_info );
 }
 
 
-CRUDE_API void
+void
 crude_gfx_cmd_end
 (
   _In_ crude_gfx_cmd_buffer                               *cmd
@@ -727,9 +728,18 @@ crude_gfx_cmd_push_marker
 )
 {
 #if CRUDE_GFX_GPU_PROFILER
-  crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_push( cmd->thread_frame_pool->time_queries, name );
-  vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->start_query_index );
+  crude_gfx_cmd_pool                                      *cmd_pool;
+  crude_gfx_gpu_time_query                                *time_query;
+
+  cmd_pool = crude_gfx_access_cmd_pool( cmd->gpu, cmd->cmd_pool );
+
+  if ( cmd_pool->profiler.enabled )
+  {
+    time_query = crude_gfx_gpu_time_query_tree_push( cmd_pool->profiler.time_queries_trees, name );
+    vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.vk_timestamp_query_pool, time_query->start_query_index );
+  }
 #endif
+
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
   vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
@@ -739,7 +749,7 @@ crude_gfx_cmd_push_marker
   vk_label.color[ 2 ] = 1.0f;
   vk_label.color[ 3 ] = 1.0f;
   cmd->gpu->vkCmdBeginDebugUtilsLabelEXT( cmd->vk_cmd_buffer, &vk_label );
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+#endif
   
 #if CRUDE_GFX_USE_NSIGHT_AFTERMATH
     //// A helper for setting a checkpoint marker
@@ -786,12 +796,21 @@ crude_gfx_cmd_pop_marker
 )
 {
 #if CRUDE_GFX_GPU_PROFILER
-  crude_gfx_gpu_time_query *time_query = crude_gfx_gpu_time_query_tree_pop( cmd->thread_frame_pool->time_queries );
-  vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd->thread_frame_pool->vk_timestamp_query_pool, time_query->end_query_index );
+  crude_gfx_cmd_pool                                      *cmd_pool;
+  crude_gfx_gpu_time_query                                *time_query;
+
+  cmd_pool = crude_gfx_access_cmd_pool( cmd->gpu, cmd->cmd_pool );
+
+  if ( cmd_pool->profiler.enabled )
+  {
+    time_query = crude_gfx_gpu_time_query_tree_pop( cmd_pool->profiler.time_queries_trees );
+    vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.vk_timestamp_query_pool, time_query->end_query_index );
+  }
 #endif
+
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+#endif
 }
 
 void
@@ -877,7 +896,6 @@ crude_gfx_cmd_manager_initialize
 {
   uint32                                                   total_pools;
   uint32                                                   total_buffers;
-  uint32                                                   temporary_allocator_mark;
 
   cmd_manager->gpu = gpu;
   cmd_manager->num_pools_per_frame = num_pools_per_frame;
@@ -896,37 +914,18 @@ crude_gfx_cmd_manager_initialize
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {
-    crude_gfx_cmd_buffer                                  *current_cmd_buffer;
-    char const                                            *resource_name;
-    crude_string_buffer                                    temporary_string_buffer;
-     sdf VkCommandBufferAllocateInfo                            allocate_info;
+    crude_gfx_cmd_buffer_creation                          cmd_buffer_creation;
     uint32                                                 frame_index, thread_index, pool_index;
-    
-    temporary_allocator_mark = crude_stack_allocator_get_marker( gpu->temporary_allocator );
 
     frame_index = i / ( cmd_manager->num_primary_cmd_buffers_per_thread * cmd_manager->num_pools_per_frame );
     thread_index = ( i / cmd_manager->num_primary_cmd_buffers_per_thread ) % cmd_manager->num_pools_per_frame;
     pool_index = pool_from_indices( cmd_manager, frame_index, thread_index );
-
-    allocate_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferAllocateInfo );
-    allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocate_info.commandPool = cmd_manager->gpu->thread_frame_pools[ pool_index ].vk_command_pool;
-    allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocate_info.commandBufferCount = 1;
     
-    current_cmd_buffer = &cmd_manager->primary_cmd_buffers[ i ];
-    current_cmd_buffer->thread_frame_pool = &gpu->thread_frame_pools[ pool_index ];
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( gpu->vk_device, &allocate_info, &current_cmd_buffer->vk_cmd_buffer ), "Failed to allocate command buffer" );
-    crude_gfx_cmd_initialize( current_cmd_buffer, gpu );
-
-    crude_string_buffer_initialize( &temporary_string_buffer, 1024, crude_stack_allocator_pack( gpu->temporary_allocator ) );
-
-    resource_name = crude_string_buffer_append_use_f( &temporary_string_buffer, "primary_cmd frame: %i thread: %i pool: %i", frame_index, thread_index, pool_index );
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )current_cmd_buffer->vk_cmd_buffer, resource_name );
-
-    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_mark );
+    cmd_buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_buffer_creation );
+    crude_snprintf( cmd_buffer_creation.name, sizeof( cmd_buffer_creation.name ), "primary_cmd frame: %i thread: %i pool: %i", frame_index, thread_index, pool_index );
+    cmd_buffer_creation.cmd_pool = cmd_manager->gpu->thread_frame_pools[ pool_index ];
+    cmd_manager->primary_cmd_buffers[ i ] = crude_gfx_create_cmd_buffer( gpu, &cmd_buffer_creation );
   }
-  crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_mark );
 }
 
 void
@@ -937,7 +936,7 @@ crude_gfx_cmd_manager_deinitialize
 {
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( cmd_manager->primary_cmd_buffers ) ; ++i )
   {
-    crude_gfx_cmd_deinitialize( &cmd_manager->primary_cmd_buffers[ i ] );
+    crude_gfx_destroy_cmd_buffer_instant( cmd_manager->gpu, cmd_manager->primary_cmd_buffers[ i ] );
   }
   CRUDE_ARRAY_DEINITIALIZE( cmd_manager->primary_cmd_buffers );
   CRUDE_ARRAY_DEINITIALIZE( cmd_manager->num_used_primary_cmd_buffers_per_frame );
@@ -954,7 +953,7 @@ crude_gfx_cmd_manager_reset
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
   {
     uint32 pool_index = pool_from_indices( cmd_manager, frame, i );
-    vkResetCommandPool( cmd_manager->gpu->vk_device, cmd_manager->gpu->thread_frame_pools[ pool_index ].vk_command_pool, 0 );
+    crude_gfx_reset_cmd_pool( cmd_manager->gpu, cmd_manager->gpu->thread_frame_pools[ pool_index ] );
   }
 
   for ( uint32 i = 0; i < cmd_manager->num_pools_per_frame; ++i )
@@ -974,10 +973,14 @@ crude_gfx_cmd_manager_get_primary_cmd
   _In_ bool                                                begin
 )
 {
-  uint32 pool_index = pool_from_indices( cmd_manager, frame, thread_index );
-  uint32 current_used_buffer = cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ];
-  uint32 cmd_index = ( pool_index * cmd_manager->num_primary_cmd_buffers_per_thread ) + current_used_buffer;
-  crude_gfx_cmd_buffer *cmd = &cmd_manager->primary_cmd_buffers[ cmd_index ];
+  crude_gfx_cmd_buffer                                    *cmd;
+  uint32                                                   pool_index, current_used_buffer, cmd_index;
+
+  pool_index = pool_from_indices( cmd_manager, frame, thread_index );
+  current_used_buffer = cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ];
+  cmd_index = ( pool_index * cmd_manager->num_primary_cmd_buffers_per_thread ) + current_used_buffer;
+  
+  cmd = crude_gfx_access_cmd_buffer( cmd_manager->gpu, cmd_manager->primary_cmd_buffers[ cmd_index ] );
 
   if ( begin )
   {  
@@ -989,11 +992,18 @@ crude_gfx_cmd_manager_get_primary_cmd
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ pool_index ] = current_used_buffer + 1;
     
 #if CRUDE_GFX_GPU_PROFILER
-    crude_gfx_gpu_thread_frame_pools *thread_pools = cmd->thread_frame_pool;
-    crude_gfx_gpu_time_query_tree_reset( thread_pools->time_queries );
-    vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_timestamp_query_pool, 0, thread_pools->time_queries->time_queries_count * 2 );
-    vkCmdResetQueryPool( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
-    vkCmdBeginQuery( cmd->vk_cmd_buffer, thread_pools->vk_pipeline_stats_query_pool, 0, 0 );
+    crude_gfx_cmd_pool                                    *cmd_pool;
+    crude_gfx_gpu_time_query                              *time_query;
+
+    cmd_pool = crude_gfx_access_cmd_pool( cmd->gpu, cmd->cmd_pool );
+
+    if ( cmd_pool->profiler.enabled )
+    {
+      crude_gfx_gpu_time_query_tree_reset( cmd_pool->profiler.time_queries_trees );
+      vkCmdResetQueryPool( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_timestamp_query_pool, 0, 2 * cmd_pool->profiler.time_queries_trees->time_queries_count );
+      vkCmdResetQueryPool( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
+      vkCmdBeginQuery( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_pipeline_stats_query_pool, 0, 0 );
+    }
 #endif
   }
   

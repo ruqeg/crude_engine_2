@@ -63,26 +63,18 @@ crude_gfx_asynchronous_loader_initialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
-    VkCommandPoolCreateInfo                                vk_cmd_pool_info;
-    VkCommandBufferAllocateInfo                            vk_cmd_info;
+    crude_gfx_cmd_pool_creation                            cmd_pool_creation;
+    crude_gfx_cmd_buffer_creation                          cmd_buffer_creation;
 
-   hhj vk_cmd_pool_info = CRUDE_COMPOUNT_EMPTY( VkCommandPoolCreateInfo );
-    vk_cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    vk_cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vk_cmd_pool_info.queueFamilyIndex = gpu->vk_transfer_queue_family;
-    vkCreateCommandPool( gpu->vk_device, &vk_cmd_pool_info, gpu->vk_allocation_callbacks, &asynloader->vk_cmd_pools[ i ] );
+    cmd_pool_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_pool_creation );
+    cmd_pool_creation.profiler.enabled = false;
+    cmd_pool_creation.queue_family_index = gpu->vk_transfer_queue_family;
+    asynloader->transfer_cmd_pools[ i ] = crude_gfx_create_cmd_pool( asynloader->gpu, &cmd_pool_creation );
     
-    vk_cmd_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferAllocateInfo );
-    vk_cmd_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    vk_cmd_info.commandPool = asynloader->vk_cmd_pools[ i ];
-    vk_cmd_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    vk_cmd_info.commandBufferCount = 1;
-    vkAllocateCommandBuffers( gpu->vk_device, &vk_cmd_info, &asynloader->cmd_buffers[ i ].vk_cmd_buffer );
-
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_COMMAND_BUFFER, ( uint64 )asynloader->cmd_buffers[ i ].vk_cmd_buffer, "asynchronous_loader_cmd" );
-    
-    asynloader->cmd_buffers[ i ].is_recording = false;
-    asynloader->cmd_buffers[ i ].gpu = gpu;
+    cmd_buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_buffer_creation );
+    cmd_buffer_creation.cmd_pool = asynloader->transfer_cmd_pools[ i ];
+    crude_snprintf( cmd_buffer_creation.name, sizeof( cmd_buffer_creation.name ), "asynchronous_loader_cmd_%i", i ); 
+    asynloader->transfer_cmd_buffers[ i ] = crude_gfx_create_cmd_buffer( asynloader->gpu, &cmd_buffer_creation );
   }
 
   crude_heap_allocator_initialize( &asynloader->strings_allocator, CRUDE_RMEGA( 1 ), "crude_gfx_asynchronous_loader::strings_allocator" );
@@ -128,7 +120,8 @@ crude_gfx_asynchronous_loader_deinitialize
 
   for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
   {
-    vkDestroyCommandPool( asynloader->gpu->vk_device, asynloader->vk_cmd_pools[ i ], asynloader->gpu->vk_allocation_callbacks );  
+    crude_gfx_destroy_cmd_buffer_instant( asynloader->gpu, asynloader->transfer_cmd_buffers[ i ] );
+    crude_gfx_destroy_cmd_pool_instant( asynloader->gpu, asynloader->transfer_cmd_pools[ i ] );
   }
 }
 
@@ -241,7 +234,7 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_upload_request                               request;
     crude_gfx_cmd_buffer                                  *cmd;
     
-    cmd = &asynloader->cmd_buffers[ asynloader->gpu->current_frame ];
+    cmd = crude_gfx_access_cmd_buffer( asynloader->gpu, asynloader->transfer_cmd_buffers[ asynloader->gpu->current_frame ] );
     
     request = crude_gfx_asynchronous_loader_pop_upload_requests_( asynloader );
     
@@ -292,7 +285,7 @@ crude_gfx_asynchronous_loader_update
       submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
       submit_info.pCommandBufferInfos      = command_buffers;
     
-      crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );;
+      crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );
       //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue submitted" );
     }
     

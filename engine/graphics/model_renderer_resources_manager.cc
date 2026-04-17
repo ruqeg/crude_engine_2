@@ -361,7 +361,6 @@ crude_gfx_model_renderer_resources_manager_wait_till_uploaded
 )
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_model_renderer_resources_manager_wait_till_uploaded" );
   while ( crude_gfx_asynchronous_loader_has_requests( manager->async_loader ) )
   {
     crude_gfx_add_texture_update_commands( manager->gpu, cmd );
@@ -755,38 +754,44 @@ crude_gfx_model_renderer_resources_manager_gltf_load_buffers_
   _In_ char const                                         *gltf_directory
 )
 {
-#if 0
+  /* Small hack, we want to get our buffers be uploaded until we hmmm ammm like yes use them RIGHT HERE IN THIS PLACE */
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  crude_gfx_cmd_buffer                                    *immediate_transfer_cmd_buffer;
+
+  immediate_transfer_cmd_buffer = crude_gfx_access_cmd_buffer( manager->gpu, manager->gpu->immediate_transfer_cmd_buffer );
+
+  crude_gfx_cmd_begin_primary( immediate_transfer_cmd_buffer );
+
   for ( uint32 buffer_index = 0; buffer_index < gltf->buffers_count; ++buffer_index )
   {
-    cgltf_buffer const                                    *buffer;
-    crude_gfx_buffer_creation                              buffer_creation;
-    crude_gfx_renderer_buffer                             *buffer_resource;
-    uint8                                                 *buffer_data;
-    char const                                            *buffer_name;
-
-    buffer = &gltf->buffers[ buffer_index ];
+    cgltf_buffer const                                    *gltf_buffer;
+    crude_gfx_memory_allocation                            cpu_allocation, gpu_allocation;
+    char const                                            *cpu_buffer_name;
+    char const                                            *gpu_buffer_name;
+    
+    gltf_buffer = &gltf->buffers[ buffer_index ];
   
-    buffer_data = ( uint8* )buffer->data;
-  
-    if ( buffer->name == NULL )
+    if ( gltf_buffer->name == NULL )
     {
-      buffer_name = crude_string_buffer_append_use_f( temporary_string_buffer, "scene_renderer_buffer_gpu_%i", buffer_index );
+      cpu_buffer_name = "manager_buffer_cpu";
+      gpu_buffer_name = "manager_buffer_gpu";
     }
     else
     {
-      buffer_name = buffer->name;
+      cpu_buffer_name = gpu_buffer_name = gltf_buffer->name;
     }
+    
+    cpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, cpu_buffer_name, VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+    crude_memory_copy( cpu_allocation.cpu_address, gltf_buffer->data, gltf_buffer->size );
 
-    buffer_creation = crude_gfx_buffer_creation_empty();
-    buffer_creation.initial_data = buffer_data;
-    buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
-    buffer_creation.size = buffer->size;
-    buffer_creation.type_flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    buffer_creation.name = buffer_name;
-    buffer_resource = crude_gfx_renderer_create_buffer( scene_renderer->renderer, &buffer_creation );
+    gpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_GPU, gpu_buffer_name, VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
 
-    CRUDE_ARRAY_PUSH( scene_renderer->buffers, *buffer_resource );
+    crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, cpu_allocation, gpu_allocation, 0, 0 );
+
+    CRUDE_ARRAY_PUSH( manager->buffers, gpu_allocation );
   }
+
+  crude_gfx_submit_immediate( immediate_transfer_cmd_buffer );
 #else
   for ( uint32 buffer_index = 0; buffer_index < gltf->buffers_count; ++buffer_index )
   {
@@ -807,10 +812,10 @@ crude_gfx_model_renderer_resources_manager_gltf_load_buffers_
       cpu_buffer_name = gpu_buffer_name = gltf_buffer->name;
     }
 
-    cpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, cpu_buffer_name, VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+    cpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, cpu_buffer_name, 0 );
     crude_memory_copy( cpu_allocation.cpu_address, gltf_buffer->data, gltf_buffer->size );
 
-    gpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_GPU, gpu_buffer_name, VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+    gpu_allocation = crude_gfx_memory_allocate_with_name( manager->gpu, gltf_buffer->size, CRUDE_GFX_MEMORY_TYPE_GPU, gpu_buffer_name, 0 );
 
     CRUDE_ARRAY_PUSH( manager->buffers, gpu_allocation );
 
@@ -1888,9 +1893,6 @@ crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_struct
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->blases_hga, CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ), crude_heap_allocator_pack( manager->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->vk_blases, CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ), crude_heap_allocator_pack( manager->allocator ) );
-  
-  /* Small hack, we want to get our buffers be uploaded until we hmmm ammm like yes use them RIGHT HERE IN THIS PLACE */
-  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( manager );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
   {
@@ -1951,8 +1953,8 @@ crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_struct
     vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = blas_scratch_buffers_hga[ i].gpu_address;
   }
 
-  CRUDE_ASSERT( false );
-  //cmd_instant = crude_gfx_get_primary_cmd( manager->gpu, 0, true );
+  cmd_instant = crude_gfx_access_cmd_buffer( manager->gpu, manager->gpu->immediate_transfer_cmd_buffer );
+  crude_gfx_cmd_begin_primary( cmd_instant );
   manager->gpu->vkCmdBuildAccelerationStructuresKHR( cmd_instant->vk_cmd_buffer, CRUDE_ARRAY_LENGTH( vk_acceleration_build_geometry_infos ), vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
   crude_gfx_submit_immediate( cmd_instant );
   

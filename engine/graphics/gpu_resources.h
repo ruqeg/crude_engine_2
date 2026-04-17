@@ -346,13 +346,16 @@ typedef struct crude_gfx_framebuffer_creation
 
 typedef struct crude_gfx_cmd_pool_creation
 {
+  uint32                                                   queue_family_index;
+#if CRUDE_GFX_GPU_PROFILER
+  struct
+  {
+    bool                                                   enabled;
+    crude_gfx_gpu_time_query_tree                         *time_queries_trees;
+    uint32                                                 time_queries_per_frame;
+  } profiler;
+#endif
 } crude_gfx_cmd_pool_creation;
-
-typedef struct crude_gfx_cmd_buffer_creation
-{
-  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
-  char                                                     name[ 512 ];
-} crude_gfx_cmd_buffer_creation;
 
 typedef struct crude_gfx_depth_stencil_creation
 {
@@ -719,17 +722,22 @@ typedef struct crude_gfx_technique
 typedef struct crude_gfx_cmd_pool
 {
   VkCommandPool                                            vk_cmd_pool;
+#if CRUDE_GFX_GPU_PROFILER
+  struct
+  {
+    VkQueryPool                                            vk_timestamp_query_pool;
+    VkQueryPool                                            vk_pipeline_stats_query_pool;
+    crude_gfx_gpu_time_query_tree                         *time_queries_trees;
+    bool                                                   enabled;
+  } profiler;
+#endif
 } crude_gfx_cmd_pool;
 
-typedef struct crude_gfx_gpu_thread_frame_pools
+typedef struct crude_gfx_cmd_buffer_creation
 {
   crude_gfx_cmd_pool_handle                                cmd_pool;
-#if CRUDE_GFX_GPU_PROFILER
-  VkQueryPool                                              vk_timestamp_query_pool;
-  VkQueryPool                                              vk_pipeline_stats_query_pool;
-  crude_gfx_gpu_time_query_tree                           *time_queries;
-#endif
-} crude_gfx_gpu_thread_frame_pools;
+  char                                                     name[ 512 ];
+} crude_gfx_cmd_buffer_creation;
 
 typedef struct crude_gfx_cmd_buffer
 {
@@ -741,8 +749,8 @@ typedef struct crude_gfx_cmd_buffer
   crude_gfx_pipeline                                      *current_pipeline;
   VkClearValue                                             clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
   VkCommandBuffer                                          vk_cmd_buffer;
-
-  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
+  
+  crude_gfx_cmd_pool_handle                                cmd_pool;
 } crude_gfx_cmd_buffer;
 
 /************************************************

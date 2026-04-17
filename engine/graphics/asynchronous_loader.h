@@ -57,8 +57,8 @@ typedef struct crude_gfx_asynchronous_loader
   crude_gfx_memory_allocation                              gpu_old_allocation_ready;
   uint32                                                   total_requests_count;
 
-  VkCommandPool                                            vk_cmd_pools[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  crude_gfx_cmd_buffer                                     cmd_buffers[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_cmd_pool_handle                                transfer_cmd_pools[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_cmd_buffer_handle                              transfer_cmd_buffers[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
 
   mtx_t                                                    request_mutex;
 

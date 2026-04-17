@@ -6,7 +6,7 @@ void
 crude_gfx_gpu_time_queries_manager_initialize
 (
   _In_ crude_gfx_gpu_time_queries_manager                 *manager,
-  _In_ crude_gfx_gpu_thread_frame_pools                   *thread_frame_pools,
+  _In_ crude_gfx_cmd_pool_handle                          *thread_frame_pools,
   _In_ crude_allocator_container                           allocator_container,
   _In_ uint16                                              queries_per_thread,
   _In_ uint16                                              num_threads,
@@ -61,20 +61,30 @@ uint32
 crude_gfx_gpu_time_queries_manager_resolve
 (
   _In_ crude_gfx_gpu_time_queries_manager                 *manager,
+  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              current_frame,
   _In_ crude_gfx_gpu_time_query                           *timestamps_to_fill
 )
 {
-  uint32 copied_timestamps = 0;
+  uint32                                                   copied_timestamps;
+
+  copied_timestamps = 0;
   for ( uint32 t = 0; t < manager->num_threads; ++t )
   {
-    uint32 pool_index = ( manager->num_threads * current_frame ) + t;
-    crude_gfx_gpu_thread_frame_pools *thread_pools = &manager->thread_frame_pools[ pool_index ];
-    crude_gfx_gpu_time_query_tree *time_query = thread_pools->time_queries;
-    if ( time_query && time_query->allocated_time_query )
+    crude_gfx_gpu_time_query_tree                         *time_query;
+    crude_gfx_cmd_pool                                    *cmd_pool;
+    uint32                                                 pool_index;
+
+    pool_index = ( manager->num_threads * current_frame ) + t;
+    cmd_pool = crude_gfx_access_cmd_pool( gpu, manager->thread_frame_pools[ pool_index ] );
+    if ( cmd_pool->profiler.enabled )
     {
-      crude_memory_copy( timestamps_to_fill + copied_timestamps, &manager->timestamps[ pool_index * manager->queries_per_thread ], sizeof( crude_gfx_gpu_time_query ) * time_query->allocated_time_query );
-      copied_timestamps += time_query->allocated_time_query;
+      time_query = cmd_pool->profiler.time_queries_trees;
+      if ( time_query && time_query->allocated_time_query )
+      {
+        crude_memory_copy( timestamps_to_fill + copied_timestamps, &manager->timestamps[ pool_index * manager->queries_per_thread ], sizeof( crude_gfx_gpu_time_query ) * time_query->allocated_time_query );
+        copied_timestamps += time_query->allocated_time_query;
+      }
     }
   }
   return copied_timestamps;

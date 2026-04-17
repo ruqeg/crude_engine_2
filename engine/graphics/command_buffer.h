@@ -9,27 +9,24 @@
  * 
  ***********************************************/
 typedef struct crude_gfx_device crude_gfx_device;
-typedef struct crude_gfx_gpu_thread_frame_pools crude_gfx_gpu_thread_frame_pools;
 
+typedef struct crude_gfx_cmd_buffer_manager
+{
+  crude_gfx_device                                        *gpu;
+
+  crude_gfx_cmd_buffer_handle                             *primary_cmd_buffers;
+
+  uint32                                                   num_pools_per_frame;
+  uint32                                                   num_primary_cmd_buffers_per_thread;
+
+  uint8                                                   *num_used_primary_cmd_buffers_per_frame;
+} crude_gfx_cmd_buffer_manager;
 
 /************************************************
  *
  * Command Buffer Functions
  * 
  ***********************************************/
-CRUDE_API void
-crude_gfx_cmd_initialize
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_device                                   *gpu
-);
-
-CRUDE_API void
-crude_gfx_cmd_deinitialize
-(
-  _In_ crude_gfx_cmd_buffer                               *cmd
-);
-
 CRUDE_API void
 crude_gfx_cmd_reset
 (

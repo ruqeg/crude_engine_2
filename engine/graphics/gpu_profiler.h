@@ -49,7 +49,7 @@ typedef struct crude_gfx_gpu_time_queries_manager
 {
   crude_gfx_gpu_time_query_tree                           *query_trees;
   crude_allocator_container                                allocator_container;
-  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;
+  crude_gfx_cmd_pool_handle                               *thread_frame_pools;
   crude_gfx_gpu_time_query                                *timestamps;
   crude_gfx_gpu_pipeline_statistics                        frame_pipeline_statistics;
   uint32                                                   queries_per_thread;
@@ -62,7 +62,7 @@ CRUDE_API void
 crude_gfx_gpu_time_queries_manager_initialize
 (
   _In_ crude_gfx_gpu_time_queries_manager                 *manager,
-  _In_ crude_gfx_gpu_thread_frame_pools                   *thread_frame_pools,
+  _In_ crude_gfx_cmd_pool_handle                          *thread_frame_pools,
   _In_ crude_allocator_container                           allocator_container,
   _In_ uint16                                              queries_per_thread,
   _In_ uint16                                              num_threads,
@@ -86,6 +86,7 @@ CRUDE_API uint32
 crude_gfx_gpu_time_queries_manager_resolve
 (
   _In_ crude_gfx_gpu_time_queries_manager                 *manager,
+  _In_ crude_gfx_device                                   *gpu,
   _In_ uint32                                              current_frame,
   _In_ crude_gfx_gpu_time_query                           *timestamps_to_fill
 );

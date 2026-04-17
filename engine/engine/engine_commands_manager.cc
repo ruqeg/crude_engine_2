@@ -114,7 +114,6 @@ crude_engine_commands_manager_update
       manager->engine->main_node = crude_node_manager_create_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world );
       
       crude_gfx_scene_renderer_update_instances_from_node( &manager->engine->scene_renderer, manager->engine->world, manager->engine->main_node );
-      crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &manager->engine->model_renderer_resources_manager );
       crude_audio_device_wait_wait_till_uploaded( &manager->engine->audio_device );
 
       crude_physics_run_system_on_start( manager->engine->world );

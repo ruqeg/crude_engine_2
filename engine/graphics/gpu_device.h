@@ -31,18 +31,6 @@ typedef struct crude_gfx_resource_cache
   CRUDE_HASHMAPSTR( crude_gfx_technique* )                *techniques;
 } crude_gfx_resource_cache;
 
-typedef struct crude_gfx_cmd_buffer_manager
-{
-  crude_gfx_device                                        *gpu;
-
-  crude_gfx_cmd_buffer                                    *primary_cmd_buffers;
-
-  uint32                                                   num_pools_per_frame;
-  uint32                                                   num_primary_cmd_buffers_per_thread;
-
-  uint8                                                   *num_used_primary_cmd_buffers_per_frame;
-} crude_gfx_cmd_buffer_manager;
-
 typedef struct crude_gfx_device_creation
 {
   SDL_Window                                              *sdl_window;
@@ -50,8 +38,6 @@ typedef struct crude_gfx_device_creation
   uint32                                                   vk_application_version;
   crude_heap_allocator                                    *allocator;
   crude_stack_allocator                                   *temporary_allocator;
-  uint16                                                   queries_per_frame;
-  uint16                                                   num_threads;
   
   char const                                              *working_absolute_directory;
   char const                                              *techniques_absolute_directory;
@@ -101,6 +87,10 @@ typedef struct crude_gfx_device
   uint32                                                   num_textures_to_update;
   mtx_t                                                    texture_update_mutex;
   crude_gfx_resource_cache                                 resource_cache;
+  crude_gfx_cmd_pool_handle                                immediate_transfer_cmd_pool;
+  crude_gfx_cmd_buffer_handle                              immediate_transfer_cmd_buffer;
+  VkFence                                                  vk_immediate_fence;
+
   /**
    * Queue to remove or update bindless texture.
    */
@@ -170,9 +160,10 @@ typedef struct crude_gfx_device
   XMFLOAT2                                                 renderer_size;
 
   crude_gfx_cmd_buffer_manager                             cmd_buffer_manager;
-
+  
+  crude_gfx_cmd_pool_handle                              *thread_frame_pools;
   uint32                                                   num_threads;
-  crude_gfx_gpu_thread_frame_pools                        *thread_frame_pools;
+  uint32                                                   gpu_time_queries_per_frame;
   float32                                                  gpu_timestamp_frequency;
 
   bool                                                     timestamps_enabled;
@@ -181,8 +172,6 @@ typedef struct crude_gfx_device
   bool                                                     fragment_shading_rate_extension_present;
   bool                                                     deferred_host_operations_extension_present;
   bool                                                     shader_relaxed_extended_instruction_extension_present;
-
-  VkFence                                                  vk_immediate_fence;
 
 #if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
@@ -273,8 +262,7 @@ crude_gfx_get_primary_cmd
 
 CRUDE_API void                                     
 crude_gfx_queue_cmd
-(                                                  
-  _In_ crude_gfx_device                                   *gpu,
+(
   _In_ crude_gfx_cmd_buffer                               *cmd
 );
 
@@ -418,6 +406,13 @@ crude_gfx_access_technique_pass_by_name
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *technique_name,
   _In_ char const                                         *pass_name
+);
+
+CRUDE_API void
+crude_gfx_reset_cmd_pool
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_cmd_pool_handle                           handle
 );
 
 /************************************************
@@ -860,6 +855,12 @@ crude_gfx_access_cmd_buffer
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_cmd_buffer_handle                         handle
+);
+
+CRUDE_API crude_gfx_technique_handle
+crude_gfx_obtain_technique
+(
+  _In_ crude_gfx_device                                   *gpu
 );
 
 CRUDE_API crude_gfx_technique*

@@ -584,8 +584,6 @@ crude_engine_initialize_graphics_
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
   device_creation.allocator = &engine->common_allocator;
   device_creation.temporary_allocator = &engine->temporary_allocator;
-  device_creation.queries_per_frame = 1u;
-  device_creation.num_threads = 1u;
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
   device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
@@ -683,8 +681,6 @@ crude_engine_deinitialize_graphics_
   _In_ crude_engine                                       *engine
 )
 {
-  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
-
   vkDeviceWaitIdle( engine->gpu.vk_device );
   crude_task_sheduler_wait_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
   crude_task_sheduler_destroy_task_set( &engine->task_sheduler, engine->graphics_task_set_handle );
@@ -897,8 +893,6 @@ crude_engine_graphics_main_thread_loop_
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Model being loaded during scene rendering!" );
   }
-
-  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager );
   
   if ( engine->gpu.swapchain_resized_last_frame )
   {
@@ -907,6 +901,9 @@ crude_engine_graphics_main_thread_loop_
   }
   
   crude_gfx_scene_renderer_start_frame( &engine->scene_renderer );
+
+  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager, engine->scene_renderer.primary_cmd );
+
   crude_gfx_scene_renderer_update_dynamic_buffers( &engine->scene_renderer );
 
   CRUDE_PROFILER_ZONE_END;
