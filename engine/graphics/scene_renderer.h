@@ -145,6 +145,7 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_memory_allocation                              scene_hga;
   
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
+  crude_gfx_model_renderer_resources_instance             *prev_model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
 
   crude_gfx_memory_allocation                              meshes_instances_draws_hga;
@@ -204,7 +205,7 @@ typedef struct crude_gfx_scene_renderer
 #if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
 #endif
-#if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_indirect_light_pass                            indirect_light_pass;
 #endif
 } crude_gfx_scene_renderer;

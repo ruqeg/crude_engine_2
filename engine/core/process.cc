@@ -94,7 +94,7 @@ crude_process_execute
 
   /* Output */
   DWORD bytes_read;
-  ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
+  ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE, &bytes_read, NULL );
   
   /* Consume all outputs.
    * Terminate current read and initialize the next. */
@@ -104,7 +104,7 @@ crude_process_execute
     k_process_output_buffer[bytes_read] = 0;
     CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "proc output: %s", k_process_output_buffer );
     
-    ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, 1024, &bytes_read, NULL );
+    ok = ReadFile( handle_stdout_pipe_read, k_process_output_buffer, CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE, &bytes_read, NULL );
   }
   
   if ( strlen(search_error_string) > 0 && strstr( k_process_output_buffer, search_error_string ) )

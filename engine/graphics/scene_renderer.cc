@@ -47,7 +47,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 /**
  * Scene Renderer Utils
  */
-static bool
+static void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -139,6 +139,7 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->culled_lights, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->prev_model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
   scene_renderer->tlas_instances_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->tlas_scratch_hga = crude_gfx_memory_allocation_empty( );
@@ -290,6 +291,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_line_vertices_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
   
+  CRUDE_ARRAY_DEINITIALIZE( scene_renderer->prev_model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
@@ -330,27 +332,37 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->ray_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_ray.gltf" );
 #endif /* CRUDE_DEVELOP */
   
+  CRUDE_SWAP( scene_renderer->model_renderer_resoruces_instances, scene_renderer->prev_model_renderer_resoruces_instances );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0u );
 
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node );
 
+  should_recreated_tlas = false;
+
+  if ( CRUDE_ARRAY_LENGTH( scene_renderer->prev_model_renderer_resoruces_instances ) != CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ) )
+  {
+    should_recreated_tlas = true;
+  }
+  else
+  {
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->prev_model_renderer_resoruces_instances ); ++i )
+    {
+      if ( scene_renderer->prev_model_renderer_resoruces_instances[ i ].unique_id != scene_renderer->model_renderer_resoruces_instances[ i ].unique_id )
+      {
+        should_recreated_tlas = true;
+      }
+    }
+  }
+
   scene_renderer->total_meshes_instances_count = 0u;
   scene_renderer->total_joints_matrices_count = 1u; /* reserve default matrix */
   
-  should_recreated_tlas = false;
-
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
   {
     crude_gfx_model_renderer_resources const              *model_renderer_resources;
     
-    if ( !scene_renderer->model_renderer_resoruces_instances[ i ].was_participated_in_tlas_build )
-    {
-      scene_renderer->model_renderer_resoruces_instances[ i ].was_participated_in_tlas_build = true;
-      should_recreated_tlas = true;
-    }
-
     model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, scene_renderer->model_renderer_resoruces_instances[ i ].model_renderer_resources_handle );
     
     for ( uint32 node_index = 0; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
@@ -570,6 +582,8 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 )
 {
   crude_gfx_device                                        *gpu;
+
+  crude_gfx_cmd_push_marker( primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers_" );
 
   gpu = scene_renderer->gpu;
   
@@ -805,9 +819,11 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     
     crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
   }
+
+  crude_gfx_cmd_pop_marker( primary_cmd );
 }
 
-bool
+void
 crude_scene_renderer_register_nodes_instances_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
@@ -815,6 +831,7 @@ crude_scene_renderer_register_nodes_instances_
   _In_ crude_entity                                        node
 )
 {
+  uint32                                                   model_renderer_resoruces_instances_count;
   ecs_iter_t                                               children_it;
   XMMATRIX                                                 model_to_custom_model;
 
@@ -822,6 +839,8 @@ crude_scene_renderer_register_nodes_instances_
 
   model_to_custom_model = XMMatrixIdentity( );
   
+  model_renderer_resoruces_instances_count = CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances );
+
   if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_gltf ) )
   {
     crude_gltf                                            *child_gltf;
@@ -831,6 +850,7 @@ crude_scene_renderer_register_nodes_instances_
     if ( !child_gltf->hidden && child_gltf->model_renderer_resources_instance.model_renderer_resources_handle.index != -1 )
     {
       XMStoreFloat4x4( &child_gltf->model_renderer_resources_instance.model_to_world, XMMatrixMultiply( model_to_custom_model, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_transform ) ) ) );
+      child_gltf->model_renderer_resources_instance.unique_id = node;
       CRUDE_ARRAY_PUSH( scene_renderer->model_renderer_resoruces_instances, child_gltf->model_renderer_resources_instance );
     }
   }
@@ -949,6 +969,13 @@ crude_scene_renderer_register_nodes_instances_
   }
 #endif /* CRUDE_DEVELOP */
 
+  if ( model_renderer_resoruces_instances_count != CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ) )
+  {
+    for ( uint32 i = model_renderer_resoruces_instances_count; i < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++i )
+    {
+      scene_renderer->model_renderer_resoruces_instances[ i ].unique_id = node;
+    }
+  }
 
   while ( ecs_children_next( &children_it ) )
   {
@@ -1260,7 +1287,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, CRUDE_ARRAY_LENGTH( scene_renderer->total_visible_meshes_instances_count ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
 
   for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
   {
@@ -1277,7 +1304,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 
       node = &model_renderer_resources->nodes[ node_index ];
         
-      if ( node->meshes || node->skin != -1 )
+      if ( node->meshes )
       {
         mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );

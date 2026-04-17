@@ -44,9 +44,6 @@
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data[]; };
 #define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data; };
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
-//layout(buffer_reference, scalar) buffer ASRef {
-//    accelerationStructureEXT as;
-//};
 #endif
 
 #ifndef __cplusplus
@@ -404,6 +401,14 @@ void crude_calculate_geometric_tbn
 #extension GL_EXT_mesh_shader : require
 #endif /* CRUDE_STAGE_TASK || CRUDE_STAGE_MESH */
 
+#if defined( CRUDE_CLOSEST_HIT ) || defined( CRUDE_RAYGEN ) || defined( CRUDE_MISS )
+#extension GL_EXT_ray_tracing : require
+#endif
+
+#endif
+
+#if defined( CRUDE_CLOSEST_HIT ) || defined( CRUDE_RAYGEN ) || defined( CRUDE_MISS ) || defined( __cplusplus )
+CRUDE_SHADER_RBUFFER_REF_SCALAR( AccelerationStructureRef, uint64 );
 #endif
 
 #endif /* CRUDE_PLATFORM_GLSL */

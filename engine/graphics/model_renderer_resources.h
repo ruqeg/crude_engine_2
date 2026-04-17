@@ -131,6 +131,7 @@ typedef struct crude_gfx_model_renderer_resources_instance
   crude_gfx_model_renderer_resources_handle                model_renderer_resources_handle;
   XMFLOAT4X4                                               model_to_world;
   bool                                                     cast_shadow;
+  uint64                                                   unique_id;
 } crude_gfx_model_renderer_resources_instance;
 
 CRUDE_API void
