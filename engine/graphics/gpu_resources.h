@@ -12,6 +12,8 @@
 
 typedef struct crude_gfx_gpu_time_query_tree crude_gfx_gpu_time_query_tree;
 
+typedef struct crude_gfx_device;
+
 /************************************************
  *
  * GPU Resoruces Handles
@@ -348,8 +350,8 @@ typedef struct crude_gfx_cmd_pool_creation
 
 typedef struct crude_gfx_cmd_buffer_creation
 {
-  crude_gfx_cmd_pool_handle                                cmd_pool;
   crude_gfx_gpu_thread_frame_pools                        *thread_frame_pool;
+  char                                                     name[ 512 ];
 } crude_gfx_cmd_buffer_creation;
 
 typedef struct crude_gfx_depth_stencil_creation
@@ -731,6 +733,8 @@ typedef struct crude_gfx_gpu_thread_frame_pools
 
 typedef struct crude_gfx_cmd_buffer
 {
+  crude_gfx_device                                        *gpu;
+
   bool                                                     is_recording;
   crude_gfx_render_pass                                   *current_render_pass;
   crude_gfx_framebuffer                                   *current_framebuffer;
