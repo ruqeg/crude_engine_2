@@ -143,7 +143,7 @@ typedef struct crude_gfx_scene_renderer
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_memory_allocation                              scene_hga;
-
+  
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   uint32                                                   total_visible_meshes_instances_count;
 
@@ -179,12 +179,10 @@ typedef struct crude_gfx_scene_renderer
    * Ray Tracing CPU & GPU Data
    **********************/
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  VkAccelerationStructureKHR                              *vk_blases;
-  crude_gfx_buffer_handle                                 *blases_buffers;
   VkAccelerationStructureKHR                               vk_tlas;
-  crude_gfx_buffer_handle                                  tlas_buffer;
-  crude_gfx_buffer_handle                                  tlas_instances_buffer_handle;
-  crude_gfx_buffer_handle                                  tlas_scratch_buffer_handle;
+  crude_gfx_memory_allocation                              tlas_hga;
+  crude_gfx_memory_allocation                              tlas_instances_hga;
+  crude_gfx_memory_allocation                              tlas_scratch_hga;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /***********************

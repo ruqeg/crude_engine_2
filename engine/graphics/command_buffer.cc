@@ -901,7 +901,7 @@ crude_gfx_cmd_manager_initialize
   cmd_manager->num_pools_per_frame = num_pools_per_frame;
   cmd_manager->num_primary_cmd_buffers_per_thread = num_primary_cmd_buffers_per_pool;
 
-  total_pools = cmd_manager->num_pools_per_frame;
+  total_pools = CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT * cmd_manager->num_pools_per_frame;
 
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
   for ( uint32 i = 0; i < total_pools; ++i )
