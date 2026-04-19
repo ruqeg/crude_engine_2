@@ -269,9 +269,9 @@ crude_engine_initialize
   crude_engine_commands_manager_initialize( &engine->commands_manager, engine, &engine->common_allocator );
   crude_engine_initialize_gui_( engine );
   crude_engine_initialize_editor_( engine );
-
+  
   engine->running = true;
-
+  
   crude_physics_enable_simulation( &engine->physics, engine->world, false );
 }
 
@@ -668,7 +668,7 @@ crude_engine_initialize_graphics_
   engine->framerate = 120;
 
   crude_gfx_scene_renderer_rebuild_light_gpu_buffers( &engine->scene_renderer );
-
+  
   crude_gfx_scene_renderer_register_passes( &engine->scene_renderer, &engine->render_graph );
 
   engine->graphics_task_set_handle = crude_task_sheduler_create_task_set( &engine->task_sheduler, crude_engine_graphics_task_set_thread_loop_, engine );

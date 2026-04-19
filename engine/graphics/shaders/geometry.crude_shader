@@ -321,7 +321,7 @@ void main()
   vec3 view_normal = normal * mat3( scene.data.camera.world_to_view );
 
   gl_Position = world_position * scene.data.camera.world_to_clip;
-  out_texcoord = vec2( mesh_draw.texcoord_buffer.data[ 2 * vertex_index ], mesh_draw.texcoord_buffer.data[ 2 * vertex_index + 1 ] );
+  out_texcoord = mesh_draw.texcoord_buffer.data[ vertex_index ];
   out_normal = normal;
   out_tangent = tangent.xyz;
   out_bitangent = bitangent;

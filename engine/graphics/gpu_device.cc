@@ -2350,6 +2350,8 @@ crude_gfx_create_buffer
     return handle;
   }
 
+  //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Allocate buffer %s", creation->name ? creation->name : "Unknown" );
+
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   buffer->name = creation->name;
   buffer->size = creation->size;
@@ -2433,6 +2435,8 @@ crude_gfx_destroy_buffer_instant
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
+
   if ( buffer )
   {
     vmaDestroyBuffer( gpu->vma_allocator, buffer->vk_buffer, buffer->vma_allocation );

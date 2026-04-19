@@ -66,7 +66,7 @@ crude_game_initialize
   game->maze_level_system_context.input = &engine->platform.input;
   crude_maze_level_system_import( engine->world, &engine->components_serialization_manager, &game->maze_level_system_context );
 
-  crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\maze.crude_node" );
+  crude_engine_commands_manager_push_load_node_command( &game->engine->commands_manager, "game\\rb9\\nodes\\weapon.crude_node" );
   crude_engine_commands_manager_update( &engine->commands_manager );
   
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;

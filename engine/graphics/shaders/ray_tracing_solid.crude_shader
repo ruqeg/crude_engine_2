@@ -16,13 +16,14 @@
 #endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
 
 #if defined( RAY_TRACING_SOLID  )
+
 CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
 {
   SceneRef                                                 scene;
   MeshDrawsRef                                             mesh_draws;
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
-  AccelerationStructureRef                                 acceleration_stucture;
+  AccelerationStructureRef                                 acceleration_stucture_ref;
 
   uint32                                                   sbt_offset;
   uint32                                                   sbt_stride;
@@ -37,6 +38,8 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
 #extension GL_EXT_ray_tracing_position_fetch  : require
 
 #if defined( RAY_TRACING_SOLID )
+
+CRUDE_ACCELERATION_STRUCTURE_DEFINE( acceleration_stucture );
 
 struct ray_payload
 {
@@ -58,17 +61,17 @@ compute_ray_dir
   float x = ( 2 * ( float( launchID.x ) + 0.5 ) / float( launchSize.x ) - 1.0 );
   float y = ( 1.0 - 2 * ( float( launchID.y ) + 0.5 ) / float( launchSize.y ) );
   vec4 dir = vec4( x, y, 1, 1 ) * scene.data.camera.clip_to_world;
-  dir = normalize( dir );
+  dir.xyz = normalize( dir.xyz );
   return dir.xyz;
 }
 
 void main()
 {
-  payload.color = vec3( 0, 0, 1 );
+  payload.color = vec3( 0, 0, 0 );
   payload.launch_id = ivec2( gl_LaunchIDEXT.xy );
 
   traceRayEXT(
-    accelerationStructureEXT(acceleration_stucture.data), /* topLevel */
+    acceleration_stucture, /* topLevel */
     gl_RayFlagsOpaqueEXT, /* rayFlags */
     0xff, /* cullMask */
     sbt_offset, /* sbtRecordOffset */
@@ -77,7 +80,7 @@ void main()
     scene.data.camera.position, /* origin */
     0.0, /* tmin */
     compute_ray_dir( gl_LaunchIDEXT, gl_LaunchSizeEXT ), /* direction */
-    100.0, /* Tmax */
+    1000.0, /* Tmax */
     0 /* payload index */
   );
 
@@ -93,9 +96,6 @@ hitAttributeEXT vec2 barycentric_weights;
 
 void main()
 {
-  vec3 radiance = vec3( 0 );
-  float distance = 0.0f;
-  
   crude_gfx_mesh_draw                                    mesh_draw;
   mat4                                                   mesh_to_world, world_to_mesh;
   vec3                                                   normal, p0_model, p1_model, p2_model, n0_model, n1_model, n2_model, model_position, world_position, diffuse, albedo;
@@ -153,21 +153,9 @@ void main()
   world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
   texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
 
-  vec3 v = normalize( scene.data.camera.position.xyz - world_position );
-  vec3 bias_vector = ( normal * 0.2f + v * 0.8f) * ( 0.75f * 1 ) * 0.3;
-  vec3 biased_world_position = world_position + bias_vector;
+  //albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
 
-  albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
-
-  payload.color = vec3( 0.5 * normal + 0.5 );
-  payload.color = vec3( 0, 0, 1 );
-  if ( payload.launch_id == ivec2( 900, 500 ) )
-  {
-    //crude_debug_draw_line( world_position, biased_world_position, vec4( 1, 0, 0, 1 ), vec4( 1, 0, 0, 1 ) );
-    //crude_debug_draw_line( world_position, world_position + normal, vec4( 0, 1, 1, 1 ), vec4( 0, 1, 1, 1 ) );
-  }
-
-  //payload = vec4( 1.0f - attribs.x - attribs.y, attribs.y, attribs.x, 1.0 );
+  payload.color = vec3(texcoord, 1);
 }
 
 #endif /* CRUDE_CLOSEST_HIT */
@@ -177,7 +165,7 @@ layout(location=0) rayPayloadInEXT ray_payload payload;
 
 void main()
 {
-  payload.color = vec3( 0, 1, 0 );
+  payload.color = vec3( 0.f, 0.f, 0.2f );
 }
 #endif /* CRUDE_MISS */
 #endif /* RAY_TRACING_SOLID */

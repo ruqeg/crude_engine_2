@@ -42,6 +42,18 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   _In_ crude_gfx_scene_renderer                           *scene_renderer,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 );
+
+static void
+crude_gfx_scene_renderer_create_acceleration_stucture_dsl_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
+
+static void
+crude_gfx_scene_renderer_create_acceleration_stucture_ds_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+);
 #endif
 
 /**
@@ -141,9 +153,14 @@ crude_gfx_scene_renderer_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( scene_renderer->prev_model_renderer_resoruces_instances, 0u, crude_heap_allocator_pack( scene_renderer->allocator ) );
   
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   scene_renderer->tlas_instances_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->tlas_scratch_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->tlas_hga = crude_gfx_memory_allocation_empty( );
+
+  scene_renderer->acceleration_stucture_ds = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
+  crude_gfx_scene_renderer_create_acceleration_stucture_dsl_( scene_renderer );
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   scene_renderer->lights_hga = crude_gfx_memory_allocation_empty( );
   scene_renderer->lights_world_to_texture_hga = crude_gfx_memory_allocation_empty( );
@@ -272,13 +289,6 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
 #endif
 
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
-  scene_renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->gpu->vk_allocation_callbacks );
-#endif
-
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
@@ -291,6 +301,16 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->debug_line_vertices_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
   
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
+  scene_renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->gpu->vk_allocation_callbacks );
+
+  crude_gfx_destroy_descriptor_set( scene_renderer->gpu, scene_renderer->acceleration_stucture_ds );
+  crude_gfx_destroy_descriptor_set_layout( scene_renderer->gpu, scene_renderer->acceleration_stucture_dsl );
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->prev_model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
@@ -388,7 +408,7 @@ crude_gfx_scene_renderer_update_instances_from_node
 
   buffers_recrteated = should_recreated_tlas;
   
-
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   if ( should_recreated_tlas )
   {
     if ( scene_renderer->tlas_hga.gpu_address )
@@ -402,7 +422,10 @@ crude_gfx_scene_renderer_update_instances_from_node
     crude_gfx_cmd_begin_primary( cmd );
     crude_gfx_scene_renderer_create_top_level_acceleration_structure_( scene_renderer, cmd );
     crude_gfx_submit_immediate( cmd );
+
+    crude_gfx_scene_renderer_create_acceleration_stucture_ds_( scene_renderer );
   }
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   if ( scene_renderer->total_joints_matrices_count > scene_renderer->total_joints_matrices_buffer_capacity )
   {
@@ -782,7 +805,9 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     crude_gfx_cmd_memory_copy( primary_cmd, meshes_instances_draws_tca, scene_renderer->meshes_instances_draws_hga, 0, 0 );
   }
   
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_scene_renderer_update_top_level_acceleration_structure_(scene_renderer, primary_cmd );
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /* Update meshlets counes storage buffers*/
   {
@@ -1147,7 +1172,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
       node = &model_renderer_resources->nodes[ node_index ];
         
-      if ( node->meshes || node->skin != -1 )
+      if ( node->meshes )
       {
         mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
@@ -1164,7 +1189,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
           VkAccelerationStructureInstanceKHR              vk_acceleration_structure_instance;
           VkAccelerationStructureDeviceAddressInfoKHR     vk_acceleration_structure_address_info;
           VkDeviceAddress                                 vk_blas_address;
-          VkTransformMatrixKHR                             vk_transform; 
+          VkTransformMatrixKHR                            vk_transform; 
 
           cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
 
@@ -1202,7 +1227,9 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     CRUDE_GFX_MEMORY_TYPE_CPU_GPU, /* !TODO try gpu only and check if it affect perfomance*/
     "tlas_instances_hga",
     VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
-  
+
+  crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, max_instance_count * sizeof( VkAccelerationStructureInstanceKHR ) );
+
   vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
   vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
   vk_acceleration_structure_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
@@ -1265,7 +1292,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   };
   
   scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
-  
+
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }
 
@@ -1350,10 +1377,11 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
       }
     }
   }
-
-  crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances ) );
   
   max_instance_count = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
+
+  crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, sizeof( VkAccelerationStructureInstanceKHR ) * max_instance_count );
+  
   
   vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
   vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1388,4 +1416,48 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }
+
+void
+crude_gfx_scene_renderer_create_acceleration_stucture_dsl_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_descriptor_set_layout_creation                 dsl_creation;
+  
+  dsl_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_layout_creation );
+  dsl_creation.name = "acceleration_stucture_dsl";
+  dsl_creation.bindless = false;
+  dsl_creation.set_index = CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX;
+  crude_gfx_descriptor_set_layout_creation_add_binding( &dsl_creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
+    .type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+    .start = CRUDE_ACCELERATION_STRUCTURE_BINDING,
+    .count = 1u,
+  } ) );
+
+  scene_renderer->acceleration_stucture_dsl = crude_gfx_create_descriptor_set_layout( scene_renderer->gpu, &dsl_creation );
+}
+
+void
+crude_gfx_scene_renderer_create_acceleration_stucture_ds_
+(
+  _In_ crude_gfx_scene_renderer                           *scene_renderer
+)
+{
+  crude_gfx_descriptor_set_creation                        ds_creation;
+
+  if ( scene_renderer->acceleration_stucture_ds.index != CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID.index )
+  {
+    crude_gfx_destroy_descriptor_set( scene_renderer->gpu, scene_renderer->acceleration_stucture_ds );
+  }
+
+  ds_creation = crude_gfx_descriptor_set_creation_empty();
+  ds_creation.layout = scene_renderer->acceleration_stucture_dsl;
+  ds_creation.name = "acceleration_stucture_dsl";
+
+  crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, scene_renderer->vk_tlas, 0u );
+    
+  scene_renderer->acceleration_stucture_ds = crude_gfx_create_descriptor_set( scene_renderer->gpu, &ds_creation );
+}
+
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */

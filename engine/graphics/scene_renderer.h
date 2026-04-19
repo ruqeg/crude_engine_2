@@ -184,6 +184,8 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_memory_allocation                              tlas_hga;
   crude_gfx_memory_allocation                              tlas_instances_hga;
   crude_gfx_memory_allocation                              tlas_scratch_hga;
+  crude_gfx_descriptor_set_handle                          acceleration_stucture_ds;
+  crude_gfx_descriptor_set_layout_handle                   acceleration_stucture_dsl;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /***********************

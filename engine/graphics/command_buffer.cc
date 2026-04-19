@@ -470,6 +470,18 @@ crude_gfx_cmd_bind_bindless_descriptor_set
 }
 
 void
+crude_gfx_cmd_bind_acceleration_structure_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+)
+{
+  crude_gfx_descriptor_set                                *descriptor_set;
+  descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, handle );
+  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, 0, NULL );
+}
+
+void
 crude_gfx_cmd_add_buffer_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

@@ -178,6 +178,13 @@ crude_gfx_cmd_bind_bindless_descriptor_set
 );
 
 CRUDE_API void
+crude_gfx_cmd_bind_acceleration_structure_descriptor_set
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_descriptor_set_handle                     handle
+);
+
+CRUDE_API void
 crude_gfx_cmd_add_buffer_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,

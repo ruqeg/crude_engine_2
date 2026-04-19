@@ -107,8 +107,10 @@ typedef struct crude_gfx_model_renderer_resources
   crude_gfx_mesh_cpu                                      *meshes;
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
   CRUDE_HASHMAPSTR( uint64 )                              *animation_name_to_index;  
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   VkAccelerationStructureKHR                              *vk_blases;
   crude_gfx_memory_allocation                             *blases_hga;
+#endif
 } crude_gfx_model_renderer_resources;
 
 typedef struct crude_gfx_model_renderer_resources_animation_instance
@@ -159,6 +161,7 @@ crude_gfx_model_renderer_resources_initialize
 CRUDE_API void
 crude_gfx_model_renderer_resources_deinitialize
 (
+  _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
 );
 
