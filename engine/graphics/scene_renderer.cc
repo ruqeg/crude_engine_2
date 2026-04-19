@@ -416,6 +416,7 @@ crude_gfx_scene_renderer_update_instances_from_node
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
+      scene_renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->gpu->vk_allocation_callbacks );
     }
 
     crude_gfx_cmd_buffer *cmd = crude_gfx_access_cmd_buffer( scene_renderer->gpu, scene_renderer->gpu->immediate_transfer_cmd_buffer );
@@ -1155,7 +1156,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, CRUDE_ARRAY_LENGTH( scene_renderer->total_visible_meshes_instances_count ), crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
 
   for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
   {
@@ -1165,6 +1166,11 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
     model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance->model_renderer_resources_handle );
   
+    if ( !model_renderer_resources->rtx_affected )
+    {
+      continue;
+    }
+
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
       crude_gfx_node                                      *node;
@@ -1269,7 +1275,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     scene_renderer->gpu, 
     vk_acceleration_structure_build_sizes_info.buildScratchSize,
     CRUDE_GFX_MEMORY_TYPE_GPU,
-    "tlas_scratch_hga", 0 );
+    "tlas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
 
   vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
   vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
@@ -1324,6 +1330,11 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
     model_renderer_resources_instance = &scene_renderer->model_renderer_resoruces_instances[ model_instance_index ];
     model_renderer_resources = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( scene_renderer->model_renderer_resources_manager, model_renderer_resources_instance->model_renderer_resources_handle );
   
+    if ( !model_renderer_resources->rtx_affected )
+    {
+      continue;
+    }
+
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
       crude_gfx_node                                      *node;
@@ -1348,10 +1359,10 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
           VkAccelerationStructureInstanceKHR              vk_acceleration_structure_instance;
           VkAccelerationStructureDeviceAddressInfoKHR     vk_acceleration_structure_address_info;
           VkDeviceAddress                                 vk_blas_address;
-          VkTransformMatrixKHR                             vk_transform; 
+          VkTransformMatrixKHR                            vk_transform; 
 
           cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
-
+          
           for ( int32 y = 0; y < 3; ++y )
           {
             for ( int32 x = 0; x < 4; ++x )

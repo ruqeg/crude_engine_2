@@ -108,8 +108,10 @@ typedef struct crude_gfx_model_renderer_resources
   char                                                     relative_filepath[ CRUDE_GFX_MODEL_RESOURCE_RELATIVE_FILEPATH_LENGTH_MAX ];
   CRUDE_HASHMAPSTR( uint64 )                              *animation_name_to_index;  
 #if CRUDE_GFX_RAY_TRACING_ENABLED
+  bool                                                     rtx_affected;
   VkAccelerationStructureKHR                              *vk_blases;
   crude_gfx_memory_allocation                             *blases_hga;
+  crude_gfx_memory_allocation                             *blases_transforms_hga;
 #endif
 } crude_gfx_model_renderer_resources;
 

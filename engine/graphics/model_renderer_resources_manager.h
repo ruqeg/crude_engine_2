@@ -68,7 +68,9 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_memory_allocation                              meshes_draws_hga;
   uint64                                                   total_meshes_count;
 
+#if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_memory_allocation                              bottom_level_acceleration_structure_transform_hga;
+#endif
 
   crude_resource_pool                                      model_renderer_resources_pool;
 } crude_gfx_model_renderer_resources_manager;

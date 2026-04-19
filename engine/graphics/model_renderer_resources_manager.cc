@@ -151,7 +151,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
 static void
-crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_structure_
+crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
@@ -443,8 +443,8 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_gfx_model_renderer_resources_manager_load_animations_( manager, &model_renderer_resouces, gltf );
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading bottom level acceleration structure" );
-  crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create bottom level acceleration structure" );
+  crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
 #endif
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading finished" );
@@ -1873,7 +1873,7 @@ crude_gfx_model_renderer_resources_manager_load_animations_
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
 static void
-crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_structure_
+crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_
 (
   _In_ crude_gfx_model_renderer_resources_manager         *manager,
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
@@ -1885,7 +1885,14 @@ crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_struct
   crude_gfx_memory_allocation                             *blas_scratch_buffers_hga;
   crude_gfx_cmd_buffer                                    *cmd_instant;
   uint32                                                   temporary_allocator_marker;
-  
+ 
+  model_renderer_resources->rtx_affected = ( CRUDE_ARRAY_LENGTH( model_renderer_resources->animations ) == 0 );
+
+  if ( !model_renderer_resources->rtx_affected )
+  {
+    return;
+  }
+
   temporary_allocator_marker = crude_stack_allocator_get_marker( manager->temporary_allocator );
   
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_structure_geometries, CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ), crude_stack_allocator_pack( manager->temporary_allocator ) );
@@ -1949,7 +1956,7 @@ crude_gfx_model_renderer_resources_manager_load_bottom_level_acceleration_struct
     CRUDE_GFX_HANDLE_VULKAN_RESULT( manager->gpu->vkCreateAccelerationStructureKHR( manager->gpu->vk_device, &vk_acceleration_structure_create_info, manager->gpu->vk_allocation_callbacks, &model_renderer_resources->vk_blases[ i ] ), "Can't create acceleration structure" );
     
     // TODO maybe we can use only one scratch buffer? idk for now
-    blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_name( manager->gpu, vk_acceleration_structure_build_sizes_info.buildScratchSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", 0 );
+    blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_name( manager->gpu, vk_acceleration_structure_build_sizes_info.buildScratchSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   
     vk_acceleration_build_geometry_infos[ i ].dstAccelerationStructure = model_renderer_resources->vk_blases[ i ];
     vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = blas_scratch_buffers_hga[ i ].gpu_address;

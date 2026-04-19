@@ -1159,7 +1159,7 @@ crude_gfx_resize_texture
   texture_creation.subresource = texture->subresource;
   texture_creation.format = texture->vk_format;
   texture_creation.type = texture->type;
-  crude_string_copy( texture->name, texture_creation.name, sizeof( texture->name ) );
+  crude_string_copy( texture_creation.name, texture->name, sizeof( texture_creation.name ) );
   texture_creation.width = width;
   texture_creation.height = height;
   texture_creation.depth = 1;

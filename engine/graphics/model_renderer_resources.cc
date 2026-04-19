@@ -71,17 +71,20 @@ crude_gfx_model_renderer_resources_deinitialize
 )
 {
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
+  if ( model_renderer_resources->rtx_affected )
   {
-    crude_gfx_memory_deallocate( gpu, model_renderer_resources->blases_hga[ i ] );
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
+    {
+      crude_gfx_memory_deallocate( gpu, model_renderer_resources->blases_hga[ i ] );
+    }
+    CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->blases_hga );
+    
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
+    {
+      gpu->vkDestroyAccelerationStructureKHR( gpu->vk_device, model_renderer_resources->vk_blases[ i ], gpu->vk_allocation_callbacks );
+    }
+    CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->vk_blases );
   }
-  CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->blases_hga );
-  
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
-  {
-    gpu->vkDestroyAccelerationStructureKHR( gpu->vk_device, model_renderer_resources->vk_blases[ i ], gpu->vk_allocation_callbacks );
-  }
-  CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->vk_blases );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )

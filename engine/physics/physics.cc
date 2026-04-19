@@ -712,12 +712,12 @@ crude_physics_ray_cast
     {
       this->jph_broad_phase_mask = jph_broad_phase_mask;
     }
-	  virtual bool
+    virtual bool
     ShouldCollide
     (
       _In_ JPH::BroadPhaseLayer                            layer
     ) const override
-	  {
+    {
       if ( ( jph_broad_phase_mask & g_crude_jph_broad_phase_layer_dynamic_mask ) && ( layer == g_crude_jph_broad_phase_layer_dynamic_class ) )
       {
         return true;
@@ -731,7 +731,7 @@ crude_physics_ray_cast
         return true;
       }
       return false;
-	  }
+    }
   private:
     uint8                                                  jph_broad_phase_mask;
   };
