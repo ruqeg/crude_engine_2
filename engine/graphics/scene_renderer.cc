@@ -1275,7 +1275,8 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     scene_renderer->gpu, 
     vk_acceleration_structure_build_sizes_info.buildScratchSize,
     CRUDE_GFX_MEMORY_TYPE_GPU,
-    "tlas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
+    "tlas_scratch_hga",
+    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
 
   vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
   vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;

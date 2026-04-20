@@ -45,13 +45,7 @@ crude_gui_devmenu_option devmenu_options[ ] =
     "Memory Visual Profiler", crude_gui_devmenu_memory_visual_profiler_callback
   },
   {
-    "Texture Inspector", crude_gui_devmenu_texture_inspector_callback
-  },
-  {
     "Render Graph", crude_gui_devmenu_render_graph_callback
-  },
-  {
-    "GPU Pool", crude_gui_devmenu_gpu_pool_callback
   },
   {
     "Scene Renderer", crude_gui_devmenu_scene_renderer_callback
@@ -79,11 +73,8 @@ crude_gui_devmenu_initialize
   devmenu->dev_heap_allocator = &engine->develop_heap_allocator;
   devmenu->dev_stack_allocator = &engine->develop_temporary_allocator;
   crude_gui_devmenu_memory_visual_profiler_initialize( &devmenu->memory_visual_profiler, devmenu );
-  crude_gui_devmenu_texture_inspector_initialize( &devmenu->texture_inspector, devmenu );
   crude_gui_devmenu_render_graph_initialize( &devmenu->render_graph, devmenu );
-  crude_gui_devmenu_gpu_pool_initialize( &devmenu->gpu_pool, devmenu );
   crude_gui_devmenu_scene_renderer_initialize( &devmenu->scene_renderer, devmenu );
-  crude_gui_devmenu_viewport_initialize( &devmenu->viewport, devmenu );
 }
 
 void
@@ -93,11 +84,8 @@ crude_gui_devmenu_deinitialize
 )
 {
   crude_gui_devmenu_memory_visual_profiler_deinitialize( &devmenu->memory_visual_profiler );
-  crude_gui_devmenu_texture_inspector_deinitialize( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_deinitialize( &devmenu->render_graph );
-  crude_gui_devmenu_gpu_pool_deinitialize( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_deinitialize( &devmenu->scene_renderer );
-  crude_gui_devmenu_viewport_deinitialize( &devmenu->viewport );
 }
 
 void
@@ -133,12 +121,8 @@ crude_gui_devmenu_draw
   //  ImGui::Text( "FPS %u", CRUDE_MIN_INT( devmenu->previous_framerate, game->framerate ) );
   //  ImGui::End( );
   //}
-  
-  crude_gui_devmenu_viewport_draw( &devmenu->viewport );
   crude_gui_devmenu_memory_visual_profiler_draw( &devmenu->memory_visual_profiler );
-  crude_gui_devmenu_texture_inspector_draw( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_draw( &devmenu->render_graph );
-  crude_gui_devmenu_gpu_pool_draw( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_draw( &devmenu->scene_renderer );
   CRUDE_PROFILER_ZONE_END;
 }
@@ -150,11 +134,8 @@ crude_gui_devmenu_update
 )
 {
   crude_gui_devmenu_memory_visual_profiler_update( &devmenu->memory_visual_profiler );
-  crude_gui_devmenu_texture_inspector_update( &devmenu->texture_inspector );
   crude_gui_devmenu_render_graph_update( &devmenu->render_graph );
-  crude_gui_devmenu_gpu_pool_update( &devmenu->gpu_pool );
   crude_gui_devmenu_scene_renderer_update( &devmenu->scene_renderer );
-  crude_gui_devmenu_viewport_update( &devmenu->viewport );
 
   //if ( game->time - devmenu->last_framerate_update_time > 1.f )
   //{
@@ -431,122 +412,6 @@ crude_gui_devmenu_memory_visual_profiler_callback
   devmenu->memory_visual_profiler.enabled = !devmenu->memory_visual_profiler.enabled;
 }
 
-/***********************
- * 
- * Develop Texture Inspector
- * 
- ***********************/
-void
-crude_gui_devmenu_texture_inspector_initialize
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_texture_inspector->devmenu = devmenu;
-  dev_texture_inspector->enabled = false;
-  dev_texture_inspector->texture_handle = crude_gfx_access_texture( &devmenu->engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( devmenu->engine->scene_renderer.render_graph->builder, "game_final" )->resource_info.texture.handle )->handle;
-}
-
-void
-crude_gui_devmenu_texture_inspector_deinitialize
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-)
-{
-}
-
-void
-crude_gui_devmenu_texture_inspector_update
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-)
-{
-}
-
-void
-crude_gui_devmenu_texture_inspector_draw
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-)
-{
-  char const                                              *preview_texture_name;
-  uint32                                                   id;
-  
-  if ( !dev_texture_inspector->enabled )
-  {
-    return;
-  }
-
-  ImGui::Begin( "Texture Inspector" );
-
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
-  {
-    ImGui::Image( CRUDE_CAST( ImTextureRef, &dev_texture_inspector->texture_handle.index ), ImGui::GetContentRegionAvail( ) );
-  }
-
-  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  
-  preview_texture_name = "Unknown";
-  id = 0;
-
-  if ( CRUDE_RESOURCE_HANDLE_IS_VALID( dev_texture_inspector->texture_handle ) )
-  {
-    crude_gfx_texture *selected_texture = crude_gfx_access_texture( &dev_texture_inspector->devmenu->engine->gpu, dev_texture_inspector->texture_handle );
-    if ( selected_texture && selected_texture->name[ 0 ] )
-    {
-      preview_texture_name = selected_texture->name;
-    };
-  }
-  
-  if ( ImGui::BeginCombo( "Texture ID", preview_texture_name ) )
-  {
-    for ( uint32 t = 0; t < dev_texture_inspector->devmenu->engine->gpu.textures.pool_size; ++t )
-    {
-      crude_gfx_texture                                   *texture;
-      crude_gfx_texture_handle                             texture_handle;
-      bool                                                 is_selected;
-  
-      texture_handle = CRUDE_CAST( crude_gfx_texture_handle, t );
-      if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( texture_handle ) )
-      {
-        continue;
-      }
-      
-      texture = crude_gfx_access_texture( &dev_texture_inspector->devmenu->engine->gpu, texture_handle );
-      if ( !texture || !texture->name )
-      {
-        continue;
-      }
-      
-      ImGui::PushID( id++ );
-  
-      is_selected = ( dev_texture_inspector->texture_handle.index == texture_handle.index );
-      if ( ImGui::Selectable( texture->name ) )
-      {
-        dev_texture_inspector->texture_handle = texture_handle;
-      }
-      
-      ImGui::PopID( );
-      if ( is_selected )
-      {
-        ImGui::SetItemDefaultFocus();
-      }
-    }
-    ImGui::EndCombo();
-  }
-  
-  ImGui::End( );
-}
-
-void
-crude_gui_devmenu_texture_inspector_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->texture_inspector.enabled = !devmenu->texture_inspector.enabled;
-}
 
 
 /***********************
@@ -683,100 +548,6 @@ crude_gui_devmenu_render_graph_callback
 
 /***********************
  * 
- * Develop GPU Pools
- * 
- ***********************/
-static void
-crude_gui_devmenu_gpu_pool_draw_pool_
-(
-  _In_ crude_resource_pool                                *resource_pool,
-  _In_ char const                                         *resource_name,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  ImGui::Text( "Pool %s, indices used %u, allocated %u", resource_name, resource_pool->used_indices, resource_pool->pool_size );
-}
-
-void
-crude_gui_devmenu_gpu_pool_initialize
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_gpu_pool->devmenu = devmenu;
-  dev_gpu_pool->enabled = false;
-}
-
-void
-crude_gui_devmenu_gpu_pool_deinitialize
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-)
-{
-}
-
-void
-crude_gui_devmenu_gpu_pool_update
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-)
-{
-}
-
-void
-crude_gui_devmenu_gpu_pool_draw
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-)
-{
-  if ( !dev_gpu_pool->enabled )
-  {
-    return;
-  }
-
-  VkPhysicalDeviceProperties                               vk_physical_properties;
-  VmaBudget                                                gpu_memory_heap_budgets[ VK_MAX_MEMORY_HEAPS ];
-  uint64                                                   memory_used, memory_allocated;
-
-  crude_memory_set( gpu_memory_heap_budgets, 0u, sizeof( gpu_memory_heap_budgets ) );
-  vmaGetHeapBudgets( dev_gpu_pool->devmenu->engine->gpu.vma_allocator, gpu_memory_heap_budgets );
- 
-  memory_used = memory_allocated = 0;
-  for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
-  {
-    memory_used += gpu_memory_heap_budgets[ i ].usage;
-    memory_allocated += gpu_memory_heap_budgets[ i ].budget;
-  }
-   
-  vkGetPhysicalDeviceProperties( dev_gpu_pool->devmenu->engine->gpu.vk_physical_device, &vk_physical_properties );
-  
-  ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
-  ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );
-  
-  ImGui::Separator();
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.buffers, "Buffers", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.textures, "Textures", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.pipelines, "Pipelines", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.samplers, "Samplers", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_sets, "DescriptorSets", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.descriptor_set_layouts, "DescriptorSetLayouts", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.framebuffers, "Framebuffers", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.render_passes, "RenderPasses", dev_gpu_pool->devmenu );
-  crude_gui_devmenu_gpu_pool_draw_pool_( &dev_gpu_pool->devmenu->engine->gpu.shaders, "Shaders", dev_gpu_pool->devmenu );
-}
-
-void
-crude_gui_devmenu_gpu_pool_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->gpu_pool.enabled = !devmenu->gpu_pool.enabled;
-}
-
-/***********************
- * 
  * Develop Scene Renderer
  * 
  ***********************/
@@ -879,158 +650,6 @@ crude_gui_devmenu_scene_renderer_callback
 )
 {
   devmenu->scene_renderer.enabled = !devmenu->scene_renderer.enabled;
-}
-
-/***********************
- * 
- * Develop Viewport
- * 
- ***********************/
-void
-crude_gui_devmenu_viewport_initialize
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport,
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  dev_viewport->devmenu = devmenu;
-  dev_viewport->enabled = true;
-}
-
-void
-crude_gui_devmenu_viewport_deinitialize
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-)
-{
-}
-
-void
-crude_gui_devmenu_viewport_update
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-)
-{
-}
-
-void
-crude_gui_devmenu_viewport_draw
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-)
-{
-  static ImGuizmo::OPERATION                               selected_gizmo_operation = ImGuizmo::TRANSLATE;
-  static ImGuizmo::MODE                                    selected_gizmo_mode = ImGuizmo::WORLD;
-  
-  crude_entity                                             camera_node, selected_node;
-  crude_camera                                            *camera;
-  crude_ecs                                               *world;
-  crude_transform                                         *camera_transform;
-  crude_transform                                         *selected_node_transform;
-  crude_transform                                         *selected_node_parent_transform;
-  crude_entity                                             selected_node_parent;
-  XMFLOAT4X4                                               camera_view_to_clip, selected_node_to_parent, selected_parent_to_camera_view;
-  XMVECTOR                                                 new_scale, new_translation, new_rotation_quat;
-  
-  ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-  ImGui::SetNextWindowSize( ImVec2( dev_viewport->devmenu->engine->gpu.renderer_size.x, dev_viewport->devmenu->engine->gpu.renderer_size.y )  );
-  ImGui::Begin( "Viewport", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs );
-
-  world = dev_viewport->devmenu->engine->world;
-
-  camera_node = dev_viewport->devmenu->engine->camera_node;
-  selected_node = dev_viewport->devmenu->nodes_tree.selected_node;
-  if ( !crude_entity_valid( world, selected_node ) )
-  {
-    goto cleanup;
-  }
-  
-  selected_node_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node, crude_transform );
-  camera = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_camera  );
-  camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_transform  );
-  selected_node_parent = crude_entity_get_parent( world, selected_node );
-  
-  if ( selected_node_transform == NULL )
-  {
-    goto cleanup;
-  }
-  
-  if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
-  {
-    selected_gizmo_operation = ImGuizmo::TRANSLATE;
-  }
-  
-  if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
-  {
-    selected_gizmo_operation = ImGuizmo::ROTATE;
-  }
-  if ( ImGui::IsKeyPressed( ImGuiKey_C ) ) // r Key
-  {
-    selected_gizmo_operation = ImGuizmo::SCALE;
-  }
-  
-  if ( ImGui::RadioButton( "Translate", selected_gizmo_operation == ImGuizmo::TRANSLATE ) )
-  {
-    selected_gizmo_operation = ImGuizmo::TRANSLATE;
-  }
-  
-  ImGui::SameLine();
-  
-  if ( ImGui::RadioButton( "Rotate", selected_gizmo_operation == ImGuizmo::ROTATE ) )
-  {
-    selected_gizmo_operation = ImGuizmo::ROTATE;
-  }
-  ImGui::SameLine();
-  if ( ImGui::RadioButton( "Scale", selected_gizmo_operation == ImGuizmo::SCALE ) )
-  {
-    selected_gizmo_operation = ImGuizmo::SCALE;
-  }
-  
-  ImGui::SetCursorPos( ImGui::GetWindowContentRegionMin( ) );
-  ImGuizmo::SetDrawlist( );
-  ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
-  
-  if ( crude_entity_valid( world, selected_node_parent ) )
-  {
-    selected_node_parent_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, selected_node_parent, crude_transform  );
-  }
-  else
-  {
-    selected_node_parent_transform = NULL;
-  }
-  
-  if ( selected_node_parent_transform )
-  {
-    XMStoreFloat4x4( &selected_parent_to_camera_view, DirectX::XMMatrixMultiply( crude_transform_node_to_world( world, selected_node_parent, selected_node_parent_transform ), XMMatrixInverse( NULL, crude_transform_node_to_world( world, camera_node, camera_transform ) ) ) );
-  }
-  else
-  {
-    XMStoreFloat4x4( &selected_parent_to_camera_view, XMMatrixIdentity( ) );
-  }
-  
-  XMStoreFloat4x4( &camera_view_to_clip, crude_camera_view_to_clip( camera ) );
-  XMStoreFloat4x4( &selected_node_to_parent, crude_transform_node_to_parent( selected_node_transform ) );
-  
-  ImGuizmo::SetID( 0 );
-  if ( ImGuizmo::Manipulate( &selected_parent_to_camera_view._11, &camera_view_to_clip._11, selected_gizmo_operation, selected_gizmo_mode, &selected_node_to_parent._11, NULL, NULL ) )
-  {
-    crude_transform_decompose( selected_node_transform, XMLoadFloat4x4( &selected_node_to_parent ) );
-  
-    CRUDE_ENTITY_COMPONENT_MODIFIED( world, selected_node, crude_transform );
-  }
-  //ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
-
-cleanup:
-  ImGui::End( );
-}
-
-void
-crude_gui_devmenu_viewport_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-)
-{
-  devmenu->viewport.enabled = !devmenu->viewport.enabled;
 }
 
 #endif

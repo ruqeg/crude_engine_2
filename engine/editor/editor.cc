@@ -57,6 +57,7 @@ crude_editor_initialize
   crude_gui_content_browser_initialize( &editor->content_browser, engine->environment.directories.resources_absolute_directory, &engine->develop_temporary_allocator );
   crude_gui_gpu_visual_profiler_initialize( &editor->gpu_visual_profiler, &engine->gpu, &engine->develop_heap_allocator );
   crude_gui_debug_initialize( &editor->debug, engine );
+  crude_gui_texture_inspector_initialize( &editor->texture_inspector, editor->engine->render_graph.builder );
 }
 
 void
@@ -71,6 +72,7 @@ crude_editor_deinitialize
   crude_gui_content_browser_deinitialize( &editor->content_browser );
   crude_gui_gpu_visual_profiler_deinitialize( &editor->gpu_visual_profiler );
   crude_gui_debug_deinitialize( &editor->debug );
+  crude_gui_texture_inspector_deinitialize( &editor->texture_inspector );
 }
 
 void
@@ -102,6 +104,7 @@ crude_editor_queue_draw
     ImGui::DockBuilderSplitNode( im_dock_id_logger, ImGuiDir_Left, 0.5f, &im_dock_id_browser, &im_dock_id_logger );
 
     ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_viewport );
+    ImGui::DockBuilderDockWindow( "Texture Inspector", im_dock_id_viewport );
     ImGui::DockBuilderDockWindow( "Inspector", im_dock_id_inspector );
     ImGui::DockBuilderDockWindow( "Node Tree", im_dock_id_node_tree );
     ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_browser );
@@ -214,6 +217,10 @@ crude_editor_queue_draw
   ImGui::End( );
   ImGui::PopStyleColor( );
   
+  ImGui::Begin( "Texture Inspector", NULL, window_flags );
+  crude_gui_texture_inspector_queue_draw( &editor->texture_inspector );
+  ImGui::End( );
+  
   ImGui::Begin( "Inspector", NULL, window_flags );
   crude_gui_node_inspector_queue_draw( &editor->node_inspector, editor->engine->world, editor->selected_node );
   ImGui::End( );
@@ -250,6 +257,7 @@ crude_editor_update
 {
   crude_gui_gpu_visual_profiler_update( &editor->gpu_visual_profiler );
   crude_gui_debug_update( &editor->debug );
+  crude_gui_texture_inspector_update( &editor->texture_inspector );
 
   if ( CRUDE_ECS_EDITOR_STAGE_IS_ENABLED( editor->engine->world ) )
   {

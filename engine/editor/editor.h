@@ -11,6 +11,7 @@
 #include <engine/gui/log_viewer.h>
 #include <engine/gui/content_browser.h>
 #include <engine/gui/gpu_visual_profiler.h>
+#include <engine/gui/texture_inspector.h>
 #include <engine/gui/debug.h>
 #include <engine/editor/editor_camera_ecs.h>
 
@@ -36,6 +37,7 @@ typedef struct crude_editor
   crude_entity                                             selected_node;
   crude_gui_gpu_visual_profiler                            gpu_visual_profiler;
   crude_gui_debug                                          debug;
+  crude_gui_texture_inspector                              texture_inspector;
 } crude_editor;
 
 CRUDE_API void

@@ -9,43 +9,12 @@
 typedef struct crude_engine crude_engine;
 typedef struct crude_gui_devmenu crude_gui_devmenu;
 
-typedef struct crude_gui_devmenu_texture_inspector
-{
-  crude_gui_devmenu                                       *devmenu;
-  bool                                                     enabled;
-  crude_gfx_texture_handle                                 texture_handle;
-} crude_gui_devmenu_texture_inspector;
-
 typedef struct crude_gui_devmenu_memory_visual_profiler
 {
   crude_gui_devmenu                                       *devmenu;
   bool                                                     enabled;
   crude_allocator_container                               *allocators_containers;
 } crude_gui_devmenu_memory_visual_profiler;
-
-typedef struct crude_gui_devmenu_gpu_visual_profiler
-{
-  crude_gui_devmenu                                       *devmenu;
-  crude_gfx_device                                        *gpu;
-  float32                                                  max_duration;
-  uint32                                                   max_frames;
-  uint32                                                   max_queries_per_frame;
-  uint32                                                   current_frame;
-  int32                                                    max_visible_depth;
-  float32                                                  average_time;
-  float32                                                  max_time;
-  float32                                                  min_time;
-  float32                                                  new_average;
-  uint32                                                   framebuffer_pixel_count;
-  uint16                                                  *per_frame_active;
-  crude_gfx_gpu_time_query                                *timestamps;
-  crude_gfx_gpu_pipeline_statistics                       *pipeline_statistics;
-  crude_heap_allocator                                    *allocator;
-  struct { uint64 key; uint32 value; }                    *name_hashed_to_color_index;
-  uint32                                                   initial_frames_paused;
-  bool                                                     paused;
-  bool                                                     enabled;
-} crude_gui_devmenu_gpu_visual_profiler;
 
 typedef struct crude_gui_devmenu_render_graph
 {
@@ -56,12 +25,6 @@ typedef struct crude_gui_devmenu_render_graph
   bool                                                     enabled;
 } crude_gui_devmenu_render_graph;
 
-typedef struct crude_gui_devmenu_gpu_pool
-{
-  crude_gui_devmenu                                       *devmenu;
-  bool                                                     enabled;
-} crude_gui_devmenu_gpu_pool;
-
 typedef struct crude_gui_devmenu_scene_renderer
 {
   crude_gui_devmenu                                       *devmenu;
@@ -70,42 +33,13 @@ typedef struct crude_gui_devmenu_scene_renderer
   bool                                                     enabled;
 } crude_gui_devmenu_scene_renderer;
 
-typedef struct crude_gui_devmenu_nodes_tree
-{
-  crude_gui_devmenu                                       *devmenu;
-  bool                                                     enabled;
-  
-  crude_entity                                             selected_node;
-
-  char                                                     dublicate_node_name[ 512 ];
-  crude_entity                                             dublicate_node_reference;
-} crude_gui_devmenu_nodes_tree;
-
-typedef struct crude_gui_devmenu_node_inspector
-{
-  crude_gui_devmenu                                       *devmenu;
-  bool                                                     enabled;
-} crude_gui_devmenu_node_inspector;
-
-typedef struct crude_gui_devmenu_viewport
-{
-  crude_gui_devmenu                                       *devmenu;
-  bool                                                     enabled;
-} crude_gui_devmenu_viewport;
-
 typedef struct crude_gui_devmenu
 {
   crude_engine                                            *engine;
   bool                                                     enabled;
-  crude_gui_devmenu_gpu_visual_profiler                    gpu_visual_profiler;
   crude_gui_devmenu_memory_visual_profiler                 memory_visual_profiler;
-  crude_gui_devmenu_texture_inspector                      texture_inspector;
   crude_gui_devmenu_render_graph                           render_graph;
-  crude_gui_devmenu_gpu_pool                               gpu_pool;
   crude_gui_devmenu_scene_renderer                         scene_renderer;
-  crude_gui_devmenu_nodes_tree                             nodes_tree;
-  crude_gui_devmenu_node_inspector                         node_inspector;
-  crude_gui_devmenu_viewport                               viewport;
   uint32                                                   selected_option;
   float32                                                  last_framerate_update_time;
   uint32                                                   previous_framerate;
@@ -242,42 +176,6 @@ crude_gui_devmenu_memory_visual_profiler_callback
 
 /***********************
  * 
- * Develop Texture Inspector
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_texture_inspector_initialize
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_texture_inspector_deinitialize
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_texture_inspector_update
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_texture_inspector_draw
-(
-  _In_ crude_gui_devmenu_texture_inspector                *dev_texture_inspector
-);
-
-CRUDE_API void
-crude_gui_devmenu_texture_inspector_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
  * Develop Render Graph
  * 
  ***********************/
@@ -314,42 +212,6 @@ crude_gui_devmenu_render_graph_callback
 
 /***********************
  * 
- * Develop GPU Pools
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_gpu_pool_initialize
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_pool_deinitialize
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_pool_update
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_pool_draw
-(
-  _In_ crude_gui_devmenu_gpu_pool                         *dev_gpu_pool
-);
-
-CRUDE_API void
-crude_gui_devmenu_gpu_pool_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
  * Develop Scene Renderer
  * 
  ***********************/
@@ -380,42 +242,6 @@ crude_gui_devmenu_scene_renderer_draw
 
 CRUDE_API void
 crude_gui_devmenu_scene_renderer_callback
-(
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-/***********************
- * 
- * Develop Viewport
- * 
- ***********************/
-CRUDE_API void
-crude_gui_devmenu_viewport_initialize
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport,
-  _In_ crude_gui_devmenu                                  *devmenu
-);
-
-CRUDE_API void
-crude_gui_devmenu_viewport_deinitialize
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-);
-
-CRUDE_API void
-crude_gui_devmenu_viewport_update
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-);
-
-CRUDE_API void
-crude_gui_devmenu_viewport_draw
-(
-  _In_ crude_gui_devmenu_viewport                         *dev_viewport
-);
-
-CRUDE_API void
-crude_gui_devmenu_viewport_callback
 (
   _In_ crude_gui_devmenu                                  *devmenu
 );
