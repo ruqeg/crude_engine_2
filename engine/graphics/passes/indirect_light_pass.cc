@@ -3,6 +3,9 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/graphics/scene_renderer.h>
 
+#define PROBE_RAYTRACER
+#include <engine/graphics/shaders/ddgi.crude_shader>
+
 #include <engine/graphics/passes/indirect_light_pass.h>
 
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
@@ -108,13 +111,6 @@ crude_gfx_indirect_light_pass_initialize
   crude_string_copy( texture_creation.name, "indirect_texture", sizeof( texture_creation.name ) );
   pass->indirect_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &texture_creation );
 
-  buffer_creation = crude_gfx_buffer_creation_empty( );
-  buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_DYNAMIC;
-  buffer_creation.type_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  buffer_creation.size = sizeof( crude_gfx_ddgi_gpu_data );
-  buffer_creation.name = "ddgi_cb";
-  pass->ddgi_cb = crude_gfx_create_buffer( pass->scene_renderer->gpu, &buffer_creation );
-
   crude_gfx_indirect_light_pass_on_resize( pass, 0, 0 );
 }
 
@@ -124,7 +120,6 @@ crude_gfx_indirect_light_pass_deinitialize
   _In_ crude_gfx_indirect_light_pass                      *pass
 )
 {
-  crude_gfx_destroy_buffer( pass->scene_renderer->gpu, pass->ddgi_cb );
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->probe_raytrace_radiance_texture_handle );
   crude_gfx_destroy_sampler( pass->scene_renderer->gpu, pass->probe_grid_sampler_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->probe_grid_irradiance_texture_handle );
@@ -140,82 +135,85 @@ crude_gfx_indirect_light_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  //crude_gfx_indirect_light_pass                           *pass;
-  //crude_gfx_renderer                                      *renderer;
-  //crude_gfx_render_graph_resource                         *render_graph_resource;
-  //crude_gfx_texture                                       *probe_raytrace_radiance_texture;
-  //crude_gfx_ddgi_gpu_data                                 *ddgi_mapped_data;
-  //crude_gfx_pipeline_handle                                probe_raytrace_pipeline, probe_update_irradiance_pipeline, probe_update_visibility_pipeline, sample_irradiance_pipeline, probe_debug_pipeline, calculate_probe_offset_pipeline;
-  //crude_gfx_map_buffer_parameters                          map_parameters;
-  //uint32                                                   probe_count;
-  //
-  //pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
-  //renderer = pass->scene_renderer->renderer;
-  //
-  //probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
-  //pass->probe_update_offset = ( pass->probe_update_offset + pass->options.probe_update_per_frame ) % probe_count;
-  //
-  //map_parameters = CRUDE_COMPOUNT_EMPTY( crude_gfx_map_buffer_parameters );
-  //map_parameters.buffer = pass->ddgi_cb;
-  //ddgi_mapped_data = CRUDE_CAST( crude_gfx_ddgi_gpu_data*, crude_gfx_map_buffer( renderer->gpu, &map_parameters ) );
-  //if ( ddgi_mapped_data )
-  //{
-  //  ddgi_mapped_data->probe_counts.x = pass->probe_count_x;
-  //  ddgi_mapped_data->probe_counts.y = pass->probe_count_y;
-  //  ddgi_mapped_data->probe_counts.z = pass->probe_count_z;
-  //  ddgi_mapped_data->probe_rays = pass->probe_rays;
-  //  ddgi_mapped_data->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
-  //  ddgi_mapped_data->indirect_output_index = pass->indirect_texture_handle.index;
-  //
-  //  render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, pass->scene_renderer->options.depth_texture_name );
-  //  ddgi_mapped_data->depth_fullscreen_texture_index = render_graph_resource->resource_info.texture.handle.index;
-  //  
-  //  render_graph_resource = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "gbuffer_normal" );
-  //  ddgi_mapped_data->normal_texture_index = render_graph_resource->resource_info.texture.handle.index;
-  //
-  //  ddgi_mapped_data->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
-  //  ddgi_mapped_data->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
-  //  ddgi_mapped_data->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
-  //  XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationRollPitchYaw( 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ) ) );
-  //  //XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
-  //  ddgi_mapped_data->irradiance_texture_width = pass->irradiance_atlas_width;
-  //  ddgi_mapped_data->irradiance_texture_height = pass->irradiance_atlas_height;
-  //  ddgi_mapped_data->irradiance_side_length = pass->irradiance_side_length;
-  //  ddgi_mapped_data->visibility_texture_width = pass->visibility_atlas_width;
-  //  ddgi_mapped_data->visibility_texture_height = pass->visibility_atlas_height;
-  //  ddgi_mapped_data->visibility_side_length = pass->visibility_side_length;
-  //  
-  //  ddgi_mapped_data->hysteresis = pass->options.hysteresis;
-  //  ddgi_mapped_data->self_shadow_bias = pass->options.self_shadow_bias;
-  //  ddgi_mapped_data->probe_grid_position = pass->options.probe_grid_position;
-  //  ddgi_mapped_data->max_probe_offset = pass->options.max_probe_offset;
-  //  ddgi_mapped_data->infinite_bounces_multiplier = pass->options.infinite_bounces_multiplier;
-  //  ddgi_mapped_data->probe_spacing = pass->options.probe_spacing;
-  //  ddgi_mapped_data->probe_update_per_frame = pass->options.probe_update_per_frame;
-  //  ddgi_mapped_data->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / pass->options.probe_spacing.x, 1.f / pass->options.probe_spacing.y, 1.f / pass->options.probe_spacing.z } );
-  //
-  //  ddgi_mapped_data->shadow_weight_power = pass->options.shadow_weight_power;
-  //
-  //  ddgi_mapped_data->probe_update_offset = pass->probe_update_offset;
-  //
-  //  crude_gfx_unmap_buffer( renderer->gpu, map_parameters.buffer );
-  //}
-  //
-  //probe_raytrace_radiance_texture = crude_gfx_access_texture( renderer->gpu, pass->probe_raytrace_radiance_texture_handle );
+  crude_gfx_indirect_light_pass                           *pass;
+  crude_gfx_device                                        *gpu;
+  crude_gfx_ddgi_constants                                 ddgi_constants;
+  uint32                                                   probe_count;
+
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
+  gpu = pass->scene_renderer->gpu;
+
+  probe_count = pass->probe_count_x * pass->probe_count_y * pass->probe_count_z;
+  pass->probe_update_offset = ( pass->probe_update_offset + pass->options.probe_update_per_frame ) % probe_count;
+  
+  ddgi_constants = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_constants );
+  ddgi_constants.probe_counts.x = pass->probe_count_x;
+  ddgi_constants.probe_counts.y = pass->probe_count_y;
+  ddgi_constants.probe_counts.z = pass->probe_count_z;
+  ddgi_constants.probe_rays = pass->probe_rays;
+  ddgi_constants.radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
+  ddgi_constants.indirect_output_index = pass->indirect_texture_handle.index;
+  ddgi_constants.depth_fullscreen_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.depth_texture );
+  ddgi_constants.normal_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.normal_texture );
+  ddgi_constants.grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
+  ddgi_constants.grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
+  ddgi_constants.probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
+  XMStoreFloat4x4( &ddgi_constants.random_rotation, XMMatrixRotationRollPitchYaw( 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ) ) );
+  //XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+  ddgi_constants.irradiance_texture_width = pass->irradiance_atlas_width;
+  ddgi_constants.irradiance_texture_height = pass->irradiance_atlas_height;
+  ddgi_constants.irradiance_side_length = pass->irradiance_side_length;
+  ddgi_constants.visibility_texture_width = pass->visibility_atlas_width;
+  ddgi_constants.visibility_texture_height = pass->visibility_atlas_height;
+  ddgi_constants.visibility_side_length = pass->visibility_side_length;
+  ddgi_constants.hysteresis = pass->options.hysteresis;
+  ddgi_constants.self_shadow_bias = pass->options.self_shadow_bias;
+  ddgi_constants.probe_grid_position = pass->options.probe_grid_position;
+  ddgi_constants.max_probe_offset = pass->options.max_probe_offset;
+  ddgi_constants.infinite_bounces_multiplier = pass->options.infinite_bounces_multiplier;
+  ddgi_constants.probe_spacing = pass->options.probe_spacing;
+  ddgi_constants.probe_update_per_frame = pass->options.probe_update_per_frame;
+  ddgi_constants.reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, { 1.f / pass->options.probe_spacing.x, 1.f / pass->options.probe_spacing.y, 1.f / pass->options.probe_spacing.z } );
+  ddgi_constants.shadow_weight_power = pass->options.shadow_weight_power;
+  ddgi_constants.probe_update_offset = pass->probe_update_offset;
+  
   //probe_raytrace_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_raytracer" )->pipeline;
   //probe_update_irradiance_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_irradiance" )->pipeline;
   //probe_update_visibility_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_update_visibility" )->pipeline;
   //sample_irradiance_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "sample_irradiance" )->pipeline;
   //probe_debug_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "probe_debug" )->pipeline;
   //calculate_probe_offset_pipeline = crude_gfx_renderer_access_technique_pass_by_name( renderer, "ray_tracing", "calculate_probe_offsets" )->pipeline;
-  //
-  //crude_gfx_cmd_push_marker( primary_cmd, "probe_raytrace" );
-  //crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-  //crude_gfx_cmd_bind_pipeline( primary_cmd, probe_raytrace_pipeline );
-  //crude_gfx_cmd_bind_descriptor_set( primary_cmd, pass->probe_raytrace_ds[ renderer->gpu->current_frame ] );
-  //crude_gfx_cmd_trace_rays( primary_cmd, probe_raytrace_pipeline, pass->probe_rays, pass->options.probe_update_per_frame, 1u );
-  //crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-  //crude_gfx_cmd_pop_marker( primary_cmd );
+  
+  {
+    crude_gfx_texture                                     *probe_raytrace_radiance_texture;
+    crude_gfx_probe_raytracer_push_constant_               push_constant;
+    crude_gfx_pipeline_handle                              pipeline;
+    
+    probe_raytrace_radiance_texture = crude_gfx_access_texture( gpu, pass->probe_raytrace_radiance_texture_handle );
+    
+    pipeline = crude_gfx_access_technique_pass_by_name( pass->scene_renderer->gpu, "ddgi", "probe_raytracer" )->pipeline;
+
+    crude_gfx_cmd_push_marker( primary_cmd, "probe_raytracer" );
+    
+    crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
+    crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
+    crude_gfx_cmd_bind_acceleration_structure_descriptor_set( primary_cmd, pass->scene_renderer->acceleration_stucture_ds );
+
+    CRUDE_ASSERT( sizeof( VkAccelerationStructureKHR ) == sizeof( uint64 ) );
+
+    push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_probe_raytracer_push_constant_ );
+    push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
+    push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
+    push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
+    push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
+    push_constant.ddgi = ddgi_constants;
+    crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
+     
+    crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+    crude_gfx_cmd_trace_rays( primary_cmd, pipeline, pass->probe_rays, pass->options.probe_update_per_frame, 1u );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+    crude_gfx_cmd_pop_marker( primary_cmd );
+  }
   //
   //if ( pass->offsets_calculations_count >= 0 )
   //{

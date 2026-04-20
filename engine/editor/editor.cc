@@ -102,9 +102,9 @@ crude_editor_queue_draw
     ImGui::DockBuilderSplitNode( im_dock_id_viewport, ImGuiDir_Left, 0.20f, &im_dock_id_node_tree, &im_dock_id_viewport );
     ImGui::DockBuilderSplitNode( im_dock_id_node_tree, ImGuiDir_Up, 0.50f, &im_dock_id_node_tree, &im_dock_id_inspector );
     ImGui::DockBuilderSplitNode( im_dock_id_logger, ImGuiDir_Left, 0.5f, &im_dock_id_browser, &im_dock_id_logger );
-
-    ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_viewport );
+    
     ImGui::DockBuilderDockWindow( "Texture Inspector", im_dock_id_viewport );
+    ImGui::DockBuilderDockWindow( "Viewport", im_dock_id_viewport );
     ImGui::DockBuilderDockWindow( "Inspector", im_dock_id_inspector );
     ImGui::DockBuilderDockWindow( "Node Tree", im_dock_id_node_tree );
     ImGui::DockBuilderDockWindow( "Content Browser", im_dock_id_browser );

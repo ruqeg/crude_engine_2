@@ -7,55 +7,6 @@
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
-typedef CRUDE_ALIGNED_STRUCT( 16 ) crude_gfx_ddgi_gpu_data
-{
-  XMINT3                                                   probe_counts;
-  int32                                                    probe_rays;
-  XMFLOAT3                                                 probe_spacing;
-  int32                                                    probe_update_offset;
-  XMFLOAT3                                                 probe_grid_position;
-  float32                                                  max_probe_offset;
-
-  uint32                                                   radiance_output_index;
-  uint32                                                   indirect_output_index;
-  uint32                                                   normal_texture_index;
-  uint32                                                   depth_fullscreen_texture_index;
-  uint32                                                   grid_irradiance_output_index;
-  uint32                                                   grid_visibility_texture_index;
-  uint32                                                   probe_offset_texture_index;
-  float32                                                  hysteresis;
-
-  XMFLOAT4X4                                               random_rotation;
-
-  int32                                                    irradiance_texture_width;
-  int32                                                    irradiance_texture_height;
-  int32                                                    irradiance_side_length;
-
-  int32                                                    visibility_texture_width;
-  int32                                                    visibility_texture_height;
-  int32                                                    visibility_side_length;
-
-  float32                                                  self_shadow_bias;
-  float32                                                  infinite_bounces_multiplier;
-  XMFLOAT3                                                 reciprocal_probe_spacing;
-
-  float32                                                  shadow_weight_power;
-  int32                                                    probe_update_per_frame;
-} crude_gfx_ddgi_gpu_data;
-
-typedef struct crude_gfx_indirect_light_pass_options
-{
-  XMFLOAT3                                                 probe_spacing;
-  XMFLOAT3                                                 probe_grid_position;
-  float32                                                  hysteresis;
-  float32                                                  self_shadow_bias;
-  float32                                                  infinite_bounces_multiplier;
-  float32                                                  max_probe_offset;
-  uint32                                                   probe_debug_flags;
-  float32                                                  shadow_weight_power;
-  int32                                                    probe_update_per_frame;
-} crude_gfx_indirect_light_pass_options;
-
 typedef struct crude_gfx_indirect_light_pass
 {
   crude_gfx_scene_renderer                                *scene_renderer;
@@ -64,7 +15,6 @@ typedef struct crude_gfx_indirect_light_pass
   crude_gfx_texture_handle                                 probe_offsets_texture_handle;
   crude_gfx_texture_handle                                 indirect_texture_handle;
   crude_gfx_texture_handle                                 probe_raytrace_radiance_texture_handle;
-  crude_gfx_buffer_handle                                  ddgi_cb;
   crude_gfx_sampler_handle                                 probe_grid_sampler_handle;
 
   uint32                                                   irradiance_atlas_width;
@@ -86,7 +36,18 @@ typedef struct crude_gfx_indirect_light_pass
 
   int32                                                    offsets_calculations_count;
 
-  crude_gfx_indirect_light_pass_options                    options;
+  struct
+  {
+    XMFLOAT3                                               probe_spacing;
+    XMFLOAT3                                               probe_grid_position;
+    float32                                                hysteresis;
+    float32                                                self_shadow_bias;
+    float32                                                infinite_bounces_multiplier;
+    float32                                                max_probe_offset;
+    uint32                                                 probe_debug_flags;
+    float32                                                shadow_weight_power;
+    int32                                                  probe_update_per_frame;
+  } options;
 } crude_gfx_indirect_light_pass;
 
 CRUDE_API void

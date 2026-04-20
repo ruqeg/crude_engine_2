@@ -4,8 +4,6 @@
 
 #include <engine/graphics/render_graph.h>
 
-typedef struct crude_editor crude_editor;
-
 typedef struct crude_gui_texture_inspector
 {
   crude_gfx_device                                        *gpu;

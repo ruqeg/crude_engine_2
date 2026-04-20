@@ -74,6 +74,7 @@ typedef struct crude_gfx_scene_renderer_options
     char const                                            *output_texture;
     char const                                            *packed_roughness_metalness_texture;
   } compose_pass;
+  
   struct 
   {
     crude_camera                                           camera;
@@ -83,6 +84,12 @@ typedef struct crude_gfx_scene_renderer_options
     XMFLOAT3                                               ambient_color;
     float32                                                ambient_intensity;
   } scene;
+
+  struct 
+  {
+    char const                                            *normal_texture;
+    char const                                            *depth_texture;
+  } indirect_light;
   
 #if CRUDE_DEVELOP
   struct 
