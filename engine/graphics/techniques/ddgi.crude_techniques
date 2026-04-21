@@ -1,0 +1,101 @@
+{
+	"name" : "ddgi",
+	"buffers": [
+		{
+			"name": "ddgi",
+			"filename": "ddgi.crude_shader",
+			"includes": [
+				"common/platform.h",
+				"common/debug.h",
+				"common/scene.h",
+				"common/light.h"
+			]
+		}
+	],
+	"pipelines" : [
+		{
+			"name" : "probe_raytracer",
+			"render_pass": "indirect_light_pass",
+			"shaders" : [
+				{
+					"stage" : "raygen",
+					"buffer" : "ddgi"
+				},
+				{
+					"stage" : "closest_hit",
+					"buffer" : "ddgi"
+				},
+				{
+					"stage" : "miss",
+					"buffer" : "ddgi"
+				}
+			]
+		},
+    {
+      "name" : "probe_update_visibility",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "probe_update_irradiance",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "sample_irradiance",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name" : "calculate_probe_offsets",
+      "render_pass": "indirect_light_pass",
+      "shaders" : [
+        {
+          "stage" : "compute",
+          "buffer" : "ddgi"
+        }
+      ]
+    },
+    {
+      "name": "probe_debug",
+      "multisample": "enabled",
+      "render_pass_output": {
+        "reference": "indirect_light_debug_pass"
+      },
+      "depth": {
+        "write": 1,
+        "test": "less_or_equal"
+      },
+      "cull": "back",
+      "shaders": [
+        {
+          "stage": "mesh",
+          "buffer": "ddgi"
+        },
+        {
+          "stage": "task",
+          "buffer": "ddgi"
+        },
+        {
+          "stage": "fragment",
+          "buffer": "ddgi"
+        }
+      ]
+    }
+  ]
+}

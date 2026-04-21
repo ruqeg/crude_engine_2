@@ -138,6 +138,25 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   scene_renderer->options.scene.ambient_intensity = 2.f;
 
+  scene_renderer->options.indirect_light.depth_texture = "depth";
+  scene_renderer->options.indirect_light.normal_texture = "direct_normal";
+  
+  scene_renderer->options.indirect_light.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
+  scene_renderer->options.indirect_light.self_shadow_bias = 0.3f;
+  scene_renderer->options.indirect_light.infinite_bounces_multiplier = 0.75f;
+  scene_renderer->options.indirect_light.hysteresis = 0.95f;
+  scene_renderer->options.indirect_light.probe_grid_position = XMFLOAT3{ -20.0,0.5,-13.0 };
+  scene_renderer->options.indirect_light.max_probe_offset = 0.4f;
+  scene_renderer->options.indirect_light.probe_debug_flags = 0;
+  scene_renderer->options.indirect_light.shadow_weight_power = 2.5;
+  scene_renderer->options.indirect_light.probe_update_per_frame = 1000;
+  scene_renderer->options.indirect_light.probe_count_x = 20;
+  scene_renderer->options.indirect_light.probe_count_y = 20;
+  scene_renderer->options.indirect_light.probe_count_z = 20;
+  scene_renderer->options.indirect_light.offsets_calculations_count = 24;
+  scene_renderer->options.indirect_light.probe_rays = 128;
+  scene_renderer->options.indirect_light.use_half_resolution = true;
+
 #if CRUDE_DEVELOP
   scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
   scene_renderer->options.debug.flags1 = 0;
@@ -167,6 +186,8 @@ crude_gfx_scene_renderer_initialize
   
   scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga", 0 );
 
+  scene_renderer->ddgi_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_ddgi_constants ), CRUDE_GFX_MEMORY_TYPE_GPU, "ddgi_hga", 0 );
+
   scene_renderer->meshes_instances_draws_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_mesh_instance_draw ) * scene_renderer->total_meshes_instances_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "meshes_instances_draws", 0 );
   scene_renderer->scene_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, sizeof( crude_gfx_scene ), CRUDE_GFX_MEMORY_TYPE_GPU, "scene", 0 );
   scene_renderer->mesh_task_indirect_commands_hga = crude_gfx_memory_allocate_with_name( scene_renderer->gpu, scene_renderer->total_meshes_instances_buffer_capacity * sizeof( crude_gfx_mesh_draw_command ), CRUDE_GFX_MEMORY_TYPE_GPU, "mesh_task_indirect_commands", 0 );
@@ -179,6 +200,12 @@ crude_gfx_scene_renderer_initialize
 
 #if CRUDE_DEVELOP
   {
+    crude_gfx_model_renderer_resources_instance_initialize(
+      &scene_renderer->probe_model_renderer_resources_instance,
+      scene_renderer->model_renderer_resources_manager,
+      crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_probe.gltf" ) );
+    scene_renderer->probe_model_renderer_resources_instance.cast_shadow = false;
+
     crude_gfx_model_renderer_resources_instance_initialize(
       &scene_renderer->light_model_renderer_resources_instance,
       scene_renderer->model_renderer_resources_manager,
@@ -247,6 +274,7 @@ crude_gfx_scene_renderer_initialize
 #endif
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_indirect_light_pass_initialize( &scene_renderer->indirect_light_pass, scene_renderer );
+  crude_gfx_indirect_light_debug_pass_initialize( &scene_renderer->indirect_light_debug_pass, scene_renderer );
 #endif
 }
 
@@ -262,6 +290,7 @@ crude_gfx_scene_renderer_deinitialize
 #endif
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_pass" );
+  crude_gfx_render_graph_builder_unregister_render_pass( scene_renderer->render_graph->builder, "indirect_light_debug_pass" );
 #endif
   
   if ( scene_renderer->imgui_pass_enalbed )
@@ -287,7 +316,10 @@ crude_gfx_scene_renderer_deinitialize
 
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_indirect_light_pass_deinitialize( &scene_renderer->indirect_light_pass );
+  crude_gfx_indirect_light_debug_pass_deinitialize( &scene_renderer->indirect_light_debug_pass );
 #endif
+
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->ddgi_hga );
 
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
@@ -317,6 +349,7 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
   
 #if CRUDE_DEVELOP
+  crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->probe_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->capsule_model_renderer_resources_instance );
@@ -343,6 +376,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   
 #if CRUDE_DEVELOP
   // load debug light (in case it was cleaned because of new model manager resource clean)
+  scene_renderer->probe_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_probe.gltf" );
   scene_renderer->light_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_light_tetrahedron.gltf" );
   scene_renderer->camera_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_camera.gltf" );
   scene_renderer->capsule_model_renderer_resources_instance.model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( scene_renderer->model_renderer_resources_manager, "editor\\models\\crude_capsule.gltf" );
@@ -581,6 +615,7 @@ crude_gfx_scene_renderer_register_passes
 #endif
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_pass" ), crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_debug_pass" ), crude_gfx_indirect_light_debug_pass_pack( &scene_renderer->indirect_light_debug_pass ) );
 #endif
 }
 
@@ -611,6 +646,54 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
   gpu = scene_renderer->gpu;
   
+  /* Update ddgi constant buffer */
+  {
+    crude_gfx_ddgi_constants                              *ddgi_constants;
+    crude_gfx_indirect_light_pass                         *pass;
+    crude_gfx_memory_allocation                            ddgi_constants_tca;
+    
+    pass = &scene_renderer->indirect_light_pass;
+
+    ddgi_constants_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_ddgi_constants ) );
+    ddgi_constants = CRUDE_CAST( crude_gfx_ddgi_constants*, ddgi_constants_tca.cpu_address );
+    
+    *ddgi_constants = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_constants );
+    ddgi_constants->probe_counts.x = scene_renderer->options.indirect_light.probe_count_x;
+    ddgi_constants->probe_counts.y = scene_renderer->options.indirect_light.probe_count_y;
+    ddgi_constants->probe_counts.z = scene_renderer->options.indirect_light.probe_count_z;
+    ddgi_constants->probe_rays = scene_renderer->options.indirect_light.probe_rays;
+    ddgi_constants->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
+    ddgi_constants->indirect_output_index = pass->indirect_texture_handle.index;
+    ddgi_constants->depth_fullscreen_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.depth_texture );
+    ddgi_constants->normal_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.normal_texture );
+    ddgi_constants->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
+    ddgi_constants->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
+    ddgi_constants->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
+    XMStoreFloat4x4( &ddgi_constants->random_rotation, XMMatrixRotationRollPitchYaw( 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ) ) );
+    //XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
+    ddgi_constants->irradiance_texture_width = pass->irradiance_atlas_width;
+    ddgi_constants->irradiance_texture_height = pass->irradiance_atlas_height;
+    ddgi_constants->irradiance_side_length = pass->irradiance_side_length;
+    ddgi_constants->visibility_texture_width = pass->visibility_atlas_width;
+    ddgi_constants->visibility_texture_height = pass->visibility_atlas_height;
+    ddgi_constants->visibility_side_length = pass->visibility_side_length;
+    ddgi_constants->hysteresis = scene_renderer->options.indirect_light.hysteresis;
+    ddgi_constants->self_shadow_bias = scene_renderer->options.indirect_light.self_shadow_bias;
+    ddgi_constants->probe_grid_position = scene_renderer->options.indirect_light.probe_grid_position;
+    ddgi_constants->max_probe_offset = scene_renderer->options.indirect_light.max_probe_offset;
+    ddgi_constants->infinite_bounces_multiplier = scene_renderer->options.indirect_light.infinite_bounces_multiplier;
+    ddgi_constants->probe_spacing = scene_renderer->options.indirect_light.probe_spacing;
+    ddgi_constants->probe_update_per_frame = scene_renderer->options.indirect_light.probe_update_per_frame;
+    ddgi_constants->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, {
+      1.f / scene_renderer->options.indirect_light.probe_spacing.x,
+      1.f / scene_renderer->options.indirect_light.probe_spacing.y,
+      1.f / scene_renderer->options.indirect_light.probe_spacing.z } );
+    ddgi_constants->shadow_weight_power = scene_renderer->options.indirect_light.shadow_weight_power;
+    ddgi_constants->probe_update_offset = pass->probe_update_offset;
+  
+    crude_gfx_cmd_memory_copy( primary_cmd, ddgi_constants_tca, scene_renderer->ddgi_hga, 0, 0 );
+  }
+
   /* Update scene constant buffer*/
   {
     crude_gfx_scene                                       *scene;
@@ -1218,6 +1301,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
           vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
           vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
           vk_acceleration_structure_instance.transform = vk_transform;
+          vk_acceleration_structure_instance.instanceCustomIndex = model_instance_index;
 
           CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
         }
@@ -1383,6 +1467,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
           vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
           vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
           vk_acceleration_structure_instance.transform = vk_transform;
+          vk_acceleration_structure_instance.instanceCustomIndex = model_instance_index;
 
           CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
         }

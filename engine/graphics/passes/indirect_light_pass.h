@@ -3,6 +3,14 @@
 #include <engine/graphics/render_graph.h>
 #include <engine/graphics/scene_renderer_resources.h>
 
+#define SAMPLE_IRRADIANCE
+#define PROBE_UPDATE_IRRADIANCE
+#define PROBE_UPDATE_VISIBILITY
+#define CALCULATE_PROBE_OFFSETS
+#define PROBE_RAYTRACER
+#define PROBE_DEBUG
+#include <engine/graphics/shaders/ddgi.crude_shader>
+
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
 
 typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
@@ -27,27 +35,6 @@ typedef struct crude_gfx_indirect_light_pass
   uint32                                                   visibility_side_length_with_borders;
 
   uint32                                                   probe_update_offset;
-  
-  uint32                                                   probe_count_x;
-  uint32                                                   probe_count_y;
-  uint32                                                   probe_count_z;
-  int32                                                    probe_rays;
-  bool                                                     use_half_resolution;
-
-  int32                                                    offsets_calculations_count;
-
-  struct
-  {
-    XMFLOAT3                                               probe_spacing;
-    XMFLOAT3                                               probe_grid_position;
-    float32                                                hysteresis;
-    float32                                                self_shadow_bias;
-    float32                                                infinite_bounces_multiplier;
-    float32                                                max_probe_offset;
-    uint32                                                 probe_debug_flags;
-    float32                                                shadow_weight_power;
-    int32                                                  probe_update_per_frame;
-  } options;
 } crude_gfx_indirect_light_pass;
 
 CRUDE_API void

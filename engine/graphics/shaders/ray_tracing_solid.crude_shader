@@ -104,11 +104,11 @@ void main()
   uint                                                   i0, i1, i2;
   uint                                                   mesh_index;
 
-  mesh_index = mesh_instance_draws.data[ gl_GeometryIndexEXT ].mesh_draw_index;
+  mesh_index = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_draw_index;
   mesh_draw = mesh_draws.data[ mesh_index ];
 
-  world_to_mesh = mesh_instance_draws.data[ gl_GeometryIndexEXT ].world_to_mesh;
-  mesh_to_world = mesh_instance_draws.data[ gl_GeometryIndexEXT ].mesh_to_world;
+  world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
+  mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
   
   if ( ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_INDEX_16 ) == 0 ) )
   {

@@ -4,7 +4,11 @@
     {
       "name": "ray_tracing_solid",
       "filename": "ray_tracing_solid.crude_shader",
-      "includes": [ "common/platform.h", "common/debug.h", "common/scene.h" ]
+      "includes": [
+        "common/platform.h",
+        "common/debug.h",
+        "common/scene.h"
+      ]
     }
   ],
   "pipelines" : [

@@ -49,7 +49,7 @@
 #endif
 
 #ifndef __cplusplus
-#define CRUDE_PUSH_CONSTANT(name) layout(push_constant) uniform name
+#define CRUDE_PUSH_CONSTANT(name) layout(push_constant, row_major, std430) uniform name
 #else
 #define CRUDE_PUSH_CONSTANT(name) CRUDE_ALIGNED_STRUCT( 16 ) name
 #endif
@@ -65,6 +65,9 @@
 #define uint16 uint16_t
 #define uint64 uint64_t
 #define uint32 uint
+#define XMINT2 ivec2
+#define XMINT3 ivec3
+#define XMINT4 ivec4
 #define XMFLOAT2 vec2
 #define XMFLOAT3 vec3
 #define XMFLOAT4 vec4
@@ -96,6 +99,19 @@
 #define CRUDE_TEXTURE_FETCH( ti, coords, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], coords, mip )
 #define CRUDE_TEXTURE_LOD( ti, uv, mip ) textureLod( global_textures[ nonuniformEXT( ti ) ], uv, mip )
 #define CRUDE_IMAGE_STORE( ti, coords, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], coords, data )
+#define CRUDE_IMAGE_LOAD( ti, coords ) imageLoad( global_images_2d[ nonuniformEXT( ti ) ], coords )
+
+#define CRUDE_IMAGE_STORE_FORMATTED_DEFINE( ti, coords, data, format ) imageStore( global_images_2d_##format[ nonuniformEXT( ti ) ], coords, data )
+#define CRUDE_IMAGE_LOAD_FORMATTED_DEFINE( ti, coords, format ) imageLoad( global_images_2d_##format[ nonuniformEXT( ti ) ], coords )
+
+#define CRUDE_IMAGE_R32_STORE( ti, coords, data, format ) CRUDE_IMAGE_STORE_FORMATTED_DEFINE( ti, coords, data, r32f )
+#define CRUDE_IMAGE_R32_LOAD( ti, coords, format ) CRUDE_IMAGE_LOAD_FORMATTED_DEFINE( ti, coords, r32f )
+
+#define CRUDE_IMAGE_R16G16_STORE( ti, coords, data ) CRUDE_IMAGE_STORE_FORMATTED_DEFINE( ti, coords, data, rg16f )
+#define CRUDE_IMAGE_R16G16_LOAD( ti, coords ) CRUDE_IMAGE_LOAD_FORMATTED_DEFINE( ti, coords, rg16f )
+
+#define CRUDE_IMAGE_R16G16B16A16_STORE( ti, coords, data ) CRUDE_IMAGE_STORE_FORMATTED_DEFINE( ti, coords, data, rgba16f )
+#define CRUDE_IMAGE_R16G16B16A16_LOAD( ti, coords ) CRUDE_IMAGE_LOAD_FORMATTED_DEFINE( ti, coords, rgba16f )
 
 #define CRUDE_DEAFULT_F0 vec3( 0.04f )
 #define CRUDE_SATURATE( v ) clamp( v, 0, 1 )
@@ -116,6 +132,8 @@ layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BIN
 layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING) writeonly uniform image3D global_images_3d[];
 layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING) writeonly uniform uimage2D global_uimages_2d[];
 layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING,r32f) uniform image2D global_images_2d_r32f[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING,rg16f) uniform image2D global_images_2d_rg16f[];
+layout(set=CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, binding=CRUDE_BINDLESS_IMAGE_BINDING,rgba16f) uniform image2D global_images_2d_rgba16f[];
 
 /* 64 Distinct Colors. Used for anything that needs random colors. */
 const uint32 crude_distinct_colors_u32[ 64 ] =

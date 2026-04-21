@@ -340,9 +340,9 @@ CRUDE_BARRIER
     float weighted_log_average = ( histogram_shared[ 0 ] / max( num_pixels - float( count_for_this_bin ), 1.0 ) ) - 1.0;
 
     float weighted_avg_lum = exp2( ( ( weighted_log_average / 254.0 ) * log_lum_range ) + min_log_lum );
-    float lum_last_frame = imageLoad( global_images_2d_r32f[ luminance_avarage_texture ], ivec2( 0, 0 ) ).x;
+    float lum_last_frame = CRUDE_IMAGE_R32_LOAD( luminance_avarage_texture, ivec2( 0, 0 ), r32f ).x;
     float adapted_lum = lum_last_frame + ( weighted_avg_lum - lum_last_frame ) * time_coeff;
-    imageStore( global_images_2d_r32f[ luminance_avarage_texture ], ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ) );
+    CRUDE_IMAGE_R32_STORE( luminance_avarage_texture, ivec2( 0, 0 ), vec4( adapted_lum, 0.0, 0.0, 0.0 ), r32f );
   }
 }
 #endif /* LUMINANCE_AVERAGE_CALCULATION */

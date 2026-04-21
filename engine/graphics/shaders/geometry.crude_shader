@@ -335,6 +335,7 @@ void main()
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_direct_radiance;
+layout(location = 1) out vec2 out_packed_normal;
 
 layout(location=0) in vec2 in_texcoord0;
 layout(location=1) in vec3 in_normal;
@@ -395,6 +396,7 @@ void main()
   direct_radiance += mesh_draw.emissive.xyz * mesh_draw.emissive.w;
 
   out_direct_radiance = vec4( direct_radiance, 1.f );
+  out_packed_normal = crude_octahedral_encode( normal );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

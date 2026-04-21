@@ -16,6 +16,7 @@
 #include <engine/graphics/passes/postprocessing_pass.h>
 #include <engine/graphics/passes/ray_tracing_solid_pass.h>
 #include <engine/graphics/passes/indirect_light_pass.h>
+#include <engine/graphics/passes/indirect_light_debug_pass.h>
 #include <engine/graphics/passes/translucent_pass.h>
 #include <engine/graphics/passes/light_lut_pass.h>
 #include <engine/graphics/passes/ssr_pass.h>
@@ -89,6 +90,22 @@ typedef struct crude_gfx_scene_renderer_options
   {
     char const                                            *normal_texture;
     char const                                            *depth_texture;
+   
+    XMFLOAT3                                               probe_spacing;
+    XMFLOAT3                                               probe_grid_position;
+    float32                                                hysteresis;
+    float32                                                self_shadow_bias;
+    float32                                                infinite_bounces_multiplier;
+    float32                                                max_probe_offset;
+    uint32                                                 probe_debug_flags;
+    float32                                                shadow_weight_power;
+    int32                                                  probe_update_per_frame;
+    uint32                                                 probe_count_x;
+    uint32                                                 probe_count_y;
+    uint32                                                 probe_count_z;
+    int32                                                  probe_rays;
+    int32                                                  offsets_calculations_count;
+    bool                                                   use_half_resolution;
   } indirect_light;
   
 #if CRUDE_DEVELOP
@@ -137,6 +154,7 @@ typedef struct crude_gfx_scene_renderer
    * Debug
    **********************/
 #if CRUDE_DEVELOP
+  crude_gfx_model_renderer_resources_instance              probe_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              light_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              camera_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              capsule_model_renderer_resources_instance;
@@ -150,6 +168,8 @@ typedef struct crude_gfx_scene_renderer
    * Common Mesh & Meshlets CPU & GPU Data
    **********************/
   crude_gfx_memory_allocation                              scene_hga;
+
+  crude_gfx_memory_allocation                              ddgi_hga;
   
   crude_gfx_model_renderer_resources_instance             *model_renderer_resoruces_instances;
   crude_gfx_model_renderer_resources_instance             *prev_model_renderer_resoruces_instances;
@@ -216,6 +236,7 @@ typedef struct crude_gfx_scene_renderer
 #endif
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_indirect_light_pass                            indirect_light_pass;
+  crude_gfx_indirect_light_debug_pass                      indirect_light_debug_pass;
 #endif
 } crude_gfx_scene_renderer;
 
