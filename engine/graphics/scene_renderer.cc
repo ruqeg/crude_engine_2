@@ -796,7 +796,9 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
             if ( node->skin != -1 )
             {
-              if ( CRUDE_ARRAY_LENGTH( cpu_mesh->affected_joints ) )
+              CRUDE_ASSERT( CRUDE_ARRAY_LENGTH( node->meshes ) == CRUDE_ARRAY_LENGTH( node->affected_joints ) );
+
+              if ( CRUDE_ARRAY_LENGTH( node->affected_joints ) )
               {
                 crude_gfx_skin                             *skin;
                 XMMATRIX                                   model_to_mesh;
@@ -807,20 +809,20 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
                 skin = &model_renderer_resources->skins[ node->skin ];
                 model_to_mesh = XMMatrixInverse( NULL, mesh_to_model );
 
-                position_max = XMLoadFloat3( &cpu_mesh->affected_joints_local_aabb[ 0 ].max );
-                position_min = XMLoadFloat3( &cpu_mesh->affected_joints_local_aabb[ 0 ].min );
+                position_max = XMLoadFloat3( &node->affected_joints_local_aabb[ 0 ].max );
+                position_min = XMLoadFloat3( &node->affected_joints_local_aabb[ 0 ].min );
 
-                for ( uint32 affected_joint = 0; affected_joint < CRUDE_ARRAY_LENGTH( cpu_mesh->affected_joints ); ++affected_joint )
+                for ( uint32 affected_joint = 0; affected_joint < CRUDE_ARRAY_LENGTH( node->affected_joints ); ++affected_joint )
                 {
                   crude_gfx_aabb_cpu                      *local_joint_aabb;
                   XMVECTOR                                 animated_joint_aabb_max;
                   XMVECTOR                                 animated_joint_aabb_min;
                   XMMATRIX                                 joint_matrix, inverse_bind_matrix;
 
-                  local_joint_aabb = &cpu_mesh->affected_joints_local_aabb[ affected_joint ];
+                  local_joint_aabb = &node->affected_joints_local_aabb[ affected_joint ];
 
-                  inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ cpu_mesh->affected_joints[ affected_joint ] ] );
-                  joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ cpu_mesh->affected_joints[ affected_joint ] ] );
+                  inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ node->affected_joints[ affected_joint ] ] );
+                  joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ node->affected_joints[ affected_joint ] ] );
                   joint_matrix = XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh );
                   
                   animated_joint_aabb_max = XMVector3Transform( XMLoadFloat3( &local_joint_aabb->max ), joint_matrix );
@@ -1236,11 +1238,13 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   VkAccelerationStructureGeometryKHR                       vk_acceleration_structure_geometry;
   uint64                                                   temporary_allocator_marker;
   uint32                                                   max_instance_count;
+  uint32                                                   instance_custom_index;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
 
+  instance_custom_index = 0u;
   for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
   {
     crude_gfx_model_renderer_resources_instance const     *model_renderer_resources_instance;
@@ -1301,10 +1305,16 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
           vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
           vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
           vk_acceleration_structure_instance.transform = vk_transform;
-          vk_acceleration_structure_instance.instanceCustomIndex = model_instance_index;
+          vk_acceleration_structure_instance.instanceCustomIndex = instance_custom_index;
 
           CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
+
+          ++instance_custom_index;
         }
+      }
+      else if ( node->meshes )
+      {
+        instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
       }
     }
   }
@@ -1402,11 +1412,13 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   VkAccelerationStructureGeometryKHR                       vk_acceleration_structure_geometry;
   uint64                                                   temporary_allocator_marker;
   uint32                                                   max_instance_count;
+  uint32                                                   instance_custom_index;
   
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
 
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-
+  
+  instance_custom_index = 0u;
   for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
   {
     crude_gfx_model_renderer_resources_instance const     *model_renderer_resources_instance;
@@ -1467,10 +1479,16 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
           vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
           vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
           vk_acceleration_structure_instance.transform = vk_transform;
-          vk_acceleration_structure_instance.instanceCustomIndex = model_instance_index;
+          vk_acceleration_structure_instance.instanceCustomIndex = instance_custom_index;
 
           CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
+
+          ++instance_custom_index;
         }
+      }
+      else if ( node->meshes )
+      {
+        instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
       }
     }
   }

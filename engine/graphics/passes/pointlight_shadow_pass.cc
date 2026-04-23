@@ -113,6 +113,7 @@ crude_gfx_pointlight_shadow_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
+  return;
   crude_gfx_device                                        *gpu;
   crude_gfx_pointlight_shadow_pass                        *pass;
   crude_gfx_texture                                       *tetrahedron_shadow_texture;
@@ -342,7 +343,8 @@ crude_gfx_pointlight_shadow_pass_render
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
     push_constant.meshlets = pass->scene_renderer->model_renderer_resources_manager->meshlets_hga.gpu_address;
-    push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
+    push_constant.vertices_positions = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_positions_hga.gpu_address;
+    push_constant.vertices_joints = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_joints_hga.gpu_address;
     push_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
     push_constant.vertices_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_hga.gpu_address;
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;

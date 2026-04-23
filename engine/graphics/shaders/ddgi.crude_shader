@@ -119,6 +119,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_debug_push_constant_ )
   MeshletsRef                                              meshlets;
   VerticesRef                                              vertices;
 
+  VerticesPositionsRef                                     vertices_positions;
+  VerticesJointsRef                                        vertices_joints;
+
   TrianglesIndicesRef                                      triangles_indices;
   VerticesIndicesRef                                       vertices_indices;
 
@@ -401,85 +404,73 @@ void main()
 
     world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
     mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
-
-    if ( ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_INDEX_16 ) == 0 ) )
-    {
-      MeshIndices32Ref indices32 = MeshIndices32Ref( mesh_draw.index_buffer );
-      i0 = indices32.data[ gl_PrimitiveID * 3 ];
-      i1 = indices32.data[ gl_PrimitiveID * 3 + 1 ];
-      i2 = indices32.data[ gl_PrimitiveID * 3 + 2 ];
-    }
-    else
-    {
-      MeshIndices16Ref indices16 = MeshIndices16Ref( mesh_draw.index_buffer );
-      i0 = indices16.data[ gl_PrimitiveID * 3 ];
-      i1 = indices16.data[ gl_PrimitiveID * 3 + 1 ];
-      i2 = indices16.data[ gl_PrimitiveID * 3 + 2 ];
-    }
-
-
-    p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
-    p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
-    p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
-
-    if ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
-    {
-      n0_model = mesh_draw.normal_buffer.data[ i0 ];
-      n1_model = mesh_draw.normal_buffer.data[ i1 ];
-      n2_model = mesh_draw.normal_buffer.data[ i2 ];
-      normal = normalize( a * n0_model + b * n1_model + c * n2_model );
-    }
-    else
-    {
-      normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
-    }
-
-    texcoord0 = mesh_draw.texcoord_buffer.data[ i0 ];
-    texcoord1 = mesh_draw.texcoord_buffer.data[ i1 ];
-    texcoord2 = mesh_draw.texcoord_buffer.data[ i2 ];
-
-    b = barycentric_weights.x;
-    c = barycentric_weights.y;
-    a = 1 - b - c;
-  
-    model_position = a * p0_model + b * p1_model + c * p2_model;
-    world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
-    texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
-
-    albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
     
-    diffuse = vec3( 0 );
-    for ( uint i = 0; i < scene.data.active_lights_count; ++i )
-    {
-      rayQueryEXT                                          ray_query;
-      crude_gfx_light                                      light;
-      float                                                position_to_light_distance;
-      vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
-      
-      light = lights.data[ i ];
-      position_to_light = light.world_position - world_position;
-      position_to_light_distance = length( position_to_light );
-      position_to_light_normalized = position_to_light / position_to_light_distance;
+    i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
+    i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
+    i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
 
-      float visiblity = 1.f;
-      if ( position_to_light_distance <= light.radius )
-      {
-        rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
-        rayQueryProceedEXT( ray_query );
-        visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
-      }
-      
-      ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
-
-      light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
-
-      diffuse += visiblity * albedo * light_intensity;
-    }
-
-    diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
-
-    radiance = diffuse;
-    distance = gl_RayTminEXT + gl_HitTEXT;
+    //p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
+    //p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
+    //p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
+    //
+    //if ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
+    //{
+    //  n0_model = mesh_draw.normal_buffer.data[ i0 ];
+    //  n1_model = mesh_draw.normal_buffer.data[ i1 ];
+    //  n2_model = mesh_draw.normal_buffer.data[ i2 ];
+    //  normal = normalize( a * n0_model + b * n1_model + c * n2_model );
+    //}
+    //else
+    //{
+    //  normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
+    //}
+    //
+    //texcoord0 = mesh_draw.texcoord_buffer.data[ i0 ];
+    //texcoord1 = mesh_draw.texcoord_buffer.data[ i1 ];
+    //texcoord2 = mesh_draw.texcoord_buffer.data[ i2 ];
+    //
+    //b = barycentric_weights.x;
+    //c = barycentric_weights.y;
+    //a = 1 - b - c;
+    //
+    //model_position = a * p0_model + b * p1_model + c * p2_model;
+    //world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
+    //texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
+    //
+    //albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
+    //
+    //diffuse = vec3( 0 );
+    //for ( uint i = 0; i < scene.data.active_lights_count; ++i )
+    //{
+    //  rayQueryEXT                                          ray_query;
+    //  crude_gfx_light                                      light;
+    //  float                                                position_to_light_distance;
+    //  vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
+    //  
+    //  light = lights.data[ i ];
+    //  position_to_light = light.world_position - world_position;
+    //  position_to_light_distance = length( position_to_light );
+    //  position_to_light_normalized = position_to_light / position_to_light_distance;
+    //
+    //  float visiblity = 1.f;
+    //  if ( position_to_light_distance <= light.radius )
+    //  {
+    //    rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
+    //    rayQueryProceedEXT( ray_query );
+    //    visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
+    //  }
+    //  
+    //  ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
+    //
+    //  light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
+    //
+    //  diffuse += visiblity * albedo * light_intensity;
+    //}
+    //
+    //diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
+    //
+    //radiance = diffuse;
+    //distance = gl_RayTminEXT + gl_HitTEXT;
   }
 
   payload.radiance = radiance;
@@ -983,22 +974,22 @@ void main()
   
   SetMeshOutputsEXT( vertices_count, triangles_count );
   
-  float i8_inverse = 1.0 / 127.0;
-  for ( uint i = gl_LocalInvocationID.x; i < vertices_count; i += gl_WorkGroupSize.x )
-  {
-    uint vertex_index = vertices_indices.data[ i + vertices_offset ];
-    
-    vec3 mesh_position = vertices.data[ vertex_index ].position;
-    vec3 world_position = mesh_position + probe_world_offset;
-
-    gl_MeshVerticesEXT[ i ].gl_Position = vec4( world_position, 1 ) * scene.data.camera.world_to_clip;
-  }
-  
-  for ( uint i = gl_LocalInvocationID.x; i < triangles_count; i += gl_WorkGroupSize.x )
-  {
-    uint triangle_index = uint( 3 * i + triangles_offset );
-    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices.data[ triangle_index ], triangles_indices.data[ triangle_index + 1 ], triangles_indices.data[ triangle_index + 2 ] );
-  }
+  //float i8_inverse = 1.0 / 127.0;
+  //for ( uint i = gl_LocalInvocationID.x; i < vertices_count; i += gl_WorkGroupSize.x )
+  //{
+  //  uint vertex_index = vertices_indices.data[ i + vertices_offset ];
+  //  
+  //  vec3 mesh_position = vertices.data[ vertex_index ].position;
+  //  vec3 world_position = mesh_position + probe_world_offset;
+  //
+  //  gl_MeshVerticesEXT[ i ].gl_Position = vec4( world_position, 1 ) * scene.data.camera.world_to_clip;
+  //}
+  //
+  //for ( uint i = gl_LocalInvocationID.x; i < triangles_count; i += gl_WorkGroupSize.x )
+  //{
+  //  uint triangle_index = uint( 3 * i + triangles_offset );
+  //  gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( triangles_indices.data[ triangle_index ], triangles_indices.data[ triangle_index + 1 ], triangles_indices.data[ triangle_index + 2 ] );
+  //}
 }
 #endif /* CRUDE_STAGE_MESH */
 

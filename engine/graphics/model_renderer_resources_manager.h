@@ -42,7 +42,7 @@ typedef struct crude_gfx_model_renderer_resources_manager
    **********************/
   crude_gfx_sampler_handle                                *samplers;
   crude_gfx_texture_handle                                *images;
-  crude_gfx_memory_allocation                             *buffers;
+  crude_gfx_memory_allocation                             *indices_buffers;
 
   crude_linear_allocator                                   linear_allocator;
   crude_string_buffer                                      gltf_absolute_filepath_string_buffer;
@@ -56,6 +56,8 @@ typedef struct crude_gfx_model_renderer_resources_manager
 
   /* For meshlet pipelines */
   crude_gfx_memory_allocation                              meshlets_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_positions_hga;
+  crude_gfx_memory_allocation                              meshlets_vertices_joints_hga;
   crude_gfx_memory_allocation                              meshlets_vertices_hga;
   crude_gfx_memory_allocation                              meshlets_vertices_indices_hga;
   crude_gfx_memory_allocation                              meshlets_triangles_indices_hga;

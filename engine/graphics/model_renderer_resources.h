@@ -32,19 +32,8 @@ typedef struct crude_gfx_aabb_cpu
 
 typedef struct crude_gfx_mesh_cpu
 {
-  crude_gfx_aabb_cpu                                      *affected_joints_local_aabb;
-  uint32                                                  *affected_joints; /* need to calculate animation bounding box, i would like to move all this bullshit to the compute shader, but naaah im too lazy */
   XMFLOAT4                                                 default_bounding_sphere;
   crude_gfx_memory_allocation                              index_hga;
-  crude_gfx_memory_allocation                              position_hga;
-  crude_gfx_memory_allocation                              tangent_hga;
-  crude_gfx_memory_allocation                              normal_hga;
-  crude_gfx_memory_allocation                              texcoord_hga;
-  uint32                                                   index_offset;
-  uint32                                                   position_offset;
-  uint32                                                   tangent_offset;
-  uint32                                                   normal_offset;
-  uint32                                                   texcoord_offset;
   uint32                                                   indices_count;
   XMFLOAT4                                                 emmision;
   XMFLOAT4                                                 albedo_color_factor;
@@ -66,6 +55,8 @@ typedef struct crude_gfx_node
   int64                                                    parent;
   int64                                                   *childrens;
   uint64                                                  *meshes;
+  crude_gfx_aabb_cpu                                      *affected_joints_local_aabb;
+  uint32                                                  *affected_joints; /* need to calculate animation bounding box, i would like to move all this bullshit to the compute shader, but naaah im too lazy */
   char                                                     name[ CRUDE_GFX_NODE_NAME_LENGTH_MAX ];
 } crude_gfx_node;
 

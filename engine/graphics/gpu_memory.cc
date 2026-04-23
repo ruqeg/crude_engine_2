@@ -166,10 +166,25 @@ crude_gfx_memory_allocate
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
-  _In_ crude_gfx_memory_type                               type
+  _In_ crude_gfx_memory_type                               type,
+  _In_ VkBufferUsageFlags2                                 additional_flags
 )
 {
-  return crude_gfx_memory_allocate_with_name( gpu, size, type, "default_allocated_buffer", 0 );
+  return crude_gfx_memory_allocate_with_name( gpu, size, type, "default_allocated_buffer", additional_flags );
+}
+
+crude_gfx_memory_allocation
+crude_gfx_memory_allocate_cpu_gpu_copy
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *data,
+  _In_ uint64                                              size,
+  _In_ VkBufferUsageFlags2                                 additional_flags
+)
+{
+  crude_gfx_memory_allocation allocation = crude_gfx_memory_allocate( gpu, size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, additional_flags );
+  crude_memory_copy( allocation.cpu_address, data, size );
+  return allocation;
 }
 
 crude_gfx_memory_allocation

@@ -167,7 +167,7 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   buffer->ready = false;
 }
 
-CRUDE_API void
+crude_gfx_memory_allocation
 crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
@@ -189,6 +189,8 @@ crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
 
   buffer = crude_gfx_access_buffer( asynloader->gpu, gpu_allocation.buffer_handle );
   buffer->ready = false;
+
+  return gpu_allocation;
 }
 
 void

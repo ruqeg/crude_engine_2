@@ -750,6 +750,8 @@ typedef struct crude_gfx_cmd_buffer
   VkClearValue                                             clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX + 1 ];
   VkCommandBuffer                                          vk_cmd_buffer;
   
+  char                                                     name[ 512 ];
+
   crude_gfx_cmd_pool_handle                                cmd_pool;
 } crude_gfx_cmd_buffer;
 

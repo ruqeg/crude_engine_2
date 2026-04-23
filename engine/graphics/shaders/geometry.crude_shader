@@ -4,11 +4,11 @@
 #extension GL_GOOGLE_include_directive : enable
 #endif
 //#define TRANSLUCENT_NO_CULL_CLASSIC
-//#define OPAQUE_MESHLET
+#define OPAQUE_MESHLET
 //#define DEFERRED_CLASSIC
 //#define TRANSLUCENT_NO_CULL
 //#define CRUDE_STAGE_TASK
-//#define CRUDE_STAGE_MESH
+#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
 //#define CRUDE_STAGE_FRAGMENT
 #include "common/platform.h"
@@ -26,8 +26,11 @@ CRUDE_PUSH_CONSTANT( crude_gfx_opaque_meshlet_pass_push_constant_ )
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
   MeshletsRef                                              meshlets;
-
+  
   VerticesRef                                              vertices;
+  VerticesPositionsRef                                     vertices_positions;
+
+  VerticesJointsRef                                        vertices_joints;
   TrianglesIndicesRef                                      triangles_indices;
 
   VerticesIndicesRef                                       vertices_indices;
@@ -92,6 +95,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
   MeshletsRef                                              meshlets;
 
   VerticesRef                                              vertices;
+  VerticesPositionsRef                                     vertices_positions;
+
+  VerticesJointsRef                                        vertices_joints;
   TrianglesIndicesRef                                      triangles_indices;
 
   VerticesIndicesRef                                       vertices_indices;
@@ -234,12 +240,8 @@ void main()
   {
     uint vertex_index = vertices_indices.data[ i + vertices_offset ];
     
-    vec4 mesh_position = vec4( vertices.data[ vertex_index ].position, 1.0 );
-    mat4 mesh_to_skin = 
-      vertices.data[ vertex_index ].joint_weights.x * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.x ) ] +
-      vertices.data[ vertex_index ].joint_weights.y * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.y ) ] +
-      vertices.data[ vertex_index ].joint_weights.z * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.z ) ] +
-      vertices.data[ vertex_index ].joint_weights.w * joint_matrices.data[ mesh_instance_draws.data[ mesh_instance_draw_index ].joints_matrices_offset + int( vertices.data[ vertex_index ].joint_indices.w ) ];
+    vec4 mesh_position = vec4( vertices_positions.data[ vertex_index ], 1.0 );
+    mat4 mesh_to_skin = crude_calculate_mesh_to_skin( vertex_index, vertices_joints, joint_matrices, mesh_instance_draws.data[ mesh_instance_draw_index ] );
     vec4 skin_position = mesh_position * mesh_to_skin;
     vec4 world_position = skin_position * mesh_to_world;
 

@@ -2963,6 +2963,8 @@ crude_gfx_create_cmd_buffer
   
   *cmd_buffer = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_buffer );
 
+  crude_string_copy( cmd_buffer->name, creation->name, sizeof( cmd_buffer->name ) );
+
   cmd_buffer->cmd_pool = creation->cmd_pool;
   cmd_buffer->gpu = gpu;
 

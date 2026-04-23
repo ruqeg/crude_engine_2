@@ -100,7 +100,7 @@ crude_gfx_asynchronous_loader_request_buffer_copy
   _In_ crude_gfx_memory_allocation                         gpu_allocation
 );
 
-CRUDE_API void
+CRUDE_API crude_gfx_memory_allocation
 crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader,
@@ -119,4 +119,4 @@ CRUDE_API bool
 crude_gfx_asynchronous_loader_has_requests
 (
   _In_ crude_gfx_asynchronous_loader                      *asynloader
-);
+);  

@@ -23,12 +23,7 @@ crude_gfx_mesh_cpu_to_mesh_draw_gpu
   mesh_draw_gpu->mesh_index = mesh->gpu_mesh_global_index;
   mesh_draw_gpu->meshletes_count = mesh->meshlets_count;
   mesh_draw_gpu->meshletes_offset = mesh->meshlets_offset;
-  mesh_draw_gpu->mesh_indices_count = mesh->indices_count;
-  mesh_draw_gpu->position_buffer = mesh->position_hga.gpu_address + mesh->position_offset;
-  mesh_draw_gpu->texcoord_buffer = mesh->texcoord_hga.gpu_address + mesh->texcoord_offset;
-  mesh_draw_gpu->index_buffer = mesh->index_hga.gpu_address + mesh->index_offset;
-  mesh_draw_gpu->normal_buffer = mesh->normal_hga.gpu_address + mesh->normal_offset;
-  mesh_draw_gpu->tangent_buffer = mesh->tangent_hga.gpu_address + mesh->tangent_offset;
+  mesh_draw_gpu->index_buffer = mesh->index_hga.gpu_address;
 }
 
 XMMATRIX
@@ -87,21 +82,18 @@ crude_gfx_model_renderer_resources_deinitialize
   }
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
-  {
-    if ( model_renderer_resources->meshes[ i ].affected_joints )
-    {
-      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes[ i ].affected_joints );
-    }
-    if ( model_renderer_resources->meshes[ i ].affected_joints_local_aabb )
-    {
-      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes[ i ].affected_joints_local_aabb );
-    }
-  }
   CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->meshes );
 
   for ( uint32 k = 0; k < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++k )
   {
+    if ( model_renderer_resources->nodes[ k ].affected_joints )
+    {
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints );
+    }
+    if ( model_renderer_resources->nodes[ k ].affected_joints_local_aabb )
+    {
+      CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints_local_aabb );
+    }
     if ( model_renderer_resources->nodes[ k ].meshes )
     {
       CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].meshes );

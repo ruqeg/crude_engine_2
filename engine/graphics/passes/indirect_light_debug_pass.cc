@@ -55,6 +55,8 @@ crude_gfx_indirect_light_debug_pass_render
   push_constant.triangles_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_triangles_indices_hga.gpu_address;
   push_constant.vertices_indices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_indices_hga.gpu_address;
   push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
+  push_constant.vertices_positions = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_positions_hga.gpu_address;
+  push_constant.vertices_joints = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_joints_hga.gpu_address;
   push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
   push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   push_constant.probe_mesh_draw_index = crude_gfx_model_renderer_resources_manager_access_model_renderer_resources( pass->scene_renderer->model_renderer_resources_manager, pass->scene_renderer->probe_model_renderer_resources_instance.model_renderer_resources_handle )->meshes[ 0 ].gpu_mesh_global_index;

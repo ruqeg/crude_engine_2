@@ -11,8 +11,7 @@
 
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshPositionsRef, XMFLOAT3 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshTexcoordsRef, XMFLOAT2 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshIndices16Ref, uint16 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshIndices32Ref, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshIndicesRef, uint32 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshNormalsRef, XMFLOAT3 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( MeshTangentsRef, XMFLOAT4 );
 
@@ -46,13 +45,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw )
   uint32                                                   meshletes_index_count;
   uint32                                                   mesh_indices_count;
   
-  MeshPositionsRef                                         position_buffer;
-  MeshTexcoordsRef                                         texcoord_buffer;
-
-  uint64_t                                                 index_buffer;
-  MeshNormalsRef                                           normal_buffer;
-
-  MeshTangentsRef                                          tangent_buffer;
+  MeshIndicesRef                                           index_buffer;
   XMFLOAT2                                                 padding;
 };
 
@@ -85,10 +78,10 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_instance_draw )
   float32                                                  padding;
 };
 
+#define crude_gfx_vertex_position XMFLOAT3
+
 CRUDE_SHADER_STRUCT( crude_gfx_vertex )
 {
-  XMFLOAT3                                                 position;
-  float32                                                  padding1;
 #if __cplusplus
   uint8                                                    normal[ 4 ];
   uint8                                                    tangent[ 4 ];
@@ -99,6 +92,10 @@ CRUDE_SHADER_STRUCT( crude_gfx_vertex )
   float16_t                                                tu, tv;
 #endif
   float32                                                  padding2;
+};
+
+CRUDE_SHADER_STRUCT( crude_gfx_vertex_joint )
+{
   XMFLOAT4                                                 joint_indices;
   XMFLOAT4                                                 joint_weights;
 };
@@ -168,6 +165,8 @@ CRUDE_SHADER_RBUFFER_REF( SceneRef, crude_gfx_scene );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshDrawCommandsRef, crude_gfx_mesh_draw_command );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshInstancesDrawsRef, crude_gfx_mesh_instance_draw );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( VerticesRef, crude_gfx_vertex );
+CRUDE_SHADER_RBUFFER_REF_ARRAY( VerticesJointsRef, crude_gfx_vertex_joint );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( VerticesPositionsRef, crude_gfx_vertex_position );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshDrawsRef, crude_gfx_mesh_draw );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( MeshletsRef, crude_gfx_meshlet );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( TrianglesIndicesRef, uint8 );
@@ -175,6 +174,22 @@ CRUDE_SHADER_RBUFFER_REF_ARRAY( VerticesIndicesRef, uint32 );
 CRUDE_SHADER_RBUFFER_REF_ARRAY( JointMatricesRef, XMFLOAT4X4 );
 
 #ifndef __cplusplus
+
+mat4
+crude_calculate_mesh_to_skin
+(
+  in uint32                                                vertex_index,
+  in VerticesJointsRef                                     vertices_joints,
+  in JointMatricesRef                                      joint_matrices,
+  in crude_gfx_mesh_instance_draw                          mesh_instance_draw
+)
+{
+  return
+    vertices_joints.data[ vertex_index ].joint_weights.x * joint_matrices.data[ mesh_instance_draw.joints_matrices_offset + int( vertices_joints.data[ vertex_index ].joint_indices.x ) ] +
+    vertices_joints.data[ vertex_index ].joint_weights.y * joint_matrices.data[ mesh_instance_draw.joints_matrices_offset + int( vertices_joints.data[ vertex_index ].joint_indices.y ) ] +
+    vertices_joints.data[ vertex_index ].joint_weights.z * joint_matrices.data[ mesh_instance_draw.joints_matrices_offset + int( vertices_joints.data[ vertex_index ].joint_indices.z ) ] +
+    vertices_joints.data[ vertex_index ].joint_weights.w * joint_matrices.data[ mesh_instance_draw.joints_matrices_offset + int( vertices_joints.data[ vertex_index ].joint_indices.w ) ];
+}
 
 #if CRUDE_DEVELOP
 

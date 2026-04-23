@@ -56,6 +56,8 @@ crude_gfx_cmd_begin_primary
   vk_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   vk_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer( cmd->vk_cmd_buffer, &vk_begin_info );
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_begin_primary( %s )", cmd->name );
 }
 
 
@@ -67,8 +69,11 @@ crude_gfx_cmd_end
 {
   if ( !cmd->is_recording )
   {
+    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_end( %s ) [!cmd->is_recording]", cmd->name );
     return;
   }
+
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_end( %s )", cmd->name );
 
   vkEndCommandBuffer( cmd->vk_cmd_buffer );
   cmd->is_recording = false;

@@ -49,7 +49,7 @@
 #endif
 
 #ifndef __cplusplus
-#define CRUDE_PUSH_CONSTANT(name) layout(push_constant, row_major, std430) uniform name
+#define CRUDE_PUSH_CONSTANT(name) layout(push_constant) uniform name
 #else
 #define CRUDE_PUSH_CONSTANT(name) CRUDE_ALIGNED_STRUCT( 16 ) name
 #endif

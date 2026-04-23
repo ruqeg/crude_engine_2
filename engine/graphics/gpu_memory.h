@@ -116,7 +116,17 @@ crude_gfx_memory_allocate
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
-  _In_ crude_gfx_memory_type                               type
+  _In_ crude_gfx_memory_type                               type,
+  _In_ VkBufferUsageFlags2                                 additional_flags
+);
+
+CRUDE_API crude_gfx_memory_allocation
+crude_gfx_memory_allocate_cpu_gpu_copy
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ void                                               *data,
+  _In_ uint64                                              size,
+  _In_ VkBufferUsageFlags2                                 additional_flags
 );
 
 CRUDE_API void
