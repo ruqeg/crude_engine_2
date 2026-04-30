@@ -35,6 +35,7 @@ crude_gfx_ray_tracing_solid_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
+  // !BACK 
   return;
   crude_gfx_ray_tracing_solid_pass                        *pass;
   crude_gfx_texture                                       *ray_tracing_solid_texture;

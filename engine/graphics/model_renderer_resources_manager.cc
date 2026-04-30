@@ -429,7 +429,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create bottom level acceleration structure" );
-  crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
+  // !BACK crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
 #endif
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading finished" );
@@ -563,8 +563,6 @@ crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_
     mesh_draw->normal_texture_handle = normal_texture_handle;
     crude_gfx_link_texture_sampler( manager->gpu, normal_texture_handle, normal_sampler_handle );
   }
-  
-  return;
 }
 
 cgltf_data*
@@ -771,7 +769,22 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
     
   crude_gfx_cmd_begin_primary( immediate_transfer_cmd_buffer );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resouces->meshes, 0, crude_heap_allocator_pack( manager->allocator ) );
+  mesh_index = 0;
+  for ( uint32 gltf_mesh_index = 0; gltf_mesh_index < gltf->meshes_count; ++gltf_mesh_index )
+  {
+    cgltf_mesh                                            *gltf_mesh;
+    
+    gltf_mesh = &gltf->meshes[ gltf_mesh_index ];
+
+    gltf_mesh_index_to_mesh_primitive_index[ mesh_index ] = mesh_index;
+
+    for ( uint32 gltf_primitive_index = 0; gltf_primitive_index < gltf_mesh->primitives_count; ++gltf_primitive_index )
+    {
+      ++mesh_index;
+    }
+  }
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resouces->meshes, mesh_index, crude_heap_allocator_pack( manager->allocator ) );
   
   mesh_index = 0;
   for ( uint32 gltf_mesh_index = 0; gltf_mesh_index < gltf->meshes_count; ++gltf_mesh_index )
@@ -788,10 +801,11 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
       XMVECTOR                                             bounding_center;
       float32                                              bounding_radius;
       uint32                                               flags;
-      bool                                                 material_transparent;
       
       gltf_mesh_primitive = &gltf_mesh->primitives[ gltf_primitive_index ];
       mesh_cpu = &model_renderer_resouces->meshes[ mesh_index ];
+
+      flags = 0u;
 
       for ( uint32 i = 0; i < gltf_mesh_primitive->attributes_count; ++i )
       {
@@ -845,6 +859,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
 
       crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_( manager, mesh_cpu, gltf, gltf_mesh_primitive->material, images_offset, samplers_offset );
 
+      mesh_cpu->indices_count = gltf_indices_accessor->count;
       mesh_cpu->gpu_mesh_global_index = crude_gfX_get_gpu_mesh_global_index_( manager->total_meshes_count, mesh_index );
       mesh_cpu->default_bounding_sphere.x = XMVectorGetX( bounding_center );
       mesh_cpu->default_bounding_sphere.y = XMVectorGetY( bounding_center );
@@ -997,20 +1012,20 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
           new_meshlet->cone_cutoff = meshopt_meshlet_bounds.cone_cutoff_s8;
         }
         
-        last_local_meshlet = &local_meshlets[ local_meshlets_offset + primitive_local_meshletes_count ];
+        last_local_meshlet = &local_meshlets[ local_meshlets_offset + primitive_local_meshletes_count - 1 ];
         
         /* Fill meshelets data to mesh */
         model_renderer_resouces->meshes[ mesh_index ].meshlets_count = primitive_local_meshletes_count;
         model_renderer_resouces->meshes[ mesh_index ].meshlets_offset = local_meshlets_offset + manager->total_meshlets_count;
 
         /* We fill offset for each primitive */
-        for ( uint32 i = 0u; i < last_local_meshlet->vertices_offset + last_local_meshlet->vertices_count; ++i )
+        for ( uint32 i = local_meshlets_vertices_indices_offset; i < last_local_meshlet->vertices_offset + last_local_meshlet->vertices_count; ++i )
         {
-          local_meshlets_vertices_indices[ local_meshlets_vertices_indices_offset + i ] += local_meshlets_vertices_offset + manager->total_meshlets_vertices_count;
+          local_meshlets_vertices_indices[ i ] += local_meshlets_vertices_offset + manager->total_meshlets_vertices_count;
         }
 
-        local_meshlets_vertices_indices_offset += last_local_meshlet->vertices_offset + last_local_meshlet->vertices_count;
-        local_meshlets_triangles_indices_offset += last_local_meshlet->triangles_offset + 3u * last_local_meshlet->triangles_count;
+        local_meshlets_vertices_indices_offset = last_local_meshlet->vertices_offset + last_local_meshlet->vertices_count;
+        local_meshlets_triangles_indices_offset = last_local_meshlet->triangles_offset + 3u * last_local_meshlet->triangles_count;
         local_meshlets_offset += primitive_local_meshletes_count;
         local_meshlets_vertices_offset += primitive_vertices_count;
       
@@ -1168,8 +1183,13 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         CRUDE_GFX_MEMORY_TYPE_GPU,
         "meshlets_vertices_positions_hga", VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR  );
 
-      crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, manager->meshlets_vertices_positions_hga, gpu_allocation, 0u, 0u );
+      if ( manager->meshlets_vertices_positions_hga.size )
+      {
+        crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, manager->meshlets_vertices_positions_hga, gpu_allocation, 0u, 0u );
+      }
       crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, cpu_allocation, gpu_allocation, 0u, manager->meshlets_vertices_positions_hga.size );
+
+      manager->meshlets_vertices_positions_hga = gpu_allocation;
     }
       
     manager->meshlets_vertices_joints_hga = crude_gfx_asynchronous_loader_request_buffer_reallocate_and_copy(
@@ -1216,6 +1236,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
     manager->meshes_draws_hga );
 
   CRUDE_ARRAY_DEINITIALIZE( meshes_draws );
+  
+  crude_gfx_submit_immediate( immediate_transfer_cmd_buffer );
 }
 
 void

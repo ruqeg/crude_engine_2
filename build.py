@@ -42,14 +42,14 @@ def main():
         if ask_yes_no("Enable sanitizers?", default="n"):
             if ask_yes_no("  Add AddressSanitizer?"):
                 cmake_options.append("-DCRUDE_ADDRESS_SANITIZER=ON")
-            if ask_yes_no("  Add MemorySanitizer?"):
-                cmake_options.append("-DCRUDE_MEMORY_SANITIZER=ON")
-            if ask_yes_no("  Add UndefinedBehaviorSanitizer?"):
-                cmake_options.append("-DCRUDE_UNDEFINED_SANITIZER=ON")
-            if ask_yes_no("  Add ThreadSanitizer?"):
-                cmake_options.append("-DCRUDE_THREAD_SANITIZER=ON")
-            if ask_yes_no("  Add LeakSanitizer?"):
-                cmake_options.append("-DCRUDE_LEAK_SANITIZER=ON")
+            #if ask_yes_no("  Add MemorySanitizer?"):
+            #    cmake_options.append("-DCRUDE_MEMORY_SANITIZER=ON")
+            #if ask_yes_no("  Add UndefinedBehaviorSanitizer?"):
+            #    cmake_options.append("-DCRUDE_UNDEFINED_SANITIZER=ON")
+            #if ask_yes_no("  Add ThreadSanitizer?"):
+            #    cmake_options.append("-DCRUDE_THREAD_SANITIZER=ON")
+            #if ask_yes_no("  Add LeakSanitizer?"):
+            #    cmake_options.append("-DCRUDE_LEAK_SANITIZER=ON")
     else:
         print("Your os doesn't support sanitizers :(")
     
@@ -105,7 +105,8 @@ def main():
             print("\n✓ CMake completed successfully!")
         else:
             print(f"\n✗ CMake failed with code {result.returncode}")
-            
+       
+       result = subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(f"\n✗ CMake failed: {e}")
         input("\nPress Enter to exit...")

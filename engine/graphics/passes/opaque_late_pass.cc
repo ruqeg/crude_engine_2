@@ -43,6 +43,7 @@ crude_gfx_opaque_late_pass_pre_render
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
 }
 
 void
@@ -52,7 +53,6 @@ crude_gfx_opaque_late_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  return;
   crude_gfx_opaque_late_pass                              *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;

@@ -60,6 +60,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
   uint32                                                   indirect_meshlet_group_count_x;
   uint32                                                   indirect_meshlet_group_count_y;
   uint32                                                   indirect_meshlet_group_count_z;
+
   uint32                                                   indirect_mesh_vertex_count;
   uint32                                                   indirect_mesh_instance_count;
   uint32                                                   indirect_mesh_first_vertex;

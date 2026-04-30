@@ -53,7 +53,6 @@ crude_gfx_opaque_early_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  return;
   crude_gfx_opaque_early_pass                             *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;

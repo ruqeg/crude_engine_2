@@ -113,7 +113,6 @@ crude_gfx_pointlight_shadow_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  return;
   crude_gfx_device                                        *gpu;
   crude_gfx_pointlight_shadow_pass                        *pass;
   crude_gfx_texture                                       *tetrahedron_shadow_texture;

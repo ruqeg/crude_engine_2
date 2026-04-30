@@ -85,7 +85,7 @@ crude_gfx_asynchronous_loader_initialize
   crude_memory_set( asynloader->file_load_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->file_load_requests[ 0 ] ) );
   crude_memory_set( asynloader->upload_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->upload_requests[ 0 ] ) );
 
-  asynloader->staging_allocation = crude_gfx_memory_allocate( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU );
+  asynloader->staging_allocation = crude_gfx_memory_allocate( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, 0 );
 
   {
     VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );

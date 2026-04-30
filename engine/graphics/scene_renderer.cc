@@ -443,7 +443,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   buffers_recrteated = should_recreated_tlas;
   
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  if ( should_recreated_tlas )
+  if ( should_recreated_tlas && 0 ) // !BACK 
   {
     if ( scene_renderer->tlas_hga.gpu_address )
     {
@@ -892,7 +892,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
   }
   
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  crude_gfx_scene_renderer_update_top_level_acceleration_structure_(scene_renderer, primary_cmd );
+  // !BACK crude_gfx_scene_renderer_update_top_level_acceleration_structure_(scene_renderer, primary_cmd );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /* Update meshlets counes storage buffers*/

@@ -58,11 +58,11 @@ crude_gfx_render_graph_parse_from_file
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
-  crude_string_buffer                                      temporary_string_buffer;
   cJSON                                                   *render_graph_json;
   cJSON const                                             *passes;
   cJSON const                                             *pass;
   uint8                                                   *render_graph_json_buffer;
+  crude_string_buffer                                      temporary_string_buffer;
   uint32                                                   render_graph_json_buffer_size, temporary_allocator_maker;
   
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Parse render graph \"%s\"", render_graph_absolute_filepath );
