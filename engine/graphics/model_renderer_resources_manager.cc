@@ -192,7 +192,7 @@ crude_gfx_model_renderer_resources_manager_intialize
       0.0f, 1.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 1.0f, 0.0f
     } );
-    manager->bottom_level_acceleration_structure_transform_hga = crude_gfx_memory_allocate_with_name( manager->gpu, sizeof( vk_transform_matrix ), CRUDE_GFX_MEMORY_TYPE_CPU_GPU, "bottom_level_acceleration_structure_transform_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+    manager->bottom_level_acceleration_structure_transform_hga = crude_gfx_memory_allocate_with_pname( manager->gpu, sizeof( vk_transform_matrix ), CRUDE_GFX_MEMORY_TYPE_CPU_GPU, "bottom_level_acceleration_structure_transform_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
     crude_memory_copy( manager->bottom_level_acceleration_structure_transform_hga.cpu_address, &vk_transform_matrix, sizeof( vk_transform_matrix ) );
   }
 }
@@ -429,7 +429,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Create bottom level acceleration structure" );
-  // !BACK crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
+  crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_structure_( manager, &model_renderer_resouces );
 #endif
 
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading finished" );
@@ -859,7 +859,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
 
       crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_( manager, mesh_cpu, gltf, gltf_mesh_primitive->material, images_offset, samplers_offset );
 
-      mesh_cpu->indices_count = gltf_indices_accessor->count;
       mesh_cpu->gpu_mesh_global_index = crude_gfX_get_gpu_mesh_global_index_( manager->total_meshes_count, mesh_index );
       mesh_cpu->default_bounding_sphere.x = XMVectorGetX( bounding_center );
       mesh_cpu->default_bounding_sphere.y = XMVectorGetY( bounding_center );
@@ -1060,6 +1059,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
             mesh_indices_count += 3 * local_meshlets[ local_meshlet_index ].triangles_count;
           }
 
+          mesh_cpu->indices_count = mesh_indices_count;
+
           CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( mesh_indices, mesh_indices_count, crude_heap_allocator_pack( manager->allocator ) );
 
           mesh_indices_count = 0u;
@@ -1087,7 +1088,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
           /* Queue cpu memory destroy */
           crude_gfx_memory_deallocate( manager->gpu, cpu_allocation );
 
-          mesh_cpu->index_hga = crude_gfx_memory_allocate_with_name(
+          mesh_cpu->index_hga = crude_gfx_memory_allocate_with_pname(
             manager->gpu,
             sizeof( mesh_indices[ 0 ] ) * mesh_indices_count,
             CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1119,7 +1120,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         manager->gpu,
         local_meshlets,
         sizeof( local_meshlets[ 0 ] ) * local_meshlets_offset, 0 ),
-      crude_gfx_memory_allocate_with_name(
+      crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets[ 0 ] ) * manager->total_meshlets_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1132,7 +1133,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         manager->gpu,
         local_meshlets_triangles_indices,
         sizeof( local_meshlets_triangles_indices[ 0 ] ) * local_meshlets_triangles_indices_offset, 0 ),
-      crude_gfx_memory_allocate_with_name(
+      crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets_triangles_indices[ 0 ] ) * manager->total_meshlets_triangles_indices_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1145,7 +1146,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         manager->gpu,
         local_meshlets_vertices_indices,
         sizeof( local_meshlets_vertices_indices[ 0 ] ) * local_meshlets_vertices_indices_offset, 0 ),
-      crude_gfx_memory_allocate_with_name(
+      crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets_vertices_indices[ 0 ] ) * manager->total_meshlets_vertices_indices_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1158,7 +1159,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         manager->gpu,
         local_meshlets_vertices,
         sizeof( local_meshlets_vertices[ 0 ] ) * local_meshlets_vertices_offset, 0 ),
-      crude_gfx_memory_allocate_with_name(
+      crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets_vertices[ 0 ] ) * manager->total_meshlets_vertices_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1177,7 +1178,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
       /* Queue cpu memory destroy */
       crude_gfx_memory_deallocate( manager->gpu, cpu_allocation );
 
-      gpu_allocation = crude_gfx_memory_allocate_with_name(
+      gpu_allocation = crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets_vertices_positions[ 0 ] ) * manager->total_meshlets_vertices_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1186,6 +1187,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
       if ( manager->meshlets_vertices_positions_hga.size )
       {
         crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, manager->meshlets_vertices_positions_hga, gpu_allocation, 0u, 0u );
+        crude_gfx_memory_deallocate( manager->gpu, manager->meshlets_vertices_positions_hga );
       }
       crude_gfx_cmd_memory_copy( immediate_transfer_cmd_buffer, cpu_allocation, gpu_allocation, 0u, manager->meshlets_vertices_positions_hga.size );
 
@@ -1198,7 +1200,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         manager->gpu,
         local_meshlets_vertices_joints,
         sizeof( local_meshlets_vertices_joints[ 0 ] ) * local_meshlets_vertices_offset, 0 ),
-      crude_gfx_memory_allocate_with_name(
+      crude_gfx_memory_allocate_with_pname(
         manager->gpu,
         sizeof( local_meshlets_vertices_joints[ 0 ] ) * manager->total_meshlets_vertices_count,
         CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1228,7 +1230,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
       manager->gpu,
       meshes_draws,
       sizeof( meshes_draws[ 0 ] ) * CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ), 0 ),
-    crude_gfx_memory_allocate_with_name(
+    crude_gfx_memory_allocate_with_pname(
       manager->gpu,
       sizeof( meshes_draws[ 0 ] ) * manager->total_meshes_count,
       CRUDE_GFX_MEMORY_TYPE_GPU,
@@ -1977,7 +1979,7 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
     manager->gpu->vkGetAccelerationStructureBuildSizesKHR( manager->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_infos[ i ], &max_primitives_count, &vk_acceleration_structure_build_sizes_info );
   
-    model_renderer_resources->blases_hga[ i ] = crude_gfx_memory_allocate_with_name( manager->gpu, vk_acceleration_structure_build_sizes_info.accelerationStructureSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
+    model_renderer_resources->blases_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, vk_acceleration_structure_build_sizes_info.accelerationStructureSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   
     vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
     vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -1988,7 +1990,7 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     CRUDE_GFX_HANDLE_VULKAN_RESULT( manager->gpu->vkCreateAccelerationStructureKHR( manager->gpu->vk_device, &vk_acceleration_structure_create_info, manager->gpu->vk_allocation_callbacks, &model_renderer_resources->vk_blases[ i ] ), "Can't create acceleration structure" );
     
     // TODO maybe we can use only one scratch buffer? idk for now
-    blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_name( manager->gpu, vk_acceleration_structure_build_sizes_info.buildScratchSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
+    blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, vk_acceleration_structure_build_sizes_info.buildScratchSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   
     vk_acceleration_build_geometry_infos[ i ].dstAccelerationStructure = model_renderer_resources->vk_blases[ i ];
     vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = blas_scratch_buffers_hga[ i ].gpu_address;

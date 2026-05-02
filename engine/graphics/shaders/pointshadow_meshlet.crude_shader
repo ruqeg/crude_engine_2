@@ -175,7 +175,7 @@ void main()
 
 #if defined( CRUDE_STAGE_MESH )
 
-layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
+layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
 
@@ -227,9 +227,12 @@ void main()
   int layer_index = int( 4 * light_index + face_index );
 
   mat4 mesh_to_world = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_to_world;
-
-  SetMeshOutputsEXT( vertices_count, triangles_count );
   
+  if ( gl_LocalInvocationID.x == 0 )
+  {
+    SetMeshOutputsEXT( vertices_count, triangles_count );
+  }
+
   for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {
     uint vertex_index = vertices_indices.data[ i + vertices_offset ];

@@ -103,21 +103,22 @@ void main()
   float                                                  a, b, c, ndotl, attenuation;
   uint                                                   i0, i1, i2;
   uint                                                   mesh_index;
-
-  mesh_index = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_draw_index;
-  mesh_draw = mesh_draws.data[ mesh_index ];
-  
-  world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
-  mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
   
   b = barycentric_weights.x;
   c = barycentric_weights.y;
   a = 1 - b - c;
+  payload.color = vec3( a, b, c );
   
-  i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
-  i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
-  i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
-  
+  //mesh_index = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_draw_index;
+  //mesh_draw = mesh_draws.data[ mesh_index ];
+  //
+  //world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
+  //mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
+  //
+  // i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
+  // i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
+  // i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
+  // 
   //p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
   //p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
   //p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];

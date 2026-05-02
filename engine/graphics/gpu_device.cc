@@ -384,7 +384,9 @@ crude_gfx_device_initialize
     gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   }
   
-  crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ) , "frame_linear_allocator" );
+  {
+    crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ), "frame_linear_allocator" );
+  }
 
   {
     VkPhysicalDeviceProperties2                             physical_device_properties_2;
@@ -485,6 +487,18 @@ crude_gfx_device_deinitialize
   
   crude_gfx_destroy_cmd_buffer_instant( gpu, gpu->immediate_transfer_cmd_buffer );
   crude_gfx_destroy_cmd_pool_instant( gpu, gpu->immediate_transfer_cmd_pool );
+  
+
+  if ( gpu->buffers.free_indices_head != 0 )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "BUFFER Resource pool has unfreed resources" );
+  
+    for ( uint32 i = 0; i < gpu->buffers.pool_size; ++i )
+    {
+      crude_gfx_buffer *buffer = CRUDE_CAST( crude_gfx_buffer*, crude_resource_pool_access_resource( &gpu->buffers, i ) );
+      CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tBUFFER MAY NOT BE FREE %s", buffer->name );
+    }
+  }
 
   crude_resource_pool_deinitialize( &gpu->buffers );
   crude_resource_pool_deinitialize( &gpu->textures );
@@ -2260,15 +2274,15 @@ crude_gfx_create_pipeline
     shader_binding_table_creation.size = group_handle_size;
 
     shader_binding_table_creation.initial_data = shader_binding_table_data;
-    shader_binding_table_creation.name = "shader_binding_table_raygen";
+    crude_string_copy( shader_binding_table_creation.name, "shader_binding_table_raygen", sizeof( shader_binding_table_creation.name ) );
     pipeline->shader_binding_table_raygen = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
     shader_binding_table_creation.initial_data = shader_binding_table_data + group_handle_size;
-    shader_binding_table_creation.name = "shader_binding_table_hit";
+    crude_string_copy( shader_binding_table_creation.name, "shader_binding_table_hit", sizeof( shader_binding_table_creation.name ) );
     pipeline->shader_binding_table_hit = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
     shader_binding_table_creation.initial_data = shader_binding_table_data + ( 2 * group_handle_size );
-    shader_binding_table_creation.name = "shader_binding_table_miss";
+    crude_string_copy( shader_binding_table_creation.name, "shader_binding_table_miss", sizeof( shader_binding_table_creation.name ) );
     pipeline->shader_binding_table_miss = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
     crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
@@ -2353,7 +2367,7 @@ crude_gfx_create_buffer
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Allocate buffer %s", creation->name ? creation->name : "Unknown" );
 
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
-  buffer->name = creation->name;
+  crude_string_copy( buffer->name, creation->name, sizeof( buffer->name ) );
   buffer->size = creation->size;
   buffer->type_flags = creation->type_flags;
   buffer->usage = creation->usage;
@@ -2435,7 +2449,8 @@ crude_gfx_destroy_buffer_instant
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
+  buffer->name[ 0 ] = 0;
+  //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
 
   if ( buffer )
   {

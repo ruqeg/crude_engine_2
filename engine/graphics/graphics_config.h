@@ -3,6 +3,7 @@
 #define CRUDE_GFX_SSR_ENABLED                              0
 
 #define CRUDE_GFX_TEXTURE_NAME_MAX                         ( 512 )
+#define CRUDE_GFX_BUFFER_NAME_MAX                          ( 512 )
 
 #define CRUDE_GFX_MESHLET_MAX_VERTICES                     ( 128 )
 #define CRUDE_GFX_MESHLET_MAX_TRIANGLES                    ( 124 )

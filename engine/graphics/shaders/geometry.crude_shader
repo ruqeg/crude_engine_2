@@ -203,7 +203,7 @@ void main()
 #endif /* CRUDE_STAGE_TASK */
 
 #if defined( CRUDE_STAGE_MESH )
-layout(local_size_x=128, local_size_y=1, local_size_z=1) in;
+layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
 
@@ -232,9 +232,13 @@ void main()
   uint triangles_offset = meshlets.data[ global_meshlet_index ].triangles_offset;
 
   mat4 mesh_to_world = mesh_instance_draws.data[ mesh_instance_draw_index ].mesh_to_world;
-
-  SetMeshOutputsEXT( vertices_count, triangles_count );
   
+  // remove if
+  if ( gl_LocalInvocationID.x == 0 )
+  {
+    SetMeshOutputsEXT( vertices_count, triangles_count );
+  }
+
   float i8_inverse = 1.0 / 127.0;
   for ( uint i = task_index; i < vertices_count; i += gl_WorkGroupSize.x )
   {

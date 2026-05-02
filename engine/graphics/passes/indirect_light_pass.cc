@@ -117,7 +117,6 @@ crude_gfx_indirect_light_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  return;
   crude_gfx_indirect_light_pass                           *pass;
   crude_gfx_device                                        *gpu;
   uint32                                                   probe_count;

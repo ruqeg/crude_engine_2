@@ -32,11 +32,11 @@ main
     crude_game_initialize( crude_game_instance( ), &engine, working_directory );
   }
 
-   while ( engine.running )
-   {
-     crude_engine_update( &engine );
-     crude_game_update( crude_game_instance( ) );
-   }
+  while ( engine.running )
+  {
+    crude_engine_update( &engine );
+    crude_game_update( crude_game_instance( ) );
+  }
    
   /* Deinitialization */
   {

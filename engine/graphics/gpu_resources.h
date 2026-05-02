@@ -311,7 +311,7 @@ typedef struct crude_gfx_buffer_creation
   uint32                                                   size;
   bool                                                     persistent;
   void                                                    *initial_data;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_BUFFER_NAME_MAX ];
   bool                                                     device_only;
 } crude_gfx_buffer_creation;
 
@@ -551,7 +551,7 @@ typedef struct crude_gfx_buffer
   crude_gfx_resource_usage_type                            usage;
   uint32                                                   size;
   crude_gfx_buffer_handle                                  handle;
-  char const                                              *name;
+  char                                                     name[ CRUDE_GFX_BUFFER_NAME_MAX ];
   uint8                                                   *mapped_data;
   bool                                                     ready;
 } crude_gfx_buffer;
@@ -736,7 +736,7 @@ typedef struct crude_gfx_cmd_pool
 typedef struct crude_gfx_cmd_buffer_creation
 {
   crude_gfx_cmd_pool_handle                                cmd_pool;
-  char                                                     name[ 512 ];
+  char                                                     name[ CRUDE_GFX_BUFFER_NAME_MAX ];
 } crude_gfx_cmd_buffer_creation;
 
 typedef struct crude_gfx_cmd_buffer

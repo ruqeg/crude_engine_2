@@ -12,7 +12,7 @@ crude_gfx_stack_allocator_initialize
 )
 {
   allocator->gpu = gpu;
-  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
+  allocator->allocation = crude_gfx_memory_allocate_with_pname( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
   allocator->capacity = capacity;
   allocator->occupied = 0u;
   allocator->name = name;
@@ -89,7 +89,7 @@ crude_gfx_linear_allocator_initialize
 )
 {
   allocator->gpu = gpu;
-  allocator->allocation = crude_gfx_memory_allocate_with_name( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
+  allocator->allocation = crude_gfx_memory_allocate_with_pname( gpu, capacity, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, name, 0 );
   allocator->capacity = capacity;
   allocator->occupied = 0u;
   allocator->name = name;
@@ -170,7 +170,7 @@ crude_gfx_memory_allocate
   _In_ VkBufferUsageFlags2                                 additional_flags
 )
 {
-  return crude_gfx_memory_allocate_with_name( gpu, size, type, "default_allocated_buffer", additional_flags );
+  return crude_gfx_memory_allocate_with_pname( gpu, size, type, "default_allocated_buffer", additional_flags );
 }
 
 crude_gfx_memory_allocation
@@ -188,12 +188,30 @@ crude_gfx_memory_allocate_cpu_gpu_copy
 }
 
 crude_gfx_memory_allocation
-crude_gfx_memory_allocate_with_name
+crude_gfx_memory_allocate_with_pname
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
   _In_ char const                                         *name,
+  _In_ VkBufferUsageFlags2                                 additional_flags
+)
+{
+  crude_gfx_memory_allocation                              allocation;
+  char                                                     name_buffer[ 512 ];
+
+  crude_string_copy( name_buffer, name, sizeof( name_buffer ) );
+  allocation = crude_gfx_memory_allocate_with_name( gpu, size, type, name_buffer, additional_flags );
+  return allocation;
+}
+
+crude_gfx_memory_allocation
+crude_gfx_memory_allocate_with_name
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ uint64                                              size,
+  _In_ crude_gfx_memory_type                               type,
+  _In_ char                                                name[ CRUDE_GFX_BUFFER_NAME_MAX ],
   _In_ VkBufferUsageFlags2                                 additional_flags
 )
 {
@@ -207,7 +225,7 @@ crude_gfx_memory_allocate_with_name
   case CRUDE_GFX_MEMORY_TYPE_CPU_GPU:
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
-    buffer_creation.name = name;
+    crude_string_copy( buffer_creation.name, name, sizeof( buffer_creation.name ) );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;
@@ -223,7 +241,7 @@ crude_gfx_memory_allocate_with_name
   case CRUDE_GFX_MEMORY_TYPE_GPU:
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
-    buffer_creation.name = name;
+    crude_string_copy( buffer_creation.name, name, sizeof( buffer_creation.name ) );
     buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;

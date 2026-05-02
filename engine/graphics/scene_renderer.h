@@ -155,7 +155,6 @@ typedef struct crude_gfx_scene_renderer
    * Debug
    **********************/
 #if CRUDE_DEVELOP
-  crude_gfx_model_renderer_resources_instance              probe_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              light_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              camera_model_renderer_resources_instance;
   crude_gfx_model_renderer_resources_instance              capsule_model_renderer_resources_instance;
