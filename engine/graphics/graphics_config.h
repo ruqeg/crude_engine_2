@@ -63,7 +63,7 @@
 #if CRUDE_PRODUCTION
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        0
 #define CRUDE_GFX_GPU_AV_ENABLE                            0
-#elif 1
+#elif 0
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        1
 #define CRUDE_GFX_GPU_AV_ENABLE                            1
 #else

@@ -4,17 +4,17 @@
 #extension GL_GOOGLE_include_directive : enable
 #endif /* !__cplusplus */
 //#define CALCULATE_PROBE_OFFSETS
-//#define PROBE_RAYTRACER
-#define PROBE_DEBUG
+#define PROBE_RAYTRACER
+//#define PROBE_DEBUG
 //#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
 //#define PROBE_UPDATE_IRRADIANCE
 //#define CRUDE_COMPUTE
-//#define CRUDE_CLOSEST_HIT
+#define CRUDE_CLOSEST_HIT
 //#define CRUDE_RAYGEN
 //#define CRUDE_MISS
 //#define CRUDE_STAGE_TASK
-#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_FRAGMENT
 
 #include "common/platform.h"
@@ -75,7 +75,7 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_raytracer_push_constant_ )
   MeshInstancesDrawsRef                                    mesh_instance_draws;
 
   LightsRef                                                lights;
-  XMFLOAT2                                                 padding;
+  VerticesRef                                              vertices;
 };
 #endif /* PROBE_RAYTRACER */
 
@@ -390,72 +390,67 @@ void main()
     world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
     mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
     
-    i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
+    i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 0 ];
     i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
     i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
 
-    //p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
-    //p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
-    //p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
-    //
-    //if ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
-    //{
-    //  n0_model = mesh_draw.normal_buffer.data[ i0 ];
-    //  n1_model = mesh_draw.normal_buffer.data[ i1 ];
-    //  n2_model = mesh_draw.normal_buffer.data[ i2 ];
-    //  normal = normalize( a * n0_model + b * n1_model + c * n2_model );
-    //}
-    //else
-    //{
-    //  normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
-    //}
-    //
-    //texcoord0 = mesh_draw.texcoord_buffer.data[ i0 ];
-    //texcoord1 = mesh_draw.texcoord_buffer.data[ i1 ];
-    //texcoord2 = mesh_draw.texcoord_buffer.data[ i2 ];
-    //
-    //b = barycentric_weights.x;
-    //c = barycentric_weights.y;
-    //a = 1 - b - c;
-    //
-    //model_position = a * p0_model + b * p1_model + c * p2_model;
-    //world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
-    //texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
-    //
-    //albedo = CRUDE_TEXTURE_LOD( mesh_draw.textures.x, texcoord, 0 ).rgb;
-    //
-    //diffuse = vec3( 0 );
-    //for ( uint i = 0; i < scene.data.active_lights_count; ++i )
-    //{
-    //  rayQueryEXT                                          ray_query;
-    //  crude_gfx_light                                      light;
-    //  float                                                position_to_light_distance;
-    //  vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
-    //  
-    //  light = lights.data[ i ];
-    //  position_to_light = light.world_position - world_position;
-    //  position_to_light_distance = length( position_to_light );
-    //  position_to_light_normalized = position_to_light / position_to_light_distance;
-    //
-    //  float visiblity = 1.f;
-    //  if ( position_to_light_distance <= light.radius )
-    //  {
-    //    rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
-    //    rayQueryProceedEXT( ray_query );
-    //    visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
-    //  }
-    //  
-    //  ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
-    //
-    //  light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
-    //
-    //  diffuse += visiblity * albedo * light_intensity;
-    //}
-    //
-    //diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
-    //
-    //radiance = diffuse;
-    //distance = gl_RayTminEXT + gl_HitTEXT;
+    p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
+    p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
+    p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
+    
+    normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
+
+    texcoord0 = vec2( vertices.data[ i0 ].tu, vertices.data[ i0 ].tu );
+    texcoord1 = vec2( vertices.data[ i1 ].tu, vertices.data[ i1 ].tu );
+    texcoord2 = vec2( vertices.data[ i2 ].tu, vertices.data[ i2 ].tu );
+    
+    b = barycentric_weights.x;
+    c = barycentric_weights.y;
+    a = 1 - b - c;
+    
+    texcoord = a * texcoord0 + b * texcoord1 + c * texcoord2;
+    model_position = a * p0_model + b * p1_model + c * p2_model;
+    
+    world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
+    
+    albedo = mesh_draw.albedo_color_factor.xyz;
+    if ( mesh_draw.textures.x != CRUDE_SHADER_TEXTURE_UNDEFINED )
+    {
+      albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], texcoord ).xyz * albedo, vec3( 2.2 ) );
+    }
+    
+    diffuse = vec3( 0 );
+    for ( uint i = 0; i < scene.data.active_lights_count; ++i )
+    {
+      rayQueryEXT                                          ray_query;
+      crude_gfx_light                                      light;
+      float                                                position_to_light_distance;
+      vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
+      
+      light = lights.data[ i ];
+      position_to_light = light.world_position - world_position;
+      position_to_light_distance = length( position_to_light );
+      position_to_light_normalized = position_to_light / position_to_light_distance;
+    
+      float visiblity = 0.f;
+      if ( position_to_light_distance <= light.radius )
+      {
+        rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
+        rayQueryProceedEXT( ray_query );
+        visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
+      }
+      
+      ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
+    
+      light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
+    
+      diffuse += visiblity * albedo * light_intensity;
+    }
+    
+    diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
+    
+    radiance = diffuse;
+    distance = gl_RayTminEXT + gl_HitTEXT;
   }
 
   payload.radiance = radiance;
@@ -822,6 +817,14 @@ void main()
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
 
+#define PROBE_VERTICES_COUNT 6
+#define PROBE_PRIMITIVES_COUNT 8
+#define PROBE_PER_MESH_EXECUTION 15
+
+struct vertex_input_output
+{
+  vec3                                                     normal;
+};
 
 #if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 taskPayloadSharedEXT struct
@@ -836,80 +839,85 @@ layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
 void main()
 {
-  EmitMeshTasksEXT( 4000, 1, 1 );
+  int total_probes = ddgi.data.probe_counts.x * ddgi.data.probe_counts.y * ddgi.data.probe_counts.z;
+  EmitMeshTasksEXT( total_probes / PROBE_PER_MESH_EXECUTION, 1, 1 );
 }
 
 #endif /* CRUDE_STAGE_TASK */
 
 #if defined( CRUDE_STAGE_MESH )
 
-#define PROBE_VERTICES_COUNT 12
-#define PROBE_PRIMITIVES_COUNT 20
-
-layout(local_size_x=8, local_size_y=1, local_size_z=1) in;
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
-layout(max_vertices=PROBE_VERTICES_COUNT, max_primitives=PROBE_PRIMITIVES_COUNT) out;
+layout(max_vertices=PROBE_PER_MESH_EXECUTION*PROBE_VERTICES_COUNT, max_primitives=PROBE_PER_MESH_EXECUTION*PROBE_PRIMITIVES_COUNT) out;
+
+layout(location=0) out vertex_input_output out_vertices[];
+layout(location=1) out flat int out_probe_index[];
 
 const vec3 vertices[ PROBE_VERTICES_COUNT ] =
 {
   vec3( 0.000000,  0.000000,  1.000000),
-  vec3( 0.894427,  0.000000,  0.447214),
-  vec3( 0.276393,  0.850651,  0.447214),
-  vec3(-0.723607,  0.525731,  0.447214),
-  vec3(-0.723607, -0.525731,  0.447214),
-  vec3( 0.276393, -0.850651,  0.447214),
-  vec3( 0.723607,  0.525731, -0.447214),
-  vec3(-0.276393,  0.850651, -0.447214),
-  vec3(-0.894427,  0.000000, -0.447214),
-  vec3(-0.276393, -0.850651, -0.447214),
-  vec3( 0.723607, -0.525731, -0.447214),
+  vec3( 1.000000,  0.000000,  0.000000),
+  vec3( 0.000000,  1.000000,  0.000000),
+  vec3(-1.000000,  0.000000,  0.000000),
+  vec3( 0.000000, -1.000000,  0.000000),
   vec3( 0.000000,  0.000000, -1.000000)
 };
 
 const int indices[ 3 * PROBE_PRIMITIVES_COUNT ] =
 {
-  0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 1,
-  1, 6, 2, 2, 7, 3, 3, 8, 4, 4, 9, 5, 5, 10, 1,
-  6, 11, 7, 7, 11, 8, 8, 11, 9, 9, 11, 10, 10, 11, 6,
-  1, 10, 6, 2, 6, 7, 3, 7, 8, 4, 8, 9, 5, 9, 10
+  0, 1, 2,
+  0, 2, 3,
+  0, 3, 4,
+  0, 4, 1,
+  5, 2, 1,
+  5, 3, 2,
+  5, 4, 3,
+  5, 1, 4
 };
 
 void main()
 {
-  int probe_index = int( gl_WorkGroupID.x );
+  SetMeshOutputsEXT( PROBE_PER_MESH_EXECUTION * PROBE_VERTICES_COUNT, PROBE_PER_MESH_EXECUTION * PROBE_PRIMITIVES_COUNT );
   
-  int total_probes = ddgi.data.probe_counts.x * ddgi.data.probe_counts.y * ddgi.data.probe_counts.z;
-  if ( probe_index >= total_probes )
+  for ( uint i = gl_LocalInvocationID.x; i < PROBE_PER_MESH_EXECUTION * PROBE_VERTICES_COUNT; i += gl_WorkGroupSize.x )
   {
-    return;
-  }
+    uint li = i % PROBE_VERTICES_COUNT;
+    
+    int probe_index = int(i) / PROBE_VERTICES_COUNT + PROBE_PER_MESH_EXECUTION * int( gl_WorkGroupID.x );
   
-  ivec3 probe_grid_indices = probe_index_to_grid_indices( ddgi, probe_index );
-  vec3 probe_world_offset = grid_indices_to_world( ddgi, probe_grid_indices, probe_index );
-  //vec3 probe_world_offset = grid_indices_to_world_no_offsets( ddgi, probe_grid_indices );
-  
-  SetMeshOutputsEXT( PROBE_VERTICES_COUNT, PROBE_PRIMITIVES_COUNT );
-  
-  for ( uint i = gl_LocalInvocationID.x; i < PROBE_VERTICES_COUNT; i += gl_WorkGroupSize.x )
-  {
-    vec3 world_position = vertices[ i ] + probe_world_offset;
+    ivec3 probe_grid_indices = probe_index_to_grid_indices( ddgi, probe_index );
+    vec3 probe_world_offset = grid_indices_to_world( ddgi, probe_grid_indices, probe_index );
+
+    vec3 world_position = vertices[ li ] + probe_world_offset;
+    
     gl_MeshVerticesEXT[ i ].gl_Position = vec4( world_position, 1 ) * scene.data.camera.world_to_clip;
+    
+    out_vertices[ i ].normal = vertices[ li ];
+    out_probe_index[ i ] = probe_index;
   }
   
-  for ( uint i = gl_LocalInvocationID.x; i < PROBE_PRIMITIVES_COUNT; i += gl_WorkGroupSize.x )
+  for ( uint i = gl_LocalInvocationID.x; i < PROBE_PER_MESH_EXECUTION * PROBE_PRIMITIVES_COUNT; i += gl_WorkGroupSize.x )
   {
-    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( indices[ 3 * i + 0 ], indices[ 3 * i + 1 ], indices[ 3 * i + 2 ] );
+    uint offset = PROBE_VERTICES_COUNT * int( i / PROBE_PRIMITIVES_COUNT );
+    uint li = i % PROBE_PRIMITIVES_COUNT;
+
+    gl_PrimitiveTriangleIndicesEXT[ i ] = uvec3( offset + indices[ 3 * li + 0 ], offset + indices[ 3 * li + 1 ], offset + indices[ 3 * li + 2 ] );
   }
 }
 #endif /* CRUDE_STAGE_MESH */
 
 #if defined( CRUDE_STAGE_FRAGMENT )
 
-layout(location = 0) out vec4 out_color;
+layout(location=0) in vertex_input_output in_vertex;
+layout(location=1) in flat int in_probe_index;
+layout(location=0) out vec4 out_color;
 
 void main()
 {
-  out_color = vec4( 1,1,1, 1.f );
+  vec2 probe_irradiance_uv = get_probe_uv( in_vertex.normal, in_probe_index, ddgi.data.irradiance_texture_width, ddgi.data.irradiance_texture_height, ddgi.data.irradiance_side_length );
+  vec3 probe_irradiance = CRUDE_TEXTURE_LOD( ddgi.data.grid_irradiance_output_index, probe_irradiance_uv, 0 ).rgb;
+  out_color = vec4( probe_irradiance, 1.f );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

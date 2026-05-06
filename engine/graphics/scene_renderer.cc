@@ -882,7 +882,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
   }
   
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  crude_gfx_scene_renderer_update_top_level_acceleration_structure_(scene_renderer, primary_cmd );
+  crude_gfx_scene_renderer_update_top_level_acceleration_structure_( scene_renderer, primary_cmd );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
   /* Update meshlets counes storage buffers*/
@@ -1245,26 +1245,36 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   
     if ( !model_renderer_resources->rtx_affected )
     {
+      for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
+      {
+        crude_gfx_node                                    *node;
+
+        node = &model_renderer_resources->nodes[ node_index ];
+          
+        if ( node->meshes )
+        {
+          instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
+        }
+      }
       continue;
     }
 
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
       crude_gfx_node                                      *node;
-      XMMATRIX                                             mesh_to_model, model_to_world, mesh_to_world;
 
       node = &model_renderer_resources->nodes[ node_index ];
         
       if ( node->meshes )
       {
+        XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+
+        CRUDE_ASSERT( node->skin == -1 );
+
         mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
         mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
-      }
-
-      /* Ignore skin animated meshes for rtx... i will figure out something in the future */
-      if ( node->meshes && node->skin == -1 )
-      {
+      
         for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
         {
           crude_gfx_mesh_cpu                             *cpu_mesh;
@@ -1301,10 +1311,6 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
           ++instance_custom_index;
         }
-      }
-      else if ( node->meshes )
-      {
-        instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
       }
     }
   }
@@ -1419,26 +1425,36 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   
     if ( !model_renderer_resources->rtx_affected )
     {
+      for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
+      {
+        crude_gfx_node                                      *node;
+
+        node = &model_renderer_resources->nodes[ node_index ];
+          
+        if ( node->meshes )
+        {
+          instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
+        }
+      }
       continue;
     }
 
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
       crude_gfx_node                                      *node;
-      XMMATRIX                                             mesh_to_model, model_to_world, mesh_to_world;
 
       node = &model_renderer_resources->nodes[ node_index ];
         
       if ( node->meshes )
       {
+        XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+
+        CRUDE_ASSERT( node->skin == -1 );
+
         mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
         mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
-      }
 
-      /* Ignore skin animated meshes for rtx... i will figure out something in the future */
-      if ( node->meshes && node->skin == -1 )
-      {
         for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
         {
           crude_gfx_mesh_cpu                             *cpu_mesh;
@@ -1455,6 +1471,13 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
             for ( int32 x = 0; x < 4; ++x )
             {
               vk_transform.matrix[ y ][ x ] = XMVectorGetByIndex( mesh_to_world.r[ x ], y );
+            }
+          }
+          for ( int32 y = 0; y < 3; ++y )
+          {
+            for ( int32 x = 0; x < 3; ++x )
+            {
+              vk_transform.matrix[ y ][ x ] = 1 * ( x == y );
             }
           }
 
@@ -1475,10 +1498,6 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 
           ++instance_custom_index;
         }
-      }
-      else if ( node->meshes )
-      {
-        instance_custom_index += CRUDE_ARRAY_LENGTH( node->meshes );
       }
     }
   }

@@ -149,6 +149,7 @@ crude_gfx_indirect_light_pass_render
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
     push_constant.ddgi = pass->scene_renderer->ddgi_hga.gpu_address;
+    push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
      
     crude_gfx_cmd_add_image_barrier( primary_cmd, probe_raytrace_radiance_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
