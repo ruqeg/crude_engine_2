@@ -38,10 +38,6 @@ crude_gfx_compose_pass_render
   crude_gfx_pipeline_handle                                pipeline;
   crude_gfx_compose_light_pass_push_constant_              pust_constant;
 
-#if !CRUDE_GFX_SSR_ENABLED
-  return;
-#endif
-
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_compose_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
@@ -50,9 +46,8 @@ crude_gfx_compose_pass_render
   
   pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_compose_light_pass_push_constant_ );
   pust_constant.direct_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.direct_radiance_texture );
-  pust_constant.ssr_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.ssr_texture );
-  pust_constant.output_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.output_texture );
-  pust_constant.packed_roughness_metalness_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.packed_roughness_metalness_texture );
+  pust_constant.indirect_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.indirect_radiance_texture );
+  pust_constant.radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.radiance_texture );
   crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

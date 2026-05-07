@@ -122,15 +122,11 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.ssr_pass.direct_radiance_texture = "direct_radiance";
   
   scene_renderer->options.compose_pass.direct_radiance_texture = "direct_radiance";
-  scene_renderer->options.compose_pass.ssr_texture = "ssr";
-  scene_renderer->options.compose_pass.output_texture = "radiance";
+  scene_renderer->options.compose_pass.indirect_radiance_texture = "indirect_radiance";
+  scene_renderer->options.compose_pass.radiance_texture = "radiance";
   scene_renderer->options.compose_pass.packed_roughness_metalness_texture = "gbuffer_roughness_metalness";
   
-#if CRUDE_GFX_SSR_ENABLED
   scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
-#else
-  scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "direct_radiance";
-#endif
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
    
   scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
@@ -140,6 +136,7 @@ crude_gfx_scene_renderer_initialize
 
   scene_renderer->options.indirect_light.depth_texture = "depth";
   scene_renderer->options.indirect_light.normal_texture = "direct_normal";
+  scene_renderer->options.indirect_light.indirect_radiance_texture = "indirect_radiance";
   
   scene_renderer->options.indirect_light.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
   scene_renderer->options.indirect_light.self_shadow_bias = 0.3f;
@@ -155,7 +152,7 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.indirect_light.probe_count_z = 20;
   scene_renderer->options.indirect_light.offsets_calculations_count = 24;
   scene_renderer->options.indirect_light.probe_rays = 128;
-  scene_renderer->options.indirect_light.use_half_resolution = true;
+  scene_renderer->options.indirect_light.use_half_resolution = false;
 
 #if CRUDE_DEVELOP
   scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
@@ -655,7 +652,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     ddgi_constants->probe_counts.z = scene_renderer->options.indirect_light.probe_count_z;
     ddgi_constants->probe_rays = scene_renderer->options.indirect_light.probe_rays;
     ddgi_constants->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
-    ddgi_constants->indirect_output_index = pass->indirect_texture_handle.index;
+    ddgi_constants->indirect_output_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.indirect_radiance_texture );
     ddgi_constants->depth_fullscreen_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.depth_texture );
     ddgi_constants->normal_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.normal_texture );
     ddgi_constants->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
@@ -689,7 +686,10 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
   /* Update scene constant buffer*/
   {
     crude_gfx_scene                                       *scene;
+    crude_gfx_indirect_light_pass                         *pass;
     crude_gfx_memory_allocation                            scene_tca;
+    
+    pass = &scene_renderer->indirect_light_pass;
 
     scene_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_scene ) );
     scene = CRUDE_CAST( crude_gfx_scene*, scene_tca.cpu_address );
@@ -707,7 +707,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     scene->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
     scene->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
-    scene->indirect_light_texture_index = scene_renderer->indirect_light_pass.indirect_texture_handle.index;
+    scene->indirect_light_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.indirect_radiance_texture );
 #else
     scene->indirect_light_texture_index = -1;
 #endif
@@ -1274,7 +1274,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
         mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
         model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
         mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
-      
+
         for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
         {
           crude_gfx_mesh_cpu                             *cpu_mesh;
@@ -1282,7 +1282,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
           VkAccelerationStructureInstanceKHR              vk_acceleration_structure_instance;
           VkAccelerationStructureDeviceAddressInfoKHR     vk_acceleration_structure_address_info;
           VkDeviceAddress                                 vk_blas_address;
-          VkTransformMatrixKHR                            vk_transform; 
+          VkTransformMatrixKHR                            vk_transform;
 
           cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
 
@@ -1296,7 +1296,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
           vk_acceleration_structure_address_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
           vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-          vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ mesh_index ];
+          vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
 
           vk_blas_address = scene_renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_address_info );
     
@@ -1343,6 +1343,8 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
   vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
   vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   scene_renderer->gpu->vkGetAccelerationStructureBuildSizesKHR( scene_renderer->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
   
@@ -1379,7 +1381,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
   
   vk_acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
-  vk_acceleration_structure_build_range_info.primitiveCount = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
+  vk_acceleration_structure_build_range_info.primitiveCount = max_instance_count;
   vk_acceleration_structure_build_range_info.primitiveOffset = 0;
   vk_acceleration_structure_build_range_info.firstVertex = 0;
   vk_acceleration_structure_build_range_info.transformOffset = 0;
@@ -1388,7 +1390,11 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+
   scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
+  
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }
@@ -1442,62 +1448,56 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
     for ( uint32 node_index = 0u; node_index < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes ); ++node_index )
     {
       crude_gfx_node                                      *node;
+      XMMATRIX                                             mesh_to_model, model_to_world, mesh_to_world;
 
       node = &model_renderer_resources->nodes[ node_index ];
         
-      if ( node->meshes )
+      if ( !node->meshes )
       {
-        XMMATRIX                                           mesh_to_model, model_to_world, mesh_to_world;
+        continue;
+      }
 
-        CRUDE_ASSERT( node->skin == -1 );
-
-        mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
-        model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
-        mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
-
-        for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
+      CRUDE_ASSERT( node->skin == -1 );
+      
+      mesh_to_model = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, node_index );
+      model_to_world = XMLoadFloat4x4( &model_renderer_resources_instance->model_to_world );
+      mesh_to_world = XMMatrixMultiply( mesh_to_model, model_to_world );
+      
+      for ( uint32 mesh_index = 0; mesh_index < CRUDE_ARRAY_LENGTH( node->meshes ); ++mesh_index )
+      {
+        crude_gfx_mesh_cpu                             *cpu_mesh;
+        crude_gfx_mesh_instance_draw                   *gpu_meshe_instance_draw;
+        VkAccelerationStructureInstanceKHR              vk_acceleration_structure_instance;
+        VkAccelerationStructureDeviceAddressInfoKHR     vk_acceleration_structure_address_info;
+        VkDeviceAddress                                 vk_blas_address;
+        VkTransformMatrixKHR                            vk_transform; 
+      
+        cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
+        
+        for ( int32 y = 0; y < 3; ++y )
         {
-          crude_gfx_mesh_cpu                             *cpu_mesh;
-          crude_gfx_mesh_instance_draw                   *gpu_meshe_instance_draw;
-          VkAccelerationStructureInstanceKHR              vk_acceleration_structure_instance;
-          VkAccelerationStructureDeviceAddressInfoKHR     vk_acceleration_structure_address_info;
-          VkDeviceAddress                                 vk_blas_address;
-          VkTransformMatrixKHR                            vk_transform; 
-
-          cpu_mesh = &model_renderer_resources->meshes[ node->meshes[ mesh_index ] ];
-          
-          for ( int32 y = 0; y < 3; ++y )
+          for ( int32 x = 0; x < 4; ++x )
           {
-            for ( int32 x = 0; x < 4; ++x )
-            {
-              vk_transform.matrix[ y ][ x ] = XMVectorGetByIndex( mesh_to_world.r[ x ], y );
-            }
+            vk_transform.matrix[ y ][ x ] = XMVectorGetByIndex( mesh_to_world.r[ x ], y );
           }
-          for ( int32 y = 0; y < 3; ++y )
-          {
-            for ( int32 x = 0; x < 3; ++x )
-            {
-              vk_transform.matrix[ y ][ x ] = 1 * ( x == y );
-            }
-          }
-
-          vk_acceleration_structure_address_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
-          vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-          vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ mesh_index ];
-
-          vk_blas_address = scene_renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_address_info );
-    
-          vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
-          vk_acceleration_structure_instance.mask = 0xff;
-          vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
-          vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
-          vk_acceleration_structure_instance.transform = vk_transform;
-          vk_acceleration_structure_instance.instanceCustomIndex = instance_custom_index;
-
-          CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
-
-          ++instance_custom_index;
         }
+      
+        vk_acceleration_structure_address_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
+        vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+        vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
+      
+        vk_blas_address = scene_renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_address_info );
+      
+        vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
+        vk_acceleration_structure_instance.mask = 0xff;
+        vk_acceleration_structure_instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR; /* TODO ??? */
+        vk_acceleration_structure_instance.accelerationStructureReference = vk_blas_address;
+        vk_acceleration_structure_instance.transform = vk_transform;
+        vk_acceleration_structure_instance.instanceCustomIndex = instance_custom_index;
+      
+        CRUDE_ARRAY_PUSH( vk_acceleration_structure_instances, vk_acceleration_structure_instance );
+      
+        ++instance_custom_index;
       }
     }
   }
@@ -1505,7 +1505,6 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   max_instance_count = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
 
   crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, sizeof( VkAccelerationStructureInstanceKHR ) * max_instance_count );
-  
   
   vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
   vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1527,7 +1526,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
 
   vk_acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
-  vk_acceleration_structure_build_range_info.primitiveCount = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
+  vk_acceleration_structure_build_range_info.primitiveCount = max_instance_count;
   vk_acceleration_structure_build_range_info.primitiveOffset = 0;
   vk_acceleration_structure_build_range_info.firstVertex = 0;
   vk_acceleration_structure_build_range_info.transformOffset = 0;
@@ -1536,7 +1535,11 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+
   scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
+  
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }

@@ -111,7 +111,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_camera )
   XMFLOAT4X4                                               clip_to_world;
   XMFLOAT4                                                 frustum_planes_culling[ 6 ];
   XMFLOAT3                                                 position;
-  float32                                                  padding1;
+  float32                                                  aspect_ratio;
   float32                                                  znear;
   float32                                                  zfar;
   XMFLOAT2                                                 padding;

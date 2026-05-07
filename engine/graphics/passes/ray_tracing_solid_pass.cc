@@ -57,7 +57,7 @@ crude_gfx_ray_tracing_solid_pass_render
 
   push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_culling_pass_push_constant_ );
   push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
-  push_constant.acceleration_stucture_ref = CRUDE_CAST( uint64, pass->scene_renderer->vk_tlas );
+  push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
   push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
   push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
   push_constant.sbt_offset = 0;

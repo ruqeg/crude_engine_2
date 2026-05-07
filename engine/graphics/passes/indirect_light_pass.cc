@@ -83,17 +83,6 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_offsets", sizeof( texture_creation.name ) );
   pass->probe_offsets_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &texture_creation );
-  
-  texture_creation = crude_gfx_texture_creation_empty( );
-  texture_creation.width = scene_renderer->options.indirect_light.use_half_resolution ? ( pass->scene_renderer->gpu->renderer_size.x ) / 2 : pass->scene_renderer->gpu->renderer_size.x;
-  texture_creation.height = scene_renderer->options.indirect_light.use_half_resolution ? ( pass->scene_renderer->gpu->renderer_size.y ) / 2 : pass->scene_renderer->gpu->renderer_size.y;
-  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-  texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
-  texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
-  crude_string_copy( texture_creation.name, "indirect_texture", sizeof( texture_creation.name ) );
-  pass->indirect_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &texture_creation );
-  
-  crude_gfx_indirect_light_pass_on_resize( pass, 0, 0 );
 }
 
 void
@@ -107,7 +96,6 @@ crude_gfx_indirect_light_pass_deinitialize
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->probe_grid_irradiance_texture_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->probe_grid_visibility_texture_handle );
   crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->probe_offsets_texture_handle );
-  crude_gfx_destroy_texture( pass->scene_renderer->gpu, pass->indirect_texture_handle );
 }
 
 void
@@ -228,7 +216,7 @@ crude_gfx_indirect_light_pass_render
     crude_gfx_probe_update_push_constant_                  push_constant;
     crude_gfx_pipeline_handle                              pipeline;
     
-    pipeline = crude_gfx_access_technique_pass_by_name( gpu, "ddgi", "probe_update_irradiance" )->pipeline;
+    pipeline = crude_gfx_access_technique_pass_by_name( gpu, "ddgi", "probe_update_visibility" )->pipeline;
     
     probe_grid_visibility_texture = crude_gfx_access_texture( gpu, pass->probe_grid_visibility_texture_handle );
 
@@ -256,7 +244,6 @@ crude_gfx_indirect_light_pass_render
 
   /* Sample Irradiance */
   {
-    crude_gfx_texture                                     *indirect_texture;
     crude_gfx_sample_irradiance_push_constant_             push_constant;
     crude_gfx_pipeline_handle                              pipeline;
     uint32                                                 width, height, half_resolution;
@@ -268,13 +255,9 @@ crude_gfx_indirect_light_pass_render
     height = gpu->renderer_size.y * resolution_divider;
 
     pipeline = crude_gfx_access_technique_pass_by_name( gpu, "ddgi", "sample_irradiance" )->pipeline;
-    
-    indirect_texture = crude_gfx_access_texture( gpu, pass->indirect_texture_handle );
 
     crude_gfx_cmd_push_marker( primary_cmd, "sample_irradiance" );
 
-    crude_gfx_cmd_add_image_barrier( primary_cmd, indirect_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
-    
     crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
     crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
     
@@ -286,28 +269,8 @@ crude_gfx_indirect_light_pass_render
 
     crude_gfx_cmd_dispatch( primary_cmd, ( width + 7 ) / 8, ( height + 7 ) / 8, 1 );
     
-    crude_gfx_cmd_add_image_barrier( primary_cmd, indirect_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );
-    
     crude_gfx_cmd_pop_marker( primary_cmd );
   }
-}
-
-void
-crude_gfx_indirect_light_pass_on_resize
-(
-  _In_ void                                               *ctx,
-  _In_ uint32                                              new_width,
-  _In_ uint32                                              new_height
-)
-{
-  crude_gfx_indirect_light_pass                           *pass;
-  crude_gfx_texture_creation                               texture_creation;
-
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_pass*, ctx );
-
-  uint32 new_indirect_texture_width = pass->scene_renderer->options.indirect_light.use_half_resolution ? ( pass->scene_renderer->gpu->renderer_size.x ) / 2 : pass->scene_renderer->gpu->renderer_size.x;
-  uint32 new_indirect_texture_height = pass->scene_renderer->options.indirect_light.use_half_resolution ? ( pass->scene_renderer->gpu->renderer_size.y ) / 2 : pass->scene_renderer->gpu->renderer_size.y;
-  crude_gfx_resize_texture( pass->scene_renderer->gpu, pass->indirect_texture_handle, new_indirect_texture_width, new_indirect_texture_height );
 }
 
 crude_gfx_render_graph_pass_container
@@ -319,7 +282,6 @@ crude_gfx_indirect_light_pass_pack
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
   container.render = crude_gfx_indirect_light_pass_render;
-  container.on_resize = crude_gfx_indirect_light_pass_on_resize;
   return container;
 }
 

@@ -23,9 +23,9 @@
       ],
       "outputs": [
         {
-            "type": "texture",
-            "name": "tetrahedron_shadow_texture",
-            "external": true
+          "type": "texture",
+          "name": "tetrahedron_shadow_texture",
+          "external": true
         },
         {
           "type": "marker",
@@ -208,6 +208,14 @@
       ],
       "outputs": [
         {
+          "type": "attachment",
+          "name": "indirect_radiance",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
           "type": "marker",
           "name": "indirect_light_pass_marker"
         }
@@ -243,6 +251,7 @@
     },
     {
       "name": "compose_pass",
+      "type": "compute",
       "inputs": [
         {
           "type": "texture",
@@ -250,18 +259,18 @@
         },
         {
           "type": "texture",
-          "name": "depth"
+          "name": "indirect_radiance"
         },
         {
           "type": "reference",
-          "name": "MESHLET_LATE_PASS_MARKER"
+          "name": "indirect_light_pass_marker"
         }
       ],
       "outputs": [
         {
           "type": "attachment",
           "name": "radiance",
-          "format": "VK_FORMAT_R16G16B16A16_UNORM",
+          "format": "VK_FORMAT_R16G16B16A16_SFLOAT",
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
@@ -299,7 +308,7 @@
       "inputs": [
         {
           "type": "attachment",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "attachment",
@@ -313,7 +322,7 @@
       "outputs": [
         {
           "type": "reference",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "reference",
@@ -330,7 +339,7 @@
       "inputs": [
         {
           "type": "texture",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "reference",
@@ -401,7 +410,7 @@
         },
         {
           "type": "texture",
-          "name": "direct_radiance"
+          "name": "radiance"
         },
         {
           "type": "texture",

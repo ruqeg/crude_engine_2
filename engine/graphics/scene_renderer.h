@@ -72,8 +72,8 @@ typedef struct crude_gfx_scene_renderer_options
   struct
   {
     char const                                            *direct_radiance_texture;
-    char const                                            *ssr_texture;
-    char const                                            *output_texture;
+    char const                                            *indirect_radiance_texture;
+    char const                                            *radiance_texture;
     char const                                            *packed_roughness_metalness_texture;
   } compose_pass;
   
@@ -91,6 +91,7 @@ typedef struct crude_gfx_scene_renderer_options
   {
     char const                                            *normal_texture;
     char const                                            *depth_texture;
+    char const                                            *indirect_radiance_texture;
    
     XMFLOAT3                                               probe_spacing;
     XMFLOAT3                                               probe_grid_position;

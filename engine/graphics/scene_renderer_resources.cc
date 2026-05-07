@@ -26,6 +26,7 @@ crude_gfx_camera_to_camera_gpu
 
   camera_gpu->znear = camera->near_z;
   camera_gpu->zfar = camera->far_z;
+  camera_gpu->aspect_ratio = camera->aspect_ratio;
   
   XMMATRIX view_to_clip_transposed = XMMatrixTranspose( view_to_clip );
   XMStoreFloat4( &camera_gpu->frustum_planes_culling[ 0 ], XMPlaneNormalize( XMVectorAdd( view_to_clip_transposed.r[ 3 ], view_to_clip_transposed.r[ 0 ] ) ) );

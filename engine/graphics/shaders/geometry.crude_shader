@@ -402,7 +402,7 @@ void main()
   direct_radiance += mesh_draw.emissive.xyz * mesh_draw.emissive.w;
 
   out_direct_radiance = vec4( direct_radiance, 1.f );
-  out_packed_normal = crude_octahedral_encode( normal );
+  out_packed_normal = crude_octahedral_encode( in_normal );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

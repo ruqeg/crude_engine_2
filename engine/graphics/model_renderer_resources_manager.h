@@ -14,7 +14,6 @@ typedef struct crude_gfx_model_renderer_resources_manager_creation
   crude_gfx_texture_manager                               *texture_manager;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
-  crude_stack_allocator                                   *temporary_allocator;
   char const                                              *resources_absolute_directory;
 #if CRUDE_DEVELOP
   crude_heap_allocator                                    *test_allocator;
@@ -31,7 +30,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
   crude_gfx_texture_manager                               *texture_manager;
   crude_heap_allocator                                    *allocator;
   crude_heap_allocator                                    *cgltf_temporary_allocator;
-  crude_stack_allocator                                   *temporary_allocator;
   char const                                              *resources_absolute_directory;
 #if CRUDE_DEVELOP
   crude_heap_allocator                                    *test_allocator;

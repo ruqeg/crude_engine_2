@@ -10,8 +10,8 @@
 //#define PROBE_UPDATE_VISIBILITY
 //#define PROBE_UPDATE_IRRADIANCE
 //#define CRUDE_COMPUTE
-#define CRUDE_CLOSEST_HIT
-//#define CRUDE_RAYGEN
+//#define CRUDE_CLOSEST_HIT
+#define CRUDE_RAYGEN
 //#define CRUDE_MISS
 //#define CRUDE_STAGE_TASK
 //#define CRUDE_STAGE_MESH
@@ -76,6 +76,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_raytracer_push_constant_ )
 
   LightsRef                                                lights;
   VerticesRef                                              vertices;
+
+  DebugLinesVerticesRef                                    debug_line_vertices;
+  DebugCountsRef                                           debug_counts;
 };
 #endif /* PROBE_RAYTRACER */
 
@@ -347,12 +350,11 @@ void main()
 
   traceRayEXT( acceleration_structure, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, ray_origin, 0.0, direction, 100.0, 0 );
 
-  
   CRUDE_IMAGE_R16G16B16A16_STORE( ddgi.data.radiance_output_index, ivec2( ray_index, probe_index ), vec4( payload.radiance, payload.distance ) );
   
-  //if ( probe_index == 1009 ) 
+  //if ( probe_index == 0 ) 
   //{
-  //  crude_debug_draw_line( ray_origin, ray_origin + direction * payload.distance, vec4( payload.radiance, 1 ), vec4( payload.radiance, 1 ) );
+  //  crude_debug_draw_line( debug_line_vertices, debug_counts, ray_origin, ray_origin + direction * payload.distance, vec4( payload.radiance, 1 ), vec4( payload.radiance, 1 ) );
   //}
 }
 
@@ -400,9 +402,9 @@ void main()
     
     normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
 
-    texcoord0 = vec2( vertices.data[ i0 ].tu, vertices.data[ i0 ].tu );
-    texcoord1 = vec2( vertices.data[ i1 ].tu, vertices.data[ i1 ].tu );
-    texcoord2 = vec2( vertices.data[ i2 ].tu, vertices.data[ i2 ].tu );
+    texcoord0 = vec2( vertices.data[ i0 ].tu, vertices.data[ i0 ].tv );
+    texcoord1 = vec2( vertices.data[ i1 ].tu, vertices.data[ i1 ].tv );
+    texcoord2 = vec2( vertices.data[ i2 ].tu, vertices.data[ i2 ].tv );
     
     b = barycentric_weights.x;
     c = barycentric_weights.y;
@@ -410,7 +412,6 @@ void main()
     
     texcoord = a * texcoord0 + b * texcoord1 + c * texcoord2;
     model_position = a * p0_model + b * p1_model + c * p2_model;
-    
     world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
     
     albedo = mesh_draw.albedo_color_factor.xyz;
@@ -418,7 +419,7 @@ void main()
     {
       albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], texcoord ).xyz * albedo, vec3( 2.2 ) );
     }
-    
+
     diffuse = vec3( 0 );
     for ( uint i = 0; i < scene.data.active_lights_count; ++i )
     {
@@ -432,7 +433,7 @@ void main()
       position_to_light_distance = length( position_to_light );
       position_to_light_normalized = position_to_light / position_to_light_distance;
     
-      float visiblity = 0.f;
+      float visiblity = 1.f;
       if ( position_to_light_distance <= light.radius )
       {
         rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
@@ -444,10 +445,10 @@ void main()
     
       light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
     
-      diffuse += visiblity * albedo * light_intensity;
+      diffuse += albedo * light_intensity;
     }
     
-    diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
+    //diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
     
     radiance = diffuse;
     distance = gl_RayTminEXT + gl_HitTEXT;

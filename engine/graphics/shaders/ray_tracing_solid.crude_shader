@@ -23,7 +23,7 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
   MeshDrawsRef                                             mesh_draws;
 
   MeshInstancesDrawsRef                                    mesh_instance_draws;
-  AccelerationStructureRef                                 acceleration_stucture_ref;
+  VerticesRef                                              vertices;
 
   uint32                                                   sbt_offset;
   uint32                                                   sbt_stride;
@@ -60,8 +60,12 @@ compute_ray_dir
 {
   float x = ( 2 * ( float( launchID.x ) + 0.5 ) / float( launchSize.x ) - 1.0 );
   float y = ( 1.0 - 2 * ( float( launchID.y ) + 0.5 ) / float( launchSize.y ) );
-  vec4 dir = vec4( x, y, 1, 1 ) * scene.data.camera.clip_to_world;
-  dir.xyz = normalize( dir.xyz );
+#if CRUDE_RIGHT_HAND
+  vec3 dir = vec3( x, y / scene.data.camera.aspect_ratio, -scene.data.camera.znear ) * mat3( scene.data.camera.view_to_world );
+#else
+  vec3 dir = vec3( x, y / scene.data.camera.aspect_ratio, scene.data.camera.znear ) * mat3( scene.data.camera.view_to_world );
+#endif
+  dir = normalize( dir );
   return dir.xyz;
 }
 
@@ -98,7 +102,7 @@ void main()
 {
   crude_gfx_mesh_draw                                    mesh_draw;
   mat4                                                   mesh_to_world, world_to_mesh;
-  vec3                                                   normal, p0_model, p1_model, p2_model, n0_model, n1_model, n2_model, model_position, world_position, diffuse, albedo;
+  vec3                                                   normal, p0_model, p1_model, p2_model, model_position, world_position, diffuse, albedo;
   vec2                                                   texcoord, texcoord0, texcoord1, texcoord2;
   float                                                  a, b, c, ndotl, attenuation;
   uint                                                   i0, i1, i2;
@@ -109,48 +113,36 @@ void main()
   a = 1 - b - c;
   payload.color = vec3( a, b, c );
   
-  //mesh_index = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_draw_index;
-  //mesh_draw = mesh_draws.data[ mesh_index ];
-  //
-  //world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
-  //mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
-  //
-  // i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
-  // i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
-  // i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
-  // 
-  //p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
-  //p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
-  //p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
-  //
-  //if ( ( mesh_draw.flags & CRUDE_MESH_DRAW_FLAGS_HAS_NORMAL ) == 0 )
-  //{
-  //  n0_model = mesh_draw.normal_buffer.data[ i0 ];
-  //  n1_model = mesh_draw.normal_buffer.data[ i1 ];
-  //  n2_model = mesh_draw.normal_buffer.data[ i2 ];
-  //  normal = normalize( a * n0_model + b * n1_model + c * n2_model );
-  //}
-  //else
-  //{
-  //  normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
-  //}
-  //
-  //texcoord0 = mesh_draw.texcoord_buffer.data[ i0 ];
-  //texcoord1 = mesh_draw.texcoord_buffer.data[ i1 ];
-  //texcoord2 = mesh_draw.texcoord_buffer.data[ i2 ];
-  //
-  //model_position = a * p0_model + b * p1_model + c * p2_model;
-  //world_position = vec3( vec4( model_position, 1 ) * mesh_to_world );
-  //texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
-  //
-  ////
-  ////albedo = mesh_draw.albedo_color_factor.xyz;
-  ////if ( mesh_draw.textures.x != CRUDE_SHADER_TEXTURE_UNDEFINED )
-  ////{
-  ////  albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], texcoord ).xyz * albedo, vec3( 2.2 ) );
-  ////}
-  //
-  //payload.color = vec3(texcoord,1);// albedo;
+  mesh_index = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_draw_index;
+  mesh_draw = mesh_draws.data[ mesh_index ];
+  
+  world_to_mesh = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].world_to_mesh;
+  mesh_to_world = mesh_instance_draws.data[ gl_InstanceCustomIndexEXT ].mesh_to_world;
+  
+  i0 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 ];
+  i1 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 1 ];
+  i2 = mesh_draw.index_buffer.data[ gl_PrimitiveID * 3 + 2 ];
+   
+  p0_model = gl_HitTriangleVertexPositionsEXT[ 0 ];
+  p1_model = gl_HitTriangleVertexPositionsEXT[ 1 ];
+  p2_model = gl_HitTriangleVertexPositionsEXT[ 2 ];
+  
+  normal = normalize( cross( p1_model - p0_model, p2_model - p1_model ) );
+  
+  texcoord0 = vec2( vertices.data[ i0 ].tu, vertices.data[ i0 ].tv );
+  texcoord1 = vec2( vertices.data[ i1 ].tu, vertices.data[ i1 ].tv );
+  texcoord2 = vec2( vertices.data[ i2 ].tu, vertices.data[ i2 ].tv );
+
+  world_position = a * p0_model + b * p1_model + c * p2_model;
+  texcoord = ( a * texcoord0 + b * texcoord1 + c * texcoord2 );
+  
+  albedo = mesh_draw.albedo_color_factor.xyz;
+  if ( mesh_draw.textures.x != CRUDE_SHADER_TEXTURE_UNDEFINED )
+  {
+    albedo = pow( texture( global_textures[ nonuniformEXT( mesh_draw.textures.x ) ], texcoord ).xyz * albedo, vec3( 2.2 ) );
+  }
+  
+  payload.color = vec3( world_position );// albedo;
 }
 
 #endif /* CRUDE_CLOSEST_HIT */
