@@ -49,7 +49,7 @@ crude_gfx_pointlight_shadow_pass_initialize
   texture_creation.width = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   texture_creation.height = CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   texture_creation.depth = 1u;
-  texture_creation.format = VK_FORMAT_D32_SFLOAT;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_RENDER_TARGET;
   crude_string_copy( texture_creation.name, "tetrahedron_shadow_texture", sizeof( texture_creation.name ) );

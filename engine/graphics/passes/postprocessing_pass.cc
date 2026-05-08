@@ -22,7 +22,7 @@ crude_gfx_postprocessing_pass_initialize
   pass->scene_renderer = scene_renderer;
 
   luminance_average_texture_creation = crude_gfx_texture_creation_empty();
-  luminance_average_texture_creation.format = VK_FORMAT_R32_SFLOAT;
+  luminance_average_texture_creation.format = CRUDE_GFX_RHI_FORMAT_R32_SFLOAT;
   luminance_average_texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   luminance_average_texture_creation.width = 1u;
   luminance_average_texture_creation.height = 1u;

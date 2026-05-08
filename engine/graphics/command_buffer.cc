@@ -273,7 +273,7 @@ crude_gfx_cmd_copy_texture
 
   CRUDE_ASSERT( src->width == dst->width && src->height == dst->height );
 
-  vkCmdCopyImage( cmd->vk_cmd_buffer, src->vk_image, crude_gfx_resource_state_to_vk_image_layout2( src->state ), dst->vk_image, crude_gfx_resource_state_to_vk_image_layout2( dst->state ), 1u, &region );
+  vkCmdCopyImage( cmd->vk_cmd_buffer, src->vk_image, crude_gfx_resource_state_to_image_layout( src->state ), dst->vk_image, crude_gfx_resource_state_to_image_layout( dst->state ), 1u, &region );
 }
 
 void
@@ -503,10 +503,10 @@ crude_gfx_cmd_add_buffer_barrier
 
   barrier = CRUDE_COMPOUNT_EMPTY( VkBufferMemoryBarrier2KHR );
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
-  barrier.srcAccessMask = crude_gfx_resource_state_to_vk_access_flags2( old_state );
-  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags2( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  barrier.dstAccessMask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
-  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags2( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  barrier.srcAccessMask = crude_gfx_resource_state_to_access_flags( old_state );
+  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  barrier.dstAccessMask = crude_gfx_resource_state_to_access_flags( new_state );
+  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
   barrier.buffer = buffer->vk_buffer;
   barrier.offset = 0;
   barrier.size = buffer->size;
@@ -625,16 +625,16 @@ crude_gfx_cmd_add_image_barrier_ext5
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
   
-  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_vk_access_flags2( old_state );
-  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_vk_access_flags2( new_state );
+  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_access_flags( old_state );
+  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_access_flags( new_state );
   VkImageMemoryBarrier2 barrier = CRUDE_COMPOUNT_EMPTY( VkImageMemoryBarrier2 );
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
-  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags2( src_access_mask, source_queue_type );
+  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags( src_access_mask, source_queue_type );
   barrier.srcAccessMask = src_access_mask;
-  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags2( dst_access_mask, destination_queue_type );
+  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags( dst_access_mask, destination_queue_type );
   barrier.dstAccessMask = dst_access_mask;
-  barrier.oldLayout = crude_gfx_resource_state_to_vk_image_layout2( old_state );
-  barrier.newLayout = crude_gfx_resource_state_to_vk_image_layout2( new_state );
+  barrier.oldLayout = crude_gfx_resource_state_to_image_layout( old_state );
+  barrier.newLayout = crude_gfx_resource_state_to_image_layout( new_state );
   barrier.srcQueueFamilyIndex = source_queue_family;
   barrier.dstQueueFamilyIndex = destination_family;
   barrier.image = vk_image;

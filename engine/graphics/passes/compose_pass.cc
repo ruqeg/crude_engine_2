@@ -48,6 +48,7 @@ crude_gfx_compose_pass_render
   pust_constant.direct_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.direct_radiance_texture );
   pust_constant.indirect_radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.indirect_radiance_texture );
   pust_constant.radiance_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.radiance_texture );
+  pust_constant.albedo_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( compose_pass.albedo_texture );
   crude_gfx_cmd_push_constant( primary_cmd, &pust_constant, sizeof( pust_constant ) );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );

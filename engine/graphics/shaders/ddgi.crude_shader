@@ -298,8 +298,8 @@ sample_irradiance
     vec2 probe_irradiance_uv = get_probe_uv( normal, probe_index, ddgi.data.irradiance_texture_width, ddgi.data.irradiance_texture_height, ddgi.data.irradiance_side_length );
     vec3 probe_irradiance = CRUDE_TEXTURE_LOD( ddgi.data.grid_irradiance_output_index, probe_irradiance_uv, 0 ).rgb;
     probe_irradiance = pow( probe_irradiance, vec3( 0.5f * 5.0f ) );
-    sum_irradiance += weight * probe_irradiance;
-    sum_weight += weight;
+    sum_irradiance += probe_irradiance;
+    sum_weight += 1;
   }
 
   vec3 net_irradiance = sum_irradiance / sum_weight;
@@ -448,7 +448,7 @@ void main()
       diffuse += albedo * light_intensity;
     }
     
-    //diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
+    diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
     
     radiance = diffuse;
     distance = gl_RayTminEXT + gl_HitTEXT;

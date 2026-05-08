@@ -65,7 +65,7 @@ typedef struct crude_gfx_render_graph_resource_info
     {
       XMFLOAT2                                             scale;
       uint32                                               depth;
-      VkFormat                                             format;
+      crude_gfx_rhi_format                                     format;
       VkImageUsageFlags                                    flags;
       crude_gfx_render_pass_operation                      load_op;
       crude_gfx_texture_handle                             handle;

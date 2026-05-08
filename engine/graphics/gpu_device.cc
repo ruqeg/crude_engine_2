@@ -374,13 +374,13 @@ crude_gfx_device_initialize
   
   {
     crude_gfx_sampler_creation default_sampler_creation = crude_gfx_sampler_creation_empty();
-    default_sampler_creation .address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    default_sampler_creation .address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    default_sampler_creation .address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    default_sampler_creation .min_filter     = VK_FILTER_LINEAR;
-    default_sampler_creation .mag_filter     = VK_FILTER_LINEAR;
-    default_sampler_creation .mip_filter     = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    default_sampler_creation .name           = "sampler default";
+    default_sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default_sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default_sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default_sampler_creation.min_filter     = CRUDE_GFX_RHI_FILTER_LINEAR;
+    default_sampler_creation.mag_filter     = CRUDE_GFX_RHI_FILTER_LINEAR;
+    default_sampler_creation.mip_filter     = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
+    default_sampler_creation.name           = "sampler default";
     gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   }
   
@@ -404,14 +404,14 @@ crude_gfx_device_initialize
     vkGetPhysicalDeviceProperties2( gpu->vk_physical_device, &physical_device_properties_2 );
   }
 
-  gpu->swapchain_output.depth_stencil_format = VK_FORMAT_D32_SFLOAT;
-  gpu->swapchain_output.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  gpu->swapchain_output.depth_stencil_format = CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
+  gpu->swapchain_output.depth_stencil_final_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   gpu->swapchain_output.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   gpu->swapchain_output.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
 
-  gpu->swapchain_output.color_final_layouts[ 0 ] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-  gpu->swapchain_output.color_formats[ 0 ] = gpu->vk_surface_format.format;
+  gpu->swapchain_output.color_final_layouts[ 0 ] = CRUDE_GFX_RHI_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  gpu->swapchain_output.color_formats[ 0 ] = gpu->surface_format.format;
   gpu->swapchain_output.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   gpu->swapchain_output.num_color_formats = 1u;
   
@@ -658,7 +658,7 @@ crude_gfx_present
       if ( texture_to_update->type == CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE )
       {
       }
-      CRUDE_ASSERT( texture->vk_format != VK_FORMAT_UNDEFINED );
+      CRUDE_ASSERT( texture->format != VK_FORMAT_UNDEFINED );
       descriptor_image_info->imageView = texture->vk_image_view;
       descriptor_image_info->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       descriptor_write->pImageInfo = descriptor_image_info;
@@ -993,7 +993,7 @@ crude_gfx_read_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *name,
-  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
 {
@@ -1008,7 +1008,7 @@ crude_gfx_read_shader
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
   
-  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
+  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
 
   crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 
@@ -1025,7 +1025,7 @@ crude_gfx_compile_shader
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
   _In_ char const                                         *name,
   _In_ crude_stack_allocator                              *temporary_allocator
 )
@@ -1041,14 +1041,14 @@ crude_gfx_compile_shader
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
   
-  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
+  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
 
   char const                                              *temp_filename;
   char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
   char                                                     technique_name_upper[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
   uint32                                                   i;
   
-  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_vk_shader_stage_to_compiler_extension( stage ) );
+  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
   crude_write_file( temp_filename, code, code_size );
 
   technique_name_upper[ 0 ] = 0;
@@ -1067,7 +1067,7 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" ); 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_vk_shader_stage_to_compiler_extension( stage ), crude_gfx_vk_shader_stage_to_defines( stage ), technique_name_upper );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_shader_stage_to_compiler_extension( stage ), crude_gfx_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
 
@@ -1083,7 +1083,7 @@ crude_gfx_compile_shader
 
   if ( !spirv_code )
   {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_vk_shader_stage_to_defines( stage ) );
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_shader_stage_to_defines( stage ) );
   }
   
   crude_file_delete( temp_filename );
@@ -1171,7 +1171,7 @@ crude_gfx_resize_texture
   crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
   texture_creation.flags = texture->flags;
   texture_creation.subresource = texture->subresource;
-  texture_creation.format = texture->vk_format;
+  texture_creation.format = texture->format;
   texture_creation.type = texture->type;
   crude_string_copy( texture_creation.name, texture->name, sizeof( texture_creation.name ) );
   texture_creation.width = width;
@@ -1424,13 +1424,16 @@ crude_gfx_create_sampler
   _In_ crude_gfx_sampler_creation const                   *creation
 )
 {
-  crude_gfx_sampler_handle handle = crude_gfx_obtain_sampler( gpu );
+  crude_gfx_sampler                                       *sampler;
+  crude_gfx_sampler_handle                                 handle;
+
+  handle = crude_gfx_obtain_sampler( gpu );
   if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( handle ) )
   {
     return handle;
   }
   
-  crude_gfx_sampler *sampler = crude_gfx_access_sampler( gpu, handle );
+  sampler = crude_gfx_access_sampler( gpu, handle );
   sampler->address_mode_u = creation->address_mode_u;
   sampler->address_mode_v = creation->address_mode_v;
   sampler->address_mode_w = creation->address_mode_w;
@@ -1439,30 +1442,33 @@ crude_gfx_create_sampler
   sampler->mip_filter     = creation->mip_filter;
   sampler->name           = creation->name;
   
-  VkSamplerCreateInfo create_info = CRUDE_COMPOUNT_EMPTY( VkSamplerCreateInfo );
-  create_info.sType                    = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-  create_info.magFilter                = creation->mag_filter;
-  create_info.minFilter                = creation->min_filter;
-  create_info.mipmapMode               = creation->mip_filter;
-  create_info.addressModeU             = creation->address_mode_u;
-  create_info.addressModeV             = creation->address_mode_v;
-  create_info.addressModeW             = creation->address_mode_w;
-  create_info.anisotropyEnable         = 0;
-  create_info.compareEnable            = 0;
-  create_info.borderColor              = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
-  create_info.unnormalizedCoordinates  = 0;
-  create_info.minLod                   = 0.f;
-  create_info.maxLod                   = VK_LOD_CLAMP_NONE;
+  VkSamplerCreateInfo                                      vk_sampler_create_info;
+  VkSamplerReductionModeCreateInfoEXT                      create_info_reduction;
 
-  VkSamplerReductionModeCreateInfoEXT create_info_reduction = CRUDE_COMPOUNT_EMPTY( VkSamplerReductionModeCreateInfoEXT );
+  vk_sampler_create_info = CRUDE_COMPOUNT_EMPTY( VkSamplerCreateInfo );
+  vk_sampler_create_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+  vk_sampler_create_info.magFilter               = CRUDE_CAST( VkFilter, creation->mag_filter );
+  vk_sampler_create_info.minFilter               = CRUDE_CAST( VkFilter, creation->min_filter );
+  vk_sampler_create_info.mipmapMode              = CRUDE_CAST( VkSamplerMipmapMode, creation->mip_filter );
+  vk_sampler_create_info.addressModeU            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_u );
+  vk_sampler_create_info.addressModeV            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_v );
+  vk_sampler_create_info.addressModeW            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_w );
+  vk_sampler_create_info.anisotropyEnable        = 0;
+  vk_sampler_create_info.compareEnable           = 0;
+  vk_sampler_create_info.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+  vk_sampler_create_info.unnormalizedCoordinates = 0;
+  vk_sampler_create_info.minLod                  = 0.f;
+  vk_sampler_create_info.maxLod                  = VK_LOD_CLAMP_NONE;
+
+  create_info_reduction = CRUDE_COMPOUNT_EMPTY( VkSamplerReductionModeCreateInfoEXT );
   create_info_reduction.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT;
   if ( creation->reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT )
   {
-    create_info_reduction.reductionMode = creation->reduction_mode;
-    create_info.pNext = &create_info_reduction;
+    create_info_reduction.reductionMode = CRUDE_CAST( VkSamplerReductionMode, creation->reduction_mode );
+    vk_sampler_create_info.pNext = &create_info_reduction;
   }
 
-  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );
+  CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateSampler( gpu->vk_device, &vk_sampler_create_info, gpu->vk_allocation_callbacks, &sampler->vk_sampler ), "Failed to create sampler" );  
   crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_SAMPLER, CRUDE_CAST( uint64, sampler->vk_sampler ), creation->name );
   return handle;
 }
@@ -2045,7 +2051,7 @@ crude_gfx_create_pipeline
         vk_vertex_attributes[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputAttributeDescription );
         vk_vertex_attributes[ i ].location = vertex_attributes[ i ].location;
         vk_vertex_attributes[ i ].binding = vertex_attributes[ i ].binding;
-        vk_vertex_attributes[ i ].format = crude_gfx_to_vk_vertex_format( vertex_attributes[ i ].format );
+        vk_vertex_attributes[ i ].format = crude_gfx_to_vertex_format( vertex_attributes[ i ].format );
         vk_vertex_attributes[ i ].offset = vertex_attributes[ i ].offset;
       }
       vk_vertex_input_info.vertexAttributeDescriptionCount = vertex_attributes_num;
@@ -2714,7 +2720,7 @@ crude_gfx_create_descriptor_set
       }
 
       image_info[ i ].imageView = texture->vk_image_view;
-      image_info[ i ].imageLayout = crude_gfx_has_depth( texture->vk_format ) ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      image_info[ i ].imageLayout = crude_gfx_rhi_format_has_depth( texture->format ) ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
       descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       descriptor_write[ i ].pImageInfo = &image_info[ i ];
@@ -4245,12 +4251,12 @@ vk_create_descriptor_pool_
     creation.bindless = true;
     creation.set_index = 0u;
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
-      .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+      .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
       .start = CRUDE_BINDLESS_TEXTURE_BINDING,
       .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
     } ) );
     crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
-      .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+      .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE,
       .start = CRUDE_BINDLESS_TEXTURE_BINDING + 1,
       .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
     } ) );
@@ -4407,7 +4413,7 @@ vk_create_texture_
   texture->depth          = creation->depth;
   texture->subresource    = creation->subresource;
   texture->type           = creation->type;
-  texture->vk_format      = creation->format;
+  texture->format         = creation->format;
   texture->sampler        = NULL;
   texture->flags          = creation->flags;
   texture->handle         = handle;
@@ -4422,8 +4428,8 @@ vk_create_texture_
 
     image_info = CRUDE_COMPOUNT_EMPTY( VkImageCreateInfo );
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    image_info.imageType = crude_gfx_to_vk_image_type( creation->type );
-    image_info.format = texture->vk_format;
+    image_info.imageType = crude_gfx_texture_type_to_image_type( creation->type );
+    image_info.format = texture->format;
     image_info.extent.width = creation->width;
     image_info.extent.height = creation->height;
     image_info.extent.depth = creation->depth;
@@ -4444,7 +4450,7 @@ vk_create_texture_
       image_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
 
-    if ( crude_gfx_has_depth_or_stencil( creation->format ) )
+    if ( crude_gfx_rhi_format_has_depth_or_stencil( creation->format ) )
     {
       image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
@@ -4475,7 +4481,7 @@ vk_create_texture_
   
   crude_gfx_texture_view_creation view_creation = crude_gfx_texture_view_creation_empty();
   view_creation.parent_texture_handle = texture->handle;
-  view_creation.view_type = crude_gfx_to_vk_image_view_type( creation->type );
+  view_creation.view_type = crude_gfx_texture_type_to_image_view_type( creation->type );
   view_creation.subresource = texture->subresource;
   view_creation.name = texture->name;
   vk_create_texture_view_( gpu, &view_creation, texture );
@@ -4501,11 +4507,11 @@ vk_create_texture_view_
   VkImageViewCreateInfo image_view_info = CRUDE_COMPOUNT_EMPTY( VkImageViewCreateInfo );
   image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   image_view_info.image = texture->vk_image;
-  image_view_info.format = texture->vk_format;
+  image_view_info.format = texture->format;
   
-  if ( crude_gfx_has_depth_or_stencil( texture->vk_format ))
+  if ( crude_gfx_rhi_format_has_depth_or_stencil( texture->format ))
   {
-    image_view_info.subresourceRange.aspectMask = crude_gfx_has_depth( texture->vk_format ) ? ( VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_DEPTH_BIT ) : 0;
+    image_view_info.subresourceRange.aspectMask = crude_gfx_rhi_format_has_depth( texture->format ) ? ( VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_DEPTH_BIT ) : 0;
   }
   else
   {
@@ -4667,28 +4673,28 @@ vk_reflect_shader_
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         {
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
-          binding->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+          binding->type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
         {
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
-          binding->type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          binding->type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
         {
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
-          binding->type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+          binding->type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE;
           ++set_layout->num_bindings;
           break;
         }
         case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
         {
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
-          binding->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          binding->type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
           ++set_layout->num_bindings;
           break;
         }
@@ -4696,7 +4702,7 @@ vk_reflect_shader_
         {
 #if CRUDE_GFX_RAY_TRACING_ENABLED
           reflect->descriptor.sets_count = CRUDE_MAX( reflect->descriptor.sets_count, ( spv_descriptor_set->set + 1 ) );
-          binding->type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+          binding->type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
           ++set_layout->num_bindings;
 #endif
           break;

@@ -44,18 +44,6 @@ parse_gpu_pipeline_
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
-static VkBlendFactor
-get_blend_factor_
-(
-  _In_ char const                                         *factor
-);
-
-static VkBlendOp
-get_blend_op_
-(
-  _In_ char const                                         *op
-);
-
 /************************************************
  *
  * Renderer Technique
@@ -271,35 +259,35 @@ parse_gpu_pipeline_
       stage = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( shader_stage_json, "stage" ) );
       if ( strcmp( stage, "vertex" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_VERTEX_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT );
       }
       else if ( strcmp( stage, "fragment" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_FRAGMENT_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT );
       }
       else if ( strcmp( stage, "compute" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_COMPUTE_BIT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT );
       }
       else if ( strcmp( stage, "mesh" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_MESH_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT );
       }
       else if ( strcmp( stage, "task" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_TASK_BIT_EXT );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT );
       }
       else if ( strcmp( stage, "raygen" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_RAYGEN_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR );
       }
       else if ( strcmp( stage, "closest_hit" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR );
       }
       else if ( strcmp( stage, "miss" ) == 0 )
       {
-        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, VK_SHADER_STAGE_MISS_BIT_KHR );
+        crude_gfx_shader_state_creation_add_stage( &pipeline_creation->shaders, shader_buffer->buffer, shader_buffer->size, CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR );
       }
     }
   }
@@ -323,19 +311,19 @@ parse_gpu_pipeline_
       
       if ( strcmp( comparison, "less_or_equal" ) == 0 )
       {
-        pipeline_creation->depth_stencil.depth_comparison = VK_COMPARE_OP_LESS_OR_EQUAL;
+        pipeline_creation->depth_stencil.depth_comparison = CRUDE_GFX_RHI_COMPARE_OP_LESS_OR_EQUAL;
       }
       else if ( strcmp( comparison, "equal" ) == 0 )
       {
-        pipeline_creation->depth_stencil.depth_comparison = VK_COMPARE_OP_EQUAL;
+        pipeline_creation->depth_stencil.depth_comparison = CRUDE_GFX_RHI_COMPARE_OP_EQUAL;
       }
       else if ( strcmp( comparison, "never" ) == 0 )
       {
-        pipeline_creation->depth_stencil.depth_comparison = VK_COMPARE_OP_NEVER;
+        pipeline_creation->depth_stencil.depth_comparison = CRUDE_GFX_RHI_COMPARE_OP_NEVER;
       }
       else if ( strcmp( comparison, "always" ) == 0 )
       {
-        pipeline_creation->depth_stencil.depth_comparison = VK_COMPARE_OP_ALWAYS;
+        pipeline_creation->depth_stencil.depth_comparison = CRUDE_GFX_RHI_COMPARE_OP_ALWAYS;
       }
       else
       {
@@ -357,9 +345,9 @@ parse_gpu_pipeline_
       char const *blend_op = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( blend_json, "op" ) );
       
       crude_gfx_blend_state blend_state = CRUDE_COMPOUNT_EMPTY( crude_gfx_blend_state );
-      blend_state.source_color = get_blend_factor_( src_colour );
-      blend_state.destination_color = get_blend_factor_( dst_colour );
-      blend_state.color_operation = get_blend_op_( blend_op );
+      blend_state.source_color = crude_gfx_rhi_string_to_blend_factor( src_colour );
+      blend_state.destination_color = crude_gfx_rhi_string_to_blend_factor( dst_colour );
+      blend_state.color_operation = crude_gfx_rhi_string_to_blend_op( blend_op );
       blend_state.blend_enabled = enabled;
       crude_gfx_pipeline_creation_add_blend_state( pipeline_creation, blend_state );
     }
@@ -372,15 +360,15 @@ parse_gpu_pipeline_
 
     if ( strcmp( cull_mode, "back" ) == 0 )
     {
-      pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_BACK_BIT;
+      pipeline_creation->rasterization.cull_mode = CRUDE_GFX_RHI_CULL_MODE_BACK_BIT;
     }
     else if ( strcmp( cull_mode, "front" ) == 0 )
     {
-      pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_FRONT_BIT;
+      pipeline_creation->rasterization.cull_mode = CRUDE_GFX_RHI_CULL_MODE_FRONT_BIT;
     }
     else if ( strcmp( cull_mode, "none" ) == 0 )
     {
-      pipeline_creation->rasterization.cull_mode = VK_CULL_MODE_NONE;
+      pipeline_creation->rasterization.cull_mode = CRUDE_GFX_RHI_CULL_MODE_NONE;
     }
     else
     {
@@ -392,10 +380,10 @@ parse_gpu_pipeline_
   if ( topology_json != NULL )
   {
     char const *topology_str = cJSON_GetStringValue( topology_json );
-    pipeline_creation->topology = crude_gfx_string_to_vk_primitive_topology( topology_str );
+    pipeline_creation->topology = crude_gfx_string_to_primitive_topology( topology_str );
   }
 
-  pipeline_creation->rasterization.front = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  pipeline_creation->rasterization.front = CRUDE_GFX_RHI_FRONT_FACE_COUNTER_CLOCKWISE;
   
   cJSON const *render_pass_output_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "render_pass_output" );
   if ( render_pass_output_json != NULL )
@@ -444,16 +432,16 @@ parse_gpu_pipeline_
         cJSON const *render_pass_output_custom_attachment_format_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_custom_attachment_json, "format" );
         cJSON const *render_pass_output_custom_attachment_load_op_json = cJSON_GetObjectItemCaseSensitive( render_pass_output_custom_attachment_json, "op" );
 
-        VkFormat vk_format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) );
+        crude_gfx_rhi_format vk_format = crude_gfx_string_to_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) );
         crude_gfx_render_pass_operation operation = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( render_pass_output_custom_attachment_load_op_json ) );
 
-        if ( crude_gfx_has_depth_or_stencil( vk_format ) )
+        if ( crude_gfx_rhi_format_has_depth_or_stencil( vk_format ) )
         {
-          crude_gfx_render_pass_output_set_depth( &pipeline_creation->render_pass_output, vk_format, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, operation, CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE );
+          crude_gfx_render_pass_output_set_depth( &pipeline_creation->render_pass_output, vk_format, CRUDE_GFX_RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, operation, CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE );
         }
         else
         {
-          crude_gfx_render_pass_output_add_color( &pipeline_creation->render_pass_output, crude_gfx_string_to_vk_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) ), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, operation );
+          crude_gfx_render_pass_output_add_color( &pipeline_creation->render_pass_output, crude_gfx_string_to_format( cJSON_GetStringValue( render_pass_output_custom_attachment_format_json ) ), CRUDE_GFX_RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, operation );
         }
       }
     }
@@ -508,120 +496,4 @@ load_shader_to_string_buffer_
   *total_code_size += code_size;
 
   crude_stack_allocator_free_marker( temporary_allocator, temporary_allocator_marker );
-}
-
-VkBlendFactor
-get_blend_factor_
-(
-  _In_ char const                                         *factor
-)
-{
-  if ( strcmp( factor, "ZERO" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ZERO;
-  }
-  if ( strcmp( factor, "ONE" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE;
-  }
-  if ( strcmp( factor, "SRC_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_SRC_COLOR;
-  }
-  if ( strcmp( factor, "ONE_MINUS_SRC_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-  }
-  if ( strcmp( factor, "DST_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_DST_COLOR;
-  }
-  if ( strcmp( factor, "ONE_MINUS_DST_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-  }
-  if ( strcmp( factor, "SRC_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_SRC_ALPHA;
-  }
-  if ( strcmp( factor, "ONE_MINUS_SRC_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-  }
-  if ( strcmp( factor, "DST_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_DST_ALPHA;
-  }
-  if ( strcmp( factor, "ONE_MINUS_DST_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-  }
-  if ( strcmp( factor, "CONSTANT_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_CONSTANT_COLOR;
-  }
-  if ( strcmp( factor, "ONE_MINUS_CONSTANT_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-  }
-  if ( strcmp( factor, "CONSTANT_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_CONSTANT_ALPHA;
-  }
-  if ( strcmp( factor, "ONE_MINUS_CONSTANT_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-  }
-  if ( strcmp( factor, "SRC_ALPHA_SATURATE" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-  }
-  if ( strcmp( factor, "SRC1_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_SRC1_COLOR;
-  }
-  if ( strcmp( factor, "ONE_MINUS_SRC1_COLOR" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-  }
-  if ( strcmp( factor, "SRC1_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_SRC1_ALPHA;
-  }
-  if ( strcmp( factor, "ONE_MINUS_SRC1_ALPHA" ) == 0 )
-  {
-    return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-  }
-  
-  return VK_BLEND_FACTOR_ONE;
-}
-
-VkBlendOp
-get_blend_op_
-(
-  _In_ char const                                         *op
-)
-{
-  if ( strcmp( op, "ADD" ) == 0 )
-  {
-    return VK_BLEND_OP_ADD;
-  }
-  if ( strcmp( op, "SUBTRACT" ) == 0 )
-  {
-    return VK_BLEND_OP_SUBTRACT;
-  }
-  if ( strcmp( op, "REVERSE_SUBTRACT" ) == 0 )
-  {
-    return VK_BLEND_OP_REVERSE_SUBTRACT;
-  }
-  if ( strcmp( op, "MIN" ) == 0 )
-  {
-    return VK_BLEND_OP_MIN;
-  }
-  if ( strcmp( op, "MAX" ) == 0 )
-  {
-    return VK_BLEND_OP_MAX;
-  }
-  
-  return VK_BLEND_OP_ADD;
 }

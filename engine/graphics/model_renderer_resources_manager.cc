@@ -1957,7 +1957,7 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     vk_acceleration_structure_geometries[ i ].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
     vk_acceleration_structure_geometries[ i ].flags = ( mesh->flags & CRUDE_MESH_DRAW_FLAGS_TRANSLUCENT_MASK ) ? 0 : VK_GEOMETRY_OPAQUE_BIT_KHR;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-    vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+    vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexFormat = CRUDE_GFX_RHI_FORMAT_R32G32B32_SFLOAT;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexData.deviceAddress = manager->meshlets_vertices_positions_hga.gpu_address;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexStride = sizeof( crude_gfx_vertex_position );
     vk_acceleration_structure_geometries[ i ].geometry.triangles.maxVertex = max_primitives_count;

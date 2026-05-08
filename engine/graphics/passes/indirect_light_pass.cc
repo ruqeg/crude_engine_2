@@ -39,7 +39,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = scene_renderer->options.indirect_light.probe_rays;
   texture_creation.height = probe_count;
-  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_rt_radiance", sizeof( texture_creation.name ) );
@@ -48,7 +48,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = pass->irradiance_atlas_width;
   texture_creation.height = pass->irradiance_atlas_height;
-  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_irradiance", sizeof( texture_creation.name ) );
@@ -57,7 +57,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = pass->visibility_atlas_width;
   texture_creation.height = pass->visibility_atlas_height;
-  texture_creation.format = VK_FORMAT_R16G16_SFLOAT;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R16G16_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_visibility", sizeof( texture_creation.name ) );
@@ -78,7 +78,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = scene_renderer->options.indirect_light.probe_count_x * scene_renderer->options.indirect_light.probe_count_y;
   texture_creation.height = scene_renderer->options.indirect_light.probe_count_z;
-  texture_creation.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SFLOAT;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_offsets", sizeof( texture_creation.name ) );
@@ -235,8 +235,8 @@ crude_gfx_indirect_light_pass_render
     crude_gfx_cmd_dispatch( primary_cmd,
       ( pass->visibility_side_length_with_borders + 7 ) / 8,
       ( pass->visibility_side_length_with_borders + 7 ) / 8,
-      pass->scene_renderer->options.indirect_light.probe_update_per_frame
-    );
+      pass->scene_renderer->options.indirect_light.probe_update_per_frame );
+
     crude_gfx_cmd_add_image_barrier( primary_cmd, probe_grid_visibility_texture, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
 
     crude_gfx_cmd_pop_marker( primary_cmd );

@@ -244,7 +244,7 @@ crude_gfx_ssr_pass_on_resize
   }
   
   radiance_hierarchy_creation = crude_gfx_texture_creation_empty();
-  radiance_hierarchy_creation.format = VK_FORMAT_R16G16B16A16_UNORM;
+  radiance_hierarchy_creation.format = CRUDE_GFX_RHI_FORMAT_R16G16B16A16_UNORM;
   radiance_hierarchy_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   radiance_hierarchy_creation.width = radiance_hierarchy_width;
   radiance_hierarchy_creation.height = radiance_hierarchy_height;

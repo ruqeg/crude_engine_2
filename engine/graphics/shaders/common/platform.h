@@ -3,9 +3,9 @@
 #define CRUDE_PLATFORM_GLSL
 
 #ifdef __cplusplus
-#include <vulkan/vulkan.h>
 #include <engine/core/alias.h>
 #include <engine/core/math.h>
+#include <engine/graphics/rhi.h>
 #endif
 
 #define CRUDE_SHADER_DEVELOP 1

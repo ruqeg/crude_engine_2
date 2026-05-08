@@ -121,11 +121,14 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.ssr_pass.ssr_texture = "ssr";
   scene_renderer->options.ssr_pass.direct_radiance_texture = "direct_radiance";
   
+#if CRUDE_GFX_COMPOSE_ENABLED
   scene_renderer->options.compose_pass.direct_radiance_texture = "direct_radiance";
   scene_renderer->options.compose_pass.indirect_radiance_texture = "indirect_radiance";
   scene_renderer->options.compose_pass.radiance_texture = "radiance";
+  scene_renderer->options.compose_pass.albedo_texture = "direct_albedo";
   scene_renderer->options.compose_pass.packed_roughness_metalness_texture = "gbuffer_roughness_metalness";
-  
+#endif
+
   scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
    
@@ -255,7 +258,9 @@ crude_gfx_scene_renderer_initialize
   crude_gfx_culling_early_pass_initialize( &scene_renderer->culling_early_pass, scene_renderer );
   crude_gfx_culling_late_pass_initialize( &scene_renderer->culling_late_pass, scene_renderer );
   crude_gfx_debug_pass_initialize( &scene_renderer->debug_pass, scene_renderer );
+#if CRUDE_GFX_COMPOSE_ENABLED
   crude_gfx_compose_pass_initialize( &scene_renderer->compose_pass, scene_renderer );
+#endif
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_translucent_pass_initialize( &scene_renderer->translucent_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
@@ -295,7 +300,9 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_culling_early_pass_deinitialize( &scene_renderer->culling_early_pass );
   crude_gfx_culling_late_pass_deinitialize( &scene_renderer->culling_late_pass );
   crude_gfx_debug_pass_deinitialize( &scene_renderer->debug_pass );
+#if CRUDE_GFX_COMPOSE_ENABLED
   crude_gfx_compose_pass_deinitialize( &scene_renderer->compose_pass );
+#endif
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
   crude_gfx_translucent_pass_deinitialize( &scene_renderer->translucent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
@@ -593,7 +600,9 @@ crude_gfx_scene_renderer_register_passes
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "culling_early_pass" ), crude_gfx_culling_early_pass_pack( &scene_renderer->culling_early_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "culling_late_pass" ), crude_gfx_culling_late_pass_pack( &scene_renderer->culling_late_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "debug_pass" ), crude_gfx_debug_pass_pack( &scene_renderer->debug_pass ) );
+#if CRUDE_GFX_COMPOSE_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "compose_pass" ), crude_gfx_compose_pass_pack( &scene_renderer->compose_pass ) );
+#endif
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "postprocessing_pass" ), crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "translucent_pass" ), crude_gfx_translucent_pass_pack( &scene_renderer->translucent_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "light_lut_pass" ), crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
@@ -1557,7 +1566,7 @@ crude_gfx_scene_renderer_create_acceleration_stucture_dsl_
   dsl_creation.bindless = false;
   dsl_creation.set_index = CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX;
   crude_gfx_descriptor_set_layout_creation_add_binding( &dsl_creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
-    .type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+    .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
     .start = CRUDE_ACCELERATION_STRUCTURE_BINDING,
     .count = 1u,
   } ) );

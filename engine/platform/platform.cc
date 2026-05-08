@@ -1,10 +1,10 @@
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 #include <nfd.h>
 
 #include <engine/core/profiler.h>
 #include <engine/core/file.h>
 #include <engine/core/assert.h>
+#include <engine/graphics/rhi.h>
 
 #include <engine/platform/platform.h>
 

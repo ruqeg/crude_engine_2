@@ -5,9 +5,9 @@
 #define CRUDE_DEBUG_LINE_2D_OFFSET 1000
 
 #ifdef __cplusplus
-#include <vulkan/vulkan.h>
 #include <engine/core/alias.h>
 #include <engine/core/math.h>
+#include <engine/graphics/rhi.h>
 #include <engine/graphics/shaders/common/platform.h>
 #endif
 

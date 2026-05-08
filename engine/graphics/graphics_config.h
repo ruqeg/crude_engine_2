@@ -1,6 +1,7 @@
 #pragma once
 
 #define CRUDE_GFX_SSR_ENABLED                              0
+#define CRUDE_GFX_COMPOSE_ENABLED                          1
 
 #define CRUDE_GFX_TEXTURE_NAME_MAX                         ( 512 )
 #define CRUDE_GFX_BUFFER_NAME_MAX                          ( 512 )
@@ -26,7 +27,7 @@
 #define CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT               ( 3 )
 #define CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT                  ( 8 )
 #define CRUDE_GFX_DESCRIPTOR_SET_LAYOUTS_MAX_COUNT         ( 8 )
-#define CRUDE_GFX_SHADER_STAGES_MAX_COUNT                  ( 5 )
+#define CRUDE_GFX_RHI_SHADER_STAGES_MAX_COUNT                  ( 5 )
 #define CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT            ( 64 )
 #define CRUDE_GFX_UBO_ALIGNMENT                            ( 256 )
 #define CRUDE_GFX_SET_MAX_COUNT                            ( 32 )
@@ -76,3 +77,7 @@
 #define CRUDE_GFX_RAY_TRACING_ENABLED                      1
 #define CRUDE_GFX_RAY_TRACING_DDGI_ENABLED                 1 && CRUDE_GFX_RAY_TRACING_ENABLED
 #define CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED          1 && CRUDE_GFX_RAY_TRACING_ENABLED
+
+#define CRUDE_GFX_VULKAN                                   0
+#define CRUDE_GFX_DX12                                     0
+#define CRUDE_GFX_NAPI                                     1

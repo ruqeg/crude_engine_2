@@ -88,6 +88,14 @@
         },
         {
           "type": "attachment",
+          "name": "direct_albedo",
+          "format": "VK_FORMAT_R8G8B8A8_UNORM",
+          "scale": [ 1, 1 ],
+          "op": "clear",
+          "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
+          "type": "attachment",
           "name": "depth",
           "format": "VK_FORMAT_D32_SFLOAT",
           "scale": [ 1, 1 ],
@@ -167,6 +175,10 @@
         },
         {
           "type": "attachment",
+          "name": "direct_albedo"
+        },
+        {
+          "type": "attachment",
           "name": "depth"
         }
       ],
@@ -178,6 +190,10 @@
         {
           "type": "reference",
           "name": "direct_normal"
+        },
+        {
+          "type": "reference",
+          "name": "direct_albedo"
         },
         {
           "type": "reference",
@@ -260,6 +276,10 @@
         {
           "type": "texture",
           "name": "indirect_radiance"
+        },
+        {
+          "type": "texture",
+          "name": "direct_albedo"
         },
         {
           "type": "reference",

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 #include <threads.h>
 
 #include <engine/core/hashmapstr.h>
@@ -10,6 +9,7 @@
 #include <engine/graphics/command_buffer.h>
 #include <engine/graphics/gpu_memory.h>
 #include <engine/graphics/gpu_crash_tracker.h>
+#include <engine/graphics/rhi.h>
 
 #include <engine/graphics/shaders/common/platform.h>
 
@@ -112,7 +112,7 @@ typedef struct crude_gfx_device
   VkInstance                                               vk_instance;
   VkDebugUtilsMessengerEXT                                 vk_debug_utils_messenger;
   VkSurfaceKHR                                             vk_surface;
-  VkSurfaceFormatKHR                                       vk_surface_format;
+  crude_gfx_rhi_surface_format                                 surface_format;
   VkPhysicalDevice                                         vk_physical_device;
   VkDevice                                                 vk_device;
   VkSwapchainKHR                                           vk_swapchain;
@@ -176,7 +176,7 @@ typedef struct crude_gfx_device
 #if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
-
+  
   PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
   PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
   PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
@@ -301,7 +301,7 @@ crude_gfx_read_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *name,
-  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
@@ -311,7 +311,7 @@ crude_gfx_compile_shader
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
-  _In_ VkShaderStageFlagBits                               stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
   _In_ char const                                         *name,
   _In_ crude_stack_allocator                              *temporary_allocator
 );

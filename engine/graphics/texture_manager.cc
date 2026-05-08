@@ -73,7 +73,7 @@ crude_gfx_texture_manager_get_texture
   texture_creation.height = height;
   texture_creation.depth = 1u;
   texture_creation.flags = 0u;
-  texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R8G8B8A8_UNORM;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.subresource.mip_level_count = log2( CRUDE_MAX( width, height ) ) + 1;
   crude_string_copy( texture_creation.name, relative_filepath, sizeof( texture_creation.name ) );

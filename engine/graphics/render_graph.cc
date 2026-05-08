@@ -171,7 +171,7 @@ crude_gfx_render_graph_parse_from_file
           CRUDE_ASSERT( output_format && output_load_op && output_scale );
           CRUDE_ASSERT( cJSON_GetArraySize( output_scale ) == 2 );
 
-          output_creation.resource_info.texture.format = crude_gfx_string_to_vk_format( cJSON_GetStringValue( output_format ) );
+          output_creation.resource_info.texture.format = crude_gfx_string_to_format( cJSON_GetStringValue( output_format ) );
           output_creation.resource_info.texture.load_op = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
           output_creation.resource_info.texture.scale.x = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 0 ) );
           output_creation.resource_info.texture.scale.y = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 1 ) );
@@ -179,7 +179,7 @@ crude_gfx_render_graph_parse_from_file
 
           output_creation.resource_info.texture.multisample = node_creation.multisample;
 
-          if ( crude_gfx_has_depth( output_creation.resource_info.texture.format ) )
+          if ( crude_gfx_rhi_format_has_depth( output_creation.resource_info.texture.format ) )
           {
             cJSON const                                   *output_clear_depth;
             cJSON const                                   *output_clear_stencil;
@@ -519,7 +519,7 @@ crude_gfx_render_graph_compile
 
         if ( output_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
-          if ( crude_gfx_has_depth_or_stencil( info->texture.format ) )
+          if ( crude_gfx_rhi_format_has_depth_or_stencil( info->texture.format ) )
           {
             render_pass_creation.depth_stencil_format = info->texture.format;
             render_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
@@ -542,7 +542,7 @@ crude_gfx_render_graph_compile
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
-          if ( crude_gfx_has_depth_or_stencil( info->texture.format ) )
+          if ( crude_gfx_rhi_format_has_depth_or_stencil( info->texture.format ) )
           {
             render_pass_creation.depth_stencil_format = info->texture.format;
             render_pass_creation.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
@@ -600,7 +600,7 @@ crude_gfx_render_graph_compile
           CRUDE_ASSERT( height == render_graph->builder->gpu->renderer_size.y * output_resource_info->texture.scale.y );
         }
 
-        if ( crude_gfx_has_depth_or_stencil( output_resource_info->texture.format ) )
+        if ( crude_gfx_rhi_format_has_depth_or_stencil( output_resource_info->texture.format ) )
         {
           framebuffer_creation.depth_stencil_texture = output_resource_info->texture.handle;
         }
@@ -647,7 +647,7 @@ crude_gfx_render_graph_compile
           continue;
         }
 
-        if ( crude_gfx_has_depth_or_stencil( info->texture.format ) )
+        if ( crude_gfx_rhi_format_has_depth_or_stencil( info->texture.format ) )
         {
           framebuffer_creation.depth_stencil_texture = info->texture.handle;
         }
@@ -707,7 +707,7 @@ crude_gfx_render_graph_render
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
         {
           crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_has_depth_or_stencil( resource->resource_info.texture.format ) );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth_or_stencil( resource->resource_info.texture.format ) );
         }
         else if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
@@ -715,7 +715,7 @@ crude_gfx_render_graph_render
           width = texture->width;
           height = texture->height;
           
-          if ( crude_gfx_has_depth_or_stencil( texture->vk_format ) )
+          if ( crude_gfx_rhi_format_has_depth_or_stencil( texture->format ) )
           {
             crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
           }
@@ -738,7 +738,7 @@ crude_gfx_render_graph_render
           width = texture->width;
           height = texture->height;
 
-          if ( crude_gfx_has_depth_or_stencil( texture->vk_format ) )
+          if ( crude_gfx_rhi_format_has_depth_or_stencil( texture->format ) )
           {
             float32 *clear_values = &resource->resource_info.texture.clear_values[ 0 ];
             crude_gfx_cmd_set_clear_depth_and_stencil( gpu_commands, clear_values[ 0 ], clear_values[ 1 ] );
@@ -790,7 +790,7 @@ crude_gfx_render_graph_render
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
         {
           crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_has_depth( resource->resource_info.texture.format ) );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth( resource->resource_info.texture.format ) );
         }
       }
       

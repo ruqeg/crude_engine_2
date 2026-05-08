@@ -36,7 +36,7 @@ crude_gfx_imgui_pass_initialize
   imgui_io->Fonts->GetTexDataAsRGBA32( &font_pixels, &font_width, &font_height );
   
   crude_gfx_texture_creation texture_creation = crude_gfx_texture_creation_empty();
-  texture_creation.format = VK_FORMAT_R8G8B8A8_UNORM;
+  texture_creation.format = CRUDE_GFX_RHI_FORMAT_R8G8B8A8_UNORM;
   texture_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   texture_creation.initial_data = font_pixels;
   texture_creation.width = font_width;
@@ -101,7 +101,7 @@ crude_gfx_imgui_pass_pre_render
       if ( texture_handle.index != pass->font_texture.index )
       {
         //crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-        //crude_gfx_cmd_add_image_barrier( primary_cmd, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, crude_gfx_has_depth( texture->vk_format ) );
+        //crude_gfx_cmd_add_image_barrier( primary_cmd, texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, crude_gfx_rhi_format_has_depth( texture->vk_format ) );
       }
     }
   }

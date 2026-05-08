@@ -150,7 +150,7 @@ crude_gfx_depth_pyramid_pass_on_resize
   }
   
   depth_hierarchy_creation = crude_gfx_texture_creation_empty();
-  depth_hierarchy_creation.format = VK_FORMAT_R32_SFLOAT;
+  depth_hierarchy_creation.format = CRUDE_GFX_RHI_FORMAT_R32_SFLOAT;
   depth_hierarchy_creation.type = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   depth_hierarchy_creation.width = depth_hierarchy_width;
   depth_hierarchy_creation.height = depth_hierarchy_height;

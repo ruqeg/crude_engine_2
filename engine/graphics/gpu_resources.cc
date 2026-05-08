@@ -1,7 +1,6 @@
-#include <vulkan/vk_enum_string_helper.h>
-
 #include <engine/core/assert.h>
 #include <engine/core/hashmapstr.h>
+#include <engine/graphics/rhi.h>
 
 #include <engine/graphics/gpu_resources.h>
 
@@ -44,7 +43,7 @@ crude_gfx_pipeline_creation_empty
 {
   crude_gfx_pipeline_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_pipeline_creation );
   creation.relfect_vertex_input = true;
-  creation.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  creation.topology = CRUDE_GFX_RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   return creation;
 }
 
@@ -106,7 +105,7 @@ crude_gfx_render_pass_creation_empty
 )
 {
   return CRUDE_COMPOUNT( crude_gfx_render_pass_creation, {
-    .depth_stencil_format = VK_FORMAT_UNDEFINED,
+    .depth_stencil_format = CRUDE_GFX_RHI_FORMAT_UNDEFINED,
     .depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE,
     .stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE
   } );
@@ -121,7 +120,7 @@ crude_gfx_texture_creation_empty
   creation.width   = 1;
   creation.height  = 1;
   creation.depth   = 1;
-  creation.format  = VK_FORMAT_UNDEFINED;
+  creation.format  = CRUDE_GFX_RHI_FORMAT_UNDEFINED;
   creation.type    = CRUDE_GFX_TEXTURE_TYPE_TEXTURE_2D;
   creation.alias   = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
   creation.subresource.array_base_layer = 0u;
@@ -155,11 +154,11 @@ crude_gfx_render_pass_output_empty
   output.num_color_formats = 0;
   for ( uint32 i = 0; i < CRUDE_GFX_IMAGE_OUTPUTS_MAX_COUNT; ++i )
   {
-    output.color_formats[ i ] = VK_FORMAT_UNDEFINED;
-    output.color_final_layouts[ i ] = VK_IMAGE_LAYOUT_UNDEFINED;
+    output.color_formats[ i ] = CRUDE_GFX_RHI_FORMAT_UNDEFINED;
+    output.color_final_layouts[ i ] = CRUDE_GFX_RHI_IMAGE_LAYOUT_UNDEFINED;
     output.color_operations[ i ] = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
   }
-  output.depth_stencil_format = VK_FORMAT_UNDEFINED;
+  output.depth_stencil_format = CRUDE_GFX_RHI_FORMAT_UNDEFINED;
   output.depth_operation = output.stencil_operation = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
 
   return output;
@@ -169,13 +168,13 @@ void
 crude_gfx_render_pass_output_add_color
 (
   _In_ crude_gfx_render_pass_output                       *output,
-  _In_ VkFormat                                            color_format,
-  _In_ VkImageLayout                                       color_final_layout,
+  _In_ crude_gfx_rhi_format                                    color_format,
+  _In_ crude_gfx_rhi_image_layout                              color_final_layout,
   _In_ crude_gfx_render_pass_operation                     color_operation
 )
 {
-  output->color_formats[ output->num_color_formats ] = VK_FORMAT_UNDEFINED;
-  output->color_final_layouts[ output->num_color_formats ] = VK_IMAGE_LAYOUT_UNDEFINED;
+  output->color_formats[ output->num_color_formats ] = CRUDE_GFX_RHI_FORMAT_UNDEFINED;
+  output->color_final_layouts[ output->num_color_formats ] = CRUDE_GFX_RHI_IMAGE_LAYOUT_UNDEFINED;
   output->color_operations[ output->num_color_formats ] = CRUDE_GFX_RENDER_PASS_OPERATION_DONT_CARE;
   ++output->num_color_formats;
 }
@@ -184,8 +183,8 @@ void
 crude_gfx_render_pass_output_set_depth
 (
   _In_ crude_gfx_render_pass_output                       *output,
-  _In_ VkFormat                                            depth_stencil_format,
-  _In_ VkImageLayout                                       depth_stencil_final_layout,
+  _In_ crude_gfx_rhi_format                                    depth_stencil_format,
+  _In_ crude_gfx_rhi_image_layout                              depth_stencil_final_layout,
   _In_ crude_gfx_render_pass_operation                     depth_operation,
   _In_ crude_gfx_render_pass_operation                     stencil_operation
 )
@@ -213,16 +212,16 @@ void
 crude_gfx_descriptor_set_creation_add_acceleration_structure
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ VkAccelerationStructureKHR                          vk_acceleration_structure,
+  _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure,
   _In_ uint16                                              binding
 )
 {
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  creation->vk_acceleration_structure = vk_acceleration_structure;
+  creation->acceleration_structure = acceleration_structure;
   creation->bindings[ creation->num_resources++ ] = binding;
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can't add acceleration structure to descriptor set. CRUDE_GRAPHICS_RAY_TRACING_ENABLED wasn't enabled" );
-#endif
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }
 
 void
@@ -254,7 +253,7 @@ crude_gfx_shader_state_creation_add_stage
   _In_ crude_gfx_shader_state_creation                    *creation,
   _In_ char const                                         *code,
   _In_ uint64                                              code_size,
-  _In_ VkShaderStageFlagBits                               type
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    type
 )
 {
   creation->stages[ creation->stages_count ].code = code;
@@ -302,238 +301,82 @@ crude_gfx_technique_creation_add_pass
  * GPU Resoruces Functions
  * 
  ***********************************************/
-VkImageType
-crude_gfx_to_vk_image_type
+crude_gfx_rhi_image_type
+crude_gfx_texture_type_to_image_type
 (
   _In_ crude_gfx_texture_type                              type
 )
 {
-  static VkImageType s_vk_target[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D };
-  return s_vk_target[ type ];
+  static crude_gfx_rhi_image_type s_target[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] =
+  {
+    CRUDE_GFX_RHI_IMAGE_TYPE_1D, CRUDE_GFX_RHI_IMAGE_TYPE_2D, CRUDE_GFX_RHI_IMAGE_TYPE_3D,
+    CRUDE_GFX_RHI_IMAGE_TYPE_1D, CRUDE_GFX_RHI_IMAGE_TYPE_2D, CRUDE_GFX_RHI_IMAGE_TYPE_3D
+  };
+  return s_target[ type ];
 }
 
-bool
-crude_gfx_has_depth_or_stencil
-(
-  _In_ VkFormat                                            value
-)
-{
-  return value >= VK_FORMAT_D16_UNORM && value <= VK_FORMAT_D32_SFLOAT_S8_UINT;
-}
-
-bool
-crude_gfx_has_depth
-(
-  _In_ VkFormat                                            value
-)
-{
-  return ( value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_S8_UINT ) || ( value >= VK_FORMAT_D16_UNORM_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT );
-}
-
-VkImageViewType
-crude_gfx_to_vk_image_view_type
+crude_gfx_rhi_image_view_type
+crude_gfx_texture_type_to_image_view_type
 (
   _In_ crude_gfx_texture_type                              type
 )
 {
-  static VkImageViewType s_vk_data[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] = { VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY };
-  return s_vk_data[ type ];
+  static crude_gfx_rhi_image_view_type s_data[ CRUDE_GFX_TEXTURE_TYPE_TEXTURE_COUNT ] =
+  {
+    CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_1D, CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_2D, CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_3D,
+    CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_1D_ARRAY, CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_2D_ARRAY, CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_CUBE_ARRAY
+  };
+  return s_data[ type ];
 }
 
-VkFormat
-crude_gfx_to_vk_vertex_format
+crude_gfx_rhi_format
+crude_gfx_to_vertex_format
 (
   _In_ crude_gfx_vertex_component_format                   value
 )
 {
-  static VkFormat s_vk_vertex_formats[ CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT ] =
+  static crude_gfx_rhi_format s_vk_vertex_formats[ CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT ] =
   {
-    VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT,
-    VK_FORMAT_R8_SINT, VK_FORMAT_R8G8B8A8_SNORM, VK_FORMAT_R8_UINT, VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R16G16_SINT, VK_FORMAT_R16G16_SNORM,
-    VK_FORMAT_R16G16B16A16_SINT, VK_FORMAT_R16G16B16A16_SNORM, VK_FORMAT_R32_UINT, VK_FORMAT_R32G32_UINT, VK_FORMAT_R32G32B32A32_UINT
+    CRUDE_GFX_RHI_FORMAT_R32_SFLOAT,
+    CRUDE_GFX_RHI_FORMAT_R32G32_SFLOAT,
+    CRUDE_GFX_RHI_FORMAT_R32G32B32_SFLOAT,
+    CRUDE_GFX_RHI_FORMAT_R32G32B32A32_SFLOAT,
+    CRUDE_GFX_RHI_FORMAT_R32G32B32A32_SFLOAT,
+    CRUDE_GFX_RHI_FORMAT_R8_SINT,
+    CRUDE_GFX_RHI_FORMAT_R8G8B8A8_SNORM,
+    CRUDE_GFX_RHI_FORMAT_R8_UINT,
+    CRUDE_GFX_RHI_FORMAT_R8G8B8A8_UINT,
+    CRUDE_GFX_RHI_FORMAT_R16G16_SINT,
+    CRUDE_GFX_RHI_FORMAT_R16G16_SNORM,
+    CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SINT,
+    CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SNORM,
+    CRUDE_GFX_RHI_FORMAT_R32_UINT,
+    CRUDE_GFX_RHI_FORMAT_R32G32_UINT,
+    CRUDE_GFX_RHI_FORMAT_R32G32B32A32_UINT
   };
 
   return s_vk_vertex_formats[ value ];
 }
 
-CRUDE_API VkAccessFlags2
-crude_gfx_resource_state_to_vk_access_flags2
-(
-  _In_ crude_gfx_resource_state                            state
-)
-{
-  VkAccessFlags2 ret = 0;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )
-  {
-    ret |= VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )
-  {
-    ret |= VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER )
-  {
-    ret |= VK_ACCESS_2_UNIFORM_READ_BIT_KHR | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_INDEX_BUFFER )
-  {
-    ret |= VK_ACCESS_2_INDEX_READ_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS )
-  {
-    ret |= VK_ACCESS_2_SHADER_READ_BIT_KHR | VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT )
-  {
-    ret |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET )
-  {
-    ret |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE )
-  {
-    ret |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR;
-  }
-  if ( state & ( CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE | CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE ) )
-  {
-    ret |= VK_ACCESS_2_SHADER_READ_BIT_KHR;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )
-  {
-    ret |= 0;
-  }
-  if ( state & CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE )
-  {
-    ret |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-  }
-  return ret;
-}
-
-VkImageLayout
-crude_gfx_resource_state_to_vk_image_layout2
-(
-  _In_ crude_gfx_resource_state                            state
-)
-{
-  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE )         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_COPY_DEST )           return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET )       return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE )         return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_DEPTH_READ )          return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS )    return VK_IMAGE_LAYOUT_GENERAL;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE )     return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR;
-  if ( state & CRUDE_GFX_RESOURCE_STATE_PRESENT )             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-  if ( state == CRUDE_GFX_RESOURCE_STATE_COMMON )             return VK_IMAGE_LAYOUT_GENERAL;
-  return VK_IMAGE_LAYOUT_UNDEFINED;
-}
-
-VkPipelineStageFlags2
-crude_gfx_determine_pipeline_stage_flags2
-(
-  _In_ VkAccessFlags2                                      access_flags,
-  _In_ crude_gfx_queue_type                                queue_type
-)
-{
-  VkPipelineStageFlags2KHR flags = 0;
-  
-  switch ( queue_type )
-  {
-    case CRUDE_GFX_QUEUE_TYPE_GRAPHICS:
-    {
-      if ( access_flags & ( VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT ) )
-      {
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR;
-      }
-      if ( access_flags & ( VK_ACCESS_2_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT ) )
-      {
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR;
-        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
-        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
-        //    flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT;
-      }
-      if ( access_flags & VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT )
-      {
-        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
-      }
-      if ( access_flags & ( VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT ) )
-      {
-        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
-      }
-      if ( access_flags & ( VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT ) )
-      {
-        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR;
-      }
-      if ( access_flags & VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR || access_flags & VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR )
-      {
-        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-      }
-      break;
-    }
-    case CRUDE_GFX_QUEUE_TYPE_COMPUTE:
-    {
-      if ( ( access_flags & ( VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT ) ) ||
-           ( access_flags & VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT ) ||
-           ( access_flags & ( VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT ) ) ||
-           ( access_flags & ( VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT ) ) )
-      {
-        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
-      }
-
-      if ( access_flags & ( VK_ACCESS_2_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT ) )
-      {
-        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
-      }
-    
-      break;
-    }
-    case CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER:
-    {
-      return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
-    }
-    default:
-      break;
-  }
-  
-  if ( access_flags & VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT )
-  {
-    flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR;
-  }
-  if ( access_flags & ( VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT ) )
-  {
-    flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
-  }
-  if ( access_flags & ( VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT ) )
-  {
-    flags |= VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
-  }
-  if ( flags == 0 )
-  {
-    flags = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
-  }
-  return flags;
-}
-
-VkFormat
-crude_gfx_string_to_vk_format
+crude_gfx_rhi_format
+crude_gfx_string_to_format
 (
   _In_ char const                                         *format
 )
 {
-  if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return VK_FORMAT_R16G16B16A16_SFLOAT;
-  if ( strcmp( format, "VK_FORMAT_D32_SFLOAT" ) == 0 ) return VK_FORMAT_D32_SFLOAT;
-  if ( strcmp( format, "VK_FORMAT_D16_UNORM" ) == 0 ) return VK_FORMAT_D16_UNORM;
-  if ( strcmp( format, "VK_FORMAT_R8G8B8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8_SRGB;
-  if ( strcmp( format, "VK_FORMAT_R8G8B8A8_SRGB" ) == 0 ) return VK_FORMAT_R8G8B8A8_SRGB;
-  if ( strcmp( format, "VK_FORMAT_R8G8B8A8_UNORM" ) == 0 ) return VK_FORMAT_R8G8B8A8_UNORM;
-  if ( strcmp( format, "VK_FORMAT_R16G16_SNORM" ) == 0 ) return VK_FORMAT_R16G16_SNORM;
-  if ( strcmp( format, "VK_FORMAT_R16G16_UNORM" ) == 0 ) return VK_FORMAT_R16G16_UNORM;
-  if ( strcmp( format, "VK_FORMAT_R16G16B16A16_SNORM" ) == 0 ) return VK_FORMAT_R16G16B16A16_SNORM;
-  if ( strcmp( format, "VK_FORMAT_R16G16B16A16_UNORM" ) == 0 ) return VK_FORMAT_R16G16B16A16_UNORM;
-  if ( strcmp( format, "VK_FORMAT_R16_UINT" ) == 0 ) return VK_FORMAT_R16_UINT;
-  // !OPTTODO HASH STRING
+  if ( strcmp( format, "FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SFLOAT;
+  if ( strcmp( format, "FORMAT_D32_SFLOAT" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
+  if ( strcmp( format, "FORMAT_D16_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_D16_UNORM;
+  if ( strcmp( format, "FORMAT_R8G8B8_SRGB" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8_SRGB;
+  if ( strcmp( format, "FORMAT_R8G8B8A8_SRGB" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8A8_SRGB;
+  if ( strcmp( format, "FORMAT_R8G8B8A8_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8A8_UNORM;
+  if ( strcmp( format, "FORMAT_R16G16_SNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16_SNORM;
+  if ( strcmp( format, "FORMAT_R16G16_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16_UNORM;
+  if ( strcmp( format, "FORMAT_R16G16B16A16_SNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SNORM;
+  if ( strcmp( format, "FORMAT_R16G16B16A16_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16B16A16_UNORM;
+  if ( strcmp( format, "FORMAT_R16_UINT" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16_UINT;
   CRUDE_ASSERT( false );
-  return VK_FORMAT_UNDEFINED;
+  return CRUDE_GFX_RHI_FORMAT_UNDEFINED;
 }
 
 crude_gfx_vertex_component_format
@@ -556,88 +399,56 @@ crude_gfx_to_vertex_component_format
   return CRUDE_GFX_VERTEX_COMPONENT_FORMAT_COUNT;
 }
 
-VkPrimitiveTopology
-crude_gfx_string_to_vk_primitive_topology
+crude_gfx_rhi_primitive_topology
+crude_gfx_string_to_primitive_topology
 ( 
   _In_ char const                                         *format
 )
 {
-  if ( strcmp( format, "TRIANGLE_LIST" ) == 0 ) return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  if ( strcmp( format, "LINE_LIST" ) == 0 ) return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-  // !OPTTODO HASH STRING
+  if ( strcmp( format, "TRIANGLE_LIST" ) == 0 ) return CRUDE_GFX_RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  if ( strcmp( format, "LINE_LIST" ) == 0 ) return CRUDE_GFX_RHI_PRIMITIVE_TOPOLOGY_LINE_LIST;
   CRUDE_ASSERT( false );
-  return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  return CRUDE_GFX_RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
 char const*
-crude_gfx_vk_shader_stage_to_defines
+crude_gfx_shader_stage_to_defines
 (
-  _In_ VkShaderStageFlagBits                              value
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    value
 )
 {
   switch ( value )
   {
-    case VK_SHADER_STAGE_VERTEX_BIT:          return "CRUDE_STAGE_VERTEX";
-    case VK_SHADER_STAGE_FRAGMENT_BIT:        return "CRUDE_STAGE_FRAGMENT";
-    case VK_SHADER_STAGE_COMPUTE_BIT:         return "CRUDE_STAGE_COMPUTE";
-    case VK_SHADER_STAGE_MESH_BIT_EXT:        return "CRUDE_STAGE_MESH";
-    case VK_SHADER_STAGE_TASK_BIT_EXT:        return "CRUDE_STAGE_TASK";
-    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "CRUDE_CLOSEST_HIT";
-    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:      return "CRUDE_RAYGEN";
-    case VK_SHADER_STAGE_MISS_BIT_KHR:        return "CRUDE_MISS";
+    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:          return "CRUDE_STAGE_VERTEX";
+    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:        return "CRUDE_STAGE_FRAGMENT";
+    case CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT:         return "CRUDE_STAGE_COMPUTE";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:        return "CRUDE_STAGE_MESH";
+    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:        return "CRUDE_STAGE_TASK";
+    case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "CRUDE_CLOSEST_HIT";
+    case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "CRUDE_RAYGEN";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "CRUDE_MISS";
   }
    return "";
 }
 
 char const*
-crude_gfx_vk_shader_stage_to_compiler_extension
+crude_gfx_shader_stage_to_compiler_extension
 (
-  _In_ VkShaderStageFlagBits                               value
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    value
 )
 {
   switch ( value )
   {
-    case VK_SHADER_STAGE_VERTEX_BIT:          return "vert";
-    case VK_SHADER_STAGE_MESH_BIT_EXT:        return "mesh";
-    case VK_SHADER_STAGE_TASK_BIT_EXT:        return "task";
-    case VK_SHADER_STAGE_FRAGMENT_BIT:        return "frag";
-    case VK_SHADER_STAGE_COMPUTE_BIT:         return "comp";
-    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "rchit";
-    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:      return "rgen";
-    case VK_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss";
+    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:          return "vert";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:        return "mesh";
+    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:        return "task";
+    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:        return "frag";
+    case CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT:         return "comp";
+    case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "rchit";
+    case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "rgen";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss";
   }
    return "";
-}
-
-char const*
-crude_gfx_resource_state_to_name
-(
-  _In_ crude_gfx_resource_state                            value
-)
-{
-  switch ( value )
-  {
-    case CRUDE_GFX_RESOURCE_STATE_UNDEFINED:                          return "Undefined";
-    case CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER:         return "Vertex And Constant";
-    case CRUDE_GFX_RESOURCE_STATE_INDEX_BUFFER:                       return "Index Buffer";
-    case CRUDE_GFX_RESOURCE_STATE_RENDER_TARGET:                      return "Render Target";
-    case CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS:                   return "UAV";
-    case CRUDE_GFX_RESOURCE_STATE_DEPTH_WRITE:                        return "Depth Write";
-    case CRUDE_GFX_RESOURCE_STATE_DEPTH_READ:                         return "Depth Read";
-    case CRUDE_GFX_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE:          return "Non Pixel Shader Resource";
-    case CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE:              return "Pixel Shader Resource";
-    case CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE:                    return "Shader Resource";
-    case CRUDE_GFX_RESOURCE_STATE_STREAM_OUT:                         return "Stream Out";
-    case CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT:                  return "Indirect Argument";
-    case CRUDE_GFX_RESOURCE_STATE_COPY_DEST:                          return "Copy Dest";
-    case CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE:                        return "Copy Source";
-    case CRUDE_GFX_RESOURCE_STATE_GENERIC_READ:                       return "Generic Read";
-    case CRUDE_GFX_RESOURCE_STATE_PRESENT:                            return "Present";
-    case CRUDE_GFX_RESOURCE_STATE_COMMON:                             return "Common";
-    case CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE:  return "Raytracing";
-    case CRUDE_GFX_RESOURCE_STATE_SHADING_RATE_SOURCE:                return "Shading Rate";
-  }
-  return "UnknownState";
 }
 
 crude_gfx_render_pass_operation

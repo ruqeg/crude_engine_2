@@ -125,7 +125,7 @@ CRUDE_PUSH_CONSTANT( crude_gfx_compose_light_pass_push_constant_ )
   uint32                                                   direct_radiance_texture_index;
   uint32                                                   indirect_radiance_texture_index;
   uint32                                                   radiance_texture_index;
-  uint32                                                   packed_roughness_metalness_texture_index;
+  uint32                                                   albedo_texture_index;
 };
 
 #endif /* COMPOSE_LIGHT */
@@ -803,8 +803,8 @@ void main()
 
   vec3 direct_radiance = CRUDE_TEXTURE_FETCH( direct_radiance_texture_index, coords, 0 ).xyz;
   vec3 indirect_radiance = CRUDE_TEXTURE_FETCH( indirect_radiance_texture_index, coords, 0 ).xyz;
-  //float metalness = CRUDE_TEXTURE_FETCH( packed_roughness_metalness_texture_index, coords, 0 ).y;
-  CRUDE_IMAGE_STORE( radiance_texture_index, coords, vec4( direct_radiance + indirect_radiance, 1.0f ) );
+  vec3 albedo = CRUDE_TEXTURE_FETCH( albedo_texture_index, coords, 0 ).xyz;
+  CRUDE_IMAGE_STORE( radiance_texture_index, coords, vec4( direct_radiance + albedo * indirect_radiance, 1.0f ) );
 }
 
 #endif /* COMPOSE_LIGHT */
