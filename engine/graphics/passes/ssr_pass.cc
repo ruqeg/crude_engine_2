@@ -117,8 +117,8 @@ crude_gfx_ssr_pass_render
 
   /* SSR Blurring Pass  */
   {
-    crude_gfx_cmd_add_image_barrier( primary_cmd, direct_radiance_texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0u, 1, false );
-    crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, direct_radiance_texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0u, 1, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
     
     crude_gfx_cmd_copy_texture( primary_cmd, direct_radiance_texture->handle, radiance_hierarchy_texture->handle );
     
@@ -135,7 +135,7 @@ crude_gfx_ssr_pass_render
       pipeline = crude_gfx_access_technique_pass_by_name( gpu, "compute", convolve_passes_names[ pass_name_index ] )->pipeline;
       crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
-      crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
+      crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
       
       crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
       
@@ -152,7 +152,7 @@ crude_gfx_ssr_pass_render
         mip_width = mip_width / 2;
         mip_height = mip_height / 2;
       
-        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
+        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
         
         pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_convolve_pass_push_constant_ );
         pust_constant.dst_texture_index = pass->radiance_hierarchy_views_handles[ mip_index ].index;
@@ -163,10 +163,10 @@ crude_gfx_ssr_pass_render
         
         crude_gfx_cmd_dispatch( primary_cmd, ( mip_width + 7 ) / 8, ( mip_height + 7 ) / 8, 1 );
         
-        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
+        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
       }
 
-      radiance_hierarchy_texture->state = CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
+      radiance_hierarchy_texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
 
       crude_gfx_cmd_pop_marker( primary_cmd  );
     }

@@ -41,9 +41,9 @@ crude_gfx_opaque_late_pass_pre_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_opaque_late_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->mesh_task_indirect_commands_culled_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_INDIRECT_ARGUMENT );
 }
 
 void

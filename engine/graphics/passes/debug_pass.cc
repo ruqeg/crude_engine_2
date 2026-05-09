@@ -39,9 +39,9 @@ crude_gfx_debug_pass_pre_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_debug_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_INDIRECT_ARGUMENT );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE );
 }
 
 void
@@ -121,9 +121,9 @@ crude_gfx_debug_pass_post_render
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_debug_pass*, ctx );
   gpu = pass->scene_renderer->gpu;
 
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_line_vertices_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->debug_cubes_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS );
 }
 
 crude_gfx_render_graph_pass_container

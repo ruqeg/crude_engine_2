@@ -593,7 +593,268 @@ crude_gfx_rhi_command_buffer_bind_descriptor_sets
     set,
     1u, &descriptor_set->vk_descriptor_set,
     0u, NULL );
+}
 
+void
+crude_gfx_rhi_command_buffer_pipeline_image_barrier
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_image_memory_barrier const           *image_memory_barriers
+)
+{
+  VkDependencyInfoKHR                                      vk_dependency_info;
+  VkImageMemoryBarrier2                                    vk_image_barrier;
+  
+  vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
+  vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+
+  vk_image_barrier = CRUDE_COMPOUNT_EMPTY( VkImageMemoryBarrier2 );
+  vk_image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
+  vk_image_barrier.srcStageMask = image_memory_barriers->src_stage_mask;
+  vk_image_barrier.srcAccessMask = image_memory_barriers->src_access_mask;
+  vk_image_barrier.dstStageMask = image_memory_barriers->dst_stage_mask;
+  vk_image_barrier.dstAccessMask = image_memory_barriers->dst_access_mask;
+  vk_image_barrier.oldLayout = CRUDE_CAST( VkImageLayout, image_memory_barriers->old_layout );
+  vk_image_barrier.newLayout = CRUDE_CAST( VkImageLayout, image_memory_barriers->new_layout );
+  vk_image_barrier.srcQueueFamilyIndex = image_memory_barriers->src_queue_family_index;
+  vk_image_barrier.dstQueueFamilyIndex = image_memory_barriers->dst_queue_family_index;
+  vk_image_barrier.image = image_memory_barriers->image->vk_image;
+  vk_image_barrier.subresourceRange = image_memory_barriers->subresource_range;
+  
+  vk_dependency_info.imageMemoryBarrierCount = 1u;
+  vk_dependency_info.pImageMemoryBarriers = &vk_image_barrier;
+ 
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+}
+
+void
+crude_gfx_rhi_command_buffer_pipeline_buffer_barrier
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer_memory_barrier                *buffer_memory_barriers
+)
+{
+  VkDependencyInfoKHR                                      vk_dependency_info;
+  VkBufferMemoryBarrier2KHR                                vk_buffer_barrier;
+  
+
+  vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
+  vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+
+  vk_buffer_barrier = CRUDE_COMPOUNT_EMPTY( VkBufferMemoryBarrier2KHR );
+  vk_buffer_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+  vk_buffer_barrier.srcStageMask = buffer_memory_barriers->src_stage_mask;
+  vk_buffer_barrier.srcAccessMask = buffer_memory_barriers->src_access_mask;
+  vk_buffer_barrier.dstStageMask = buffer_memory_barriers->dst_stage_mask;
+  vk_buffer_barrier.dstAccessMask = buffer_memory_barriers->dst_access_mask;
+  vk_buffer_barrier.srcQueueFamilyIndex = buffer_memory_barriers->src_queue_family_index;
+  vk_buffer_barrier.dstQueueFamilyIndex = buffer_memory_barriers->dst_queue_family_index;
+  vk_buffer_barrier.buffer = buffer_memory_barriers->buffer->vk_buffer;
+  vk_buffer_barrier.offset = buffer_memory_barriers->offset;
+  vk_buffer_barrier.size = buffer_memory_barriers->size;
+  
+  vk_dependency_info.bufferMemoryBarrierCount = 1u;
+  vk_dependency_info.pBufferMemoryBarriers = &vk_buffer_barrier;
+ 
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+}
+
+void
+crude_gfx_rhi_command_buffer_pipeline_global_barrier
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+)
+{
+  VkMemoryBarrier2KHR                                      vk_barrier;
+  VkDependencyInfoKHR                                      vk_dependency_info;
+
+  vk_barrier = CRUDE_COMPOUNT_EMPTY( VkMemoryBarrier2KHR );
+  vk_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
+  vk_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+  vk_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
+  vk_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+  vk_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
+
+  vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
+  vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+  vk_dependency_info.memoryBarrierCount = 1;
+  vk_dependency_info.pMemoryBarriers = &vk_barrier;
+  
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+}
+
+void
+crude_gfx_rhi_command_buffer_copy_buffer_to_image
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *buffer,
+  _In_ crude_gfx_rhi_image                                *image,
+  _In_ crude_gfx_rhi_buffer_image_copy const              *region
+)
+{
+  VkBufferImageCopy                                        vk_region;
+
+  vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferImageCopy );
+  vk_region.bufferOffset = region->buffer_offset;
+  vk_region.bufferRowLength = region->buffer_row_length;
+  vk_region.bufferImageHeight = region->buffer_image_height;
+  vk_region.imageSubresource.aspectMask = region->image_subresource.aspect_mask;
+  vk_region.imageSubresource.mipLevel = region->image_subresource.mip_level;
+  vk_region.imageSubresource.baseArrayLayer = region->image_subresource.base_array_layer;
+  vk_region.imageSubresource.layerCount = region->image_subresource.layer_count;
+  vk_region.imageOffset.x = region->image_offset.x;
+  vk_region.imageOffset.y = region->image_offset.y;
+  vk_region.imageOffset.z = region->image_offset.z;
+  vk_region.imageExtent.width = region->image_extent.x;
+  vk_region.imageExtent.height = region->image_extent.y;
+  vk_region.imageExtent.depth = region->image_extent.z;
+  
+  vkCmdCopyBufferToImage( command_buffer->vk_command_buffer, buffer->vk_buffer, image->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
+}
+
+void
+crude_gfx_rhi_command_buffer_copy_buffer
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *src_buffer,
+  _In_ crude_gfx_rhi_buffer                               *dst_buffer,
+  _In_ crude_gfx_rhi_buffer_copy const                    *region
+)
+{
+  VkBufferCopy                                             vk_region;
+
+  vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );
+  vk_region.srcOffset = region->src_offset;
+  vk_region.dstOffset = region->dst_offset;
+  vk_region.size = region->size;
+
+  vkCmdCopyBuffer( command_buffer->vk_command_buffer, src_buffer->vk_buffer, dst_buffer->vk_buffer, 1, &vk_region );
+}
+
+void
+crude_gfx_rhi_command_buffer_write_timestamp
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_pipeline_stage_flags                  pipeline_stage,
+  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ uint32                                              query
+)
+{
+  vkCmdWriteTimestamp( command_buffer->vk_command_buffer, CRUDE_CAST( VkPipelineStageFlagBits, pipeline_stage ), query_pool->vk_query_pool, query );
+}
+
+void
+crude_gfx_rhi_command_buffer_begin_debug_utils_label
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_debug_utils_label const              *debug_utils_label
+)
+{
+  VkDebugUtilsLabelEXT                                     vk_label;
+  
+  vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
+  vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  vk_label.pLabelName = debug_utils_label->label_name;
+  vk_label.color[ 0 ] = debug_utils_label->color[ 0 ];
+  vk_label.color[ 1 ] = debug_utils_label->color[ 1 ];
+  vk_label.color[ 2 ] = debug_utils_label->color[ 2 ];
+  vk_label.color[ 3 ] = debug_utils_label->color[ 3 ];
+  g_pfn.vkCmdBeginDebugUtilsLabelEXT( command_buffer->vk_command_buffer, &vk_label );
+}
+
+void
+crude_gfx_rhi_command_buffer_end_debug_utils_label
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+)
+{
+  g_pfn.vkCmdEndDebugUtilsLabelEXT( command_buffer->vk_command_buffer );
+}
+
+void
+crude_gfx_rhi_command_buffer_push_constant
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_pipeline_layout                      *layout,
+  _In_ crude_gfx_rhi_shader_stage_flags                    stage_flags,
+  _In_ uint32                                              offset,
+  _In_ uint32                                              size,
+  _In_ void const                                         *values
+)
+{
+  vkCmdPushConstants( command_buffer->vk_command_buffer, layout->vk_pipeline_layout, stage_flags, 0u, size, values );
+}
+
+void
+crude_gfx_rhi_command_buffer_fill_buffer
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *dst_buffer,
+  _In_ uint64                                              dst_offset,
+  _In_ uint64                                              size,
+  _In_ uint32                                              data
+)
+{
+  vkCmdFillBuffer( command_buffer->vk_command_buffer, dst_buffer->vk_buffer, dst_offset, size, data );
+}
+
+void
+crude_gfx_rhi_trace_rays
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_strided_device_address_region const  *raygen_shader_binding_table,
+  _In_ crude_gfx_rhi_strided_device_address_region const  *miss_shader_binding_table,
+  _In_ crude_gfx_rhi_strided_device_address_region const  *hit_shader_binding_table,
+  _In_ crude_gfx_rhi_strided_device_address_region const  *callable_shader_binding_table,
+  _In_ uint32                                              width,
+  _In_ uint32                                              height,
+  _In_ uint32                                              depth
+)
+{
+  VkStridedDeviceAddressRegionKHR                          vk_raygen_table, vk_hit_table, vk_miss_table, vk_callable_table;
+  
+  vk_raygen_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  vk_raygen_table.deviceAddress = raygen_shader_binding_table->device_address;
+  vk_raygen_table.stride = raygen_shader_binding_table->stride;
+  vk_raygen_table.size = raygen_shader_binding_table->size;
+  
+  vk_hit_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  vk_hit_table.deviceAddress = hit_shader_binding_table->device_address;
+  vk_hit_table.stride = hit_shader_binding_table->stride;
+  vk_hit_table.size = hit_shader_binding_table->size;
+  
+  vk_miss_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  vk_miss_table.deviceAddress = miss_shader_binding_table->device_address;
+  vk_miss_table.stride = miss_shader_binding_table->stride;
+  vk_miss_table.size = miss_shader_binding_table->size;
+
+  vk_callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  
+  g_pfn.vkCmdTraceRaysKHR( command_buffer->vk_command_buffer, &vk_raygen_table, &vk_miss_table, &vk_hit_table, &vk_callable_table, width, height, depth );
+}
+
+void
+crude_gfx_rhi_begin_query
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ uint32                                              query,
+  _In_ crude_gfx_rhi_query_control_flags                   flags
+)
+{
+  vkCmdBeginQuery( command_buffer->vk_command_buffer, query_pool->vk_query_pool, query, flags );
+}
+
+void
+crude_gfx_rhi_reset_query_pool
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ uint32                                              first_query,
+  _In_ uint32                                              query_count
+)
+{
+  vkCmdResetQueryPool( command_buffer->vk_command_buffer, query_pool->vk_query_pool, first_query, query_count );
 }
 
 #elif CRUDE_GFX_NAPI

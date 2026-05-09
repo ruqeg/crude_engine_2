@@ -1353,7 +1353,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
   vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   scene_renderer->gpu->vkGetAccelerationStructureBuildSizesKHR( scene_renderer->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
   
@@ -1399,11 +1399,11 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }
@@ -1544,11 +1544,11 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
     &vk_acceleration_structure_build_range_info
   };
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   
-  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
+  crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }

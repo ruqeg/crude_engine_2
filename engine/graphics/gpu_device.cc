@@ -746,10 +746,10 @@ crude_gfx_present
     cmd = crude_gfx_access_cmd_buffer( gpu, gpu->immediate_transfer_cmd_buffer );
     crude_gfx_cmd_begin_primary( cmd );
 
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_PRESENT, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     vkCmdCopyImage( cmd->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region );
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ gpu->vk_swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
     
     crude_gfx_cmd_end( cmd );
   
@@ -1240,14 +1240,14 @@ crude_gfx_generate_mipmaps
     return;
   }
 
-  crude_gfx_cmd_add_image_barrier( cmd_buffer, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( cmd_buffer, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
 
   w = texture->width;
   h = texture->height;
 
   for ( uint32 mip_index = 1; mip_index < texture->subresource.mip_level_count; ++mip_index )
   {
-    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, mip_index, 1, false );
 
     VkImageBlit blit_region = CRUDE_COMPOUNT_EMPTY( VkImageBlit );
     blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1271,12 +1271,12 @@ crude_gfx_generate_mipmaps
 
     vkCmdBlitImage( cmd_buffer->vk_cmd_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR );
 
-    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, mip_index, 1, false );
   }
 
-  crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, texture->subresource.mip_level_count, false );
+  crude_gfx_cmd_add_image_barrier_ext2( cmd_buffer, texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, 0, texture->subresource.mip_level_count, false );
 
-  texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
+  texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE;
 }
 
 VkDeviceAddress
@@ -1363,9 +1363,9 @@ crude_gfx_add_texture_update_commands
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( gpu, gpu->textures_to_update[ i ] );
     CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_add_texture_update_commands %s", texture->name );
-    crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, gpu->vk_transfer_queue_family, gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+    crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, gpu->vk_transfer_queue_family, gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
     texture->ready = true;
-    texture->state = CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE;
+    texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE;
     crude_gfx_generate_mipmaps( cmd, texture );
   }
   
@@ -1568,7 +1568,7 @@ crude_gfx_create_texture
     vk_region.imageSubresource.layerCount = 1;
     vk_region.imageOffset = { 0, 0, 0 };
     vk_region.imageExtent = { creation->width, creation->height, creation->depth };
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, vk_staging_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
     crude_gfx_generate_mipmaps( cmd, texture );
     
@@ -4172,7 +4172,7 @@ vk_create_swapchain_
   crude_gfx_cmd_begin_primary( cmd );
   for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
   {
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RHI_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
   }
   crude_gfx_submit_immediate( cmd );
 }
@@ -4418,7 +4418,7 @@ vk_create_texture_
   texture->flags          = creation->flags;
   texture->handle         = handle;
   texture->parent_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
-  texture->state          = CRUDE_GFX_RESOURCE_STATE_UNDEFINED;
+  texture->state          = CRUDE_GFX_RHI_RESOURCE_STATE_UNDEFINED;
   crude_string_copy( texture->name, creation->name, sizeof( texture->name ) );
 
   {

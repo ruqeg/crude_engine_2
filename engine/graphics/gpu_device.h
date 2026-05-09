@@ -180,14 +180,8 @@ typedef struct crude_gfx_device
   PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
   PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
-  PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
   PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
   PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
-
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
-  PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
@@ -198,7 +192,6 @@ typedef struct crude_gfx_device
   PFN_vkGetAccelerationStructureDeviceAddressKHR           vkGetAccelerationStructureDeviceAddressKHR;
   PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
   PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
-  PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
   PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                

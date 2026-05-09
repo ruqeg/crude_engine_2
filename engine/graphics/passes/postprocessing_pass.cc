@@ -111,9 +111,9 @@ crude_gfx_postprocessing_pass_pre_render
     push_constant.time_coeff = CRUDE_CLAMP( ( 1 - exp( -luminance_avarge_last_update_delta_time * 1.1f ) ), 1.0, 0.001 );
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
   
-    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle ), CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, 0u, 1u, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle ), CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0u, 1u, false );
     crude_gfx_cmd_dispatch( primary_cmd, 1u, 1u, 1u );
-    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle ), CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->luminance_average_texture_handle ), CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, 1u, false );
   }
   crude_gfx_cmd_pop_marker( primary_cmd );
 }

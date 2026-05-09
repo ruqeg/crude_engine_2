@@ -481,32 +481,28 @@ crude_gfx_cmd_add_buffer_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_buffer_handle                             buffer_handle,
-  _In_ crude_gfx_resource_state                            old_state,
-  _In_ crude_gfx_resource_state                            new_state
+  _In_ crude_gfx_rhi_resource_state                        old_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state
 )
 {
   crude_gfx_buffer                                        *buffer;
-  VkBufferMemoryBarrier2KHR                                barrier;
-  VkDependencyInfoKHR                                      dependency_info;
+  crude_gfx_rhi_buffer_memory_barrier                      buffer_memory_barrier;
 
   buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
 
-  barrier = CRUDE_COMPOUNT_EMPTY( VkBufferMemoryBarrier2KHR );
-  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
-  barrier.srcAccessMask = crude_gfx_resource_state_to_access_flags( old_state );
-  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags( barrier.srcAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  barrier.dstAccessMask = crude_gfx_resource_state_to_access_flags( new_state );
-  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags( barrier.dstAccessMask, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
-  barrier.buffer = buffer->vk_buffer;
-  barrier.offset = 0;
-  barrier.size = buffer->size;
+  buffer_memory_barrier.src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
+  buffer_memory_barrier.src_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags(
+    buffer_memory_barrier.src_access_mask, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   
-  dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
-  dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
-  dependency_info.bufferMemoryBarrierCount = 1;
-  dependency_info.pBufferMemoryBarriers = &barrier;
+  buffer_memory_barrier.dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
+  buffer_memory_barrier.dst_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags(
+    buffer_memory_barrier.dst_access_mask, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   
-  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
+  buffer_memory_barrier.buffer = &buffer->rhi_buffer;
+  buffer_memory_barrier.offset = 0;
+  buffer_memory_barrier.size = buffer->size;
+  
+  crude_gfx_rhi_command_buffer_pipeline_buffer_barrier( &cmd->rhi_cmd_buffer, &buffer_memory_barrier );
 }
 
 void
@@ -514,13 +510,13 @@ crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_texture                                  *texture,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext2( cmd, texture->vk_image, texture->state, new_state, base_mip_level, mip_count, is_depth );
+  crude_gfx_cmd_add_image_barrier_ext2( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth );
   texture->state = new_state;
 }
 
@@ -529,17 +525,17 @@ crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_texture                                  *texture,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth,
   _In_ uint32                                              source_queue_family,
   _In_ uint32                                              destination_family,
-  _In_ crude_gfx_queue_type                                source_queue_type,
-  _In_ crude_gfx_queue_type                                destination_queue_type
+  _In_ crude_gfx_rhi_queue_type                            source_queue_type,
+  _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->vk_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
   texture->state = new_state;
 }
 
@@ -547,34 +543,34 @@ void
 crude_gfx_cmd_add_image_barrier_ext2
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             vk_image,
-  _In_ crude_gfx_resource_state                            old_state,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_resource_state                        old_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext3( cmd, vk_image, old_state, new_state, base_mip_level, mip_count, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
 void
 crude_gfx_cmd_add_image_barrier_ext3
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             vk_image,
-  _In_ crude_gfx_resource_state                            old_state,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_resource_state                        old_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth,
   _In_ uint32                                              source_queue_family,
   _In_ uint32                                              destination_family,
-  _In_ crude_gfx_queue_type                                source_queue_type,
-  _In_ crude_gfx_queue_type                                destination_queue_type
+  _In_ crude_gfx_rhi_queue_type                            source_queue_type,
+  _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, vk_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
 }
 
 void
@@ -582,7 +578,7 @@ crude_gfx_cmd_add_image_barrier_ext4
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_texture                                  *texture,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ uint32                                              base_array_layer,
@@ -590,7 +586,7 @@ crude_gfx_cmd_add_image_barrier_ext4
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->vk_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   texture->state = new_state;
 }
 
@@ -598,9 +594,9 @@ void
 crude_gfx_cmd_add_image_barrier_ext5
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             vk_image,
-  _In_ crude_gfx_resource_state                            old_state,
-  _In_ crude_gfx_resource_state                            new_state,
+  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_resource_state                        old_state,
+  _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ uint32                                              base_array_layer,
@@ -608,38 +604,35 @@ crude_gfx_cmd_add_image_barrier_ext5
   _In_ bool                                                is_depth,
   _In_ uint32                                              source_queue_family,
   _In_ uint32                                              destination_family,
-  _In_ crude_gfx_queue_type                                source_queue_type,
-  _In_ crude_gfx_queue_type                                destination_queue_type
+  _In_ crude_gfx_rhi_queue_type                            source_queue_type,
+  _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
+  crude_gfx_rhi_image_memory_barrier                       image_memory_barrier;
+  crude_gfx_rhi_access_flags                               src_access_mask, dst_access_mask;
+
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_image != VK_NULL_HANDLE, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, rhi_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
   
-  VkAccessFlags2 src_access_mask = crude_gfx_resource_state_to_access_flags( old_state );
-  VkAccessFlags2 dst_access_mask = crude_gfx_resource_state_to_access_flags( new_state );
-  VkImageMemoryBarrier2 barrier = CRUDE_COMPOUNT_EMPTY( VkImageMemoryBarrier2 );
-  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
-  barrier.srcStageMask = crude_gfx_determine_pipeline_stage_flags( src_access_mask, source_queue_type );
-  barrier.srcAccessMask = src_access_mask;
-  barrier.dstStageMask = crude_gfx_determine_pipeline_stage_flags( dst_access_mask, destination_queue_type );
-  barrier.dstAccessMask = dst_access_mask;
-  barrier.oldLayout = crude_gfx_resource_state_to_image_layout( old_state );
-  barrier.newLayout = crude_gfx_resource_state_to_image_layout( new_state );
-  barrier.srcQueueFamilyIndex = source_queue_family;
-  barrier.dstQueueFamilyIndex = destination_family;
-  barrier.image = vk_image;
-  barrier.subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-  barrier.subresourceRange.baseMipLevel = base_mip_level;
-  barrier.subresourceRange.levelCount = mip_count;
-  barrier.subresourceRange.baseArrayLayer = base_array_layer;
-  barrier.subresourceRange.layerCount = array_layer_count;
+  crude_gfx_rhi_access_flags src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
+  crude_gfx_rhi_access_flags dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
 
-  VkDependencyInfo dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfo );
-  dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
-  dependency_info.imageMemoryBarrierCount = 1;
-  dependency_info.pImageMemoryBarriers = &barrier;
+  image_memory_barrier.src_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags( src_access_mask, source_queue_type );
+  image_memory_barrier.src_access_mask = src_access_mask;
+  image_memory_barrier.dst_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags( dst_access_mask, destination_queue_type );
+  image_memory_barrier.dst_access_mask = dst_access_mask;
+  image_memory_barrier.old_layout = crude_gfx_rhi_resource_state_to_image_layout( old_state );
+  image_memory_barrier.new_layout = crude_gfx_rhi_resource_state_to_image_layout( new_state );
+  image_memory_barrier.src_queue_family_index = source_queue_family;
+  image_memory_barrier.dst_queue_family_index = destination_family;
+  image_memory_barrier.image = rhi_image;
+  image_memory_barrier.subresource_range.aspect_mask = is_depth ? CRUDE_GFX_RHI_IMAGE_ASPECT_DEPTH_BIT : CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
+  image_memory_barrier.subresource_range.base_mip_level = base_mip_level;
+  image_memory_barrier.subresource_range.level_count = mip_count;
+  image_memory_barrier.subresource_range.base_array_layer = base_array_layer;
+  image_memory_barrier.subresource_range.layer_count = array_layer_count;
 
-  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &dependency_info );
+  crude_gfx_rhi_command_buffer_pipeline_image_barrier( &cmd->rhi_cmd_buffer, &image_memory_barrier );
 }
 
 void
@@ -648,22 +641,7 @@ crude_gfx_cmd_global_debug_barrier
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  VkMemoryBarrier2KHR                                      vk_barrier;
-  VkDependencyInfoKHR                                      vk_dependency_info;
-
-  vk_barrier = CRUDE_COMPOUNT_EMPTY( VkMemoryBarrier2KHR );
-  vk_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
-  vk_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
-  vk_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
-  vk_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
-  vk_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT_KHR | VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
-
-  vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
-  vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
-  vk_dependency_info.memoryBarrierCount = 1;
-  vk_dependency_info.pMemoryBarriers = &vk_barrier;
-
-  cmd->gpu->vkCmdPipelineBarrier2KHR( cmd->vk_cmd_buffer, &vk_dependency_info );
+  crude_gfx_rhi_command_buffer_pipeline_global_barrier( &cmd->rhi_cmd_buffer );
 }
 
 void
@@ -676,25 +654,29 @@ crude_gfx_cmd_memory_copy_to_texture
 {
   crude_gfx_texture                                       *texture;
   crude_gfx_buffer                                        *buffer;
-  VkBufferImageCopy                                        vk_region;
+  crude_gfx_rhi_buffer_image_copy                          region;
 
   texture = crude_gfx_access_texture( cmd->gpu, texture_handle );
   buffer = crude_gfx_access_buffer( cmd->gpu, memory_allocation.buffer_handle );
 
-  vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferImageCopy );
-  vk_region.bufferOffset = 0;
-  vk_region.bufferRowLength = 0;
-  vk_region.bufferImageHeight = 0;
-  vk_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  vk_region.imageSubresource.mipLevel = 0;
-  vk_region.imageSubresource.baseArrayLayer = 0;
-  vk_region.imageSubresource.layerCount = 1;
-  vk_region.imageOffset = CRUDE_COMPOUNT( VkOffset3D, { 0, 0, 0 } );
-  vk_region.imageExtent = CRUDE_COMPOUNT( VkExtent3D, { texture->width, texture->height, 1 }  );
+  region = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_buffer_image_copy );
+  region.buffer_offset = 0;
+  region.buffer_row_length = 0;
+  region.buffer_image_height = 0;
+  region.image_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
+  region.image_subresource.mip_level = 0;
+  region.image_subresource.base_array_layer = 0;
+  region.image_subresource.layer_count = 1;
+  region.image_offset.x = 0;
+  region.image_offset.y = 0;
+  region.image_offset.z = 0;
+  region.image_extent.x = texture->width;
+  region.image_extent.y = texture->height;
+  region.image_extent.z = 1;
   
-  crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_DEST, 0, 1, false );
-  vkCmdCopyBufferToImage( cmd->vk_cmd_buffer, buffer->vk_buffer, texture->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
-  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_rhi_command_buffer_copy_buffer_to_image( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, &texture->rhi_image, &region );
+  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
 void
@@ -709,7 +691,7 @@ crude_gfx_cmd_memory_copy
 {
   crude_gfx_buffer                                        *src_buffer;
   crude_gfx_buffer                                        *dst_buffer;
-  VkBufferCopy                                             vk_region;
+  crude_gfx_rhi_buffer_copy                                region;
 
   src_buffer = crude_gfx_access_buffer( cmd->gpu, src_memory_allocation.buffer_handle );
   dst_buffer = crude_gfx_access_buffer( cmd->gpu, dst_memory_allocation.buffer_handle );
@@ -717,14 +699,14 @@ crude_gfx_cmd_memory_copy
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, dst_memory_allocation.size, "%s dst buffer size == 0", dst_buffer->name ? dst_buffer->name : "unknown" )
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_memory_allocation.size <= dst_memory_allocation.size, "%s src buffer size > %s dst buffer size", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
 
-  vk_region = CRUDE_COMPOUNT_EMPTY( VkBufferCopy );
-  vk_region.srcOffset = src_offset + src_memory_allocation.offset;
-  vk_region.dstOffset = dst_offset + dst_memory_allocation.offset;
-  vk_region.size = src_memory_allocation.size;
+  region = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_buffer_copy );
+  region.src_offset = src_offset + src_memory_allocation.offset;
+  region.dst_offset = dst_offset + dst_memory_allocation.offset;
+  region.size = src_memory_allocation.size;
 
   //CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_memory_allocation.aligned_size - vk_region.srcOffset <= dst_memory_allocation.aligned_size - vk_region.dstOffset, "%s src buffer size < %s dst buffer size - offset", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
 
-  vkCmdCopyBuffer( cmd->vk_cmd_buffer, src_buffer->vk_buffer, dst_buffer->vk_buffer, 1, &vk_region );
+  crude_gfx_rhi_command_buffer_copy_buffer( &cmd->rhi_cmd_buffer, &src_buffer->rhi_buffer, &dst_buffer->rhi_buffer, &region );
 }
 
 void
@@ -743,19 +725,18 @@ crude_gfx_cmd_push_marker
   if ( cmd_pool->profiler.enabled )
   {
     time_query = crude_gfx_gpu_time_query_tree_push( cmd_pool->profiler.time_queries_trees, name );
-    vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.vk_timestamp_query_pool, time_query->start_query_index );
+    crude_gfx_rhi_command_buffer_write_timestamp( &cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &cmd_pool->profiler.rhi_timestamp_query_pool, time_query->start_query_index );
   }
 #endif
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  VkDebugUtilsLabelEXT vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
-  vk_label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-  vk_label.pLabelName = name;
-  vk_label.color[ 0 ] = 1.0f;
-  vk_label.color[ 1 ] = 1.0f;
-  vk_label.color[ 2 ] = 1.0f;
-  vk_label.color[ 3 ] = 1.0f;
-  cmd->gpu->vkCmdBeginDebugUtilsLabelEXT( cmd->vk_cmd_buffer, &vk_label );
+  crude_gfx_rhi_debug_utils_label label = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_debug_utils_label );
+  label.label_name = name;
+  label.color[ 0 ] = 1.0f;
+  label.color[ 1 ] = 1.0f;
+  label.color[ 2 ] = 1.0f;
+  label.color[ 3 ] = 1.0f;
+  crude_gfx_rhi_command_buffer_begin_debug_utils_label( &cmd->rhi_cmd_buffer, &label );
 #endif
   
 #if CRUDE_GFX_USE_NSIGHT_AFTERMATH
@@ -811,12 +792,13 @@ crude_gfx_cmd_pop_marker
   if ( cmd_pool->profiler.enabled )
   {
     time_query = crude_gfx_gpu_time_query_tree_pop( cmd_pool->profiler.time_queries_trees );
-    vkCmdWriteTimestamp( cmd->vk_cmd_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.vk_timestamp_query_pool, time_query->end_query_index );
+    
+    crude_gfx_rhi_command_buffer_write_timestamp( &cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &cmd_pool->profiler.rhi_timestamp_query_pool, time_query->end_query_index );
   }
 #endif
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  cmd->gpu->vkCmdEndDebugUtilsLabelEXT( cmd->vk_cmd_buffer );
+  crude_gfx_rhi_command_buffer_end_debug_utils_label( &cmd->rhi_cmd_buffer );
 #endif
 }
 
@@ -828,7 +810,7 @@ crude_gfx_cmd_push_constant
   _In_ uint64                                              size
 )
 {
-  vkCmdPushConstants( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
+  crude_gfx_rhi_command_buffer_push_constant( &cmd->rhi_cmd_buffer, &cmd->current_pipeline->rhi_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
 }
 
 void
@@ -842,7 +824,7 @@ crude_gfx_cmd_fill_buffer
   crude_gfx_buffer                                        *buffer;
 
   buffer = crude_gfx_access_buffer( cmd->gpu, handle );
-  vkCmdFillBuffer( cmd->vk_cmd_buffer, buffer->vk_buffer, 0, buffer->size, value );
+  crude_gfx_rhi_command_buffer_fill_buffer( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, 0, buffer->size, value );
 }
 
 void
@@ -857,31 +839,31 @@ crude_gfx_cmd_trace_rays
 {
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   crude_gfx_pipeline                                      *pipeline;
-  VkStridedDeviceAddressRegionKHR                          raygen_table, hit_table, miss_table, callable_table;
+  crude_gfx_rhi_strided_device_address_region              raygen_table, hit_table, miss_table, callable_table;
   uint32                                                   shader_group_handle_size;
 
   pipeline = crude_gfx_access_pipeline( cmd->gpu, pipeline_handle );
 
   shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
 
-  raygen_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
-  raygen_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_raygen );
+  raygen_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
+  raygen_table.device_address = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_raygen );
   raygen_table.stride = shader_group_handle_size;
   raygen_table.size = shader_group_handle_size;
   
-  hit_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
-  hit_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_hit );
+  hit_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
+  hit_table.device_address = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_hit );
   hit_table.stride = shader_group_handle_size;
   hit_table.size = shader_group_handle_size;
   
-  miss_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
-  miss_table.deviceAddress = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_miss );
+  miss_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
+  miss_table.device_address = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_miss );
   miss_table.stride = shader_group_handle_size;
   miss_table.size = shader_group_handle_size;
 
-  callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
+  callable_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
   
-  cmd->gpu->vkCmdTraceRaysKHR( cmd->vk_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
+  crude_gfx_rhi_trace_rays( &cmd->rhi_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can proccess crude_gfx_cmd_trace_rays, CRUDE_GFX_RAY_TRACING_ENABLED wasn't enabled" );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
@@ -1007,9 +989,9 @@ crude_gfx_cmd_manager_get_primary_cmd
     if ( cmd_pool->profiler.enabled )
     {
       crude_gfx_gpu_time_query_tree_reset( cmd_pool->profiler.time_queries_trees );
-      vkCmdResetQueryPool( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_timestamp_query_pool, 0, 2 * cmd_pool->profiler.time_queries_trees->time_queries_count );
-      vkCmdResetQueryPool( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
-      vkCmdBeginQuery( cmd->vk_cmd_buffer, cmd_pool->profiler.vk_pipeline_stats_query_pool, 0, 0 );
+      crude_gfx_rhi_reset_query_pool( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_timestamp_query_pool, 0, 2 * cmd_pool->profiler.time_queries_trees->time_queries_count );
+      crude_gfx_rhi_reset_query_pool( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
+      crude_gfx_rhi_begin_query( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, 0 );
     }
 #endif
   }

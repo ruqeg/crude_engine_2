@@ -58,7 +58,7 @@ crude_gfx_light_lut_pass_render
   
   /* Upload light to gpu */
   {
-    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_COPY_DEST );
+    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST );
   
     crude_gfx_light                                       *lights_gpu;
     crude_gfx_memory_allocation                            lights_tca;

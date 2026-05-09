@@ -83,13 +83,13 @@ crude_gfx_depth_pyramid_pass_render
   width = depth_pyramid_texture->width;
   height = depth_pyramid_texture->height;
   
-  crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
+  crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
   
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 
   for ( uint32 mip_index = 0; mip_index < depth_pyramid_texture->subresource.mip_level_count; ++mip_index )
   {
-    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
+    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
     
     if ( mip_index == 0 )
     {
@@ -107,13 +107,13 @@ crude_gfx_depth_pyramid_pass_render
     group_y = ( height + 7 ) / 8;
     crude_gfx_cmd_dispatch( primary_cmd, group_x, group_y, 1 );
     
-    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
+    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
     
     width = width / 2;
     height = height / 2;
   }
 
-  depth_pyramid_texture->state = CRUDE_GFX_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
+  depth_pyramid_texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
 }
 
 void
