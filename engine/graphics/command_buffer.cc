@@ -54,7 +54,7 @@ crude_gfx_cmd_begin_primary
 
   begin_info = crude_gfx_rhi_command_buffer_begin_info_empty( );
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  crude_gfx_rhi_begin_command_buffer( &cmd->rhi_cmd_buffer, &begin_info );
+  crude_gfx_rhi_begin_command_buffer( cmd->rhi_cmd_buffer, &begin_info );
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_begin_primary( %s )", cmd->name );
 }
@@ -74,7 +74,7 @@ crude_gfx_cmd_end
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_end( %s )", cmd->name );
 
-  crude_gfx_rhi_end_command_buffer( &cmd->rhi_cmd_buffer );
+  crude_gfx_rhi_end_command_buffer( cmd->rhi_cmd_buffer );
   cmd->is_recording = false;
 }
 
@@ -86,7 +86,7 @@ crude_gfx_cmd_end_render_pass
 {
   if ( cmd->is_recording && cmd->current_render_pass != NULL && cmd->current_framebuffer != NULL )
   {
-    crude_gfx_rhi_command_buffer_end_rendering( &cmd->rhi_cmd_buffer );
+    crude_gfx_rhi_command_buffer_end_rendering( cmd->rhi_cmd_buffer );
     cmd->current_render_pass = NULL;
     cmd->current_framebuffer = NULL;
   }
@@ -198,7 +198,7 @@ crude_gfx_cmd_bind_render_pass
     rendering_info.depth_attachment.clear_value = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_clear_value );
   }
   
-  crude_gfx_rhi_command_buffer_begin_rendering( &cmd->rhi_cmd_buffer, &rendering_info );
+  crude_gfx_rhi_command_buffer_begin_rendering( cmd->rhi_cmd_buffer, &rendering_info );
   
   cmd->current_render_pass = render_pass;
   cmd->current_framebuffer = framebuffer;
@@ -218,7 +218,7 @@ crude_gfx_cmd_bind_pipeline
     return;
   }
 
-  crude_gfx_rhi_command_buffer_bind_pipeline( &cmd->rhi_cmd_buffer, &pipeline->rhi_pipeline, pipeline->bind_point );
+  crude_gfx_rhi_command_buffer_bind_pipeline( cmd->rhi_cmd_buffer, pipeline->rhi_pipeline, pipeline->bind_point );
   cmd->current_pipeline = pipeline;
 }
 
@@ -253,10 +253,10 @@ crude_gfx_cmd_copy_texture
   CRUDE_ASSERT( src->width == dst->width && src->height == dst->height );
 
   crude_gfx_rhi_command_buffer_copy_image(
-    &cmd->rhi_cmd_buffer,
-    &src->rhi_image,
+    cmd->rhi_cmd_buffer,
+    src->rhi_image,
     crude_gfx_rhi_resource_state_to_image_layout( src->state ),
-    &dst->rhi_image,
+    dst->rhi_image,
     crude_gfx_rhi_resource_state_to_image_layout( dst->state ),
     &image_copy );
 }
@@ -299,7 +299,7 @@ crude_gfx_cmd_set_viewport
     rhi_viewport.max_depth = 1.0f;
   }
   
-  crude_gfx_rhi_command_buffer_set_viewport( &cmd->rhi_cmd_buffer, &rhi_viewport );
+  crude_gfx_rhi_command_buffer_set_viewport( cmd->rhi_cmd_buffer, &rhi_viewport );
 }
 
 void
@@ -357,7 +357,7 @@ crude_gfx_cmd_set_scissor
 
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, scissor.extent.x > 0 && scissor.extent.y > 0 && scissor.offset.x >= 0 && scissor.offset.y >= 0, "vk_scissor issues!" );
   
-  crude_gfx_rhi_command_buffer_set_scissor( &cmd->rhi_cmd_buffer, &scissor );
+  crude_gfx_rhi_command_buffer_set_scissor( cmd->rhi_cmd_buffer, &scissor );
 }
 
 void
@@ -370,7 +370,7 @@ crude_gfx_cmd_draw
   _In_ uint32                                              instance_count
 )
 {
-  crude_gfx_rhi_command_buffer_draw( &cmd->rhi_cmd_buffer, vertex_count, instance_count, first_vertex, first_instance );
+  crude_gfx_rhi_command_buffer_draw( cmd->rhi_cmd_buffer, vertex_count, instance_count, first_vertex, first_instance );
 }
 
 void
@@ -384,7 +384,7 @@ crude_gfx_cmd_draw_inderect
 )
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
-  crude_gfx_rhi_command_buffer_draw_indirect( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, offset, draw_count, stride );
+  crude_gfx_rhi_command_buffer_draw_indirect( cmd->rhi_cmd_buffer, buffer->rhi_buffer, offset, draw_count, stride );
 }
 
 void
@@ -403,9 +403,9 @@ crude_gfx_cmd_draw_indirect_count
   crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
   
   crude_gfx_rhi_command_buffer_draw_indirect_count(
-    &cmd->rhi_cmd_buffer,
-    &argument_buffer->rhi_buffer, argument_offset,
-    &count_buffer->rhi_buffer, count_offset,
+    cmd->rhi_cmd_buffer,
+    argument_buffer->rhi_buffer, argument_offset,
+    count_buffer->rhi_buffer, count_offset,
     max_draws, stride );
 }
 
@@ -418,7 +418,7 @@ crude_gfx_cmd_draw_mesh_task
   _In_ uint32                                              group_count_z
 )
 {
-  crude_gfx_rhi_command_buffer_draw_mesh_task( &cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
+  crude_gfx_rhi_command_buffer_draw_mesh_task( cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
@@ -436,7 +436,7 @@ crude_gfx_cmd_draw_mesh_task_indirect_count
   crude_gfx_buffer *argument_buffer = crude_gfx_access_buffer( cmd->gpu, argument_buffer_handle );
   crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
   
-  crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count( &cmd->rhi_cmd_buffer, &argument_buffer->rhi_buffer, argument_offset, &count_buffer->rhi_buffer, count_offset, max_draws, stride );
+  crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count( cmd->rhi_cmd_buffer, argument_buffer->rhi_buffer, argument_offset, count_buffer->rhi_buffer, count_offset, max_draws, stride );
 }
 
 void
@@ -448,7 +448,7 @@ crude_gfx_cmd_dispatch
   _In_ uint32                                              group_count_z
 )
 {
-  crude_gfx_rhi_command_buffer_dispatch( &cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
+  crude_gfx_rhi_command_buffer_dispatch( cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
@@ -460,7 +460,7 @@ crude_gfx_cmd_bind_bindless_descriptor_set
   crude_gfx_descriptor_set                                *bindless_descriptor_set;
 
   bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
-  crude_gfx_rhi_command_buffer_bind_descriptor_sets( &cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, &cmd->current_pipeline->rhi_pipeline_layout, CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, &bindless_descriptor_set->rhi_descriptor_set );
+  crude_gfx_rhi_command_buffer_bind_descriptor_sets( cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, cmd->current_pipeline->rhi_pipeline_layout, CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, bindless_descriptor_set->rhi_descriptor_set );
 }
 
 void
@@ -473,7 +473,7 @@ crude_gfx_cmd_bind_acceleration_structure_descriptor_set
   crude_gfx_descriptor_set                                *descriptor_set;
 
   descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, handle );
-  crude_gfx_rhi_command_buffer_bind_descriptor_sets( &cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, &cmd->current_pipeline->rhi_pipeline_layout, CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, &descriptor_set->rhi_descriptor_set );
+  crude_gfx_rhi_command_buffer_bind_descriptor_sets( cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, cmd->current_pipeline->rhi_pipeline_layout, CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, descriptor_set->rhi_descriptor_set );
 }
 
 void
@@ -502,7 +502,7 @@ crude_gfx_cmd_add_buffer_barrier
   buffer_memory_barrier.offset = 0;
   buffer_memory_barrier.size = buffer->size;
   
-  crude_gfx_rhi_command_buffer_pipeline_buffer_barrier( &cmd->rhi_cmd_buffer, &buffer_memory_barrier );
+  crude_gfx_rhi_command_buffer_pipeline_buffer_barrier( cmd->rhi_cmd_buffer, &buffer_memory_barrier );
 }
 
 void
@@ -632,7 +632,7 @@ crude_gfx_cmd_add_image_barrier_ext5
   image_memory_barrier.subresource_range.base_array_layer = base_array_layer;
   image_memory_barrier.subresource_range.layer_count = array_layer_count;
 
-  crude_gfx_rhi_command_buffer_pipeline_image_barrier( &cmd->rhi_cmd_buffer, &image_memory_barrier );
+  crude_gfx_rhi_command_buffer_pipeline_image_barrier( cmd->rhi_cmd_buffer, &image_memory_barrier );
 }
 
 void
@@ -641,7 +641,7 @@ crude_gfx_cmd_global_debug_barrier
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  crude_gfx_rhi_command_buffer_pipeline_global_barrier( &cmd->rhi_cmd_buffer );
+  crude_gfx_rhi_command_buffer_pipeline_global_barrier( cmd->rhi_cmd_buffer );
 }
 
 void
@@ -675,7 +675,7 @@ crude_gfx_cmd_memory_copy_to_texture
   region.image_extent.z = 1;
   
   crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
-  crude_gfx_rhi_command_buffer_copy_buffer_to_image( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, &texture->rhi_image, &region );
+  crude_gfx_rhi_command_buffer_copy_buffer_to_image( cmd->rhi_cmd_buffer, buffer->rhi_buffer, texture->rhi_image, &region );
   crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
@@ -706,7 +706,7 @@ crude_gfx_cmd_memory_copy
 
   //CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, src_memory_allocation.aligned_size - vk_region.srcOffset <= dst_memory_allocation.aligned_size - vk_region.dstOffset, "%s src buffer size < %s dst buffer size - offset", src_buffer->name ? src_buffer->name : "unknown", dst_buffer->name ? dst_buffer->name : "unknown" )
 
-  crude_gfx_rhi_command_buffer_copy_buffer( &cmd->rhi_cmd_buffer, &src_buffer->rhi_buffer, &dst_buffer->rhi_buffer, &region );
+  crude_gfx_rhi_command_buffer_copy_buffer( cmd->rhi_cmd_buffer, src_buffer->rhi_buffer, dst_buffer->rhi_buffer, &region );
 }
 
 void
@@ -725,7 +725,7 @@ crude_gfx_cmd_push_marker
   if ( cmd_pool->profiler.enabled )
   {
     time_query = crude_gfx_gpu_time_query_tree_push( cmd_pool->profiler.time_queries_trees, name );
-    crude_gfx_rhi_command_buffer_write_timestamp( &cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &cmd_pool->profiler.rhi_timestamp_query_pool, time_query->start_query_index );
+    crude_gfx_rhi_command_buffer_write_timestamp( cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.rhi_timestamp_query_pool, time_query->start_query_index );
   }
 #endif
 
@@ -736,7 +736,7 @@ crude_gfx_cmd_push_marker
   label.color[ 1 ] = 1.0f;
   label.color[ 2 ] = 1.0f;
   label.color[ 3 ] = 1.0f;
-  crude_gfx_rhi_command_buffer_begin_debug_utils_label( &cmd->rhi_cmd_buffer, &label );
+  crude_gfx_rhi_command_buffer_begin_debug_utils_label( cmd->rhi_cmd_buffer, &label );
 #endif
   
 #if CRUDE_GFX_USE_NSIGHT_AFTERMATH
@@ -793,12 +793,12 @@ crude_gfx_cmd_pop_marker
   {
     time_query = crude_gfx_gpu_time_query_tree_pop( cmd_pool->profiler.time_queries_trees );
     
-    crude_gfx_rhi_command_buffer_write_timestamp( &cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &cmd_pool->profiler.rhi_timestamp_query_pool, time_query->end_query_index );
+    crude_gfx_rhi_command_buffer_write_timestamp( cmd->rhi_cmd_buffer, CRUDE_GFX_RHI_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cmd_pool->profiler.rhi_timestamp_query_pool, time_query->end_query_index );
   }
 #endif
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  crude_gfx_rhi_command_buffer_end_debug_utils_label( &cmd->rhi_cmd_buffer );
+  crude_gfx_rhi_command_buffer_end_debug_utils_label( cmd->rhi_cmd_buffer );
 #endif
 }
 
@@ -810,7 +810,7 @@ crude_gfx_cmd_push_constant
   _In_ uint64                                              size
 )
 {
-  crude_gfx_rhi_command_buffer_push_constant( &cmd->rhi_cmd_buffer, &cmd->current_pipeline->rhi_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
+  crude_gfx_rhi_command_buffer_push_constant( cmd->rhi_cmd_buffer, cmd->current_pipeline->rhi_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
 }
 
 void
@@ -824,7 +824,7 @@ crude_gfx_cmd_fill_buffer
   crude_gfx_buffer                                        *buffer;
 
   buffer = crude_gfx_access_buffer( cmd->gpu, handle );
-  crude_gfx_rhi_command_buffer_fill_buffer( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, 0, buffer->size, value );
+  crude_gfx_rhi_command_buffer_fill_buffer( cmd->rhi_cmd_buffer, buffer->rhi_buffer, 0, buffer->size, value );
 }
 
 void
@@ -863,7 +863,7 @@ crude_gfx_cmd_trace_rays
 
   callable_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
   
-  crude_gfx_rhi_trace_rays( &cmd->rhi_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
+  crude_gfx_rhi_command_buffer_trace_rays( cmd->rhi_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can proccess crude_gfx_cmd_trace_rays, CRUDE_GFX_RAY_TRACING_ENABLED wasn't enabled" );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
@@ -989,9 +989,9 @@ crude_gfx_cmd_manager_get_primary_cmd
     if ( cmd_pool->profiler.enabled )
     {
       crude_gfx_gpu_time_query_tree_reset( cmd_pool->profiler.time_queries_trees );
-      crude_gfx_rhi_reset_query_pool( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_timestamp_query_pool, 0, 2 * cmd_pool->profiler.time_queries_trees->time_queries_count );
-      crude_gfx_rhi_reset_query_pool( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
-      crude_gfx_rhi_begin_query( &cmd->rhi_cmd_buffer, &cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, 0 );
+      crude_gfx_rhi_command_buffer_reset_query_pool( cmd->rhi_cmd_buffer, cmd_pool->profiler.rhi_timestamp_query_pool, 0, 2 * cmd_pool->profiler.time_queries_trees->time_queries_count );
+      crude_gfx_rhi_command_buffer_reset_query_pool( cmd->rhi_cmd_buffer, cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT );
+      crude_gfx_rhi_command_buffer_begin_query( cmd->rhi_cmd_buffer, cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0, 0 );
     }
 #endif
   }

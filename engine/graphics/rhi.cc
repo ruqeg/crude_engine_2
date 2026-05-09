@@ -323,10 +323,289 @@ crude_gfx_rhi_command_buffer_begin_info_empty
   return begin_info;
 }
 
+bool
+crude_gfx_rhi_queue_submit
+(
+  _In_ crude_gfx_rhi_queue                                 queue,
+  _In_ uint32                                              submit_count,
+  _In_ crude_gfx_rhi_submit_info                          *submit_info,
+  _In_ crude_gfx_rhi_fence                                 fence
+)
+{
+  VkSemaphoreSubmitInfo                                    vk_wait_semaphores[ 8 ];
+  VkSemaphoreSubmitInfo                                    vk_signal_semaphores[ 8 ];
+  VkCommandBufferSubmitInfo                                vk_command_buffers[ 8 ];
+  VkResult                                                 vk_result;
+  VkSubmitInfo2                                            vk_submit_info;
+
+  CRUDE_ASSERT( submit_info->wait_semaphore_info_count < CRUDE_COUNTOF( vk_wait_semaphores ) );
+  for ( uint32 i = 0; i < submit_info->wait_semaphore_info_count; ++i )
+  {
+    vk_wait_semaphores[ i ] = CRUDE_COMPOUNT_EMPTY( VkSemaphoreSubmitInfo );
+    vk_wait_semaphores[ i ].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
+    vk_wait_semaphores[ i ].semaphore = submit_info->wait_semaphore_infos[ i ].semaphore.vk_semaphore;
+    vk_wait_semaphores[ i ].stageMask = submit_info->wait_semaphore_infos[ i ].stage_mask;
+    vk_wait_semaphores[ i ].value = submit_info->wait_semaphore_infos[ i ].value;
+    vk_wait_semaphores[ i ].deviceIndex = submit_info->wait_semaphore_infos[ i ].device_index;
+  }
+  
+  CRUDE_ASSERT( submit_info->signal_semaphore_info_count < CRUDE_COUNTOF( vk_signal_semaphores ) );
+  for ( uint32 i = 0; i < submit_info->signal_semaphore_info_count; ++i )
+  {
+    vk_signal_semaphores[ i ] = CRUDE_COMPOUNT_EMPTY( VkSemaphoreSubmitInfo );
+    vk_signal_semaphores[ i ].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
+    vk_signal_semaphores[ i ].semaphore = submit_info->signal_semaphore_infos[ i ].semaphore.vk_semaphore;
+    vk_signal_semaphores[ i ].stageMask = submit_info->signal_semaphore_infos[ i ].stage_mask;
+    vk_signal_semaphores[ i ].value = submit_info->signal_semaphore_infos[ i ].value;
+    vk_signal_semaphores[ i ].deviceIndex = submit_info->signal_semaphore_infos[ i ].device_index;
+  }
+
+  CRUDE_ASSERT( submit_info->command_buffer_info_count < CRUDE_COUNTOF( vk_command_buffers ) );
+  for ( uint32 i = 0; i < submit_info->command_buffer_info_count; ++i )
+  {
+    vk_command_buffers[ i ] = CRUDE_COMPOUNT_EMPTY( VkCommandBufferSubmitInfo );
+    vk_command_buffers[ i ].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR;
+    vk_command_buffers[ i ].commandBuffer = submit_info->command_buffer_infos[ i ].command_buffer.vk_command_buffer;
+    vk_command_buffers[ i ].deviceMask  = submit_info->command_buffer_infos[ i ].device_mask;
+  }
+    
+  vk_submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
+  vk_submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+  vk_submit_info.waitSemaphoreInfoCount   = submit_info->wait_semaphore_info_count;
+  vk_submit_info.pWaitSemaphoreInfos      = vk_wait_semaphores;
+  vk_submit_info.commandBufferInfoCount   = submit_info->command_buffer_info_count;
+  vk_submit_info.pCommandBufferInfos      = vk_command_buffers;
+  vk_submit_info.signalSemaphoreInfoCount = submit_info->signal_semaphore_info_count;
+  vk_submit_info.pSignalSemaphoreInfos    = vk_signal_semaphores;
+
+  vk_result = g_pfn.vkQueueSubmit2KHR( queue.vk_queue, 1u, &vk_submit_info, fence.vk_fence );
+  return vk_result != VK_ERROR_DEVICE_LOST && vk_result != VK_ERROR_OUT_OF_DEVICE_MEMORY && vk_result != VK_ERROR_UNKNOWN;
+}
+
+void
+crude_gfx_rhi_destroy_surface
+(
+  _In_ crude_gfx_rhi_instance                              instance,
+  _In_ crude_gfx_rhi_surface                               surface
+)
+{
+  vkDestroySurfaceKHR( instance.vk_instance, surface.vk_surface, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_destroy_device
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_instance                              instance
+)
+{
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  g_pfn.vkDestroyDebugUtilsMessengerEXT( instance.vk_instance, device->vk_debug_utils_messenger, g_pfn.vk_allocation_callbacks );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+
+  vmaDestroyAllocator( device->vma_allocator );
+  vkDestroyDevice( device->vk_device, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_destroy_instance
+(
+  _In_ crude_gfx_rhi_instance                              instance
+)
+{
+  vkDestroyInstance( instance.vk_instance, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_wait_semaphore
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_semaphore                             semaphore,
+  _In_ uint64                                              value
+)
+{
+  VkSemaphoreWaitInfo                                      vk_semaphore_wait_info;
+
+  vk_semaphore_wait_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreWaitInfo );
+  vk_semaphore_wait_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+  vk_semaphore_wait_info.semaphoreCount = 1;
+  vk_semaphore_wait_info.pSemaphores = &semaphore.vk_semaphore;
+  vk_semaphore_wait_info.pValues = &value;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkWaitSemaphores( device->vk_device, &vk_semaphore_wait_info, UINT64_MAX ), "Failed vkWaitSemaphores" );
+}
+
+bool
+crude_gfx_rhi_acquire_next_image
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_swapchain                             swapchain,
+  _In_ uint64                                              timeout,
+  _In_ crude_gfx_rhi_semaphore                             semaphore,
+  _Out_ uint32                                            *image_index
+)
+{
+  VkResult                                                 vk_result;
+
+  vk_result = vkAcquireNextImageKHR( device->vk_device, swapchain.vk_swapchain, timeout, semaphore.vk_semaphore, VK_NULL_HANDLE, image_index );
+  return ( vk_result != VK_ERROR_OUT_OF_DATE_KHR );
+}
+
+void
+crude_gfx_rhi_wait_idle
+(
+  _In_ crude_gfx_rhi_device                               *device
+)
+{
+  vkDeviceWaitIdle( device->vk_device );
+}
+
+void
+crude_gfx_rhi_update_descriptor_sets
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ uint32                                              descriptor_write_count,
+  _In_ crude_gfx_rhi_write_descriptor_set const           *descriptor_writes
+)
+{
+  VkWriteDescriptorSet                                     vk_descriptor_writes[ 2048 ];
+  VkDescriptorImageInfo                                    vk_image_info[ 2048 ];
+  uint32                                                   current_write_index;
+
+  CRUDE_ASSERT( descriptor_write_count < CRUDE_COUNTOF( vk_descriptor_writes ) );
+
+  for ( int32 i = 0u; i < descriptor_write_count; ++i )
+  {
+    vk_image_info[ i ].imageLayout = CRUDE_CAST( VkImageLayout, descriptor_writes[ i ].image_info.image_layout );
+    vk_image_info[ i ].imageView = descriptor_writes[ i ].image_info.image_view.vk_image_view;
+    vk_image_info[ i ].sampler = descriptor_writes[ i ].image_info.sampler.vk_sampler;
+
+    vk_descriptor_writes[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vk_descriptor_writes[ i ].pNext = NULL;
+    vk_descriptor_writes[ i ].dstSet = descriptor_writes[ i ].descriptor_set.vk_descriptor_set;
+    vk_descriptor_writes[ i ].dstBinding = descriptor_writes[ i ].dst_binding;
+    vk_descriptor_writes[ i ].dstArrayElement = descriptor_writes[ i ].dst_array_element;
+    vk_descriptor_writes[ i ].descriptorCount = descriptor_writes[ i ].descriptor_count;
+    vk_descriptor_writes[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, descriptor_writes[ i ].descriptor_type );
+    vk_descriptor_writes[ i ].pImageInfo = &vk_image_info[ i ];
+    vk_descriptor_writes[ i ].pBufferInfo = NULL;
+    vk_descriptor_writes[ i ].pTexelBufferView = NULL;
+  }
+
+  vkUpdateDescriptorSets( device->vk_device, descriptor_write_count, vk_descriptor_writes, 0, NULL );
+}
+
+void
+crude_gfx_rhi_create_semaphore
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ bool                                                timeline,
+  _Out_ crude_gfx_rhi_semaphore                           *semaphore
+)
+{
+  VkSemaphoreCreateInfo                                    vk_semaphore_info;
+  VkSemaphoreTypeCreateInfo                                vk_semaphore_type_info;
+  
+  vk_semaphore_type_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreTypeCreateInfo );
+  vk_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+  vk_semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+
+  vk_semaphore_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreCreateInfo );
+  vk_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  vk_semaphore_info.pNext = &vk_semaphore_type_info;
+
+  vkCreateSemaphore( device->vk_device, &vk_semaphore_info, g_pfn.vk_allocation_callbacks, &semaphore->vk_semaphore );
+}
+
+void
+crude_gfx_rhi_destroy_semaphore
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_semaphore                             semaphore
+)
+{
+  vkDestroySemaphore( device->vk_device, semaphore.vk_semaphore, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_set_semaphore_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_semaphore                             semaphore,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_SEMAPHORE, CRUDE_CAST( uint64, semaphore.vk_semaphore ), name );
+}
+
+void
+crude_gfx_rhi_create_fence
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _Out_ crude_gfx_rhi_fence                               *fence
+)
+{
+  VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  vkCreateFence( device->vk_device, &fence_info, g_pfn.vk_allocation_callbacks, &fence->vk_fence );
+}
+  
+void
+crude_gfx_rhi_destroy_fence
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_fence                                 fence
+)
+{
+  vkDestroyFence( device->vk_device, fence.vk_fence, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_set_fence_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_fence                                 fence,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_FENCE, CRUDE_CAST( uint64, fence.vk_fence ), name );
+}
+
+void
+crude_gfx_rhi_set_debug_utils_object_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_object_type                           object_type,
+  _In_ uint64                                              object_handle,
+  _In_ char const                                         *object_name
+)
+{
+  if ( g_pfn.vkSetDebugUtilsObjectNameEXT )
+  {
+    VkDebugUtilsObjectNameInfoEXT vk_name_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsObjectNameInfoEXT );
+    vk_name_info.sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    vk_name_info.objectType   = CRUDE_CAST( VkObjectType, object_type );
+    vk_name_info.objectHandle = object_handle;
+    vk_name_info.pObjectName  = object_name;
+    g_pfn.vkSetDebugUtilsObjectNameEXT( device->vk_device, &vk_name_info );
+  }
+}
+
+void
+crude_gfx_rhi_destroy_descriptor_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _Out_ crude_gfx_rhi_descriptor_pool                     *descriptor_pool
+)
+{
+  vkDestroyDescriptorPool( device->vk_device, descriptor_pool->vk_descriptor_pool, g_pfn.vk_allocation_callbacks );
+}
+
 void
 crude_gfx_rhi_begin_command_buffer
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_command_buffer_begin_info const      *begin_info
 )
 {
@@ -335,22 +614,22 @@ crude_gfx_rhi_begin_command_buffer
   vk_begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
   vk_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   vk_begin_info.flags = begin_info->flags;
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkBeginCommandBuffer( command_buffer->vk_command_buffer, &vk_begin_info ), "Failed vkBeginCommandBuffer" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkBeginCommandBuffer( command_buffer.vk_command_buffer, &vk_begin_info ), "Failed vkBeginCommandBuffer" );
 }
 
 void
 crude_gfx_rhi_end_command_buffer
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkEndCommandBuffer( command_buffer->vk_command_buffer ), "Failed vkEndCommandBuffer" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkEndCommandBuffer( command_buffer.vk_command_buffer ), "Failed vkEndCommandBuffer" );
 }
 
 void
 crude_gfx_rhi_command_buffer_begin_rendering
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_rendering_info const                 *rendering_info
 )
 {
@@ -402,36 +681,36 @@ crude_gfx_rhi_command_buffer_begin_rendering
   vk_rendering_info.pDepthAttachment = rendering_info->has_depth_attachment ? &vk_depth_attachment : 0;
   vk_rendering_info.flags = rendering_info->flags;
   
-  g_pfn.vkCmdBeginRenderingKHR( command_buffer->vk_command_buffer, &vk_rendering_info );
+  g_pfn.vkCmdBeginRenderingKHR( command_buffer.vk_command_buffer, &vk_rendering_info );
 }
 
 void
 crude_gfx_rhi_command_buffer_end_rendering
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
-  g_pfn.vkCmdEndRenderingKHR( command_buffer->vk_command_buffer );
+  g_pfn.vkCmdEndRenderingKHR( command_buffer.vk_command_buffer );
 }
 
 void
 crude_gfx_rhi_command_buffer_bind_pipeline
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_pipeline                             *pipeline,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_pipeline                              pipeline,
   _In_ crude_gfx_rhi_pipeline_bind_point                   pipeline_bind_point
 )
 {
-  vkCmdBindPipeline( command_buffer->vk_command_buffer, CRUDE_CAST( VkPipelineBindPoint, pipeline_bind_point ), pipeline->vk_pipeline );
+  vkCmdBindPipeline( command_buffer.vk_command_buffer, CRUDE_CAST( VkPipelineBindPoint, pipeline_bind_point ), pipeline.vk_pipeline );
 }
 
 void
 crude_gfx_rhi_command_buffer_copy_image
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_image                                *src_image,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_image                                 src_image,
   _In_ crude_gfx_rhi_image_layout                          src_image_layout,
-  _In_ crude_gfx_rhi_image                                *dst_image,
+  _In_ crude_gfx_rhi_image                                 dst_image,
   _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
   _In_ crude_gfx_rhi_image_copy const                     *image_copy
 )
@@ -457,13 +736,13 @@ crude_gfx_rhi_command_buffer_copy_image
   region.extent.height = image_copy->extent.y;
   region.extent.depth = image_copy->extent.z;
 
-  vkCmdCopyImage( command_buffer->vk_command_buffer, src_image->vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ), dst_image->vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ), 1u, &region );
+  vkCmdCopyImage( command_buffer.vk_command_buffer, src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ), dst_image.vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ), 1u, &region );
 }
 
 void
 crude_gfx_rhi_command_buffer_set_viewport
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_viewport const                       *viewport
 )
 {
@@ -476,13 +755,13 @@ crude_gfx_rhi_command_buffer_set_viewport
   vk_viewport.minDepth = viewport->min_depth;
   vk_viewport.maxDepth = viewport->max_depth;
 
-  vkCmdSetViewport( command_buffer->vk_command_buffer, 0, 1, &vk_viewport);
+  vkCmdSetViewport( command_buffer.vk_command_buffer, 0, 1, &vk_viewport);
 }
 
 void
 crude_gfx_rhi_command_buffer_set_scissor
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_scissor const                        *scissor
 )
 {
@@ -492,113 +771,113 @@ crude_gfx_rhi_command_buffer_set_scissor
   vk_scissor.offset.y = scissor->offset.y;
   vk_scissor.extent.width = scissor->extent.x;
   vk_scissor.extent.height = scissor->extent.y;
-  vkCmdSetScissor( command_buffer->vk_command_buffer, 0, 1, &vk_scissor );
+  vkCmdSetScissor( command_buffer.vk_command_buffer, 0, 1, &vk_scissor );
 }
 
 void
 crude_gfx_rhi_command_buffer_draw
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ uint32                                              vertex_count,
   _In_ uint32                                              instance_count,
   _In_ uint32                                              first_vertex,
   _In_ uint32                                              first_instance
 )
 {
-  vkCmdDraw( command_buffer->vk_command_buffer, vertex_count, instance_count, first_vertex, first_instance );
+  vkCmdDraw( command_buffer.vk_command_buffer, vertex_count, instance_count, first_vertex, first_instance );
 }
 
 void
 crude_gfx_rhi_command_buffer_draw_indirect
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                buffer,
   _In_ uint64                                              offset,
   _In_ uint32                                              draw_count,
   _In_ uint32                                              stride
 )
 {
-  vkCmdDrawIndirect( command_buffer->vk_command_buffer, buffer->vk_buffer, offset, draw_count, stride );
+  vkCmdDrawIndirect( command_buffer.vk_command_buffer, buffer.vk_buffer, offset, draw_count, stride );
 }
 
 
 void
 crude_gfx_rhi_command_buffer_draw_indirect_count
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *argument_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                argument_buffer,
   _In_ uint64                                              argument_buffer_offset,
-  _In_ crude_gfx_rhi_buffer                               *count_buffer,
+  _In_ crude_gfx_rhi_buffer                                count_buffer,
   _In_ uint64                                              count_buffer_offset,
   _In_ uint32                                              max_draw_count,
   _In_ uint32                                              stride
 )
 {
-  vkCmdDrawIndirectCount( command_buffer->vk_command_buffer, argument_buffer->vk_buffer, argument_buffer_offset, count_buffer->vk_buffer, count_buffer_offset, max_draw_count, stride );
+  vkCmdDrawIndirectCount( command_buffer.vk_command_buffer, argument_buffer.vk_buffer, argument_buffer_offset, count_buffer.vk_buffer, count_buffer_offset, max_draw_count, stride );
 }
 
 void
 crude_gfx_rhi_command_buffer_draw_mesh_task
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ uint32                                              group_count_x,
   _In_ uint32                                              group_count_y,
   _In_ uint32                                              group_count_z
 )
 {
-  g_pfn.vkCmdDrawMeshTasksEXT( command_buffer->vk_command_buffer, group_count_x, group_count_y, group_count_z );
+  g_pfn.vkCmdDrawMeshTasksEXT( command_buffer.vk_command_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
 crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *argument_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                argument_buffer,
   _In_ uint64                                              argument_buffer_offset,
-  _In_ crude_gfx_rhi_buffer                               *count_buffer,
+  _In_ crude_gfx_rhi_buffer                                count_buffer,
   _In_ uint64                                              count_buffer_offset,
   _In_ uint32                                              max_draw_count,
   _In_ uint32                                              stride
 )
 {
-  g_pfn.vkCmdDrawMeshTasksIndirectCountEXT( command_buffer->vk_command_buffer, argument_buffer->vk_buffer, argument_buffer_offset, count_buffer->vk_buffer, count_buffer_offset, max_draw_count, stride );
+  g_pfn.vkCmdDrawMeshTasksIndirectCountEXT( command_buffer.vk_command_buffer, argument_buffer.vk_buffer, argument_buffer_offset, count_buffer.vk_buffer, count_buffer_offset, max_draw_count, stride );
 }
 
 void
 crude_gfx_rhi_command_buffer_dispatch
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ uint32                                              group_count_x,
   _In_ uint32                                              group_count_y,
   _In_ uint32                                              group_count_z
 )
 {
-  vkCmdDispatch( command_buffer->vk_command_buffer, group_count_x, group_count_y, group_count_z );
+  vkCmdDispatch( command_buffer.vk_command_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
 crude_gfx_rhi_command_buffer_bind_descriptor_sets
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_pipeline_bind_point                   pipeline_bind_point,
-  _In_ crude_gfx_rhi_pipeline_layout                      *pipeline_layout,
+  _In_ crude_gfx_rhi_pipeline_layout                       pipeline_layout,
   _In_ uint32                                              set,
-  _In_ crude_gfx_rhi_descriptor_set const                 *descriptor_set
+  _In_ crude_gfx_rhi_descriptor_set const                  descriptor_set
 )
 {
   vkCmdBindDescriptorSets(
-    command_buffer->vk_command_buffer,
+    command_buffer.vk_command_buffer,
     CRUDE_CAST( VkPipelineBindPoint, pipeline_bind_point ),
-    pipeline_layout->vk_pipeline_layout,
+    pipeline_layout.vk_pipeline_layout,
     set,
-    1u, &descriptor_set->vk_descriptor_set,
+    1u, &descriptor_set.vk_descriptor_set,
     0u, NULL );
 }
 
 void
 crude_gfx_rhi_command_buffer_pipeline_image_barrier
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_image_memory_barrier const           *image_memory_barriers
 )
 {
@@ -619,25 +898,28 @@ crude_gfx_rhi_command_buffer_pipeline_image_barrier
   vk_image_barrier.srcQueueFamilyIndex = image_memory_barriers->src_queue_family_index;
   vk_image_barrier.dstQueueFamilyIndex = image_memory_barriers->dst_queue_family_index;
   vk_image_barrier.image = image_memory_barriers->image->vk_image;
-  vk_image_barrier.subresourceRange = image_memory_barriers->subresource_range;
+  vk_image_barrier.subresourceRange.aspectMask = image_memory_barriers->subresource_range.aspect_mask;
+  vk_image_barrier.subresourceRange.baseArrayLayer = image_memory_barriers->subresource_range.base_array_layer;
+  vk_image_barrier.subresourceRange.baseMipLevel = image_memory_barriers->subresource_range.base_mip_level;
+  vk_image_barrier.subresourceRange.layerCount = image_memory_barriers->subresource_range.layer_count;
+  vk_image_barrier.subresourceRange.levelCount = image_memory_barriers->subresource_range.level_count;
   
   vk_dependency_info.imageMemoryBarrierCount = 1u;
   vk_dependency_info.pImageMemoryBarriers = &vk_image_barrier;
  
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
 crude_gfx_rhi_command_buffer_pipeline_buffer_barrier
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer_memory_barrier                *buffer_memory_barriers
 )
 {
   VkDependencyInfoKHR                                      vk_dependency_info;
   VkBufferMemoryBarrier2KHR                                vk_buffer_barrier;
   
-
   vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
   vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
 
@@ -656,13 +938,13 @@ crude_gfx_rhi_command_buffer_pipeline_buffer_barrier
   vk_dependency_info.bufferMemoryBarrierCount = 1u;
   vk_dependency_info.pBufferMemoryBarriers = &vk_buffer_barrier;
  
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
 crude_gfx_rhi_command_buffer_pipeline_global_barrier
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
   VkMemoryBarrier2KHR                                      vk_barrier;
@@ -680,15 +962,15 @@ crude_gfx_rhi_command_buffer_pipeline_global_barrier
   vk_dependency_info.memoryBarrierCount = 1;
   vk_dependency_info.pMemoryBarriers = &vk_barrier;
   
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer->vk_command_buffer, &vk_dependency_info );
+  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
 crude_gfx_rhi_command_buffer_copy_buffer_to_image
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *buffer,
-  _In_ crude_gfx_rhi_image                                *image,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                buffer,
+  _In_ crude_gfx_rhi_image                                 image,
   _In_ crude_gfx_rhi_buffer_image_copy const              *region
 )
 {
@@ -709,15 +991,15 @@ crude_gfx_rhi_command_buffer_copy_buffer_to_image
   vk_region.imageExtent.height = region->image_extent.y;
   vk_region.imageExtent.depth = region->image_extent.z;
   
-  vkCmdCopyBufferToImage( command_buffer->vk_command_buffer, buffer->vk_buffer, image->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
+  vkCmdCopyBufferToImage( command_buffer.vk_command_buffer, buffer.vk_buffer, image.vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vk_region );
 }
 
 void
 crude_gfx_rhi_command_buffer_copy_buffer
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *src_buffer,
-  _In_ crude_gfx_rhi_buffer                               *dst_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                src_buffer,
+  _In_ crude_gfx_rhi_buffer                                dst_buffer,
   _In_ crude_gfx_rhi_buffer_copy const                    *region
 )
 {
@@ -728,25 +1010,25 @@ crude_gfx_rhi_command_buffer_copy_buffer
   vk_region.dstOffset = region->dst_offset;
   vk_region.size = region->size;
 
-  vkCmdCopyBuffer( command_buffer->vk_command_buffer, src_buffer->vk_buffer, dst_buffer->vk_buffer, 1, &vk_region );
+  vkCmdCopyBuffer( command_buffer.vk_command_buffer, src_buffer.vk_buffer, dst_buffer.vk_buffer, 1, &vk_region );
 }
 
 void
 crude_gfx_rhi_command_buffer_write_timestamp
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_pipeline_stage_flags                  pipeline_stage,
-  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ crude_gfx_rhi_query_pool                            query_pool,
   _In_ uint32                                              query
 )
 {
-  vkCmdWriteTimestamp( command_buffer->vk_command_buffer, CRUDE_CAST( VkPipelineStageFlagBits, pipeline_stage ), query_pool->vk_query_pool, query );
+  vkCmdWriteTimestamp( command_buffer.vk_command_buffer, CRUDE_CAST( VkPipelineStageFlagBits, pipeline_stage ), query_pool.vk_query_pool, query );
 }
 
 void
 crude_gfx_rhi_command_buffer_begin_debug_utils_label
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_debug_utils_label const              *debug_utils_label
 )
 {
@@ -759,49 +1041,49 @@ crude_gfx_rhi_command_buffer_begin_debug_utils_label
   vk_label.color[ 1 ] = debug_utils_label->color[ 1 ];
   vk_label.color[ 2 ] = debug_utils_label->color[ 2 ];
   vk_label.color[ 3 ] = debug_utils_label->color[ 3 ];
-  g_pfn.vkCmdBeginDebugUtilsLabelEXT( command_buffer->vk_command_buffer, &vk_label );
+  g_pfn.vkCmdBeginDebugUtilsLabelEXT( command_buffer.vk_command_buffer, &vk_label );
 }
 
 void
 crude_gfx_rhi_command_buffer_end_debug_utils_label
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
-  g_pfn.vkCmdEndDebugUtilsLabelEXT( command_buffer->vk_command_buffer );
+  g_pfn.vkCmdEndDebugUtilsLabelEXT( command_buffer.vk_command_buffer );
 }
 
 void
 crude_gfx_rhi_command_buffer_push_constant
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_pipeline_layout                      *layout,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_pipeline_layout                       layout,
   _In_ crude_gfx_rhi_shader_stage_flags                    stage_flags,
   _In_ uint32                                              offset,
   _In_ uint32                                              size,
   _In_ void const                                         *values
 )
 {
-  vkCmdPushConstants( command_buffer->vk_command_buffer, layout->vk_pipeline_layout, stage_flags, 0u, size, values );
+  vkCmdPushConstants( command_buffer.vk_command_buffer, layout.vk_pipeline_layout, stage_flags, 0u, size, values );
 }
 
 void
 crude_gfx_rhi_command_buffer_fill_buffer
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_buffer                               *dst_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_buffer                                dst_buffer,
   _In_ uint64                                              dst_offset,
   _In_ uint64                                              size,
   _In_ uint32                                              data
 )
 {
-  vkCmdFillBuffer( command_buffer->vk_command_buffer, dst_buffer->vk_buffer, dst_offset, size, data );
+  vkCmdFillBuffer( command_buffer.vk_command_buffer, dst_buffer.vk_buffer, dst_offset, size, data );
 }
 
 void
-crude_gfx_rhi_trace_rays
+crude_gfx_rhi_command_buffer_trace_rays
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_strided_device_address_region const  *raygen_shader_binding_table,
   _In_ crude_gfx_rhi_strided_device_address_region const  *miss_shader_binding_table,
   _In_ crude_gfx_rhi_strided_device_address_region const  *hit_shader_binding_table,
@@ -830,31 +1112,42 @@ crude_gfx_rhi_trace_rays
 
   vk_callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   
-  g_pfn.vkCmdTraceRaysKHR( command_buffer->vk_command_buffer, &vk_raygen_table, &vk_miss_table, &vk_hit_table, &vk_callable_table, width, height, depth );
+  g_pfn.vkCmdTraceRaysKHR( command_buffer.vk_command_buffer, &vk_raygen_table, &vk_miss_table, &vk_hit_table, &vk_callable_table, width, height, depth );
 }
 
 void
-crude_gfx_rhi_begin_query
+crude_gfx_rhi_command_buffer_begin_query
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_query_pool                            query_pool,
   _In_ uint32                                              query,
   _In_ crude_gfx_rhi_query_control_flags                   flags
 )
 {
-  vkCmdBeginQuery( command_buffer->vk_command_buffer, query_pool->vk_query_pool, query, flags );
+  vkCmdBeginQuery( command_buffer.vk_command_buffer, query_pool.vk_query_pool, query, flags );
 }
 
 void
-crude_gfx_rhi_reset_query_pool
+crude_gfx_rhi_command_buffer_end_query
 (
-  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
-  _In_ crude_gfx_rhi_query_pool                           *query_pool,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_query_pool                            query_pool,
+  _In_ uint32                                              query
+)
+{
+  vkCmdEndQuery( command_buffer.vk_command_buffer, query_pool.vk_query_pool, query );
+}
+
+void
+crude_gfx_rhi_command_buffer_reset_query_pool
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_query_pool                            query_pool,
   _In_ uint32                                              first_query,
   _In_ uint32                                              query_count
 )
 {
-  vkCmdResetQueryPool( command_buffer->vk_command_buffer, query_pool->vk_query_pool, first_query, query_count );
+  vkCmdResetQueryPool( command_buffer.vk_command_buffer, query_pool.vk_query_pool, first_query, query_count );
 }
 
 #elif CRUDE_GFX_NAPI

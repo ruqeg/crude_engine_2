@@ -89,7 +89,7 @@ typedef struct crude_gfx_device
   crude_gfx_resource_cache                                 resource_cache;
   crude_gfx_cmd_pool_handle                                immediate_transfer_cmd_pool;
   crude_gfx_cmd_buffer_handle                              immediate_transfer_cmd_buffer;
-  VkFence                                                  vk_immediate_fence;
+  crude_gfx_rhi_fence                                      rhi_immediate_fence;
 
   /**
    * Queue to remove or update bindless texture.
@@ -109,23 +109,22 @@ typedef struct crude_gfx_device
   /**
    * Additional data related to the foundation of the renderer.
    */
-  VkInstance                                               vk_instance;
-  VkDebugUtilsMessengerEXT                                 vk_debug_utils_messenger;
-  VkSurfaceKHR                                             vk_surface;
-  crude_gfx_rhi_surface_format                                 surface_format;
+  crude_gfx_rhi_instance                                   rhi_instance;
+  crude_gfx_rhi_surface                                    rhi_surface;
+  crude_gfx_rhi_surface_format                             surface_format;
   VkPhysicalDevice                                         vk_physical_device;
-  VkDevice                                                 vk_device;
-  VkSwapchainKHR                                           vk_swapchain;
-  VkSemaphore                                              vk_graphics_semaphore;
-  VkSemaphore                                              vk_image_avalivable_semaphores[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  VkSemaphore                                              vk_rendering_finished_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  VkSemaphore                                              vk_swapchain_updated_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  VkDescriptorPool                                         vk_descriptor_pool;
+  crude_gfx_rhi_device                                     rhi_device;
+  crude_gfx_rhi_swapchain                                  rhi_swapchain;
+  crude_gfx_rhi_semaphore                                  rhi_graphics_semaphore;
+  crude_gfx_rhi_semaphore                                  rhi_image_avalivable_semaphores[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_rhi_semaphore                                  rhi_rendering_finished_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_rhi_semaphore                                  rhi_swapchain_updated_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_rhi_descriptor_pool                            rhi_descriptor_pool;
   /**
    * Vulkan queues
    */
-  VkQueue                                                  vk_main_queue;
-  VkQueue                                                  vk_transfer_queue;
+  crude_gfx_rhi_queue                                      main_queue;
+  crude_gfx_rhi_queue                                      transfer_queue;
   uint32                                                   vk_main_queue_family;
   uint32                                                   vk_transfer_queue_family;
   /**
@@ -142,14 +141,12 @@ typedef struct crude_gfx_device
    * Descriptor pools/sets automatically generated
    * based on the reflection of the pipeline shaders.
    */
-  VkDescriptorPool                                         vk_bindless_descriptor_pool;
+  crude_gfx_rhi_descriptor_pool                            rhi_bindless_descriptor_pool;
   crude_gfx_descriptor_set_layout_handle                   bindless_descriptor_set_layout_handle;
   crude_gfx_descriptor_set_handle                          bindless_descriptor_set_handle;
   /**
    * Allocators and callbacks
-   */
-  VkAllocationCallbacks                                   *vk_allocation_callbacks;                               
-  VmaAllocator                                             vma_allocator;
+   */                           
   crude_heap_allocator                                    *allocator;
   crude_allocator_container                                allocator_container;
   crude_stack_allocator                                   *temporary_allocator;
@@ -177,10 +174,6 @@ typedef struct crude_gfx_device
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
   
-  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
-  PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
-  PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
-  PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
   PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
@@ -218,16 +211,7 @@ crude_gfx_device_deinitialize
  *
  * GPU Device Common Functions
  * 
- ***********************************************/
-CRUDE_API void                                     
-crude_gfx_set_resource_name                        
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ VkObjectType                                        type,
-  _In_ uint64                                              handle,
-  _In_ char const                                         *name
-);
-                                                   
+ ***********************************************/  
 CRUDE_API void                                     
 crude_gfx_new_frame                                
 (                                                  
@@ -327,9 +311,9 @@ CRUDE_API void
 crude_gfx_device_queue_submit
 (
   _In_ crude_gfx_device                                   *gpu,
-  _In_ VkQueue                                             vk_queue,
-  _In_ VkSubmitInfo2                                      *vk_submit_info,
-  _In_ VkFence                                             vk_fence
+  _In_ crude_gfx_rhi_queue                                 rhi_queue,
+  _In_ crude_gfx_rhi_submit_info                          *submit_info,
+  _In_ crude_gfx_rhi_fence                                 rhi_fence
 );
 
 #if CRUDE_GFX_GPU_PROFILER
