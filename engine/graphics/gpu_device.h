@@ -177,10 +177,6 @@ typedef struct crude_gfx_device
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
   
-  PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
-  PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
-  PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
-  PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
   PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
   PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
   PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;

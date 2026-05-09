@@ -56,8 +56,7 @@ crude_gfx_cmd_bind_render_pass
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_render_pass_handle                        render_pass_handle,
-  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
-  _In_ bool                                                use_secondary
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle
 );
 
 CRUDE_API void

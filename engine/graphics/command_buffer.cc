@@ -43,7 +43,7 @@ crude_gfx_cmd_begin_primary
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  VkCommandBufferBeginInfo                                 vk_begin_info;
+  crude_gfx_rhi_command_buffer_begin_info                  begin_info;
 
   if ( cmd->is_recording )
   {
@@ -52,10 +52,9 @@ crude_gfx_cmd_begin_primary
 
   cmd->is_recording = true;
 
-  vk_begin_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferBeginInfo );
-  vk_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  vk_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer( cmd->vk_cmd_buffer, &vk_begin_info );
+  begin_info = crude_gfx_rhi_command_buffer_begin_info_empty( );
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  crude_gfx_rhi_begin_command_buffer( &cmd->rhi_cmd_buffer, &begin_info );
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_begin_primary( %s )", cmd->name );
 }
@@ -75,7 +74,7 @@ crude_gfx_cmd_end
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_end( %s )", cmd->name );
 
-  vkEndCommandBuffer( cmd->vk_cmd_buffer );
+  crude_gfx_rhi_end_command_buffer( &cmd->rhi_cmd_buffer );
   cmd->is_recording = false;
 }
 
@@ -87,7 +86,7 @@ crude_gfx_cmd_end_render_pass
 {
   if ( cmd->is_recording && cmd->current_render_pass != NULL && cmd->current_framebuffer != NULL )
   {
-    cmd->gpu->vkCmdEndRenderingKHR( cmd->vk_cmd_buffer );
+    crude_gfx_rhi_command_buffer_end_rendering( &cmd->rhi_cmd_buffer );
     cmd->current_render_pass = NULL;
     cmd->current_framebuffer = NULL;
   }
@@ -98,19 +97,12 @@ crude_gfx_cmd_bind_render_pass
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
   _In_ crude_gfx_render_pass_handle                        render_pass_handle,
-  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle,
-  _In_ bool                                                use_secondary
+  _In_ crude_gfx_framebuffer_handle                        framebuffer_handle
 )
 {
   crude_gfx_framebuffer                                   *framebuffer;
   crude_gfx_render_pass                                   *render_pass;
-  VkRenderingAttachmentInfoKHR                            *vk_color_attachments_info;
-  VkRenderingAttachmentInfoKHR                             vk_depth_attachment_info;
-  VkRenderingInfoKHR                                       vk_rendering_info;
-  uint32                                                   temporary_allocator_marker;
-  bool                                                     has_depth_attachment;
-  
-  temporary_allocator_marker = crude_stack_allocator_get_marker( cmd->gpu->temporary_allocator );
+  crude_gfx_rhi_rendering_info                             rendering_info;
 
   cmd->is_recording = true;
   
@@ -134,93 +126,82 @@ crude_gfx_cmd_bind_render_pass
   
   framebuffer = crude_gfx_access_framebuffer( cmd->gpu, framebuffer_handle );
   
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_color_attachments_info, framebuffer->num_color_attachments, crude_stack_allocator_pack( cmd->gpu->temporary_allocator ) );
-  crude_memory_set( vk_color_attachments_info, 0, sizeof( VkRenderingAttachmentInfoKHR ) * framebuffer->num_color_attachments );
+  rendering_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_rendering_info );
   
-  for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )
+  rendering_info.render_area.offset.x = 0;
+  rendering_info.render_area.offset.y = 0;
+  rendering_info.render_area.extent.x = framebuffer->width;
+  rendering_info.render_area.extent.y = framebuffer->height;
+  rendering_info.layer_count = 1;
+  rendering_info.view_mask = 0;
+  
+  rendering_info.color_attachment_count = framebuffer->num_color_attachments;
+  for ( uint32 i = 0; i < rendering_info.color_attachment_count; ++i )
   {
-    VkRenderingAttachmentInfoKHR                          *color_attachment_info;
+    crude_gfx_rhi_rendering_attachment_info               *color_attachment_info;
     crude_gfx_texture                                     *texture;
-    VkAttachmentLoadOp                                     color_op;
+    crude_gfx_rhi_attachment_load_op                       color_op;
 
     texture = crude_gfx_access_texture( cmd->gpu, framebuffer->color_attachments[ i ] );
     
     switch ( render_pass->output.color_operations[ i ] )
     {
       case CRUDE_GFX_RENDER_PASS_OPERATION_LOAD:
-        color_op = VK_ATTACHMENT_LOAD_OP_LOAD;
+        color_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_LOAD;
         break;
       case CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR:
-        color_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_CLEAR;
         break;
       default:
-        color_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // !TODO VK_ATTACHMENT_LOAD_OP_DONT_CARE for multisample https://docs.vulkan.org/samples/latest/samples/performance/msaa/README.html
+        color_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_DONT_CARE; // !TODO VK_ATTACHMENT_LOAD_OP_DONT_CARE for multisample https://docs.vulkan.org/samples/latest/samples/performance/msaa/README.html
         break;
     }
     
-    color_attachment_info = &vk_color_attachments_info[ i ];
-    color_attachment_info->sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    color_attachment_info->imageView = texture->vk_image_view;
-    color_attachment_info->imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    color_attachment_info->resolveMode = VK_RESOLVE_MODE_NONE;
-    color_attachment_info->loadOp = color_op;
-    color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // !TODO STORE_OP_DONT_CARE for multisample
-    color_attachment_info->clearValue = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ i ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    color_attachment_info = &rendering_info.color_attachments[ i ];
+    *color_attachment_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_rendering_attachment_info );
+    color_attachment_info->image_view = texture->rhi_image_view;
+    color_attachment_info->image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    color_attachment_info->resolve_mode = CRUDE_GFX_RHI_RESOLVE_MODE_NONE;
+    color_attachment_info->load_op = color_op;
+    color_attachment_info->store_op = CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_STORE; // !TODO STORE_OP_DONT_CARE for multisample
+    color_attachment_info->clear_value = render_pass->output.color_operations[ i ] == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ i ] : CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_clear_value );
   }
   
-  vk_depth_attachment_info = CRUDE_COMPOUNT_EMPTY( VkRenderingAttachmentInfoKHR );
-  vk_depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+  rendering_info.depth_attachment = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_rendering_attachment_info );
   
-  has_depth_attachment = CRUDE_RESOURCE_HANDLE_IS_VALID( framebuffer->depth_stencil_attachment );
-  if ( has_depth_attachment )
+  rendering_info.has_depth_attachment = CRUDE_RESOURCE_HANDLE_IS_VALID( framebuffer->depth_stencil_attachment );
+  if ( rendering_info.has_depth_attachment )
   {
     crude_gfx_texture                                     *texture;
-    VkAttachmentLoadOp                                     depth_op;
+    crude_gfx_rhi_attachment_load_op                       depth_op;
 
     texture = crude_gfx_access_texture( cmd->gpu, framebuffer->depth_stencil_attachment );
   
     switch ( render_pass->output.depth_operation )
     {
       case CRUDE_GFX_RENDER_PASS_OPERATION_LOAD:
-        depth_op = VK_ATTACHMENT_LOAD_OP_LOAD;
+        depth_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_LOAD;
         break;
       case CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR:
-        depth_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depth_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_CLEAR;
         break;
       default:
-        depth_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depth_op = CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
         break;
     }
     
-    vk_depth_attachment_info.imageView = texture->vk_image_view;
-    vk_depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    vk_depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
-    vk_depth_attachment_info.loadOp = depth_op;
-    vk_depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    vk_depth_attachment_info.clearValue = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( VkClearValue );
+    rendering_info.depth_attachment.image_view = texture->rhi_image_view;
+    rendering_info.depth_attachment.image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    rendering_info.depth_attachment.resolve_mode = CRUDE_GFX_RHI_RESOLVE_MODE_NONE;
+    rendering_info.depth_attachment.load_op = depth_op;
+    rendering_info.depth_attachment.store_op = CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_STORE;
+    rendering_info.depth_attachment.clear_value = render_pass->output.depth_operation == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR ? cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ] : CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_clear_value );
   }
   
-  vk_rendering_info = CRUDE_COMPOUNT_EMPTY( VkRenderingInfoKHR );
-  vk_rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-  vk_rendering_info.renderArea = CRUDE_COMPOUNT( VkRect2D, { 0, 0, framebuffer->width, framebuffer->height } );
-  vk_rendering_info.layerCount = 1;
-  vk_rendering_info.viewMask = 0;
-  vk_rendering_info.colorAttachmentCount = framebuffer->num_color_attachments;
-  vk_rendering_info.pColorAttachments = framebuffer->num_color_attachments > 0 ? vk_color_attachments_info : NULL;
-  vk_rendering_info.pDepthAttachment =  has_depth_attachment ? &vk_depth_attachment_info : NULL;
-  vk_rendering_info.pStencilAttachment = NULL;
-
-  if ( use_secondary )
-  {
-    vk_rendering_info.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
-  }
-  
-  cmd->gpu->vkCmdBeginRenderingKHR( cmd->vk_cmd_buffer, &vk_rendering_info );
+  crude_gfx_rhi_command_buffer_begin_rendering( &cmd->rhi_cmd_buffer, &rendering_info );
   
   cmd->current_render_pass = render_pass;
   cmd->current_framebuffer = framebuffer;
-  
-  crude_stack_allocator_free_marker( cmd->gpu->temporary_allocator, temporary_allocator_marker );
 }
 
 void
@@ -237,7 +218,7 @@ crude_gfx_cmd_bind_pipeline
     return;
   }
 
-  vkCmdBindPipeline( cmd->vk_cmd_buffer, pipeline->vk_bind_point, pipeline->vk_pipeline );
+  crude_gfx_rhi_command_buffer_bind_pipeline( &cmd->rhi_cmd_buffer, &pipeline->rhi_pipeline, pipeline->bind_point );
   cmd->current_pipeline = pipeline;
 }
 
@@ -251,70 +232,74 @@ crude_gfx_cmd_copy_texture
 {
   crude_gfx_texture                                       *src;
   crude_gfx_texture                                       *dst;
-  VkImageCopy                                              region;
+  crude_gfx_rhi_image_copy                                 image_copy;
 
   src = crude_gfx_access_texture( cmd->gpu, src_handle );
   dst = crude_gfx_access_texture( cmd->gpu, dst_handle );
 
-  region = CRUDE_COMPOUNT_EMPTY( VkImageCopy );
-  region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.srcSubresource.mipLevel = 0;
-  region.srcSubresource.baseArrayLayer = 0;
-  region.srcSubresource.layerCount = 1;
-  region.srcOffset = CRUDE_COMPOUNT( VkOffset3D, { 0 } );
-  region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.dstSubresource.mipLevel = 0;
-  region.dstSubresource.baseArrayLayer = 0;
-  region.dstSubresource.layerCount = 1;
-  region.dstOffset = CRUDE_COMPOUNT( VkOffset3D, { 0 } );
-  region.extent.width = dst->width;
-  region.extent.height = dst->height;
-  region.extent.depth = 1;
+  image_copy = crude_gfx_rhi_image_copy_empty( );
+  image_copy.src_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
+  image_copy.src_subresource.mip_level = 0;
+  image_copy.src_subresource.base_array_layer = 0;
+  image_copy.src_subresource.layer_count = 1;
+  image_copy.dst_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
+  image_copy.dst_subresource.mip_level = 0;
+  image_copy.dst_subresource.base_array_layer = 0;
+  image_copy.dst_subresource.layer_count = 1;
+  image_copy.extent.x = dst->width;
+  image_copy.extent.y = dst->height;
+  image_copy.extent.z = 1;
 
   CRUDE_ASSERT( src->width == dst->width && src->height == dst->height );
 
-  vkCmdCopyImage( cmd->vk_cmd_buffer, src->vk_image, crude_gfx_resource_state_to_image_layout( src->state ), dst->vk_image, crude_gfx_resource_state_to_image_layout( dst->state ), 1u, &region );
+  crude_gfx_rhi_command_buffer_copy_image(
+    &cmd->rhi_cmd_buffer,
+    &src->rhi_image,
+    crude_gfx_rhi_resource_state_to_image_layout( src->state ),
+    &dst->rhi_image,
+    crude_gfx_rhi_resource_state_to_image_layout( dst->state ),
+    &image_copy );
 }
 
 void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_opt_ crude_gfx_viewport const                       *dev_viewport
+  _In_opt_ crude_gfx_viewport const                       *viewport
 )
 {
-  VkViewport vk_viewport;
+  crude_gfx_rhi_viewport                                   rhi_viewport;
   
-  if ( dev_viewport )
+  if ( viewport )
   {
-    vk_viewport.x = dev_viewport->rect.x * 1.f;
-    vk_viewport.width = dev_viewport->rect.width * 1.f;
-    vk_viewport.y = dev_viewport->rect.height * 1.f - dev_viewport->rect.y;
-    vk_viewport.height = -dev_viewport->rect.height * 1.f;
-    vk_viewport.minDepth = dev_viewport->min_depth;
-    vk_viewport.maxDepth = dev_viewport->max_depth;
+    rhi_viewport.x = viewport->rect.x * 1.f;
+    rhi_viewport.width = viewport->rect.width * 1.f;
+    rhi_viewport.y = viewport->rect.height * 1.f - viewport->rect.y;
+    rhi_viewport.height = -viewport->rect.height * 1.f;
+    rhi_viewport.min_depth = viewport->min_depth;
+    rhi_viewport.max_depth = viewport->max_depth;
   }
   else
   {
-    vk_viewport.x = 0.f;
+    rhi_viewport.x = 0.f;
     
     if ( cmd->current_render_pass )
     {
-      vk_viewport.width = cmd->current_framebuffer->width * 1.f;
-      vk_viewport.y = cmd->current_framebuffer->height * 1.f;
-      vk_viewport.height = -cmd->current_framebuffer->height * 1.f;
+      rhi_viewport.width = cmd->current_framebuffer->width * 1.f;
+      rhi_viewport.y = cmd->current_framebuffer->height * 1.f;
+      rhi_viewport.height = -cmd->current_framebuffer->height * 1.f;
     }
     else
     {
-      vk_viewport.width = cmd->gpu->renderer_size.x * 1.f;
-      vk_viewport.y = cmd->gpu->renderer_size.y * 1.f;
-      vk_viewport.height = -cmd->gpu->renderer_size.y * 1.f;
+      rhi_viewport.width = cmd->gpu->renderer_size.x * 1.f;
+      rhi_viewport.y = cmd->gpu->renderer_size.y * 1.f;
+      rhi_viewport.height = -cmd->gpu->renderer_size.y * 1.f;
     }
-    vk_viewport.minDepth = 0.0f;
-    vk_viewport.maxDepth = 1.0f;
+    rhi_viewport.min_depth = 0.0f;
+    rhi_viewport.max_depth = 1.0f;
   }
   
-  vkCmdSetViewport( cmd->vk_cmd_buffer, 0, 1, &vk_viewport);
+  crude_gfx_rhi_command_buffer_set_viewport( &cmd->rhi_cmd_buffer, &rhi_viewport );
 }
 
 void
@@ -342,8 +327,8 @@ crude_gfx_cmd_set_clear_depth_and_stencil
   _In_ float32                                             stencil
 )
 {
-  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.depth = depth;
-  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depthStencil.stencil = stencil;
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depth_stencil.depth = depth;
+  cmd->clears[ CRUDE_GFX_DEPTH_AND_STENCIL_CLEAR_COLOR_INDEX ].depth_stencil.stencil = stencil;
 }
 
 void
@@ -353,26 +338,26 @@ crude_gfx_cmd_set_scissor
   _In_opt_ crude_gfx_rect2d_int const                     *rect
 )
 {
-  VkRect2D vk_scissor;
+  crude_gfx_rhi_scissor                                    scissor;
   
   if ( rect )
   {
-    vk_scissor.offset.x = rect->x;
-    vk_scissor.offset.y = rect->y;
-    vk_scissor.extent.width = rect->width;
-    vk_scissor.extent.height = rect->height;
+    scissor.offset.x = rect->x;
+    scissor.offset.y = rect->y;
+    scissor.extent.x = rect->width;
+    scissor.extent.y = rect->height;
   }
   else
   {
-    vk_scissor.offset.x = 0;
-    vk_scissor.offset.y = 0;
-    vk_scissor.extent.width = cmd->gpu->renderer_size.x;
-    vk_scissor.extent.height = cmd->gpu->renderer_size.y;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.x = cmd->gpu->renderer_size.x;
+    scissor.extent.y = cmd->gpu->renderer_size.y;
   }
 
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, vk_scissor.extent.width > 0 && vk_scissor.extent.height > 0 && vk_scissor.offset.x >= 0 && vk_scissor.offset.y >= 0, "vk_scissor issues!" );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, scissor.extent.x > 0 && scissor.extent.y > 0 && scissor.offset.x >= 0 && scissor.offset.y >= 0, "vk_scissor issues!" );
   
-  vkCmdSetScissor( cmd->vk_cmd_buffer, 0, 1, &vk_scissor );
+  crude_gfx_rhi_command_buffer_set_scissor( &cmd->rhi_cmd_buffer, &scissor );
 }
 
 void
@@ -385,7 +370,7 @@ crude_gfx_cmd_draw
   _In_ uint32                                              instance_count
 )
 {
-  vkCmdDraw( cmd->vk_cmd_buffer, vertex_count, instance_count, first_vertex, first_instance );
+  crude_gfx_rhi_command_buffer_draw( &cmd->rhi_cmd_buffer, vertex_count, instance_count, first_vertex, first_instance );
 }
 
 void
@@ -399,7 +384,7 @@ crude_gfx_cmd_draw_inderect
 )
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
-  vkCmdDrawIndirect( cmd->vk_cmd_buffer, buffer->vk_buffer, offset, draw_count, stride );
+  crude_gfx_rhi_command_buffer_draw_indirect( &cmd->rhi_cmd_buffer, &buffer->rhi_buffer, offset, draw_count, stride );
 }
 
 void
@@ -417,7 +402,11 @@ crude_gfx_cmd_draw_indirect_count
   crude_gfx_buffer *argument_buffer = crude_gfx_access_buffer( cmd->gpu, argument_buffer_handle );
   crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
   
-  vkCmdDrawIndirectCount( cmd->vk_cmd_buffer, argument_buffer->vk_buffer, argument_offset, count_buffer->vk_buffer, count_offset, max_draws, stride );
+  crude_gfx_rhi_command_buffer_draw_indirect_count(
+    &cmd->rhi_cmd_buffer,
+    &argument_buffer->rhi_buffer, argument_offset,
+    &count_buffer->rhi_buffer, count_offset,
+    max_draws, stride );
 }
 
 void
@@ -429,7 +418,7 @@ crude_gfx_cmd_draw_mesh_task
   _In_ uint32                                              group_count_z
 )
 {
-  cmd->gpu->vkCmdDrawMeshTasksEXT( cmd->vk_cmd_buffer, group_count_x, group_count_y, group_count_z );
+  crude_gfx_rhi_command_buffer_draw_mesh_task( &cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
@@ -447,7 +436,7 @@ crude_gfx_cmd_draw_mesh_task_indirect_count
   crude_gfx_buffer *argument_buffer = crude_gfx_access_buffer( cmd->gpu, argument_buffer_handle );
   crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
   
-  cmd->gpu->vkCmdDrawMeshTasksIndirectCountEXT( cmd->vk_cmd_buffer, argument_buffer->vk_buffer, argument_offset, count_buffer->vk_buffer, count_offset, max_draws, stride );
+  crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count( &cmd->rhi_cmd_buffer, &argument_buffer->rhi_buffer, argument_offset, &count_buffer->rhi_buffer, count_offset, max_draws, stride );
 }
 
 void
@@ -459,7 +448,7 @@ crude_gfx_cmd_dispatch
   _In_ uint32                                              group_count_z
 )
 {
-  vkCmdDispatch( cmd->vk_cmd_buffer, group_count_x, group_count_y, group_count_z );
+  crude_gfx_rhi_command_buffer_dispatch( &cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
@@ -471,7 +460,7 @@ crude_gfx_cmd_bind_bindless_descriptor_set
   crude_gfx_descriptor_set                                *bindless_descriptor_set;
 
   bindless_descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, cmd->gpu->bindless_descriptor_set_handle );
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, 1u, &bindless_descriptor_set->vk_descriptor_set, 0u, NULL );
+  crude_gfx_rhi_command_buffer_bind_descriptor_sets( &cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, &cmd->current_pipeline->rhi_pipeline_layout, CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX, &bindless_descriptor_set->rhi_descriptor_set );
 }
 
 void
@@ -482,8 +471,9 @@ crude_gfx_cmd_bind_acceleration_structure_descriptor_set
 )
 {
   crude_gfx_descriptor_set                                *descriptor_set;
+
   descriptor_set = crude_gfx_access_descriptor_set( cmd->gpu, handle );
-  vkCmdBindDescriptorSets( cmd->vk_cmd_buffer, cmd->current_pipeline->vk_bind_point, cmd->current_pipeline->vk_pipeline_layout, CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, 1u, &descriptor_set->vk_descriptor_set, 0, NULL );
+  crude_gfx_rhi_command_buffer_bind_descriptor_sets( &cmd->rhi_cmd_buffer, cmd->current_pipeline->bind_point, &cmd->current_pipeline->rhi_pipeline_layout, CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, &descriptor_set->rhi_descriptor_set );
 }
 
 void

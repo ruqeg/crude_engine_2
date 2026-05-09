@@ -40,6 +40,39 @@ typedef enum crude_gfx_rhi_resource_state
   CRUDE_GFX_RHI_RESOURCE_STATE_SHADING_RATE_SOURCE = 0x8000,
 } crude_gfx_rhi_resource_state;
 
+typedef struct crude_gfx_rhi_rect_2d
+{
+  XMFLOAT2                                                 offset;
+  XMFLOAT2                                                 extent;
+} crude_gfx_rhi_rect_2d;
+
+typedef enum crude_gfx_rhi_queue_type
+{
+  CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS,
+  CRUDE_GFX_RHI_QUEUE_TYPE_COMPUTE,
+  CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER,
+  CRUDE_GFX_RHI_QUEUE_TYPE_COUNT
+} crude_gfx_rhi_queue_type;
+
+typedef union crude_gfx_rhi_clear_color_value
+{
+  float32                                                  float32[ 4 ];
+  int32                                                    int32[ 4 ];
+  uint32                                                   uint32[ 4 ];
+} crude_gfx_rhi_clear_color_value;
+
+typedef struct crude_gfx_rhi_clear_depth_stencil_value
+{
+  float32                                                  depth;
+  uint32                                                   stencil;
+} crude_gfx_rhi_clear_depth_stencil_value;
+
+typedef union crude_gfx_rhi_clear_value
+{
+  crude_gfx_rhi_clear_color_value                          color;
+  crude_gfx_rhi_clear_depth_stencil_value                  depth_stencil;
+} crude_gfx_rhi_clear_value;
+
 char const*
 crude_gfx_rhi_resource_state_to_name
 (
@@ -489,26 +522,205 @@ typedef enum crude_gfx_rhi_color_space
   CRUDE_GFX_RHI_COLOR_SPACE_MAX_ENUM_KHR = VK_COLOR_SPACE_MAX_ENUM_KHR
 } crude_gfx_rhi_color_space;
 
-typedef struct crude_gfx_rhi_surface_format
+typedef enum crude_gfx_rhi_ray_tracing_shader_group_type
 {
-  crude_gfx_rhi_format                                         format;
-  crude_gfx_rhi_color_space                                    color_space;
-} crude_gfx_rhi_surface_format;
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_NV = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_NV,
+  CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_MAX_ENUM_KHR = VK_RAY_TRACING_SHADER_GROUP_TYPE_MAX_ENUM_KHR,
+} crude_gfx_rhi_ray_tracing_shader_group_type;
+
+typedef enum crude_gfx_rhi_resolve_mode_flag_bits
+{
+  CRUDE_GFX_RHI_RESOLVE_MODE_NONE = VK_RESOLVE_MODE_NONE,
+  CRUDE_GFX_RHI_RESOLVE_MODE_SAMPLE_ZERO_BIT = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
+  CRUDE_GFX_RHI_RESOLVE_MODE_AVERAGE_BIT = VK_RESOLVE_MODE_AVERAGE_BIT,
+  CRUDE_GFX_RHI_RESOLVE_MODE_MIN_BIT = VK_RESOLVE_MODE_MIN_BIT,
+  CRUDE_GFX_RHI_RESOLVE_MODE_MAX_BIT = VK_RESOLVE_MODE_MAX_BIT,
+  CRUDE_GFX_RHI_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_BIT_ANDROID = VK_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_BIT_ANDROID,
+  CRUDE_GFX_RHI_RESOLVE_MODE_NONE_KHR = VK_RESOLVE_MODE_NONE_KHR,
+  CRUDE_GFX_RHI_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+  CRUDE_GFX_RHI_RESOLVE_MODE_AVERAGE_BIT_KHR = VK_RESOLVE_MODE_AVERAGE_BIT_KHR,
+  CRUDE_GFX_RHI_RESOLVE_MODE_MIN_BIT_KHR = VK_RESOLVE_MODE_MIN_BIT_KHR,
+  CRUDE_GFX_RHI_RESOLVE_MODE_MAX_BIT_KHR = VK_RESOLVE_MODE_MAX_BIT_KHR,
+  CRUDE_GFX_RHI_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_ANDROID = VK_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_ANDROID,
+  CRUDE_GFX_RHI_RESOLVE_MODE_FLAG_BITS_MAX_ENUM = VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM
+} crude_gfx_rhi_resolve_mode_flag_bits;
+
+typedef enum crude_gfx_rhi_attachment_load_op
+{
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_LOAD = VK_ATTACHMENT_LOAD_OP_LOAD,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_CLEAR = VK_ATTACHMENT_LOAD_OP_CLEAR,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_DONT_CARE = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_NONE = VK_ATTACHMENT_LOAD_OP_NONE,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_NONE_EXT = VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_NONE_KHR = VK_ATTACHMENT_LOAD_OP_NONE_KHR,
+  CRUDE_GFX_RHI_ATTACHMENT_LOAD_OP_MAX_ENUM = VK_ATTACHMENT_LOAD_OP_MAX_ENUM
+} crude_gfx_rhi_attachment_load_op;
+
+typedef enum crude_gfx_rhi_attachment_store_op
+{
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_STORE = VK_ATTACHMENT_STORE_OP_STORE,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_DONT_CARE = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_NONE = VK_ATTACHMENT_STORE_OP_NONE,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_NONE_KHR = VK_ATTACHMENT_STORE_OP_NONE_KHR,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_NONE_QCOM = VK_ATTACHMENT_STORE_OP_NONE_QCOM,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_NONE_EXT = VK_ATTACHMENT_STORE_OP_NONE_EXT,
+  CRUDE_GFX_RHI_ATTACHMENT_STORE_OP_MAX_ENUM = VK_ATTACHMENT_STORE_OP_MAX_ENUM
+} crude_gfx_rhi_attachment_store_op;
+
+typedef enum crude_gfx_rhi_pipeline_bind_point
+{
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_GRAPHICS = VK_PIPELINE_BIND_POINT_GRAPHICS,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_COMPUTE = VK_PIPELINE_BIND_POINT_COMPUTE,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_RAY_TRACING_KHR = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI = VK_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_DATA_GRAPH_ARM = VK_PIPELINE_BIND_POINT_DATA_GRAPH_ARM,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_RAY_TRACING_NV = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV,
+  CRUDE_GFX_RHI_PIPELINE_BIND_POINT_MAX_ENUM = VK_PIPELINE_BIND_POINT_MAX_ENUM
+} crude_gfx_rhi_pipeline_bind_point;
+
+typedef enum crude_gfx_rhi_image_aspect_flag_bits
+{
+  CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT = VK_IMAGE_ASPECT_COLOR_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_DEPTH_BIT = VK_IMAGE_ASPECT_DEPTH_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_STENCIL_BIT = VK_IMAGE_ASPECT_STENCIL_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_METADATA_BIT = VK_IMAGE_ASPECT_METADATA_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_0_BIT = VK_IMAGE_ASPECT_PLANE_0_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_1_BIT = VK_IMAGE_ASPECT_PLANE_1_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_2_BIT = VK_IMAGE_ASPECT_PLANE_2_BIT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_NONE = VK_IMAGE_ASPECT_NONE,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT = VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT = VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT = VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_0_BIT_KHR = VK_IMAGE_ASPECT_PLANE_0_BIT_KHR,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_1_BIT_KHR = VK_IMAGE_ASPECT_PLANE_1_BIT_KHR,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_PLANE_2_BIT_KHR = VK_IMAGE_ASPECT_PLANE_2_BIT_KHR,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_NONE_KHR = VK_IMAGE_ASPECT_NONE_KHR,
+  CRUDE_GFX_RHI_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM
+} crude_gfx_rhi_image_aspect_flag_bits;
 
 typedef VkBufferUsageFlags2 crude_gfx_rhi_buffer_usage_flags;
 typedef VkAccessFlags2 crude_gfx_rhi_access_flags;
 typedef VkPipelineStageFlags2 crude_gfx_rhi_pipeline_stage_flags;
+typedef VkPipelineShaderStageCreateFlagBits crude_gfx_rhi_pipeline_shader_stage_create_flags;
+typedef VkCommandBufferUsageFlags crude_gfx_rhi_command_buffer_usage_flags;
+typedef VkRenderingFlags crude_gfx_rhi_rendering_flags;
+typedef VkImageAspectFlags crude_gfx_rhi_image_aspect_flags;
+
+typedef struct crude_gfx_rhi_surface_format
+{
+  crude_gfx_rhi_format                                     format;
+  crude_gfx_rhi_color_space                                color_space;
+} crude_gfx_rhi_surface_format;
+
+typedef struct crude_gfx_rhi_command_buffer
+{
+  VkCommandBuffer                                          vk_command_buffer;
+} crude_gfx_rhi_command_buffer;
+
+typedef struct crude_gfx_rhi_buffer
+{
+  VkBuffer                                                 vk_buffer;
+} crude_gfx_rhi_buffer;
+
+typedef struct crude_gfx_rhi_image
+{
+  VkImage                                                  vk_image;
+} crude_gfx_rhi_image;
+
+typedef struct crude_gfx_rhi_image_view
+{
+  VkImageView                                              vk_image_view;
+} crude_gfx_rhi_image_view;
+
+typedef struct crude_gfx_rhi_image_view_layout
+{
+  VkImageLayout                                            vk_image_layout;
+} crude_gfx_rhi_image_view_layout;
+
+typedef struct crude_gfx_rhi_device
+{
+  VkDevice                                                 vk_device;
+} crude_gfx_rhi_device;
+
+typedef struct crude_gfx_rhi_shader_module
+{
+  VkShaderModule                                           vk_shader_module;
+} crude_gfx_rhi_shader_module;
+
+typedef struct crude_gfx_rhi_pipeline
+{
+  VkPipeline                                               vk_pipeline;
+} crude_gfx_rhi_pipeline;
+
+typedef struct crude_gfx_rhi_pipeline_layout
+{
+  VkPipelineLayout                                         vk_pipeline_layout;
+} crude_gfx_rhi_pipeline_layout;
+
+typedef struct crude_gfx_rhi_descriptor_set
+{
+  VkDescriptorSet                                          vk_descriptor_set;
+} crude_gfx_rhi_descriptor_set;
+
+typedef struct crude_gfx_rhi_image_subresource_layers
+{
+  crude_gfx_rhi_image_aspect_flags                         aspect_mask;
+  uint32                                                   mip_level;
+  uint32                                                   base_array_layer;
+  uint32                                                   layer_count;
+} crude_gfx_rhi_image_subresource_layers;
+
+typedef struct crude_gfx_rhi_image_copy
+{
+  crude_gfx_rhi_image_subresource_layers                   src_subresource;
+  XMFLOAT3                                                 src_offset;
+  crude_gfx_rhi_image_subresource_layers                   dst_subresource;
+  XMFLOAT3                                                 dst_offset;
+  XMFLOAT3                                                 extent;
+} crude_gfx_rhi_image_copy;
+
+typedef struct crude_gfx_rhi_viewport
+{
+  float32                                                  x;
+  float32                                                  y;
+  float32                                                  width;
+  float32                                                  height;
+  float32                                                  min_depth;
+  float32                                                  max_depth;
+} crude_gfx_rhi_viewport;
+
+typedef struct crude_gfx_rhi_scissor
+{
+  XMFLOAT2                                                 offset;
+  XMFLOAT2                                                 extent;
+} crude_gfx_rhi_scissor;
+
+CRUDE_API crude_gfx_rhi_image_copy
+crude_gfx_rhi_image_copy_empty
+(
+);
+
+CRUDE_API crude_gfx_rhi_viewport
+crude_gfx_rhi_viewport_empty
+(
+);
 
 CRUDE_API bool
 crude_gfx_rhi_format_has_depth_or_stencil
 ( 
-  _In_ crude_gfx_rhi_format                                    value
+  _In_ crude_gfx_rhi_format                                value
 );
 
 CRUDE_API bool
 crude_gfx_rhi_format_has_depth
 ( 
-  _In_ crude_gfx_rhi_format                                    value
+  _In_ crude_gfx_rhi_format                                value
 );
 
 CRUDE_API crude_gfx_rhi_blend_factor
@@ -522,6 +734,26 @@ crude_gfx_rhi_string_to_blend_op
 (
   _In_ char const                                         *op
 );
+
+CRUDE_API VkClearValue
+crude_gfx_rhi_clear_value_to_vk_clear_value
+(
+  _In_ crude_gfx_rhi_clear_value                           clear_value
+);
+
+CRUDE_API VkRect2D
+crude_gfx_rhi_rect_2d_to_vk_rect_2d
+(
+  _In_ crude_gfx_rhi_rect_2d                               rect2d
+);
+
+struct
+{
+  PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
+  PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
+  PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
+  PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
+} g_pfn;
 
 #elif CRUDE_GFX_NAPI
 typedef enum crude_gfx_rhi_format
@@ -977,13 +1209,6 @@ typedef enum crude_gfx_rhi_ray_tracing_shader_group_type
   CRUDE_GFX_RAY_TRACING_SHADER_GROUP_TYPE_MAX_ENUM_KHR,
 } crude_gfx_rhi_ray_tracing_shader_group_type;
 
-typedef enum crude_gfx_rhi_queue_type
-{
-  CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS,
-  CRUDE_GFX_RHI_QUEUE_TYPE_COMPUTE,
-  CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER,
-  CRUDE_GFX_RHI_QUEUE_TYPE_COUNT
-} crude_gfx_rhi_queue_type;
 
 typedef struct crude_gfx_rhi_surface_format
 {
@@ -995,6 +1220,7 @@ typedef uint64 crude_gfx_rhi_buffer_usage_flags;
 typedef uint64 crude_gfx_rhi_access_flags;
 typedef uint64 crude_gfx_rhi_pipeline_stage_flags;
 typedef uint64 crude_gfx_rhi_pipeline_shader_stage_create_flags;
+typedef uint64 crude_gfx_rhi_command_buffer_usage_flags;
 
 typedef struct crude_gfx_rhi_buffer
 {
@@ -1056,28 +1282,13 @@ typedef struct crude_gfx_rhi_command_buffer
 {
 } crude_gfx_rhi_command_buffer;
 
-typedef struct crude_gfx_rhi_shader_module
+typedef struct crude_gfx_rhi_device
 {
-} crude_gfx_rhi_shader_module;
+} crude_gfx_rhi_device;
 
-typedef union crude_gfx_rhi_clear_color_value
-{
-  float32                                                  float32[ 4 ];
-  int32                                                    int32[ 4 ];
-  uint32                                                   uint32[ 4 ];
-} crude_gfx_rhi_clear_color_value;
-
-typedef struct crude_gfx_rhi_clear_depth_stencil_value
-{
-  float32                                                  depth;
-  uint32                                                   stencil;
-} crude_gfx_rhi_clear_depth_stencil_value;
-
-typedef union crude_gfx_rhi_clear_value
-{
-  crude_gfx_rhi_clear_color_value                          color;
-  crude_gfx_rhi_clear_depth_stencil_value                  depth_stencil;
-} crude_gfx_rhi_clear_value;
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
 
 typedef struct crude_gfx_rhi_pipeline_shader_stage_create_info
 {
@@ -1097,6 +1308,37 @@ typedef struct crude_gfx_rhi_ray_tracing_shader_group_create_info
   uint32                                                   any_hit_shader;
   uint32                                                   intersection_shader;
 } crude_gfx_rhi_ray_tracing_shader_group_create_info;
+
+typedef struct crude_gfx_rhi_command_buffer_begin_info
+{
+  crude_gfx_rhi_command_buffer_usage_flags                     flags;
+} crude_gfx_rhi_command_buffer_begin_info;
+
+typedef struct crude_gfx_rhi_rendering_attachment_info
+{
+  void const                                              *next;
+  crude_gfx_rhi_image_view                                 image_view;
+  crude_gfx_rhi_image_layout                               image_layout;
+  crude_gfx_rhi_resolve_mode_flag_bits                     resolve_mode;
+  crude_gfx_rhi_image_view                                 resolve_image_view;
+  crude_gfx_rhi_image_view_layout                          resolve_image_layout;
+  crude_gfx_rhi_attachment_load_op                         load_op;
+  crude_gfx_rhi_attachment_store_op                        store_op;
+  crude_gfx_rhi_clear_value                                clear_value;
+} crude_gfx_rhi_rendering_attachment_info;
+
+typedef struct crude_gfx_rhi_rendering_info
+{
+  void const                                              *next;
+  crude_gfx_rhi_rendering_flags                            flags;
+  crude_gfx_rhi_rect_2d                                    render_area;
+  uint32                                                   layer_count;
+  uint32                                                   view_mask;
+  uint32                                                   color_attachment_count;
+  crude_gfx_rhi_rendering_attachment_info                  color_attachments[ 8 ];
+  crude_gfx_rhi_rendering_attachment_info                  depth_attachment;
+  bool                                                     has_depth_attachment;
+} crude_gfx_rhi_rendering_info;
 
 CRUDE_API bool
 crude_gfx_rhi_format_has_depth_or_stencil
@@ -1141,6 +1383,138 @@ crude_gfx_rhi_determine_pipeline_stage_flags
   _In_ crude_gfx_rhi_queue_type                            queue_type
 );
 
-#else
-CRUDE_GFX_RHI_TO_IMPLEMENTIT
-#endif
+CRUDE_API crude_gfx_rhi_command_buffer_begin_info
+crude_gfx_rhi_command_buffer_begin_info_empty
+(
+);
+
+CRUDE_API void
+crude_gfx_rhi_begin_command_buffer
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_command_buffer_begin_info const      *begin_info
+);
+
+CRUDE_API void
+crude_gfx_rhi_end_command_buffer
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_begin_rendering
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_rendering_info const                 *rendering_info
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_end_rendering
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_bind_pipeline
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_pipeline                             *rhi_pipeline,
+  _In_ crude_gfx_rhi_pipeline_bind_point                   rhi_pipeline_bind_point
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_copy_image
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_image                                *src_image,
+  _In_ crude_gfx_rhi_image_layout                          src_image_layout,
+  _In_ crude_gfx_rhi_image                                *dst_image,
+  _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
+  _In_ crude_gfx_rhi_image_copy const                     *image_copy
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_set_viewport
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_viewport const                       *viewport
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_set_scissor
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_scissor const                        *scissor
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_draw
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ uint32                                              vertex_count,
+  _In_ uint32                                              instance_count,
+  _In_ uint32                                              first_vertex,
+  _In_ uint32                                              first_instance
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_draw_indirect
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *buffer,
+  _In_ uint64                                              offset,
+  _In_ uint32                                              draw_count,
+  _In_ uint32                                              stride
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_draw_indirect_count
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *argument_buffer,
+  _In_ uint64                                              argument_buffer_offset,
+  _In_ crude_gfx_rhi_buffer                               *count_buffer,
+  _In_ uint64                                              count_buffer_offset,
+  _In_ uint32                                              max_draw_count,
+  _In_ uint32                                              stride
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_draw_mesh_task
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ uint32                                              group_count_x,
+  _In_ uint32                                              group_count_y,
+  _In_ uint32                                              group_count_z
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_buffer                               *argument_buffer,
+  _In_ uint64                                              argument_buffer_offset,
+  _In_ crude_gfx_rhi_buffer                               *count_buffer,
+  _In_ uint64                                              count_buffer_offset,
+  _In_ uint32                                              max_draw_count,
+  _In_ uint32                                              stride
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_dispatch
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ uint32                                              group_count_x,
+  _In_ uint32                                              group_count_y,
+  _In_ uint32                                              group_count_z
+);
+
+CRUDE_API void
+crude_gfx_rhi_command_buffer_bind_descriptor_sets
+(
+  _In_ crude_gfx_rhi_command_buffer                       *command_buffer,
+  _In_ crude_gfx_rhi_pipeline_bind_point                   pipeline_bind_point,
+  _In_ crude_gfx_rhi_pipeline_layout                      *pipeline_layout,
+  _In_ uint32                                              set,
+  _In_ crude_gfx_rhi_descriptor_set const                 *descriptor_set
+);
