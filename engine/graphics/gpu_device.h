@@ -123,17 +123,17 @@ typedef struct crude_gfx_device
   /**
    * Vulkan queues
    */
-  crude_gfx_rhi_queue                                      main_queue;
-  crude_gfx_rhi_queue                                      transfer_queue;
+  crude_gfx_rhi_queue                                      rhi_main_queue;
+  crude_gfx_rhi_queue                                      rhi_transfer_queue;
   uint32                                                   vk_main_queue_family;
   uint32                                                   vk_transfer_queue_family;
   /**
    * Additional data related to the swapchain.
    */
-  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
-  uint32                                                   vk_swapchain_images_count;
-  XMFLOAT2                                                 vk_swapchain_size;
-  uint32                                                   vk_swapchain_image_index;
+  crude_gfx_rhi_image                                      swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  uint32                                                   swapchain_images_count;
+  XMFLOAT2                                                 swapchain_size;
+  uint32                                                   swapchain_image_index;
   VkPresentModeKHR                                         vk_selected_present_mode;
   bool                                                     swapchain_resized_last_frame;
   crude_gfx_render_pass_output                             swapchain_output;
@@ -173,8 +173,6 @@ typedef struct crude_gfx_device
 #if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
-  
-  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
@@ -339,7 +337,7 @@ crude_gfx_generate_mipmaps
   _In_ crude_gfx_texture                                  *texture
 );
 
-CRUDE_API VkDeviceAddress
+CRUDE_API crude_gfx_rhi_device_address
 crude_gfx_get_buffer_device_address
 (
   _In_ crude_gfx_device                                   *gpu,

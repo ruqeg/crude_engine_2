@@ -222,7 +222,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier_ext2
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ VkImage                                             vk_image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
@@ -234,7 +234,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier_ext3
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_rhi_image                                *image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
@@ -263,7 +263,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier_ext5
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_rhi_image                                *image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,

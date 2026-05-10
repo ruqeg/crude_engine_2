@@ -58,7 +58,7 @@
 #define CRUDE_GFX_PRESENT_TEXTURE_NAME "editor_final"
 #endif
 
-#define CRUDE_GFX_SAMPLE_COUNT                             ( VK_SAMPLE_COUNT_16_BIT )
+#define CRUDE_GFX_SAMPLE_COUNT                             ( CRUDE_GFX_RHI_SAMPLE_COUNT_16_BIT )
 #define CRUDE_GFX_SAMPLE_RATE_SHADING                      1
 #define CRUDE_GFX_USE_NSIGHT_AFTERMATH                     0
 #if CRUDE_PRODUCTION

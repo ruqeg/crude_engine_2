@@ -682,7 +682,7 @@ typedef struct crude_gfx_technique
 
 typedef struct crude_gfx_cmd_pool
 {
-  crude_gfx_rhi_command_pool                               cmd_pool;
+  crude_gfx_rhi_command_pool                               rhi_cmd_pool;
 #if CRUDE_GFX_GPU_PROFILER
   struct
   {

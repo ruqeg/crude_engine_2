@@ -383,6 +383,88 @@ crude_gfx_rhi_queue_submit
 }
 
 void
+crude_gfx_rhi_queue_submit_simple
+(
+  _In_ crude_gfx_rhi_queue                                 queue,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_fence                                 fence
+)
+{
+  VkSubmitInfo submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo );
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.pCommandBuffers = &command_buffer.vk_command_buffer;
+  submit_info.commandBufferCount = 1u;
+
+  vkQueueSubmit( queue.vk_queue, 1, &submit_info, fence.vk_fence );
+}
+
+void
+crude_gfx_rhi_wait_for_fence
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_fence                                 fence
+)
+{
+  if ( vkGetFenceStatus( device->vk_device, fence.vk_fence ) != VK_SUCCESS )
+  {
+    vkWaitForFences( device->vk_device, 1u, &fence.vk_fence, VK_TRUE, UINT64_MAX );
+  }
+}
+
+bool
+crude_gfx_rhi_queue_present
+(
+  _In_ crude_gfx_rhi_queue                                 queue,
+  _In_ crude_gfx_rhi_semaphore                             semaphore,
+  _In_ crude_gfx_rhi_swapchain                             swapchain,
+  _Out_ uint32                                            *image_indices
+)
+{
+  VkSemaphore wait_semaphores[] = { semaphore.vk_semaphore };
+  VkSwapchainKHR swap_chains[] = { swapchain.vk_swapchain };
+
+  VkPresentInfoKHR vk_present_info = CRUDE_COMPOUNT_EMPTY( VkPresentInfoKHR );
+  vk_present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  vk_present_info.waitSemaphoreCount = 1;
+  vk_present_info.pWaitSemaphores    = wait_semaphores;
+  vk_present_info.swapchainCount     = CRUDE_COUNTOF( swap_chains );
+  vk_present_info.pSwapchains        = swap_chains;
+  vk_present_info.pImageIndices      = image_indices;
+  
+  VkResult result = vkQueuePresentKHR( queue.vk_queue, &vk_present_info );
+  return ( result != VK_ERROR_OUT_OF_DATE_KHR ) && ( result != VK_SUBOPTIMAL_KHR );
+}
+
+void
+crude_gfx_rhi_get_query_pool_results
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_query_pool                            query_pool,
+  _In_ uint32                                              first_query,
+  _In_ uint32                                              query_count,
+  _In_ uint64                                              data_size,
+  _In_ void                                               *data,
+  _In_ crude_gfx_rhi_device_size                           stride,
+  _In_ crude_gfx_rhi_query_result_flags                    flags
+)
+{
+  vkGetQueryPoolResults( device->vk_device, query_pool.vk_query_pool, first_query, query_count, data_size, data, stride, flags );
+}
+
+crude_gfx_rhi_device_address
+crude_gfx_rhi_get_buffer_device_address
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_buffer                                buffer
+)
+{
+  VkBufferDeviceAddressInfo device_address_info = CRUDE_COMPOUNT_EMPTY( VkBufferDeviceAddressInfo );
+  device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+  device_address_info.buffer = buffer.vk_buffer;
+  return g_pfn.vkGetBufferDeviceAddressKHR( device->vk_device, &device_address_info );
+}
+
+void
 crude_gfx_rhi_destroy_surface
 (
   _In_ crude_gfx_rhi_instance                              instance,
@@ -414,6 +496,257 @@ crude_gfx_rhi_destroy_instance
 )
 {
   vkDestroyInstance( instance.vk_instance, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_create_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_buffer_create_info const             *creation,
+  _Out_ crude_gfx_rhi_buffer                              *buffer
+)
+{
+  VkBufferCreateInfo                                       vk_creation;
+  VmaAllocationCreateInfo                                  vma_creation;
+  VmaAllocationInfo                                        vma_allocation_info;
+  
+  vk_creation = CRUDE_COMPOUNT_EMPTY( VkBufferCreateInfo );
+  vk_creation.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  vk_creation.size = creation->size;
+  vk_creation.usage = creation->usage;
+  
+  vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocationCreateInfo );
+  vma_creation.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+
+  if ( creation->persistent )
+  {
+    vma_creation.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  }
+
+  if ( creation->device_only )
+  {
+    vma_creation.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  }
+  else
+  {
+    vma_creation.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+  }
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateBuffer( device->vma_allocator, &vk_creation, &vma_creation, &buffer->vk_buffer, &buffer->vma_allocation, &vma_allocation_info ),  "Failed to create buffer" );
+}
+
+void
+crude_gfx_rhi_destroy_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_buffer                                buffer
+)
+{
+  vmaDestroyBuffer( device->vma_allocator, buffer.vk_buffer, buffer.vma_allocation );
+}
+
+void
+crude_gfx_rhi_map_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_buffer                                buffer,
+  _Out_ void                                             **data
+)
+{
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaMapMemory( device->vma_allocator, buffer.vma_allocation, data ), "Failed vmaMapMemory" );
+}
+
+void
+crude_gfx_rhi_unmap_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_buffer                                buffer
+)
+{
+  vmaUnmapMemory( device->vma_allocator, buffer.vma_allocation );
+}
+
+void
+crude_gfx_rhi_create_image
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image_create_info const              *creation,
+  _Out_ crude_gfx_rhi_image                               *image
+)
+{
+  VmaAllocationCreateInfo                                  vma_creation;
+  VkImageCreateInfo                                        vk_creation;
+  bool                                                     is_render_target, is_compute_used;
+
+  vk_creation = CRUDE_COMPOUNT_EMPTY( VkImageCreateInfo );
+  vk_creation.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  vk_creation.imageType = CRUDE_CAST( VkImageType, creation->image_type );
+  vk_creation.format = CRUDE_CAST( VkFormat, creation->format );
+  vk_creation.extent.width = creation->extent.x;
+  vk_creation.extent.height = creation->extent.y;
+  vk_creation.extent.depth = creation->extent.z;
+  vk_creation.mipLevels = creation->mip_levels;
+  vk_creation.arrayLayers = creation->array_layers;
+  vk_creation.tiling = CRUDE_CAST( VkImageTiling, creation->tiling );
+  vk_creation.sharingMode = CRUDE_CAST( VkSharingMode, creation->sharing_mode );
+  vk_creation.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  vk_creation.samples = CRUDE_CAST( VkSampleCountFlagBits, creation->samples );
+  vk_creation.usage = creation->usage;
+  
+  if ( creation->alias_image )
+  {
+    image->vma_allocation = 0;
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( device->vma_allocator, creation->alias_image->vma_allocation, &vk_creation, &image->vk_image ), "Failed to create aliasing image!" );
+  }
+  else
+  {
+    vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocationCreateInfo );
+    vma_creation.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateImage( device->vma_allocator, &vk_creation, &vma_creation, &image->vk_image, &image->vma_allocation, NULL ), "Failed to create image!" );
+  }
+}
+
+void
+crude_gfx_rhi_destroy_image
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image                                 image
+)
+{
+  vmaDestroyImage( device->vma_allocator, image.vk_image, image.vma_allocation );
+}
+
+void
+crude_gfx_rhi_set_image_allocation_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image                                 image,
+  _In_ char const                                         *name
+)
+{
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  vmaSetAllocationName( device->vma_allocator, image.vma_allocation, name );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+}
+
+void
+crude_gfx_rhi_set_image_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image                                 image,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_IMAGE, CRUDE_CAST( uint64, image.vk_image ), name );
+}
+
+void
+crude_gfx_rhi_create_image_view
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image_view_create_info const         *creation,
+  _Out_ crude_gfx_rhi_image_view                          *image_view
+)
+{
+  VkImageViewCreateInfo                                    vk_creation;
+  
+  vk_creation = CRUDE_COMPOUNT_EMPTY( VkImageViewCreateInfo );
+  vk_creation.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  vk_creation.flags = creation->flags;
+  vk_creation.image = creation->image.vk_image;
+  vk_creation.viewType = CRUDE_CAST( VkImageViewType, creation->view_type );
+  vk_creation.format = CRUDE_CAST( VkFormat, creation->format );
+  vk_creation.components.r = CRUDE_CAST( VkComponentSwizzle, creation->components.r );
+  vk_creation.components.g = CRUDE_CAST( VkComponentSwizzle, creation->components.g );
+  vk_creation.components.b = CRUDE_CAST( VkComponentSwizzle, creation->components.b );
+  vk_creation.components.a = CRUDE_CAST( VkComponentSwizzle, creation->components.a );
+  vk_creation.subresourceRange.aspectMask = creation->subresource_range.aspect_mask;
+  vk_creation.subresourceRange.baseArrayLayer = creation->subresource_range.base_array_layer;
+  vk_creation.subresourceRange.baseMipLevel = creation->subresource_range.base_mip_level;
+  vk_creation.subresourceRange.layerCount = creation->subresource_range.layer_count;
+  vk_creation.subresourceRange.levelCount = creation->subresource_range.level_count;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateImageView( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &image_view->vk_image_view ), "Failed to create image view!" );
+}
+
+void
+crude_gfx_rhi_destroy_image_view
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image_view                            image_view
+)
+{
+  vkDestroyImageView( device->vk_device, image_view.vk_image_view, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_set_image_view_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_image_view                            image_view,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_IMAGE_VIEW, CRUDE_CAST( uint64, image_view.vk_image_view ), name );
+}
+
+void
+crude_gfx_rhi_create_sampler
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_sampler_create_info const            *creation,
+  _Out_ crude_gfx_rhi_sampler                             *sampler
+)
+{
+  VkSamplerCreateInfo                                      vk_sampler_create_info;
+  VkSamplerReductionModeCreateInfoEXT                      create_info_reduction;
+
+  vk_sampler_create_info = CRUDE_COMPOUNT_EMPTY( VkSamplerCreateInfo );
+  vk_sampler_create_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+  vk_sampler_create_info.magFilter               = CRUDE_CAST( VkFilter, creation->mag_filter );
+  vk_sampler_create_info.minFilter               = CRUDE_CAST( VkFilter, creation->min_filter );
+  vk_sampler_create_info.mipmapMode              = CRUDE_CAST( VkSamplerMipmapMode, creation->mipmap_mode );
+  vk_sampler_create_info.addressModeU            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_u );
+  vk_sampler_create_info.addressModeV            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_v );
+  vk_sampler_create_info.addressModeW            = CRUDE_CAST( VkSamplerAddressMode, creation->address_mode_w );
+  vk_sampler_create_info.anisotropyEnable        = creation->anisotropy_enable;
+  vk_sampler_create_info.compareEnable           = creation->compare_enable;
+  vk_sampler_create_info.borderColor             = CRUDE_CAST( VkBorderColor, creation->border_color );
+  vk_sampler_create_info.unnormalizedCoordinates = creation->unnormalized_coordinates;
+  vk_sampler_create_info.minLod                  = creation->min_lod;
+  vk_sampler_create_info.maxLod                  = creation->max_lod;
+
+  create_info_reduction = CRUDE_COMPOUNT_EMPTY( VkSamplerReductionModeCreateInfoEXT );
+  create_info_reduction.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT;
+  if ( creation->reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT )
+  {
+    create_info_reduction.reductionMode = CRUDE_CAST( VkSamplerReductionMode, creation->reduction_mode );
+    vk_sampler_create_info.pNext = &create_info_reduction;
+  }
+
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSampler( device->vk_device, &vk_sampler_create_info, g_pfn.vk_allocation_callbacks, &sampler->vk_sampler ), "Failed vkCreateSampler" );  
+}
+
+void
+crude_gfx_rhi_destroy_sampler
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_sampler                               sampler
+)
+{
+  vkDestroySampler( device->vk_device, sampler.vk_sampler, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_set_sampler_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_sampler                               sampler,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_SAMPLER, CRUDE_CAST( uint64, sampler.vk_sampler ), name );
 }
 
 void
@@ -562,6 +895,16 @@ crude_gfx_rhi_destroy_fence
 }
 
 void
+crude_gfx_rhi_reset_fence
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_fence                                *fence
+)
+{
+  vkResetFences( device->vk_device, 1, &fence->vk_fence );
+}
+
+void
 crude_gfx_rhi_set_fence_debug_name
 (
   _In_ crude_gfx_rhi_device                               *device,
@@ -600,6 +943,16 @@ crude_gfx_rhi_destroy_descriptor_pool
 )
 {
   vkDestroyDescriptorPool( device->vk_device, descriptor_pool->vk_descriptor_pool, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_reset_command_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_pool                          command_pool
+)
+{
+  vkResetCommandPool( device->vk_device, command_pool.vk_command_pool, 0 );
 }
 
 void
@@ -792,7 +1145,7 @@ crude_gfx_rhi_command_buffer_draw_indirect
 (
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                buffer,
-  _In_ uint64                                              offset,
+  _In_ crude_gfx_rhi_device_size                           offset,
   _In_ uint32                                              draw_count,
   _In_ uint32                                              stride
 )
@@ -806,9 +1159,9 @@ crude_gfx_rhi_command_buffer_draw_indirect_count
 (
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                argument_buffer,
-  _In_ uint64                                              argument_buffer_offset,
+  _In_ crude_gfx_rhi_device_size                           argument_buffer_offset,
   _In_ crude_gfx_rhi_buffer                                count_buffer,
-  _In_ uint64                                              count_buffer_offset,
+  _In_ crude_gfx_rhi_device_size                           count_buffer_offset,
   _In_ uint32                                              max_draw_count,
   _In_ uint32                                              stride
 )
@@ -833,9 +1186,9 @@ crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
 (
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                argument_buffer,
-  _In_ uint64                                              argument_buffer_offset,
+  _In_ crude_gfx_rhi_device_size                           argument_buffer_offset,
   _In_ crude_gfx_rhi_buffer                                count_buffer,
-  _In_ uint64                                              count_buffer_offset,
+  _In_ crude_gfx_rhi_device_size                           count_buffer_offset,
   _In_ uint32                                              max_draw_count,
   _In_ uint32                                              stride
 )
@@ -897,7 +1250,7 @@ crude_gfx_rhi_command_buffer_pipeline_image_barrier
   vk_image_barrier.newLayout = CRUDE_CAST( VkImageLayout, image_memory_barriers->new_layout );
   vk_image_barrier.srcQueueFamilyIndex = image_memory_barriers->src_queue_family_index;
   vk_image_barrier.dstQueueFamilyIndex = image_memory_barriers->dst_queue_family_index;
-  vk_image_barrier.image = image_memory_barriers->image->vk_image;
+  vk_image_barrier.image = image_memory_barriers->image.vk_image;
   vk_image_barrier.subresourceRange.aspectMask = image_memory_barriers->subresource_range.aspect_mask;
   vk_image_barrier.subresourceRange.baseArrayLayer = image_memory_barriers->subresource_range.base_array_layer;
   vk_image_barrier.subresourceRange.baseMipLevel = image_memory_barriers->subresource_range.base_mip_level;
@@ -1072,8 +1425,8 @@ crude_gfx_rhi_command_buffer_fill_buffer
 (
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                dst_buffer,
-  _In_ uint64                                              dst_offset,
-  _In_ uint64                                              size,
+  _In_ crude_gfx_rhi_device_size                           dst_offset,
+  _In_ crude_gfx_rhi_device_size                           size,
   _In_ uint32                                              data
 )
 {
@@ -1148,6 +1501,99 @@ crude_gfx_rhi_command_buffer_reset_query_pool
 )
 {
   vkCmdResetQueryPool( command_buffer.vk_command_buffer, query_pool.vk_query_pool, first_query, query_count );
+}
+
+void
+crude_gfx_rhi_command_buffer_copy_image
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_image                                 src_image,
+  _In_ crude_gfx_rhi_image_layout                          src_image_layout,
+  _In_ crude_gfx_rhi_image                                 dst_image,
+  _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
+  _In_ crude_gfx_rhi_image_copy const                     *region
+)
+{
+  VkImageCopy                                              vk_image_copy;
+
+  vk_image_copy = CRUDE_COMPOUNT_EMPTY( VkImageCopy );
+  vk_image_copy.srcSubresource.aspectMask = region->src_subresource.aspect_mask;
+  vk_image_copy.srcSubresource.mipLevel = region->src_subresource.mip_level;
+  vk_image_copy.srcSubresource.baseArrayLayer = region->src_subresource.base_array_layer;
+  vk_image_copy.srcSubresource.layerCount = region->src_subresource.layer_count;
+  vk_image_copy.srcOffset.x = region->src_offset.x;
+  vk_image_copy.srcOffset.y = region->src_offset.y;
+  vk_image_copy.srcOffset.z = region->src_offset.z;
+  vk_image_copy.dstSubresource.aspectMask = region->dst_subresource.aspect_mask;
+  vk_image_copy.dstSubresource.mipLevel = region->dst_subresource.mip_level;
+  vk_image_copy.dstSubresource.baseArrayLayer = region->dst_subresource.base_array_layer;
+  vk_image_copy.dstSubresource.layerCount = region->dst_subresource.layer_count;
+  vk_image_copy.dstOffset.x = region->dst_offset.x;
+  vk_image_copy.dstOffset.y = region->dst_offset.y;
+  vk_image_copy.dstOffset.z = region->dst_offset.z;
+  vk_image_copy.extent.width = region->extent.x;
+  vk_image_copy.extent.height = region->extent.y;
+  vk_image_copy.extent.depth = region->extent.z;
+
+  vkCmdCopyImage(
+    command_buffer.vk_command_buffer,
+    src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ),
+    dst_image.vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ),
+    1u, &vk_image_copy );
+}
+
+void
+crude_gfx_rhi_command_buffer_blit_image
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_image                                 src_image,
+  _In_ crude_gfx_rhi_image_layout                          src_image_layout,
+  _In_ crude_gfx_rhi_image                                 dst_image,
+  _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
+  _In_ crude_gfx_rhi_image_blit const                     *region,
+  _In_ crude_gfx_rhi_filter                                filter
+)
+{
+  VkImageBlit blit_region = CRUDE_COMPOUNT_EMPTY( VkImageBlit );
+
+  blit_region.srcSubresource.aspectMask = region->src_subresource.aspect_mask;
+  blit_region.srcSubresource.mipLevel = region->src_subresource.mip_level;
+  blit_region.srcSubresource.baseArrayLayer = region->src_subresource.base_array_layer;
+  blit_region.srcSubresource.layerCount = region->src_subresource.layer_count;
+  
+  blit_region.srcOffsets[ 0 ].x = region->src_offsets[ 0 ].x;
+  blit_region.srcOffsets[ 0 ].y = region->src_offsets[ 0 ].y;
+  blit_region.srcOffsets[ 0 ].z = region->src_offsets[ 0 ].z;
+  blit_region.srcOffsets[ 1 ].x = region->src_offsets[ 1 ].x;
+  blit_region.srcOffsets[ 1 ].y = region->src_offsets[ 1 ].y;
+  blit_region.srcOffsets[ 1 ].z = region->src_offsets[ 1 ].z;
+
+  blit_region.dstSubresource.aspectMask = region->dst_subresource.aspect_mask;
+  blit_region.dstSubresource.mipLevel = region->dst_subresource.mip_level;
+  blit_region.dstSubresource.baseArrayLayer = region->dst_subresource.base_array_layer;
+  blit_region.dstSubresource.layerCount = region->dst_subresource.layer_count;
+  
+  blit_region.dstOffsets[ 0 ].x = region->dst_offsets[ 0 ].x;
+  blit_region.dstOffsets[ 0 ].y = region->dst_offsets[ 0 ].y;
+  blit_region.dstOffsets[ 0 ].z = region->dst_offsets[ 0 ].z;
+  blit_region.dstOffsets[ 1 ].x = region->dst_offsets[ 1 ].x;
+  blit_region.srcOffsets[ 1 ].y = region->src_offsets[ 1 ].y;
+  blit_region.srcOffsets[ 1 ].z = region->src_offsets[ 1 ].z;
+
+  vkCmdBlitImage( command_buffer.vk_command_buffer,
+    src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ),
+    dst_image.vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ),
+    1, &blit_region,
+    CRUDE_CAST( VkFilter, filter ) );
+}
+
+void
+crude_gfx_rhi_reset_command_buffer
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
+)
+{
+  vkResetCommandBuffer( command_buffer.vk_command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
 }
 
 #elif CRUDE_GFX_NAPI

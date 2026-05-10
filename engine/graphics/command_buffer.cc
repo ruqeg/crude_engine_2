@@ -516,7 +516,7 @@ crude_gfx_cmd_add_image_barrier
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext2( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth );
+  crude_gfx_cmd_add_image_barrier_ext2( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth );
   texture->state = new_state;
 }
 
@@ -535,7 +535,7 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext3( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
   texture->state = new_state;
 }
 
@@ -543,7 +543,7 @@ void
 crude_gfx_cmd_add_image_barrier_ext2
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
@@ -558,7 +558,7 @@ void
 crude_gfx_cmd_add_image_barrier_ext3
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
@@ -586,7 +586,7 @@ crude_gfx_cmd_add_image_barrier_ext4
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, &texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   texture->state = new_state;
 }
 
@@ -594,7 +594,7 @@ void
 crude_gfx_cmd_add_image_barrier_ext5
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_rhi_image                                *rhi_image,
+  _In_ crude_gfx_rhi_image                                 rhi_image,
   _In_ crude_gfx_rhi_resource_state                        old_state,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
@@ -612,7 +612,7 @@ crude_gfx_cmd_add_image_barrier_ext5
   crude_gfx_rhi_access_flags                               src_access_mask, dst_access_mask;
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, rhi_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, rhi_image.vk_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
   
   crude_gfx_rhi_access_flags src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
   crude_gfx_rhi_access_flags dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
