@@ -267,7 +267,7 @@ crude_gfx_texture_ready
   _In_ crude_gfx_texture_handle                            texture_handle
 );
 
-CRUDE_API VkShaderModuleCreateInfo
+CRUDE_API crude_gfx_rhi_shader_module_create_info
 crude_gfx_read_shader
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -276,7 +276,7 @@ crude_gfx_read_shader
   _In_ crude_stack_allocator                              *temporary_allocator
 );
 
-CRUDE_API VkShaderModuleCreateInfo
+CRUDE_API crude_gfx_rhi_shader_module_create_info
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,

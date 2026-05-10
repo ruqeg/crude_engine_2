@@ -560,8 +560,8 @@ typedef struct crude_gfx_descriptor_binding
 
 typedef struct crude_gfx_descriptor_set_layout
 {
-  crude_gfx_rhi_descriptor_pool                            descriptor_pool;
-  crude_gfx_rhi_descriptor_set_layout                      descriptor_set_layout;
+  crude_gfx_rhi_descriptor_pool                            rhi_descriptor_pool;
+  crude_gfx_rhi_descriptor_set_layout                      rhi_descriptor_set_layout;
   crude_gfx_rhi_descriptor_set_layout_binding             *binding;
   crude_gfx_descriptor_binding                            *bindings;
   uint8                                                    binding_to_index[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
