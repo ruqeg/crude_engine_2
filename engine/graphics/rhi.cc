@@ -1,5 +1,7 @@
 #include <engine/core/log.h>
 #include <engine/core/assert.h>
+#include <engine/core/array.h>
+#include <engine/core/string.h>
 
 #include <engine/graphics/rhi.h>
 
@@ -45,6 +47,107 @@ crude_gfx_rhi_resource_state_to_name
 }
 
 #if CRUDE_GFX_VULKAN
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+static char const *const vk_instance_required_debug_extensions[] =
+{
+  VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+};
+
+static char const *const vk_required_debug_layers[] =
+{
+  "VK_LAYER_KHRONOS_validation"
+};
+
+static VkValidationFeatureEnableEXT const vk_features_requested[ ] =
+{ 
+  VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+#if CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE
+  VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+#endif
+#if CRUDE_GFX_GPU_AV_ENABLE
+  VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+#endif
+  //VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
+};
+
+static char const *const crude_gfx_rhi_vk_device_required_extensions[] = 
+{ 
+  VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
+  VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+  VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+  VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+  VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+  VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
+  VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
+  VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
+  VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+  VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
+  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME,
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME,
+  VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
+#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+  VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+  VK_KHR_RAY_QUERY_EXTENSION_NAME,
+  VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME,
+//#if  CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED 
+//  VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME
+//#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+};
+
+static VKAPI_ATTR VkBool32
+crude_gfx_rhi_vk_debug_callback_
+(
+  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT              messageSeverity,
+  _In_ VkDebugUtilsMessageTypeFlagsEXT                     messageType,
+  _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
+  _In_ void                                               *pUserData
+);
+#endif
+
+static bool
+crude_gfx_rhi_vk_pick_physical_device_
+(
+  _In_ VkInstance                                          vk_instance,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ VkPhysicalDevice                                  *vk_selected_physical_devices,
+  _Out_ crude_gfx_rhi_physical_device_optional_extensions *vk_selected_physical_devices_optional_extenstions
+);
+
+static int32
+crude_gfx_rhi_vk_get_supported_queue_family_index_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_heap_allocator                               *allocator
+);
+
+static bool
+crude_gfx_rhi_vk_check_support_required_extensions_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_opt_ char const                                   **not_supported_extension_name
+);
+
+static bool
+crude_gfx_rhi_vk_check_swapchain_adequate_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface
+);
+
+static bool
+crude_gfx_rhi_vk_check_support_required_features_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device
+);
 
 crude_gfx_rhi_image_copy
 crude_gfx_rhi_image_copy_empty
@@ -465,6 +568,20 @@ crude_gfx_rhi_get_buffer_device_address
 }
 
 void
+crude_gfx_rhi_create_surface
+(
+  _In_ crude_gfx_rhi_instance                              instance,
+  _In_ SDL_Window                                         *window,
+  _Out_ crude_gfx_rhi_surface                             *surface
+)
+{
+  if ( !SDL_Vulkan_CreateSurface( window, instance.vk_instance, g_pfn.vk_allocation_callbacks, &surface->vk_surface ) )
+  {
+    CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
+  }
+}
+
+void
 crude_gfx_rhi_destroy_surface
 (
   _In_ crude_gfx_rhi_instance                              instance,
@@ -475,6 +592,550 @@ crude_gfx_rhi_destroy_surface
 }
 
 void
+crude_gfx_rhi_create_descriptor_set_layout
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set_layout_create_info const *creation,
+  _Out_ crude_gfx_rhi_descriptor_set_layout               *layout
+)
+{
+  VkDescriptorSetLayoutCreateInfo                          vk_creation;
+  VkDescriptorSetLayoutBinding                             vk_bindings[ 128 ];
+
+  CRUDE_ASSERT( creation->binding_count < CRUDE_COUNTOF( vk_bindings ) );
+  for ( uint32 i = 0; i < creation->binding_count; ++i )
+  {
+    vk_bindings[ i ] = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetLayoutBinding );
+    vk_bindings[ i ].binding = creation->bindings[ i ].binding;
+    vk_bindings[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, creation->bindings[ i ].descriptor_type );
+    vk_bindings[ i ].descriptorCount = creation->bindings[ i ].descriptor_count;
+    vk_bindings[ i ].stageFlags = creation->bindings[ i ].stage_flags;
+    vk_bindings[ i ].pImmutableSamplers = NULL;
+  }
+
+  if ( creation->bindless )
+  {
+    VkDescriptorBindingFlags                               vk_binding_flags[ 128 ];
+    VkDescriptorSetLayoutBindingFlagsCreateInfoEXT         vk_extended_info;
+
+    for ( uint32 i = 0; i < creation->binding_count; ++i )
+    {
+      vk_binding_flags[ i ] = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
+    }
+
+    vk_extended_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetLayoutBindingFlagsCreateInfoEXT );
+    vk_extended_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+    vk_extended_info.bindingCount = creation->binding_count;
+    vk_extended_info.pBindingFlags = vk_binding_flags;
+
+    vk_creation = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetLayoutCreateInfo );
+    vk_creation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    vk_creation.pNext = &vk_extended_info;
+    vk_creation.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
+    vk_creation.bindingCount = creation->binding_count;
+    vk_creation.pBindings = vk_bindings;
+
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &layout->vk_descriptor_set_layout ), "Failed create descriptor set layout" );
+  }
+  else
+  {
+    vk_creation = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetLayoutCreateInfo );
+    vk_creation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    vk_creation.bindingCount = creation->binding_count;
+    vk_creation.pBindings = vk_bindings;
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &layout->vk_descriptor_set_layout ), "Failed to create descriptor set layout" );
+  }
+}
+
+void
+crude_gfx_rhi_destroy_descriptor_set_layout
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set_layout                 layout
+)
+{
+  vkDestroyDescriptorSetLayout( device->vk_device, layout.vk_descriptor_set_layout, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_create_descriptor_set
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set_create_info const     *creation,
+  _Out_ crude_gfx_rhi_descriptor_set                      *descriptor_set
+)
+{
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  VkWriteDescriptorSetAccelerationStructureKHR             vk_acceleration_structure_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+#endif
+  VkWriteDescriptorSet                                     vk_descriptor_write[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorBufferInfo                                   vk_buffer_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorImageInfo                                    vk_image_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorSetAllocateInfo                              vk_descriptor_info;
+  VkDescriptorSetVariableDescriptorCountAllocateInfoEXT    vk_count_info;
+  uint32                                                   max_binding;
+
+  vk_descriptor_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetAllocateInfo );
+  vk_descriptor_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  vk_descriptor_info.descriptorPool = creation->descriptor_pool.vk_descriptor_pool;
+  vk_descriptor_info.descriptorSetCount = 1u;
+  vk_descriptor_info.pSetLayouts = &creation->descriptor_set_layout.vk_descriptor_set_layout;
+
+  if ( creation->bindless )
+  {
+    max_binding = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT - 1;
+    vk_count_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorSetVariableDescriptorCountAllocateInfoEXT );
+    vk_count_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
+    vk_count_info.descriptorSetCount = 1;
+    vk_count_info.pDescriptorCounts = &max_binding;
+
+    vk_descriptor_info.pNext = &vk_count_info;
+  }
+
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( device->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set" );
+
+  for ( uint32 i = 0; i < creation->write_descripor_sets_count; i++ )
+  {
+    vk_descriptor_write[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSet );
+    vk_descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vk_descriptor_write[ i ].pNext = NULL;
+    vk_descriptor_write[ i ].dstSet = descriptor_set->vk_descriptor_set;
+    vk_descriptor_write[ i ].dstBinding = creation->write_descripor_sets[ i ].dst_binding;
+    vk_descriptor_write[ i ].dstArrayElement = creation->write_descripor_sets[ i ].dst_array_element;
+    vk_descriptor_write[ i ].descriptorCount = creation->write_descripor_sets[ i ].descriptor_count;
+    vk_descriptor_write[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, creation->write_descripor_sets[ i ].descriptor_type );
+    vk_descriptor_write[ i ].pImageInfo = NULL;
+    vk_descriptor_write[ i ].pBufferInfo = NULL;
+    vk_descriptor_write[ i ].pTexelBufferView = NULL;
+
+    if ( creation->write_descripor_sets[ i ].image_info )
+    {
+      vk_image_info[ i ].imageLayout = CRUDE_CAST( VkImageLayout, creation->write_descripor_sets[ i ].image_info->image_layout );
+      vk_image_info[ i ].imageView = creation->write_descripor_sets[ i ].image_info->image_view.vk_image_view;
+      vk_image_info[ i ].sampler = creation->write_descripor_sets[ i ].image_info->sampler.vk_sampler;
+      
+      vk_descriptor_write[ i ].pImageInfo = &vk_image_info[ i ];
+    }
+    
+    if ( creation->write_descripor_sets[ i ].buffer_info )
+    {
+      vk_buffer_info[ i ].buffer = creation->write_descripor_sets[ i ].buffer_info->buffer.vk_buffer;
+      vk_buffer_info[ i ].offset = creation->write_descripor_sets[ i ].buffer_info->offset;
+      vk_buffer_info[ i ].range = creation->write_descripor_sets[ i ].buffer_info->range;
+      
+      vk_descriptor_write[ i ].pBufferInfo = &vk_buffer_info[ i ];
+    }
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+    if ( creation->write_descripor_sets[ i ].acceleration_info )
+    {
+      vk_descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+      
+      vk_acceleration_structure_info[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSetAccelerationStructureKHR );
+      vk_acceleration_structure_info[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+      vk_acceleration_structure_info[ i ].accelerationStructureCount = 1;
+      vk_acceleration_structure_info[ i ].pAccelerationStructures = &creation->write_descripor_sets[ i ].acceleration_info->acceleration_sturcture.vk_acceleration_structure;
+
+      vk_descriptor_write[ i ].pNext = &vk_acceleration_structure_info[ i ];
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+    }
+  }
+
+  vkUpdateDescriptorSets( device->vk_device, creation->write_descripor_sets_count, vk_descriptor_write, 0, NULL );
+}
+
+void
+crude_gfx_rhi_set_descriptor_set_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set                        descriptor_set,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_DESCRIPTOR_SET, CRUDE_CAST( uint64, descriptor_set.vk_descriptor_set ), name );
+}
+
+void
+crude_gfx_rhi_create_command_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_pool_create_info const       *creation,
+  _Out_ crude_gfx_rhi_command_pool                        *command_pool
+)
+{
+  VkCommandPoolCreateInfo                                  vk_cmd_pool_creation;
+  
+  vk_cmd_pool_creation = CRUDE_COMPOUNT_EMPTY( VkCommandPoolCreateInfo );
+  vk_cmd_pool_creation.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  vk_cmd_pool_creation.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  vk_cmd_pool_creation.queueFamilyIndex = creation->queue.vk_queue_family;
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateCommandPool( device->vk_device, &vk_cmd_pool_creation, g_pfn.vk_allocation_callbacks, &command_pool->vk_command_pool ), "Failed create command pool" );
+}
+
+void
+crude_gfx_rhi_destroy_command_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_pool                          command_pool
+)
+{
+  vkDestroyCommandPool( device->vk_device, command_pool.vk_command_pool, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_create_query_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_queru_pool_create_info const         *creation,
+  _Out_ crude_gfx_rhi_query_pool                          *query_pool
+)
+{
+  VkQueryPoolCreateInfo                                    vk_creation;
+
+  vk_creation = CRUDE_COMPOUNT_EMPTY( VkQueryPoolCreateInfo );
+  vk_creation.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+  vk_creation.queryType = CRUDE_CAST( VkQueryType, creation->query_type );
+  vk_creation.queryCount = creation->query_count;
+  vk_creation.pipelineStatistics = creation->pipeline_statistics;
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateQueryPool( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &query_pool->vk_query_pool ), "Failed create query pool" );     
+}
+
+void
+crude_gfx_rhi_destroy_query_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_query_pool                            query_pool
+)
+{
+  vkDestroyQueryPool( device->vk_device, query_pool.vk_query_pool, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_create_command_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_buffer_create_info const     *creation,
+  _Out_ crude_gfx_rhi_command_buffer                      *command_buffer
+)
+{
+  VkCommandBufferAllocateInfo                              vk_cmd_allocation_info;
+
+  vk_cmd_allocation_info = CRUDE_COMPOUNT_EMPTY( VkCommandBufferAllocateInfo );
+  vk_cmd_allocation_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  vk_cmd_allocation_info.commandPool = creation->command_pool.vk_command_pool;
+  vk_cmd_allocation_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  vk_cmd_allocation_info.commandBufferCount = 1;
+    
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( device->vk_device, &vk_cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
+}
+
+void
+crude_gfx_rhi_set_command_buffer_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_COMMAND_BUFFER, CRUDE_CAST( uint64, command_buffer.vk_command_buffer ), name );
+}
+
+void
+crude_gfx_rhi_create_device
+(
+  _In_ crude_gfx_rhi_instance                              instance,
+  _In_ crude_gfx_rhi_surface                               surface,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ crude_gfx_rhi_device                              *device
+)
+{
+  VkQueueFamilyProperties                                 *vk_queue_families;
+  char const                                              *vk_device_extensions[ 64 ];
+  void                                                    *vk_next_feature;
+  VkDeviceQueueCreateInfo                                  vk_queue_create_infos[ 2 ];
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  VkPhysicalDeviceDiagnosticsConfigFeaturesNV              physical_device_diagnostics_config_features_nv;
+#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  VkPhysicalDeviceRayTracingValidationFeaturesNV           vk_physical_device_ray_tracing_validation_features_nv;
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+  VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR       vk_physical_device_ray_tracing_position_fetch_features;
+  VkPhysicalDeviceRayQueryFeaturesKHR                      vk_physical_device_ray_query_features;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR            vk_physical_device_ray_tracing_pipeline_features;
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR         vk_physical_device_acceleration_structure_features;
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+  VkPhysicalDeviceShaderAtomicInt64Features                vk_shader_atomic_int64_features;
+  VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR vk_shader_relaxed_extended_instruction_features;
+  VkPhysicalDeviceSynchronization2Features                 vk_synchronization_features;
+  VkPhysicalDeviceDynamicRenderingFeaturesKHR              vk_dynamic_rendering_features;
+  VkPhysicalDeviceFeatures2                                vk_physical_features2;
+  VkPhysicalDeviceFragmentShadingRateFeaturesKHR           vk_device_features_fragment_shading_rate;
+  VkPhysicalDeviceVulkan11Features                         vk_device_features_vulkan11;
+  VkPhysicalDeviceVulkan12Features                         vk_device_features_vulkan12;
+  VkPhysicalDeviceMeshShaderFeaturesEXT                    vk_device_features_mesh;
+  VkDeviceCreateInfo                                       vk_device_creation;
+  VmaAllocatorCreateInfo                                   vma_creation;
+  uint32                                                   vk_queue_family_count, vk_main_queue_index, vk_transfer_queue_index, vk_compute_queue_index, vk_present_queue_index;
+  uint32                                                   vk_device_extensions_count;
+
+  crude_gfx_rhi_vk_pick_physical_device_( instance.vk_instance, surface.vk_surface, allocator, &device->vk_physical_device, &device->optional_extensions );
+
+  vk_queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties( device->vk_physical_device, &vk_queue_family_count, NULL );
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_queue_families, vk_queue_family_count, crude_heap_allocator_pack( allocator ) );
+  vkGetPhysicalDeviceQueueFamilyProperties( device->vk_physical_device, &vk_queue_family_count, vk_queue_families );
+  
+  vk_main_queue_index = UINT32_MAX;
+  vk_transfer_queue_index = UINT32_MAX;
+  vk_compute_queue_index = UINT32_MAX;
+  vk_present_queue_index = UINT32_MAX;
+
+  for ( uint32 family_index = 0; family_index < vk_queue_family_count; ++family_index )
+  {
+    VkQueueFamilyProperties                                vk_queue_family;
+
+    vk_queue_family = vk_queue_families[ family_index ];
+    
+    if ( vk_queue_family.queueCount == 0 )
+    {
+      continue;
+    }
+    
+    if ( ( vk_queue_family.queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) ) == ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT  ) )
+    {
+      vk_main_queue_index = family_index;
+    }
+
+    if ( ( vk_queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT ) == 0 && ( vk_queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT ) )
+    {
+      vk_transfer_queue_index = family_index;
+    }
+  }
+
+  float const queue_priority[] = { 1.0f };
+
+  vk_queue_create_infos[ 0 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
+  vk_queue_create_infos[ 0 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  vk_queue_create_infos[ 0 ].queueFamilyIndex = vk_main_queue_index;
+  vk_queue_create_infos[ 0 ].queueCount = 1;
+  vk_queue_create_infos[ 0 ].pQueuePriorities = queue_priority;
+  
+  if ( vk_transfer_queue_index < vk_queue_family_count )
+  {
+    vk_queue_create_infos[ 1 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
+    vk_queue_create_infos[ 1 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    vk_queue_create_infos[ 1 ].queueFamilyIndex = vk_transfer_queue_index;
+    vk_queue_create_infos[ 1 ].queueCount = 1;
+    vk_queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
+  }
+
+  vk_next_feature = NULL;
+
+  //shader_atomic_int64_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderAtomicInt64Features );
+  //shader_atomic_int64_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
+  //shader_atomic_int64_features.shaderBufferInt64Atomics = true;
+  
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  vk_physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
+  vk_physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
+  vk_physical_device_ray_tracing_position_fetch_features.pNext = vk_next_feature;
+  vk_physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = true;
+  vk_next_feature = &vk_physical_device_ray_tracing_position_fetch_features;
+
+  vk_physical_device_ray_query_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayQueryFeaturesKHR );
+  vk_physical_device_ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+  vk_physical_device_ray_query_features.pNext = vk_next_feature;
+  vk_physical_device_ray_query_features.rayQuery = true;
+  vk_next_feature = &vk_physical_device_ray_query_features;
+
+  vk_physical_device_ray_tracing_pipeline_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelineFeaturesKHR );
+  vk_physical_device_ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+  vk_physical_device_ray_tracing_pipeline_features.pNext = vk_next_feature;
+  vk_physical_device_ray_tracing_pipeline_features.rayTracingPipeline = true;
+  vk_next_feature = &vk_physical_device_ray_tracing_pipeline_features;
+  
+  vk_physical_device_acceleration_structure_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceAccelerationStructureFeaturesKHR );
+  vk_physical_device_acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+  vk_physical_device_acceleration_structure_features.pNext = vk_next_feature;
+  vk_physical_device_acceleration_structure_features.accelerationStructure = true;
+  vk_next_feature = &vk_physical_device_acceleration_structure_features;
+  
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  vk_physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
+  vk_physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
+  vk_physical_device_ray_tracing_validation_features_nv.pNext = vk_next_feature;
+  vk_physical_device_ray_tracing_validation_features_nv.rayTracingValidation = true;
+  vk_next_feature = &vk_physical_device_ray_tracing_validation_features_nv;
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+
+#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+  physical_device_diagnostics_config_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDiagnosticsConfigFeaturesNV );
+  physical_device_diagnostics_config_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
+  physical_device_diagnostics_config_features_nv.pNext = next_feature;
+  physical_device_diagnostics_config_features_nv.diagnosticsConfig = 
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV |
+    VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV;
+  next_feature = &physical_device_diagnostics_config_features_nv;
+#endif
+  
+  if ( device->optional_extensions.shader_relaxed_extended_instruction_extension_present )
+  {
+    vk_shader_relaxed_extended_instruction_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR );
+    vk_shader_relaxed_extended_instruction_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+    vk_shader_relaxed_extended_instruction_features.pNext = vk_next_feature;
+    vk_shader_relaxed_extended_instruction_features.shaderRelaxedExtendedInstruction = VK_TRUE;
+    vk_next_feature = &vk_shader_relaxed_extended_instruction_features;
+  }
+  
+  vk_synchronization_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceSynchronization2Features );
+  vk_synchronization_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+  vk_synchronization_features.pNext = vk_next_feature;
+  vk_synchronization_features.synchronization2 = VK_TRUE;
+  vk_next_feature = &vk_synchronization_features;
+
+  if ( device->optional_extensions.fragment_shading_rate_extension_present )
+  {
+    vk_device_features_fragment_shading_rate = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFragmentShadingRateFeaturesKHR );
+    vk_device_features_fragment_shading_rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+    vk_device_features_fragment_shading_rate.pNext = vk_next_feature;
+    vk_device_features_fragment_shading_rate.primitiveFragmentShadingRate = VK_TRUE;
+    vk_next_feature = &vk_device_features_fragment_shading_rate;
+  }
+
+  vk_device_features_vulkan11 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan11Features );
+  vk_device_features_vulkan11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  vk_device_features_vulkan11.storageBuffer16BitAccess = VK_TRUE;
+  vk_device_features_vulkan11.pNext = vk_next_feature;
+  vk_next_feature = &vk_device_features_vulkan11;
+
+  vk_device_features_vulkan12 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceVulkan12Features );
+  vk_device_features_vulkan12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  vk_device_features_vulkan12.drawIndirectCount = VK_TRUE;
+  vk_device_features_vulkan12.pNext = vk_next_feature;
+  vk_next_feature = &vk_device_features_vulkan12;
+  
+  if ( device->optional_extensions.mesh_shaders_extension_present )
+  {
+    vk_device_features_mesh = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceMeshShaderFeaturesEXT );
+    vk_device_features_mesh.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+    vk_device_features_mesh.pNext = vk_next_feature;
+    vk_device_features_mesh.taskShader = VK_TRUE;
+    vk_device_features_mesh.meshShader = VK_TRUE;
+    vk_device_features_mesh.multiviewMeshShader = VK_TRUE;
+    vk_device_features_mesh.primitiveFragmentShadingRateMeshShader = VK_TRUE;
+    vk_next_feature = &vk_device_features_mesh;
+  }
+  
+  vk_dynamic_rendering_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDynamicRenderingFeaturesKHR );
+  vk_dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+  vk_dynamic_rendering_features.pNext = vk_next_feature;
+  vk_next_feature = &vk_dynamic_rendering_features;
+
+  vk_physical_features2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceFeatures2 );
+  vk_physical_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  vk_physical_features2.pNext = vk_next_feature;
+#if CRUDE_GFX_SAMPLE_RATE_SHADING
+  vk_physical_features2.features.sampleRateShading = VK_TRUE;
+#endif
+  vkGetPhysicalDeviceFeatures2( device->vk_physical_device, &vk_physical_features2 );
+
+  CRUDE_ASSERT( CRUDE_COUNTOF( vk_device_extensions ) < 10 + CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ) );
+
+  vk_device_extensions_count = 0u;
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ); ++i )
+  {
+    vk_device_extensions[ vk_device_extensions_count++ ] = crude_gfx_rhi_vk_device_required_extensions[ i ];
+  }
+  
+  if ( device->optional_extensions.mesh_shaders_extension_present )
+  {
+    vk_device_extensions[ vk_device_extensions_count++ ] = VK_EXT_MESH_SHADER_EXTENSION_NAME;
+  }
+
+  if ( device->optional_extensions.fragment_shading_rate_extension_present )
+  {
+    vk_device_extensions[ vk_device_extensions_count++ ] = VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME;
+  }
+
+  if ( device->optional_extensions.deferred_host_operations_extension_present )
+  {
+    vk_device_extensions[ vk_device_extensions_count++ ] = VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
+  }
+
+  if ( device->optional_extensions.shader_relaxed_extended_instruction_extension_present )
+  {
+    vk_device_extensions[ vk_device_extensions_count++ ] = VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME;
+  }
+
+  vk_device_creation = CRUDE_COMPOUNT_EMPTY( VkDeviceCreateInfo );
+  vk_device_creation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  vk_device_creation.pNext = &vk_physical_features2;
+  vk_device_creation.flags = 0;
+  vk_device_creation.queueCreateInfoCount = CRUDE_STATIC_CAST( uint32, vk_transfer_queue_index < vk_queue_family_count ? 2 : 1 );
+  vk_device_creation.pQueueCreateInfos = vk_queue_create_infos;
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  vk_device_creation.enabledLayerCount = CRUDE_COUNTOF( vk_required_debug_layers );
+  vk_device_creation.ppEnabledLayerNames = vk_required_debug_layers;
+#endif
+  vk_device_creation.enabledExtensionCount = vk_device_extensions_count;
+  vk_device_creation.ppEnabledExtensionNames = vk_device_extensions;
+  vk_device_creation.pEnabledFeatures = NULL;
+
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDevice( device->vk_physical_device, &vk_device_creation, g_pfn.vk_allocation_callbacks, &device->vk_device ), "Failed to create logic device!" );
+  
+  gpu->vkCmdDrawMeshTasksIndirectCountEXT = ( PFN_vkCmdDrawMeshTasksIndirectCountEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksIndirectCountEXT" );
+  gpu->vkCmdDrawMeshTasksEXT = ( PFN_vkCmdDrawMeshTasksEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksEXT" );
+  gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
+  gpu->vkCmdEndRenderingKHR = ( PFN_vkCmdEndRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
+  gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
+  gpu->vkCmdPipelineBarrier2KHR = ( PFN_vkCmdPipelineBarrier2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdPipelineBarrier2KHR" );
+  gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
+  gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
+  gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  gpu->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
+  gpu->vkCreateAccelerationStructureKHR = ( PFN_vkCreateAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateAccelerationStructureKHR" );
+  gpu->vkCmdBuildAccelerationStructuresKHR = ( PFN_vkCmdBuildAccelerationStructuresKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBuildAccelerationStructuresKHR" );
+  gpu->vkGetAccelerationStructureDeviceAddressKHR = ( PFN_vkGetAccelerationStructureDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureDeviceAddressKHR" );
+  gpu->vkCreateRayTracingPipelinesKHR = ( PFN_vkCreateRayTracingPipelinesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateRayTracingPipelinesKHR" );
+  gpu->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
+  gpu->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdTraceRaysKHR" );
+  gpu->vkDestroyAccelerationStructureKHR = ( PFN_vkDestroyAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkDestroyAccelerationStructureKHR" );
+  
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+  
+  vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocatorCreateInfo );
+  vma_creation.physicalDevice = device->vk_physical_device;
+  vma_creation.device = device->vk_device;
+  vma_creation.instance = instance.vk_instance;
+  vma_creation.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &vma_creation, &device->vma_allocator ), "Failed to create vma allocator" );
+  
+  vkGetDeviceQueue( device->vk_device, vk_main_queue_index, 0u, &device->main_queue.vk_queue );
+  if ( vk_transfer_queue_index < vk_queue_family_count )
+  {
+    vkGetDeviceQueue( device->vk_device, vk_transfer_queue_index, 0u, &device->transfer_queue.vk_queue );
+  }
+  else
+  {
+    device->transfer_queue = device->main_queue;
+  }
+
+  CRUDE_ARRAY_DEINITIALIZE( vk_queue_families );
+}
+
+void
 crude_gfx_rhi_destroy_device
 (
   _In_ crude_gfx_rhi_device                               *device,
@@ -482,11 +1143,106 @@ crude_gfx_rhi_destroy_device
 )
 {
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  g_pfn.vkDestroyDebugUtilsMessengerEXT( instance.vk_instance, device->vk_debug_utils_messenger, g_pfn.vk_allocation_callbacks );
+  g_pfn.vkDestroyDebugUtilsMessengerEXT( instance.vk_instance, instance.vk_debug_utils_messenger, g_pfn.vk_allocation_callbacks );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
   vmaDestroyAllocator( device->vma_allocator );
   vkDestroyDevice( device->vk_device, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_create_instance
+(
+  _Out_ crude_gfx_rhi_instance                            *instance
+)
+{
+  VkInstanceCreateInfo                                     vk_instance_creation;
+  VkApplicationInfo                                        vk_application;
+  VkDebugUtilsMessengerCreateInfoEXT                       vk_debug_creation;
+  VkValidationFeaturesEXT                                  vk_validation_features;
+  char const                                       *const *surface_extensions_array;
+  char const                                              *instance_enabled_extensions[ 256 ];
+  uint32                                                   debug_extensions_count, instance_enabled_extension_index, surface_extensions_count;
+  
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  debug_extensions_count = CRUDE_COUNTOF( vk_instance_required_debug_extensions );
+#else
+  debug_extensions_count = 0u;
+#endif
+
+  surface_extensions_array = SDL_Vulkan_GetInstanceExtensions( &surface_extensions_count );
+
+  CRUDE_ASSERT( CRUDE_COUNTOF( instance_enabled_extensions ) < surface_extensions_count + debug_extensions_count );
+
+  instance_enabled_extension_index = 0u;
+  for ( uint32 i = 0; i < surface_extensions_count; ++i )
+  {
+    instance_enabled_extensions[ instance_enabled_extension_index++ ] = surface_extensions_array[ i ];
+  }
+  
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  for ( uint32 i = 0; i < debug_extensions_count; ++i )
+  {
+    instance_enabled_extensions[ instance_enabled_extension_index++ ] = vk_instance_required_debug_extensions[ i ];
+  }
+#endif
+
+  vk_application = CRUDE_COMPOUNT_EMPTY( VkApplicationInfo );
+  vk_application.pApplicationName = "crude_game";
+  vk_application.applicationVersion = VK_MAKE_VERSION( 1, 0, 0 );
+  vk_application.pEngineName = "crude_engine";
+  vk_application.engineVersion = VK_MAKE_VERSION( 1, 0, 0 );
+  vk_application.apiVersion = VK_API_VERSION_1_3;
+  
+  vk_instance_creation = CRUDE_COMPOUNT_EMPTY( VkInstanceCreateInfo );
+  vk_instance_creation.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  vk_instance_creation.pApplicationInfo = &vk_application;
+  vk_instance_creation.flags = 0u;
+  vk_instance_creation.ppEnabledExtensionNames = instance_enabled_extensions;
+  vk_instance_creation.enabledExtensionCount = instance_enabled_extension_index;
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  vk_instance_creation.ppEnabledLayerNames = vk_required_debug_layers;
+  vk_instance_creation.enabledLayerCount = CRUDE_COUNTOF( vk_required_debug_layers );
+
+#if VK_EXT_debug_utils
+  vk_debug_creation = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsMessengerCreateInfoEXT );
+  vk_debug_creation.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  vk_debug_creation.pNext = NULL;
+  vk_debug_creation.flags = 0u;
+  vk_debug_creation.pfnUserCallback = crude_gfx_rhi_vk_debug_callback_;
+  vk_debug_creation.pUserData = NULL;
+  vk_debug_creation.messageSeverity =
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+  vk_debug_creation.messageType =
+    VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+  vk_validation_features = CRUDE_COMPOUNT_EMPTY( VkValidationFeaturesEXT );
+  vk_validation_features.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+  vk_validation_features.pNext = &vk_debug_creation; 
+  vk_validation_features.enabledValidationFeatureCount = CRUDE_COUNTOF( vk_features_requested );
+  vk_validation_features.pEnabledValidationFeatures = vk_features_requested;
+
+  vk_instance_creation.pNext = &vk_validation_features;
+#endif /* VK_EXT_debug_utils */
+
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+  
+  g_pfn.vk_allocation_callbacks = NULL;
+
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateInstance( &vk_instance_creation, g_pfn.vk_allocation_callbacks, &instance->vk_instance ), "Failed to create instance" );
+  
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  g_pfn.vkCreateDebugUtilsMessengerEXT = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance->vk_instance, "vkCreateDebugUtilsMessengerEXT" );
+  g_pfn.vkDestroyDebugUtilsMessengerEXT = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
+
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkCreateDebugUtilsMessengerEXT( instance->vk_instance, &vk_debug_creation, g_pfn.vk_allocation_callbacks, &instance->vk_debug_utils_messenger ), "Failed to create debug utils messenger" );
+#endif
 }
 
 void
@@ -835,10 +1591,20 @@ crude_gfx_rhi_create_pipeline_layout
 }
 
 void
+crude_gfx_rhi_destroy_pipeline_layout
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_pipeline_layout                       pipeline_layout
+)
+{
+  vkDestroyPipelineLayout( device->vk_device, pipeline_layout.vk_pipeline_layout, g_pfn.vk_allocation_callbacks );
+}
+
+void
 crude_gfx_rhi_set_pipeline_layout_debug_name
 (
   _In_ crude_gfx_rhi_device                               *device,
-  _Out_ crude_gfx_rhi_pipeline_layout                      pipeline_layout,
+  _In_ crude_gfx_rhi_pipeline_layout                       pipeline_layout,
   _In_ char const                                         *name
 )
 {
@@ -857,215 +1623,139 @@ crude_gfx_rhi_create_graphics_pipeline
 
   VkGraphicsPipelineCreateInfo                             vk_pipeline_info;  
   VkPipelineInputAssemblyStateCreateInfo                   vk_input_assembly;
+  VkPipelineViewportStateCreateInfo                        vk_viewport_state;
+  VkPipelineDynamicStateCreateInfo                         vk_dynamic_state;
+  VkPipelineRenderingCreateInfoKHR                         vk_pipeline_rendering_create_info;
+  VkPipelineRasterizationStateCreateInfo                   vk_rasterizer;
+  VkPipelineMultisampleStateCreateInfo                     vk_multisampling;
+  VkPipelineDepthStencilStateCreateInfo                    vk_depth_stencil;
+  VkPipelineColorBlendStateCreateInfo                      vk_color_blending;
+  VkPipelineVertexInputStateCreateInfo                     vk_vertex_input_info;
+  VkVertexInputAttributeDescription                        vk_vertex_attributes[ 8 ];
+  VkVertexInputBindingDescription                          vk_vertex_bindings[ 8 ];
+  VkPipelineColorBlendAttachmentState                      vk_color_blend_attachment[ 8 ];
+  VkFormat                                                 vk_color_attachment_formats[ 8 ];
+  VkPipelineShaderStageCreateInfo                          vk_stages[ 8 ];
 
-    VkViewport                                             vk_viewport;
-    VkRect2D                                               vk_scissor;
-    VkPipelineViewportStateCreateInfo                      vk_viewport_state;
-    VkPipelineDynamicStateCreateInfo                       vk_dynamic_state;
-    VkPipelineRenderingCreateInfoKHR                       vk_pipeline_rendering_create_info;
-    VkPipelineRasterizationStateCreateInfo                 vk_rasterizer;
-    VkPipelineMultisampleStateCreateInfo                   vk_multisampling;
-    VkPipelineDepthStencilStateCreateInfo                  vk_depth_stencil;
-    VkPipelineColorBlendStateCreateInfo                    vk_color_blending;
-    VkPipelineVertexInputStateCreateInfo                   vk_vertex_input_info;
-    VkVertexInputAttributeDescription                      vk_vertex_attributes[ 8 ];
-    VkVertexInputBindingDescription                        vk_vertex_bindings[ 8 ];
-    VkPipelineColorBlendAttachmentState                    vk_color_blend_attachment[ 8 ];
-    crude_gfx_vertex_stream const                         *vertex_streams;
-    crude_gfx_vertex_attribute const                      *vertex_attributes;
-    uint32                                                 vertex_attributes_num, vertex_streams_num;
+  vk_vertex_input_info = CRUDE_COMPOUNT_EMPTY( VkPipelineVertexInputStateCreateInfo );
+  vk_vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    
+  for ( uint32 i = 0; i < creation->vertex_input_state->vertex_attribute_description_count; ++i )
+  {
+    vk_vertex_attributes[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputAttributeDescription );
+    vk_vertex_attributes[ i ].location = creation->vertex_input_state->vertex_attribute_descriptions[ i ].location;
+    vk_vertex_attributes[ i ].binding = creation->vertex_input_state->vertex_attribute_descriptions[ i ].binding;
+    vk_vertex_attributes[ i ].format = CRUDE_CAST( VkFormat, creation->vertex_input_state->vertex_attribute_descriptions[ i ].format );
+    vk_vertex_attributes[ i ].offset = creation->vertex_input_state->vertex_attribute_descriptions[ i ].offset;
+  }
+  vk_vertex_input_info.vertexAttributeDescriptionCount = creation->vertex_input_state->vertex_attribute_description_count;
+  vk_vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
+  
+  for ( uint32 i = 0; i < creation->vertex_input_state->vertex_binding_description_count; ++i )
+  {
+    vk_vertex_bindings[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputBindingDescription );
+    vk_vertex_bindings[ i ].binding = creation->vertex_input_state->vertex_binding_descriptions[ i ].binding;
+    vk_vertex_bindings[ i ].stride = creation->vertex_input_state->vertex_binding_descriptions[ i ].stride;
+    vk_vertex_bindings[ i ].inputRate = CRUDE_CAST( VkVertexInputRate, creation->vertex_input_state->vertex_binding_descriptions[ i ].input_rate );
+  }
+  vk_vertex_input_info.vertexBindingDescriptionCount = creation->vertex_input_state->vertex_binding_description_count;
+  vk_vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
 
-    vk_vertex_input_info = CRUDE_COMPOUNT_EMPTY( VkPipelineVertexInputStateCreateInfo );
-    vk_vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    
-    if ( creation->relfect_vertex_input )
-    {
-      vertex_attributes = shader_state->reflect.input.vertex_attributes;
-      vertex_streams = shader_state->reflect.input.vertex_streams;
-      vertex_attributes_num = CRUDE_ARRAY_LENGTH( vertex_attributes );
-      vertex_streams_num = CRUDE_ARRAY_LENGTH( vertex_streams );
-      CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_attributes ) >= vertex_attributes_num );
-      CRUDE_ASSERT( CRUDE_COUNTOF( vk_vertex_bindings ) >= vertex_streams_num );
-    }
-    else
-    {
-      vertex_attributes = creation->vertex_attributes;
-      vertex_streams = creation->vertex_streams;
-      vertex_attributes_num = creation->vertex_attributes_num;
-      vertex_streams_num = creation->vertex_streams_num;
-    }
+  vk_input_assembly = CRUDE_COMPOUNT_EMPTY( VkPipelineInputAssemblyStateCreateInfo );
+  vk_input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  vk_input_assembly.topology = CRUDE_CAST( VkPrimitiveTopology, creation->input_assembly_state->topology );
+  vk_input_assembly.primitiveRestartEnable = creation->input_assembly_state->primitive_restart_enable;
 
-    if ( vertex_attributes_num )
-    {
-      for ( uint32 i = 0; i < vertex_attributes_num; ++i )
-      {
-        vk_vertex_attributes[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputAttributeDescription );
-        vk_vertex_attributes[ i ].location = vertex_attributes[ i ].location;
-        vk_vertex_attributes[ i ].binding = vertex_attributes[ i ].binding;
-        vk_vertex_attributes[ i ].format = crude_gfx_to_vertex_format( vertex_attributes[ i ].format );
-        vk_vertex_attributes[ i ].offset = vertex_attributes[ i ].offset;
-      }
-      vk_vertex_input_info.vertexAttributeDescriptionCount = vertex_attributes_num;
-      vk_vertex_input_info.pVertexAttributeDescriptions = vk_vertex_attributes;
-    }
-    else
-    {
-      vk_vertex_input_info.vertexAttributeDescriptionCount = 0;
-      vk_vertex_input_info.pVertexAttributeDescriptions = NULL;
-    }
+  for ( uint32 i = 0; i < creation->color_blend_state->attachments_count; ++i )
+  {
+    vk_color_blend_attachment[ i ].colorWriteMask = creation->color_blend_state->attachments[ i ].color_write_mask;
+    vk_color_blend_attachment[ i ].srcColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].src_color_blend_factor );
+    vk_color_blend_attachment[ i ].dstColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].dst_color_blend_factor );
+    vk_color_blend_attachment[ i ].colorBlendOp = CRUDE_CAST( VkBlendOp, creation->color_blend_state->attachments[ i ].color_blend_op );
+    vk_color_blend_attachment[ i ].srcAlphaBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].src_alpha_blend_factor );
+    vk_color_blend_attachment[ i ].dstAlphaBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].dst_alpha_blend_factor );
+    vk_color_blend_attachment[ i ].alphaBlendOp = CRUDE_CAST( VkBlendOp, creation->color_blend_state->attachments[ i ].alpha_blend_op );
+  }
+    
+  vk_color_blending = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendStateCreateInfo );
+  vk_color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  vk_color_blending.logicOpEnable = creation->color_blend_state->logic_op_enable ? VK_TRUE : VK_FALSE;
+  vk_color_blending.logicOp = CRUDE_CAST( VkLogicOp, creation->color_blend_state->logic_op );
+  vk_color_blending.attachmentCount = creation->color_blend_state->attachments_count;
+  vk_color_blending.pAttachments = vk_color_blend_attachment;
+  vk_color_blending.blendConstants[ 0 ] = creation->color_blend_state->blend_constants[ 0 ];
+  vk_color_blending.blendConstants[ 1 ] = creation->color_blend_state->blend_constants[ 1 ];
+  vk_color_blending.blendConstants[ 2 ] = creation->color_blend_state->blend_constants[ 2 ];
+  vk_color_blending.blendConstants[ 3 ] = creation->color_blend_state->blend_constants[ 3 ];
+    
+  vk_depth_stencil = CRUDE_COMPOUNT_EMPTY( VkPipelineDepthStencilStateCreateInfo );
+  vk_depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  vk_depth_stencil.depthTestEnable = creation->depth_stencil_state->depth_test_enable ? VK_TRUE : VK_FALSE;
+  vk_depth_stencil.depthWriteEnable = creation->depth_stencil_state->depth_write_enable ? VK_TRUE : VK_FALSE;
+  vk_depth_stencil.depthCompareOp = CRUDE_CAST( VkCompareOp, creation->depth_stencil_state->depth_compare_op );
+  vk_depth_stencil.stencilTestEnable = creation->depth_stencil_state->stencil_test_enable ? VK_TRUE : VK_FALSE;
 
-    if ( vertex_streams_num )
-    {
-      for ( uint32 i = 0; i < vertex_streams_num; ++i )
-      {
-        vk_vertex_bindings[ i ] = CRUDE_COMPOUNT_EMPTY( VkVertexInputBindingDescription );
-        vk_vertex_bindings[ i ].binding = vertex_streams[ i ].binding;
-        vk_vertex_bindings[ i ].stride = vertex_streams[ i ].stride;
-        vk_vertex_bindings[ i ].inputRate = vertex_streams[ i ].input_rate == CRUDE_GFX_VERTEX_INPUT_RATE_PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-      }
-      vk_vertex_input_info.vertexBindingDescriptionCount = vertex_streams_num;
-      vk_vertex_input_info.pVertexBindingDescriptions = vk_vertex_bindings;
-    }
-    else
-    {
-      vk_vertex_input_info.vertexBindingDescriptionCount = 0;
-      vk_vertex_input_info.pVertexBindingDescriptions = NULL;
-    }
+  vk_multisampling = CRUDE_COMPOUNT_EMPTY( VkPipelineMultisampleStateCreateInfo );
+  vk_multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  vk_multisampling.rasterizationSamples = CRUDE_CAST( VkSampleCountFlagBits, creation->multisample_state->rasterization_samples );
+  vk_multisampling.pSampleMask = NULL;
+  vk_multisampling.alphaToCoverageEnable = creation->multisample_state->alpha_to_coverage_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.alphaToOneEnable = creation->multisample_state->alpha_to_one_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.sampleShadingEnable = creation->multisample_state->sample_shading_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.minSampleShading = creation->multisample_state->min_sample_shading;
     
-    vk_input_assembly = CRUDE_COMPOUNT_EMPTY( VkPipelineInputAssemblyStateCreateInfo );
-    vk_input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    vk_input_assembly.topology = creation->topology;
-    vk_input_assembly.primitiveRestartEnable = VK_FALSE;
+  vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
+  vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  vk_rasterizer.depthClampEnable = creation->rasterization_state->depth_clamp_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.rasterizerDiscardEnable = creation->rasterization_state->rasterizer_discard_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.polygonMode = CRUDE_CAST( VkPolygonMode, creation->rasterization_state->polygon_mode );
+  vk_rasterizer.cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization_state->cull_mode );
+  vk_rasterizer.frontFace = CRUDE_CAST( VkFrontFace, creation->rasterization_state->front_face );
+  vk_rasterizer.depthBiasEnable = creation->rasterization_state->depth_bias_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.depthBiasConstantFactor = creation->rasterization_state->depth_bias_constant_factor;
+  vk_rasterizer.depthBiasClamp = creation->rasterization_state->depth_bias_clamp;
+  vk_rasterizer.depthBiasSlopeFactor = creation->rasterization_state->depth_bias_slope_factor;
+  vk_rasterizer.lineWidth = creation->rasterization_state->line_width;
+    
+  vk_viewport_state = CRUDE_COMPOUNT_EMPTY( VkPipelineViewportStateCreateInfo ); 
+  vk_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  vk_viewport_state.viewportCount = creation->viewport_state->viewport_count;
+  vk_viewport_state.scissorCount = creation->viewport_state->scissor_count;
+    
+  vk_dynamic_state = CRUDE_COMPOUNT_EMPTY( VkPipelineDynamicStateCreateInfo ); 
+  vk_dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  vk_dynamic_state.dynamicStateCount = CRUDE_COUNTOF( vk_dynamic_states );
+  vk_dynamic_state.pDynamicStates = vk_dynamic_states;
+    
+  CRUDE_ASSERT( creation->rendering_state->color_attachment_count < CRUDE_COUNTOF( vk_color_attachment_formats ) );
+  for ( uint32 i = 0; i < creation->rendering_state->color_attachment_count; ++i )
+  {
+    vk_color_attachment_formats[ i ] = CRUDE_CAST( VkFormat, creation->rendering_state->color_attachment_formats[ i ] );
+  }
 
-    if ( creation->blend_state.active_states )
-    {
-      for ( uint32 i = 0; i < creation->blend_state.active_states; ++i )
-      {
-        crude_gfx_blend_state const *blend_state = &creation->blend_state.blend_states[i];
-    
-        vk_color_blend_attachment[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        vk_color_blend_attachment[i].blendEnable = blend_state->blend_enabled ? VK_TRUE : VK_FALSE;
-        vk_color_blend_attachment[i].srcColorBlendFactor = blend_state->source_color;
-        vk_color_blend_attachment[i].dstColorBlendFactor = blend_state->destination_color;
-        vk_color_blend_attachment[i].colorBlendOp = blend_state->color_operation;
-        
-        if ( blend_state->separate_blend )
-        {
-          vk_color_blend_attachment[i].srcAlphaBlendFactor = blend_state->source_alpha;
-          vk_color_blend_attachment[i].dstAlphaBlendFactor = blend_state->destination_alpha;
-          vk_color_blend_attachment[i].alphaBlendOp = blend_state->alpha_operation;
-        }
-        else
-        {
-          vk_color_blend_attachment[i].srcAlphaBlendFactor = blend_state->source_color;
-          vk_color_blend_attachment[i].dstAlphaBlendFactor = blend_state->destination_color;
-          vk_color_blend_attachment[i].alphaBlendOp = blend_state->color_operation;
-        }
-      }
-    }
-    else
-    {
-      memset( &vk_color_blend_attachment, 0u, creation->render_pass_output.num_color_formats * sizeof( vk_color_blend_attachment[ 0 ] ) );
-      for ( uint32 i = 0; i < creation->render_pass_output.num_color_formats; ++i )
-      {
-        vk_color_blend_attachment[ i ].blendEnable = VK_FALSE;
-        vk_color_blend_attachment[ i ].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-      }
-    }
-    
-    vk_color_blending = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendStateCreateInfo );
-    vk_color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    vk_color_blending.logicOpEnable = VK_FALSE;
-    vk_color_blending.logicOp = VK_LOGIC_OP_COPY;
-    vk_color_blending.attachmentCount = creation->blend_state.active_states ? creation->blend_state.active_states : creation->render_pass_output.num_color_formats;
-    vk_color_blending.pAttachments = vk_color_blend_attachment;
-    vk_color_blending.blendConstants[ 0 ] = 0.0f;
-    vk_color_blending.blendConstants[ 1 ] = 0.0f;
-    vk_color_blending.blendConstants[ 2 ] = 0.0f;
-    vk_color_blending.blendConstants[ 3 ] = 0.0f;
-    
-    vk_depth_stencil = CRUDE_COMPOUNT_EMPTY( VkPipelineDepthStencilStateCreateInfo );
-    vk_depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    vk_depth_stencil.depthTestEnable = creation->depth_stencil.depth_enable ? VK_TRUE : VK_FALSE;
-    vk_depth_stencil.depthWriteEnable = creation->depth_stencil.depth_write_enable ? VK_TRUE : VK_FALSE;
-    vk_depth_stencil.depthCompareOp = creation->depth_stencil.depth_comparison;
-    vk_depth_stencil.stencilTestEnable = creation->depth_stencil.stencil_enable ? VK_TRUE : VK_FALSE;
-    
-    if ( creation->depth_stencil.stencil_enable )
-    {
-      CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "TODO creation->depth_stencil.stencil_enable" );
-    }
-    
-    vk_multisampling = CRUDE_COMPOUNT_EMPTY( VkPipelineMultisampleStateCreateInfo );
-    vk_multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    vk_multisampling.rasterizationSamples = creation->multisample.enabled ? CRUDE_GFX_SAMPLE_COUNT : VK_SAMPLE_COUNT_1_BIT;
-    vk_multisampling.pSampleMask = NULL;
-    vk_multisampling.alphaToCoverageEnable = VK_FALSE;
-    vk_multisampling.alphaToOneEnable = VK_FALSE;
-    if ( creation->multisample.enabled )
-    {
-#if CRUDE_GFX_SAMPLE_RATE_SHADING
-      vk_multisampling.sampleShadingEnable = VK_TRUE;
-      vk_multisampling.minSampleShading = 0.2f;
-#endif
-    }
-    else
-    {
-      vk_multisampling.sampleShadingEnable = VK_FALSE;
-      vk_multisampling.minSampleShading = 1.0f;
-    }
-    
-    vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
-    vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    vk_rasterizer.depthClampEnable = VK_FALSE;
-    vk_rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    vk_rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    vk_rasterizer.cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization.cull_mode );
-    vk_rasterizer.frontFace = creation->rasterization.front;
-    vk_rasterizer.depthBiasEnable = VK_FALSE;
-    vk_rasterizer.depthBiasConstantFactor = 0.0f;
-    vk_rasterizer.depthBiasClamp = 0.0f;
-    vk_rasterizer.depthBiasSlopeFactor = 0.0f;
-    vk_rasterizer.lineWidth = 1.0f;
-    
-    vk_viewport = CRUDE_COMPOUNT_EMPTY( VkViewport );
-    vk_viewport.x = 0.0f;
-    vk_viewport.y = 0.0f;
-    vk_viewport.width = CRUDE_STATIC_CAST( float32, gpu->renderer_size.x );
-    vk_viewport.height = CRUDE_STATIC_CAST( float32, gpu->renderer_size.y );
-    vk_viewport.minDepth = 0.0f;
-    vk_viewport.maxDepth = 1.0f;
-    
-    vk_scissor = CRUDE_COMPOUNT_EMPTY( VkRect2D );
-    vk_scissor.offset = { 0, 0 };
-    vk_scissor.extent.width = gpu->renderer_size.x;
-    vk_scissor.extent.height = gpu->renderer_size.y;
-
-    vk_viewport_state = CRUDE_COMPOUNT_EMPTY( VkPipelineViewportStateCreateInfo ); 
-    vk_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    vk_viewport_state.viewportCount = 1;
-    vk_viewport_state.pViewports = &vk_viewport;
-    vk_viewport_state.scissorCount = 1;
-    vk_viewport_state.pScissors = &vk_scissor;
-    
-    vk_dynamic_state = CRUDE_COMPOUNT_EMPTY( VkPipelineDynamicStateCreateInfo ); 
-    vk_dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    vk_dynamic_state.dynamicStateCount = CRUDE_COUNTOF( vk_dynamic_states );
-    vk_dynamic_state.pDynamicStates = vk_dynamic_states;
-    
   vk_pipeline_rendering_create_info = CRUDE_COMPOUNT_EMPTY( VkPipelineRenderingCreateInfoKHR );
   vk_pipeline_rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
-  vk_pipeline_rendering_create_info.viewMask = 0;
-  vk_pipeline_rendering_create_info.colorAttachmentCount = creation->render_pass_output.num_color_formats;
-  vk_pipeline_rendering_create_info.pColorAttachmentFormats = creation->render_pass_output.num_color_formats > 0 ? creation->render_pass_output.color_formats : NULL;
-  vk_pipeline_rendering_create_info.depthAttachmentFormat = creation->render_pass_output.depth_stencil_format;
-  vk_pipeline_rendering_create_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-    
+  vk_pipeline_rendering_create_info.viewMask = creation->rendering_state->view_mask;
+  vk_pipeline_rendering_create_info.colorAttachmentCount = creation->rendering_state->color_attachment_count;
+  vk_pipeline_rendering_create_info.pColorAttachmentFormats = vk_color_attachment_formats;
+  vk_pipeline_rendering_create_info.depthAttachmentFormat = CRUDE_CAST( VkFormat, creation->rendering_state->depth_attachment_format );
+  vk_pipeline_rendering_create_info.stencilAttachmentFormat = CRUDE_CAST( VkFormat, creation->rendering_state->stencil_attachment_format );
+  
+  CRUDE_ASSERT( creation->stage_count < CRUDE_COUNTOF( vk_stages ) );
+  for ( uint32 i = 0; i < creation->stage_count; ++i )
+  {
+    vk_stages[ i ] = CRUDE_COMPOUNT_EMPTY( VkPipelineShaderStageCreateInfo );
+    vk_stages[ i ].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vk_stages[ i ].module = creation->stages[ i ].rhi_module.vk_shader_module;
+    vk_stages[ i ].stage  = CRUDE_CAST( VkShaderStageFlagBits, creation->stages[ i ].stage );
+    vk_stages[ i ].pName  = creation->stages[ i ].name;
+  }
+
   vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkGraphicsPipelineCreateInfo );
   vk_pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   vk_pipeline_info.pNext = &vk_pipeline_rendering_create_info;
-  vk_pipeline_info.stageCount = shader_state->active_shaders;
-  vk_pipeline_info.pStages = shader_state->shader_stage_info;
+  vk_pipeline_info.stageCount = creation->stage_count;
+  vk_pipeline_info.pStages = vk_stages;
   vk_pipeline_info.pVertexInputState = &vk_vertex_input_info;
   vk_pipeline_info.pInputAssemblyState = &vk_input_assembly;
   vk_pipeline_info.pViewportState = &vk_viewport_state;
@@ -1074,10 +1764,184 @@ crude_gfx_rhi_create_graphics_pipeline
   vk_pipeline_info.pDepthStencilState = &vk_depth_stencil;
   vk_pipeline_info.pColorBlendState = &vk_color_blending;
   vk_pipeline_info.pDynamicState = &vk_dynamic_state;
-  vk_pipeline_info.layout = pipeline->vk_pipeline_layout;
+  vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
   vk_pipeline_info.renderPass = NULL;
     
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create graphics pipeline" );
+}
+
+void
+crude_gfx_rhi_create_compute_pipeline
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_compute_pipeline_create_info const   *creation,
+  _Out_ crude_gfx_rhi_pipeline                            *pipeline
+)
+{
+  VkComputePipelineCreateInfo                            vk_pipeline_info;
+  
+  vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkComputePipelineCreateInfo );
+  vk_pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  vk_pipeline_info.stage.pName = creation->stage.name;
+  vk_pipeline_info.stage.module = creation->stage.rhi_module.vk_shader_module;
+  vk_pipeline_info.stage.stage = CRUDE_CAST( VkShaderStageFlagBits, creation->stage.stage );
+  vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateComputePipelines( device->vk_device, VK_NULL_HANDLE, 1u, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create copmute pipeline" );
+}
+
+void
+crude_gfx_rhi_create_ray_tracing_pipeline
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_ray_tracing_pipeline_create_info const *creation,
+  _Out_ crude_gfx_rhi_pipeline                            *pipeline
+)
+{
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  VkRayTracingPipelineCreateInfoKHR                        vk_pipeline_info;
+  VkPipelineShaderStageCreateInfo                          vk_stages[ 8 ];
+  VkRayTracingShaderGroupCreateInfoKHR                     vk_groups[ 8 ];
+
+  CRUDE_ASSERT( creation->stage_count < CRUDE_COUNTOF( vk_stages ) );
+  for ( uint32 i = 0; i < creation->stage_count; ++i )
+  {
+    vk_stages[ i ] = CRUDE_COMPOUNT_EMPTY( VkPipelineShaderStageCreateInfo );
+    vk_stages[ i ].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vk_stages[ i ].module = creation->stages[ i ].rhi_module.vk_shader_module;
+    vk_stages[ i ].stage  = CRUDE_CAST( VkShaderStageFlagBits, creation->stages[ i ].stage );
+    vk_stages[ i ].pName  = creation->stages[ i ].name;
+  }
+
+  CRUDE_ASSERT( creation->group_count < CRUDE_COUNTOF( vk_groups ) );
+  for ( uint32 i = 0; i < creation->group_count; ++i )
+  {
+    vk_groups[ i ] = CRUDE_COMPOUNT_EMPTY( VkRayTracingShaderGroupCreateInfoKHR );
+    vk_groups[ i ].sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+    vk_groups[ i ].anyHitShader = creation->groups[ i ].any_hit_shader;
+    vk_groups[ i ].closestHitShader = creation->groups[ i ].closest_hit_shader;
+    vk_groups[ i ].generalShader = creation->groups[ i ].general_shader;
+    vk_groups[ i ].intersectionShader = creation->groups[ i ].intersection_shader;
+    vk_groups[ i ].type = CRUDE_CAST( VkRayTracingShaderGroupTypeKHR, creation->groups[ i ].type );
+  }
+
+  vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkRayTracingPipelineCreateInfoKHR );
+  vk_pipeline_info.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+  vk_pipeline_info.stageCount = creation->stage_count;
+  vk_pipeline_info.pStages = vk_stages;
+  vk_pipeline_info.groupCount = creation->group_count;
+  vk_pipeline_info.pGroups = vk_groups;
+  vk_pipeline_info.maxPipelineRayRecursionDepth = creation->max_pipeline_ray_recursion_depth;
+  vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkCreateRayTracingPipelinesKHR( device->vk_device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+}
+
+void
+crude_gfx_rhi_destroy_pipeline
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_pipeline                              pipeline
+)
+{
+  vkDestroyPipeline( device->vk_device, pipeline.vk_pipeline, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_get_ray_tracing_shader_group_handles
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_pipeline                              pipeline,
+  _In_ uint32                                              first_group,
+  _In_ uint32                                              group_count,
+  _In_ uint32                                              data_size,
+  _Out_ void                                              *data
+)
+{
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkGetRayTracingShaderGroupHandlesKHR( device->vk_device, pipeline.vk_pipeline, first_group, group_count, data_size, data ), "Failed to get ray tracing shader group handles" );
+}
+
+void
+crude_gfx_rhi_set_pipeline_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_pipeline                              pipeline,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_PIPELINE, CRUDE_CAST( uint64, pipeline.vk_pipeline ), name );
+}
+
+void
+crude_gfx_rhi_create_swapchain
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_swapchain_create_info const          *creation,
+  _Out_ crude_gfx_rhi_swapchain                           *swapchain
+)
+{
+  VkSwapchainCreateInfoKHR                                 vk_swapchain_creation;
+
+  vk_swapchain_creation = CRUDE_COMPOUNT_EMPTY( VkSwapchainCreateInfoKHR );
+  vk_swapchain_creation.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  vk_swapchain_creation.pNext = NULL;
+  vk_swapchain_creation.surface = creation->surface.vk_surface;
+  vk_swapchain_creation.minImageCount = creation->min_images_count;
+  vk_swapchain_creation.imageFormat = CRUDE_CAST( VkFormat, creation->image_format );
+  vk_swapchain_creation.imageColorSpace = CRUDE_CAST( VkColorSpaceKHR, creation->image_color_space );
+  vk_swapchain_creation.imageExtent.width = creation->image_extent.x;
+  vk_swapchain_creation.imageExtent.height = creation->image_extent.y;
+  vk_swapchain_creation.imageArrayLayers = 1;
+  vk_swapchain_creation.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  vk_swapchain_creation.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // MAYBE VK_SHARING_MODE_EXCLUSIVE ?;
+  vk_swapchain_creation.queueFamilyIndexCount = 1u;
+  vk_swapchain_creation.pQueueFamilyIndices = &device->main_queue.vk_queue_family;
+  vk_swapchain_creation.preTransform = CRUDE_CAST( VkSurfaceTransformFlagBitsKHR, creation->pre_transform );
+  vk_swapchain_creation.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  vk_swapchain_creation.presentMode = CRUDE_CAST( VkPresentModeKHR, creation->present_mode );
+  vk_swapchain_creation.clipped = VK_TRUE;
+  vk_swapchain_creation.oldSwapchain = VK_NULL_HANDLE;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( device->vk_device, &vk_swapchain_creation, g_pfn.vk_allocation_callbacks, &swapchain->vk_swapchain ), "Failed to create swapchain!" );
+}
+
+void
+crude_gfx_rhi_destroy_swapchain
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_swapchain                             swapchain
+)
+{
+  vkDestroySwapchainKHR( device->vk_device, swapchain.vk_swapchain, g_pfn.vk_allocation_callbacks );
+}
+
+void
+crude_gfx_rhi_destroy_surface
+(
+  _In_ crude_gfx_rhi_instance                              instance,
+  _In_ crude_gfx_rhi_surface                               surface
+)
+{
+  vkDestroySurfaceKHR( instance.vk_instance, surface.vk_surface, g_pfn.vk_allocation_callbacks );
+}
+
+crude_gfx_rhi_queue*
+crude_gfx_rhi_device_get_graphics_queue
+(
+  _In_ crude_gfx_rhi_device                               *device
+)
+{
+  return &device->main_queue;
+}
+
+crude_gfx_rhi_queue*
+crude_gfx_rhi_device_get_transfer_queue
+(
+  _In_ crude_gfx_rhi_device                               *device
+)
+{
+  return &device->transfer_queue;
 }
 
 void
@@ -1097,6 +1961,35 @@ crude_gfx_rhi_wait_semaphore
   vk_semaphore_wait_info.pValues = &value;
   
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkWaitSemaphores( device->vk_device, &vk_semaphore_wait_info, UINT64_MAX ), "Failed vkWaitSemaphores" );
+}
+
+XMFLOAT2
+crude_gfx_rhi_get_surface_extent
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_surface                               surface
+)
+{
+  XMFLOAT2                                                 swapchain_extent;
+  VkSurfaceCapabilitiesKHR                                 vk_surface_capabilities;
+
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( device->vk_physical_device, surface.vk_surface, &vk_surface_capabilities );
+  
+  swapchain_extent.x = vk_surface_capabilities.currentExtent.width;
+  swapchain_extent.y = vk_surface_capabilities.currentExtent.height;
+
+  return swapchain_extent;
+}
+
+crude_gfx_rhi_surface_transform_flag_bits
+crude_gfx_rhi_get_surface_transform
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_surface                               surface
+)
+{
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( device->vk_physical_device, surface.vk_surface, &vk_surface_capabilities );
+  return CRUDE_CAST( crude_gfx_rhi_surface_transform_flag_bits, surface_capabilities.currentTransform );
 }
 
 bool
@@ -1122,41 +2015,6 @@ crude_gfx_rhi_wait_idle
 )
 {
   vkDeviceWaitIdle( device->vk_device );
-}
-
-void
-crude_gfx_rhi_update_descriptor_sets
-(
-  _In_ crude_gfx_rhi_device                               *device,
-  _In_ uint32                                              descriptor_write_count,
-  _In_ crude_gfx_rhi_write_descriptor_set const           *descriptor_writes
-)
-{
-  VkWriteDescriptorSet                                     vk_descriptor_writes[ 2048 ];
-  VkDescriptorImageInfo                                    vk_image_info[ 2048 ];
-  uint32                                                   current_write_index;
-
-  CRUDE_ASSERT( descriptor_write_count < CRUDE_COUNTOF( vk_descriptor_writes ) );
-
-  for ( int32 i = 0u; i < descriptor_write_count; ++i )
-  {
-    vk_image_info[ i ].imageLayout = CRUDE_CAST( VkImageLayout, descriptor_writes[ i ].image_info.image_layout );
-    vk_image_info[ i ].imageView = descriptor_writes[ i ].image_info.image_view.vk_image_view;
-    vk_image_info[ i ].sampler = descriptor_writes[ i ].image_info.sampler.vk_sampler;
-
-    vk_descriptor_writes[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    vk_descriptor_writes[ i ].pNext = NULL;
-    vk_descriptor_writes[ i ].dstSet = descriptor_writes[ i ].descriptor_set.vk_descriptor_set;
-    vk_descriptor_writes[ i ].dstBinding = descriptor_writes[ i ].dst_binding;
-    vk_descriptor_writes[ i ].dstArrayElement = descriptor_writes[ i ].dst_array_element;
-    vk_descriptor_writes[ i ].descriptorCount = descriptor_writes[ i ].descriptor_count;
-    vk_descriptor_writes[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, descriptor_writes[ i ].descriptor_type );
-    vk_descriptor_writes[ i ].pImageInfo = &vk_image_info[ i ];
-    vk_descriptor_writes[ i ].pBufferInfo = NULL;
-    vk_descriptor_writes[ i ].pTexelBufferView = NULL;
-  }
-
-  vkUpdateDescriptorSets( device->vk_device, descriptor_write_count, vk_descriptor_writes, 0, NULL );
 }
 
 void
@@ -1927,6 +2785,289 @@ crude_gfx_rhi_reset_command_buffer
   vkResetCommandBuffer( command_buffer.vk_command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
 }
 
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+VKAPI_ATTR VkBool32
+crude_gfx_rhi_vk_debug_callback_
+(
+  _In_ VkDebugUtilsMessageSeverityFlagBitsEXT              messageSeverity,
+  _In_ VkDebugUtilsMessageTypeFlagsEXT                     messageType,
+  _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
+  _In_ void                                               *pUserData
+)
+{
+  if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
+  }
+  else if ( messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT )
+  {
+    CRUDE_LOG_WARNING( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
+  }
+  //else if ( pCallbackData->pMessageIdName && strcmp( "WARNING-DEBUG-PRINTF", pCallbackData->pMessageIdName ) == 0 ) // !TODO
+  //{
+  //  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "%s", pCallbackData->pMessage );
+  //}
+  return VK_FALSE;
+}
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+
+bool
+crude_gfx_rhi_vk_pick_physical_device_
+(
+  _In_ VkInstance                                          vk_instance,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ VkPhysicalDevice                                  *vk_selected_physical_devices,
+  _Out_ crude_gfx_rhi_physical_device_optional_extensions *vk_selected_physical_devices_optional_extenstions
+)
+{
+  VkExtensionProperties                                   *vk_available_extensions;
+  uint32                                                   vk_available_extensions_count;
+  VkPhysicalDevice                                         vk_available_physical_devices[ 8 ];
+  VkPhysicalDeviceProperties                               vk_selected_physical_properties;
+  uint32                                                   vk_available_physical_devices_count;
+
+  vkEnumeratePhysicalDevices( vk_instance, &vk_available_physical_devices_count, NULL );
+  
+  if ( vk_available_physical_devices_count == 0u ) 
+  {
+    return false;
+  }
+
+  CRUDE_ASSERT( vk_available_physical_devices_count < CRUDE_COUNTOF( vk_available_physical_devices ) );
+  
+  vkEnumeratePhysicalDevices( vk_instance, &vk_available_physical_devices_count, vk_available_physical_devices );
+  
+  *vk_selected_physical_devices = VK_NULL_HANDLE;
+  for ( uint32 try_picking = 0; try_picking < 2; ++try_picking )
+  {
+    bool looking_for_discrete_gpu = ( try_picking == 0 );
+    bool looking_for_any_gpu = ( try_picking == 1 );
+
+    for ( uint32 i = 0; i < vk_available_physical_devices_count; ++i )
+    {
+      char const                                            *not_supported_extension_name;
+      VkPhysicalDeviceProperties                             vk_current_physical_properties;
+      VkPhysicalDevice                                       vk_current_physical_device;
+      int32                                                  vk_queue_family_index;
+
+      vk_current_physical_device = vk_available_physical_devices[ i ];
+      vkGetPhysicalDeviceProperties( vk_current_physical_device, &vk_current_physical_properties );
+      
+      not_supported_extension_name = "";
+
+      if ( looking_for_discrete_gpu )
+      {
+        if ( vk_current_physical_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU )
+        {
+          continue;
+        }
+      }
+
+      if ( !crude_gfx_rhi_vk_check_support_required_extensions_( vk_current_physical_device, allocator, &not_supported_extension_name ) )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested extension \"%s\"!", vk_current_physical_properties.deviceName ? vk_current_physical_properties.deviceName : "Unknown", not_supported_extension_name ? not_supported_extension_name : "" );
+        continue;
+      }
+      if ( !crude_gfx_rhi_vk_check_swapchain_adequate_( vk_current_physical_device, vk_surface ) )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested swap chain adequate!", vk_current_physical_properties.deviceName ? vk_current_physical_properties.deviceName : "Unknown" );
+        continue;
+      }
+      if ( !crude_gfx_rhi_vk_check_support_required_features_( vk_current_physical_device ) )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested swap chain adequate!", vk_current_physical_properties.deviceName ? vk_current_physical_properties.deviceName : "Unknown" );
+        continue;
+      }
+      
+      vk_queue_family_index = crude_gfx_rhi_vk_get_supported_queue_family_index_( vk_current_physical_device, vk_surface, allocator ); 
+      if ( vk_queue_family_index == -1 )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%s physical device doesn't support requested queue family indices!", vk_current_physical_properties.deviceName ? vk_current_physical_properties.deviceName : "Unknown" );
+        continue;
+      }
+      
+      *vk_selected_physical_devices = vk_current_physical_device;
+
+      try_picking = 2;
+      break;
+    }
+  }
+  
+
+  if ( *vk_selected_physical_devices == VK_NULL_HANDLE )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "I don't fucking know why any physical device doesn't supported!" );
+    return false;
+  }
+
+  vkGetPhysicalDeviceProperties( *vk_selected_physical_devices, &vk_selected_physical_properties );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Selected physical device %s %i", vk_selected_physical_properties.deviceName, vk_selected_physical_properties.deviceType );
+
+  vk_available_extensions_count = 0;
+  vkEnumerateDeviceExtensionProperties( *vk_selected_physical_devices, NULL, &vk_available_extensions_count, NULL );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_available_extensions, vk_available_extensions_count, crude_heap_allocator_pack( allocator ) );
+  vkEnumerateDeviceExtensionProperties( *vk_selected_physical_devices, NULL, &vk_available_extensions_count, vk_available_extensions );
+  
+  for ( size_t i = 0; i < vk_available_extensions_count; ++i )
+  {
+#if !CRUDE_GRAPHICS_MESH_SHADER_DISBLED
+    if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) == 0 )
+    {
+      vk_selected_physical_devices_optional_extenstions->mesh_shaders_extension_present = true;
+      continue;
+    }
+#endif
+#if !CRUDE_GRAPHICS_FRAGMENT_SHADING_RATE_DISBLED
+    if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME ) == 0 )
+    {
+      vk_selected_physical_devices_optional_extenstions->fragment_shading_rate_extension_present = true;
+      continue;
+    }
+#endif
+#if !CRUDE_GRAPHICS_DEFERRED_HOST_OPERATIONS_DISBLED
+    if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME ) == 0 )
+    {
+      vk_selected_physical_devices_optional_extenstions->deferred_host_operations_extension_present = true;
+      continue;
+    }
+#endif
+#if !CRUDE_GRAPHICS_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED
+    if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME ) == 0 )
+    {
+      vk_selected_physical_devices_optional_extenstions->shader_relaxed_extended_instruction_extension_present = true;
+      continue;
+    }
+#endif
+  }
+
+  return true;
+}
+
+int32
+crude_gfx_rhi_vk_get_supported_queue_family_index_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface,
+  _In_ crude_heap_allocator                               *allocator
+)
+{
+  VkQueueFamilyProperties                                 *queue_families_properties;
+  uint32                                                   queue_family_count;
+  int32                                                    queue_index;
+
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, NULL );
+  if ( queue_family_count == 0u )
+  {
+    return -1;
+  }
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( queue_families_properties, queue_family_count, crude_heap_allocator_pack( allocator ) );
+  vkGetPhysicalDeviceQueueFamilyProperties( vk_physical_device, &queue_family_count, queue_families_properties );
+  
+  queue_index = -1;
+  for ( uint32 i = 0; i < queue_family_count; ++i )
+  {
+    if ( queue_families_properties[ i ].queueCount > 0 && queue_families_properties[ i ].queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) )
+    {
+      VkBool32 surface_supported = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR( vk_physical_device, i, vk_surface, &surface_supported );
+      if ( surface_supported )
+      {
+        queue_index = i;
+        break;
+      }
+    }
+  }
+
+  CRUDE_ARRAY_DEINITIALIZE( queue_families_properties );
+
+  return queue_index;
+}
+
+bool
+crude_gfx_rhi_vk_check_support_required_extensions_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_opt_ char const                                   **not_supported_extension_name
+)
+{
+  VkExtensionProperties                                   *available_extensions;
+  uint32                                                   available_extensions_count;
+  bool                                                     support_required_extensions;
+  
+  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, NULL );
+  if ( available_extensions_count == 0u)
+  {
+    return false;
+  }
+    
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_extensions, available_extensions_count, crude_heap_allocator_pack( allocator ) );
+  vkEnumerateDeviceExtensionProperties( vk_physical_device, NULL, &available_extensions_count, available_extensions );
+
+  support_required_extensions = true;
+  for ( uint32 i = 0; i < CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ); ++i )
+  {
+    bool extension_found = false;
+    for ( uint32 k = 0; k < available_extensions_count; ++k )
+    {
+      if ( strcmp( crude_gfx_rhi_vk_device_required_extensions[i], available_extensions[k].extensionName ) == 0 )
+      {
+        extension_found = true;
+        break;
+      }
+    }
+    if ( !extension_found )
+    {
+      if ( not_supported_extension_name )
+      {
+        *not_supported_extension_name = crude_gfx_rhi_vk_device_required_extensions[ i ];
+      }
+      support_required_extensions = false;
+      break;
+    }
+  }
+  
+  CRUDE_ARRAY_DEINITIALIZE( available_extensions );
+  return support_required_extensions;
+}
+
+bool
+crude_gfx_rhi_vk_check_swapchain_adequate_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device,
+  _In_ VkSurfaceKHR                                        vk_surface
+)
+{
+  uint32 formats_count, presents_mode_count;
+
+  vkGetPhysicalDeviceSurfaceFormatsKHR( vk_physical_device, vk_surface, &formats_count, NULL );
+  if ( formats_count == 0u )
+  {
+    return false;
+  }
+
+  vkGetPhysicalDeviceSurfacePresentModesKHR( vk_physical_device, vk_surface, &presents_mode_count, NULL );
+  if ( presents_mode_count == 0u ) 
+  {
+    return false;
+  }
+
+  return true;
+}
+
+bool
+crude_gfx_rhi_vk_check_support_required_features_
+(
+  _In_ VkPhysicalDevice                                    vk_physical_device
+)
+{
+  VkPhysicalDeviceFeatures features;
+  vkGetPhysicalDeviceFeatures( vk_physical_device, &features );
+  return features.samplerAnisotropy;
+}
 #elif CRUDE_GFX_NAPI
 
 bool

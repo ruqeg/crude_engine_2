@@ -106,13 +106,9 @@ typedef struct crude_gfx_device
 #if CRUDE_GFX_USE_NSIGHT_AFTERMATH
   crude_gfx_gpu_crash_tracker                              crash_tracker;
 #endif
-  /**
-   * Additional data related to the foundation of the renderer.
-   */
   crude_gfx_rhi_instance                                   rhi_instance;
   crude_gfx_rhi_surface                                    rhi_surface;
   crude_gfx_rhi_surface_format                             surface_format;
-  VkPhysicalDevice                                         vk_physical_device;
   crude_gfx_rhi_device                                     rhi_device;
   crude_gfx_rhi_swapchain                                  rhi_swapchain;
   crude_gfx_rhi_semaphore                                  rhi_graphics_semaphore;
@@ -120,13 +116,9 @@ typedef struct crude_gfx_device
   crude_gfx_rhi_semaphore                                  rhi_rendering_finished_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   crude_gfx_rhi_semaphore                                  rhi_swapchain_updated_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   crude_gfx_rhi_descriptor_pool                            rhi_descriptor_pool;
-  /**
-   * Vulkan queues
-   */
-  crude_gfx_rhi_queue                                      rhi_main_queue;
-  crude_gfx_rhi_queue                                      rhi_transfer_queue;
-  uint32                                                   vk_main_queue_family;
-  uint32                                                   vk_transfer_queue_family;
+  crude_gfx_rhi_queue                                     *rhi_main_queue;
+  crude_gfx_rhi_queue                                     *rhi_transfer_queue;
+
   /**
    * Additional data related to the swapchain.
    */
@@ -165,11 +157,6 @@ typedef struct crude_gfx_device
 
   bool                                                     timestamps_enabled;
 
-  bool                                                     mesh_shaders_extension_present;
-  bool                                                     fragment_shading_rate_extension_present;
-  bool                                                     deferred_host_operations_extension_present;
-  bool                                                     shader_relaxed_extended_instruction_extension_present;
-
 #if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager                      *gpu_time_queries_manager;
 #endif
@@ -181,8 +168,6 @@ typedef struct crude_gfx_device
   PFN_vkCreateAccelerationStructureKHR                     vkCreateAccelerationStructureKHR;
   PFN_vkCmdBuildAccelerationStructuresKHR                  vkCmdBuildAccelerationStructuresKHR;
   PFN_vkGetAccelerationStructureDeviceAddressKHR           vkGetAccelerationStructureDeviceAddressKHR;
-  PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
-  PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
   PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                

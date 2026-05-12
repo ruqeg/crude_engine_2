@@ -312,7 +312,7 @@ typedef struct crude_gfx_framebuffer_creation
 
 typedef struct crude_gfx_cmd_pool_creation
 {
-  uint32                                                   queue_family_index;
+  crude_gfx_rhi_queue                                      queue;
 #if CRUDE_GFX_GPU_PROFILER
   struct
   {
@@ -478,7 +478,7 @@ typedef struct crude_gfx_descriptor_set_creation
   uint32                                                   num_resources;
   char const                                              *name;
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  crude_gfx_rhi_acceleration_structure                     acceleration_structure;
+  crude_gfx_rhi_acceleration_structure                     rhi_acceleration_structure;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set_creation;
 
@@ -562,7 +562,7 @@ typedef struct crude_gfx_descriptor_set_layout
 {
   crude_gfx_rhi_descriptor_pool                            rhi_descriptor_pool;
   crude_gfx_rhi_descriptor_set_layout                      rhi_descriptor_set_layout;
-  crude_gfx_rhi_descriptor_set_layout_binding             *binding;
+  crude_gfx_rhi_descriptor_set_layout_binding             *rhi_bindings;
   crude_gfx_descriptor_binding                            *bindings;
   uint8                                                    binding_to_index[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   uint16                                                   num_bindings;
@@ -581,7 +581,7 @@ typedef struct crude_gfx_descriptor_set
   uint32                                                   num_resources;
   char const                                              *name;
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  crude_gfx_rhi_acceleration_structure                     acceleration_structure;
+  crude_gfx_rhi_acceleration_structure                     rhi_acceleration_structure;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_descriptor_set;
 
